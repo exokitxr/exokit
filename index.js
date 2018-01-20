@@ -74,12 +74,14 @@ const browserPoly = (s = '', options = {}) => {
 
   const result = new jsdom.JSDOM(s, options);
   const {window} = result;
+
   window.fetch = (fetch => function(url, options) {
     if (!/^.+?:/.test(url)) {
-      url = basePath + (!/^\//.test(url) ? '/' : '') + url;
+      url = basePath + ((!/\/$/.test(basePath) && !/^\//.test(url)) ? '/' : '') + url;
     }
     return fetch(url, options);
   })(window.fetch)
+
   window.localStorage = new LocalStorage(path.join(options.dataPath, 'localStorage'));
 
   const rafCbs = [];
