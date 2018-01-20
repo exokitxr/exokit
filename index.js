@@ -50,16 +50,6 @@ const WebSocket = require('ws/lib/websocket');
 Window.prototype.WebSocket = WebSocket;
 
 const TinyWorker = require("tiny-worker");
-class Worker extends TinyWorker {
-  constructor(src, options) {
-    if (src instanceof Blob) {
-      super(new Function(src[Blob.BUFFER].toString('utf8')), options);
-    } else {
-      super(src, options);
-    }
-  }
-}
-Window.prototype.Worker = Worker;
 
 const {LocalStorage} = require('node-localstorage');
 
@@ -71,16 +61,93 @@ const browserPoly = (s = '', options = {}) => {
   options.dataPath = options.dataPath || __dirname;
 
   const basePath = options.url;
+  const _normalizeUrl = url => {
+    if (!/^.+?:/.test(url)) {
+      url = basePath + ((!/\/$/.test(basePath) && !/^\//.test(url)) ? '/' : '') + url;
+    }
+    return url;
+  };
 
   const result = new jsdom.JSDOM(s, options);
   const {window} = result;
 
-  window.fetch = (fetch => function(url, options) {
-    if (!/^.+?:/.test(url)) {
-      url = basePath + ((!/\/$/.test(basePath) && !/^\//.test(url)) ? '/' : '') + url;
+  window.fetch = (fetch => (url, options) => fetch(_normalizeUrl(url), options))(window.fetch);
+
+  class Worker {
+    constructor(src, options) {
+      this.src = src;
+      this.options = options;
+
+      this.live = true;
+      this.worker = null;
+      this.queue = [];
+
+      this.start();
     }
-    return fetch(url, options);
-  })(window.fetch)
+
+    start() {
+      const {src, options} = this;
+
+      if (typeof src === 'string') {
+        fetch(_normalizeUrl(src))
+          .then(res => {
+            if (res.status >= 200 && res.status < 300) {
+              return res.text();
+            } else {
+              return Promise.reject(new Error('worker fetch got invalid status code: ' + res.status));
+            }
+          })
+          .then(codeString => {
+            if (this.live) {
+              this.worker = new TinyWorker(new Function(codeString), options);
+
+              for (let i = 0; i < this.queue.length; i++) {
+                this.queue[i]();
+              }
+              this.queue.length = 0;
+            }
+          })
+          .catch(err => {
+            if (this.live) {
+              console.warn(err);
+            }
+          });
+      } else if (src instanceof Blob) {
+        this.worker = new TinyWorker(new Function(src[Blob.BUFFER].toString('utf8')), options);
+      } else {
+        this.worker = new TinyWorker(src, options);
+      }
+    }
+
+    addEventListener() {
+      if (this.worker) {
+        this.worker.addEventListener.apply(this.worker, arguments);
+      } else {
+        this.queue.push(() => {
+          this.addEventListener.apply(this, arguments);
+        });
+      }
+    }
+
+    postMessage() {
+      if (this.worker) {
+        this.worker.postMessage.apply(this.worker, arguments);
+      } else {
+        this.queue.push(() => {
+          this.postMessage.apply(this, arguments);
+        });
+      }
+    }
+
+    terminate() {
+      this.live = false;
+
+      if (this.worker) {
+        this.worker.terminate();
+      }
+    }
+  }
+  window.Worker = Worker;
 
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
 
