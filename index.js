@@ -82,6 +82,24 @@ const browserPoly = (s = '', options = {}) => {
   })(window.fetch)
   window.localStorage = new LocalStorage(path.join(options.dataPath, 'localStorage'));
 
+  const rafCbs = [];
+  window.requestAnimationFrame = fn => {
+    rafCbs.push(fn);
+  };
+  window.clearAnimationFrame = fn => {
+    const index = rafCbs.indexOf(fn);
+    if (index !== -1) {
+      rafCbs.splice(index, 1);
+    }
+  };
+  window.tickAnimationFrame = () => {
+    const localRafCbs = rafCbs.slice();
+    rafCbs.length = 0;
+    for (let i = 0; i < localRafCbs.length; i++) {
+      localRafCbs[i]();
+    }
+  };
+
   return result;
 };
 browserPoly.fetch = fetch;
