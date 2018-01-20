@@ -9,7 +9,7 @@ JsdomBlob.interface = Blob;
 const DomImplementation = require('jsdom/lib/jsdom/living/generated/DOMImplementation');
 const DomImplementationImpl = require('jsdom/lib/jsdom/living/nodes/DOMImplementation-impl');
 DomImplementationImpl.implementation.prototype._hasFeature = (hasFeature => function(feature, version) {
-  return (feature === 'FetchExternalResources' && version === 'script') || hasFeature.apply(this, arguments);
+  return (feature === 'FetchExternalResources' && (version === 'link' || version === 'script' || version === 'iframe')) || hasFeature.apply(this, arguments);
 })(DomImplementationImpl.implementation.prototype._hasFeature);
 
 const HTMLCanvasElement = require('jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl');
