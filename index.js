@@ -53,123 +53,133 @@ const TinyWorker = require("tiny-worker");
 
 const {LocalStorage} = require('node-localstorage');
 
+const utils = require('jsdom/lib/jsdom/living/generated/utils');
+
 const jsdom = require('jsdom');
 const browserPoly = (s = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1';
   options.contentType = 'text/html';
   options.runScripts = 'dangerously';
   options.dataPath = options.dataPath || __dirname;
+  options.beforeParse = window => {
+    const basePath = options.url;
+    const _normalizeUrl = url => {
+      if (!/^.+?:/.test(url)) {
+        url = basePath + ((!/\/$/.test(basePath) && !/^\//.test(url)) ? '/' : '') + url;
+      }
+      return url;
+    };
 
-  const basePath = options.url;
-  const _normalizeUrl = url => {
-    if (!/^.+?:/.test(url)) {
-      url = basePath + ((!/\/$/.test(basePath) && !/^\//.test(url)) ? '/' : '') + url;
-    }
-    return url;
-  };
+    // synchronize script tag onload
+    window.document[utils.implSymbol]._queue = {
+      resume: () => {},
+      push: callback => (err, data, response) => {
+        // process.nextTick(() => {
+          callback(err, data, response);
+        // });
+      },
+    };
 
-  const result = new jsdom.JSDOM(s, options);
-  const {window} = result;
+    window.fetch = (fetch => (url, options) => fetch(_normalizeUrl(url), options))(window.fetch);
 
-  window.fetch = (fetch => (url, options) => fetch(_normalizeUrl(url), options))(window.fetch);
+    class Worker {
+      constructor(src, options) {
+        this.src = src;
+        this.options = options;
 
-  class Worker {
-    constructor(src, options) {
-      this.src = src;
-      this.options = options;
+        this.live = true;
+        this.worker = null;
+        this.queue = [];
 
-      this.live = true;
-      this.worker = null;
-      this.queue = [];
+        this.start();
+      }
 
-      this.start();
-    }
+      start() {
+        const {src, options} = this;
 
-    start() {
-      const {src, options} = this;
-
-      if (typeof src === 'string') {
-        fetch(_normalizeUrl(src))
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('worker fetch got invalid status code: ' + res.status));
-            }
-          })
-          .then(codeString => {
-            if (this.live) {
-              this.worker = new TinyWorker(new Function(codeString), options);
-
-              for (let i = 0; i < this.queue.length; i++) {
-                this.queue[i]();
+        if (typeof src === 'string') {
+          fetch(_normalizeUrl(src))
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.text();
+              } else {
+                return Promise.reject(new Error('worker fetch got invalid status code: ' + res.status));
               }
-              this.queue.length = 0;
-            }
-          })
-          .catch(err => {
-            if (this.live) {
-              console.warn(err);
-            }
+            })
+            .then(codeString => {
+              if (this.live) {
+                this.worker = new TinyWorker(new Function(codeString), options);
+
+                for (let i = 0; i < this.queue.length; i++) {
+                  this.queue[i]();
+                }
+                this.queue.length = 0;
+              }
+            })
+            .catch(err => {
+              if (this.live) {
+                console.warn(err);
+              }
+            });
+        } else if (src instanceof Blob) {
+          this.worker = new TinyWorker(new Function(src[Blob.BUFFER].toString('utf8')), options);
+        } else {
+          this.worker = new TinyWorker(src, options);
+        }
+      }
+
+      addEventListener() {
+        if (this.worker) {
+          this.worker.addEventListener.apply(this.worker, arguments);
+        } else {
+          this.queue.push(() => {
+            this.addEventListener.apply(this, arguments);
           });
-      } else if (src instanceof Blob) {
-        this.worker = new TinyWorker(new Function(src[Blob.BUFFER].toString('utf8')), options);
-      } else {
-        this.worker = new TinyWorker(src, options);
+        }
+      }
+
+      postMessage() {
+        if (this.worker) {
+          this.worker.postMessage.apply(this.worker, arguments);
+        } else {
+          this.queue.push(() => {
+            this.postMessage.apply(this, arguments);
+          });
+        }
+      }
+
+      terminate() {
+        this.live = false;
+
+        if (this.worker) {
+          this.worker.terminate();
+        }
       }
     }
+    window.Worker = Worker;
 
-    addEventListener() {
-      if (this.worker) {
-        this.worker.addEventListener.apply(this.worker, arguments);
-      } else {
-        this.queue.push(() => {
-          this.addEventListener.apply(this, arguments);
-        });
+    window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
+
+    const rafCbs = [];
+    window.requestAnimationFrame = fn => {
+      rafCbs.push(fn);
+    };
+    window.clearAnimationFrame = fn => {
+      const index = rafCbs.indexOf(fn);
+      if (index !== -1) {
+        rafCbs.splice(index, 1);
       }
-    }
-
-    postMessage() {
-      if (this.worker) {
-        this.worker.postMessage.apply(this.worker, arguments);
-      } else {
-        this.queue.push(() => {
-          this.postMessage.apply(this, arguments);
-        });
+    };
+    window.tickAnimationFrame = () => {
+      const localRafCbs = rafCbs.slice();
+      rafCbs.length = 0;
+      for (let i = 0; i < localRafCbs.length; i++) {
+        localRafCbs[i]();
       }
-    }
-
-    terminate() {
-      this.live = false;
-
-      if (this.worker) {
-        this.worker.terminate();
-      }
-    }
-  }
-  window.Worker = Worker;
-
-  window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
-
-  const rafCbs = [];
-  window.requestAnimationFrame = fn => {
-    rafCbs.push(fn);
-  };
-  window.clearAnimationFrame = fn => {
-    const index = rafCbs.indexOf(fn);
-    if (index !== -1) {
-      rafCbs.splice(index, 1);
-    }
-  };
-  window.tickAnimationFrame = () => {
-    const localRafCbs = rafCbs.slice();
-    rafCbs.length = 0;
-    for (let i = 0; i < localRafCbs.length; i++) {
-      localRafCbs[i]();
-    }
+    };
   };
 
-  return result;
+  return new jsdom.JSDOM(s, options);
 };
 browserPoly.fetch = fetch;
 module.exports = browserPoly;
