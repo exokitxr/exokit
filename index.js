@@ -82,7 +82,7 @@ const browserPoly = (s = '', options = {}) => {
     return fetch(url, options);
   })(window.fetch)
 
-  window.localStorage = new LocalStorage(path.join(options.dataPath, 'localStorage'));
+  window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
 
   const rafCbs = [];
   window.requestAnimationFrame = fn => {
