@@ -1,0 +1,19 @@
+{
+  "name": "browser-poly",
+  "version": "0.0.1",
+  "main": "index.js",
+  "dependencies": {
+    "jsdom": "^11.5.1",
+    "node-localstorage": "^1.3.0",
+    "tiny-worker": "^2.1.1",
+    "window-fetch": "0.0.1",
+    "ws": "^4.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC",
+  "description": "Browser environment for node.js"
+}
