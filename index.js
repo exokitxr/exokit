@@ -49,7 +49,7 @@ URL.revokeObjectURL = blob => {
 const WebSocket = require('ws/lib/websocket');
 Window.prototype.WebSocket = WebSocket;
 
-const TinyWorker = require("tiny-worker");
+const WindowWorker = require('window-worker');
 
 const {LocalStorage} = require('node-localstorage');
 
@@ -74,85 +74,18 @@ const browserPoly = (s = '', options = {}) => {
     window.document[utils.implSymbol]._queue = {
       resume: () => {},
       push: callback => (err, data, response) => {
-        // process.nextTick(() => {
-          callback(err, data, response);
-        // });
+        callback(err, data, response);
       },
     };
 
     window.fetch = (fetch => (url, options) => fetch(_normalizeUrl(url), options))(window.fetch);
 
-    class Worker {
+    class Worker extends WindowWorker {
       constructor(src, options) {
-        this.src = src;
-        this.options = options;
-
-        this.live = true;
-        this.worker = null;
-        this.queue = [];
-
-        this.start();
-      }
-
-      start() {
-        const {src, options} = this;
-
-        if (typeof src === 'string') {
-          fetch(_normalizeUrl(src))
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.text();
-              } else {
-                return Promise.reject(new Error('worker fetch got invalid status code: ' + res.status));
-              }
-            })
-            .then(codeString => {
-              if (this.live) {
-                this.worker = new TinyWorker(new Function(codeString), options);
-
-                for (let i = 0; i < this.queue.length; i++) {
-                  this.queue[i]();
-                }
-                this.queue.length = 0;
-              }
-            })
-            .catch(err => {
-              if (this.live) {
-                console.warn(err);
-              }
-            });
-        } else if (src instanceof Blob) {
-          this.worker = new TinyWorker(new Function(src[Blob.BUFFER].toString('utf8')), options);
+        if (src instanceof Blob) {
+          super('data:application/javascript,' + src[Blob.BUFFER].toString('utf8'), options);
         } else {
-          this.worker = new TinyWorker(src, options);
-        }
-      }
-
-      addEventListener() {
-        if (this.worker) {
-          this.worker.addEventListener.apply(this.worker, arguments);
-        } else {
-          this.queue.push(() => {
-            this.addEventListener.apply(this, arguments);
-          });
-        }
-      }
-
-      postMessage() {
-        if (this.worker) {
-          this.worker.postMessage.apply(this.worker, arguments);
-        } else {
-          this.queue.push(() => {
-            this.postMessage.apply(this, arguments);
-          });
-        }
-      }
-
-      terminate() {
-        this.live = false;
-
-        if (this.worker) {
-          this.worker.terminate();
+          super(_normalizeUrl(src), options);
         }
       }
     }
