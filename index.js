@@ -62,10 +62,10 @@ const browserPoly = (s = '', options = {}) => {
   options.runScripts = 'dangerously';
   options.dataPath = options.dataPath || __dirname;
   options.beforeParse = window => {
-    const basePath = options.url;
+    const baseUrl = options.url;
     const _normalizeUrl = url => {
       if (!/^.+?:/.test(url)) {
-        url = basePath + ((!/\/$/.test(basePath) && !/^\//.test(url)) ? '/' : '') + url;
+        url = baseUrl + ((!/\/$/.test(baseUrl) && !/^\//.test(url)) ? '/' : '') + url;
       }
       return url;
     };
