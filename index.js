@@ -81,7 +81,9 @@ const browserPoly = (s = '', options = {}) => {
     window.fetch = (fetch => (url, options) => fetch(_normalizeUrl(url), options))(window.fetch);
 
     class Worker extends WindowWorker {
-      constructor(src, options) {
+      constructor(src, options = {}) {
+        options.baseUrl = options.baseUrl || baseUrl;
+
         if (src instanceof Blob) {
           super('data:application/javascript,' + src[Blob.BUFFER].toString('utf8'), options);
         } else {
