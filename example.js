@@ -1,5 +1,12 @@
 const browserPoly = require('.');
 
+process.on('uncaughtException', err => {
+  console.warn(err.stack);
+});
+process.on('unhandledRejection', err => {
+  console.warn(err.stack);
+});
+
 const window = browserPoly(`\
   <html>
     <body>
