@@ -48,6 +48,11 @@ class ImageData {
     this.data = new Uint8ClampedArray(0);
   }
 }
+class Path2D {
+  moveTo() {}
+  lineTo() {}
+  quadraticCurveTo() {}
+}
 class AudioNode {}
 class GainNode extends AudioNode {
   connect() {}
@@ -625,13 +630,20 @@ const browserPoly = (s = '', options = {}) => {
           this._context = typeof nativeImage !== 'undefined' ? nativeImage : {
             drawImage() {},
             fillRect() {},
+            clearRect() {},
             fillText() {},
+            stroke() {},
+            scale() {},
+            measureText() {
+              return {width: 0};
+            },
             createImageData(w, h) {
               return new ImageData(null, w, h);
             },
             getImageData(sx, sy, sw, sh) {
               return new ImageData(null, sw, sh);
             },
+            putImageData() {},
           };
         } else if (contextType === 'webgl') {
           const VERSION = id++;
@@ -653,6 +665,21 @@ const browserPoly = (s = '', options = {}) => {
               bindTexture() {},
               texParameteri() {},
               texImage2D() {},
+              createProgram() {},
+              createShader() {},
+              shaderSource() {},
+              compileShader() {},
+              getShaderParameter() {},
+              getShaderInfoLog() {
+                return '';
+              },
+              attachShader() {},
+              linkProgram() {},
+              getProgramInfoLog() {
+                return '';
+              },
+              getProgramParameter() {},
+              deleteShader() {},
               clearColor() {},
               clearDepth() {},
               clearStencil() {},
@@ -749,6 +776,7 @@ const browserPoly = (s = '', options = {}) => {
     window.Worker = Worker;
     window.Blob = Blob;
     window.AudioContext = AudioContext;
+    window.Path2D = Path2D;
     window.createImageBitmap = image => Promise.resolve(new ImageBitmap(image));
     window.requestAnimationFrame = fn => {
       rafCbs.push(fn);
