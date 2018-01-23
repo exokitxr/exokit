@@ -1,19 +1,17 @@
 const browserPoly = require('.');
 
-const appUrl = `http://127.0.0.1:8000`;
-const html = browserPoly(`\
+const window = browserPoly(`\
   <html>
     <body>
       <script>
         console.log('run inline script');
       </script>
-      <script src="${appUrl}/archae/index.js"></script>
+      <script src="/archae/index.js"></script>
     </body>
   </html>
 `, {
-  url: appUrl,
+  url: `http://127.0.0.1:8000`,
 });
-const {window} = html;
 window.addEventListener('error', err => {
   console.warn('got error', err.error.stack);
 });

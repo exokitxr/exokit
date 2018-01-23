@@ -1,42 +1,24 @@
+const events = require('events');
+const {EventEmitter} = events;
 const path = require('path');
 const url = require('url');
+const {URL} = url;
+const {performance} = require('perf_hooks');
+const vm = require('vm');
+
+const parse5 = require('parse5');
 
 const fetch = require('window-fetch');
+const {XMLHttpRequest} = require('xmlhttprequest');
 const {Response, Blob} = fetch;
-const JsdomBlob = require('jsdom/lib/jsdom/living/generated/Blob');
-JsdomBlob.interface = Blob;
+const WebSocket = require('ws/lib/websocket');
+const {LocalStorage} = require('node-localstorage');
+const WindowWorker = require('window-worker');
 
-const DomImplementation = require('jsdom/lib/jsdom/living/generated/DOMImplementation');
-const DomImplementationImpl = require('jsdom/lib/jsdom/living/nodes/DOMImplementation-impl');
-DomImplementationImpl.implementation.prototype._hasFeature = (hasFeature => function(feature, version) {
-  return (feature === 'FetchExternalResources' && (version === 'link' || version === 'script' || version === 'iframe')) || hasFeature.apply(this, arguments);
-})(DomImplementationImpl.implementation.prototype._hasFeature);
+const windowSymbol = Symbol();
 
-const HTMLCanvasElement = require('jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl');
-if (typeof global.nativeGl === 'undefined') {
-  global.nativeGl = {};
-}
-const canvasImplementation = {
-  getContext: () => nativeGl,
-};
-HTMLCanvasElement.implementation.prototype._getCanvas = () => canvasImplementation;
-
-const Window = require('jsdom/lib/jsdom/browser/Window');
-
-Window.prototype.fetch = (url, options) => {
-  const blob = urls.get(url);
-  if (blob) {
-    return Promise.resolve(new Response(blob));
-  } else {
-    return fetch(url, options);
-  }
-};
-
-// const {URL} = url;
 let id = 0;
 const urls = new Map();
-const URL = require('whatwg-url/lib/URL').interface;
-// Window.prototype.URL = URL;
 URL.createObjectURL = blob => {
   const url = 'blob:' + id++;
   urls.set(url, blob);
@@ -46,56 +28,750 @@ URL.revokeObjectURL = blob => {
   urls.delete(url);
 };
 
-const WebSocket = require('ws/lib/websocket');
-Window.prototype.WebSocket = WebSocket;
+class MessageEvent {
+  constructor(data) {
+    this.data = data;
+  }
+}
+class ImageBitmap {
+  constructor(image) {
+    this.image = image;
+    this.width = image.width;
+    this.height = image.height;
+  }
+}
+class ImageData {
+  constructor(image, width, height) {
+    this.image = image;
+    this.width = width;
+    this.height = height;
+    this.data = new Uint8ClampedArray(0);
+  }
+}
+class AudioNode {}
+class GainNode extends AudioNode {
+  connect() {}
+}
+class AudioContext {
+  createGain() {
+    return new GainNode();
+  }
+}
 
-const WindowWorker = require('window-worker');
-
-const {LocalStorage} = require('node-localstorage');
-
-const utils = require('jsdom/lib/jsdom/living/generated/utils');
-
-const jsdom = require('jsdom');
 const browserPoly = (s = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1';
-  options.contentType = 'text/html';
-  options.runScripts = 'dangerously';
   options.dataPath = options.dataPath || __dirname;
-  options.beforeParse = window => {
-    const baseUrl = options.url;
-    const _normalizeUrl = url => {
-      if (!/^.+?:/.test(url)) {
-        url = baseUrl + ((!/\/$/.test(baseUrl) && !/^\//.test(url)) ? '/' : '') + url;
+
+  const baseUrl = options.url;
+  const _normalizeUrl = url => {
+    if (!/^.+?:/.test(url)) {
+      url = baseUrl + ((!/\/$/.test(baseUrl) && !/^\//.test(url)) ? '/' : '') + url;
+    }
+    return url;
+  };
+  const _parseStyle = styleString => {
+    const style = {};
+    const split = styleString.split(/;\s*/);
+    for (let i = 0; i < split.length; i++) {
+      const split2 = split[i].split(/:\s*/);
+      if (split2.length === 2) {
+        style[split2[0]] = split2[1];
       }
-      return url;
-    };
+    }
+    return style;
+  };
+  const _formatStyle = style => {
+    let styleString = '';
+    for (const k in style) {
+      styleString += (styleString.length > 0 ? ' ' : '') + k + ': ' + style[k] + ';';
+    }
+    return styleString;
+  };
+  const _hash = s => {
+    let result = 0;
+    for (let i = 0; i < s.length; i++) {
+      result += s.codePointAt(i);
+    }
+    return result;
+  };
 
-    // synchronize script tag onload
-    window.document[utils.implSymbol]._queue = {
-      resume: () => {},
-      push: callback => (err, data, response) => {
-        callback(err, data, response);
-      },
-    };
+  class Node extends EventEmitter {
+    constructor(nodeName = null, window = null) {
+      super();
 
-    window.fetch = (fetch => (url, options) => fetch(_normalizeUrl(url), options))(window.fetch);
+      this.nodeName = nodeName;
+      this.parentNode = null;
 
-    class Worker extends WindowWorker {
-      constructor(src, options = {}) {
-        options.baseUrl = options.baseUrl || baseUrl;
+      this[windowSymbol] = window;
+    }
+  }
+  Node.fromAST = (node, window, parentNode = null) => {
+    if (node.nodeName === '#text') {
+      const textNode = new TextNode(node.value, window);
+      textNode.parentNode = parentNode;
+      return textNode;
+    } else if (node.nodeName === '#comment') {
+      const commentNode = new CommentNode(node.value, window);
+      commentNode.parentNode = parentNode;
+      return commentNode;
+    } else {
+      const attributes = node.attrs && (() => {
+        const result = {};
+        for (let i = 0; i < node.attrs.length; i++) {
+          const attr = node.attrs[i];
+          result[attr.name] = attr.value;
+        }
+        return result;
+      })();
+      const element = new Element(node.tagName, attributes, node.value, window);
+      element.parentNode = parentNode;
+      if (node.childNodes) {
+        element.childNodes = node.childNodes.map(childNode => Node.fromAST(childNode, window, element));
+      }
+      return element;
+    }
+  };
+  class Element extends Node {
+    constructor(tagName = 'div', attributes = {}, value = '', window = null) {
+      super(null, window);
 
-        if (src instanceof Blob) {
-          super('data:application/javascript,' + src[Blob.BUFFER].toString('utf8'), options);
+      this.tagName = tagName;
+      this.attributes = attributes;
+      this.value = value;
+      this.childNodes = [];
+
+      this._innerHTML = '';
+    }
+
+    get children() {
+      return this.childNodes;
+    }
+    set children(children) {
+      this.childNodes = children;
+    }
+
+    getAttribute(name) {
+      return this.attributes[name];
+    }
+    setAttribute(name, value) {
+      this.attributes[name] = value;
+
+      this.emit('attribute', name, value);
+    }
+
+    appendChild(childNode) {
+      this.childNodes.push(childNode);
+      childNode.parentNode = this;
+    }
+    removeChild(childNode) {
+      const index = this.childNodes.indexOf(childNode);
+      if (index !== -1) {
+        this.childNodes.splice(index, 1);
+        childNode.parentNode = null;
+      }
+    }
+    insertBefore(childNode, nextSibling) {
+      const index = this.childNodes.indexOf(nextSibling);
+      if (index !== -1) {
+        this.childNodes.splice(index, 0, childNode);
+        childNode.parentNode = this;
+      }
+    }
+    insertAfter(childNode, nextSibling) {
+      const index = this.childNodes.indexOf(nextSibling);
+      if (index !== -1) {
+        this.childNodes.splice(index + 1, 0, childNode);
+        childNode.parentNode = this;
+      }
+    }
+
+    getElementById(id) {
+      return this.traverse(node => {
+        if (
+          (node.getAttribute && node.getAttribute('id') === id) ||
+          (node.attrs && node.attrs.some(attr => attr.name === 'id' && attr.value === id))
+        ) {
+          return node;
+        }
+      });
+    }
+    getElementByClassName(className) {
+      return this.traverse(node => {
+        if (
+          (node.getAttribute && node.getAttribute('class') === className) ||
+          (node.attrs && node.attrs.some(attr => attr.name === 'class' && attr.value === className))
+        ) {
+          return node;
+        }
+      });
+    }
+    getElementByTagName(tagName) {
+      return this.traverse(node => {
+        if (node.tagName === tagName) {
+          return node;
+        }
+      });
+    }
+    querySelector(selector) {
+      let match;
+      if (match = selector.match(/^#(.+)$/)) {
+        return this.getElementById(match[1]);
+      } else if (match = selector.match(/^\.(.+)$/)) {
+        return this.getElementByClassName(match[1]);
+      } else {
+        return this.getElementByTagName(selector);
+      }
+    }
+    getElementsById(id) {
+      const result = [];
+      this.traverse(node => {
+        if (
+          (node.getAttribute && node.getAttribute('id') === id) ||
+          (node.attrs && node.attrs.some(attr => attr.name === 'id' && attr.value === id))
+        ) {
+          result.push(node);
+        }
+      });
+      return result;
+    }
+    getElementsByClassName(className) {
+      const result = [];
+      this.traverse(node => {
+        if (
+          (node.getAttribute && node.getAttribute('class') === className) ||
+          (node.attrs && node.attrs.some(attr => attr.name === 'class' && attr.value === className))
+        ) {
+          result.push(node);
+        }
+      });
+      return result;
+    }
+    getElementsByTagName(tagName) {
+      const result = [];
+      this.traverse(node => {
+        if (node.tagName === tagName) {
+          result.push(node);
+        }
+      });
+      return result;
+    }
+    querySelectorAll(selector) {
+      let match;
+      if (match = selector.match(/^#(.+)$/)) {
+        return this.getElementsById(match[1]);
+      } else if (match = selector.match(/^\.(.+)$/)) {
+        return this.getElementsByClassName(match[1]);
+      } else {
+        return this.getElementsByTagName(selector);
+      }
+    }
+    traverse(fn) {
+      const _recurse = node => {
+        const result = fn(node);
+        if (result !== undefined) {
+          return result;
         } else {
-          super(_normalizeUrl(src), options);
+          if (node.childNodes) {
+            for (let i = 0; i < node.childNodes.length; i++) {
+              const result = _recurse(node.childNodes[i]);
+              if (result !== undefined) {
+                return result;
+              }
+            }
+          }
+        }
+      };
+      return _recurse(this);
+    }
+
+    addEventListener() {
+      this.on.apply(this, arguments);
+    }
+    removeEventListener() {
+      this.removeListener.apply(this, arguments);
+    }
+
+    get offsetWidth() {
+      const style = _parseStyle(this.attributes['style'] || '');
+      const fontFamily = style['font-family'];
+      if (fontFamily) {
+        return _hash(fontFamily) * _hash(this.innerHTML);
+      } else {
+        return 0;
+      }
+    }
+    set offsetWidth(offsetWidth) {}
+    get offsetHeight() {
+      return 0;
+    }
+    set offsetHeight(offsetHeight) {}
+
+    get className() {
+      return this.attributes['class'] || '';
+    }
+    set className(className) {
+      this.attributes['class'] = className;
+    }
+
+    get style() {
+      const style = _parseStyle(this.attributes['style'] || '');
+      Object.defineProperty(style, 'cssText', {
+        get: () => this.attributes['style'],
+        set: cssText => {
+          this.attributes['style'] = cssText;
+        },
+      });
+      return style;
+    }
+    set style(style) {
+      this.attributes['style'] = _formatStyle(style);
+    }
+
+    get innerHTML() {
+      return parse5.serialize(this);
+    }
+    set innerHTML(innerHTML) {
+      const childNodes = parse5.parseFragment(innerHTML).childNodes.map(childNode => Node.fromAST(childNode, this[windowSymbol], this));
+      this.childNodes = childNodes;
+
+      _promiseSerial(childNodes.map(childNode => () => _runHtml(childNode, this[windowSymbol])))
+        .catch(err => {
+          console.warn(err);
+        });
+
+      this.emit('innerHTML', innerHTML);
+    }
+  }
+  class LoadableElement extends Element {
+    constructor(tagName, window) {
+      super(tagName, undefined, undefined, window);
+    }
+
+    get onload() {
+      return this.listeners('load')[0];
+    }
+    set onload(onload) {
+      if (typeof onload === 'function') {
+        this.addEventListener('load', onload);
+      } else {
+        const listeners = this.listeners('load');
+        for (let i = 0; i < listeners.length; i++) {
+          this.removeEventListener('load', listeners[i]);
         }
       }
     }
-    window.Worker = Worker;
 
+    get onerror() {
+      return this.listeners('error')[0];
+    }
+    set onerror(onerror) {
+      if (typeof onerror === 'function') {
+        this.addEventListener('error', onerror);
+      } else {
+        const listeners = this.listeners('error');
+        for (let i = 0; i < listeners.length; i++) {
+          this.removeEventListener('error', listeners[i]);
+        }
+      }
+    }
+  }
+  class WindowElement extends LoadableElement {
+    constructor() {
+      super('window');
+    }
+
+    postMessage(data) {
+      this.emit('message', new MessageEvent(data));
+    }
+
+    get onmessage() {
+      return this.listeners('load')[0];
+    }
+    set onmessage(onmessage) {
+      if (typeof onmessage === 'function') {
+        this.addEventListener('message', onmessage);
+      } else {
+        const listeners = this.listeners('message');
+        for (let i = 0; i < listeners.length; i++) {
+          this.removeEventListener('message', listeners[i]);
+        }
+      }
+    }
+  }
+  class ScriptElement extends LoadableElement {
+    constructor(window) {
+      super('script', window);
+
+      this.readyState = null;
+
+      this.on('attribute', (name, value) => {
+        if (name === 'src') {
+          this.readyState = null;
+
+          const url = _normalizeUrl(value);
+
+          fetch(url)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.text();
+              } else {
+                return Promise.reject(new Error('script src got invalid status code: ' + res.status));
+              }
+            })
+            .then(jsString => {
+              this.runJavascript(jsString, url);
+
+              this.readyState = 'complete';
+
+              this.emit('load');
+            })
+            .catch(err => {
+              this.readyState = 'complete';
+
+              this.emit('error', err);
+            });
+        }
+      });
+      this.on('innerHTML', innerHTML => {
+        this.runJavascript(innerHTML);
+
+        this.readyState = 'complete';
+
+        process.nextTick(() => {
+          this.emit('load');
+        });
+      });
+    }
+
+    get src() {
+      this.getAttribute('src');
+    }
+    set src(value) {
+      this.setAttribute('src', value);
+    }
+
+    set innerHTML(innerHTML) {
+      this.emit('innerHTML', innerHTML);
+    }
+
+    runJavascript(jsString, filename = 'script') {
+      try {
+        vm.runInContext(jsString, this[windowSymbol], {
+          filename,
+        });
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+  }
+  class MediaElement extends LoadableElement {
+    constructor(tagName, window) {
+      super(tagName, window);
+    }
+
+    get src() {
+      this.getAttribute('src');
+    }
+    set src(value) {
+      this.setAttribute('src', value);
+    }
+  }
+  class ImageElement extends MediaElement {
+    constructor(window) {
+      super('image', window);
+
+      this.on('attribute', (name, value) => {
+        if (name === 'src') {
+          process.nextTick(() => { // XXX
+            this.emit('load');
+          });
+        }
+      });
+    }
+
+    get width() {
+      return 0; // XXX
+    }
+    set width(width) {}
+    get height() {
+      return 0; // XXX
+    }
+    set height(height) {}
+  }
+  class AudioElement extends MediaElement {
+    constructor(window) {
+      super('audio', window);
+
+      this.on('attribute', (name, value) => {
+        if (name === 'src') {
+          process.nextTick(() => { // XXX
+            this.emit('load');
+            this.emit('canplay');
+          });
+        }
+      });
+    }
+
+    get oncanplay() {
+      return this.listeners('canplay')[0];
+    }
+    set oncanplay(oncanplay) {
+      if (typeof oncanplay === 'function') {
+        this.addEventListener('canplay', oncanplay);
+      } else {
+        const listeners = this.listeners('canplay');
+        for (let i = 0; i < listeners.length; i++) {
+          this.removeEventListener('canplay', listeners[i]);
+        }
+      }
+    }
+
+    get oncanplaythrough() {
+      return this.listeners('canplaythrough')[0];
+    }
+    set oncanplaythrough(oncanplaythrough) {
+      if (typeof oncanplaythrough === 'function') {
+        this.addEventListener('canplaythrough', oncanplaythrough);
+      } else {
+        const listeners = this.listeners('canplaythrough');
+        for (let i = 0; i < listeners.length; i++) {
+          this.removeEventListener('canplaythrough', listeners[i]);
+        }
+      }
+    }
+  }
+  class VideoElement extends MediaElement {
+    constructor(window) {
+      super('video', window);
+
+      this.on('attribute', (name, value) => {
+        if (name === 'src') {
+          process.nextTick(() => { // XXX
+            this.emit('load');
+          });
+        }
+      });
+    }
+  }
+  class IframeElement extends MediaElement {
+    constructor(window) {
+      super('iframe', window);
+
+      this.contentWindow = null;
+      this.contentDocument = null;
+
+      this.on('attribute', (name, value) => {
+        if (name === 'src') {
+          value = _normalizeUrl(value);
+
+          fetch(value)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.text();
+              } else {
+                return Promise.reject(new Error('iframe src got invalid status code: ' + res.status));
+              }
+            })
+            .then(htmlString => {
+              const contentWindow = _parseWindow(htmlString, this[windowSymbol], this[windowSymbol].top);
+              this.contentWindow = contentWindow;
+
+              const {document: contentDocument} = contentWindow;
+              this.contentDocument = contentDocument;
+
+              contentDocument.once('readystatechange', () => {
+                this.emit('load');
+              });
+            })
+            .catch(err => {
+              this.emit('error', err);
+            });
+        }
+      });
+    }
+  }
+  class CanvasElement extends Element {
+    constructor(window) {
+      super('canvas', undefined, undefined, window);
+
+      this._context = null;
+
+      this.on('attribute', (name, value) => {
+        if (name === 'width') {
+          // XXX
+        } else if (name === 'height') {
+          // XXX
+        }
+      });
+    }
+
+    get width() {
+      this.getAttribute('width');
+    }
+    set width(value) {
+      this.setAttribute('width', value);
+    }
+
+    get height() {
+      this.getAttribute('height');
+    }
+    set height(value) {
+      this.setAttribute('height', value);
+    }
+
+    getContext(contextType) {
+      if (this._context === null) {
+        if (contextType === '2d') {
+          this._context = typeof nativeImage !== 'undefined' ? nativeImage : {
+            drawImage() {},
+            fillRect() {},
+            fillText() {},
+            createImageData(w, h) {
+              return new ImageData(null, w, h);
+            },
+            getImageData(sx, sy, sw, sh) {
+              return new ImageData(null, sw, sh);
+            },
+          };
+        } else if (contextType === 'webgl') {
+          const VERSION = id++;
+          this._context = typeof nativeGl !== 'undefined' ? nativeGl : (() => {
+            const VERSION = Symbol();
+            return {
+              VERSION,
+              getExtension() {
+                return null;
+              },
+              getParameter(param) {
+                if (param === VERSION) {
+                  return 'WebGL 1';
+                } else {
+                  return null;
+                }
+              },
+              createTexture() {},
+              bindTexture() {},
+              texParameteri() {},
+              texImage2D() {},
+              clearColor() {},
+              clearDepth() {},
+              clearStencil() {},
+              enable() {},
+              disable() {},
+              depthFunc() {},
+              frontFace() {},
+              cullFace() {},
+              blendEquationSeparate() {},
+              blendFuncSeparate() {},
+              viewport() {},
+            };
+          })();
+        }
+      }
+      return this._context;
+    }
+  }
+  class TextNode extends Node {
+    constructor(value, window) {
+      super('#text', window);
+
+      this.value = value;
+    }
+  }
+  class CommentNode extends Node {
+    constructor(value, window) {
+      super('#comment', window);
+
+      this.value = value;
+    }
+  }
+  const ELEMENTS = {
+    script: window => new ScriptElement(window),
+    img: window => new ImageElement(window),
+    audio: window => new AudioElement(window),
+    video: window => new VideoElement(window),
+    iframe: window => new IframeElement(window),
+    canvas: window => new CanvasElement(window),
+  };
+
+  class Worker extends WindowWorker {
+    constructor(src, options = {}) {
+      options.baseUrl = options.baseUrl || baseUrl;
+
+      if (src instanceof Blob) {
+        super('data:application/javascript,' + src[Blob.BUFFER].toString('utf8'), options);
+      } else {
+        super(_normalizeUrl(src), options);
+      }
+    }
+  }
+
+  const rafCbs = [];
+
+  const _parseWindow = (s, parent, top) => {
+    const window = new WindowElement();
+    vm.createContext(window);
+
+    const document = Node.fromAST(parse5.parse(s), window);
+    const html = document.childNodes[0];
+    const head = html.childNodes[0];
+    const body = html.childNodes[1];
+
+    document.documentElement = document;
+    document.readyState = null;
+    document.head = head;
+    document.body = body;
+    document.location = url.parse(baseUrl);
+    document.createElement = tagName => {
+      const elementTemplate = ELEMENTS[tagName];
+      return elementTemplate ? elementTemplate(window) : new Element(tagName, undefined, undefined, window);
+    };
+    document.createElementNS = (namespace, tagName) => document.createElement(tagName);
+    document.createTextNode = text => new TextNode(text);
+
+    window.window = window;
+    window.self = window;
+    window.parent = parent || window;
+    window.top = top || window;
+    window.console = console;
+    window.setTimeout = setTimeout;
+    window.clearTimeout = clearTimeout;
+    window.setInterval = setInterval;
+    window.clearInterval = clearInterval;
+    window.Date = Date;
+    window.performance = performance;
+    window.document = document;
+    window.location = document.location;
+    window.navigator = {};
     window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
-
-    const rafCbs = [];
+    /* window.addEventListener = window.addEventListener;
+    window.removeEventListener = window.removeEventListener;
+    window.postMessage = window.postMessage; */
+    window.URL = URL;
+    window.Image = (() => {
+      class Image extends ImageElement {
+        constructor() {
+          super(window);
+        }
+      }
+      return Image;
+    })();
+    window.btoa = s => new Buffer(s, 'binary').toString('base64');
+    window.atob = s => new Buffer(s, 'base64').toString('binary');
+    window.fetch = (url, options) => {
+      const blob = urls.get(url);
+      if (blob) {
+        return Promise.resolve(new Response(blob));
+      } else {
+        return fetch(_normalizeUrl(url), options);
+      }
+    };
+    window.XMLHttpRequest = XMLHttpRequest;
+    window.WebSocket = WebSocket;
+    window.Worker = Worker;
+    window.Blob = Blob;
+    window.AudioContext = AudioContext;
+    window.createImageBitmap = image => Promise.resolve(new ImageBitmap(image));
     window.requestAnimationFrame = fn => {
       rafCbs.push(fn);
     };
@@ -112,9 +788,84 @@ const browserPoly = (s = '', options = {}) => {
         localRafCbs[i]();
       }
     };
+
+    process.nextTick(async () => {
+      await _runHtml(document, window);
+
+      document.readyState = 'complete';
+      document.emit('readystatechange');
+    });
+
+    return window;
+  };
+  const window = _parseWindow(s);
+  const {document} = window;
+
+  const _promiseSerial = async promiseFns => {
+    for (let i = 0; i < promiseFns.length; i++) {
+      await promiseFns[i]();
+    }
+  };
+  const _loadPromise = el => new Promise((accept, reject) => {
+    el.on('load', () => {
+      accept();
+    });
+    el.on('error', err => {
+      reject(err);
+    });
+  });
+  const _runHtml = async (element, window) => {
+    if (element instanceof Element) {
+      const scripts = element.querySelectorAll('script');
+      for (let i = 0; i < scripts.length; i++) {
+        const script = scripts[i];
+        const scriptEl = new ScriptElement(window);
+        if (script.attributes.src) {
+          scriptEl.src = script.attributes.src;
+        }
+        if (script.childNodes.length > 0) {
+          scriptEl.innerHTML = script.childNodes[0].value;
+        }
+
+        await _loadPromise(scriptEl);
+      }
+
+      const images = element.querySelectorAll('image');
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const imageEl = new ImageElement(window);
+        if (image.attributes.src) {
+          imageEl.src = image.attributes.src;
+        }
+
+        await _loadPromise(imageEl);
+      }
+
+      const audios = element.querySelectorAll('audio');
+      for (let i = 0; i < audios.length; i++) {
+        const audio = audios[i];
+        const audioEl = new AudioElement(window);
+        if (audio.attributes.src) {
+          audioEl.src = audio.attributes.src;
+        }
+
+        await _loadPromise(audioEl);
+      }
+
+      const videos = element.querySelectorAll('video');
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
+        const videoEl = new VideoElement(window);
+        if (video.attributes.src) {
+          videoEl.src = video.attributes.src;
+        }
+
+        await _loadPromise(videoEl);
+      }
+    }
   };
 
-  return new jsdom.JSDOM(s, options);
+  return window;
 };
-browserPoly.fetch = fetch;
+// browserPoly.fetch = fetch;
 module.exports = browserPoly;
