@@ -827,7 +827,18 @@ const browserPoly = (s = '', options = {}) => {
           scriptEl.innerHTML = script.childNodes[0].value;
         }
 
-        await _loadPromise(scriptEl);
+        if (script.attributes.async) {
+          _loadPromise(scriptEl)
+            .catch(err => {
+              console.warn(err);
+            });
+        } else {
+          try {
+            await _loadPromise(scriptEl);
+          } catch(err) {
+            console.warn(err);
+          }
+        }
       }
 
       const images = element.querySelectorAll('image');
