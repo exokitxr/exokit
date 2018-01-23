@@ -557,14 +557,17 @@ const browserPoly = (s = '', options = {}) => {
     constructor(window) {
       super('iframe', window);
 
-      this.contentWindow = null;
-      this.contentDocument = null;
+      const contentWindow = _parseWindow('', this[windowSymbol], this[windowSymbol].top);
+      this.contentWindow = contentWindow;
+
+      const {document: contentDocument} = contentWindow;
+      this.contentDocument = contentDocument;
 
       this.on('attribute', (name, value) => {
         if (name === 'src') {
-          value = _normalizeUrl(value);
+          const url = _normalizeUrl(value);
 
-          fetch(value)
+          fetch(url)
             .then(res => {
               if (res.status >= 200 && res.status < 300) {
                 return res.text();
@@ -573,10 +576,7 @@ const browserPoly = (s = '', options = {}) => {
               }
             })
             .then(htmlString => {
-              const contentWindow = _parseWindow(htmlString, this[windowSymbol], this[windowSymbol].top);
-              this.contentWindow = contentWindow;
-
-              const {document: contentDocument} = contentWindow;
+              const contentDocument = _parseDocument(htmlString, this.contentWindow);
               this.contentDocument = contentDocument;
 
               contentDocument.once('readystatechange', () => {
@@ -708,27 +708,8 @@ const browserPoly = (s = '', options = {}) => {
 
   const rafCbs = [];
 
-  const _parseWindow = (s, parent, top) => {
+  const _makeWindow = (parent, top) => {
     const window = new WindowElement();
-    vm.createContext(window);
-
-    const document = Node.fromAST(parse5.parse(s), window);
-    const html = document.childNodes[0];
-    const head = html.childNodes[0];
-    const body = html.childNodes[1];
-
-    document.documentElement = document;
-    document.readyState = null;
-    document.head = head;
-    document.body = body;
-    document.location = url.parse(baseUrl);
-    document.createElement = tagName => {
-      const elementTemplate = ELEMENTS[tagName];
-      return elementTemplate ? elementTemplate(window) : new Element(tagName, undefined, undefined, window);
-    };
-    document.createElementNS = (namespace, tagName) => document.createElement(tagName);
-    document.createTextNode = text => new TextNode(text);
-
     window.window = window;
     window.self = window;
     window.parent = parent || window;
@@ -740,13 +721,10 @@ const browserPoly = (s = '', options = {}) => {
     window.clearInterval = clearInterval;
     window.Date = Date;
     window.performance = performance;
-    window.document = document;
-    window.location = document.location;
+    window.location = url.parse(baseUrl);
     window.navigator = {};
     window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
-    /* window.addEventListener = window.addEventListener;
-    window.removeEventListener = window.removeEventListener;
-    window.postMessage = window.postMessage; */
+    window.document = null;
     window.URL = URL;
     window.Image = (() => {
       class Image extends ImageElement {
@@ -788,13 +766,42 @@ const browserPoly = (s = '', options = {}) => {
         localRafCbs[i]();
       }
     };
+    vm.createContext(window);
+    return window;
+  };
+  const _parseDocument = (s, window) => {
+    const document = Node.fromAST(parse5.parse(s), window);
+    const html = document.childNodes.find(element => element.tagName === 'html');
+    const head = html.childNodes.find(element => element.tagName === 'head');
+    const body = html.childNodes.find(element => element.tagName === 'body');
+
+    document.documentElement = document;
+    document.readyState = null;
+    document.head = head;
+    document.body = body;
+    document.location = url.parse(baseUrl);
+    document.createElement = tagName => {
+      const elementTemplate = ELEMENTS[tagName];
+      return elementTemplate ? elementTemplate(window) : new Element(tagName, undefined, undefined, window);
+    };
+    document.createElementNS = (namespace, tagName) => document.createElement(tagName);
+    document.createTextNode = text => new TextNode(text);
+    window.document = document;
 
     process.nextTick(async () => {
+      document.readyState = 'complete';
+
       await _runHtml(document, window);
 
-      document.readyState = 'complete';
       document.emit('readystatechange');
     });
+
+    return document;
+  };
+  const _parseWindow = (s, parent, top) => {
+    const window = _makeWindow(parent, top);
+    const document = _parseDocument(s, window);
+    window.document = document;
 
     return window;
   };
