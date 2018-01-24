@@ -8,7 +8,7 @@
     "uglifyjs-webpack-plugin": "^1.1.6",
     "webpack": "^3.10.0",
     "window-fetch": "0.0.2",
-    "window-worker": "0.0.13",
+    "window-worker": "0.0.16",
     "ws": "^4.0.0",
     "xmlhttprequest": "^1.8.0"
   },
