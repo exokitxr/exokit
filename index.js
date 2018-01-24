@@ -67,10 +67,10 @@ const browserPoly = (s = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1';
   options.dataPath = options.dataPath || __dirname;
 
-  const baseUrl = options.url;
+  const baseUrl = options.url.replace(/\/+$/, '');
   const _normalizeUrl = url => {
     if (!/^.+?:/.test(url)) {
-      url = baseUrl + ((!/\/$/.test(baseUrl) && !/^\//.test(url)) ? '/' : '') + url;
+      url = baseUrl + (!/^\//.test(url) ? '/' : '') + url;
     }
     return url;
   };
