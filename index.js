@@ -420,7 +420,7 @@ const browserPoly = (s = '', options = {}) => {
               if (res.status >= 200 && res.status < 300) {
                 return res.text();
               } else {
-                return Promise.reject(new Error('script src got invalid status code: ' + res.status));
+                return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
               }
             })
             .then(jsString => {
@@ -577,7 +577,7 @@ const browserPoly = (s = '', options = {}) => {
               if (res.status >= 200 && res.status < 300) {
                 return res.text();
               } else {
-                return Promise.reject(new Error('iframe src got invalid status code: ' + res.status));
+                return Promise.reject(new Error('iframe src got invalid status code: ' + res.status + ' : ' + url));
               }
             })
             .then(htmlString => {
@@ -918,7 +918,7 @@ browserPoly.fetch = (url, options) => fetch(url)
     if (res.status >= 200 && res.status < 300) {
       return res.text();
     } else {
-      return Promise.reject(new Error('fetch got invalid status code: ' + res.status));
+      return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + url));
     }
   })
   .then(htmlString => browserPoly(htmlString, options));
