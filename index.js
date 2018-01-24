@@ -913,5 +913,13 @@ const browserPoly = (s = '', options = {}) => {
 
   return window;
 };
-// browserPoly.fetch = fetch;
+browserPoly.fetch = (url, options) => fetch(url)
+  .then(res => {
+    if (res.status >= 200 && res.status < 300) {
+      return res.text();
+    } else {
+      return Promise.reject(new Error('fetch got invalid status code: ' + res.status));
+    }
+  })
+  .then(htmlString => browserPoly(htmlString, options));
 module.exports = browserPoly;
