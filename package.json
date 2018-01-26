@@ -19,5 +19,21 @@
   },
   "author": "Avaer Kazmer <a@modules.io>",
   "license": "ISC",
-  "description": "Browser environment for node.js"
+  "description": "Browser environment for node.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modulesio/exokit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/modulesio/exokit/issues"
+  },
+  "homepage": "https://github.com/modulesio/exokit#readme",
+  "keywords": [
+    "exobrowser",
+    "web",
+    "browser",
+    "program",
+    "javascript",
+    "dom"
+  ]
 }
