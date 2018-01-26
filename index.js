@@ -741,6 +741,8 @@ const browserPoly = (s = '', options = {}) => {
     window.self = window;
     window.parent = parent || window;
     window.top = top || window;
+    window.innerWidth = 1280;
+    window.innerHeight = 1024;
     window.console = console;
     window.setTimeout = setTimeout;
     window.clearTimeout = clearTimeout;
