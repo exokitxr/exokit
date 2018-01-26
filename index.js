@@ -130,23 +130,31 @@ const browserPoly = (s = '', options = {}) => {
   };
 
   class Node extends EventEmitter {
-    constructor(nodeName = null, window = null) {
+    constructor(nodeName = null) {
       super();
 
       this.nodeName = nodeName;
       this.parentNode = null;
 
+      this[windowSymbol] = null;
+    }
+
+    setWindow(window) {
       this[windowSymbol] = window;
+
+      this.emit('window', window);
     }
   }
   Node.fromAST = (node, window, parentNode = null) => {
     if (node.nodeName === '#text') {
-      const textNode = new TextNode(node.value, window);
+      const textNode = new TextNode(node.value);
       textNode.parentNode = parentNode;
+      textNode.setWindow(window);
       return textNode;
     } else if (node.nodeName === '#comment') {
-      const commentNode = new CommentNode(node.value, window);
+      const commentNode = new CommentNode(node.value);
       commentNode.parentNode = parentNode;
+      commentNode.setWindow(window);
       return commentNode;
     } else {
       const attributes = node.attrs && (() => {
@@ -157,8 +165,9 @@ const browserPoly = (s = '', options = {}) => {
         }
         return result;
       })();
-      const element = new Element(node.tagName, attributes, node.value, window);
+      const element = new Element(node.tagName, attributes, node.value);
       element.parentNode = parentNode;
+      element.setWindow(window);
       if (node.childNodes) {
         element.childNodes = node.childNodes.map(childNode => Node.fromAST(childNode, window, element));
       }
@@ -166,8 +175,8 @@ const browserPoly = (s = '', options = {}) => {
     }
   };
   class Element extends Node {
-    constructor(tagName = 'div', attributes = {}, value = '', window = null) {
-      super(null, window);
+    constructor(tagName = 'div', attributes = {}, value = '') {
+      super(null);
 
       this.tagName = tagName;
       this.attributes = attributes;
@@ -377,8 +386,8 @@ const browserPoly = (s = '', options = {}) => {
     }
   }
   class LoadableElement extends Element {
-    constructor(tagName, window) {
-      super(tagName, undefined, undefined, window);
+    constructor(tagName) {
+      super(tagName);
     }
 
     get onload() {
@@ -433,8 +442,8 @@ const browserPoly = (s = '', options = {}) => {
     }
   }
   class ScriptElement extends LoadableElement {
-    constructor(window) {
-      super('script', window);
+    constructor() {
+      super('script');
 
       this.readyState = null;
 
@@ -499,8 +508,8 @@ const browserPoly = (s = '', options = {}) => {
     }
   }
   class MediaElement extends LoadableElement {
-    constructor(tagName, window) {
-      super(tagName, window);
+    constructor(tagName) {
+      super(tagName);
     }
 
     get src() {
@@ -511,8 +520,8 @@ const browserPoly = (s = '', options = {}) => {
     }
   }
   class ImageElement extends MediaElement {
-    constructor(window) {
-      super('image', window);
+    constructor() {
+      super('image');
 
       this.on('attribute', (name, value) => {
         if (name === 'src') {
@@ -533,8 +542,8 @@ const browserPoly = (s = '', options = {}) => {
     set height(height) {}
   }
   class AudioElement extends MediaElement {
-    constructor(window) {
-      super('audio', window);
+    constructor() {
+      super('audio');
 
       this.on('attribute', (name, value) => {
         if (name === 'src') {
@@ -575,8 +584,8 @@ const browserPoly = (s = '', options = {}) => {
     }
   }
   class VideoElement extends MediaElement {
-    constructor(window) {
-      super('video', window);
+    constructor() {
+      super('video');
 
       this.on('attribute', (name, value) => {
         if (name === 'src') {
@@ -588,15 +597,19 @@ const browserPoly = (s = '', options = {}) => {
     }
   }
   class IframeElement extends MediaElement {
-    constructor(window) {
-      super('iframe', window);
+    constructor() {
+      super('iframe');
 
-      const contentWindow = _parseWindow('', this[windowSymbol], this[windowSymbol].top);
-      this.contentWindow = contentWindow;
+      this.contentWindow = null;
+      this.contentDocument = null;
 
-      const {document: contentDocument} = contentWindow;
-      this.contentDocument = contentDocument;
+      this.on('window', window => {
+        const contentWindow = _parseWindow('', this[windowSymbol], this[windowSymbol].top);
+        this.contentWindow = contentWindow;
 
+        const {document: contentDocument} = contentWindow;
+        this.contentDocument = contentDocument;
+      });
       this.on('attribute', (name, value) => {
         if (name === 'src') {
           const url = _normalizeUrl(value);
@@ -625,8 +638,8 @@ const browserPoly = (s = '', options = {}) => {
     }
   }
   class CanvasElement extends Element {
-    constructor(window) {
-      super('canvas', undefined, undefined, window);
+    constructor() {
+      super('canvas');
 
       this._context = null;
 
@@ -728,26 +741,26 @@ const browserPoly = (s = '', options = {}) => {
     }
   }
   class TextNode extends Node {
-    constructor(value, window) {
-      super('#text', window);
+    constructor(value) {
+      super('#text');
 
       this.value = value;
     }
   }
   class CommentNode extends Node {
-    constructor(value, window) {
-      super('#comment', window);
+    constructor(value) {
+      super('#comment');
 
       this.value = value;
     }
   }
   const ELEMENTS = {
-    script: window => new ScriptElement(window),
-    img: window => new ImageElement(window),
-    audio: window => new AudioElement(window),
-    video: window => new VideoElement(window),
-    iframe: window => new IframeElement(window),
-    canvas: window => new CanvasElement(window),
+    script: ScriptElement,
+    img: ImageElement,
+    audio: AudioElement,
+    video: VideoElement,
+    iframe: IframeElement,
+    canvas: CanvasElement,
   };
 
   class Worker extends WindowWorker {
@@ -784,14 +797,7 @@ const browserPoly = (s = '', options = {}) => {
     window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
     window.document = null;
     window.URL = URL;
-    window.Image = (() => {
-      class Image extends ImageElement {
-        constructor() {
-          super(window);
-        }
-      }
-      return Image;
-    })();
+    window.Image = ImageElement;
     window.btoa = s => new Buffer(s, 'binary').toString('base64');
     window.atob = s => new Buffer(s, 'base64').toString('binary');
     window.fetch = (url, options) => {
@@ -840,8 +846,10 @@ const browserPoly = (s = '', options = {}) => {
     document.body = body;
     document.location = url.parse(baseUrl);
     document.createElement = tagName => {
-      const elementTemplate = ELEMENTS[tagName];
-      return elementTemplate ? elementTemplate(window) : new Element(tagName, undefined, undefined, window);
+      const ElementTemplate = ELEMENTS[tagName];
+      const el = ElementTemplate ? new ElementTemplate() : new Element(tagName);
+      el.setWindow(window);
+      return el;
     };
     document.createElementNS = (namespace, tagName) => document.createElement(tagName);
     document.createTextNode = text => new TextNode(text);
@@ -885,7 +893,8 @@ const browserPoly = (s = '', options = {}) => {
       const scripts = element.querySelectorAll('script');
       for (let i = 0; i < scripts.length; i++) {
         const script = scripts[i];
-        const scriptEl = new ScriptElement(window);
+        const scriptEl = new ScriptElement();
+        scriptEl.setWindow(window);
         if (script.attributes.src) {
           scriptEl.src = script.attributes.src;
         }
@@ -910,7 +919,8 @@ const browserPoly = (s = '', options = {}) => {
       const images = element.querySelectorAll('image');
       for (let i = 0; i < images.length; i++) {
         const image = images[i];
-        const imageEl = new ImageElement(window);
+        const imageEl = new ImageElement();
+        imageEl.setWindow(window);
         if (image.attributes.src) {
           imageEl.src = image.attributes.src;
         }
@@ -921,7 +931,8 @@ const browserPoly = (s = '', options = {}) => {
       const audios = element.querySelectorAll('audio');
       for (let i = 0; i < audios.length; i++) {
         const audio = audios[i];
-        const audioEl = new AudioElement(window);
+        const audioEl = new AudioElement();
+        audioEl.setWindow(window);
         if (audio.attributes.src) {
           audioEl.src = audio.attributes.src;
         }
@@ -932,7 +943,8 @@ const browserPoly = (s = '', options = {}) => {
       const videos = element.querySelectorAll('video');
       for (let i = 0; i < videos.length; i++) {
         const video = videos[i];
-        const videoEl = new VideoElement(window);
+        const videoEl = new VideoElement();
+        videoEl.setWindow(window);
         if (video.attributes.src) {
           videoEl.src = video.attributes.src;
         }
