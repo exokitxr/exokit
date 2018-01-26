@@ -54,6 +54,16 @@ class Path2D {
   quadraticCurveTo() {}
 }
 class AudioNode {}
+class AudioParam {
+  constructor() {
+    this.value = 0;
+    this.minValue = 0;
+    this.maxValue = 0;
+    this.defaultValue = 0;
+  }
+
+  setValueAtTime() {}
+}
 class GainNode extends AudioNode {
   connect() {}
 }
@@ -61,15 +71,15 @@ class AudioListener extends AudioNode {
   constructor() {
     super();
 
-    this.positionX = 0;
-    this.positionY = 0;
-    this.positionZ = 0;
-    this.forwardX = 0;
-    this.forwardY = 0;
-    this.forwardZ = -1;
-    this.upX = 0;
-    this.upY = 1;
-    this.upZ = 0;
+    this.positionX = new AudioParam();
+    this.positionY = new AudioParam();
+    this.positionZ = new AudioParam();
+    this.forwardX = new AudioParam();
+    this.forwardY = new AudioParam();
+    this.forwardZ = new AudioParam();
+    this.upX = new AudioParam();
+    this.upY = new AudioParam();
+    this.upZ = new AudioParam();
   }
 }
 class AudioContext {
