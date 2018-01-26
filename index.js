@@ -16,6 +16,7 @@ const {LocalStorage} = require('node-localstorage');
 const WindowWorker = require('window-worker');
 
 const windowSymbol = Symbol();
+const setWindowSymbol = Symbol();
 
 let id = 0;
 const urls = new Map();
@@ -139,7 +140,7 @@ const browserPoly = (s = '', options = {}) => {
       this[windowSymbol] = null;
     }
 
-    setWindow(window) {
+    [setWindowSymbol](window) {
       this[windowSymbol] = window;
 
       this.emit('window', window);
@@ -149,12 +150,12 @@ const browserPoly = (s = '', options = {}) => {
     if (node.nodeName === '#text') {
       const textNode = new TextNode(node.value);
       textNode.parentNode = parentNode;
-      textNode.setWindow(window);
+      textNode[setWindowSymbol](window);
       return textNode;
     } else if (node.nodeName === '#comment') {
       const commentNode = new CommentNode(node.value);
       commentNode.parentNode = parentNode;
-      commentNode.setWindow(window);
+      commentNode[setWindowSymbol](window);
       return commentNode;
     } else {
       const attributes = node.attrs && (() => {
@@ -165,16 +166,16 @@ const browserPoly = (s = '', options = {}) => {
         }
         return result;
       })();
-      const element = new Element(node.tagName, attributes, node.value);
+      const element = new HTMLElement(node.tagName, attributes, node.value);
       element.parentNode = parentNode;
-      element.setWindow(window);
+      element[setWindowSymbol](window);
       if (node.childNodes) {
         element.childNodes = node.childNodes.map(childNode => Node.fromAST(childNode, window, element));
       }
       return element;
     }
   };
-  class Element extends Node {
+  class HTMLElement extends Node {
     constructor(tagName = 'div', attributes = {}, value = '') {
       super(null);
 
@@ -385,7 +386,7 @@ const browserPoly = (s = '', options = {}) => {
       this.emit('innerHTML', innerHTML);
     }
   }
-  class LoadableElement extends Element {
+  class HTMLLoadableElement extends HTMLElement {
     constructor(tagName) {
       super(tagName);
     }
@@ -418,7 +419,7 @@ const browserPoly = (s = '', options = {}) => {
       }
     }
   }
-  class WindowElement extends LoadableElement {
+  class HTMLWindowElement extends HTMLLoadableElement {
     constructor() {
       super('window');
     }
@@ -441,7 +442,7 @@ const browserPoly = (s = '', options = {}) => {
       }
     }
   }
-  class ScriptElement extends LoadableElement {
+  class HTMLScriptElement extends HTMLLoadableElement {
     constructor() {
       super('script');
 
@@ -507,7 +508,7 @@ const browserPoly = (s = '', options = {}) => {
       }
     }
   }
-  class MediaElement extends LoadableElement {
+  class HTMLMediaElement extends HTMLLoadableElement {
     constructor(tagName) {
       super(tagName);
     }
@@ -519,7 +520,7 @@ const browserPoly = (s = '', options = {}) => {
       this.setAttribute('src', value);
     }
   }
-  class ImageElement extends MediaElement {
+  class HTMLImageElement extends HTMLMediaElement {
     constructor() {
       super('image');
 
@@ -541,7 +542,7 @@ const browserPoly = (s = '', options = {}) => {
     }
     set height(height) {}
   }
-  class AudioElement extends MediaElement {
+  class HTMLAudioElement extends HTMLMediaElement {
     constructor() {
       super('audio');
 
@@ -583,7 +584,7 @@ const browserPoly = (s = '', options = {}) => {
       }
     }
   }
-  class VideoElement extends MediaElement {
+  class HTMLVideoElement extends HTMLMediaElement {
     constructor() {
       super('video');
 
@@ -596,7 +597,7 @@ const browserPoly = (s = '', options = {}) => {
       });
     }
   }
-  class IframeElement extends MediaElement {
+  class HTMLIframeElement extends HTMLMediaElement {
     constructor() {
       super('iframe');
 
@@ -637,7 +638,7 @@ const browserPoly = (s = '', options = {}) => {
       });
     }
   }
-  class CanvasElement extends Element {
+  class HTMLCanvasElement extends HTMLElement {
     constructor() {
       super('canvas');
 
@@ -754,13 +755,13 @@ const browserPoly = (s = '', options = {}) => {
       this.value = value;
     }
   }
-  const ELEMENTS = {
-    script: ScriptElement,
-    img: ImageElement,
-    audio: AudioElement,
-    video: VideoElement,
-    iframe: IframeElement,
-    canvas: CanvasElement,
+  const HTML_ELEMENTS = {
+    script: HTMLScriptElement,
+    img: HTMLImageElement,
+    audio: HTMLAudioElement,
+    video: HTMLVideoElement,
+    iframe: HTMLIframeElement,
+    canvas: HTMLCanvasElement,
   };
 
   class Worker extends WindowWorker {
@@ -778,7 +779,7 @@ const browserPoly = (s = '', options = {}) => {
   const rafCbs = [];
 
   const _makeWindow = (parent, top) => {
-    const window = new WindowElement();
+    const window = new HTMLWindowElement();
     window.window = window;
     window.self = window;
     window.parent = parent || window;
@@ -797,7 +798,14 @@ const browserPoly = (s = '', options = {}) => {
     window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
     window.document = null;
     window.URL = URL;
-    window.Image = ImageElement;
+    window.Image = HTMLImageElement;
+    window.HTMLScriptElement = HTMLScriptElement;
+    window.HTMLImageElement = HTMLImageElement;
+    window.HTMLAudioElement = HTMLAudioElement;
+    window.HTMLVideoElement = HTMLVideoElement;
+    window.HTMLIframeElement = HTMLIframeElement;
+    window.HTMLCanvasElement = HTMLCanvasElement;
+    window.ImageBitmap = ImageBitmap;
     window.btoa = s => new Buffer(s, 'binary').toString('base64');
     window.atob = s => new Buffer(s, 'base64').toString('binary');
     window.fetch = (url, options) => {
@@ -846,9 +854,9 @@ const browserPoly = (s = '', options = {}) => {
     document.body = body;
     document.location = url.parse(baseUrl);
     document.createElement = tagName => {
-      const ElementTemplate = ELEMENTS[tagName];
-      const el = ElementTemplate ? new ElementTemplate() : new Element(tagName);
-      el.setWindow(window);
+      const HTMLElementTemplate = HTML_ELEMENTS[tagName];
+      const el = HTMLElementTemplate ? new HTMLElementTemplate() : new HTMLElement(tagName);
+      el[setWindowSymbol](window);
       return el;
     };
     document.createElementNS = (namespace, tagName) => document.createElement(tagName);
@@ -889,12 +897,12 @@ const browserPoly = (s = '', options = {}) => {
     });
   });
   const _runHtml = async (element, window) => {
-    if (element instanceof Element) {
+    if (element instanceof HTMLElement) {
       const scripts = element.querySelectorAll('script');
       for (let i = 0; i < scripts.length; i++) {
         const script = scripts[i];
-        const scriptEl = new ScriptElement();
-        scriptEl.setWindow(window);
+        const scriptEl = new HTMLScriptElement();
+        scriptEl[setWindowSymbol](window);
         if (script.attributes.src) {
           scriptEl.src = script.attributes.src;
         }
@@ -919,8 +927,8 @@ const browserPoly = (s = '', options = {}) => {
       const images = element.querySelectorAll('image');
       for (let i = 0; i < images.length; i++) {
         const image = images[i];
-        const imageEl = new ImageElement();
-        imageEl.setWindow(window);
+        const imageEl = new HTMLImageElement();
+        imageEl[setWindowSymbol](window);
         if (image.attributes.src) {
           imageEl.src = image.attributes.src;
         }
@@ -931,8 +939,8 @@ const browserPoly = (s = '', options = {}) => {
       const audios = element.querySelectorAll('audio');
       for (let i = 0; i < audios.length; i++) {
         const audio = audios[i];
-        const audioEl = new AudioElement();
-        audioEl.setWindow(window);
+        const audioEl = new HTMLAudioElement();
+        audioEl[setWindowSymbol](window);
         if (audio.attributes.src) {
           audioEl.src = audio.attributes.src;
         }
@@ -943,8 +951,8 @@ const browserPoly = (s = '', options = {}) => {
       const videos = element.querySelectorAll('video');
       for (let i = 0; i < videos.length; i++) {
         const video = videos[i];
-        const videoEl = new VideoElement();
-        videoEl.setWindow(window);
+        const videoEl = new HTMLVideoElement();
+        videoEl[setWindowSymbol](window);
         if (video.attributes.src) {
           videoEl.src = video.attributes.src;
         }
