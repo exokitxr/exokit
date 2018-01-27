@@ -14,6 +14,7 @@ const {Response, Blob} = fetch;
 const WebSocket = require('ws/lib/websocket');
 const {LocalStorage} = require('node-localstorage');
 const WindowWorker = require('window-worker');
+const THREE = require('./lib/three-min.js');
 
 const windowSymbol = Symbol();
 const setWindowSymbol = Symbol();
@@ -54,6 +55,145 @@ class Path2D {
   lineTo() {}
   quadraticCurveTo() {}
 }
+class VRFrameData {
+  constructor() {
+    this.leftProjectionMatrix = new Float32Array(16);
+    this.leftViewMatrix = new Float32Array(16);
+    this.rightProjectionMatrix = new Float32Array(16);
+    this.rightViewMatrix = new Float32Array(16);
+    this.pose = new VRPose();
+  }
+}
+class VRPose {
+  constructor(position = new Float32Array(3), orientation = new Float32Array(4)) {
+    this.position = position;
+    this.orientation = orientation;
+  }
+
+  set(position, orientation) {
+    this.position[0] = position.x;
+    this.position[1] = position.y;
+    this.position[2] = position.z;
+
+    this.orientation[0] = orientation.x;
+    this.orientation[1] = orientation.y;
+    this.orientation[2] = orientation.z;
+    this.orientation[3] = orientation.w;
+  }
+}
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
+class VRDisplay {
+  constructor(window) {
+    this[windowSymbol] = window;
+
+    this.isPresenting = false;
+    this.capabilities = {
+      canPresent: true,
+      hasExternalDisplay: true,
+      hasPosition: true,
+      maxLayers: 1,
+    };
+    this.depthNear = 0.1;
+    this.depthFar = 1000.0;
+    this.stageParameters = {
+      // new THREE.Matrix4().compose(new THREE.Vector3(0, 1.6, 0), new THREE.Quaternion(), new THREE.Vector3()).toArray(new Float32Array(16))
+      sittingToStandingTransform: Float32Array.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.6, 0, 1]),
+    };
+
+    this._width = window.innerWidth / 2;
+    this._height = window.innerHeight;
+    this._viewMatrix = new Float32Array(16);
+    this._projectionMatrix = new Float32Array(16);
+
+    window.on('resize', () => {
+      this._width = window.innerWidth / 2;
+      this._height = window.innerHeight;
+    });
+    window.on('alignframe', (viewMatrix, projectionMatrix) => {
+      this._viewMatrix.set(viewMatrix);
+      this._projectionMatrix.set(projectionMatrix);
+    });
+  }
+
+  getLayers() {
+    return [
+      {
+        leftBounds: [0, 0, 0.5, 1],
+        rightBounds: [0.5, 0, 0.5, 1],
+        source: null,
+      }
+    ];
+  }
+
+  getEyeParameters(eye) {
+    return {
+      renderWidth: this._width,
+      renderHeight: this._height,
+    };
+  }
+
+  getFrameData(frameData) {
+    const hmdMatrix = localMatrix.fromArray(this._viewMatrix);
+
+    hmdMatrix.decompose(localVector, localQuaternion, localVector2);
+    frameData.pose.set(localVector, localQuaternion);
+
+    hmdMatrix.getInverse(hmdMatrix);
+
+    localMatrix2.compose( // head to eye transform
+      localVector.set(-0.02, 0, 0),
+      localQuaternion.set(0, 0, 0, 1),
+      localVector2.set(0, 0, 0),
+    )
+      .multiply(hmdMatrix)
+      .toArray(frameData.leftViewMatrix);
+
+    frameData.leftProjectionMatrix.set(this._projectionMatrix);
+
+    localMatrix2.compose( // head to eye transform
+      localVector.set(0.02, 0, 0),
+      localQuaternion.set(0, 0, 0, 1),
+      localVector2.set(0, 0, 0),
+    )
+      .multiply(hmdMatrix)
+      .toArray(frameData.rightViewMatrix);
+
+    frameData.rightProjectionMatrix.set(this._projectionMatrix);
+  }
+
+  requestPresent(sources) {
+    this.isPresenting = true;
+
+    process.nextTick(() => {
+      this[windowSymbol].emit('vrdisplaypresentchange');
+    });
+
+    return Promise.resolve();
+  }
+
+  exitPresent() {
+    this.isPresenting = false;
+
+    process.nextTick(() => {
+      this[windowSymbol].emit('vrdisplaypresentchange');
+    });
+
+    return Promise.resolve();
+  }
+
+  requestAnimationFrame(fn) {
+    return window.requestAnimationFrame(fn);
+  }
+
+  cancelAnimationFrame(animationFrame) {
+    return window.cancelAnimationFrame(animationFrame);
+  }
+
+  submitFrame() {}
+}
 class AudioNode {}
 class AudioParam {
   constructor() {
@@ -93,7 +233,7 @@ class AudioContext {
   }
 }
 
-const browserPoly = (s = '', options = {}) => {
+const exokit = (s = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1';
   options.dataPath = options.dataPath || __dirname;
 
@@ -794,7 +934,10 @@ const browserPoly = (s = '', options = {}) => {
     window.Date = Date;
     window.performance = performance;
     window.location = url.parse(baseUrl);
-    window.navigator = {};
+    const vrDisplays = [new VRDisplay(window)];
+    window.navigator = {
+      getVRDisplays: () => vrDisplays,
+    };
     window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
     window.document = null;
     window.URL = URL;
@@ -806,6 +949,7 @@ const browserPoly = (s = '', options = {}) => {
     window.HTMLIframeElement = HTMLIframeElement;
     window.HTMLCanvasElement = HTMLCanvasElement;
     window.ImageBitmap = ImageBitmap;
+    window.VRFrameData = VRFrameData;
     window.btoa = s => new Buffer(s, 'binary').toString('base64');
     window.atob = s => new Buffer(s, 'base64').toString('binary');
     window.fetch = (url, options) => {
@@ -838,6 +982,9 @@ const browserPoly = (s = '', options = {}) => {
       for (let i = 0; i < localRafCbs.length; i++) {
         localRafCbs[i]();
       }
+    };
+    window.alignFrame = (viewMatrix, projectionMatrix) => {
+      window.emit('alignframe', viewMatrix, projectionMatrix);
     };
     vm.createContext(window);
     return window;
@@ -964,7 +1111,7 @@ const browserPoly = (s = '', options = {}) => {
 
   return window;
 };
-browserPoly.fetch = (url, options) => fetch(url)
+exokit.fetch = (url, options) => fetch(url)
   .then(res => {
     if (res.status >= 200 && res.status < 300) {
       return res.text();
@@ -972,5 +1119,6 @@ browserPoly.fetch = (url, options) => fetch(url)
       return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + url));
     }
   })
-  .then(htmlString => browserPoly(htmlString, options));
-module.exports = browserPoly;
+  .then(htmlString => exokit(htmlString, options));
+exokit.THREE = THREE;
+module.exports = exokit;
