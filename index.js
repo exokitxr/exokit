@@ -331,13 +331,8 @@ const exokit = (s = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1';
   options.dataPath = options.dataPath || __dirname;
 
-  const baseUrl = options.url.replace(/\/+$/, '');
-  const _normalizeUrl = url => {
-    if (!/^.+?:/.test(url)) {
-      url = baseUrl + (!/^\//.test(url) ? '/' : '') + url;
-    }
-    return url;
-  };
+  const baseUrl = options.url;
+  const _normalizeUrl = src => new URL(src, baseUrl).href;
   const _parseStyle = styleString => {
     const style = {};
     const split = styleString.split(/;\s*/);
