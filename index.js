@@ -1113,6 +1113,12 @@ const exokit = (s = '', options = {}) => {
     };
     document.createElementNS = (namespace, tagName) => document.createElement(tagName);
     document.createTextNode = text => new TextNode(text);
+    document.write = htmlString => {
+      const childNodes = parse5.parseFragment(htmlString).childNodes.map(childNode => Node.fromAST(childNode, window, this));
+      for (let i = 0; i < childNodes.length; i++) {
+        document.body.appendChild(childNodes[i]);
+      }
+    };
     window.document = document;
 
     process.nextTick(async () => {
