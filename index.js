@@ -1232,3 +1232,9 @@ exokit.fetch = src => fetch(src)
   });
 exokit.THREE = THREE;
 module.exports = exokit;
+
+if (require.main === module) {
+  if (process.argv.length === 3) {
+    exokit.fetch(process.argv[2]);
+  }
+}
