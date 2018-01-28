@@ -35,26 +35,120 @@ class MessageEvent {
     this.data = data;
   }
 }
-class ImageBitmap {
-  constructor(image) {
-    this.image = image;
-    this.width = image.width;
-    this.height = image.height;
+const ImageData = (() => {
+  if (typeof nativeImageData !== 'undefined') {
+    return nativeImageData;
+  } else {
+    return class ImageData {
+      constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.data = new Uint8ClampedArray(0);
+      }
+    };
   }
-}
-class ImageData {
-  constructor(image, width, height) {
-    this.image = image;
-    this.width = width;
-    this.height = height;
-    this.data = new Uint8ClampedArray(0);
+})();
+const ImageBitmap = (() => {
+  if (typeof nativeImageBitmap !== 'undefined') {
+    return nativeImageBitmap;
+  } else {
+    class ImageBitmap {
+      constructor(image) {
+        this.width = image.width;
+        this.height = image.height;
+      }
+    }
+    ImageBitmap.createImageBitmap = image => new ImageBitmap(image.width, image.height);
+    return ImageBitmap;
   }
-}
-class Path2D {
-  moveTo() {}
-  lineTo() {}
-  quadraticCurveTo() {}
-}
+})();
+const Path2D = (() => {
+  if (typeof nativePath2D !== 'undefined') {
+    return nativePath2D;
+  } else {
+    return class Path2D {
+      moveTo() {}
+      lineTo() {}
+      quadraticCurveTo() {}
+    };
+  }
+})();
+const CanvasRenderingContext2D = (() => {
+  if (typeof nativeCanvasRenderingContext2d !== 'undefined') {
+    return nativeCanvasRenderingContext2D;
+  } else {
+    return class CanvasRenderingContext2D {
+      drawImage() {}
+      fillRect() {}
+      clearRect() {}
+      fillText() {}
+      stroke() {}
+      scale() {}
+      measureText() {
+        return {width: 0};
+      }
+      createImageData(w, h) {
+        return new ImageData(w, h);
+      }
+      getImageData(sx, sy, sw, sh) {
+        return new ImageData(sw, sh);
+      }
+      putImageData() {}
+    };
+  }
+})();
+const WebGLContext = (() => {
+  if (typeof nativeGl !== 'undefined') {
+    return nativeGl;
+  } else {
+    const VERSION = Symbol();
+    return class WebGLContext {
+      get VERSION() {
+        return VERSION;
+      }
+      getExtension() {
+        return null;
+      }
+      getParameter(param) {
+        if (param === VERSION) {
+          return 'WebGL 1';
+        } else {
+          return null;
+        }
+      }
+      createTexture() {}
+      bindTexture() {}
+      texParameteri() {}
+      texImage2D() {}
+      createProgram() {}
+      createShader() {}
+      shaderSource() {}
+      compileShader() {}
+      getShaderParameter() {}
+      getShaderInfoLog() {
+        return '';
+      }
+      attachShader() {}
+      linkProgram() {}
+      getProgramInfoLog() {
+        return '';
+      }
+      getProgramParameter() {}
+      deleteShader() {}
+      clearColor() {}
+      clearDepth() {}
+      clearStencil() {}
+      enable() {}
+      disable() {}
+      depthFunc() {}
+      frontFace() {}
+      cullFace() {}
+      blendEquationSeparate() {}
+      blendFuncSeparate() {}
+      viewport() {}
+    };
+  }
+})();
 class VRFrameData {
   constructor() {
     this.leftProjectionMatrix = new Float32Array(16);
@@ -660,28 +754,99 @@ const exokit = (s = '', options = {}) => {
       this.setAttribute('src', value);
     }
   }
-  class HTMLImageElement extends HTMLMediaElement {
-    constructor() {
-      super('image');
+  const HTMLImageElement = (() => {
+    if (typeof nativeImage !== 'undefined') {
+      return class HTMLImageElement extends nativeImage {
+        constructor() {
+          super();
+          EventEmitter.call(this);
+          this.tagName = 'image'
 
-      this.on('attribute', (name, value) => {
-        if (name === 'src') {
-          process.nextTick(() => { // XXX
-            this.emit('load');
+          this._src = '';
+        }
+
+        get src() {
+          return this._src;
+        }
+        set src(src) {
+          this._src = src;
+
+          fetch(src)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.arrayBuffer();
+              } else {
+                return Promise.reject(new Error('img src got invalid status code: ' + res.status + ' : ' + url));
+              }
+            })
+            .then(arrayBuffer => {
+              if (this.load(arrayBuffer)) {
+                return Promise.resolve();
+              } else {
+                return Promise.reject(new Error('failed to decode image'));
+              }
+            })
+            .then(() => {
+              this.emit('load');
+            })
+            .catch(err => {
+              this.emit('error', err);
+            });
+        }
+
+        get onload() {
+          return this.listeners('load')[0];
+        }
+        set onload(onload) {
+          if (typeof onload === 'function') {
+            this.addEventListener('load', onload);
+          } else {
+            const listeners = this.listeners('load');
+            for (let i = 0; i < listeners.length; i++) {
+              this.removeEventListener('load', listeners[i]);
+            }
+          }
+        }
+
+        get onerror() {
+          return this.listeners('error')[0];
+        }
+        set onerror(onerror) {
+          if (typeof onerror === 'function') {
+            this.addEventListener('error', onerror);
+          } else {
+            const listeners = this.listeners('error');
+            for (let i = 0; i < listeners.length; i++) {
+              this.removeEventListener('error', listeners[i]);
+            }
+          }
+        }
+      };
+    } else {
+      return class HTMLImageElement extends HTMLMediaElement {
+        constructor() {
+          super('image');
+
+          this.on('attribute', (name, value) => {
+            if (name === 'src') {
+              process.nextTick(() => { // XXX
+                this.emit('load');
+              });
+            }
           });
         }
-      });
-    }
 
-    get width() {
-      return 0; // XXX
+        get width() {
+          return 0; // XXX
+        }
+        set width(width) {}
+        get height() {
+          return 0; // XXX
+        }
+        set height(height) {}
+      };
     }
-    set width(width) {}
-    get height() {
-      return 0; // XXX
-    }
-    set height(height) {}
-  }
+  })();
   class HTMLAudioElement extends HTMLMediaElement {
     constructor() {
       super('audio');
@@ -810,72 +975,9 @@ const exokit = (s = '', options = {}) => {
     getContext(contextType) {
       if (this._context === null) {
         if (contextType === '2d') {
-          this._context = typeof nativeImage !== 'undefined' ? nativeImage : {
-            drawImage() {},
-            fillRect() {},
-            clearRect() {},
-            fillText() {},
-            stroke() {},
-            scale() {},
-            measureText() {
-              return {width: 0};
-            },
-            createImageData(w, h) {
-              return new ImageData(null, w, h);
-            },
-            getImageData(sx, sy, sw, sh) {
-              return new ImageData(null, sw, sh);
-            },
-            putImageData() {},
-          };
+          this._context = new CanvasRenderingContext2D(this.width, this.height);
         } else if (contextType === 'webgl') {
-          const VERSION = id++;
-          this._context = typeof nativeGl !== 'undefined' ? nativeGl : (() => {
-            const VERSION = Symbol();
-            return {
-              VERSION,
-              getExtension() {
-                return null;
-              },
-              getParameter(param) {
-                if (param === VERSION) {
-                  return 'WebGL 1';
-                } else {
-                  return null;
-                }
-              },
-              createTexture() {},
-              bindTexture() {},
-              texParameteri() {},
-              texImage2D() {},
-              createProgram() {},
-              createShader() {},
-              shaderSource() {},
-              compileShader() {},
-              getShaderParameter() {},
-              getShaderInfoLog() {
-                return '';
-              },
-              attachShader() {},
-              linkProgram() {},
-              getProgramInfoLog() {
-                return '';
-              },
-              getProgramParameter() {},
-              deleteShader() {},
-              clearColor() {},
-              clearDepth() {},
-              clearStencil() {},
-              enable() {},
-              disable() {},
-              depthFunc() {},
-              frontFace() {},
-              cullFace() {},
-              blendEquationSeparate() {},
-              blendFuncSeparate() {},
-              viewport() {},
-            };
-          })();
+          this._context = new WebGLContext();
         }
       }
       return this._context;
@@ -948,7 +1050,10 @@ const exokit = (s = '', options = {}) => {
     window.HTMLVideoElement = HTMLVideoElement;
     window.HTMLIframeElement = HTMLIframeElement;
     window.HTMLCanvasElement = HTMLCanvasElement;
+    window.ImageData = ImageData;
     window.ImageBitmap = ImageBitmap;
+    window.Path2D = Path2D;
+    window.CanvasRenderingContext2D = CanvasRenderingContext2D;
     window.VRFrameData = VRFrameData;
     window.btoa = s => new Buffer(s, 'binary').toString('base64');
     window.atob = s => new Buffer(s, 'base64').toString('binary');
@@ -966,7 +1071,7 @@ const exokit = (s = '', options = {}) => {
     window.Blob = Blob;
     window.AudioContext = AudioContext;
     window.Path2D = Path2D;
-    window.createImageBitmap = image => Promise.resolve(new ImageBitmap(image));
+    window.createImageBitmap = image => Promise.resolve(ImageBitmap.createImageBitmap(image));
     window.requestAnimationFrame = fn => {
       rafCbs.push(fn);
     };
