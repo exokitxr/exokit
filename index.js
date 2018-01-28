@@ -1216,14 +1216,19 @@ const exokit = (s = '', options = {}) => {
 
   return window;
 };
-exokit.fetch = (url, options) => fetch(url)
+exokit.fetch = src => fetch(src)
   .then(res => {
     if (res.status >= 200 && res.status < 300) {
       return res.text();
     } else {
-      return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + url));
+      return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + src));
     }
   })
-  .then(htmlString => exokit(htmlString, options));
+  .then(htmlString => {
+    const parsedUrl = url.parse(src);
+    return exokit(htmlString, {
+      url: (parsedUrl.protocol || 'http:') + '//' + (parsedUrl.host || '127.0.0.1'),
+    });
+  });
 exokit.THREE = THREE;
 module.exports = exokit;
