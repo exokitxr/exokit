@@ -406,11 +406,20 @@ const exokit = (s = '', options = {}) => {
       commentNode[setWindowSymbol](window);
       return commentNode;
     } else {
-      const element = new HTMLElement(
-        node.tagName,
-        node.attrs && _parseAttributes(node.attrs),
-        node.value
-      );
+      const {tagName, value} = node;
+      const attributes = node.attrs && _parseAttributes(node.attrs);
+      const HTMLElementTemplate = HTML_ELEMENTS[tagName];
+      const element = HTMLElementTemplate ?
+        new HTMLElementTemplate(
+          attributes,
+          value
+        )
+      :
+        new HTMLElement(
+          tagName,
+          attributes,
+          value
+        );
       element.parentNode = parentNode;
       element[setWindowSymbol](window);
       if (node.childNodes) {
@@ -650,8 +659,8 @@ const exokit = (s = '', options = {}) => {
     }
   }
   class HTMLLoadableElement extends HTMLElement {
-    constructor(tagName) {
-      super(tagName);
+    constructor(tagName, attributes = {}, value = '') {
+      super(tagName, attributes, value);
     }
 
     get onload() {
@@ -706,8 +715,8 @@ const exokit = (s = '', options = {}) => {
     }
   }
   class HTMLScriptElement extends HTMLLoadableElement {
-    constructor() {
-      super('script');
+    constructor(attributes = {}, value = '') {
+      super('script', attributes, value);
 
       this.readyState = null;
 
@@ -772,8 +781,8 @@ const exokit = (s = '', options = {}) => {
     }
   }
   class HTMLMediaElement extends HTMLLoadableElement {
-    constructor(tagName) {
-      super(tagName);
+    constructor(tagName = null, attributes = {}, value = '') {
+      super(tagName, attributes, value);
     }
 
     get src() {
@@ -786,10 +795,12 @@ const exokit = (s = '', options = {}) => {
   const HTMLImageElement = (() => {
     if (typeof nativeImage !== 'undefined') {
       return class HTMLImageElement extends nativeImage {
-        constructor() {
+        constructor(attributes = {}, value = '') {
           super();
           EventEmitter.call(this);
           this.tagName = 'image'
+          this.attributes = attributes;
+          this.value = value;
 
           this._src = '';
         }
@@ -894,8 +905,8 @@ const exokit = (s = '', options = {}) => {
     }
   })();
   class HTMLAudioElement extends HTMLMediaElement {
-    constructor() {
-      super('audio');
+    constructor(attributes = {}, value = '') {
+      super('audio', attributes, value);
 
       this.on('attribute', (name, value) => {
         if (name === 'src') {
@@ -936,8 +947,8 @@ const exokit = (s = '', options = {}) => {
     }
   }
   class HTMLVideoElement extends HTMLMediaElement {
-    constructor() {
-      super('video');
+    constructor(attributes = {}, value = '') {
+      super('video', attributes, value);
 
       this.on('attribute', (name, value) => {
         if (name === 'src') {
@@ -949,8 +960,8 @@ const exokit = (s = '', options = {}) => {
     }
   }
   class HTMLIframeElement extends HTMLMediaElement {
-    constructor() {
-      super('iframe');
+    constructor(attributes = {}, value = '') {
+      super('iframe', attributes, value);
 
       this.contentWindow = null;
       this.contentDocument = null;
@@ -990,8 +1001,8 @@ const exokit = (s = '', options = {}) => {
     }
   }
   class HTMLCanvasElement extends HTMLElement {
-    constructor() {
-      super('canvas');
+    constructor(attributes = {}, value = '') {
+      super('canvas', attributes, value);
 
       this._context = null;
 
