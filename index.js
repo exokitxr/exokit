@@ -1108,6 +1108,7 @@ const exokit = (s = '', options = {}) => {
     window.location = url.parse(baseUrl);
     const vrDisplays = [new VRDisplay(window)];
     window.navigator = {
+      userAgent: 'exokit',
       getVRDisplays: () => vrDisplays,
     };
     window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
