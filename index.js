@@ -735,7 +735,7 @@ const exokit = (s = '', options = {}) => {
               }
             })
             .then(jsString => {
-              this.runJavascript(jsString, url);
+              _runJavascript(jsString, this[windowSymbol], url);
 
               this.readyState = 'complete';
 
@@ -749,7 +749,7 @@ const exokit = (s = '', options = {}) => {
         }
       });
       this.on('innerHTML', innerHTML => {
-        this.runJavascript(innerHTML);
+        _runJavascript(innerHTML, this[windowSymbol]);
 
         this.readyState = 'complete';
 
@@ -770,14 +770,17 @@ const exokit = (s = '', options = {}) => {
       this.emit('innerHTML', innerHTML);
     }
 
-    runJavascript(jsString, filename = 'script') {
-      try {
-        vm.runInContext(jsString, this[windowSymbol], {
-          filename,
-        });
-      } catch (err) {
-        console.warn(err);
+    run() {
+      let running = false;
+      if (this.attributes.src) {
+        this.src = this.attributes.src;
+        running = true;
       }
+      if (this.childNodes.length > 0) {
+        this.innerHTML = this.childNodes[0].value;
+        running = true;
+      }
+      return running;
     }
   }
   class HTMLMediaElement extends HTMLLoadableElement {
@@ -790,6 +793,15 @@ const exokit = (s = '', options = {}) => {
     }
     set src(value) {
       this.setAttribute('src', value);
+    }
+
+    run() {
+      if (this.attributes.src) {
+        this.src = this.attributes.src;
+        return true;
+      } else {
+        return false;
+      }
     }
   }
   const HTMLImageElement = (() => {
@@ -1217,25 +1229,18 @@ const exokit = (s = '', options = {}) => {
       const scripts = element.querySelectorAll('script');
       for (let i = 0; i < scripts.length; i++) {
         const script = scripts[i];
-        const scriptEl = new HTMLScriptElement();
-        scriptEl[setWindowSymbol](window);
-        if (script.attributes.src) {
-          scriptEl.src = script.attributes.src;
-        }
-        if (script.childNodes.length > 0) {
-          scriptEl.innerHTML = script.childNodes[0].value;
-        }
-
-        if (script.attributes.async) {
-          _loadPromise(scriptEl)
-            .catch(err => {
+        if (script.run()) {
+          if (script.attributes.async) {
+            _loadPromise(script)
+              .catch(err => {
+                console.warn(err);
+              });
+          } else {
+            try {
+              await _loadPromise(script);
+            } catch(err) {
               console.warn(err);
-            });
-        } else {
-          try {
-            await _loadPromise(scriptEl);
-          } catch(err) {
-            console.warn(err);
+            }
           }
         }
       }
@@ -1243,38 +1248,35 @@ const exokit = (s = '', options = {}) => {
       const images = element.querySelectorAll('image');
       for (let i = 0; i < images.length; i++) {
         const image = images[i];
-        const imageEl = new HTMLImageElement();
-        imageEl[setWindowSymbol](window);
-        if (image.attributes.src) {
-          imageEl.src = image.attributes.src;
+        if (image.run()) {
+          await _loadPromise(image);
         }
-
-        await _loadPromise(imageEl);
       }
 
       const audios = element.querySelectorAll('audio');
       for (let i = 0; i < audios.length; i++) {
         const audio = audios[i];
-        const audioEl = new HTMLAudioElement();
-        audioEl[setWindowSymbol](window);
-        if (audio.attributes.src) {
-          audioEl.src = audio.attributes.src;
+        if (audio.run()) {
+          await _loadPromise(audioEl);
         }
-
-        await _loadPromise(audioEl);
       }
 
       const videos = element.querySelectorAll('video');
       for (let i = 0; i < videos.length; i++) {
         const video = videos[i];
-        const videoEl = new HTMLVideoElement();
-        videoEl[setWindowSymbol](window);
-        if (video.attributes.src) {
-          videoEl.src = video.attributes.src;
+        if (video.run()) {
+          await _loadPromise(videoEl);
         }
-
-        await _loadPromise(videoEl);
       }
+    }
+  };
+  const _runJavascript = (jsString, window, filename = 'script') => {
+    try {
+      vm.runInContext(jsString, window, {
+        filename,
+      });
+    } catch (err) {
+      console.warn(err);
     }
   };
 
