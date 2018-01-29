@@ -1183,7 +1183,10 @@ const exokit = (s = '', options = {}) => {
       return el;
     };
     document.createElementNS = (namespace, tagName) => document.createElement(tagName);
+    document.createDocumentFragment = () => document.createElement();
     document.createTextNode = text => new TextNode(text);
+    document.createComment = comment => new CommentNode(comment);
+    document.styleSheets = [];
     document.write = htmlString => {
       const childNodes = parse5.parseFragment(htmlString).childNodes.map(childNode => Node.fromAST(childNode, window, this));
       for (let i = 0; i < childNodes.length; i++) {
