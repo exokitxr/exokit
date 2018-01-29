@@ -1195,7 +1195,11 @@ const exokit = (s = '', options = {}) => {
     process.nextTick(async () => {
       document.readyState = 'complete';
 
-      await _runHtml(document, window);
+      try {
+        await _runHtml(document, window);
+      } catch(err) {
+        console.warn(err);
+      }
 
       document.emit('readystatechange');
     });
