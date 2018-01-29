@@ -760,7 +760,7 @@ const exokit = (s = '', options = {}) => {
     }
 
     get src() {
-      this.getAttribute('src');
+      return this.getAttribute('src') || '';
     }
     set src(value) {
       this.setAttribute('src', value);
