@@ -760,6 +760,23 @@ const exokit = (s = '', options = {}) => {
           this._src = '';
         }
 
+        emit(event, data) {
+          return EventEmitter.prototype.emit.call(this, event, data);
+        }
+        on(event, cb) {
+          return EventEmitter.prototype.on.call(this, event, cb);
+        }
+        removeListener(event, cb) {
+          return EventEmitter.prototype.removeListener.call(this, event, cb);
+        }
+
+        addEventListener(event, cb) {
+          return HTMLElement.prototype.addEventListener.call(this, event, cb);
+        }
+        removeEventListener(event, cb) {
+          return HTMLElement.prototype.removeEventListener.call(this, event, cb);
+        }
+
         get src() {
           return this._src;
         }
