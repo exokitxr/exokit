@@ -333,6 +333,25 @@ const exokit = (s = '', options = {}) => {
 
   const baseUrl = options.url;
   const _normalizeUrl = src => new URL(src, baseUrl).href;
+  const _parseAttributes = attrs => {
+    const result = {};
+    for (let i = 0; i < attrs.length; i++) {
+      const attr = attrs[i];
+      result[attr.name] = attr.value;
+    }
+    return result;
+  };
+  const _formatAttributes = attributes => {
+    const result = [];
+    for (const name in attributes) {
+      const value = attributes[name];
+      result.push({
+        name,
+        value,
+      });
+    }
+    return result;
+  };
   const _parseStyle = styleString => {
     const style = {};
     const split = styleString.split(/;\s*/);
@@ -387,15 +406,11 @@ const exokit = (s = '', options = {}) => {
       commentNode[setWindowSymbol](window);
       return commentNode;
     } else {
-      const attributes = node.attrs && (() => {
-        const result = {};
-        for (let i = 0; i < node.attrs.length; i++) {
-          const attr = node.attrs[i];
-          result[attr.name] = attr.value;
-        }
-        return result;
-      })();
-      const element = new HTMLElement(node.tagName, attributes, node.value);
+      const element = new HTMLElement(
+        node.tagName,
+        node.attrs && _parseAttributes(node.attrs),
+        node.value
+      );
       element.parentNode = parentNode;
       element[setWindowSymbol](window);
       if (node.childNodes) {
@@ -414,6 +429,13 @@ const exokit = (s = '', options = {}) => {
       this.childNodes = [];
 
       this._innerHTML = '';
+    }
+
+    get attrs() {
+      return _formatAttributes(this.attributes);
+    }
+    set attrs(attrs) {
+      this.attributes = _parseAttributes(attrs);
     }
 
     get children() {
