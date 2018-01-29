@@ -637,6 +637,18 @@ const exokit = (s = '', options = {}) => {
       this.emit('innerHTML', innerHTML);
     }
   }
+  class HTMLAnchorElement extends HTMLElement {
+    constructor(attributes = {}, value = '') {
+      super('a', attributes, value);
+    }
+
+    get href() {
+      return this.getAttribute('href') || '';
+    }
+    set href(value) {
+      this.setAttribute('href', value);
+    }
+  }
   class HTMLLoadableElement extends HTMLElement {
     constructor(tagName) {
       super(tagName);
@@ -1032,6 +1044,7 @@ const exokit = (s = '', options = {}) => {
     }
   }
   const HTML_ELEMENTS = {
+    a: HTMLAnchorElement,
     script: HTMLScriptElement,
     img: HTMLImageElement,
     audio: HTMLAudioElement,
