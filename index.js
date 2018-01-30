@@ -179,8 +179,10 @@ const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
-class VRDisplay {
-  constructor(window) {
+const localMatrix2 = new THREE.Matrix4();
+class MRDisplay {
+  constructor(name, window) {
+    this.name = name;
     this[windowSymbol] = window;
 
     this.isPresenting = false;
@@ -229,35 +231,6 @@ class VRDisplay {
     };
   }
 
-  getFrameData(frameData) {
-    const hmdMatrix = localMatrix.fromArray(this._viewMatrix);
-
-    hmdMatrix.decompose(localVector, localQuaternion, localVector2);
-    frameData.pose.set(localVector, localQuaternion);
-
-    hmdMatrix.getInverse(hmdMatrix);
-
-    localMatrix2.compose( // head to eye transform
-      localVector.set(-0.02, 0, 0),
-      localQuaternion.set(0, 0, 0, 1),
-      localVector2.set(0, 0, 0),
-    )
-      .multiply(hmdMatrix)
-      .toArray(frameData.leftViewMatrix);
-
-    frameData.leftProjectionMatrix.set(this._projectionMatrix);
-
-    localMatrix2.compose( // head to eye transform
-      localVector.set(0.02, 0, 0),
-      localQuaternion.set(0, 0, 0, 1),
-      localVector2.set(0, 0, 0),
-    )
-      .multiply(hmdMatrix)
-      .toArray(frameData.rightViewMatrix);
-
-    frameData.rightProjectionMatrix.set(this._projectionMatrix);
-  }
-
   requestPresent(sources) {
     this.isPresenting = true;
 
@@ -287,6 +260,57 @@ class VRDisplay {
   }
 
   submitFrame() {}
+}
+class VRDisplay extends MRDisplay {
+  constructor(window) {
+    super('VR', window);
+  }
+
+  getFrameData(frameData) {
+    const hmdMatrix = localMatrix.fromArray(this._viewMatrix);
+
+    hmdMatrix.decompose(localVector, localQuaternion, localVector2);
+    frameData.pose.set(localVector, localQuaternion);
+
+    hmdMatrix.getInverse(hmdMatrix);
+
+    localMatrix2.compose( // head to eye transform
+      localVector.set(-0.02, 0, 0),
+      localQuaternion.set(0, 0, 0, 1),
+      localVector2.set(0, 0, 0),
+    )
+      .multiply(hmdMatrix)
+      .toArray(frameData.leftViewMatrix);
+
+    frameData.leftProjectionMatrix.set(this._projectionMatrix);
+
+    localMatrix2.compose( // head to eye transform
+      localVector.set(0.02, 0, 0),
+      localQuaternion.set(0, 0, 0, 1),
+      localVector2.set(0, 0, 0),
+    )
+      .multiply(hmdMatrix)
+      .toArray(frameData.rightViewMatrix);
+
+    frameData.rightProjectionMatrix.set(this._projectionMatrix);
+  }
+}
+class ARDisplay extends MRDisplay {
+  constructor(window) {
+    super('AR', window);
+  }
+
+  getFrameData(frameData) {
+    const hmdMatrix = localMatrix.fromArray(this._viewMatrix);
+    hmdMatrix.decompose(localVector, localQuaternion, localVector2);
+    frameData.pose.set(localVector, localQuaternion);
+
+    frameData.leftViewMatrix.set(this._viewMatrix);
+    frameData.rightViewMatrix.set(this._viewMatrix);
+
+    frameData.leftProjectionMatrix.set(this._projectionMatrix);
+    frameData.rightProjectionMatrix.set(this._projectionMatrix);
+  }
 }
 class AudioNode {}
 class AudioParam {
@@ -1106,7 +1130,10 @@ const exokit = (s = '', options = {}) => {
     window.Date = Date;
     window.performance = performance;
     window.location = url.parse(baseUrl);
-    const vrDisplays = [new VRDisplay(window)];
+    const vrDisplays = [
+      new VRDisplay(window),
+      new ARDisplay(window),
+    ];
     window.navigator = {
       userAgent: 'exokit',
       getVRDisplays: () => vrDisplays,
