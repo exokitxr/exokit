@@ -204,14 +204,21 @@ class MRDisplay {
     this._viewMatrix = new Float32Array(16);
     this._projectionMatrix = new Float32Array(16);
 
-    window.on('resize', () => {
+    const _resize = () => {
       this._width = window.innerWidth / 2;
       this._height = window.innerHeight;
-    });
-    window.on('alignframe', (viewMatrix, projectionMatrix) => {
+    };
+    window.on('resize', _resize);
+    const _alignframe = (viewMatrix, projectionMatrix) => {
       this._viewMatrix.set(viewMatrix);
       this._projectionMatrix.set(projectionMatrix);
-    });
+    };
+    window.on('alignframe', _alignframe);
+
+    this._cleanup = () => {
+      window.removeListener('resize', _resize);
+      window.removeListener('alignframe', _alignframe);
+    };
   }
 
   getLayers() {
@@ -260,6 +267,10 @@ class MRDisplay {
   }
 
   submitFrame() {}
+
+  destroy() {
+    this.cleanup();
+  }
 }
 class VRDisplay extends MRDisplay {
   constructor(window) {
@@ -1130,12 +1141,20 @@ const exokit = (s = '', options = {}) => {
     window.Date = Date;
     window.performance = performance;
     window.location = url.parse(baseUrl);
-    const vrDisplays = [
-      new VRDisplay(window),
-      new ARDisplay(window),
-    ];
+    let vrDisplays = [];
     window.navigator = {
       userAgent: 'exokit',
+      setVRMode: vrMode => {
+        for (let i = 0; i < vrDisplays.length; i++) {
+          vrDisplays[i].destroy();
+        }
+
+        if (vrMode === 'vr') {
+          vrDisplays = [new VRDisplay(window)];
+        } else if (vrMode === 'ar') {
+          vrDisplays = [new ARDisplay(window)];
+        }
+      },
       getVRDisplays: () => vrDisplays,
     };
     window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
