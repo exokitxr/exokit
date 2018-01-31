@@ -921,10 +921,6 @@ class HTMLIframeElement extends HTMLMediaElement {
   constructor(attributes = {}, value = '') {
     super('iframe', attributes, value);
 
-    const parentWindow = this[windowSymbol];
-    this.contentWindow = _parseWindow('', parentWindow[optionsSymbol], parentWindow, parentWindow.top);
-    this.contentDocument = this.contentWindow.document;
-
     this.on('attribute', (name, value) => {
       if (name === 'src') {
         const url = value;
@@ -948,6 +944,11 @@ class HTMLIframeElement extends HTMLMediaElement {
             this.emit('error', err);
           });
       }
+    });
+    this.on('window', () => {
+      const parentWindow = this[windowSymbol];
+      this.contentWindow = _parseWindow('', parentWindow[optionsSymbol], parentWindow, parentWindow.top);
+      this.contentDocument = this.contentWindow.document;
     });
   }
 }
@@ -1187,17 +1188,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.document = null;
   window.URL = URL;
   window[htmlElementsSymbol] = {
-    Node: (Old => class Node extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(Node),
-    HTMLElement: (Old => class HTMLElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLElement),
-    HTMLAnchorElement: (Old => class HTMLAnchorElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLAnchorElement),
-    HTMLScriptElement: (Old => class HTMLScriptElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLScriptElement),
-    HTMLImageElement: (Old => class HTMLImageElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLImageElement),
-    HTMLAudioElement: (Old => class HTMLAudioElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLAudioElement),
-    HTMLVideoElement: (Old => class HTMLVideoElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLVideoElement),
-    HTMLIframeElement: (Old => class HTMLIframeElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLIframeElement),
-    HTMLCanvasElement: (Old => class HTMLCanvasElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLCanvasElement),
-    TextNode: (Old => class TextNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(TextNode),
-    CommentNode: (Old => class CommentNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(CommentNode),
+    Node: (Old => class Node extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(Node),
+    HTMLElement: (Old => class HTMLElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLElement),
+    HTMLAnchorElement: (Old => class HTMLAnchorElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLAnchorElement),
+    HTMLScriptElement: (Old => class HTMLScriptElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLScriptElement),
+    HTMLImageElement: (Old => class HTMLImageElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLImageElement),
+    HTMLAudioElement: (Old => class HTMLAudioElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLAudioElement),
+    HTMLVideoElement: (Old => class HTMLVideoElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLVideoElement),
+    HTMLIframeElement: (Old => class HTMLIframeElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLIframeElement),
+    HTMLCanvasElement: (Old => class HTMLCanvasElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLCanvasElement),
+    TextNode: (Old => class TextNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(TextNode),
+    CommentNode: (Old => class CommentNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(CommentNode),
   };
   window[htmlTagsSymbol] = {
     a: window[htmlElementsSymbol].HTMLAnchorElement,
@@ -1236,13 +1237,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.XMLHttpRequest = XMLHttpRequest;
   window.WebSocket = WebSocket;
   window.Worker = class Worker extends WindowWorker {
-    constructor(src, options = {}) {
-      options.baseUrl = baseUrl;
+    constructor(src, workerOptions = {}) {
+      workerOptions.baseUrl = options.baseUrl;
 
       if (src instanceof Blob) {
-        super('data:application/javascript,' + src[Blob.BUFFER].toString('utf8'), options);
+        super('data:application/javascript,' + src[Blob.BUFFER].toString('utf8'), workerOptions);
       } else {
-        super(_normalizeUrl(src), options);
+        super(_normalizeUrl(src), workerOptions);
       }
     }
   };
