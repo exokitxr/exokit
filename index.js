@@ -19,6 +19,7 @@ const THREE = require('./lib/three-min.js');
 const windowSymbol = Symbol();
 const htmlTagsSymbol = Symbol();
 const htmlElementsSymbol = Symbol();
+const optionsSymbol = Symbol();
 
 let id = 0;
 const urls = new Map();
@@ -920,7 +921,8 @@ class HTMLIframeElement extends HTMLMediaElement {
   constructor(attributes = {}, value = '') {
     super('iframe', attributes, value);
 
-    this.contentWindow = _parseWindow('', this[windowSymbol], this[windowSymbol].top);
+    const parentWindow = this[windowSymbol];
+    this.contentWindow = _parseWindow('', parentWindow[optionsSymbol], parentWindow, parentWindow.top);
     this.contentDocument = this.contentWindow.document;
 
     this.on('attribute', (name, value) => {
@@ -935,7 +937,7 @@ class HTMLIframeElement extends HTMLMediaElement {
             }
           })
           .then(htmlString => {
-            const contentDocument = _parseDocument(htmlString, this.contentWindow);
+            const contentDocument = _parseDocument(htmlString, this.contentWindow[optionsSymbol], this.contentWindow);
             this.contentDocument = contentDocument;
 
             contentDocument.once('readystatechange', () => {
@@ -1023,7 +1025,7 @@ const _fromAST = (node, window, parentNode = null) => {
         value
       )
     :
-      new HTMLElement(
+      new window[htmlElementsSymbol].HTMLElement(
         tagName,
         attributes,
         value
@@ -1147,17 +1149,95 @@ const _runJavascript = (jsString, window, filename = 'script') => {
     console.warn(err);
   }
 };
+const _makeWindow = (options = {}, parent = null, top = null) => {
+  const _normalizeUrl = src => new URL(src, options.baseUrl).href;
 
-const exokit = (s = '', options = {}) => {
-  options.url = options.url || 'http://127.0.0.1';
-  options.dataPath = options.dataPath || __dirname;
+  const window = new HTMLWindowElement();
+  window.window = window;
+  window.self = window;
+  window.parent = parent || window;
+  window.top = top || window;
+  window.innerWidth = 1280;
+  window.innerHeight = 1024;
+  window.console = console;
+  window.setTimeout = setTimeout;
+  window.clearTimeout = clearTimeout;
+  window.setInterval = setInterval;
+  window.clearInterval = clearInterval;
+  window.Date = Date;
+  window.performance = performance;
+  window.location = url.parse(options.baseUrl);
+  let vrDisplays = [];
+  window.navigator = {
+    userAgent: 'exokit',
+    setVRMode: vrMode => {
+      for (let i = 0; i < vrDisplays.length; i++) {
+        vrDisplays[i].destroy();
+      }
 
-  const baseUrl = options.url;
-  const _normalizeUrl = src => new URL(src, baseUrl).href;
-
-  class Worker extends WindowWorker {
+      if (vrMode === 'vr') {
+        vrDisplays = [new VRDisplay(window)];
+      } else if (vrMode === 'ar') {
+        vrDisplays = [new ARDisplay(window)];
+      }
+    },
+    getVRDisplays: () => vrDisplays,
+  };
+  window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
+  window.document = null;
+  window.URL = URL;
+  window[htmlElementsSymbol] = {
+    Node: (Old => class Node extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(Node),
+    HTMLElement: (Old => class HTMLElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLElement),
+    HTMLAnchorElement: (Old => class HTMLAnchorElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLAnchorElement),
+    HTMLScriptElement: (Old => class HTMLScriptElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLScriptElement),
+    HTMLImageElement: (Old => class HTMLImageElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLImageElement),
+    HTMLAudioElement: (Old => class HTMLAudioElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLAudioElement),
+    HTMLVideoElement: (Old => class HTMLVideoElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLVideoElement),
+    HTMLIframeElement: (Old => class HTMLIframeElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLIframeElement),
+    HTMLCanvasElement: (Old => class HTMLCanvasElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLCanvasElement),
+    TextNode: (Old => class TextNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(TextNode),
+    CommentNode: (Old => class CommentNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(CommentNode),
+  };
+  window[htmlTagsSymbol] = {
+    a: window[htmlElementsSymbol].HTMLAnchorElement,
+    script: window[htmlElementsSymbol].HTMLScriptElement,
+    img: window[htmlElementsSymbol].HTMLImageElement,
+    audio: window[htmlElementsSymbol].HTMLAudioElement,
+    video: window[htmlElementsSymbol].HTMLVideoElement,
+    iframe: window[htmlElementsSymbol].HTMLIframeElement,
+    canvas: window[htmlElementsSymbol].HTMLCanvasElement,
+  };
+  window[optionsSymbol] = options;
+  window.Image = window[htmlElementsSymbol].HTMLImageElement;
+  window.HTMLElement = window[htmlElementsSymbol].HTMLElement;
+  window.HTMLAnchorElement = window[htmlElementsSymbol].HTMLAnchorElement;
+  window.HTMLScriptElement = window[htmlElementsSymbol].HTMLScriptElement;
+  window.HTMLImageElement = window[htmlElementsSymbol].HTMLImageElement;
+  window.HTMLAudioElement = window[htmlElementsSymbol].HTMLAudioElement;
+  window.HTMLVideoElement = window[htmlElementsSymbol].HTMLVideoElement;
+  window.HTMLIframeElement = window[htmlElementsSymbol].HTMLIframeElement;
+  window.HTMLCanvasElement = window[htmlElementsSymbol].HTMLCanvasElement;
+  window.ImageData = ImageData;
+  window.ImageBitmap = ImageBitmap;
+  window.Path2D = Path2D;
+  window.CanvasRenderingContext2D = CanvasRenderingContext2D;
+  window.VRFrameData = VRFrameData;
+  window.btoa = s => new Buffer(s, 'binary').toString('base64');
+  window.atob = s => new Buffer(s, 'base64').toString('binary');
+  window.fetch = (url, options) => {
+    const blob = urls.get(url);
+    if (blob) {
+      return Promise.resolve(new Response(blob));
+    } else {
+      return fetch(_normalizeUrl(url), options);
+    }
+  };
+  window.XMLHttpRequest = XMLHttpRequest;
+  window.WebSocket = WebSocket;
+  window.Worker = class Worker extends WindowWorker {
     constructor(src, options = {}) {
-      options.baseUrl = options.baseUrl || baseUrl;
+      options.baseUrl = baseUrl;
 
       if (src instanceof Blob) {
         super('data:application/javascript,' + src[Blob.BUFFER].toString('utf8'), options);
@@ -1165,172 +1245,87 @@ const exokit = (s = '', options = {}) => {
         super(_normalizeUrl(src), options);
       }
     }
-  }
-
+  };
+  window.Blob = Blob;
+  window.AudioContext = AudioContext;
+  window.Path2D = Path2D;
+  window.createImageBitmap = image => Promise.resolve(ImageBitmap.createImageBitmap(image));
   const rafCbs = [];
-
-  const _makeWindow = (parent, top) => {
-    const window = new HTMLWindowElement();
-    window.window = window;
-    window.self = window;
-    window.parent = parent || window;
-    window.top = top || window;
-    window.innerWidth = 1280;
-    window.innerHeight = 1024;
-    window.console = console;
-    window.setTimeout = setTimeout;
-    window.clearTimeout = clearTimeout;
-    window.setInterval = setInterval;
-    window.clearInterval = clearInterval;
-    window.Date = Date;
-    window.performance = performance;
-    window.location = url.parse(baseUrl);
-    let vrDisplays = [];
-    window.navigator = {
-      userAgent: 'exokit',
-      setVRMode: vrMode => {
-        for (let i = 0; i < vrDisplays.length; i++) {
-          vrDisplays[i].destroy();
-        }
-
-        if (vrMode === 'vr') {
-          vrDisplays = [new VRDisplay(window)];
-        } else if (vrMode === 'ar') {
-          vrDisplays = [new ARDisplay(window)];
-        }
-      },
-      getVRDisplays: () => vrDisplays,
-    };
-    window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
-    window.document = null;
-    window.URL = URL;
-    window[htmlElementsSymbol] = {
-      Node: (Old => class Node extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(Node),
-      HTMLElement: (Old => class HTMLElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLElement),
-      HTMLAnchorElement: (Old => class HTMLAnchorElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLAnchorElement),
-      HTMLScriptElement: (Old => class HTMLScriptElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLScriptElement),
-      HTMLImageElement: (Old => class HTMLImageElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLImageElement),
-      HTMLAudioElement: (Old => class HTMLAudioElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLAudioElement),
-      HTMLVideoElement: (Old => class HTMLVideoElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLVideoElement),
-      HTMLIframeElement: (Old => class HTMLIframeElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLIframeElement),
-      HTMLCanvasElement: (Old => class HTMLCanvasElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(HTMLCanvasElement),
-      TextNode: (Old => class TextNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(TextNode),
-      CommentNode: (Old => class CommentNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; } })(CommentNode),
-    };
-    window[htmlTagsSymbol] = {
-      a: window[htmlElementsSymbol].HTMLAnchorElement,
-      script: window[htmlElementsSymbol].HTMLScriptElement,
-      img: window[htmlElementsSymbol].HTMLImageElement,
-      audio: window[htmlElementsSymbol].HTMLAudioElement,
-      video: window[htmlElementsSymbol].HTMLVideoElement,
-      iframe: window[htmlElementsSymbol].HTMLIframeElement,
-      canvas: window[htmlElementsSymbol].HTMLCanvasElement,
-    };
-    window.Image = window[htmlElementsSymbol].HTMLImageElement;
-    window.HTMLElement = window[htmlElementsSymbol].HTMLElement;
-    window.HTMLAnchorElement = window[htmlElementsSymbol].HTMLAnchorElement;
-    window.HTMLScriptElement = window[htmlElementsSymbol].HTMLScriptElement;
-    window.HTMLImageElement = window[htmlElementsSymbol].HTMLImageElement;
-    window.HTMLAudioElement = window[htmlElementsSymbol].HTMLAudioElement;
-    window.HTMLVideoElement = window[htmlElementsSymbol].HTMLVideoElement;
-    window.HTMLIframeElement = window[htmlElementsSymbol].HTMLIframeElement;
-    window.HTMLCanvasElement = window[htmlElementsSymbol].HTMLCanvasElement;
-    window.ImageData = ImageData;
-    window.ImageBitmap = ImageBitmap;
-    window.Path2D = Path2D;
-    window.CanvasRenderingContext2D = CanvasRenderingContext2D;
-    window.VRFrameData = VRFrameData;
-    window.btoa = s => new Buffer(s, 'binary').toString('base64');
-    window.atob = s => new Buffer(s, 'base64').toString('binary');
-    window.fetch = (url, options) => {
-      const blob = urls.get(url);
-      if (blob) {
-        return Promise.resolve(new Response(blob));
-      } else {
-        return fetch(_normalizeUrl(url), options);
-      }
-    };
-    window.XMLHttpRequest = XMLHttpRequest;
-    window.WebSocket = WebSocket;
-    window.Worker = Worker;
-    window.Blob = Blob;
-    window.AudioContext = AudioContext;
-    window.Path2D = Path2D;
-    window.createImageBitmap = image => Promise.resolve(ImageBitmap.createImageBitmap(image));
-    window.requestAnimationFrame = fn => {
-      rafCbs.push(fn);
-    };
-    window.clearAnimationFrame = fn => {
-      const index = rafCbs.indexOf(fn);
-      if (index !== -1) {
-        rafCbs.splice(index, 1);
-      }
-    };
-    window.tickAnimationFrame = () => {
-      const localRafCbs = rafCbs.slice();
-      rafCbs.length = 0;
-      for (let i = 0; i < localRafCbs.length; i++) {
-        localRafCbs[i]();
-      }
-    };
-    window.alignFrame = (viewMatrix, projectionMatrix) => {
-      window.emit('alignframe', viewMatrix, projectionMatrix);
-    };
-    vm.createContext(window);
-    return window;
+  window.requestAnimationFrame = fn => {
+    rafCbs.push(fn);
   };
-  const _parseDocument = (s, window) => {
-    const document = _fromAST(parse5.parse(s), window);
-    const html = document.childNodes.find(element => element.tagName === 'html');
-    const head = html.childNodes.find(element => element.tagName === 'head');
-    const body = html.childNodes.find(element => element.tagName === 'body');
-
-    document.documentElement = document;
-    document.readyState = null;
-    document.head = head;
-    document.body = body;
-    document.location = url.parse(baseUrl);
-    document.createElement = tagName => {
-      const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
-      return HTMLElementTemplate ? new HTMLElementTemplate() : new window[htmlElementsSymbol].HTMLElement(tagName);
-    };
-    document.createElementNS = (namespace, tagName) => document.createElement(tagName);
-    document.createDocumentFragment = () => document.createElement();
-    document.createTextNode = text => new TextNode(text);
-    document.createComment = comment => new CommentNode(comment);
-    document.styleSheets = [];
-    document.write = htmlString => {
-      const childNodes = parse5.parseFragment(htmlString).childNodes.map(childNode => _fromAST(childNode, window, this));
-      for (let i = 0; i < childNodes.length; i++) {
-        document.body.appendChild(childNodes[i]);
-      }
-    };
-    window.document = document;
-
-    process.nextTick(async () => {
-      document.readyState = 'complete';
-
-      try {
-        await _runHtml(document, window);
-      } catch(err) {
-        console.warn(err);
-      }
-
-      document.emit('readystatechange');
-    });
-
-    return document;
+  window.clearAnimationFrame = fn => {
+    const index = rafCbs.indexOf(fn);
+    if (index !== -1) {
+      rafCbs.splice(index, 1);
+    }
   };
-  const _parseWindow = (s, parent, top) => {
-    const window = _makeWindow(parent, top);
-    const document = _parseDocument(s, window);
-    window.document = document;
-    return window;
+  window.tickAnimationFrame = () => {
+    const localRafCbs = rafCbs.slice();
+    rafCbs.length = 0;
+    for (let i = 0; i < localRafCbs.length; i++) {
+      localRafCbs[i]();
+    }
   };
-  const window = _parseWindow(s);
-  const {document} = window;
-
+  window.alignFrame = (viewMatrix, projectionMatrix) => {
+    window.emit('alignframe', viewMatrix, projectionMatrix);
+  };
+  vm.createContext(window);
   return window;
+};
+const _parseDocument = (s, options, window) => {
+  const document = _fromAST(parse5.parse(s), window);
+  const html = document.childNodes.find(element => element.tagName === 'html');
+  const head = html.childNodes.find(element => element.tagName === 'head');
+  const body = html.childNodes.find(element => element.tagName === 'body');
+
+  document.documentElement = document;
+  document.readyState = null;
+  document.head = head;
+  document.body = body;
+  document.location = url.parse(options.baseUrl);
+  document.createElement = tagName => {
+    const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
+    return HTMLElementTemplate ? new HTMLElementTemplate() : new window[htmlElementsSymbol].HTMLElement(tagName);
+  };
+  document.createElementNS = (namespace, tagName) => document.createElement(tagName);
+  document.createDocumentFragment = () => document.createElement();
+  document.createTextNode = text => new TextNode(text);
+  document.createComment = comment => new CommentNode(comment);
+  document.styleSheets = [];
+  document.write = htmlString => {
+    const childNodes = parse5.parseFragment(htmlString).childNodes.map(childNode => _fromAST(childNode, window, this));
+    for (let i = 0; i < childNodes.length; i++) {
+      document.body.appendChild(childNodes[i]);
+    }
+  };
+  window.document = document;
+
+  process.nextTick(async () => {
+    document.readyState = 'complete';
+
+    try {
+      await _runHtml(document, window);
+    } catch(err) {
+      console.warn(err);
+    }
+
+    document.emit('readystatechange');
+  });
+
+  return document;
+};
+const _parseWindow = (s, options, parent, top) => {
+  const window = _makeWindow(options, parent, top);
+  const document = _parseDocument(s, options, window);
+  window.document = document;
+  return window;
+};
+
+const exokit = (s = '', options = {}) => {
+  options.baseUrl = options.baseUrl || 'http://127.0.0.1';
+  options.dataPath = options.dataPath || __dirname;
+  return _parseWindow(s, options);
 };
 exokit.fetch = src => fetch(src)
   .then(res => {
@@ -1343,7 +1338,7 @@ exokit.fetch = src => fetch(src)
   .then(htmlString => {
     const parsedUrl = url.parse(src);
     return exokit(htmlString, {
-      url: (parsedUrl.protocol || 'http:') + '//' + (parsedUrl.host || '127.0.0.1'),
+      baseUrl: (parsedUrl.protocol || 'http:') + '//' + (parsedUrl.host || '127.0.0.1'),
     });
   });
 exokit.THREE = THREE;
