@@ -76,7 +76,7 @@ const Path2D = (() => {
   }
 })();
 const CanvasRenderingContext2D = (() => {
-  if (typeof nativeCanvasRenderingContext2d !== 'undefined') {
+  if (typeof nativeCanvasRenderingContext2D !== 'undefined') {
     return nativeCanvasRenderingContext2D;
   } else {
     return class CanvasRenderingContext2D {
