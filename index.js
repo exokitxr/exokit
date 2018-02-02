@@ -963,18 +963,27 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get width() {
-    this.getAttribute('width');
+     return this.getAttribute('width') || 1;
   }
   set width(value) {
-    this.setAttribute('width', value);
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('width', value);
+    }
   }
 
   get height() {
-    this.getAttribute('height');
+    return this.getAttribute('height') || 1;
   }
   set height(value) {
-    this.setAttribute('height', value);
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('height', value);
+    }
   }
+
+  get data() {
+    return (this._context && this._context.data) || null;
+  }
+  set data(data) {}
 
   getContext(contextType) {
     if (this._context === null) {
