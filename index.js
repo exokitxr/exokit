@@ -1271,6 +1271,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const rafCbs = [];
   window.requestAnimationFrame = fn => {
     rafCbs.push(fn);
+    return fn;
   };
   window.cancelAnimationFrame = fn => {
     const index = rafCbs.indexOf(fn);
