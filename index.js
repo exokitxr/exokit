@@ -177,9 +177,10 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 class MRDisplay {
-  constructor(name, window) {
+  constructor(name, window, displayId) {
     this.name = name;
     this[windowSymbol] = window;
+    this.displayId = displayId;
 
     this.isPresenting = false;
     this.capabilities = {
@@ -269,8 +270,8 @@ class MRDisplay {
   }
 }
 class VRDisplay extends MRDisplay {
-  constructor(window) {
-    super('VR', window);
+  constructor(window, displayId) {
+    super('VR', window, displayId);
   }
 
   getFrameData(frameData) {
@@ -303,8 +304,8 @@ class VRDisplay extends MRDisplay {
   }
 }
 class ARDisplay extends MRDisplay {
-  constructor(window) {
-    super('AR', window);
+  constructor(window, displayId) {
+    super('AR', window, displayId);
   }
 
   getFrameData(frameData) {
