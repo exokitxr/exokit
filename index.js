@@ -1175,21 +1175,24 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.location = url.parse(options.url);
   let vrDisplays = [];
   const gamepads = [];
+  let vrMode = null;
   let vrTexture = null;
   window.navigator = {
     userAgent: 'exokit',
     getVRDisplays: () => vrDisplays,
     getGamepads: () => gamepads,
-    setVRMode: vrMode => {
+    getVRMode: () => vrMode,
+    setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
         vrDisplays[i].destroy();
       }
 
-      if (vrMode === 'vr') {
+      if (newVrMode === 'vr') {
         vrDisplays = [new VRDisplay(window, 0)];
-      } else if (vrMode === 'ar') {
+      } else if (newVrMode === 'ar') {
         vrDisplays = [new ARDisplay(window, 1)];
       }
+      vrMode = newVrMode;
     },
     getVRTexture: () => vrTexture,
     setVRTexture: newVrTexture => {
