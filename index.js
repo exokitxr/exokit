@@ -161,20 +161,14 @@ class VRFrameData {
   }
 }
 class VRPose {
-  constructor(position = new Float32Array(3), orientation = new Float32Array(4)) {
+  constructor(position = new Float32Array(3), orientation = Float32Array.from([0, 0, 0, 1])) {
     this.position = position;
     this.orientation = orientation;
   }
 
   set(position, orientation) {
-    this.position[0] = position.x;
-    this.position[1] = position.y;
-    this.position[2] = position.z;
-
-    this.orientation[0] = orientation.x;
-    this.orientation[1] = orientation.y;
-    this.orientation[2] = orientation.z;
-    this.orientation[3] = orientation.w;
+    position.toArray(this.position);
+    orientation.toArray(this.orientation);
   }
 }
 const localVector = new THREE.Vector3();
