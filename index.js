@@ -256,11 +256,11 @@ class MRDisplay {
   }
 
   requestAnimationFrame(fn) {
-    return window.requestAnimationFrame(fn);
+    return this[windowSymbol].requestAnimationFrame(fn);
   }
 
   cancelAnimationFrame(animationFrame) {
-    return window.cancelAnimationFrame(animationFrame);
+    return this[windowSymbol].cancelAnimationFrame(animationFrame);
   }
 
   submitFrame() {}
