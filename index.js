@@ -192,8 +192,8 @@ class MRDisplay {
     this.depthNear = 0.1;
     this.depthFar = 1000.0;
     this.stageParameters = {
-      // new THREE.Matrix4().compose(new THREE.Vector3(0, 1.6, 0), new THREE.Quaternion(), new THREE.Vector3()).toArray(new Float32Array(16))
-      sittingToStandingTransform: Float32Array.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.6, 0, 1]),
+      // new THREE.Matrix4().compose(new THREE.Vector3(0, 1.6, 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1)).toArray(new Float32Array(16))
+      sittingToStandingTransform: Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1.6, 0, 1]),
     };
 
     this._width = window.innerWidth / 2;
