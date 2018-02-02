@@ -1238,6 +1238,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.ImageBitmap = ImageBitmap;
   window.Path2D = Path2D;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
+  window.VRDisplay = VRDisplay;
+  // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
   window.btoa = s => new Buffer(s, 'binary').toString('base64');
   window.atob = s => new Buffer(s, 'base64').toString('binary');
