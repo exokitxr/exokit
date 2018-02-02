@@ -1172,7 +1172,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.clearInterval = clearInterval;
   window.Date = Date;
   window.performance = performance;
-  window.location = url.parse(options.baseUrl);
+  window.location = url.parse(options.url);
   let vrDisplays = [];
   window.navigator = {
     userAgent: 'exokit',
@@ -1289,7 +1289,7 @@ const _parseDocument = (s, options, window) => {
   document.readyState = null;
   document.head = head;
   document.body = body;
-  document.location = url.parse(options.baseUrl);
+  document.location = url.parse(options.url);
   document.createElement = tagName => {
     const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
     return HTMLElementTemplate ? new HTMLElementTemplate() : new window[htmlElementsSymbol].HTMLElement(tagName);
@@ -1329,7 +1329,8 @@ const _parseWindow = (s, options, parent, top) => {
 };
 
 const exokit = (s = '', options = {}) => {
-  options.baseUrl = options.baseUrl || 'http://127.0.0.1';
+  options.url = options.url || 'http://127.0.0.1/';
+  options.baseUrl = options.baseUrl || options.url;
   options.dataPath = options.dataPath || __dirname;
   return _parseWindow(s, options);
 };
@@ -1344,7 +1345,11 @@ exokit.fetch = src => fetch(src)
   .then(htmlString => {
     const parsedUrl = url.parse(src);
     return exokit(htmlString, {
-      baseUrl: (parsedUrl.protocol || 'http:') + '//' + (parsedUrl.host || '127.0.0.1'),
+      url: src,
+      baseUrl: url.format({
+        protocol: parsedUrl.protocol || 'http:',
+        host: parsedUrl.host || '127.0.0.1',
+      }),
     });
   });
 exokit.THREE = THREE;
