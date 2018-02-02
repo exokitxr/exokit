@@ -1182,9 +1182,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
 
       if (vrMode === 'vr') {
-        vrDisplays = [new VRDisplay(window)];
+        vrDisplays = [new VRDisplay(window, 0)];
       } else if (vrMode === 'ar') {
-        vrDisplays = [new ARDisplay(window)];
+        vrDisplays = [new ARDisplay(window, 1)];
       }
     },
     getVRDisplays: () => vrDisplays,
