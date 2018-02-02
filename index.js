@@ -1164,6 +1164,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.top = top || window;
   window.innerWidth = 1280;
   window.innerHeight = 1024;
+  window.devicePixelRatio = 1;
   window.console = console;
   window.setTimeout = setTimeout;
   window.clearTimeout = clearTimeout;
