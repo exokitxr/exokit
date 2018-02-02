@@ -955,9 +955,9 @@ class HTMLCanvasElement extends HTMLElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'width') {
-        // XXX
+        this._context && this._context.resize && this._context.resize(this.width, this.height);
       } else if (name === 'height') {
-        // XXX
+        this._context && this._context.resize && this._context.resize(this.width, this.height);
       }
     });
   }
