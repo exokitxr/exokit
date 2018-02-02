@@ -1262,7 +1262,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.requestAnimationFrame = fn => {
     rafCbs.push(fn);
   };
-  window.clearAnimationFrame = fn => {
+  window.cancelAnimationFrame = fn => {
     const index = rafCbs.indexOf(fn);
     if (index !== -1) {
       rafCbs.splice(index, 1);
