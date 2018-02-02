@@ -1174,6 +1174,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.performance = performance;
   window.location = url.parse(options.url);
   let vrDisplays = [];
+  const gamepads = [];
   window.navigator = {
     userAgent: 'exokit',
     setVRMode: vrMode => {
@@ -1188,6 +1189,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     },
     getVRDisplays: () => vrDisplays,
+    getGamepads: () => gamepads,
   };
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.document = null;
