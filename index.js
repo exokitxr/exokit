@@ -1175,8 +1175,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.location = url.parse(options.url);
   let vrDisplays = [];
   const gamepads = [];
+  let vrTexture = null;
   window.navigator = {
     userAgent: 'exokit',
+    getVRDisplays: () => vrDisplays,
+    getGamepads: () => gamepads,
     setVRMode: vrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
         vrDisplays[i].destroy();
@@ -1188,8 +1191,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         vrDisplays = [new ARDisplay(window, 1)];
       }
     },
-    getVRDisplays: () => vrDisplays,
-    getGamepads: () => gamepads,
+    getVRTexture: () => vrTexture,
+    setVRTexture: newVrTexture => {
+      vrTexture = newVrTexture;
+    },
   };
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.document = null;
