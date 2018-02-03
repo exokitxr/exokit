@@ -20,6 +20,18 @@
         '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
         '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
       ],
+      'libraries': [
+        'glfw3.lib',
+        ],
+      'defines' : [
+        'WIN32_LEAN_AND_MEAN',
+        'VC_EXTRALEAN'
+      ],
+      'msvs_settings' : {
+        'VCCLCompilerTool' : {
+          'AdditionalOptions' : ['/O3',/std:[c++14]
+        },
+      },
     }
   ]
 }
