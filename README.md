@@ -16,7 +16,7 @@ The multipmedia parts (e.g. WebGL) are pluggable native modules. Everything else
 
 Exokit runs on Android/iOS, as well as Windows, Linux, and macOS.
 
-Examples are illustrative.
+## Examples
 
 What Exokit *can* do:
 
