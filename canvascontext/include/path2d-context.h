@@ -43,6 +43,6 @@ private:
   friend class CanvasRenderingContext2D;
 };
 
-#include "canvas.h"
+#include "canvas-context.h"
 
 #endif

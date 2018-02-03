@@ -108,9 +108,9 @@ private:
   friend class Path2D;
 };
 
-#include "image.h"
-#include "imageData.h"
-#include "imageBitmap.h"
-#include "path2d.h"
+#include "image-context.h"
+#include "imageData-context.h"
+#include "imageBitmap-context.h"
+#include "path2d-context.h"
 
 #endif

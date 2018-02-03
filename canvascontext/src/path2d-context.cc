@@ -1,4 +1,4 @@
-#include <canvascontext/include/path2d.h>
+#include <canvascontext/include/path2d-context.h>
 
 using namespace v8;
 using namespace node;

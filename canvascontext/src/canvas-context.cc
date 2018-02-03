@@ -1,4 +1,4 @@
-#include <canvascontext/include/canvas.h>
+#include <canvascontext/include/canvas-context.h>
 
 using namespace v8;
 using namespace node;

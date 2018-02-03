@@ -1,4 +1,4 @@
-#include <canvascontext/include/imageBitmap.h>
+#include <canvascontext/include/imageBitmap-context.h>
 
 using namespace v8;
 using namespace node;
