@@ -11,7 +11,6 @@
         'deps/exokit-bindings/webglcontext/src/*.cc',
       ],
       'include_dirs': [
-        "<!(node -e \"require('nan')\")",
         '<(module_root_dir)/deps/exokit-bindings/node',
         '<(module_root_dir)/deps/exokit-bindings/native_app_glue',
         '<(module_root_dir)/deps/exokit-bindings/util/include',
