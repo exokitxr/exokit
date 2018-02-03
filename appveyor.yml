@@ -28,9 +28,8 @@ after_test:
       git submodule update --init --recursive
       npm install --no-package-lock
       pushd deps/glfw
-      cmake .
-      # cmake -DCMAKE_BUILD_TYPE=Release .
-      msbuild GLFW.sln
+      cmake -DBUILD_SHARED_LIBS=ON .
+      msbuild GLFW.sln /p:Configuration=Release
       popd
       cmake .
       wget "https://nodejs.org/dist/v9.5.0/node-v9.5.0-win-x64.zip" -OutFile node.zip
