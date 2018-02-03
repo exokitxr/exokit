@@ -1,12 +1,4 @@
 {
-  'variables': {
-    'platform': '<(OS)',
-  },
-  'conditions': [
-    # Replace gyp platform with node platform, blech
-    ['platform == "mac"', {'variables': {'platform': 'darwin'}}],
-    ['platform == "win"', {'variables': {'platform': 'win32'}}],
-  ],
   'targets': [
     {
       'target_name': 'exokit',
