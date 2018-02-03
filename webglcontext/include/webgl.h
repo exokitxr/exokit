@@ -9,12 +9,16 @@
 #define _WEBGLCONTEXT_WEBGL_H_
 
 #include <nan/nan.h>
-#include <GLES3/gl3.h>
-#include <GLES3/gl3ext.h>
-#include <GLES/gl.h>
-#include <GLES/glext.h>
+
+#if _WIN32
+#include <GL/glew.h>
+#include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
-#include <GLES2/gl2.h>
+#endif
+#if __ANDROID__
+#include <GLES3/gl3.h>
+#include <GLES2/gl2ext.h>
+#endif
 
 using namespace node;
 using namespace v8;
