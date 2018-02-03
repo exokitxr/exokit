@@ -70,23 +70,6 @@ Image::loadFromMemory(const unsigned char * buffer, size_t size) {
   }
 }
 
-std::unique_ptr<ImageData>
-Image::loadFromFile(const std::string & filename) {
-  assert(!filename.empty());
-  int w, h, channels;
-  auto img_buffer = stbi_load(filename.c_str(), &w, &h, &channels, 0);
-  if (!img_buffer) {
-    throw ImageLoadingException(stbi_failure_reason());
-  }
-  assert(w && h && channels);    
-
-  std::unique_ptr<ImageData> data = std::unique_ptr<ImageData>(new ImageData((unsigned char *)img_buffer, w, h, channels));
-  
-  stbi_image_free(img_buffer);
-
-  return data;
-}
-
 bool
 Image::isPNG(const unsigned char * buffer, size_t size) {
   return size >= 4 && buffer[0] == 0x89 && buffer[1] == 0x50 && buffer[2] == 0x4e && buffer[3] == 0x47;

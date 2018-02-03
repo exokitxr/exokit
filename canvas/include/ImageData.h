@@ -9,7 +9,6 @@
 namespace canvas {
   class ImageData {
   public:
-    static ImageData nullImage;
 
   ImageData() : width(0), height(0), num_channels(0) { }
   ImageData(const unsigned char * _data, unsigned short _width, unsigned short _height, unsigned short _num_channels)
@@ -54,8 +53,7 @@ namespace canvas {
     unsigned short getHeight() const { return height; }
     unsigned short getNumChannels() const { return num_channels; }
 
-    unsigned char * getData() { return data.get(); }
-    const unsigned char * getData() const { return data.get(); }
+    unsigned char * getData() const { return data.get(); }
     
     static size_t calculateSize(unsigned short width, unsigned short height, unsigned short num_channels) { return width * height * num_channels; }
     size_t calculateSize() const { return calculateSize(width, height, num_channels); }

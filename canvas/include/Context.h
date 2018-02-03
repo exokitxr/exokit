@@ -235,7 +235,6 @@ namespace canvas {
     virtual ~ContextFactory() { }
     virtual std::unique_ptr<Context> createContext(unsigned int width, unsigned int height, unsigned int num_channels = 4) = 0;
     virtual std::unique_ptr<Surface> createSurface(unsigned int width, unsigned int height, unsigned int num_channels = 4) = 0;
-    virtual std::unique_ptr<Image> loadImage(const std::string & filename) = 0;
     virtual std::unique_ptr<Image> createImage() = 0;
     virtual std::unique_ptr<Image> createImage(const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels) = 0;
     
@@ -260,9 +259,8 @@ namespace canvas {
     std::unique_ptr<Surface> createSurface(unsigned int width, unsigned int height, InternalFormat format = RGBA8) {
       
     }
-    virtual std::unique_ptr<Image> loadImage(const std::string & filename) = 0;
     virtual std::unique_ptr<Image> createImage() = 0;
-    virtual std::unique_ptr<Image> createImage(const unsigned char * _data, InternalFormat _format, unsigned int _width, unsigned int _height) = 0;
+    virtual std::unique_ptr<Image> createImage(const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels) = 0;
   };
 #endif  
 };

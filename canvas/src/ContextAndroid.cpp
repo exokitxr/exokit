@@ -277,38 +277,7 @@ public:
   AndroidImage(AAssetManager * _asset_manager, float _display_scale)
     : Image(_display_scale), asset_manager(_asset_manager) { }
 
-    AndroidImage(AAssetManager * _asset_manager, const std::string & filename, float _display_scale)
-      : Image(filename, _display_scale), asset_manager(_asset_manager) { }
-
   AndroidImage(AAssetManager * _asset_manager, const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels, float _display_scale) : Image(_data, _width, _height, _num_channels, _display_scale), asset_manager(_asset_manager) { }
-
-protected:
-  void loadFile() override {
-    if (asset_manager) {
-      AAsset * asset = AAssetManager_open(asset_manager, getFilename().c_str(), 0);
-      if (asset) {
-        FILE * in = funopen(asset, android_read, android_write, android_seek, android_close);
-
-        basic_string<unsigned char> s;
-        while (!feof(in)) {
-          unsigned char b[256];
-          size_t n = fread(b, 1, 256, in);
-          s += basic_string<unsigned char>(b, n);
-        }
-        fclose(in);
-
-        __android_log_print(ANDROID_LOG_VERBOSE, "Sometrik", "image %s loaded successfully: %d", getFilename().c_str(), int(s.size()));
-
-        data = loadFromMemory(s.data(), s.size());
-        __android_log_print(ANDROID_LOG_INFO, "Sometrik", "Image Width = %u", data->getWidth());
-        __android_log_print(ANDROID_LOG_INFO, "Sometrik", "Image height = %u", data->getHeight());
-      }
-    }
-    if (!data.get()) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "Sometrik", "image %s loading FAILED", getFilename().c_str());
-      getFilename().clear();
-    }
-  }
 
 private:
   AAssetManager * asset_manager;
@@ -327,11 +296,6 @@ AndroidSurface::createImage(float display_scale) {
 }
 
 std::shared_ptr<AndroidCache> AndroidContextFactory::cache;
-
-std::unique_ptr<Image>
-AndroidContextFactory::loadImage(const std::string & filename) {
-  return std::unique_ptr<Image>(new AndroidImage(asset_manager, filename, getDisplayScale()));
-}
 
 std::unique_ptr<Image>
 AndroidContextFactory::createImage() {
