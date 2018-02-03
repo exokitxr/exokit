@@ -26,12 +26,12 @@ test_script:
 after_test:
   - ps: |
       git submodule update --init --recursive
-      npm install --no-package-lock
       pushd deps/glfw
       cmake -DBUILD_SHARED_LIBS=ON .
       msbuild GLFW.sln /p:Configuration=Release
       popd
       cmake .
+      npm install --no-package-lock
       wget "https://nodejs.org/dist/v9.5.0/node-v9.5.0-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
