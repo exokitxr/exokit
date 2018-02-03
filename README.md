@@ -1,6 +1,6 @@
 # Exokit: Javascript web browser for the post-screen world
 
-```
+```sh
 exokit https://example.com # run site in VR/AR
 ```
 
