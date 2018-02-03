@@ -26,8 +26,6 @@ test_script:
 after_test:
   - ps: |
       npm install --no-package-lock
-      mkdir deps
-      git clone https://github.com/glfw/glfw.git deps/glfw
       cd deps/glfw
       cmake .
       # cmake -DCMAKE_BUILD_TYPE=Release .
