@@ -1,7 +1,7 @@
 # Exokit: Javascript web browser for the post-screen world
 
 ```sh
-exokit https://example.com # run site in VR/AR
+exokit https://example.com # run site in WebGL/VR/AR
 ```
 
 **Exokit** is a full HTML5 web browser, written as a node.js module. It lets you run a web site as a program. It can do everything a browser can do -- _except render HTML_.
