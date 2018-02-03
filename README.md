@@ -6,7 +6,7 @@ exokit https://example.com # run site in VR/AR
 
 **Exokit** is a full HTML5 web browser, written as a node.js module. It lets you run a web site as a program. It can do everything a browser can do -- _except render HTML_.
 
-#### What? Isn't that useless?
+## What? Isn't that useless?
 
 Exokit can't render HTML, but it _can_ draw Canvas and WebGL -- natively, and fast -- as well as take keyboard/mouse/mixed reality input with the regular APIs. It's a browser for the post-(2D) world.
 
