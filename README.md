@@ -1,18 +1,20 @@
-# Exokit: Javascript web site emulator
-
-Or, run a web site as a program.
-
-**Exokit** is an HTML5 web browser, as a node.js module. Think JSDOM, except for running web sites instead of parsing DOM. Chromium, except 300kb. Electron, except instant run. Or, a video game emulator that runs web sites.
+# Exokit: Javascript web browser for the post-screen world
 
 ```
 exokit https://example.com
 ```
 
-The catch is that Exokit cannot render HTML, but it _can_ draw Canvas and WebGL -- native, fast -- as well as take keyboard/mouse/mixed reality input with the regular APIs.
+**Exokit** is a full HTML5 web browser, written as a node.js module. It lets you run a web site as a program. It can do everything a browser can do -- _except render HTML_.
+
+#### What? Isn't that useless?
+
+Exokit can't render HTML, but it _can_ draw Canvas and WebGL -- natively, and fast -- as well as take keyboard/mouse/mixed reality input with the regular APIs. It's a browser for the post-(2D) world.
+
+Think JSDOM, except it _runs_ the DOM in a `window`. Or think Electron, except 300k and runs instantly. Or, think an emulator for running web sites.
 
 The multipmedia parts (e.g. WebGL) are pluggable native modules. Everything else is Javascript. It's pretty easy to experiment and add new Web APIs.
 
-A site is a program and `Exokit` runs web sites as programs.
+Exokit runs on Android/iOS, as well as Windows, Linux, and macOS.
 
 Examples are illustrative.
 
