@@ -21,17 +21,6 @@
   },
   "homepage": "https://github.com/modulesio/exokit-windows#readme",
   "dependencies": {
-    "exokit": "0.0.17",
-    "follow-redirects": "^1.2.6",
-    "getport": "^0.1.0",
-    "jimp": "^0.2.28",
-    "mkdirp": "^0.5.1",
-    "node-openvr": "0.0.54",
-    "pidify": "0.0.9",
-    "rimraf": "^2.6.2",
-    "spog": "0.0.5",
-    "tail-shell": "0.0.3",
-    "tar": "^4.2.0",
-    "touch": "^3.1.0"
+    "exokit": "0.0.17"
   }
 }
