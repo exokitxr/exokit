@@ -5,8 +5,8 @@
  *      Author: ngk437
  */
 
-#ifndef WEBGL_H_
-#define WEBGL_H_
+#ifndef _WEBGLCONTEXT_WEBGL_H_
+#define _WEBGLCONTEXT_WEBGL_H_
 
 #include <nan/nan.h>
 #include <GLES3/gl3.h>
@@ -20,10 +20,6 @@ using namespace node;
 using namespace v8;
 
 namespace webgl {
-// void AtExit();
-
-// NAN_METHOD(Init);
-
 NAN_METHOD(Uniform1f);
 NAN_METHOD(Uniform2f);
 NAN_METHOD(Uniform3f);
@@ -167,4 +163,4 @@ NAN_METHOD(CheckFramebufferStatus);
 NAN_METHOD(FrontFace);
 }
 
-#endif /* WEBGL_H_ */
+#endif

@@ -2,22 +2,16 @@
 #include <vector>
 // #include <iostream>
 
-#include "webgl.h"
+#include <webglcontext/include/webgl.h>
 #include <node.h>
-#include <node_buffer.h>
 #include <defines.h>
 
-#include <EGL/egl.h>
-// at least some defs from gl1 are needed
-#include <GLES/gl.h>
-#include <GLES2/gl2.h>
-
-#include <android/sensor.h>
+/* #include <android/sensor.h>
 #include <android/log.h>
 #include <android_native_app_glue.h>
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "glesjs", __VA_ARGS__))
-#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "glesjs", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "glesjs", __VA_ARGS__)) */
 
 #define CHECK_ARRAY_BUFFER(val) if(!val->IsArrayBufferView()) \
         {Nan::ThrowTypeError("Only support array buffer"); return;}
@@ -872,7 +866,7 @@ NAN_METHOD(TexImage2D) {
       height = border->BooleanValue() ? border->ToObject()->Get(heightString) : Number::New(isolate, 1).As<Value>();
       // return _texImage2D(target, level, internalformat, width, height, 0, format, type, pixels);
     } else {
-      LOGI("Loaded string asset %d %d %d %d %d %d %d %d %d",
+      /* LOGI("Loaded string asset %d %d %d %d %d %d %d %d %d",
         target->TypeOf(isolate)->StrictEquals(numberString),
         level->TypeOf(isolate)->StrictEquals(numberString),
         internalformat->TypeOf(isolate)->StrictEquals(numberString),
@@ -882,7 +876,7 @@ NAN_METHOD(TexImage2D) {
         !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString), // 1
         !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(widthString)->TypeOf(isolate)->StrictEquals(numberString), // 0
         !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(heightString)->TypeOf(isolate)->StrictEquals(numberString) // 0
-      );
+      ); */
 
       Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number format, number type, Image pixels)");
       return;
