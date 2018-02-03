@@ -11,6 +11,9 @@
         'deps/exokit-bindings/webglcontext/src/*.cc',
       ],
       'include_dirs': [
+        '<(module_root_dir)/node_modules/native-graphics-deps/include',
+        '<(module_root_dir)/deps/exokit-bindings',
+        '<(module_root_dir)/deps/exokit-bindings/utf8',
         '<(module_root_dir)/deps/exokit-bindings/node',
         '<(module_root_dir)/deps/exokit-bindings/native_app_glue',
         '<(module_root_dir)/deps/exokit-bindings/util/include',
@@ -20,16 +23,19 @@
         '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
         '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
       ],
+      'library_dirs': [
+        '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64',
+      ],
       'libraries': [
-        'glfw3.lib',
-        ],
-      'defines' : [
-        'WIN32_LEAN_AND_MEAN',
-        'VC_EXTRALEAN'
+        'opengl32.lib',
+        'glew32.lib',
       ],
       'msvs_settings' : {
         'VCCLCompilerTool' : {
-          'AdditionalOptions' : ['/O2','/std:c++14'],
+          'AdditionalOptions' : ['/O2','/Oy','/GL','/GF','/Gm-','/EHsc','/MT','/GS','/Gy','/GR-','/Gd']
+        },
+        'VCLinkerTool' : {
+          'AdditionalOptions' : ['/OPT:REF','/OPT:ICF','/LTCG']
         },
       },
     }

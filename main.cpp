@@ -2,24 +2,18 @@
 //BEGIN_INCLUDE(all)
 #include <string.h>
 #include <cstring>
-#include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <sstream>
 #include <thread>
 #include <functional>
-
-#include <jni.h>
-#include <errno.h>
-
-// #include <EGL/egl.h>
-// at least some defs from gl1 are needed
-// #include <GLES/gl.h>
-// #include <GLES2/gl2.h>
 
 #include <v8.h>
 #include <bindings.h>
 
 using namespace v8;
+
+namespace exokit {
 
 // NOTE: must already be in context
 void callFunction(const char *funcname, const int argc, Local<Value> argv[]) {
@@ -41,43 +35,22 @@ void callFunction(const char *funcname, const int argc, Local<Value> argv[]) {
   if (result.IsEmpty()) {
     String::Utf8Value error(try_catch.Exception());
     String::Utf8Value stacktrace(try_catch.StackTrace());
-    LOGI("Error calling %s: %s:\n%s",funcname,*error,*stacktrace);
+    // LOGI("Error calling %s: %s:\n%s",funcname,*error,*stacktrace);
   } else {
-    //LOGI("%s called",funcname);
+    // LOGI("%s called",funcname);
   }
 }
 
-void redirectStdioToLog() {
-  setvbuf(stdout, 0, _IOLBF, 0);
-  setvbuf(stderr, 0, _IONBF, 0);
-
-  int pfd[2];
-  pipe(pfd);
-  dup2(pfd[1], 1);
-  dup2(pfd[1], 2);
-
-  std::thread([](int pfd0) {
-    char buf[1024];
-    std::size_t nBytes = 0;
-    while ((nBytes = read(pfd0, buf, sizeof buf - 1)) > 0) {
-      if (buf[nBytes - 1] == '\n') --nBytes;
-      buf[nBytes] = 0;
-      LOGI("%s", buf);
-    }
-  }, pfd[0]).detach();
-}
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-JNIEXPORT void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_onResize
-(JNIEnv *env, jclass clas, jint width, jint height) {
-	LOGI("JNI onResize %d %d", width, height);
+void Java_com_mafintosh_nodeonandroid_NodeService_onResize
+() {
+// (JNIEnv *env, jclass clas, jint width, jint height) {
+	// LOGI("JNI onResize %d %d", width, height);
 
   {
     HandleScope handle_scope(Isolate::GetCurrent());
+    
+    unsigned int width = 1;
+    unsigned int height = 1;
 
     Handle<Number> js_width = v8::Integer::New(Isolate::GetCurrent(), width);
     Handle<Number> js_height = v8::Integer::New(Isolate::GetCurrent(), height);
@@ -88,11 +61,12 @@ JNIEXPORT void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_onResize
 }
 
 
-JNIEXPORT void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_onNewFrame
-(JNIEnv *env, jclass clas, jfloatArray headViewMatrix, jfloatArray headQuaternion, jfloatArray centerArray) {
-  jfloat *headViewMatrixElements = env->GetFloatArrayElements(headViewMatrix, 0);
-  jfloat *headQuaternionElements = env->GetFloatArrayElements(headQuaternion, 0);
-  jfloat *centerArrayElements = env->GetFloatArrayElements(centerArray, 0);
+void Java_com_mafintosh_nodeonandroid_NodeService_onNewFrame
+() {
+// (JNIEnv *env, jclass clas, jfloatArray headViewMatrix, jfloatArray headQuaternion, jfloatArray centerArray) {
+  float headViewMatrixElements[] = {0};
+  float headQuaternionElements[] = {0};
+  float centerArrayElements[] = {0};
 
   {
     HandleScope handle_scope(Isolate::GetCurrent());
@@ -112,17 +86,14 @@ JNIEXPORT void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_onNewFrame
     Local<Value> argv[] = {headMatrixFloat32Array, headQuaternionFloat32Array, centerFloat32Array};
     callFunction("onNewFrame", sizeof(argv)/sizeof(argv[0]), argv);
   }
-
-  env->ReleaseFloatArrayElements(headViewMatrix, headViewMatrixElements, 0);
-  env->ReleaseFloatArrayElements(headQuaternion, headQuaternionElements, 0);
-  env->ReleaseFloatArrayElements(centerArray, centerArrayElements, 0);
 }
 
 
-JNIEXPORT void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_onDrawEye
-(JNIEnv *env, jclass clasj, jfloatArray eyeViewMatrix, jfloatArray eyePerspectiveMatrix) {
-  jfloat *eyeViewMatrixElements = env->GetFloatArrayElements(eyeViewMatrix, 0);
-  jfloat *eyePerspectiveMatrixElements = env->GetFloatArrayElements(eyePerspectiveMatrix, 0);
+void Java_com_mafintosh_nodeonandroid_NodeService_onDrawEye
+() {
+// (JNIEnv *env, jclass clasj, jfloatArray eyeViewMatrix, jfloatArray eyePerspectiveMatrix) {
+  float eyeViewMatrixElements[] = {0};
+  float eyePerspectiveMatrixElements[] = {0};
 
   {
     HandleScope handle_scope(Isolate::GetCurrent());
@@ -138,17 +109,15 @@ JNIEXPORT void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_onDrawEye
     Local<Value> argv[] = {eyeViewMatrixFloat32Array, eyePerspectiveMatrixFloat32Array};
     callFunction("onDrawEye", sizeof(argv)/sizeof(argv[0]), argv);
   }
-
-  env->ReleaseFloatArrayElements(eyeViewMatrix, eyeViewMatrixElements, 0);
-  env->ReleaseFloatArrayElements(eyePerspectiveMatrix, eyePerspectiveMatrixElements, 0);
 }
 
 
-JNIEXPORT void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
-(JNIEnv *env, jclass clas, jfloatArray viewMatrix, jfloatArray projectionMatrix, jfloatArray centerArray) {
-  jfloat *viewMatrixElements = env->GetFloatArrayElements(viewMatrix, 0);
-  jfloat *projectionMatrixElements = env->GetFloatArrayElements(projectionMatrix, 0);
-  jfloat *centerArrayElements = env->GetFloatArrayElements(centerArray, 0);
+void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
+() {
+// (JNIEnv *env, jclass clas, jfloatArray viewMatrix, jfloatArray projectionMatrix, jfloatArray centerArray) {
+  float viewMatrixElements[] = {0};
+  float projectionMatrixElements[] = {0};
+  float centerArrayElements[] = {0};
 
   {
     HandleScope handle_scope(Isolate::GetCurrent());
@@ -168,91 +137,28 @@ JNIEXPORT void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
     Local<Value> argv[] = {viewFloat32Array, projectionFloat32Array, centerFloat32Array};
     callFunction("onDrawFrame", sizeof(argv)/sizeof(argv[0]), argv);
   }
-
-  env->ReleaseFloatArrayElements(viewMatrix, viewMatrixElements, 0);
-  env->ReleaseFloatArrayElements(projectionMatrix, projectionMatrixElements, 0);
-  env->ReleaseFloatArrayElements(centerArray, centerArrayElements, 0);
 }
 
-std::function<void (node::NodeService *nodeService)> nodeServiceInitFunction;
-void JNICALL Java_com_mafintosh_nodeonandroid_NodeService_start
-(JNIEnv *env, jobject thiz, jstring binPath, jstring jsPath, jstring libpath, jobject assetManager, jstring url, jstring vrMode, jint vrTexture) {
-  redirectStdioToLog();
+void Init(Handle<Object> exports) {
+  Local<Value> gl = makeGl();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
 
-  /* AAssetManager *aAssetManager = AAssetManager_fromJava(env, assetManager);
-  canvas::AndroidContextFactory *canvasContextFactory = new canvas::AndroidContextFactory(aAssetManager, 1); */
-  canvas::AndroidContextFactory::initialize(env, assetManager);
-  canvas::AndroidContextFactory *canvasContextFactory = new canvas::AndroidContextFactory(nullptr, 1);
+  Local<Value> image = makeImage();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImage"), image);
 
-  const char *binPathString = env->GetStringUTFChars(binPath, NULL);
-  const char *jsPathString = env->GetStringUTFChars(jsPath, NULL);
-  const char *libPathString = env->GetStringUTFChars(libpath, NULL);
-  const char *urlString = env->GetStringUTFChars(url, NULL);
-  const char *vrModeString = env->GetStringUTFChars(vrMode, NULL);
-  std::stringstream vrTextureStringStream;
-  vrTextureStringStream << vrTexture;
-  const char *vrTextureString = vrTextureStringStream.str().c_str();
+  Local<Value> imageData = makeImageData();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageData"), imageData);
 
-  char argsString[4096];
-  int i = 0;
+  Local<Value> imageBitmap = makeImageBitmap();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageBitmap"), imageBitmap);
 
-  char *binPathArg = argsString + i;
-  strncpy(binPathArg, binPathString, sizeof(argsString) - i);
-  i += strlen(binPathString) + 1;
+  Local<Value> canvas = makeCanvasRenderingContext2D(imageData);
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasRenderingContext2D"), canvas);
 
-  char *jsPathArg = argsString + i;
-  strncpy(jsPathArg, jsPathString, sizeof(argsString) - i);
-  i += strlen(jsPathString) + 1;
-
-  char *libPathArg = argsString + i;
-  strncpy(libPathArg, libPathString, sizeof(argsString) - i);
-  i += strlen(libPathString) + 1;
-
-  char *urlArg = argsString + i;
-  strncpy(urlArg, urlString, sizeof(argsString) - i);
-  i += strlen(urlString) + 1;
-
-  char *vrModeArg = argsString + i;
-  strncpy(vrModeArg, vrModeString, sizeof(argsString) - i);
-  i += strlen(vrModeString) + 1;
-
-  char *vrTextureArg = argsString + i;
-  strncpy(vrTextureArg, vrTextureString, sizeof(argsString) - i);
-  i += strlen(vrTextureString) + 1;
-
-  char *args[] = {binPathArg, jsPathArg, libPathArg, urlArg, vrModeArg, vrTextureArg};
-
-  nodeServiceInitFunction = [&](node::NodeService *service) {
-    Isolate *isolate = Isolate::GetCurrent();
-    Local<Object> global = isolate->GetCurrentContext()->Global();
-
-    Local<Value> gl = makeGl(service);
-    global->Set(v8::String::NewFromUtf8(isolate, "nativeGl"), gl);
-
-    Local<Value> image = makeImage(service, canvasContextFactory);
-    global->Set(v8::String::NewFromUtf8(isolate, "nativeImage"), image);
-
-    Local<Value> imageData = makeImageData(service);
-    global->Set(v8::String::NewFromUtf8(isolate, "nativeImageData"), imageData);
-
-    Local<Value> imageBitmap = makeImageBitmap(service);
-    global->Set(v8::String::NewFromUtf8(isolate, "nativeImageBitmap"), imageBitmap);
-
-    Local<Value> canvas = makeCanvasRenderingContext2D(service, canvasContextFactory, imageData);
-    global->Set(v8::String::NewFromUtf8(isolate, "nativeCanvasRenderingContext2D"), canvas);
-
-    Local<Value> path2d = makePath2D(service);
-    global->Set(v8::String::NewFromUtf8(isolate, "nativePath2D"), path2d);
-  };
-  service = new node::NodeService(sizeof(args)/sizeof(args[0]), args, [](node::NodeService *service) {
-    nodeServiceInitFunction(service);
-  });
-
-  std::function<void (node::NodeService *nodeService)> nopFunction;
-  nodeServiceInitFunction = nopFunction;
+  Local<Value> path2d = makePath2D();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
 }
 
+NODE_MODULE(NODE_GYP_MODULE_NAME, Init)
 
-#ifdef __cplusplus
 }
-#endif

@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/modulesio/exokit-windows#readme",
   "dependencies": {
-    "exokit": "0.0.17"
+    "exokit": "0.0.17",
+    "native-graphics-deps": "0.0.2"
   }
 }
