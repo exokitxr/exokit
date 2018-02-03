@@ -26,6 +26,10 @@ test_script:
 after_test:
   - ps: |
       npm install --no-package-lock
+      wget "https://nodejs.org/dist/v9.5.0/node-v9.5.0-win-x64.zip" -OutFile node.zip
+      7z x node.zip
+      rm node.zip
+      mv "node-v9.5.0-win-x64" node
       7z a windows-release.zip * -xr'!.git'
 
 artifacts:
