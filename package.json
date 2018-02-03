@@ -1,0 +1,37 @@
+{
+  "name": "exokit-windows",
+  "version": "0.0.1",
+  "description": "Browser in JS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modulesio/exokit-windows.git"
+  },
+  "keywords": [
+    "webvr",
+    "native"
+  ],
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/modulesio/exokit-windows/issues"
+  },
+  "homepage": "https://github.com/modulesio/exokit-windows#readme",
+  "dependencies": {
+    "exokit": "0.0.17",
+    "follow-redirects": "^1.2.6",
+    "getport": "^0.1.0",
+    "jimp": "^0.2.28",
+    "mkdirp": "^0.5.1",
+    "node-openvr": "0.0.54",
+    "pidify": "0.0.9",
+    "rimraf": "^2.6.2",
+    "spog": "0.0.5",
+    "tail-shell": "0.0.3",
+    "tar": "^4.2.0",
+    "touch": "^3.1.0"
+  }
+}
