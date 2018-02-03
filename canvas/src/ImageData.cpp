@@ -1,10 +1,13 @@
 #include <ImageData.h>
 
 #include <vector>
+#include <algorithm>
 #include <cassert>
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
+
+#define M_PI 3.14159265358979323846
 
 using namespace std;
 using namespace canvas;
