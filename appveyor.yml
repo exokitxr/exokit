@@ -8,7 +8,7 @@ branches:
 
 # Test against the latest version of this Node.js version
 environment:
-  nodejs_version: "9.5.0"
+  nodejs_version: "9"
 
 # Install scripts. (runs after repo cloning)
 install:
