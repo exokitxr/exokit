@@ -1,8 +1,8 @@
-# Exokit: JS web browser
+# Exokit: Javascript web site emulator
 
 Or, run a web site as a program.
 
-**Exokit** is an HTML5 web browser, as a node.js module. Think JSDOM, except for running sites instead of parsing DOM. Think Chromium, except 300kb. Or think Electron, except edit-and-run instead of try-to-compile-and-give-up.
+**Exokit** is an HTML5 web browser, as a node.js module. Think JSDOM, except for running web sites instead of parsing DOM. Chromium, except 300kb. Electron, except instant run. Or, a video game emulator that runs web sites.
 
 ```
 exokit https://example.com
