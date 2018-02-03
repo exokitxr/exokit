@@ -26,6 +26,9 @@ test_script:
 after_test:
   - ps: |
       npm install --no-package-lock
+      mkdir deps
+      git clone https://github.com/glfw/glfw.git deps/glfw
+      cmake deps/glfw
       wget "https://nodejs.org/dist/v9.5.0/node-v9.5.0-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
