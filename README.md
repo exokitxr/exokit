@@ -48,9 +48,9 @@ What Exokit *cannot* do:
 
 The web is imporant. The most important part of the web is that it's open. The web is not open if you need to be a genius to build a web browser.
 
-Despite browsers being nominally open source, development is restricted to the interests of a small number of browser vendors because the code is impenetrable.
+Despite modern browsers being nominally open source, their code is impenetrable. You've probably never compiled a web browser, and almost certainly never added things. Despite the amount of time you spend in a browser.
 
-As the web transitions from 2D documents to WASM-powered multimedia, we can do better.
+With Exokit, anyone can write some Javascript to control their experience of the web.
 
 #### Platform support?
 
