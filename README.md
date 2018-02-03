@@ -12,7 +12,7 @@ Exokit can do everything a browser can do -- _except render HTML_.
 
 Exokit can't render HTML, but it _can_ draw Canvas and WebGL -- natively, and fast -- as well as take keyboard/mouse/mixed reality input with the regular APIs. It's a browser for the post-(2D) world.
 
-Think JSDOM, except it _runs_ the DOM in a `window`. Or think Electron, except 300k and runs instantly. Or, think an emulator for running web sites.
+Think JSDOM, except it _actually runs_ the DOM in a `window`. Or think Electron, except 300k and no compile step. Or, think an emulator for running web sites.
 
 The multipmedia parts (e.g. WebGL) are pluggable native modules. Everything else is Javascript. It's pretty easy to experiment and add new Web APIs.
 
