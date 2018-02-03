@@ -1,14 +1,14 @@
-#ifndef PATH2D_H_
-#define PATH2D_H_
+#ifndef _CANVASCONTEXT_PATH2D_H_
+#define _CANVASCONTEXT_PATH2D_H_
 
 #include <v8.h>
 #include <nan/nan.h>
 #include <defines.h>
-#include <Context.h>
-#include <Image.h>
-#include <ImageData.h>
-#include <Point.h>
-#include <Path2D.h>
+#include <canvas/include/Context.h>
+#include <canvas/include/Image.h>
+#include <canvas/include/ImageData.h>
+#include <canvas/include/Point.h>
+#include <canvas/include/Path2D.h>
 
 using namespace v8;
 using namespace node;

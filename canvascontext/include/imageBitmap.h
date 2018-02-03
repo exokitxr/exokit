@@ -1,11 +1,11 @@
-#ifndef IMAGEBITMAP_H_
-#define IMAGEBITMAP_H_
+#ifndef _CANVASCONTEXT_IMAGEBITMAP_H_
+#define _CANVASCONTEXT_IMAGEBITMAP_H_
 
 #include <v8.h>
 #include <nan/nan.h>
 #include <defines.h>
-#include <Context.h>
-#include <ImageData.h>
+#include <canvas/include/Context.h>
+#include <canvas/include/ImageData.h>
 
 using namespace v8;
 using namespace node;

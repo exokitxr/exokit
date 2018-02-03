@@ -1,12 +1,12 @@
-#ifndef CANVAS_H_
-#define CANVAS_H_
+#ifndef _CANVASCONTEXT_CANVAS_H_
+#define _CANVASCONTEXT_CANVAS_H_
 
 #include <v8.h>
 #include <nan/nan.h>
 #include <defines.h>
-#include <ContextAndroid.h>
-#include <Image.h>
-#include <ImageData.h>
+#include <canvas/include/ContextAndroid.h>
+#include <canvas/include/Image.h>
+#include <canvas/include/ImageData.h>
 
 using namespace v8;
 using namespace node;

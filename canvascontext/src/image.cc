@@ -1,7 +1,7 @@
-#include "image.h"
+#include <canvascontext/include/image.h>
 
 using namespace v8;
-using namespace node;
+// using namespace node;
 // using namespace std;
 
 // Persistent<Function> Image::constructor_template;

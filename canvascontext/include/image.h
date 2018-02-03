@@ -1,12 +1,12 @@
-#ifndef IMAGE_H_
-#define IMAGE_H_
+#ifndef _CANVASCONTEXT_IMAGE_H_
+#define _CANVASCONTEXT_IMAGE_H_
 
 #include <v8.h>
 #include <nan/nan.h>
 #include <defines.h>
-#include <Context.h>
-#include <Image.h>
-#include <ImageData.h>
+#include <canvas/include/Context.h>
+#include <canvas/include/Image.h>
+#include <canvas/include/ImageData.h>
 
 using namespace v8;
 using namespace node;
