@@ -41,6 +41,7 @@ const ImageData = (() => {
   if (typeof nativeImageData !== 'undefined') {
     return nativeImageData;
   } else {
+    throw new Error('fail to bind native image data class'); // XXX
     return class ImageData {
       constructor(width, height) {
         this.width = width;
@@ -54,6 +55,7 @@ const ImageBitmap = (() => {
   if (typeof nativeImageBitmap !== 'undefined') {
     return nativeImageBitmap;
   } else {
+    throw new Error('fail to bind native image bitmap class'); // XXX
     class ImageBitmap {
       constructor(image) {
         this.width = image.width;
@@ -68,6 +70,7 @@ const Path2D = (() => {
   if (typeof nativePath2D !== 'undefined') {
     return nativePath2D;
   } else {
+    throw new Error('fail to bind native path 2d class'); // XXX
     return class Path2D {
       moveTo() {}
       lineTo() {}
@@ -79,6 +82,7 @@ const CanvasRenderingContext2D = (() => {
   if (typeof nativeCanvasRenderingContext2D !== 'undefined') {
     return nativeCanvasRenderingContext2D;
   } else {
+    throw new Error('fail to bind native canvas rendering context 2d class'); // XXX
     return class CanvasRenderingContext2D {
       drawImage() {}
       fillRect() {}
@@ -101,7 +105,29 @@ const CanvasRenderingContext2D = (() => {
 })();
 const WebGLContext = (() => {
   if (typeof nativeGl !== 'undefined') {
-    return nativeGl;
+    console.log('make gl proxy'); // XXX
+
+    // return nativeGl;
+    return function WebGLContext() {
+      return new Proxy(new nativeGl(), {
+        get(target, propKey, receiver) {
+          const orig = target[propKey];
+          if (typeof orig === 'function') {
+            return function(a, b, c, d, e, f) {
+              console.log('gl proxy method ' + propKey);
+              /* if (propKey === 'enableVertexAttribArray') {
+                console.log('gl proxy ' + propKey + ' ' + a);
+              } else if (propKey === 'disableVertexAttribArray') {
+                console.log('gl proxy ' + propKey + ' ' + a);
+              } */
+              return orig.apply(target, arguments);
+            };
+          } else {
+            return orig;
+          }
+        }
+      });
+    };
   } else {
     const VERSION = Symbol();
     return class WebGLContext {
@@ -752,6 +778,8 @@ const HTMLImageElement = (() => {
         this.attributes = attributes;
         this.value = value;
 
+        this.stack = new Error().stack;
+
         this._src = '';
       }
 
@@ -785,7 +813,7 @@ const HTMLImageElement = (() => {
             if (res.status >= 200 && res.status < 300) {
               return res.arrayBuffer();
             } else {
-              return Promise.reject(new Error('img src got invalid status code: ' + res.status + ' : ' + url));
+              return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
             }
           })
           .then(arrayBuffer => {
@@ -793,7 +821,7 @@ const HTMLImageElement = (() => {
               return Promise.resolve();
             } else {
               console.warn('failed to decode image src', srcError.stack);
-              return Promise.reject(new Error('failed to decode image'));
+              return Promise.reject(new Error(`failed to decode image (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
             }
           })
           .then(() => {
@@ -836,6 +864,8 @@ const HTMLImageElement = (() => {
     return class HTMLImageElement extends HTMLMediaElement {
       constructor() {
         super('image');
+
+        this.stack = new Error().stack;
 
         this.on('attribute', (name, value) => {
           if (name === 'src') {
@@ -955,8 +985,10 @@ class HTMLCanvasElement extends HTMLElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'width') {
+        // console.log('gl canvas set width', this.width, this.height, this._context && this._context.resize, new Error().stack);
         this._context && this._context.resize && this._context.resize(this.width, this.height);
       } else if (name === 'height') {
+        // console.log('gl canvas set height', this.width, this.height, this._context && this._context.resize, new Error().stack);
         this._context && this._context.resize && this._context.resize(this.width, this.height);
       }
     });
@@ -981,6 +1013,8 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get data() {
+    // console.log('get canvas data 1'); // XXX
+    // console.log('get canvas data 2', Boolean(this._context), Boolean(this._context && this._context.data));
     return (this._context && this._context.data) || null;
   }
   set data(data) {}
@@ -988,8 +1022,12 @@ class HTMLCanvasElement extends HTMLElement {
   getContext(contextType) {
     if (this._context === null) {
       if (contextType === '2d') {
+        if (!this.width || !this.height) {
+          console.log('gl context 2d bad', this.width, this.height, new Error().stack); // XXX
+        }
         this._context = new CanvasRenderingContext2D(this.width, this.height);
       } else if (contextType === 'webgl') {
+        console.log('gl context webgl');
         this._context = new WebGLContext();
       }
     }
@@ -1281,6 +1319,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.tickAnimationFrame = () => {
     const localRafCbs = rafCbs.slice();
+    // console.log('tick animation frames', localRafCbs.length); // XXX
     rafCbs.length = 0;
     for (let i = 0; i < localRafCbs.length; i++) {
       localRafCbs[i]();
