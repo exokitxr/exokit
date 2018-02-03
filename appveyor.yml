@@ -25,6 +25,7 @@ test_script:
 
 after_test:
   - ps: |
+      git submodule update --init --recursive
       npm install --no-package-lock
       cd deps/glfw
       cmake .
