@@ -15,7 +15,7 @@ class CanvasRenderingContext2D;
 
 class Image : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, canvas::ContextFactory *canvasContextFactory);
+  static Handle<Object> Initialize(Isolate *isolate);
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();
@@ -33,8 +33,6 @@ protected:
   virtual ~Image();
 
 private:
-  static canvas::ContextFactory *canvasContextFactory;
-
   canvas::Image *image;
 
   friend class CanvasRenderingContext2D;

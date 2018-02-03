@@ -636,8 +636,8 @@ NAN_METHOD(newGl) {
   info.GetReturnValue().Set(info.This());
 }
 
-Local<Object> makeGl(node::NodeService *service) {
-  Isolate *isolate = service->GetIsolate();
+Local<Object> makeGl() {
+  Isolate *isolate = Isolate::GetCurrent();
 
   v8::EscapableHandleScope scope(isolate);
 
@@ -651,40 +651,40 @@ Local<Object> makeGl(node::NodeService *service) {
   return scope.Escape(ctor->GetFunction());
 }
 
-Local<Object> makeImage(node::NodeService *service, canvas::ContextFactory *canvasContextFactory) {
-  Isolate *isolate = service->GetIsolate();
+Local<Object> makeImage() {
+  Isolate *isolate = Isolate::GetCurrent();
 
   v8::EscapableHandleScope scope(isolate);
 
-  return scope.Escape(Image::Initialize(isolate, canvasContextFactory));
+  return scope.Escape(Image::Initialize(isolate));
 }
 
-Local<Object> makeImageData(node::NodeService *service) {
-  Isolate *isolate = service->GetIsolate();
+Local<Object> makeImageData() {
+  Isolate *isolate = Isolate::GetCurrent();
 
   v8::EscapableHandleScope scope(isolate);
 
   return scope.Escape(ImageData::Initialize(isolate));
 }
 
-Local<Object> makeImageBitmap(node::NodeService *service) {
-  Isolate *isolate = service->GetIsolate();
+Local<Object> makeImageBitmap() {
+  Isolate *isolate = Isolate::GetCurrent();
 
   v8::EscapableHandleScope scope(isolate);
 
   return scope.Escape(ImageBitmap::Initialize(isolate));
 }
 
-Local<Object> makeCanvasRenderingContext2D(node::NodeService *service, canvas::ContextFactory *canvasContextFactory, Local<Value> imageDataCons) {
-  Isolate *isolate = service->GetIsolate();
+Local<Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons) {
+  Isolate *isolate = Isolate::GetCurrent();
 
   v8::EscapableHandleScope scope(isolate);
 
-  return scope.Escape(CanvasRenderingContext2D::Initialize(isolate, canvasContextFactory, imageDataCons));
+  return scope.Escape(CanvasRenderingContext2D::Initialize(isolate, imageDataCons));
 }
 
-Local<Object> makePath2D(node::NodeService *service) {
-  Isolate *isolate = service->GetIsolate();
+Local<Object> makePath2D() {
+  Isolate *isolate = Isolate::GetCurrent();
 
   v8::EscapableHandleScope scope(isolate);
 

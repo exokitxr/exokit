@@ -4,9 +4,7 @@ using namespace v8;
 using namespace node;
 // using namespace std;
 
-canvas::ContextFactory *CanvasRenderingContext2D::canvasContextFactory;
-
-Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, canvas::ContextFactory *canvasContextFactory, Local<Value> imageDataCons) {
+Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons) {
   v8::EscapableHandleScope scope(isolate);
 
   // constructor
@@ -60,8 +58,6 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, canvas::Co
 
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
-
-  CanvasRenderingContext2D::canvasContextFactory = canvasContextFactory;
 
   return scope.Escape(ctorFn);
 }
@@ -802,8 +798,13 @@ NAN_METHOD(CanvasRenderingContext2D::Restore) {
 }
 
 CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
-  context = CanvasRenderingContext2D::canvasContextFactory->createContext(width, height).release();
+  context = CanvasRenderingContext2D::canvasContextFactory->createContext(width, height, 4).release();
 }
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {
   delete context;
+}
+
+canvas::ContextFactory *CanvasRenderingContext2D::canvasContextFactory;
+void CanvasRenderingContext2D::InitalizeStatic(canvas::ContextFactory *newCanvasContextFactory) {
+  CanvasRenderingContext2D::canvasContextFactory = newCanvasContextFactory;
 }
