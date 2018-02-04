@@ -36,6 +36,7 @@
         'opengl32.lib',
         'glew32.lib',
         'glfw3dll.lib',
+        'gdiplus.lib',
       ],
       'msvs_settings' : {
         'VCCLCompilerTool' : {
