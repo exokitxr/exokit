@@ -3,8 +3,7 @@
 // #include <iostream>
 
 #include <webglcontext/include/webgl.h>
-#include <node.h>
-#include <defines.h>
+// #include <node.h>
 
 /* #include <android/sensor.h>
 #include <android/log.h>
@@ -18,7 +17,7 @@
 
 namespace webgl {
 
-using namespace node;
+// using namespace node;
 using namespace v8;
 using namespace std;
 

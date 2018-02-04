@@ -1,5 +1,5 @@
-#ifndef BINDINGS_H_
-#define BINDINGS_H_
+#ifndef _EXOKIT_BINDINGS_H_
+#define _EXOKIT_BINDINGS_H_
 
 #include <v8.h>
 #include <node.h>

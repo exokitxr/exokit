@@ -20,7 +20,9 @@
 #include <GLES2/gl2ext.h>
 #endif
 
-using namespace node;
+#include <defines.h>
+
+// using namespace node;
 using namespace v8;
 
 namespace webgl {
