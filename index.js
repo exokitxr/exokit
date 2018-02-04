@@ -259,6 +259,10 @@ class MRDisplay {
   requestPresent(sources) {
     this.isPresenting = true;
 
+    if (typeof nativeVr !== 'undefined') {
+      nativeVr.requestPresent(sources);
+    }
+
     process.nextTick(() => {
       this[windowSymbol].emit('vrdisplaypresentchange');
     });
@@ -268,6 +272,10 @@ class MRDisplay {
 
   exitPresent() {
     this.isPresenting = false;
+
+    if (typeof nativeVr !== 'undefined') {
+      nativeVr.exitPresent();
+    }
 
     process.nextTick(() => {
       this[windowSymbol].emit('vrdisplaypresentchange');
