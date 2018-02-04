@@ -257,31 +257,21 @@ class MRDisplay {
   }
 
   requestPresent(sources) {
-    this.isPresenting = true;
+    return (typeof nativeVr !== 'undefined' ? nativeVr.requestPresent(sources) : Promise.resolve())
+      .then(() => {
+        this.isPresenting = true;
 
-    if (typeof nativeVr !== 'undefined') {
-      nativeVr.requestPresent(sources);
-    }
-
-    process.nextTick(() => {
-      this[windowSymbol].emit('vrdisplaypresentchange');
-    });
-
-    return Promise.resolve();
+        this[windowSymbol].emit('vrdisplaypresentchange');
+      });
   }
 
   exitPresent() {
-    this.isPresenting = false;
+    return (typeof nativeVr !== 'undefined' ? nativeVr.exitPresent(sources) : Promise.resolve())
+      .then(() => {
+        this.isPresenting = false;
 
-    if (typeof nativeVr !== 'undefined') {
-      nativeVr.exitPresent();
-    }
-
-    process.nextTick(() => {
-      this[windowSymbol].emit('vrdisplaypresentchange');
-    });
-
-    return Promise.resolve();
+        this[windowSymbol].emit('vrdisplaypresentchange');
+      });
   }
 
   requestAnimationFrame(fn) {
