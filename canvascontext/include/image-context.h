@@ -34,6 +34,7 @@ protected:
 
 private:
   canvas::Image *image;
+  Persistent<Uint8ClampedArray> dataArray;
 
   friend class CanvasRenderingContext2D;
   friend class ImageData;

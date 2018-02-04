@@ -57,8 +57,12 @@ namespace canvas {
     
     static size_t calculateSize(unsigned short width, unsigned short height, unsigned short num_channels) { return width * height * num_channels; }
     size_t calculateSize() const { return calculateSize(width, height, num_channels); }
-    
+
+    static bool getFlip() { return ImageData::flip; }
+    static void setFlip(bool newFlip) { ImageData::flip = newFlip; }
   private:
+    static bool flip;
+
     unsigned short width, height, num_channels;
     std::unique_ptr<unsigned char[]> data;
   };

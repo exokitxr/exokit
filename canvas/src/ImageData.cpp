@@ -12,6 +12,8 @@
 using namespace std;
 using namespace canvas;
 
+bool ImageData::flip = false;
+
 std::unique_ptr<ImageData>
 ImageData::crop(int x, int y, unsigned short w, unsigned short h) const {
   const unsigned short fullWidth = getWidth();

@@ -81,12 +81,17 @@ NAN_GETTER(ImageBitmap::DataGetter) {
   Nan::HandleScope scope;
 
   ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(info.This());
-  unsigned int width = imageBitmap->GetWidth();
-  unsigned int height = imageBitmap->GetHeight();
-  Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageBitmap->GetData(), width * height * 4);
-  Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
 
-  info.GetReturnValue().Set(uint8ClampedArray);
+  if (imageBitmap->dataArray.IsEmpty()) {
+    unsigned int width = imageBitmap->GetWidth();
+    unsigned int height = imageBitmap->GetHeight();
+    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageBitmap->GetData(), width * height * 4);
+
+    Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+    imageBitmap->dataArray.Reset(Isolate::GetCurrent(), uint8ClampedArray);
+  }
+
+  info.GetReturnValue().Set(Nan::New(imageBitmap->dataArray));
 }
 
 NAN_METHOD(ImageBitmap::CreateImageBitmap) {

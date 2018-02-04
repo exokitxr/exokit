@@ -3,6 +3,7 @@
 // #include <iostream>
 
 #include <webglcontext/include/webgl.h>
+#include <canvascontext/include/imageData-context.h>
 // #include <node.h>
 
 /* #include <android/sensor.h>
@@ -42,14 +43,18 @@ static GLuint ToGLuint(const void* ptr) {
 template<typename Type>
 inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
   Type *data=NULL;
-  if (num) *num=0;
+  if (num) {
+    *num = 0;
+  }
 
   if (!arg->IsNull()) {
     if (arg->IsArray()) {
       Nan::ThrowError("Not support array type");
     } else if (arg->IsObject()) {
       Local<ArrayBufferView> arr = Local<ArrayBufferView>::Cast(arg);
-      if (num) *num=arr->ByteLength()/sizeof(Type);
+      if (num) {
+        *num = arr->ByteLength()/sizeof(Type);
+      }
       data = reinterpret_cast<Type*>((char *)arr->Buffer()->GetContents().Data() + arr->ByteOffset());
     } else {
       Nan::ThrowError("Bad array argument");
@@ -59,19 +64,18 @@ inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
   return data;
 }
 
-inline void *getImageData(Local<Value> arg, int *num = NULL) {
-  Isolate *isolate = Isolate::GetCurrent();
+inline void *getImageData(Local<Value> arg, int *num = nullptr) {
+  void *pixels = nullptr;
 
-  void *pixels = NULL;
   if (!arg->IsNull()) {
     Local<Object> obj = Local<Object>::Cast(arg);
     if (obj->IsObject()) {
       if (obj->IsArrayBufferView()) {
         pixels = getArrayData<unsigned char>(obj, num);
       } else {
-        Local<String> dataString = String::NewFromUtf8(isolate, "data", NewStringType::kInternalized).ToLocalChecked();
-        Local<Value> data = obj->Get(dataString);
-        if (data->BooleanValue()) {
+        Local<String> dataString = String::NewFromUtf8(Isolate::GetCurrent(), "data", NewStringType::kInternalized).ToLocalChecked();
+        if (obj->Has(dataString)) {
+          Local<Value> data = obj->Get(dataString);
           pixels = getArrayData<unsigned char>(data, num);
         } else {
           Nan::ThrowError("Bad texture argument");
@@ -83,6 +87,14 @@ inline void *getImageData(Local<Value> arg, int *num = NULL) {
     }
   }
   return pixels;
+}
+
+inline void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t numChannels) {
+  size_t stride = width * numChannels;
+  size_t size = width * height * numChannels;
+  for (size_t i = 0; i < height; i++) {
+    memcpy(dstData + (i * stride), srcData + size - stride - (i * stride), stride);
+  }
 }
 
 /* NAN_METHOD(Init) {
@@ -909,12 +921,17 @@ NAN_METHOD(TexImage2D) {
   int borderV = border->Int32Value();
   int formatV = format->Int32Value();
   int typeV = type->Int32Value();
-  int num;
-  char *pixelsV = (char *)getImageData(pixels, &num);
+  // int num;
+  char *pixelsV = (char *)getImageData(pixels);
 
-  glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV);
+  if (canvas::ImageData::getFlip()) {
+    unique_ptr<char[]> pixelsV2(new char[widthV * heightV * 4]);
+    flipImageData(pixelsV2.get(), pixelsV, widthV, heightV, 4);
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2.get());
+  } else {
+    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV);
+  }
 }
 
 
@@ -1828,8 +1845,17 @@ NAN_METHOD(TexSubImage2D) {
   GLsizei height = info[5]->Int32Value();
   GLenum format = info[6]->Int32Value();
   GLenum type = info[7]->Int32Value();
-  int num;
-  char *pixels = (char*)getImageData(info[8], &num);
+  // int num;
+  char *pixels = (char *)getImageData(info[8]);
+
+  if (canvas::ImageData::getFlip()) {
+    unique_ptr<char[]> pixels2(new char[width * height * 4]);
+    flipImageData(pixels2.get(), pixels, width, height, 4);
+
+    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels2.get());
+  } else {
+    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+  }
 
   /* if (pixels != nullptr) {
     int elementSize = num / width / height;
@@ -1837,9 +1863,6 @@ NAN_METHOD(TexSubImage2D) {
       memcpy(&(texPixels[(height - 1 - y) * width * elementSize]), &pixels[y * width * elementSize], width * elementSize);
     }
   } */
-  glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(ReadPixels) {

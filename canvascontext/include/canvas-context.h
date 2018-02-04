@@ -102,6 +102,7 @@ public:
 
 private:
   static canvas::ContextFactory *canvasContextFactory;
+  Persistent<Uint8ClampedArray> dataArray;
 
   canvas::Context *context;
 

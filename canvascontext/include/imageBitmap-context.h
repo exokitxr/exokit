@@ -33,6 +33,7 @@ protected:
 
 private:
   canvas::ImageData *imageData;
+  Persistent<Uint8ClampedArray> dataArray;
 
   friend class CanvasRenderingContext2D;
 };

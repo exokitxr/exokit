@@ -225,25 +225,28 @@ NAN_GETTER(CanvasRenderingContext2D::DataGetter) {
   Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  canvas::Surface &surface = context->context->getDefaultSurface();
-  // std::unique_ptr<canvas::Image> img(surface.createImage(1));
 
-  unsigned int width = context->GetWidth();
-  unsigned int height = context->GetHeight();
-  unsigned int numChannels = context->GetNumChannels();
-  if (numChannels == 4) {
-    unsigned char *data = (unsigned char *)surface.lockMemory(false);
+  if (context->dataArray.IsEmpty()) {
+    unsigned int width = context->GetWidth();
+    unsigned int height = context->GetHeight();
+    unsigned int numChannels = context->GetNumChannels();
+    if (numChannels == 4) {
+      canvas::Surface &surface = context->context->getDefaultSurface();
+      unsigned char *data = (unsigned char *)surface.lockMemory(false);
 
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4);
-    memcpy(arrayBuffer->GetContents().Data(), data, arrayBuffer->ByteLength());
-    Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4);
+      memcpy(arrayBuffer->GetContents().Data(), data, arrayBuffer->ByteLength());
 
-    surface.releaseMemory();
+      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+      context->dataArray.Reset(Isolate::GetCurrent(), uint8ClampedArray);
 
-    info.GetReturnValue().Set(uint8ClampedArray);
-  } else {
-    Nan::ThrowError("CanvasRenderingContext2D invalid number of channels");
+      surface.releaseMemory();
+    } else {
+      return Nan::ThrowError("CanvasRenderingContext2D invalid number of channels");
+    }
   }
+
+  info.GetReturnValue().Set(Nan::New(context->dataArray));
 }
 
 NAN_GETTER(CanvasRenderingContext2D::LineWidthGetter) {

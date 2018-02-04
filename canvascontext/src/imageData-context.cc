@@ -74,12 +74,17 @@ NAN_GETTER(ImageData::DataGetter) {
   Nan::HandleScope scope;
 
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(info.This());
-  unsigned int width = imageData->GetWidth();
-  unsigned int height = imageData->GetHeight();
-  Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageData->GetData(), width * height * 4);
-  Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
 
-  info.GetReturnValue().Set(uint8ClampedArray);
+  if (imageData->dataArray.IsEmpty()) {
+    unsigned int width = imageData->GetWidth();
+    unsigned int height = imageData->GetHeight();
+    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageData->GetData(), width * height * 4);
+
+    Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+    imageData->dataArray.Reset(Isolate::GetCurrent(), uint8ClampedArray);
+  }
+
+  info.GetReturnValue().Set(Nan::New(imageData->dataArray));
 }
 
 ImageData::ImageData(unsigned int width, unsigned int height) {
