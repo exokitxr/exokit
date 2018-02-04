@@ -1188,6 +1188,20 @@ NAN_METHOD(Submit) {
   glfwSwapBuffers(windowHandle);
 }
 
+NAN_METHOD(SetCursorMode) {
+  if (info[0]->BooleanValue()) {
+    glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  } else {
+    glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  }
+}
+
+NAN_METHOD(SetCursorPosition) {
+  int x = info[0]->Int32Value();
+  int y = info[1]->Int32Value();
+  glfwSetCursorPos(windowHandle, x, y);
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1567,6 +1581,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "create", glfw::Create);
   Nan::SetMethod(target, "update", glfw::Update);
   Nan::SetMethod(target, "submit", glfw::Submit);
+  Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
+  Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
   target->Set(JS_STR("events"), events);
   
   return scope.Escape(target);
