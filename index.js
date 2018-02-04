@@ -611,6 +611,11 @@ class HTMLElement extends Node {
 
     if (document.pointerLockElement === null) {
       document.pointerLockElement = this;
+
+      if (typeof nativeWindow !== 'undefined') {
+        nativeWindow.setCursorMode(false);
+      }
+
       document.emit('pointerlockchange');
     }
   }
@@ -619,6 +624,11 @@ class HTMLElement extends Node {
 
     if (document.pointerLockElement !== null) {
       document.pointerLockElement = null;
+
+      if (typeof nativeWindow !== 'undefined') {
+        nativeWindow.setCursorMode(true);
+      }
+
       document.emit('pointerlockchange');
     }
   }
