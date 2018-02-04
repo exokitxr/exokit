@@ -126,7 +126,7 @@ const FPS = 90;
 if (require.main === module) {
   const url = process.argv[2];
   
-  const nativeWindowHandle = global.nativeWindow.create(innerWidth, innerHeight);
+  global.nativeWindow.create(innerWidth, innerHeight);
 
   exokit.fetch(url)
     .then(site => {
@@ -142,12 +142,12 @@ if (require.main === module) {
       });
       
       const _recurse = () => {
-        global.nativeWindow.update(nativeWindowHandle); // XXX hook this in on tick
+        global.nativeWindow.update(); // XXX hook this in on tick
 
         // window.alignFrame(viewMatrixFloat32Array, projectionMatrixFloat32Array); // XXX implement this
         window.tickAnimationFrame();
         
-        global.nativeWindow.submit(nativeWindowHandle); // XXX hook this in on submitFrame
+        global.nativeWindow.submit(); // XXX hook this in on submitFrame
         
         setTimeout(_recurse, FPS / 1000);
       };

@@ -1098,6 +1098,7 @@ NAN_METHOD(ExtensionSupported) {
   info.GetReturnValue().Set(JS_BOOL(glfwExtensionSupported(*str)==1));
 }
 
+GLFWwindow *windowHandle = nullptr;
 NAN_METHOD(Create) {
   Nan::HandleScope scope;
   
@@ -1120,48 +1121,59 @@ NAN_METHOD(Create) {
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
   glfwWindowHint(GLFW_REFRESH_RATE, 0);
 
-  GLFWwindow *window = glfwCreateWindow(width, height, "exokit", nullptr, nullptr);
+  windowHandle = glfwCreateWindow(width, height, "exokit", nullptr, nullptr);
 
-  if (window) {
-    glfwMakeContextCurrent(window);
-
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-    // GLFW.SetWindowTitle(win, "WebGL");
-
-    glfwSwapBuffers(window);
-    glfwSwapInterval(0);
+  if (windowHandle) {
+    glfwMakeContextCurrent(windowHandle);
     
-    /* int fbWidth, fbHeight;
-    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
-    
-    int wWidth, wHeight;
-    glfwGetWindowSize(window, &wWidth, &wHeight); */
-    
-    /* Local<Object> result = Object::New(Isolate::GetCurrent());
-    result->Set(JS_STR("width"), JS_INT(fbWidth));
-    result->Set(JS_STR("height"), JS_INT(fbHeight)); */
+    GLenum err = glewInit();
+    if (!err) {
+      glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    // glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
+      // GLFW.SetWindowTitle(win, "WebGL");
 
-    // window callbacks
-    glfwSetWindowPosCallback(window, windowPosCB);
-    glfwSetWindowSizeCallback(window, windowSizeCB);
-    glfwSetWindowCloseCallback(window, windowCloseCB);
-    glfwSetWindowRefreshCallback(window, windowRefreshCB);
-    glfwSetWindowFocusCallback(window, windowFocusCB);
-    glfwSetWindowIconifyCallback(window, windowIconifyCB);
-    glfwSetFramebufferSizeCallback(window, windowFramebufferSizeCB);
-    glfwSetDropCallback(window, windowDropCB);
+      glfwSwapBuffers(windowHandle);
+      glfwSwapInterval(0);
+      
+      /* int fbWidth, fbHeight;
+      glfwGetFramebufferSize(windowHandle, &fbWidth, &fbHeight);
+      
+      int wWidth, wHeight;
+      glfwGetWindowSize(windowHandle, &wWidth, &wHeight); */
+      
+      /* Local<Object> result = Object::New(Isolate::GetCurrent());
+      result->Set(JS_STR("width"), JS_INT(fbWidth));
+      result->Set(JS_STR("height"), JS_INT(fbHeight)); */
 
-    // input callbacks
-    glfwSetKeyCallback(window, keyCB);
-    glfwSetMouseButtonCallback(window, mouseButtonCB);
-    glfwSetCursorPosCallback(window, cursorPosCB);
-    glfwSetCursorEnterCallback(window, cursorEnterCB);
-    glfwSetScrollCallback(window, scrollCB);
-    
-    info.GetReturnValue().Set(JS_NUM((uint64_t)window));
+      // glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
+
+      // window callbacks
+      glfwSetWindowPosCallback(windowHandle, windowPosCB);
+      glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
+      glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
+      glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
+      glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
+      glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
+      glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
+      glfwSetDropCallback(windowHandle, windowDropCB);
+
+      // input callbacks
+      glfwSetKeyCallback(windowHandle, keyCB);
+      glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
+      glfwSetCursorPosCallback(windowHandle, cursorPosCB);
+      glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
+      glfwSetScrollCallback(windowHandle, scrollCB);
+      
+      // info.GetReturnValue().Set(JS_NUM((uint64_t)windowHandle));
+    } else {
+      /* Problem: glewInit failed, something is seriously wrong. */
+      std::string msg="Can't init GLEW (glew error ";
+      msg+=(const char*) glewGetErrorString(err);
+      msg+=")";
+
+      fprintf(stderr, "%s", msg.c_str());
+      Nan::ThrowError(msg.c_str());
+    }
   } else {
     // can't create window, throw error
     Nan::ThrowError("Can't create GLFW window");
@@ -1173,9 +1185,9 @@ NAN_METHOD(Update) {
 }
 
 NAN_METHOD(Submit) {
-  uint64_t handle = info[0]->IntegerValue();
-  GLFWwindow *window = (GLFWwindow *)handle;
-  glfwSwapBuffers(window);
+  /* uint64_t handle = info[0]->IntegerValue();
+  GLFWwindow *window = (GLFWwindow *)handle; */
+  glfwSwapBuffers(windowHandle);
 }
 
 }
@@ -1542,7 +1554,6 @@ NAN_METHOD(Submit) {
 
 Local<Object> makeWindow() {
   glfwInit();
-  glewInit();
   atexit([]() {
     glfwTerminate();
   });
