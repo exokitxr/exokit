@@ -1,7 +1,21 @@
 const path = require('path');
 
-const exokit = require('exokit');
 const exokitWindows = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
+
+[
+  'nativeGl',
+  'nativeImage',
+  'nativeImageData',
+  'nativeImageBitmap',
+  'nativeCanvasRenderingContext2D',
+  'nativePath2D',
+  'nativeWindow',
+].forEach(k => { // XXX hook these in via exokit config option
+  global[k] = exokitWindows[k];
+});
+
+const exokit = require('exokit');
+
 // const {THREE} = exokit;
 
 /* const {VERSION} = nativeGl;
@@ -53,17 +67,7 @@ nativeGl.viewport = function() {
 
 // BINDINGS
 
-[
-  'nativeGl',
-  'nativeImage',
-  'nativeImageData',
-  'nativeImageBitmap',
-  'nativeCanvasRenderingContext2D',
-  'nativePath2D',
-  'nativeWindow',
-].forEach(k => {
-  global[k] = exokitWindows[k];
-});
+
 
 // CALLBACKS
 
