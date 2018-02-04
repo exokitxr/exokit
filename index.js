@@ -616,7 +616,9 @@ class HTMLElement extends Node {
         nativeWindow.setCursorMode(false);
       }
 
-      document.emit('pointerlockchange');
+      process.nextTick(() => {
+        document.emit('pointerlockchange');
+      });
     }
   }
   exitPointerLock() {
@@ -629,7 +631,9 @@ class HTMLElement extends Node {
         nativeWindow.setCursorMode(true);
       }
 
-      document.emit('pointerlockchange');
+      process.nextTick(() => {
+        document.emit('pointerlockchange');
+      });
     }
   }
 }
