@@ -87,6 +87,26 @@ global.nativeWindow.events.emit = (type, data) => {
       }
       break;
     }
+    case 'keydown':
+    case 'keyup':
+    case 'keypress':
+    case 'mousedown':
+    case 'mouseup':
+    case 'click': {
+      window.emit(type, data);
+      break;
+    }
+    case 'mousemove': {
+      if (window.document.pointerLockElement) {
+        data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
+        data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
+
+        global.nativeWindow.setCursorPosition(window.innerWidth / 2, window.innerHeight / 2);
+      }
+      
+      window.emit(type, data);
+      break;
+    }
     case 'quit': {
       process.exit();
       break;
