@@ -142,6 +142,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
 }
 
 void Init(Handle<Object> exports) {
+  canvas::ContextGDIPlus::initialize();
   canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
 
