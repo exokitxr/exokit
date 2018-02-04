@@ -1185,8 +1185,6 @@ NAN_METHOD(Update) {
 }
 
 NAN_METHOD(Submit) {
-  /* uint64_t handle = info[0]->IntegerValue();
-  GLFWwindow *window = (GLFWwindow *)handle; */
   glfwSwapBuffers(windowHandle);
 }
 
