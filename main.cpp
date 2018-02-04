@@ -145,6 +145,8 @@ void Init(Handle<Object> exports) {
   canvas::ContextGDIPlus::initialize();
   canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
+  
+  canvas::ImageData::setFlip(true);
 
   Local<Value> gl = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
