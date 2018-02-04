@@ -610,6 +610,23 @@ class HTMLElement extends Node {
 
     this.emit('innerHTML', innerHTML);
   }
+
+  requestPointerLock() {
+    const {document} = this[windowSymbol];
+
+    if (document.pointerLockElement === null) {
+      document.pointerLockElement = this;
+      document.emit('pointerlockchange');
+    }
+  }
+  exitPointerLock() {
+    const {document} = this[windowSymbol];
+
+    if (document.pointerLockElement !== null) {
+      document.pointerLockElement = null;
+      document.emit('pointerlockchange');
+    }
+  }
 }
 class HTMLAnchorElement extends HTMLElement {
   constructor(attributes = {}, value = '') {
@@ -1357,6 +1374,7 @@ const _parseDocument = (s, options, window) => {
       document.body.appendChild(childNodes[i]);
     }
   };
+  document.pointerLockElement = null;
   window.document = document;
 
   process.nextTick(async () => {
