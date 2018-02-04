@@ -96,7 +96,7 @@ namespace canvas {
 	if (!bitmap.get()) {
 	  bitmap = std::unique_ptr<Gdiplus::Bitmap>(new Gdiplus::Bitmap(4, 4, PixelFormat32bppPARGB));
 	}
-	g = std::unique_ptr<Gdiplus::Graphics>(new Gdiplus::Graphics(&(*bitmap)));
+	g = std::unique_ptr<Gdiplus::Graphics>(new Gdiplus::Graphics(bitmap.get()));
 #if 0
 	g->SetPixelOffsetMode( PixelOffsetModeNone );
 #endif
