@@ -67,8 +67,8 @@ nativeGl.viewport = function() {
 
 // CALLBACKS
 
-global.nativeWindow.events.emit = e => {
-  const {type} = e;
+global.nativeWindow.events.emit = (type, data) => {
+  // console.log(type, data);
 
   switch (type) {
     case 'resize': {
@@ -115,8 +115,11 @@ module.exports = exokit;
 let window = null;
 let innerWidth = 1280;
 let innerHeight = 1024;
+const FPS = 90;
 if (require.main === module) {
-  global.nativeWindow.create(innerWidth, innerHeight);
+  const url = process.argv[2];
+  
+  const nativeWindowHandle = global.nativeWindow.create(innerWidth, innerHeight);
 
   exokit.fetch(url)
     .then(site => {
@@ -130,6 +133,18 @@ if (require.main === module) {
       window.addEventListener('error', err => {
         console.warn('got error', err.error.stack);
       });
+      
+      const _recurse = () => {
+        global.nativeWindow.update(nativeWindowHandle); // XXX hook this in on tick
+
+        // window.alignFrame(viewMatrixFloat32Array, projectionMatrixFloat32Array); // XXX implement this
+        window.tickAnimationFrame();
+        
+        global.nativeWindow.submit(nativeWindowHandle); // XXX hook this in on submitFrame
+        
+        setTimeout(_recurse, FPS / 1000);
+      };
+      _recurse();
     });
 }
 
