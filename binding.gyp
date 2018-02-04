@@ -9,6 +9,7 @@
         'deps/exokit-bindings/nanosvg/src/*.cpp',
         'deps/exokit-bindings/canvascontext/src/*.cc',
         'deps/exokit-bindings/webglcontext/src/*.cc',
+        'deps/exokit-bindings/platform/windows/src/*.cpp',
       ],
       'include_dirs': [
         '<(module_root_dir)/node_modules/native-graphics-deps/include',
@@ -22,6 +23,7 @@
         '<(module_root_dir)/deps/exokit-bindings/nanosvg/include',
         '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
         '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
+        '<(module_root_dir)/deps/exokit-bindings/platform/windows/include',
       ],
       'library_dirs': [
         '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64',
