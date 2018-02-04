@@ -1,8 +1,8 @@
 {
   "name": "exokit-windows",
   "version": "0.0.1",
-  "description": "Browser in JS",
-  "main": "index.js",
+  "description": "Javascript web browser for the post-screen world",
+  "main": "html5.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
