@@ -88,3 +88,7 @@ The core is Javascript and is platform-agnostic. Porting work is restricted to t
 - **No** HTML layout
 - **No** HTML rendering
 - **No** CSS
+
+#### Community?
+
+- [Slack](https://communityinviter.com/apps/exokit/exokit)
