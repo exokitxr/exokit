@@ -72,6 +72,7 @@ global.nativeWindow.events.emit = (type, data) => {
 
   switch (type) {
     case 'resize': {
+      const {width, height} = data;
       innerWidth = width;
       innerHeight = height;
 
@@ -80,9 +81,11 @@ global.nativeWindow.events.emit = (type, data) => {
         window.innerHeight = innerHeight;
         window.emit('resize');
       }
+      break;
     }
     case 'quit': {
       process.exit();
+      break;
     }
   }
 };
