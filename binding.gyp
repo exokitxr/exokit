@@ -10,6 +10,7 @@
         'deps/exokit-bindings/canvascontext/src/*.cc',
         'deps/exokit-bindings/webglcontext/src/*.cc',
         'deps/exokit-bindings/platform/windows/src/*.cpp',
+        'deps/glfw-bindings/src/*.cc',
       ],
       'include_dirs': [
         '<(module_root_dir)/node_modules/native-graphics-deps/include',
@@ -24,13 +25,17 @@
         '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
         '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
         '<(module_root_dir)/deps/exokit-bindings/platform/windows/include',
+        '<(module_root_dir)/deps/glfw/include',
+        '<(module_root_dir)/deps/glfw-bindings/include',
       ],
       'library_dirs': [
         '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64',
+        '<(module_root_dir)/deps/glfw/src/Release',
       ],
       'libraries': [
         'opengl32.lib',
         'glew32.lib',
+        'glfw3dll.lib',
       ],
       'msvs_settings' : {
         'VCCLCompilerTool' : {

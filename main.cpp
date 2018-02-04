@@ -11,6 +11,7 @@
 #include <v8.h>
 #include <bindings.h>
 #include <platform/windows/include/ContextGDIPlus.h>
+#include <glfw-bindings.h>
 
 using namespace v8;
 
@@ -143,6 +144,9 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
 void Init(Handle<Object> exports) {
   canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
+  
+  Local<Value> glfw = makeGlfw();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw);
 
   Local<Value> gl = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
