@@ -17,6 +17,7 @@
 using namespace v8;
 // using namespace node;
 
-Local<Object> makeGlfw();
+// Local<Object> makeGlfw();
+Local<Object> makeWindow();
 
 #endif

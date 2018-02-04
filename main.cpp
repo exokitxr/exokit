@@ -144,9 +144,6 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
 void Init(Handle<Object> exports) {
   canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
-  
-  Local<Value> glfw = makeGlfw();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw);
 
   Local<Value> gl = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
@@ -165,6 +162,12 @@ void Init(Handle<Object> exports) {
 
   Local<Value> path2d = makePath2D();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
+  
+  /* Local<Value> glfw = makeGlfw();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
+  
+  Local<Value> window = makeWindow();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, Init)

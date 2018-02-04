@@ -6,11 +6,11 @@ NAN_METHOD(GetVersion) {
   Nan::HandleScope scope;
   int major, minor, rev;
   glfwGetVersion(&major,&minor,&rev);
-  Local<Array> arr=Nan::New<Array>(3);
-  arr->Set(JS_STR("major"),JS_INT(major));
-  arr->Set(JS_STR("minor"),JS_INT(minor));
-  arr->Set(JS_STR("rev"),JS_INT(rev));
-  info.GetReturnValue().Set(arr);
+  Local<Object> result = Nan::New<Object>();
+  result->Set(JS_STR("major"),JS_INT(major));
+  result->Set(JS_STR("minor"),JS_INT(minor));
+  result->Set(JS_STR("rev"),JS_INT(rev));
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(GetVersionString) {
@@ -88,11 +88,11 @@ NAN_METHOD(GetMonitors) {
 
 /* @Module: Window handling */
 Nan::Persistent<Object> glfw_events;
-int lastX=0,lastY=0;
+int lastX = 0, lastY = 0;
 bool windowCreated=false;
 
 void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
   // MakeCallback(glfw_events, "emit", argc, argv);
   if(Nan::New(glfw_events)->Has(JS_STR("emit"))) {
     // Local<Function> callback = Nan::New(glfw_events)->Get(JS_STR("emit")).As<Function>();
@@ -100,7 +100,7 @@ void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
 
     if (!callback.IsEmpty()) {
       // callback->Call(Context::GetCurrent()->Global(),argc,argv);
-      callback.Call(argc,argv);
+      callback.Call(argc, argv);
     }
   }
 }
@@ -110,7 +110,7 @@ void APIENTRY windowPosCB(GLFWwindow *window, int xpos, int ypos) {
   Nan::HandleScope scope;
   //cout<<"resizeCB: "<<w<<" "<<h<<endl;
 
-  Local<Array> evt=Nan::New<Array>(3);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("window_pos"));
   evt->Set(JS_STR("xpos"),JS_INT(xpos));
   evt->Set(JS_STR("ypos"),JS_INT(ypos));
@@ -127,7 +127,7 @@ void APIENTRY windowSizeCB(GLFWwindow *window, int w, int h) {
   Nan::HandleScope scope;
   //cout<<"resizeCB: "<<w<<" "<<h<<endl;
 
-  Local<Array> evt=Nan::New<Array>(3);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("resize"));
   evt->Set(JS_STR("width"),JS_INT(w));
   evt->Set(JS_STR("height"),JS_INT(h));
@@ -144,7 +144,7 @@ void APIENTRY windowFramebufferSizeCB(GLFWwindow *window, int w, int h) {
   Nan::HandleScope scope;
   //cout<<"resizeCB: "<<w<<" "<<h<<endl;
 
-  Local<Array> evt=Nan::New<Array>(3);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
   evt->Set(JS_STR("width"),JS_INT(w));
   evt->Set(JS_STR("height"),JS_INT(h));
@@ -186,7 +186,7 @@ void APIENTRY windowCloseCB(GLFWwindow *window) {
 void APIENTRY windowRefreshCB(GLFWwindow *window) {
   Nan::HandleScope scope;
 
-  Local<Array> evt=Nan::New<Array>(2);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("refresh"));
   evt->Set(JS_STR("window"),JS_NUM((uint64_t) window));
 
@@ -201,7 +201,7 @@ void APIENTRY windowRefreshCB(GLFWwindow *window) {
 void APIENTRY windowIconifyCB(GLFWwindow *window, int iconified) {
   Nan::HandleScope scope;
 
-  Local<Array> evt=Nan::New<Array>(2);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("iconified"));
   evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
 
@@ -216,7 +216,7 @@ void APIENTRY windowIconifyCB(GLFWwindow *window, int iconified) {
 void APIENTRY windowFocusCB(GLFWwindow *window, int focused) {
   Nan::HandleScope scope;
 
-  Local<Array> evt=Nan::New<Array>(2);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("focused"));
   evt->Set(JS_STR("focused"),JS_BOOL(focused));
 
@@ -306,7 +306,7 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
 
   Nan::HandleScope scope;
 
-  Local<Array> evt=Nan::New<Array>(7);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"), JS_STR( &actionNames[action << 3] ));
   evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
   evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
@@ -422,7 +422,7 @@ void APIENTRY cursorPosCB(GLFWwindow* window, double x, double y) {
 
   Nan::HandleScope scope;
 
-  Local<Array> evt=Nan::New<Array>(5);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("mousemove"));
   evt->Set(JS_STR("clientX"),JS_NUM(x));
   evt->Set(JS_STR("clientY"),JS_NUM(y));
@@ -444,7 +444,7 @@ void APIENTRY cursorPosCB(GLFWwindow* window, double x, double y) {
 void APIENTRY cursorEnterCB(GLFWwindow* window, int entered) {
   Nan::HandleScope scope;
 
-  Local<Array> evt=Nan::New<Array>(2);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("mouseenter"));
   evt->Set(JS_STR("entered"),JS_INT(entered));
 
@@ -459,7 +459,7 @@ void APIENTRY cursorEnterCB(GLFWwindow* window, int entered) {
 void APIENTRY mouseButtonCB(GLFWwindow *window, int button, int action, int mods) {
   Nan::HandleScope scope;
 
-  Local<Array> evt=Nan::New<Array>(7);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
   evt->Set(JS_STR("button"),JS_INT(button));
   evt->Set(JS_STR("which"),JS_INT(button));
@@ -480,7 +480,7 @@ void APIENTRY mouseButtonCB(GLFWwindow *window, int button, int action, int mods
   CallEmitter(2, argv);
 
   if (!action) {
-    Local<Array> evt=Nan::New<Array>(7);
+    Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("click"));
     evt->Set(JS_STR("button"),JS_INT(button));
     evt->Set(JS_STR("which"),JS_INT(button));
@@ -505,7 +505,7 @@ void APIENTRY mouseButtonCB(GLFWwindow *window, int button, int action, int mods
 void APIENTRY scrollCB(GLFWwindow *window, double xoffset, double yoffset) {
   Nan::HandleScope scope;
 
-  Local<Array> evt=Nan::New<Array>(3);
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("mousewheel"));
   evt->Set(JS_STR("wheelDeltaX"),JS_NUM(xoffset*120));
   evt->Set(JS_STR("wheelDeltaY"),JS_NUM(yoffset*120));
@@ -853,10 +853,10 @@ NAN_METHOD(GetWindowSize) {
     int w,h;
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     glfwGetWindowSize(window, &w, &h);
-    Local<Array> arr=Nan::New<Array>(2);
-    arr->Set(JS_STR("width"),JS_INT(w));
-    arr->Set(JS_STR("height"),JS_INT(h));
-    info.GetReturnValue().Set(arr);
+    Local<Object> result = Nan::New<Object>();
+    result->Set(JS_STR("width"),JS_INT(w));
+    result->Set(JS_STR("height"),JS_INT(h));
+    info.GetReturnValue().Set(result);
   }
   return;
 }
@@ -888,10 +888,10 @@ NAN_METHOD(GetWindowPos) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     int xpos, ypos;
     glfwGetWindowPos(window, &xpos, &ypos);
-    Local<Array> arr=Nan::New<Array>(2);
-    arr->Set(JS_STR("xpos"),JS_INT(xpos));
-    arr->Set(JS_STR("ypos"),JS_INT(ypos));
-    info.GetReturnValue().Set(arr);
+    Local<Object> result = Nan::New<Object>();
+    result->Set(JS_STR("xpos"),JS_INT(xpos));
+    result->Set(JS_STR("ypos"),JS_INT(ypos));
+    info.GetReturnValue().Set(result);
   }
   return;
 }
@@ -903,10 +903,10 @@ NAN_METHOD(GetFramebufferSize) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    Local<Array> arr=Nan::New<Array>(2);
-    arr->Set(JS_STR("width"),JS_INT(width));
-    arr->Set(JS_STR("height"),JS_INT(height));
-    info.GetReturnValue().Set(arr);
+    Local<Object> result = Nan::New<Object>();
+    result->Set(JS_STR("width"),JS_INT(width));
+    result->Set(JS_STR("height"),JS_INT(height));
+    info.GetReturnValue().Set(result);
   }
   return;
 }
@@ -1037,10 +1037,10 @@ NAN_METHOD(GetCursorPos) {
     GLFWwindow* window = reinterpret_cast<GLFWwindow*>(handle);
     double x,y;
     glfwGetCursorPos(window, &x, &y);
-    Local<Array> arr=Nan::New<Array>(2);
-    arr->Set(JS_STR("x"),JS_NUM(x));
-    arr->Set(JS_STR("y"),JS_NUM(y));
-    info.GetReturnValue().Set(arr);
+    Local<Object> result = Nan::New<Object>();
+    result->Set(JS_STR("x"),JS_NUM(x));
+    result->Set(JS_STR("y"),JS_NUM(y));
+    info.GetReturnValue().Set(result);
   }
   return;
 }
@@ -1098,6 +1098,86 @@ NAN_METHOD(ExtensionSupported) {
   info.GetReturnValue().Set(JS_BOOL(glfwExtensionSupported(*str)==1));
 }
 
+NAN_METHOD(Create) {
+  Nan::HandleScope scope;
+  
+  unsigned int width = info[0]->Uint32Value();
+  unsigned int height = info[1]->Uint32Value();
+  
+  glfwDefaultWindowHints();
+
+  // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
+  //GLFW.OpenWindowHint(GLFW.OPENGL_FORWARD_COMPAT, 1);
+  //GLFW.OpenWindowHint(GLFW.OPENGL_VERSION_MAJOR, 3);
+  //GLFW.OpenWindowHint(GLFW.OPENGL_VERSION_MINOR, 2);
+  //GLFW.OpenWindowHint(GLFW.OPENGL_PROFILE, GLFW.OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_RESIZABLE, 1);
+  glfwWindowHint(GLFW_VISIBLE, 1);
+  glfwWindowHint(GLFW_DECORATED, 1);
+  glfwWindowHint(GLFW_RED_BITS, 8);
+  glfwWindowHint(GLFW_GREEN_BITS, 8);
+  glfwWindowHint(GLFW_BLUE_BITS, 8);
+  glfwWindowHint(GLFW_DEPTH_BITS, 24);
+  glfwWindowHint(GLFW_REFRESH_RATE, 0);
+
+  GLFWwindow *window = glfwCreateWindow(width, height, "exokit", nullptr, nullptr);
+
+  if (window) {
+    glfwMakeContextCurrent(window);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+    // GLFW.SetWindowTitle(win, "WebGL");
+
+    glfwSwapBuffers(window);
+    glfwSwapInterval(0);
+    
+    /* int fbWidth, fbHeight;
+    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+    
+    int wWidth, wHeight;
+    glfwGetWindowSize(window, &wWidth, &wHeight); */
+    
+    /* Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("width"), JS_INT(fbWidth));
+    result->Set(JS_STR("height"), JS_INT(fbHeight)); */
+
+    // glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
+
+    // window callbacks
+    glfwSetWindowPosCallback(window, windowPosCB);
+    glfwSetWindowSizeCallback(window, windowSizeCB);
+    glfwSetWindowCloseCallback(window, windowCloseCB);
+    glfwSetWindowRefreshCallback(window, windowRefreshCB);
+    glfwSetWindowFocusCallback(window, windowFocusCB);
+    glfwSetWindowIconifyCallback(window, windowIconifyCB);
+    glfwSetFramebufferSizeCallback(window, windowFramebufferSizeCB);
+    glfwSetDropCallback(window, windowDropCB);
+
+    // input callbacks
+    glfwSetKeyCallback(window, keyCB);
+    glfwSetMouseButtonCallback(window, mouseButtonCB);
+    glfwSetCursorPosCallback(window, cursorPosCB);
+    glfwSetCursorEnterCallback(window, cursorEnterCB);
+    glfwSetScrollCallback(window, scrollCB);
+    
+    info.GetReturnValue().Set(JS_NUM((uint64_t)window));
+  } else {
+    // can't create window, throw error
+    Nan::ThrowError("Can't create GLFW window");
+  }
+}
+
+NAN_METHOD(Update) {
+  glfwPollEvents();
+}
+
+NAN_METHOD(Submit) {
+  uint64_t handle = info[0]->IntegerValue();
+  GLFWwindow *window = (GLFWwindow *)handle;
+  glfwSwapBuffers(window);
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1108,8 +1188,9 @@ NAN_METHOD(ExtensionSupported) {
 #define JS_GLFW_CONSTANT(name) target->Set(JS_STR( #name ), JS_INT(GLFW_ ## name))
 #define JS_GLFW_SET_METHOD(name) Nan::SetMethod(target, #name , glfw::name);
 
-Local<Object> makeGlfw() {
+/* Local<Object> makeGlfw() {
   glfwInit();
+  glewInit();
   atexit([]() {
     glfwTerminate();
   });
@@ -1119,18 +1200,18 @@ Local<Object> makeGlfw() {
   
   Local<Object> target = Object::New(isolate);
 
-  /* GLFW initialization, termination and version querying */
+  // GLFW initialization, termination and version querying
   JS_GLFW_SET_METHOD(GetVersion);
   JS_GLFW_SET_METHOD(GetVersionString);
 
-  /* Time */
+  // Time
   JS_GLFW_SET_METHOD(GetTime);
   JS_GLFW_SET_METHOD(SetTime);
 
-  /* Monitor handling */
+  // Monitor handling
   JS_GLFW_SET_METHOD(GetMonitors);
 
-  /* Window handling */
+  // Window handling
   //JS_GLFW_SET_METHOD(CreateWindow);
   Nan::SetMethod(target, "CreateWindow", glfw::glfw_CreateWindow);
   Nan::SetMethod(target, "GetRenderTarget", glfw::GetRenderTarget);
@@ -1156,62 +1237,57 @@ Local<Object> makeGlfw() {
   JS_GLFW_SET_METHOD(PollEvents);
   JS_GLFW_SET_METHOD(WaitEvents);
 
-  /* Input handling */
+  // Input handling
   JS_GLFW_SET_METHOD(GetKey);
   JS_GLFW_SET_METHOD(GetMouseButton);
   JS_GLFW_SET_METHOD(GetCursorPos);
   JS_GLFW_SET_METHOD(SetCursorPos);
 
-  /* Context handling */
+  // Context handling
   JS_GLFW_SET_METHOD(MakeContextCurrent);
   JS_GLFW_SET_METHOD(GetCurrentContext);
   JS_GLFW_SET_METHOD(SwapBuffers);
   JS_GLFW_SET_METHOD(SwapInterval);
   JS_GLFW_SET_METHOD(ExtensionSupported);
 
-  /* Joystick */
+  // Joystick
   JS_GLFW_SET_METHOD(JoystickPresent);
   JS_GLFW_SET_METHOD(GetJoystickAxes);
   JS_GLFW_SET_METHOD(GetJoystickButtons);
   JS_GLFW_SET_METHOD(GetJoystickName);
 
-  /*************************************************************************
-   * GLFW version
-   *************************************************************************/
+  // GLFW version
 
   JS_GLFW_CONSTANT(VERSION_MAJOR);
   JS_GLFW_CONSTANT(VERSION_MINOR);
   JS_GLFW_CONSTANT(VERSION_REVISION);
 
-  /*************************************************************************
-   * Input handling definitions
-   *************************************************************************/
+  // Input handling definitions
 
-  /* Key and button state/action definitions */
+  // Key and button state/action definitions
   JS_GLFW_CONSTANT(RELEASE);
   JS_GLFW_CONSTANT(PRESS);
   JS_GLFW_CONSTANT(REPEAT);
 
-  /* These key codes are inspired by the *USB HID Usage Tables v1.12* (p. 53-60),
-   * but re-arranged to map to 7-bit ASCII for printable keys (function keys are
-   * put in the 256+ range).
-   *
-   * The naming of the key codes follow these rules:
-   *  - The US keyboard layout is used
-   *  - Names of printable alpha-numeric characters are used (e.g. "A", "R",
-   *    "3", etc.)
-   *  - For non-alphanumeric characters, Unicode:ish names are used (e.g.
-   *    "COMMA", "LEFT_SQUARE_BRACKET", etc.). Note that some names do not
-   *    correspond to the Unicode standard (usually for brevity)
-   *  - Keys that lack a clear US mapping are named "WORLD_x"
-   *  - For non-printable keys, custom names are used (e.g. "F4",
-   *    "BACKSPACE", etc.)
-   */
+  // These key codes are inspired by the *USB HID Usage Tables v1.12* (p. 53-60),
+  // but re-arranged to map to 7-bit ASCII for printable keys (function keys are
+  // put in the 256+ range).
+  //
+  // The naming of the key codes follow these rules:
+  //  - The US keyboard layout is used
+  //  - Names of printable alpha-numeric characters are used (e.g. "A", "R",
+  //    "3", etc.)
+  //  - For non-alphanumeric characters, Unicode:ish names are used (e.g.
+  //    "COMMA", "LEFT_SQUARE_BRACKET", etc.). Note that some names do not
+  //    correspond to the Unicode standard (usually for brevity)
+  //  - Keys that lack a clear US mapping are named "WORLD_x"
+  //  - For non-printable keys, custom names are used (e.g. "F4",
+  //    "BACKSPACE", etc.)
 
-  /* The unknown key */
+  // The unknown key
   JS_GLFW_CONSTANT(KEY_UNKNOWN);
 
-  /* Printable keys */
+  // Printable keys
   JS_GLFW_CONSTANT(KEY_SPACE);
   JS_GLFW_CONSTANT(KEY_APOSTROPHE);
   JS_GLFW_CONSTANT(KEY_COMMA);
@@ -1263,7 +1339,7 @@ Local<Object> makeGlfw() {
   JS_GLFW_CONSTANT(KEY_WORLD_1);
   JS_GLFW_CONSTANT(KEY_WORLD_2);
 
-  /* Function keys */
+  // Function keys
   JS_GLFW_CONSTANT(KEY_ESCAPE);
   JS_GLFW_CONSTANT(KEY_ENTER);
   JS_GLFW_CONSTANT(KEY_TAB);
@@ -1336,18 +1412,18 @@ Local<Object> makeGlfw() {
   JS_GLFW_CONSTANT(KEY_MENU);
   JS_GLFW_CONSTANT(KEY_LAST);
 
-  /*Modifier key flags*/
+  // Modifier key flags
 
-  /*If this bit is set one or more Shift keys were held down. */
+  // If this bit is set one or more Shift keys were held down.
   JS_GLFW_CONSTANT(MOD_SHIFT);
-  /*If this bit is set one or more Control keys were held down. */
+  // If this bit is set one or more Control keys were held down.
   JS_GLFW_CONSTANT(MOD_CONTROL);
-  /*If this bit is set one or more Alt keys were held down. */
+  // If this bit is set one or more Alt keys were held down.
   JS_GLFW_CONSTANT(MOD_ALT);
-  /*If this bit is set one or more Super keys were held down. */
+  // If this bit is set one or more Super keys were held down.
   JS_GLFW_CONSTANT(MOD_SUPER);
 
-  /*Mouse buttons*/
+  // Mouse buttons
   JS_GLFW_CONSTANT(MOUSE_BUTTON_1);
   JS_GLFW_CONSTANT(MOUSE_BUTTON_2);
   JS_GLFW_CONSTANT(MOUSE_BUTTON_3);
@@ -1361,7 +1437,7 @@ Local<Object> makeGlfw() {
   JS_GLFW_CONSTANT(MOUSE_BUTTON_RIGHT);
   JS_GLFW_CONSTANT(MOUSE_BUTTON_MIDDLE);
 
-  /*Joysticks*/
+  // Joysticks
   JS_GLFW_CONSTANT(JOYSTICK_1);
   JS_GLFW_CONSTANT(JOYSTICK_2);
   JS_GLFW_CONSTANT(JOYSTICK_3);
@@ -1380,25 +1456,25 @@ Local<Object> makeGlfw() {
   JS_GLFW_CONSTANT(JOYSTICK_16);
   JS_GLFW_CONSTANT(JOYSTICK_LAST);
 
-  /*errors Error codes*/
+  // errors Error codes
 
-  /*GLFW has not been initialized.*/
+  // GLFW has not been initialized.
   JS_GLFW_CONSTANT(NOT_INITIALIZED);
-  /*No context is current for this thread.*/
+  // No context is current for this thread.
   JS_GLFW_CONSTANT(NO_CURRENT_CONTEXT);
-  /*One of the enum parameters for the function was given an invalid enum.*/
+  // One of the enum parameters for the function was given an invalid enum.
   JS_GLFW_CONSTANT(INVALID_ENUM);
-  /*One of the parameters for the function was given an invalid value.*/
+  // One of the parameters for the function was given an invalid value.
   JS_GLFW_CONSTANT(INVALID_VALUE);
-  /*A memory allocation failed.*/
+  // A memory allocation failed.
   JS_GLFW_CONSTANT(OUT_OF_MEMORY);
-  /*GLFW could not find support for the requested client API on the system.*/
+  // GLFW could not find support for the requested client API on the system.
   JS_GLFW_CONSTANT(API_UNAVAILABLE);
-  /*The requested client API version is not available.*/
+  // The requested client API version is not available.
   JS_GLFW_CONSTANT(VERSION_UNAVAILABLE);
-  /*A platform-specific error occurred that does not match any of the more specific categories.*/
+  // A platform-specific error occurred that does not match any of the more specific categories.
   JS_GLFW_CONSTANT(PLATFORM_ERROR);
-  /*The clipboard did not contain data in the requested format.*/
+  // The clipboard did not contain data in the requested format.
   JS_GLFW_CONSTANT(FORMAT_UNAVAILABLE);
 
   JS_GLFW_CONSTANT(FOCUSED);
@@ -1460,6 +1536,29 @@ Local<Object> makeGlfw() {
   // test scene
   JS_GLFW_SET_METHOD(testScene);
   JS_GLFW_SET_METHOD(testJoystick);
+  
+  return scope.Escape(target);
+} */
+
+Local<Object> makeWindow() {
+  glfwInit();
+  glewInit();
+  atexit([]() {
+    glfwTerminate();
+  });
+  
+  Isolate *isolate = Isolate::GetCurrent();
+  v8::EscapableHandleScope scope(isolate);
+  
+  Local<Object> events = Object::New(Isolate::GetCurrent());
+  glfw::glfw_events.Reset(events);
+  
+  Local<Object> target = Object::New(isolate);
+
+  Nan::SetMethod(target, "create", glfw::Create);
+  Nan::SetMethod(target, "update", glfw::Update);
+  Nan::SetMethod(target, "submit", glfw::Submit);
+  target->Set(JS_STR("events"), events);
   
   return scope.Escape(target);
 }
