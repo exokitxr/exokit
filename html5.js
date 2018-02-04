@@ -71,6 +71,7 @@ nativeGl.viewport = function() {
 
 // CALLBACKS
 
+const nop = () => {};
 global.nativeWindow.events.emit = (type, data) => {
   // console.log(type, data);
 
@@ -93,10 +94,18 @@ global.nativeWindow.events.emit = (type, data) => {
     case 'mousedown':
     case 'mouseup':
     case 'click': {
+      data.preventDefault = nop;
+      data.preventStopPropagation = nop;
+      data.preventStopImmediatePropagation = nop;
+      
       window.emit(type, data);
       break;
     }
     case 'mousemove': {
+      data.preventDefault = nop;
+      data.preventStopPropagation = nop;
+      data.preventStopImmediatePropagation = nop;
+      
       if (window.document.pointerLockElement) {
         data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
         data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
