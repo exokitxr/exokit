@@ -367,7 +367,7 @@ class VRDisplay extends MRDisplay {
       this._width = renderWidth;
       this._height = renderHeight;
       this._frameData.copy(frameData);
-      this._stageParameters.copy(stageParameters);
+      this.stageParameters.copy(stageParameters);
     };
     window.on('updatevrframe', _updatevrframe);
 
