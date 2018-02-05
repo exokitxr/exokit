@@ -180,6 +180,14 @@ class VRFrameData {
     this.rightViewMatrix = new Float32Array(16);
     this.pose = new VRPose();
   }
+
+  copy(frameData) {
+    this.leftProjectionMatrix.set(frameData.leftProjectionMatrix);
+    this.leftViewMatrix.set(frameData.leftViewMatrix);
+    this.rightProjectionMatrix.set(frameData.rightProjectionMatrix);
+    this.rightViewMatrix.set(frameData.rightViewMatrix);
+    this.pose.copy(frameData.pose);
+  }
 }
 class VRPose {
   constructor(position = new Float32Array(3), orientation = Float32Array.from([0, 0, 0, 1])) {
@@ -190,6 +198,11 @@ class VRPose {
   set(position, orientation) {
     position.toArray(this.position);
     orientation.toArray(this.orientation);
+  }
+
+  copy(vrPose) {
+    this.position.set(vrPose.position);
+    this.orientation.set(vrPose.orientation);
   }
 }
 class GamepadButton {
