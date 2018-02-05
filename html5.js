@@ -185,6 +185,11 @@ global.nativeVr.requestPresent = function() {
       renderWidth = halfWidth;
       renderHeight = height;
 
+      window.updateVrFrame({
+        renderWidth,
+        renderHeight,
+      });
+
       const width = halfWidth * 2;
       const [msFb, msTex] = global.nativeWindow.getRenderTarget(width, height, 4);
       msFbo = msFb;
