@@ -1330,17 +1330,19 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       gamepads,
     } = update;
 
-    if (gamepads[0]) {
-      localGamepads[0] = leftGamepad;
-      localGamepads[0].copy(gamepads[0]);
-    } else {
-      localGamepads[0] = null;
-    }
-    if (gamepads[1]) {
-      localGamepads[1] = rightGamepad;
-      localGamepads[1].copy(gamepads[1]);
-    } else {
-      localGamepads[1] = null;
+    if (gamepads !== undefined) {
+      if (gamepads[0]) {
+        localGamepads[0] = leftGamepad;
+        localGamepads[0].copy(gamepads[0]);
+      } else {
+        localGamepads[0] = null;
+      }
+      if (gamepads[1]) {
+        localGamepads[1] = rightGamepad;
+        localGamepads[1].copy(gamepads[1]);
+      } else {
+        localGamepads[1] = null;
+      }
     }
   };
   window.on('updatevrframe', _updatevrframe);
