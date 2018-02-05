@@ -1294,8 +1294,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   let vrDisplays = [];
 
   const localGamepads = [null, null];
-  const leftGamepad = new window.Gamepad('left', 0);
-  const rightGamepad = new window.Gamepad('right', 1);
+  const leftGamepad = new Gamepad('left', 0);
+  const rightGamepad = new Gamepad('right', 1);
   const _updatevrframe = update => {
     const {
       gamepads,
