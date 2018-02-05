@@ -291,6 +291,8 @@ class MRDisplay {
 
     this._width = window.innerWidth / 2;
     this._height = window.innerHeight;
+    this._cleanups = [];
+    this._rafs = [];
   }
 
   getLayers() {
@@ -333,17 +335,29 @@ class MRDisplay {
   }
 
   requestAnimationFrame(fn) {
-    return this[windowSymbol].requestAnimationFrame(fn);
+    const animationFrame = this[windowSymbol].requestAnimationFrame(fn);
+    this._rafs.push(animationFrame);
+    return animationFrame;
   }
 
   cancelAnimationFrame(animationFrame) {
-    return this[windowSymbol].cancelAnimationFrame(animationFrame);
+    const result = this[windowSymbol].cancelAnimationFrame(animationFrame);
+    const index = this._rafs.indexOf(animationFrame);
+    if (index !== -1) {
+      this._rafs.splice(index, 1);
+    }
+    return result;
   }
 
   submitFrame() {}
 
   destroy() {
-    this._cleanup && this._cleanup();
+    for (let i = 0; i < this._rafs.length; i++) {
+      this.cancelAnimationFrame(this._rafs[i]);
+    }
+    for (let i = 0; i < this._cleanups.length; i++) {
+      this._cleanups[i]();
+    }
   }
 }
 class VRDisplay extends MRDisplay {
@@ -383,9 +397,9 @@ class VRDisplay extends MRDisplay {
     };
     window.on('updatevrframe', _updatevrframe);
 
-    this._cleanup = () => {
+    this._cleanups.push(() => {
       window.removeListener('updatevrframe', _updatevrframe);
-    };
+    });
   }
 
   getFrameData(frameData) {
@@ -410,10 +424,10 @@ class ARDisplay extends MRDisplay {
     };
     window.on('updatearframe', _updatearframe);
 
-    this._cleanup = () => {
+    this._cleanups.push(() => {
       window.removeListener('resize', _resize);
       window.removeListener('updatearframe', _updatearframe);
-    };
+    });
   }
 
   getFrameData(frameData) {
