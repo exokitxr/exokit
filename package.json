@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/modulesio/exokit-windows#readme",
   "dependencies": {
-    "exokit": "0.0.24",
+    "exokit": "0.0.25",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.1"
   }
