@@ -328,6 +328,11 @@ class MRDisplay {
       .then(() => {
         this.isPresenting = false;
 
+        for (let i = 0; i < this._rafs.length; i++) {
+          this.cancelAnimationFrame(this._rafs[i]);
+        }
+        this._rafs.length = 0;
+
         process.nextTick(() => {
           this[windowSymbol].emit('vrdisplaypresentchange');
         });
@@ -335,7 +340,9 @@ class MRDisplay {
   }
 
   requestAnimationFrame(fn) {
-    const animationFrame = this[windowSymbol].requestAnimationFrame(fn);
+    const animationFrame = this[windowSymbol].requestAnimationFrame(() => {
+      this._rafs.splice(animationFrame, 1);
+    });
     this._rafs.push(animationFrame);
     return animationFrame;
   }
