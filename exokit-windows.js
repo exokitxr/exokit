@@ -1,7 +1,8 @@
 const path = require('path');
 const exokitWindows = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
+const {nativeVr} = exokitWindows;
 
-exokitWindows.EVRInitError = {
+nativeVr.EVRInitError = {
   None: 0,
   Unknown: 1,
 
@@ -89,7 +90,7 @@ exokitWindows.EVRInitError = {
   Steam_SteamInstallationNotFound: 2000,
 };
 
-exokitWindows.EVRApplicationType = {
+nativeVr.EVRApplicationType = {
   Other: 0,
   Scene: 1,
   Overlay: 2,
@@ -100,18 +101,18 @@ exokitWindows.EVRApplicationType = {
   Bootstrapper: 7,
 };
 
-exokitWindows.EVREye = {
+nativeVr.EVREye = {
   Left: 0,
   Right: 1,
 };
 
-exokitWindows.ETrackingUniverseOrigin = {
+nativeVr.ETrackingUniverseOrigin = {
   Seated: 0,
   Standing: 1,
   RawAndUncalibrated: 2,
 };
 
-exokitWindows.ETrackingResult = {
+nativeVr.ETrackingResult = {
   Uninitialized: 1,
   Calibrating_InProgress: 100,
   Calibrating_OutOfRange: 101,
@@ -119,7 +120,7 @@ exokitWindows.ETrackingResult = {
   Running_OutOfRange: 201,
 };
 
-exokitWindows.ETrackedDeviceClass = {
+nativeVr.ETrackedDeviceClass = {
   Invalid: 0,
   HMD: 1,
   Controller: 2,
