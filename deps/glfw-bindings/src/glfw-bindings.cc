@@ -995,11 +995,11 @@ NAN_METHOD(SetInputMode) {
   return;
 }
 
-NAN_METHOD(PollEvents) {
+/* NAN_METHOD(PollEvents) {
   Nan::HandleScope scope;
   glfwPollEvents();
   return;
-}
+}  */
 
 NAN_METHOD(WaitEvents) {
   Nan::HandleScope scope;
@@ -1074,7 +1074,7 @@ NAN_METHOD(GetCurrentContext) {
   info.GetReturnValue().Set(JS_NUM((uint64_t) window));
 }
 
-NAN_METHOD(SwapBuffers) {
+/* NAN_METHOD(SwapBuffers) {
   Nan::HandleScope scope;
   uint64_t handle=info[0]->IntegerValue();
   if(handle) {
@@ -1082,7 +1082,7 @@ NAN_METHOD(SwapBuffers) {
     glfwSwapBuffers(window);
   }
   return;
-}
+} */
 
 NAN_METHOD(SwapInterval) {
   Nan::HandleScope scope;
@@ -1180,11 +1180,11 @@ NAN_METHOD(Create) {
   }
 }
 
-NAN_METHOD(Update) {
+NAN_METHOD(PollEvents) {
   glfwPollEvents();
 }
 
-NAN_METHOD(Submit) {
+NAN_METHOD(SwapBuffers) {
   glfwSwapBuffers(windowHandle);
 }
 
@@ -1579,10 +1579,13 @@ Local<Object> makeWindow() {
   Local<Object> target = Object::New(isolate);
 
   Nan::SetMethod(target, "create", glfw::Create);
-  Nan::SetMethod(target, "update", glfw::Update);
-  Nan::SetMethod(target, "submit", glfw::Submit);
+  Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
+  Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
+  Nan::SetMethod(target, "getRenderTarget", glfw::GetRenderTarget);
+  Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
+  Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   target->Set(JS_STR("events"), events);
   
   return scope.Escape(target);
