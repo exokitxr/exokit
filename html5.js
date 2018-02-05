@@ -1,6 +1,4 @@
-const path = require('path');
-
-const exokitWindows = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
+const exokitWindows = require('./exokit-windows.js');
 
 [
   'nativeGl',
