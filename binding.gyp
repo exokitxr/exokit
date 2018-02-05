@@ -47,9 +47,12 @@
         {
           'destination': '<(module_root_dir)/build/Release/',
           'files': [
-          './node_modules/native-graphics-deps/windows/lib/x64/AntTweakBar.dll',
             '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glew32.dll',
             '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glfw3.dll',
+            # '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glew32.lib',
+            # '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glew32s.lib',
+            # '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glfw3.lib',
+            # '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glfw3dll.lib',
             '<(module_root_dir)/node_modules/native-openvr-deps/bin/win64/openvr_api.dll',
           ]
         }
