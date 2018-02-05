@@ -315,7 +315,9 @@ class MRDisplay {
       .then(() => {
         this.isPresenting = true;
 
-        this[windowSymbol].emit('vrdisplaypresentchange');
+        process.nextTick(() => {
+          this[windowSymbol].emit('vrdisplaypresentchange');
+        });
       });
   }
 
@@ -324,7 +326,9 @@ class MRDisplay {
       .then(() => {
         this.isPresenting = false;
 
-        this[windowSymbol].emit('vrdisplaypresentchange');
+        process.nextTick(() => {
+          this[windowSymbol].emit('vrdisplaypresentchange');
+        });
       });
   }
 
