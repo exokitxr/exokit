@@ -146,6 +146,8 @@ let fbo = null;
 let texture = null;
 let renderWidth = 0;
 let renderHeight = 0;
+const depthNear = 0.1;
+const depthFar = 1000.0;
 global.nativeVr.requestPresent = function() {
   // while booting we sometimes get transient errors
   const _requestSystem = () => new Promise((accept, reject) => {
@@ -264,7 +266,7 @@ if (require.main === module) {
             .multiply(hmdMatrix)
             .toArray(frameData.leftViewMatrix);
 
-          system.GetProjectionMatrix(0, vrDepthNear, vrDepthFar, localFloat32Array4);
+          system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.leftProjectionMatrix.set(localFloat32Array4);
 
@@ -275,7 +277,7 @@ if (require.main === module) {
             .multiply(hmdMatrix)
             .toArray(frameData.rightViewMatrix);
 
-          system.GetProjectionMatrix(1, vrDepthNear, vrDepthFar, localFloat32Array4);
+          system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.rightProjectionMatrix.set(localFloat32Array4);
 
