@@ -362,12 +362,24 @@ class VRDisplay extends MRDisplay {
         stageParameters,
       } = update;
 
-      this.depthNear = depthNear;
-      this.depthFar = depthFar;
-      this._width = renderWidth;
-      this._height = renderHeight;
-      this._frameData.copy(frameData);
-      this.stageParameters.copy(stageParameters);
+      if (depthNear !== undefined) {
+        this.depthNear = depthNear;
+      }
+      if (depthFar !== undefined) {
+        this.depthFar = depthFar;
+      }
+      if (renderWidth !== undefined) {
+        this._width = renderWidth;
+      }
+      if (renderHeight !== undefined) {
+        this._height = renderHeight;
+      }
+      if (frameData !== undefined) {
+        this._frameData.copy(frameData);
+      }
+      if (stageParameters !== undefined) {
+        this.stageParameters.copy(stageParameters);
+      }
     };
     window.on('updatevrframe', _updatevrframe);
 
