@@ -43,6 +43,12 @@
         'gdiplus.lib',
         'openvr_api.lib',
       ],
+      'copies': [
+        {
+          'destination': '<(module_root_dir)/build/Release',
+          'files': ['<(module_root_dir)/node_modules/native-openvr-deps/bin/win64/openvr_api.dll']
+        }
+      ],
       'defines': ['NOMINMAX'],
       'msvs_settings' : {
         'VCCLCompilerTool' : {

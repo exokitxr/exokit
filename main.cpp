@@ -12,6 +12,7 @@
 #include <bindings.h>
 #include <platform/windows/include/ContextGDIPlus.h>
 #include <glfw-bindings.h>
+#include <openvr-bindings.h>
 
 using namespace v8;
 
@@ -171,6 +172,9 @@ void Init(Handle<Object> exports) {
   
   Local<Value> window = makeWindow();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
+  
+  Local<Value> vr = makeVr();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, Init)

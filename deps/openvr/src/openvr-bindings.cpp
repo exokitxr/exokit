@@ -169,7 +169,11 @@ NAN_METHOD(VR_GetInitToken)
   info.GetReturnValue().Set(Nan::New<Number>(result));
 }
 
-void Initialize(v8::Local<v8::Object> exports) {
+Local<Object> makeVr() {
+  v8::EscapableHandleScope scope(Isolate::GetCurrent());
+  
+  Local<Object> exports = Object::New(Isolate::GetCurrent());
+
   v8::Local<v8::Object> system = v8::Object::New(v8::Isolate::GetCurrent());
   system->Set(Nan::New("VR_Init").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_Init)->GetFunction());
   system->Set(Nan::New("VR_Shutdown").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_Shutdown)->GetFunction());
@@ -186,6 +190,9 @@ void Initialize(v8::Local<v8::Object> exports) {
   compositor->Set(Nan::New("NewCompositor").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(NewCompositor)->GetFunction());
   IVRCompositor::Init(compositor);
   exports->Set(Nan::New("compositor").ToLocalChecked(), compositor);
-}
+  
+  /* exports->Set(Nan::New("width").ToLocalChecked(), Nan::New<Integer>(1280));
+  exports->Set(Nan::New("height").ToLocalChecked(), Nan::New<Integer>(1024)); */
 
-NODE_MODULE(openvr, Initialize);
+  return scope.Escape(exports);
+}

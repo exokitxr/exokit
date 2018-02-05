@@ -1,7 +1,10 @@
 #ifndef _OPENVR_BINDINGS_H_
 #define _OPENVR_BINDINGS_H_
 
+#include <v8.h>
 #include <nan/nan.h>
+
+using namespace v8;
 
 /// inline IVRSystem *VR_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
 NAN_METHOD(VR_Init);
@@ -32,5 +35,7 @@ NAN_METHOD(VR_GetVRInitErrorAsEnglishDescription);
 
 /// VR_INTERFACE uint32_t VR_CALLTYPE VR_GetInitToken();
 NAN_METHOD(VR_GetInitToken);
+
+Local<Object> makeVr();
 
 #endif
