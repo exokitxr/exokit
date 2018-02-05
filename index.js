@@ -192,6 +192,68 @@ class VRPose {
     orientation.toArray(this.orientation);
   }
 }
+class GamepadButton {
+  constructor() {
+     this.value = 0;
+     this.pressed = false;
+     this.touched = false;
+  }
+
+  copy(button) {
+    this.value = button.value;
+    this.pressed = button.pressed;
+    this.touched = button.touched;
+  }
+}
+class Gamepad {
+  constructor(hand, index) {
+    this.hand = hand;
+    this.index = index;
+
+    this.connected = true;
+    this.buttons = [
+      new GamepadButton(),
+      new GamepadButton(),
+      new GamepadButton(),
+      new GamepadButton(),
+    ];
+    this.hasPosition = true;
+    this.hasOrientation = true;
+    this.position = new Float32Array(3);
+    this.linearVelocity = new Float32Array(3);
+    this.linearAcceleration = new Float32Array(3);
+    this.orientation = Float32Array.from([0, 0, 0, 1]);
+    this.angularVelocity = new Float32Array(3);
+    this.angularAcceleration = new Float32Array(3);
+    this.axes = new Float32Array(2);
+  }
+
+  copy(gamepad) {
+    this.connected = gamepad.connected;
+    for (let i = 0; i < this.buttons.length; i++) {
+      this.buttons[i].set(gamepad.buttons[i]);
+    }
+    this.hasPosition = gamepad.hasPosition;
+    this.hasOrientation = gamepad.hasOrientation;
+    this.position.set(gamepad.position);
+    this.linearVelocity.set(gamepad.linearVelocity);
+    this.linearAcceleration.set(gamepad.linearAcceleration);
+    this.orientation.set(gamepad.orientation);
+    this.angularVelocity.set(gamepad.angularVelocity);
+    this.angularAcceleration.set(gamepad.angularAcceleration);
+    this.axes.set(gamepad.axes);
+  }
+}
+class VRStageParameters {
+  constructor() {
+    // new THREE.Matrix4().compose(new THREE.Vector3(0, 1.6, 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1)).toArray(new Float32Array(16))
+    this.sittingToStandingTransform = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1.6, 0, 1]);
+  }
+
+  copy(vrStageParameters) {
+    this.sittingToStandingTransform.set(vrStageParameters.sittingToStandingTransform);
+  }
+}
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
@@ -212,31 +274,10 @@ class MRDisplay {
     };
     this.depthNear = 0.1;
     this.depthFar = 1000.0;
-    this.stageParameters = {
-      // new THREE.Matrix4().compose(new THREE.Vector3(0, 1.6, 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1)).toArray(new Float32Array(16))
-      sittingToStandingTransform: Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1.6, 0, 1]),
-    };
+    this.stageParameters = new VRStageParameters();
 
     this._width = window.innerWidth / 2;
     this._height = window.innerHeight;
-    this._viewMatrix = new Float32Array(16);
-    this._projectionMatrix = new Float32Array(16);
-
-    const _resize = () => {
-      this._width = window.innerWidth / 2;
-      this._height = window.innerHeight;
-    };
-    window.on('resize', _resize);
-    const _alignframe = (viewMatrix, projectionMatrix) => {
-      this._viewMatrix.set(viewMatrix);
-      this._projectionMatrix.set(projectionMatrix);
-    };
-    window.on('alignframe', _alignframe);
-
-    this._cleanup = () => {
-      window.removeListener('resize', _resize);
-      window.removeListener('alignframe', _alignframe);
-    };
   }
 
   getLayers() {
@@ -285,46 +326,67 @@ class MRDisplay {
   submitFrame() {}
 
   destroy() {
-    this.cleanup();
+    this._cleanup && this._cleanup();
   }
 }
 class VRDisplay extends MRDisplay {
   constructor(window, displayId) {
     super('VR', window, displayId);
+
+    const leftGamepad = new window.Gamepad('left', 0);
+    const rightGamepad = new window.Gamepad('right', 1);
+    this._frameData = new VRFrameData();
+
+    const _updatevrframe = update => {
+      const {
+        depthNear,
+        depthFar,
+        renderWidth,
+        renderHeight,
+        frameData,
+        stageParameters,
+      } = update;
+
+      this.depthNear = depthNear;
+      this.depthFar = depthFar;
+      this._width = renderWidth;
+      this._height = renderHeight;
+      this._frameData.copy(frameData);
+      this._stageParameters.copy(stageParameters);
+    };
+    window.on('updatevrframe', _updatevrframe);
+
+    this._cleanup = () => {
+      window.removeListener('updatevrframe', _updatevrframe);
+    };
   }
 
   getFrameData(frameData) {
-    const hmdMatrix = localMatrix.fromArray(this._viewMatrix);
-
-    hmdMatrix.decompose(localVector, localQuaternion, localVector2);
-    frameData.pose.set(localVector, localQuaternion);
-
-    hmdMatrix.getInverse(hmdMatrix);
-
-    localMatrix2.compose( // head to eye transform
-      localVector.set(-0.02, 0, 0),
-      localQuaternion.set(0, 0, 0, 1),
-      localVector2.set(0, 0, 0),
-    )
-      .multiply(hmdMatrix)
-      .toArray(frameData.leftViewMatrix);
-
-    frameData.leftProjectionMatrix.set(this._projectionMatrix);
-
-    localMatrix2.compose( // head to eye transform
-      localVector.set(0.02, 0, 0),
-      localQuaternion.set(0, 0, 0, 1),
-      localVector2.set(0, 0, 0),
-    )
-      .multiply(hmdMatrix)
-      .toArray(frameData.rightViewMatrix);
-
-    frameData.rightProjectionMatrix.set(this._projectionMatrix);
+    frameData.copy(this._frameData);
   }
 }
 class ARDisplay extends MRDisplay {
   constructor(window, displayId) {
     super('AR', window, displayId);
+
+    this._viewMatrix = new Float32Array(16);
+    this._projectionMatrix = new Float32Array(16);
+
+    const _resize = () => {
+      this._width = window.innerWidth / 2;
+      this._height = window.innerHeight;
+    };
+    window.on('resize', _resize);
+    const _updatearframe = (viewMatrix, projectionMatrix) => {
+      this._viewMatrix.set(viewMatrix);
+      this._projectionMatrix.set(projectionMatrix);
+    };
+    window.on('updatearframe', _updatearframe);
+
+    this._cleanup = () => {
+      window.removeListener('resize', _resize);
+      window.removeListener('updatearframe', _updatearframe);
+    };
   }
 
   getFrameData(frameData) {
@@ -1230,14 +1292,38 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Date = Date;
   window.performance = performance;
   window.location = url.parse(options.url);
+
   let vrDisplays = [];
-  const gamepads = [];
+
+  const localGamepads = [null, null];
+  const leftGamepad = new window.Gamepad('left', 0);
+  const rightGamepad = new window.Gamepad('right', 1);
+  const _updatevrframe = update => {
+    const {
+      gamepads,
+    } = update;
+
+    if (gamepads[0]) {
+      localGamepads[0] = leftGamepad;
+      localGamepads[0].copy(gamepads[0]);
+    } else {
+      localGamepads[0] = null;
+    }
+    if (gamepads[1]) {
+      localGamepads[1] = rightGamepad;
+      localGamepads[1].copy(gamepads[1]);
+    } else {
+      localGamepads[1] = null;
+    }
+  };
+  window.on('updatevrframe', _updatevrframe);
+
   let vrMode = null;
   let vrTexture = null;
   window.navigator = {
     userAgent: 'exokit',
     getVRDisplays: () => vrDisplays,
-    getGamepads: () => gamepads,
+    getGamepads: () => localGamepads,
     getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
@@ -1295,6 +1381,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.ImageBitmap = ImageBitmap;
   window.Path2D = Path2D;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
+  window.Gamepad = Gamepad;
+  window.VRStageParameters = VRStageParameters;
   window.VRDisplay = VRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
@@ -1343,8 +1431,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       localRafCbs[i]();
     }
   };
-  window.alignFrame = (viewMatrix, projectionMatrix) => {
-    window.emit('alignframe', viewMatrix, projectionMatrix);
+  window.updateVrFrame = update => {
+    window.emit('updatevrframe', update);
+  };
+  window.updateArFrame = (viewMatrix, projectionMatrix) => {
+    window.emit('updatearframe', viewMatrix, projectionMatrix);
   };
   vm.createContext(window);
   return window;
