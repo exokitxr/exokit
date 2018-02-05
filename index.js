@@ -333,8 +333,6 @@ class VRDisplay extends MRDisplay {
   constructor(window, displayId) {
     super('VR', window, displayId);
 
-    const leftGamepad = new window.Gamepad('left', 0);
-    const rightGamepad = new window.Gamepad('right', 1);
     this._frameData = new VRFrameData();
 
     const _updatevrframe = update => {
