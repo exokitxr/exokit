@@ -312,8 +312,8 @@ class MRDisplay {
     };
   }
 
-  requestPresent(sources) {
-    return (typeof nativeVr !== 'undefined' ? nativeVr.requestPresent(sources) : Promise.resolve())
+  requestPresent() {
+    return (typeof nativeVr !== 'undefined' ? nativeVr.requestPresent() : Promise.resolve())
       .then(() => {
         this.isPresenting = true;
 
@@ -324,7 +324,7 @@ class MRDisplay {
   }
 
   exitPresent() {
-    return (typeof nativeVr !== 'undefined' ? nativeVr.exitPresent(sources) : Promise.resolve())
+    return (typeof nativeVr !== 'undefined' ? nativeVr.exitPresent() : Promise.resolve())
       .then(() => {
         this.isPresenting = false;
 
