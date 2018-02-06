@@ -1,0 +1,28 @@
+{
+  "name": "exokit-macos",
+  "version": "0.0.1",
+  "description": "Javascript web browser for the post-screen world",
+  "main": "html5.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modulesio/exokit-macos.git"
+  },
+  "keywords": [
+    "webvr",
+    "native"
+  ],
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/modulesio/exokit-macos/issues"
+  },
+  "homepage": "https://github.com/modulesio/exokit-macos#readme",
+  "dependencies": {
+    "exokit": "0.0.32",
+    "native-graphics-deps": "0.0.2",
+    "native-openvr-deps": "0.0.1"
+  }
+}
