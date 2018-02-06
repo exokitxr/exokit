@@ -5,7 +5,7 @@
 
 #include <QuartzCore/QuartzCore.h>
 #include <CoreText/CoreText.h>
-#include <FilenameConverter.h>
+// #include <FilenameConverter.h>
 
 #include <unordered_map>
 #include <sstream>
@@ -328,7 +328,7 @@ namespace canvas {
 
   class Quartz2DContextFactory : public ContextFactory {
   public:
-    Quartz2DContextFactory(float _display_scale, FilenameConverter * _converter) : ContextFactory(_display_scale), converter(_converter) {
+    Quartz2DContextFactory(float _display_scale) : ContextFactory(_display_scale) {
       cache = std::make_shared<Quartz2DCache>();
   }
     std::unique_ptr<Context> createContext(unsigned int width, unsigned int height, unsigned int num_channels) override {
@@ -340,13 +340,11 @@ namespace canvas {
         return std::unique_ptr<Surface>(new Quartz2DSurface(cache, width, height, aw, ah, num_channels));
     }
 
-    std::unique_ptr<Image> loadImage(const std::string & filename) override;
     std::unique_ptr<Image> createImage() override;
     std::unique_ptr<Image> createImage(const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels) override;
 
   private:
     std::shared_ptr<Quartz2DCache> cache;
-    FilenameConverter * converter;
   };
 };
 

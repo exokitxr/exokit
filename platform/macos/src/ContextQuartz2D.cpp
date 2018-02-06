@@ -226,62 +226,20 @@ Quartz2DSurface::drawImage(const ImageData & _img, const Point & p, double w, do
 
 class Quartz2DImage : public Image {
 public:
-  Quartz2DImage(FilenameConverter * _converter, float _display_scale)
-    : Image(_display_scale), converter(_converter) { }
+  Quartz2DImage(float _display_scale)
+    : Image(_display_scale) { }
 
-  Quartz2DImage(FilenameConverter * _converter, const std::string & _filename, float _display_scale)
-    : Image(_filename, _display_scale),
-      converter(_converter) { }
-
-  Quartz2DImage(FilenameConverter * _converter, const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels, float _display_scale) : Image(_data, _width, _height, _num_channels, _display_scale), converter(_converter) { }
-  
-  void loadFile() override {
-#if 0
-    // Create CFString
-    CFStringRef filename2 = CFStringCreateWithCString(NULL, filename.c_str(), kCFStringEncodingUTF8);
-
-    // Get a reference to the main bundle
-    CFBundleRef mainBundle = CFBundleGetMainBundle();
-    if (!mainBundle) {
-      cerr << "failed to get main bundle, err = " << fnfErr << endl;
-    }
-    
-    // Get a reference to the file's URL
-    CFURLRef imageURL = CFBundleCopyResourceURL(mainBundle, filename2, NULL, NULL);
-
-    // Convert the URL reference into a string reference
-    CFStringRef imagePath = CFURLCopyFileSystemPath(imageURL, kCFURLPOSIXPathStyle);
-    
-    // Get the system encoding method
-    CFStringEncoding encodingMethod = CFStringGetSystemEncoding();
-    
-    // Convert the string reference into a C string
-    const char *path = CFStringGetCStringPtr(imagePath, encodingMethod);
-#else
-    string path;
-    converter->convert(filename, path);
-#endif
-    data = loadFromFile(path);
-    if (!data.get()) filename.clear();
-  }
-      
-    private:
-      FilenameConverter * converter;
+  Quartz2DImage(const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels, float _display_scale) : Image(_data, _width, _height, _num_channels, _display_scale) { }
 };
 
 std::unique_ptr<Image>
-Quartz2DContextFactory::loadImage(const std::string & filename) {
-  return std::unique_ptr<Image>(new Quartz2DImage(converter, filename, getDisplayScale()));
-}
-
-std::unique_ptr<Image>
 Quartz2DContextFactory::createImage() {
-  return std::unique_ptr<Image>(new Quartz2DImage(converter, getDisplayScale()));
+  return std::unique_ptr<Image>(new Quartz2DImage(getDisplayScale()));
 }
 
 std::unique_ptr<Image>
 Quartz2DContextFactory::createImage(const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels) {
-  return std::unique_ptr<Image>(new Quartz2DImage(converter, _data, _width, _height, _num_channels, getDisplayScale()));
+  return std::unique_ptr<Image>(new Quartz2DImage(_data, _width, _height, _num_channels, getDisplayScale()));
 }
 
 std::unique_ptr<Image>
@@ -289,7 +247,7 @@ Quartz2DSurface::createImage(float display_scale) {
   unsigned char * buffer = (unsigned char *)lockMemory(false);
   assert(buffer);
 
-  auto image = std::unique_ptr<Image>(new Quartz2DImage(0, buffer, getActualWidth(), getActualHeight(), getNumChannels(), display_scale));
+  auto image = std::unique_ptr<Image>(new Quartz2DImage(buffer, getActualWidth(), getActualHeight(), getNumChannels(), display_scale));
   releaseMemory();
   
   return image;

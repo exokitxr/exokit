@@ -15,6 +15,11 @@
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
 #endif
+#if __APPLE__
+#include <GL/glew.h>
+#include <GLES2/gl2platform.h>
+#include <GLES2/gl2ext.h>
+#endif
 #if __ANDROID__
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
