@@ -14,10 +14,10 @@
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
 
-using namespace v8;
+// using namespace v8;
 // using namespace node;
 
 // Local<Object> makeGlfw();
-Local<Object> makeWindow();
+v8::Local<v8::Object> makeWindow();
 
 #endif

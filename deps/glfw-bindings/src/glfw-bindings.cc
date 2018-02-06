@@ -1,5 +1,7 @@
 #include <glfw-bindings.h>
 
+using namespace v8;
+
 namespace glfw {
 
 NAN_METHOD(GetVersion) {

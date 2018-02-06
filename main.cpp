@@ -9,9 +9,9 @@
 #include <functional>
 
 #include <v8.h>
-#include <bindings.h>
-#include <platform/windows/include/ContextGDIPlus.h>
 #include <glfw-bindings.h>
+#include <platform/macos/include/ContextQuartz2D.h>
+#include <bindings.h>
 #include <openvr-bindings.h>
 
 using namespace v8;
