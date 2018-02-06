@@ -97,12 +97,12 @@ NAN_GETTER(ImageBitmap::DataGetter) {
 NAN_METHOD(ImageBitmap::CreateImageBitmap) {
   Nan::HandleScope scope;
 
-  Local<String> typeof = info.Callee()->TypeOf(Isolate::GetCurrent());
-  String::Utf8Value typeofString(typeof);
+  /* Local<String> typeofCallee = info.Callee()->TypeOf(Isolate::GetCurrent());
+  String::Utf8Value typeofString(typeofCallee); */
 
   Local<Function> imageBitmapConstructor = Local<Function>::Cast(info.Callee()->Get(JS_STR("ImageBitmap")));
-  Local<String> typeof2 = imageBitmapConstructor->TypeOf(Isolate::GetCurrent());
-  String::Utf8Value typeofString2(typeof);
+  /* Local<String> typeofCallee2 = imageBitmapConstructor->TypeOf(Isolate::GetCurrent());
+  String::Utf8Value typeofString2(typeofCallee2); */
   Local<Value> argv[] = {
     info[0],
   };
