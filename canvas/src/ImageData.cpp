@@ -7,7 +7,9 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
 
-#define M_PI 3.14159265358979323846
+#ifndef M_PI
+  #define M_PI 3.14159265358979323846
+#endif
 
 using namespace std;
 using namespace canvas;

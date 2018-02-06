@@ -2,7 +2,12 @@
 
 #include <cmath>
 
-#define M_PI 3.14159265358979323846
+#ifndef M_PI
+  #define M_PI 3.14159265358979323846
+#endif
+#ifndef FLT_EPSILON
+  #define FLT_EPSILON __FLT_EPSILON__
+#endif
 
 using namespace canvas;
 
