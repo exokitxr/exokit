@@ -143,8 +143,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
 }
 
 void Init(Handle<Object> exports) {
-  canvas::ContextGDIPlus::initialize();
-  canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
+  canvas::Quartz2DContextFactory *canvasContextFactory = new canvas::Quartz2DContextFactory(1);
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
   
   canvas::ImageData::setFlip(true);
