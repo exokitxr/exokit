@@ -2,3 +2,4 @@ node_modules
 build
 CMakeFiles
 CMakeCache.txt
+.DS_Store
