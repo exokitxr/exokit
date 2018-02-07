@@ -38,19 +38,17 @@
       'libraries': [
         '-lGLEW',
         '-lglfw',
-        # 'opengl32.lib',
-        # 'glew32.lib',
-        # 'glfw3dll.lib',
-        # 'gdiplus.lib',
-        # 'openvr_api.lib',
+        '-lcairo',
+        '-lopenvr_api',
+      ],
+      'ldflags': [
+        '-Wl,-R<(module_root_dir)/node_modules/native-openvr-deps/bin/linux64',
       ],
       'copies': [
         {
           'destination': '<(module_root_dir)/build/Release/',
           'files': [
-            # '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glew32.dll',
-            # '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glfw3.dll',
-            # '<(module_root_dir)/node_modules/native-openvr-deps/bin/linux64/openvr_api.dll',
+            # '<(module_root_dir)/node_modules/native-openvr-deps/bin/linux64/libopenvr_api.so',
           ]
         }
       ],
