@@ -23,6 +23,6 @@
   "dependencies": {
     "exokit": "0.0.32",
     "native-graphics-deps": "0.0.2",
-    "native-openvr-deps": "0.0.1"
+    "native-openvr-deps": "0.0.4"
   }
 }
