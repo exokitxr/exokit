@@ -1565,6 +1565,8 @@ NAN_METHOD(SetCursorPosition) {
 } */
 
 Local<Object> makeWindow() {
+  glewExperimental = GL_TRUE;
+    
   glfwInit();
   atexit([]() {
     glfwTerminate();
