@@ -96,7 +96,6 @@ namespace canvas {
       unsigned int aw = width * getDisplayScale(), ah = height * getDisplayScale();
       return std::unique_ptr<Surface>(new CairoSurface(width, height, aw, ah, num_channels));
     }
-    std::unique_ptr<Image> loadImage(const std::string & filename) override;
     std::unique_ptr<Image> createImage() override;
     std::unique_ptr<Image> createImage(const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels) override;
   };

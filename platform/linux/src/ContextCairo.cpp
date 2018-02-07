@@ -319,12 +319,6 @@ protected:
   }
 };
 
-
-std::unique_ptr<Image>
-CairoContextFactory::loadImage(const std::string & filename) {
-  return std::unique_ptr<Image>(new CairoImage(filename, getDisplayScale()));
-}
-
 std::unique_ptr<Image>
 CairoContextFactory::createImage() {
   return std::unique_ptr<Image>(new CairoImage(getDisplayScale()));
