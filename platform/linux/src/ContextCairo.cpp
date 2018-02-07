@@ -290,7 +290,7 @@ CairoSurface::drawNativeSurface(CairoSurface & img, const Point & p, double w, d
 
 void
 CairoSurface::drawImage(Surface & _img, const Point & p, double w, double h, float displayScale, float globalAlpha, float shadowBlur, float shadowOffsetX, float shadowOffsetY, const Color & shadowColor, const Path2D & clipPath, bool imageSmoothingEnabled) {
-  CairoSurface * cs_ptr = dynamic_cast<CairoSurface*>(&_img);
+  CairoSurface * cs_ptr = static_cast<CairoSurface*>(&_img);
   if (cs_ptr) {
     drawNativeSurface(*cs_ptr, p, w, h, displayScale, globalAlpha, clipPath, imageSmoothingEnabled);    
   } else {
@@ -309,14 +309,7 @@ CairoSurface::drawImage(const ImageData & _img, const Point & p, double w, doubl
 class CairoImage : public Image {
 public:
   CairoImage(float _display_scale) : Image(_display_scale) { }
-  CairoImage(const std::string & filename, float _display_scale) : Image(filename, _display_scale) { }
   CairoImage(const unsigned char * _data, unsigned int _width, unsigned int _height, unsigned int _num_channels, float _display_scale) : Image(_data, _width, _height, _num_channels, _display_scale) { }
-  
-protected:
-  void loadFile() override {
-    data = loadFromFile("assets/" + filename);
-    if (!data.get()) filename.clear();
-  }
 };
 
 std::unique_ptr<Image>
