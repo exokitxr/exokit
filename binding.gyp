@@ -36,6 +36,8 @@
         '<(module_root_dir)/node_modules/native-openvr-deps/lib/linux64',
       ],
       'libraries': [
+        '-lGLEW',
+        '-lglfw',
         # 'opengl32.lib',
         # 'glew32.lib',
         # 'glfw3dll.lib',
