@@ -32,21 +32,26 @@
         '<(module_root_dir)/deps/openvr/include',
       ],
       'library_dirs': [
-        # '<(module_root_dir)/deps/glfw/src',
-        # '<(module_root_dir)/node_modules/native-openvr-deps/lib/win64',
       ],
       'libraries': [
+        '-framework OpenGL',
         '-lglew', # brew install
         '-lglfw', # brew install
-        # '-lglfw3',
-        '-framework Cocoa'
-        # 'openvr_api.lib',
+        # '-lglfw3', # for local build
+        '-framework Cocoa',
+        '-F <(module_root_dir)/node_modules/native-openvr-deps/bin/osx64',
+        '-framework OpenVR',
       ],
+      'link_settings': {
+        'libraries': [
+          '-Wl,-rpath,<(module_root_dir)/node_modules/native-openvr-deps/bin/osx64',
+          '-framework OpenVR',
+        ],
+      },
       'copies': [
         {
           'destination': '<(module_root_dir)/build/Release/',
           'files': [
-            # '<(module_root_dir)/node_modules/native-openvr-deps/bin/win64/openvr_api.dll',
           ]
         }
       ],
