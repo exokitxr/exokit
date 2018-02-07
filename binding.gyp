@@ -33,7 +33,6 @@
       ],
       'library_dirs': [
         '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64',
-        '<(module_root_dir)/deps/glfw/src/Release',
         '<(module_root_dir)/node_modules/native-openvr-deps/lib/win64',
       ],
       'libraries': [
