@@ -10,7 +10,7 @@
 
 #include <v8.h>
 #include <bindings.h>
-#include <platform/windows/include/ContextGDIPlus.h>
+#include <platform/linux/include/ContextCairo.h>
 #include <glfw-bindings.h>
 #include <openvr-bindings.h>
 
@@ -143,8 +143,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
 }
 
 void Init(Handle<Object> exports) {
-  canvas::ContextGDIPlus::initialize();
-  canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
+  canvas::CairoContextFactory *canvasContextFactory = new canvas::CairoContextFactory();
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
   
   canvas::ImageData::setFlip(true);
