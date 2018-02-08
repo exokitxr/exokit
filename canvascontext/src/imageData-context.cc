@@ -5,7 +5,7 @@ using namespace node;
 // using namespace std;
 
 Handle<Object> ImageData::Initialize(Isolate *isolate) {
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
@@ -81,7 +81,7 @@ NAN_GETTER(ImageData::DataGetter) {
     Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageData->GetData(), width * height * 4);
 
     Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-    imageData->dataArray.Reset(Isolate::GetCurrent(), uint8ClampedArray);
+    imageData->dataArray.Reset(uint8ClampedArray);
   }
 
   info.GetReturnValue().Set(Nan::New(imageData->dataArray));

@@ -837,6 +837,20 @@ NAN_METHOD(FlipTextureData) {
   memcpy(pixels, texPixels, num);
 } */
 
+inline bool hasWidthHeight(Local<Value> &value) {
+  MaybeLocal<Object> valueObject(Nan::To<Object>(value));
+  if (!valueObject.IsEmpty()) {
+    Local<String> widthString = Nan::New<String>("width", sizeof("width") - 1).ToLocalChecked();
+    Local<String> heightString = Nan::New<String>("height", sizeof("height") - 1).ToLocalChecked();
+
+    MaybeLocal<Number> widthValue(Nan::To<Number>(valueObject.ToLocalChecked()->Get(widthString)));
+    MaybeLocal<Number> heightValue(Nan::To<Number>(valueObject.ToLocalChecked()->Get(heightString)));
+    return !widthValue.IsEmpty() && !heightValue.IsEmpty();
+  } else {
+    return false;
+  }
+}
+
 NAN_METHOD(TexImage2D) {
   Isolate *isolate = Isolate::GetCurrent();
 
@@ -852,20 +866,21 @@ NAN_METHOD(TexImage2D) {
   Local<Value> type = info[7];
   Local<Value> pixels = info[8];
 
-  Local<String> numberString = String::NewFromUtf8(isolate, "number", NewStringType::kInternalized).ToLocalChecked();
-  Local<String> objectString = String::NewFromUtf8(isolate, "object", NewStringType::kInternalized).ToLocalChecked();
   Local<String> widthString = String::NewFromUtf8(isolate, "width", NewStringType::kInternalized).ToLocalChecked();
   Local<String> heightString = String::NewFromUtf8(isolate, "height", NewStringType::kInternalized).ToLocalChecked();
 
   if (info.Length() == 6) {
     // width is now format, height is now type, and border is now pixels
+    MaybeLocal<Number> targetNumber(Nan::To<Number>(target));
+    MaybeLocal<Number> levelNumber(Nan::To<Number>(level));
+    MaybeLocal<Number> internalformatNumber(Nan::To<Number>(internalformat));
+    MaybeLocal<Number> widthNumber(Nan::To<Number>(width));
+    MaybeLocal<Number> heightNumber(Nan::To<Number>(height));
     if (
-      target->TypeOf(isolate)->StrictEquals(numberString) &&
-      level->TypeOf(isolate)->StrictEquals(numberString) && internalformat->TypeOf(isolate)->StrictEquals(numberString) &&
-      width->TypeOf(isolate)->StrictEquals(numberString) && height->TypeOf(isolate)->StrictEquals(numberString) &&
-      (border->IsNull() || (
-        border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(widthString)->TypeOf(isolate)->StrictEquals(numberString) && border->ToObject()->Get(heightString)->TypeOf(isolate)->StrictEquals(numberString)
-      ))
+      !targetNumber.IsEmpty() &&
+      !levelNumber.IsEmpty() && !internalformatNumber.IsEmpty() &&
+      !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
+      (border->IsNull() || hasWidthHeight(border))
     ) {
       pixels=border;
       /* if (pixels) {
@@ -893,12 +908,19 @@ NAN_METHOD(TexImage2D) {
       return;
     }
   } else if (info.Length() == 9) {
+    MaybeLocal<Number> targetNumber(Nan::To<Number>(target));
+    MaybeLocal<Number> levelNumber(Nan::To<Number>(level));
+    MaybeLocal<Number> internalformatNumber(Nan::To<Number>(internalformat));
+    MaybeLocal<Number> widthNumber(Nan::To<Number>(width));
+    MaybeLocal<Number> heightNumber(Nan::To<Number>(height));
+    MaybeLocal<Number> formatNumber(Nan::To<Number>(format));
+    MaybeLocal<Number> typeNumber(Nan::To<Number>(type));
     if (
-      target->TypeOf(isolate)->StrictEquals(numberString) &&
-      level->TypeOf(isolate)->StrictEquals(numberString) && internalformat->TypeOf(isolate)->StrictEquals(numberString) &&
-      width->TypeOf(isolate)->StrictEquals(numberString) && height->TypeOf(isolate)->StrictEquals(numberString) &&
-      format->TypeOf(isolate)->StrictEquals(numberString) && type->TypeOf(isolate)->StrictEquals(numberString) &&
-      (pixels->IsNull() || pixels->TypeOf(isolate)->StrictEquals(objectString))
+      !targetNumber.IsEmpty() &&
+      !levelNumber.IsEmpty() && !internalformat.IsEmpty() &&
+      !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
+      !formatNumber.IsEmpty() && !typeNumber.IsEmpty() &&
+        (pixels->IsNull() || !Nan::To<Object>(pixels).IsEmpty())
     ) {
       /* if (pixels) {
         pixels = _getImageData(pixels);

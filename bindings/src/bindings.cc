@@ -639,7 +639,7 @@ NAN_METHOD(newGl) {
 Local<Object> makeGl() {
   Isolate *isolate = Isolate::GetCurrent();
 
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(newGl);
@@ -654,7 +654,7 @@ Local<Object> makeGl() {
 Local<Object> makeImage() {
   Isolate *isolate = Isolate::GetCurrent();
 
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   return scope.Escape(Image::Initialize(isolate));
 }
@@ -662,7 +662,7 @@ Local<Object> makeImage() {
 Local<Object> makeImageData() {
   Isolate *isolate = Isolate::GetCurrent();
 
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   return scope.Escape(ImageData::Initialize(isolate));
 }
@@ -670,7 +670,7 @@ Local<Object> makeImageData() {
 Local<Object> makeImageBitmap() {
   Isolate *isolate = Isolate::GetCurrent();
 
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   return scope.Escape(ImageBitmap::Initialize(isolate));
 }
@@ -678,7 +678,7 @@ Local<Object> makeImageBitmap() {
 Local<Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons) {
   Isolate *isolate = Isolate::GetCurrent();
 
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   return scope.Escape(CanvasRenderingContext2D::Initialize(isolate, imageDataCons));
 }
@@ -686,7 +686,7 @@ Local<Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons) {
 Local<Object> makePath2D() {
   Isolate *isolate = Isolate::GetCurrent();
 
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   return scope.Escape(Path2D::Initialize(isolate));
 }

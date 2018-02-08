@@ -5,7 +5,7 @@ using namespace node;
 // using namespace std;
 
 Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons) {
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
@@ -238,7 +238,7 @@ NAN_GETTER(CanvasRenderingContext2D::DataGetter) {
       memcpy(arrayBuffer->GetContents().Data(), data, arrayBuffer->ByteLength());
 
       Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-      context->dataArray.Reset(Isolate::GetCurrent(), uint8ClampedArray);
+      context->dataArray.Reset(uint8ClampedArray);
 
       surface.releaseMemory();
     } else {

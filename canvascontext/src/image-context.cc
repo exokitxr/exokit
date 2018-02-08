@@ -7,7 +7,7 @@ using namespace v8;
 // Persistent<Function> Image::constructor_template;
 
 Handle<Object> Image::Initialize(Isolate *isolate) {
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
@@ -85,7 +85,7 @@ NAN_GETTER(Image::DataGetter) {
     Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), image->GetData(), width * height * 4);
 
     Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-    image->dataArray.Reset(Isolate::GetCurrent(), uint8ClampedArray);
+    image->dataArray.Reset(uint8ClampedArray);
   }
 
   info.GetReturnValue().Set(Nan::New(image->dataArray));

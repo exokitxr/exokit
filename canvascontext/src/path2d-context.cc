@@ -5,7 +5,7 @@ using namespace node;
 // using namespace std;
 
 Handle<Object> Path2D::Initialize(Isolate *isolate) {
-  v8::EscapableHandleScope scope(isolate);
+  Nan::EscapableHandleScope scope;
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
