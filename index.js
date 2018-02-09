@@ -1371,6 +1371,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   let vrMode = null;
   let vrTexture = null;
+  let vrTextures = [];
   window.navigator = {
     userAgent: 'exokit',
     getVRDisplays: () => vrDisplays,
@@ -1391,6 +1392,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     getVRTexture: () => vrTexture,
     setVRTexture: newVrTexture => {
       vrTexture = newVrTexture;
+    },
+    getVRTextures: () => vrTextures,
+    setVRTextures: newVrTextures => {
+      vrTextures = newVrTextures;
     },
   };
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
