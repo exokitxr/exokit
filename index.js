@@ -1552,7 +1552,7 @@ const exokit = (s = '', options = {}) => {
   options.dataPath = options.dataPath || __dirname;
   return _parseWindow(s, options);
 };
-exokit.fetch = src => fetch(src)
+exokit.fetch = src => fetch(src, options = {})
   .then(res => {
     if (res.status >= 200 && res.status < 300) {
       return res.text();
@@ -1563,8 +1563,8 @@ exokit.fetch = src => fetch(src)
   .then(htmlString => {
     const parsedUrl = url.parse(src);
     return exokit(htmlString, {
-      url: src,
-      baseUrl: url.format({
+      url: options.url || src,
+      baseUrl: options.baseUrl || url.format({
         protocol: parsedUrl.protocol || 'http:',
         host: parsedUrl.host || '127.0.0.1',
       }),
