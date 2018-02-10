@@ -1552,7 +1552,7 @@ const exokit = (s = '', options = {}) => {
   options.dataPath = options.dataPath || __dirname;
   return _parseWindow(s, options);
 };
-exokit.fetch = src => fetch(src, options = {})
+exokit.fetch = (src, options = {}) => fetch(src)
   .then(res => {
     if (res.status >= 200 && res.status < 300) {
       return res.text();
@@ -1568,6 +1568,7 @@ exokit.fetch = src => fetch(src, options = {})
         protocol: parsedUrl.protocol || 'http:',
         host: parsedUrl.host || '127.0.0.1',
       }),
+      dataPath: options.dataPath,
     });
   });
 exokit.THREE = THREE;
