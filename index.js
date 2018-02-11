@@ -1510,6 +1510,10 @@ const _parseDocument = (s, options, window) => {
   document.createTextNode = text => new TextNode(text);
   document.createComment = comment => new CommentNode(comment);
   document.styleSheets = [];
+  document.open = () => {
+    document.innerHTML = '';
+  };
+  document.close = () => {};
   document.write = htmlString => {
     const childNodes = parse5.parseFragment(htmlString).childNodes.map(childNode => _fromAST(childNode, window, this));
     for (let i = 0; i < childNodes.length; i++) {
