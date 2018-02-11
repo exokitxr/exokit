@@ -37,6 +37,104 @@ class MessageEvent {
     this.data = data;
   }
 }
+class MutationRecord {
+  constructor(type, target, addedNodes, removedNodes, previousSibling, nextSibling, attributeName, attributeNamespace, oldValue) {
+    this.type = type;
+    this.target = target;
+    this.addedNodes = addedNodes;
+    this.removedNodes = removedNodes;
+    this.previousSibling = previousSibling;
+    this.nextSibling = nextSibling;
+    this.attributeName = attributeName;
+    this.attributeNamespace = attributeNamespace;
+    this.oldValue = oldValue;
+  }
+}
+class MutationObserver {
+  constructor(callback) {
+    this.callback = callback;
+
+    this.element = null;
+    this.options = null;
+    this.queue = [];
+    this.bindings = new WeakMap();
+  }
+
+  observe(element, options) {
+    this.element = element;
+    this.options = options;
+
+    this.bind(element);
+  }
+
+  disconnect() {
+    this.unbind(this.element);
+
+    this.element = null;
+    this.options = null;
+  }
+
+  takeRecords() {
+    const oldQueue = this.queue.slice();
+    this.queue.length = 0;
+    return oldQueue;
+  }
+
+  bind(element) {
+    element.traverse(el => {
+      const _attribute = (name, value) => this.handleAttribute(el, name, value);
+      el.on('attribute', _attribute);
+      const _children = (addedNodes, removedNodes, previousSibling, nextSibling) => this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
+      el.on('children', this.handleChildren);
+
+      this.bindings.set(el, [
+        _attribute,
+        _children,
+      ]);
+    });
+  }
+
+  unbind(element) {
+    element.traverse(el => {
+      const bindings = this.bindings.get(el);
+      for (let i = 0; i < bindings.length; i++) {
+        el.removeListener(bindings[i]);
+      }
+      this.bindings.remove(el);
+    });
+  }
+
+  flush() {
+    if (this.queue.length > 0) {
+      const oldQueue = this.queue.slice();
+      this.queue.length = 0;
+      this.callback(oldQueue, this);
+    }
+  }
+
+  handleAttribute(el, name, value, oldValue) {
+    this.queue.push(new MutationRecord('attributes', el, null, null, null, null, name, null, oldValue));
+
+    setImmediate(() => {
+      this.flush();
+    });
+  }
+
+  handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
+    this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes, previousSibling, nextSibling, null, null, null));
+
+    for (let i = 0; i < addedNodes.length; i++) {
+      this.bind(addedNodes[i]);
+    }
+    for (let i = 0; i < removedNodes.length; i++) {
+      this.unbind(removedNodes[i]);
+    }
+
+    setImmediate(() => {
+      this.flush();
+    });
+  }
+}
 const ImageData = (() => {
   if (typeof nativeImageData !== 'undefined') {
     return nativeImageData;
@@ -527,20 +625,25 @@ class HTMLElement extends Node {
     return this.attributes[name];
   }
   setAttribute(name, value) {
+    const oldValue = this.attributes[name];
     this.attributes[name] = value;
 
-    this.emit('attribute', name, value);
+    this.emit('attribute', name, value, oldValue);
   }
 
   appendChild(childNode) {
     this.childNodes.push(childNode);
     childNode.parentNode = this;
+
+    this.emit('children', [childNode], [], this.childNodes[this.childNodes.length - 2] || null, null);
   }
   removeChild(childNode) {
     const index = this.childNodes.indexOf(childNode);
     if (index !== -1) {
       this.childNodes.splice(index, 1);
       childNode.parentNode = null;
+
+      this.emit('children', [], [childNode], this.childNodes[index - 1] || null, this.childNodes[index] || null);
     }
   }
   insertBefore(childNode, nextSibling) {
@@ -548,6 +651,8 @@ class HTMLElement extends Node {
     if (index !== -1) {
       this.childNodes.splice(index, 0, childNode);
       childNode.parentNode = this;
+
+      this.emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
     }
   }
   insertAfter(childNode, nextSibling) {
@@ -555,6 +660,8 @@ class HTMLElement extends Node {
     if (index !== -1) {
       this.childNodes.splice(index + 1, 0, childNode);
       childNode.parentNode = this;
+
+      this.emit('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
     }
   }
 
@@ -704,10 +811,18 @@ class HTMLElement extends Node {
     return parse5.serialize(this);
   }
   set innerHTML(innerHTML) {
-    const childNodes = parse5.parseFragment(innerHTML).childNodes.map(childNode => _fromAST(childNode, this[windowSymbol], this));
-    this.childNodes = childNodes;
+    const oldChildNodes = this.childNodes;
+    const newChildNodes = parse5.parseFragment(innerHTML).childNodes.map(childNode => _fromAST(childNode, this[windowSymbol], this));
+    this.childNodes = newChildNodes;
 
-    _promiseSerial(childNodes.map(childNode => () => _runHtml(childNode, this[windowSymbol])))
+    if (oldChildNodes.length > 0) {
+      this.emit('children', [], oldChildNodes, null, null);
+    }
+    if (newChildNodes.length > 0) {
+      this.emit('children', newChildNodes, [], null, null);
+    }
+
+    _promiseSerial(newChildNodes.map(childNode => () => _runHtml(childNode, this[windowSymbol])))
       .catch(err => {
         console.warn(err);
       });
@@ -1422,7 +1537,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     canvas: window[htmlElementsSymbol].HTMLCanvasElement,
   };
   window[optionsSymbol] = options;
-  window.Image = window[htmlElementsSymbol].HTMLImageElement;
   window.HTMLElement = window[htmlElementsSymbol].HTMLElement;
   window.HTMLAnchorElement = window[htmlElementsSymbol].HTMLAnchorElement;
   window.HTMLScriptElement = window[htmlElementsSymbol].HTMLScriptElement;
@@ -1431,6 +1545,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.HTMLVideoElement = window[htmlElementsSymbol].HTMLVideoElement;
   window.HTMLIframeElement = window[htmlElementsSymbol].HTMLIframeElement;
   window.HTMLCanvasElement = window[htmlElementsSymbol].HTMLCanvasElement;
+  window.MutationObserver = MutationObserver;
+  window.Image = window[htmlElementsSymbol].HTMLImageElement;
   window.ImageData = ImageData;
   window.ImageBitmap = ImageBitmap;
   window.Path2D = Path2D;
