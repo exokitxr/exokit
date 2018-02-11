@@ -994,8 +994,8 @@ const HTMLImageElement = (() => {
     };
   } else {
     return class HTMLImageElement extends HTMLMediaElement {
-      constructor() {
-        super('image');
+      constructor(attributes = {}, value = '') {
+        super('image', attributes, value);
 
         this.stack = new Error().stack;
 
