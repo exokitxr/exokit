@@ -990,6 +990,11 @@ const HTMLImageElement = (() => {
           }
         }
       }
+
+      get data() {
+        return this.image.data;
+      }
+      set data(data) {}
     };
   } else {
     return class HTMLImageElement extends HTMLMediaElement {
