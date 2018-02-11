@@ -4,6 +4,7 @@
   "main": "index.js",
   "dependencies": {
     "node-localstorage": "^1.3.0",
+    "parse-int": "^1.0.2",
     "parse5": "^4.0.0",
     "window-eval-native": "0.0.1",
     "window-fetch": "0.0.2",

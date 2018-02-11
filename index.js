@@ -5,6 +5,7 @@ const url = require('url');
 const {URL} = url;
 const {performance} = require('perf_hooks');
 
+const parseIntStrict = require('parse-int');
 const parse5 = require('parse5');
 
 const fetch = require('window-fetch');
@@ -602,15 +603,59 @@ Node.COMMENT_NODE = 8;
 Node.DOCUMENT_NODE = 9;
 Node.DOCUMENT_TYPE_NODE = 10;
 Node.DOCUMENT_FRAGMENT_NODE = 11;
+const _makeAttributesProxy = attrs => new Proxy(attrs, {
+  get(target, prop) {
+    const propN = parseIntStrict(prop);
+    if (propN !== undefined) {
+      return target[propN];
+    } else if (prop === 'length') {
+      return target.length;
+    } else {
+      const attr = target.find(attr => attr.name === prop);
+      return attr && attr.value;
+    }
+  },
+  set(target, prop, value) {
+    const propN = parseIntStrict(prop);
+    if (propN !== undefined) {
+      target[propN] = value;
+    } else if (prop === 'length') {
+      target.length = value;
+    } else {
+      const attr = target.find(attr => attr.name === prop);
+      if (!attr) {
+        const attr = {
+          name: prop,
+          value,
+        };
+        target.push(attr);
+      } else {
+        attr.name = prop;
+        attr.value = value;
+      }
+    }
+    return true;
+  },
+  has(target, prop) {
+    if (typeof prop === 'number') {
+      return target[prop] !== undefined;
+    } else if (prop === 'length') {
+      return true;
+    } else {
+      return target.findIndex(attr => attr.name === prop) !== -1;
+    }
+  },
+});
 class HTMLElement extends Node {
-  constructor(tagName = 'div', attributes = {}, value = '') {
+  constructor(tagName = 'div', attrs = [], value = '') {
     super(null);
 
     this.tagName = tagName;
-    this.attributes = attributes;
+    this.attrs = attrs;
     this.value = value;
-    this.childNodes = [];
 
+    this.attributes = _makeAttributesProxy(attrs);
+    this.childNodes = [];
     this._innerHTML = '';
   }
 
@@ -618,13 +663,6 @@ class HTMLElement extends Node {
     return Node.ELEMENT_NODE;
   }
   set nodeType(nodeType) {}
-
-  get attrs() {
-    return _formatAttributes(this.attributes);
-  }
-  set attrs(attrs) {
-    this.attributes = _parseAttributes(attrs);
-  }
 
   get children() {
     return this.childNodes;
@@ -874,8 +912,8 @@ class HTMLElement extends Node {
   }
 }
 class HTMLAnchorElement extends HTMLElement {
-  constructor(attributes = {}, value = '') {
-    super('a', attributes, value);
+  constructor(attrs = [], value = '') {
+    super('a', attrs, value);
   }
 
   get href() {
@@ -886,8 +924,8 @@ class HTMLAnchorElement extends HTMLElement {
   }
 }
 class HTMLLoadableElement extends HTMLElement {
-  constructor(tagName, attributes = {}, value = '') {
-    super(tagName, attributes, value);
+  constructor(tagName, attrs = [], value = '') {
+    super(tagName, attrs, value);
   }
 
   get onload() {
@@ -942,8 +980,8 @@ class HTMLWindowElement extends HTMLLoadableElement {
   }
 }
 class HTMLScriptElement extends HTMLLoadableElement {
-  constructor(attributes = {}, value = '') {
-    super('script', attributes, value);
+  constructor(attrs = [], value = '') {
+    super('script', attrs, value);
 
     this.readyState = null;
 
@@ -1010,8 +1048,8 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 }
 class HTMLMediaElement extends HTMLLoadableElement {
-  constructor(tagName = null, attributes = {}, value = '') {
-    super(tagName, attributes, value);
+  constructor(tagName = null, attrs = [], value = '') {
+    super(tagName, attrs, value);
   }
 
   get src() {
@@ -1033,8 +1071,8 @@ class HTMLMediaElement extends HTMLLoadableElement {
 const HTMLImageElement = (() => {
   if (typeof nativeImage !== 'undefined') {
     return class HTMLImageElement extends HTMLMediaElement {
-      constructor(attributes = {}, value = '') {
-        super('image', attributes, value);
+      constructor(attrs = [], value = '') {
+        super('image', attrs, value);
 
 
         this._src = '';
@@ -1125,8 +1163,8 @@ const HTMLImageElement = (() => {
     };
   } else {
     return class HTMLImageElement extends HTMLMediaElement {
-      constructor(attributes = {}, value = '') {
-        super('image', attributes, value);
+      constructor(attrs = [], value = '') {
+        super('image', attrs, value);
 
         this.stack = new Error().stack;
 
@@ -1151,8 +1189,8 @@ const HTMLImageElement = (() => {
   }
 })();
 class HTMLAudioElement extends HTMLMediaElement {
-  constructor(attributes = {}, value = '') {
-    super('audio', attributes, value);
+  constructor(attrs = [], value = '') {
+    super('audio', attrs, value);
 
     this.on('attribute', (name, value) => {
       if (name === 'src') {
@@ -1193,8 +1231,8 @@ class HTMLAudioElement extends HTMLMediaElement {
   }
 }
 class HTMLVideoElement extends HTMLMediaElement {
-  constructor(attributes = {}, value = '') {
-    super('video', attributes, value);
+  constructor(attrs = [], value = '') {
+    super('video', attrs, value);
 
     this.on('attribute', (name, value) => {
       if (name === 'src') {
@@ -1206,8 +1244,8 @@ class HTMLVideoElement extends HTMLMediaElement {
   }
 }
 class HTMLIframeElement extends HTMLMediaElement {
-  constructor(attributes = {}, value = '') {
-    super('iframe', attributes, value);
+  constructor(attrs = [], value = '') {
+    super('iframe', attrs, value);
 
     this.on('attribute', (name, value) => {
       if (name === 'src') {
@@ -1241,8 +1279,8 @@ class HTMLIframeElement extends HTMLMediaElement {
   }
 }
 class HTMLCanvasElement extends HTMLElement {
-  constructor(attributes = {}, value = '') {
-    super('canvas', attributes, value);
+  constructor(attrs = [], value = '') {
+    super('canvas', attrs, value);
 
     this._context = null;
 
@@ -1327,18 +1365,17 @@ const _fromAST = (node, window, parentNode = null) => {
     commentNode.parentNode = parentNode;
     return commentNode;
   } else {
-    const {tagName, value} = node;
-    const attributes = node.attrs && _parseAttributes(node.attrs);
+    const {tagName, attrs, value} = node;
     const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
     const element = HTMLElementTemplate ?
       new HTMLElementTemplate(
-        attributes,
+        attrs,
         value
       )
     :
       new window[htmlElementsSymbol].HTMLElement(
         tagName,
-        attributes,
+        attrs,
         value
       );
     element.parentNode = parentNode;
@@ -1347,25 +1384,6 @@ const _fromAST = (node, window, parentNode = null) => {
     }
     return element;
   }
-};
-const _parseAttributes = attrs => {
-  const result = {};
-  for (let i = 0; i < attrs.length; i++) {
-    const attr = attrs[i];
-    result[attr.name] = attr.value;
-  }
-  return result;
-};
-const _formatAttributes = attributes => {
-  const result = [];
-  for (const name in attributes) {
-    const value = attributes[name];
-    result.push({
-      name,
-      value,
-    });
-  }
-  return result;
 };
 const _parseStyle = styleString => {
   const style = {};
