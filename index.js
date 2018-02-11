@@ -1319,7 +1319,7 @@ const _runJavascript = (jsString, window, filename = 'script') => {
       filename,
     });
   } catch (err) {
-    console.warn(err);
+    console.warn(`${filename}: ${err.stack}`);
   }
 };
 const _makeWindow = (options = {}, parent = null, top = null) => {
