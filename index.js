@@ -909,7 +909,6 @@ const HTMLImageElement = (() => {
       constructor(attributes = {}, value = '') {
         super('image', attributes, value);
 
-        this.stack = new Error().stack;
 
         this._src = '';
         this.image = new nativeImage();
