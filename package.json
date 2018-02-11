@@ -4,7 +4,8 @@
   "description": "Javascript web browser for the post-screen world",
   "main": "html5.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "node postinstall.js"
   },
   "repository": {
     "type": "git",
@@ -21,7 +22,7 @@
   },
   "homepage": "https://github.com/modulesio/exokit-macos#readme",
   "dependencies": {
-    "exokit": "0.0.32",
+    "exokit": "0.0.45",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.3"
   }
