@@ -4,7 +4,6 @@ const path = require('path');
 const url = require('url');
 const {URL} = url;
 const {performance} = require('perf_hooks');
-const vm = require('vm');
 
 const parse5 = require('parse5');
 
@@ -14,6 +13,7 @@ const {Response, Blob} = fetch;
 const WebSocket = require('ws/lib/websocket');
 const {LocalStorage} = require('node-localstorage');
 const WindowWorker = require('window-worker');
+const windowEval = require('window-eval');
 const THREE = require('./lib/three-min.js');
 
 const windowSymbol = Symbol();
@@ -1315,7 +1315,7 @@ const _runHtml = async (element, window) => {
 };
 const _runJavascript = (jsString, window, filename = 'script') => {
   try {
-    vm.runInContext(jsString, window, {
+    windowEval(jsString, window, {
       filename,
     });
   } catch (err) {
@@ -1493,7 +1493,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.updateArFrame = (viewMatrix, projectionMatrix) => {
     window.emit('updatearframe', viewMatrix, projectionMatrix);
   };
-  vm.createContext(window);
   return window;
 };
 const _parseDocument = (s, options, window) => {

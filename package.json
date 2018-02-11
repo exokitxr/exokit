@@ -5,6 +5,7 @@
   "dependencies": {
     "node-localstorage": "^1.3.0",
     "parse5": "^4.0.0",
+    "window-eval": "0.0.2",
     "window-fetch": "0.0.2",
     "window-worker": "0.0.20",
     "ws": "^4.0.0",
