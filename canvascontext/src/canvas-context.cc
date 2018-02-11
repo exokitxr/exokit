@@ -613,7 +613,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       context->DrawImage(imageData, 0, 0, sw, sh, x, y, dw, dh);
     }
   } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
-    Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(info[0]));
+    Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(info[0]->ToObject()->Get(JS_STR("image"))));
     int x = info[1]->Int32Value();
     int y = info[2]->Int32Value();
     if (info.Length() > 3) {
