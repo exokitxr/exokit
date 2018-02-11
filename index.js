@@ -1330,6 +1330,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.self = window;
   window.parent = parent || window;
   window.top = top || window;
+  for (let i = 0; i < windowEval.builtinKeys.length; i++) {
+    const k = windowEval.builtinKeys[i];
+    window[k] = global[k];
+  }
   window.innerWidth = 1280;
   window.innerHeight = 1024;
   window.devicePixelRatio = 1;
@@ -1338,11 +1342,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.clearTimeout = clearTimeout;
   window.setInterval = setInterval;
   window.clearInterval = clearInterval;
-  window.Date = Date;
-  window.Map = Map;
-  window.Set = Set;
-  window.WeakMap = WeakMap;
-  window.WeakSet = WeakSet;
   window.performance = performance;
   window.location = url.parse(options.url);
 
