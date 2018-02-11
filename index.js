@@ -905,17 +905,14 @@ class HTMLMediaElement extends HTMLLoadableElement {
 }
 const HTMLImageElement = (() => {
   if (typeof nativeImage !== 'undefined') {
-    return class HTMLImageElement extends nativeImage {
+    return class HTMLImageElement extends HTMLMediaElement {
       constructor(attributes = {}, value = '') {
-        super();
-        EventEmitter.call(this);
-        this.tagName = 'image'
-        this.attributes = attributes;
-        this.value = value;
+        super('image', attributes, value);
 
         this.stack = new Error().stack;
 
         this._src = '';
+        this.image = new nativeImage();
       }
 
       emit(event, data) {
@@ -952,7 +949,7 @@ const HTMLImageElement = (() => {
             }
           })
           .then(arrayBuffer => {
-            if (this.load(arrayBuffer)) {
+            if (this.image.load(arrayBuffer)) {
               return Promise.resolve();
             } else {
               console.warn('failed to decode image src', srcError.stack);
