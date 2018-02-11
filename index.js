@@ -85,7 +85,7 @@ class MutationObserver {
       const _attribute = (name, value) => this.handleAttribute(el, name, value);
       el.on('attribute', _attribute);
       const _children = (addedNodes, removedNodes, previousSibling, nextSibling) => this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
-      el.on('children', this.handleChildren);
+      el.on('children', _children);
 
       this.bindings.set(el, [
         _attribute,
