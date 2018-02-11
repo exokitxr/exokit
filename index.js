@@ -13,7 +13,7 @@ const {Response, Blob} = fetch;
 const WebSocket = require('ws/lib/websocket');
 const {LocalStorage} = require('node-localstorage');
 const WindowWorker = require('window-worker');
-const windowEval = require('window-eval');
+const windowEval = require('window-eval-native');
 const THREE = require('./lib/three-min.js');
 
 const windowSymbol = Symbol();
@@ -1315,11 +1315,9 @@ const _runHtml = async (element, window) => {
 };
 const _runJavascript = (jsString, window, filename = 'script') => {
   try {
-    windowEval(jsString, window, {
-      filename,
-    });
+    windowEval(jsString, window, filename);
   } catch (err) {
-    console.warn(`${filename}: ${err.stack}`);
+    console.warn(err.stack);
   }
 };
 const _makeWindow = (options = {}, parent = null, top = null) => {
