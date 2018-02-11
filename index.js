@@ -595,6 +595,13 @@ class Node extends EventEmitter {
     this.parentNode = null;
   }
 }
+Node.ELEMENT_NODE = 1;
+Node.TEXT_NODE = 3;
+Node.PROCESSING_INSTRUCTION_NODE = 7;
+Node.COMMENT_NODE = 8;
+Node.DOCUMENT_NODE = 9;
+Node.DOCUMENT_TYPE_NODE = 10;
+Node.DOCUMENT_FRAGMENT_NODE = 11;
 class HTMLElement extends Node {
   constructor(tagName = 'div', attributes = {}, value = '') {
     super(null);
@@ -606,6 +613,11 @@ class HTMLElement extends Node {
 
     this._innerHTML = '';
   }
+
+  get nodeType() {
+    return Node.ELEMENT_NODE;
+  }
+  set nodeType(nodeType) {}
 
   get attrs() {
     return _formatAttributes(this.attributes);
@@ -1286,6 +1298,11 @@ class TextNode extends Node {
 
     this.value = value;
   }
+
+  get nodeType() {
+    return Node.TEXT_NODE;
+  }
+  set nodeType(nodeType) {}
 }
 class CommentNode extends Node {
   constructor(value) {
@@ -1293,6 +1310,11 @@ class CommentNode extends Node {
 
     this.value = value;
   }
+
+  get nodeType() {
+    return Node.COMMENT_NODE;
+  }
+  set nodeType(nodeType) {}
 }
 
 const _fromAST = (node, window, parentNode = null) => {
@@ -1515,7 +1537,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.document = null;
   window.URL = URL;
   window[htmlElementsSymbol] = {
-    Node: (Old => class Node extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(Node),
+    Node: (Old => {
+      class Node extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } }
+      for (const k in Old) {
+        Node[k] = Old[k];
+      }
+      return Node;
+    })(Node),
     HTMLElement: (Old => class HTMLElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLElement),
     HTMLAnchorElement: (Old => class HTMLAnchorElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLAnchorElement),
     HTMLScriptElement: (Old => class HTMLScriptElement extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(HTMLScriptElement),
@@ -1546,6 +1574,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.HTMLIframeElement = window[htmlElementsSymbol].HTMLIframeElement;
   window.HTMLCanvasElement = window[htmlElementsSymbol].HTMLCanvasElement;
   window.MutationObserver = MutationObserver;
+  window.Node = window[htmlElementsSymbol].Node;
   window.Image = window[htmlElementsSymbol].HTMLImageElement;
   window.ImageData = ImageData;
   window.ImageBitmap = ImageBitmap;
