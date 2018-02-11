@@ -1501,6 +1501,7 @@ const _parseDocument = (s, options, window) => {
   document.body = body;
   document.location = url.parse(options.url);
   document.createElement = tagName => {
+    tagName = tagName.toLowerCase();
     const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
     return HTMLElementTemplate ? new HTMLElementTemplate() : new window[htmlElementsSymbol].HTMLElement(tagName);
   };
