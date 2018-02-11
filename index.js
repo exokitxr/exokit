@@ -1339,6 +1339,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.setInterval = setInterval;
   window.clearInterval = clearInterval;
   window.Date = Date;
+  window.Map = Map;
+  window.Set = Set;
+  window.WeakMap = WeakMap;
+  window.WeakSet = WeakSet;
   window.performance = performance;
   window.location = url.parse(options.url);
 
