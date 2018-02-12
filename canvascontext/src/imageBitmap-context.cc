@@ -4,7 +4,7 @@ using namespace v8;
 using namespace node;
 // using namespace std;
 
-Handle<Object> ImageBitmap::Initialize(Isolate *isolate) {
+Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -24,6 +24,7 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate) {
 
   Local<Function> createImageBitmapFn = Nan::New<Function>(CreateImageBitmap);
   createImageBitmapFn->Set(JS_STR("ImageBitmap"), ctorFn);
+  createImageBitmapFn->Set(JS_STR("Image"), imageCons);
 
   ctorFn->Set(JS_STR("createImageBitmap"), createImageBitmapFn);
 
@@ -104,6 +105,22 @@ NAN_METHOD(ImageBitmap::CreateImageBitmap) {
       arg,
     };
     Local<Object> imageBitmapObj = imageBitmapConstructor->NewInstance(sizeof(argv) / sizeof(argv[0]), argv);
+
+    info.GetReturnValue().Set(imageBitmapObj);
+  } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("Blob"))) {
+    Local<ArrayBufferView> buffer = Local<ArrayBufferView>::Cast(info[0]->ToObject()->Get(JS_STR("buffer")));
+    Local<ArrayBuffer> arrayBufer = buffer->Buffer();
+
+    Local<Function> imageConstructor = Local<Function>::Cast(info.Callee()->Get(JS_STR("Image")));
+    Local<Value> argv1[] = {};
+    Local<Object> imageObj = imageConstructor->NewInstance(sizeof(argv1) / sizeof(argv1[0]), argv1);
+    Image *image = ObjectWrap::Unwrap<Image>(imageObj);
+    image->Load((unsigned char *)arrayBufer->GetContents().Data() + buffer->ByteOffset(), buffer->ByteLength());
+
+    Local<Value> argv2[] = {
+      imageObj,
+    };
+    Local<Object> imageBitmapObj = imageBitmapConstructor->NewInstance(sizeof(argv2) / sizeof(argv2[0]), argv2);
 
     info.GetReturnValue().Set(imageBitmapObj);
   } else {

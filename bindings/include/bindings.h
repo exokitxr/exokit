@@ -13,7 +13,7 @@
 v8::Local<v8::Object> makeGl();
 v8::Local<v8::Object> makeImage();
 v8::Local<v8::Object> makeImageData();
-v8::Local<v8::Object> makeImageBitmap();
+v8::Local<v8::Object> makeImageBitmap(Local<Value> imageCons);
 v8::Local<v8::Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons);
 v8::Local<v8::Object> makePath2D();
 
