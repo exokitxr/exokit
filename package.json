@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/modulesio/exokit-linux#readme",
   "dependencies": {
-    "exokit": "0.0.57",
+    "exokit": "0.0.59",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.4"
   }
