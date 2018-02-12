@@ -1620,7 +1620,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       workerOptions.baseUrl = options.baseUrl;
 
       if (src instanceof Blob) {
-        super('data:application/javascript,' + src[Blob.BUFFER].toString('utf8'), workerOptions);
+        super('data:application/javascript,' + src.buffer.toString('utf8'), workerOptions);
       } else {
         super(_normalizeUrl(src), workerOptions);
       }

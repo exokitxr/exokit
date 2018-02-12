@@ -7,7 +7,7 @@
     "parse-int": "^1.0.2",
     "parse5": "^4.0.0",
     "window-eval-native": "0.0.1",
-    "window-fetch": "0.0.2",
+    "window-fetch": "0.0.3",
     "window-worker": "0.0.20",
     "ws": "^4.0.0",
     "xmlhttprequest": "^1.8.0"
