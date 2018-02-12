@@ -1070,7 +1070,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     return running;
   }
 }
-class HTMLMediaElement extends HTMLLoadableElement {
+class HTMLSrcableElement extends HTMLLoadableElement {
   constructor(tagName = null, attrs = [], value = '') {
     super(tagName, attrs, value);
   }
@@ -1091,9 +1091,27 @@ class HTMLMediaElement extends HTMLLoadableElement {
     }
   }
 }
+class HTMLMediaElement extends HTMLSrcableElement {
+  constructor(tagName = null, attrs = [], value = '') {
+    super(tagName, attrs, value);
+
+    this.paused = false;
+    this.currentTime = 0;
+    this.duration = 0;
+    this.loop = false;
+  }
+
+  play() {
+    this.paused = false;
+  }
+
+  pause() {
+    this.paused = true;
+  }
+}
 const HTMLImageElement = (() => {
   if (typeof nativeImage !== 'undefined') {
-    return class HTMLImageElement extends HTMLMediaElement {
+    return class HTMLImageElement extends HTMLSrcableElement {
       constructor(attrs = [], value = '') {
         super('IMG', attrs, value);
 
@@ -1185,7 +1203,7 @@ const HTMLImageElement = (() => {
       set data(data) {}
     };
   } else {
-    return class HTMLImageElement extends HTMLMediaElement {
+    return class HTMLImageElement extends HTMLSrcableElement {
       constructor(attrs = [], value = '') {
         super('IMG', attrs, value);
 
@@ -1266,7 +1284,7 @@ class HTMLVideoElement extends HTMLMediaElement {
     });
   }
 }
-class HTMLIframeElement extends HTMLMediaElement {
+class HTMLIframeElement extends HTMLSrcableElement {
   constructor(attrs = [], value = '') {
     super('IFRAME', attrs, value);
 
