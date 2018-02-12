@@ -21,6 +21,7 @@ const windowSymbol = Symbol();
 const htmlTagsSymbol = Symbol();
 const htmlElementsSymbol = Symbol();
 const optionsSymbol = Symbol();
+let nativeBindingsModulePath = null;
 
 let id = 0;
 const urls = new Map();
@@ -136,141 +137,91 @@ class MutationObserver {
     });
   }
 }
-const ImageData = (() => {
-  if (typeof nativeImageData !== 'undefined') {
-    return nativeImageData;
-  } else {
-    // throw new Error('fail to bind native image data class');
-    return class ImageData {
-      constructor(width, height) {
-        this.width = width;
-        this.height = height;
-        this.data = new Uint8ClampedArray(0);
-      }
-    };
+class ImageData {
+  constructor(width, height) {
+    this.width = width;
+    this.height = height;
+    this.data = new Uint8ClampedArray(0);
   }
-})();
-const ImageBitmap = (() => {
-  if (typeof nativeImageBitmap !== 'undefined') {
-    return nativeImageBitmap;
-  } else {
-    // throw new Error('fail to bind native image bitmap class');
-    class ImageBitmap {
-      constructor(image) {
-        this.width = image.width;
-        this.height = image.height;
-      }
+}
+class ImageBitmap {
+  constructor(image) {
+    this.width = image.width;
+    this.height = image.height;
+  }
+}
+ImageBitmap.createImageBitmap = image => new ImageBitmap(image.width, image.height);
+class Path2D {
+  moveTo() {}
+  lineTo() {}
+  quadraticCurveTo() {}
+}
+class CanvasRenderingContext2D {
+  drawImage() {}
+  fillRect() {}
+  clearRect() {}
+  fillText() {}
+  stroke() {}
+  scale() {}
+  measureText() {
+    return {width: 0};
+  }
+  createImageData(w, h) {
+    return new ImageData(w, h);
+  }
+  getImageData(sx, sy, sw, sh) {
+    return new ImageData(sw, sh);
+  }
+  putImageData() {}
+}
+const VERSION = Symbol();
+class WebGLContext {
+  get VERSION() {
+    return VERSION;
+  }
+  getExtension() {
+    return null;
+  }
+  getParameter(param) {
+    if (param === VERSION) {
+      return 'WebGL 1';
+    } else {
+      return null;
     }
-    ImageBitmap.createImageBitmap = image => new ImageBitmap(image.width, image.height);
-    return ImageBitmap;
   }
-})();
-const Path2D = (() => {
-  if (typeof nativePath2D !== 'undefined') {
-    return nativePath2D;
-  } else {
-    // throw new Error('fail to bind native path 2d class');
-    return class Path2D {
-      moveTo() {}
-      lineTo() {}
-      quadraticCurveTo() {}
-    };
+  createTexture() {}
+  bindTexture() {}
+  texParameteri() {}
+  texImage2D() {}
+  createProgram() {}
+  createShader() {}
+  shaderSource() {}
+  compileShader() {}
+  getShaderParameter() {}
+  getShaderInfoLog() {
+    return '';
   }
-})();
-const CanvasRenderingContext2D = (() => {
-  if (typeof nativeCanvasRenderingContext2D !== 'undefined') {
-    return nativeCanvasRenderingContext2D;
-  } else {
-    // throw new Error('fail to bind native canvas rendering context 2d class');
-    return class CanvasRenderingContext2D {
-      drawImage() {}
-      fillRect() {}
-      clearRect() {}
-      fillText() {}
-      stroke() {}
-      scale() {}
-      measureText() {
-        return {width: 0};
-      }
-      createImageData(w, h) {
-        return new ImageData(w, h);
-      }
-      getImageData(sx, sy, sw, sh) {
-        return new ImageData(sw, sh);
-      }
-      putImageData() {}
-    };
+  attachShader() {}
+  linkProgram() {}
+  getProgramInfoLog() {
+    return '';
   }
-})();
-const WebGLContext = (() => {
-  if (typeof nativeGl !== 'undefined') {
-    // console.log('make gl proxy');
-
-    return nativeGl;
-    /* return function WebGLContext() {
-      return new Proxy(new nativeGl(), {
-        get(target, propKey, receiver) {
-          const orig = target[propKey];
-          if (typeof orig === 'function') {
-            return function(a, b, c, d, e, f) {
-              console.log('gl proxy method ' + propKey);
-              return orig.apply(target, arguments);
-            };
-          } else {
-            return orig;
-          }
-        }
-      });
-    }; */
-  } else {
-    const VERSION = Symbol();
-    return class WebGLContext {
-      get VERSION() {
-        return VERSION;
-      }
-      getExtension() {
-        return null;
-      }
-      getParameter(param) {
-        if (param === VERSION) {
-          return 'WebGL 1';
-        } else {
-          return null;
-        }
-      }
-      createTexture() {}
-      bindTexture() {}
-      texParameteri() {}
-      texImage2D() {}
-      createProgram() {}
-      createShader() {}
-      shaderSource() {}
-      compileShader() {}
-      getShaderParameter() {}
-      getShaderInfoLog() {
-        return '';
-      }
-      attachShader() {}
-      linkProgram() {}
-      getProgramInfoLog() {
-        return '';
-      }
-      getProgramParameter() {}
-      deleteShader() {}
-      clearColor() {}
-      clearDepth() {}
-      clearStencil() {}
-      enable() {}
-      disable() {}
-      depthFunc() {}
-      frontFace() {}
-      cullFace() {}
-      blendEquationSeparate() {}
-      blendFuncSeparate() {}
-      viewport() {}
-    };
-  }
-})();
+  getProgramParameter() {}
+  deleteShader() {}
+  clearColor() {}
+  clearDepth() {}
+  clearStencil() {}
+  enable() {}
+  disable() {}
+  depthFunc() {}
+  frontFace() {}
+  cullFace() {}
+  blendEquationSeparate() {}
+  blendFuncSeparate() {}
+  viewport() {}
+}
+let nativeVr = null;
+let nativeWindow = null;
 class VRFrameData {
   constructor() {
     this.leftProjectionMatrix = new Float32Array(16);
@@ -412,7 +363,7 @@ class MRDisplay {
   }
 
   requestPresent() {
-    return (typeof nativeVr !== 'undefined' ? nativeVr.requestPresent() : Promise.resolve())
+    return (nativeVr !== null ? nativeVr.requestPresent() : Promise.resolve())
       .then(() => {
         this.isPresenting = true;
 
@@ -423,7 +374,7 @@ class MRDisplay {
   }
 
   exitPresent() {
-    return (typeof nativeVr !== 'undefined' ? nativeVr.exitPresent() : Promise.resolve())
+    return (nativeVr !== null ? nativeVr.exitPresent() : Promise.resolve())
       .then(() => {
         this.isPresenting = false;
 
@@ -909,7 +860,7 @@ class HTMLElement extends Node {
     if (document.pointerLockElement === null) {
       document.pointerLockElement = this;
 
-      if (typeof nativeWindow !== 'undefined') {
+      if (nativeWindow !== null) {
         nativeWindow.setCursorMode(false);
       }
 
@@ -924,7 +875,7 @@ class HTMLElement extends Node {
     if (document.pointerLockElement !== null) {
       document.pointerLockElement = null;
 
-      if (typeof nativeWindow !== 'undefined') {
+      if (nativeWindow !== null) {
         nativeWindow.setCursorMode(true);
       }
 
@@ -1109,126 +1060,30 @@ class HTMLMediaElement extends HTMLSrcableElement {
     this.paused = true;
   }
 }
-const HTMLImageElement = (() => {
-  if (typeof nativeImage !== 'undefined') {
-    return class HTMLImageElement extends HTMLSrcableElement {
-      constructor(attrs = [], value = '') {
-        super('IMG', attrs, value);
+class HTMLImageElement extends HTMLSrcableElement {
+  constructor(attrs = [], value = '') {
+    super('IMG', attrs, value);
 
+    this.stack = new Error().stack;
 
-        this._src = '';
-        this.image = new nativeImage();
-      }
-
-      emit(event, data) {
-        return EventEmitter.prototype.emit.call(this, event, data);
-      }
-      on(event, cb) {
-        return EventEmitter.prototype.on.call(this, event, cb);
-      }
-      removeListener(event, cb) {
-        return EventEmitter.prototype.removeListener.call(this, event, cb);
-      }
-
-      addEventListener(event, cb) {
-        return HTMLElement.prototype.addEventListener.call(this, event, cb);
-      }
-      removeEventListener(event, cb) {
-        return HTMLElement.prototype.removeEventListener.call(this, event, cb);
-      }
-
-      get src() {
-        return this._src;
-      }
-      set src(src) {
-        this._src = src;
-
-        const srcError = new Error();
-
-        this[windowSymbol].fetch(src)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.arrayBuffer();
-            } else {
-              return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-            }
-          })
-          .then(arrayBuffer => {
-            if (this.image.load(arrayBuffer)) {
-              return Promise.resolve();
-            } else {
-              console.warn('failed to decode image src', srcError.stack);
-              return Promise.reject(new Error(`failed to decode image (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
-            }
-          })
-          .then(() => {
-            this.emit('load');
-          })
-          .catch(err => {
-            this.emit('error', err);
-          });
-      }
-
-      get onload() {
-        return this.listeners('load')[0];
-      }
-      set onload(onload) {
-        if (typeof onload === 'function') {
-          this.addEventListener('load', onload);
-        } else {
-          const listeners = this.listeners('load');
-          for (let i = 0; i < listeners.length; i++) {
-            this.removeEventListener('load', listeners[i]);
-          }
-        }
-      }
-
-      get onerror() {
-        return this.listeners('error')[0];
-      }
-      set onerror(onerror) {
-        if (typeof onerror === 'function') {
-          this.addEventListener('error', onerror);
-        } else {
-          const listeners = this.listeners('error');
-          for (let i = 0; i < listeners.length; i++) {
-            this.removeEventListener('error', listeners[i]);
-          }
-        }
-      }
-
-      get data() {
-        return this.image.data;
-      }
-      set data(data) {}
-    };
-  } else {
-    return class HTMLImageElement extends HTMLSrcableElement {
-      constructor(attrs = [], value = '') {
-        super('IMG', attrs, value);
-
-        this.stack = new Error().stack;
-
-        this.on('attribute', (name, value) => {
-          if (name === 'src') {
-            process.nextTick(() => { // XXX
-              this.emit('load');
-            });
-          }
+    this.on('attribute', (name, value) => {
+      if (name === 'src') {
+        process.nextTick(() => { // XXX
+          this.emit('load');
         });
       }
-
-      get width() {
-        return 0; // XXX
-      }
-      set width(width) {}
-      get height() {
-        return 0; // XXX
-      }
-      set height(height) {}
-    };
+    });
   }
-})();
+
+  get width() {
+    return 0; // XXX
+  }
+  set width(width) {}
+  get height() {
+    return 0; // XXX
+  }
+  set height(height) {}
+};
 class HTMLAudioElement extends HTMLMediaElement {
   constructor(attrs = [], value = '') {
     super('AUDIO', attrs, value);
@@ -1660,6 +1515,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Worker = class Worker extends WindowWorker {
     constructor(src, workerOptions = {}) {
       workerOptions.baseUrl = options.baseUrl;
+      if (nativeBindingsModulePath) {
+        workerOptions.args = [nativeBindingsModulePath];
+        workerOptions.bindingsModule = path.join(__dirname, 'lib', 'worker-native-bindings.js');
+      }
 
       if (src instanceof Blob) {
         super('data:application/javascript,' + src.buffer.toString('utf8'), workerOptions);
@@ -1779,6 +1638,125 @@ exokit.fetch = (src, options = {}) => fetch(src)
     });
   });
 exokit.THREE = THREE;
+exokit.setNativeBindingsModule = nativeBindingsModule => {
+  nativeBindingsModulePath = nativeBindingsModule;
+
+  const bindings = require(nativeBindingsModule);
+
+  ImageData = bindings.nativeImageData;
+  ImageBitmap = bindings.nativeImageBitmap;
+  Path2D = bindings.nativePath2D;
+  CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
+  WebGLContext = bindings.nativeGl;
+  /* return function WebGLContext() {
+    return new Proxy(new nativeGl(), {
+      get(target, propKey, receiver) {
+        const orig = target[propKey];
+        if (typeof orig === 'function') {
+          return function(a, b, c, d, e, f) {
+            console.log('gl proxy method ' + propKey);
+            return orig.apply(target, arguments);
+          };
+        } else {
+          return orig;
+        }
+      }
+    });
+  }; */
+  HTMLImageElement = class extends HTMLSrcableElement {
+    constructor(attrs = [], value = '') {
+      super('IMG', attrs, value);
+
+
+      this._src = '';
+      this.image = new bindings.nativeImage();
+    }
+
+    emit(event, data) {
+      return EventEmitter.prototype.emit.call(this, event, data);
+    }
+    on(event, cb) {
+      return EventEmitter.prototype.on.call(this, event, cb);
+    }
+    removeListener(event, cb) {
+      return EventEmitter.prototype.removeListener.call(this, event, cb);
+    }
+
+    addEventListener(event, cb) {
+      return HTMLElement.prototype.addEventListener.call(this, event, cb);
+    }
+    removeEventListener(event, cb) {
+      return HTMLElement.prototype.removeEventListener.call(this, event, cb);
+    }
+
+    get src() {
+      return this._src;
+    }
+    set src(src) {
+      this._src = src;
+
+      const srcError = new Error();
+
+      this[windowSymbol].fetch(src)
+        .then(res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.arrayBuffer();
+          } else {
+            return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
+          }
+        })
+        .then(arrayBuffer => {
+          if (this.image.load(arrayBuffer)) {
+            return Promise.resolve();
+          } else {
+            console.warn('failed to decode image src', srcError.stack);
+            return Promise.reject(new Error(`failed to decode image (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
+          }
+        })
+        .then(() => {
+          this.emit('load');
+        })
+        .catch(err => {
+          this.emit('error', err);
+        });
+    }
+
+    get onload() {
+      return this.listeners('load')[0];
+    }
+    set onload(onload) {
+      if (typeof onload === 'function') {
+        this.addEventListener('load', onload);
+      } else {
+        const listeners = this.listeners('load');
+        for (let i = 0; i < listeners.length; i++) {
+          this.removeEventListener('load', listeners[i]);
+        }
+      }
+    }
+
+    get onerror() {
+      return this.listeners('error')[0];
+    }
+    set onerror(onerror) {
+      if (typeof onerror === 'function') {
+        this.addEventListener('error', onerror);
+      } else {
+        const listeners = this.listeners('error');
+        for (let i = 0; i < listeners.length; i++) {
+          this.removeEventListener('error', listeners[i]);
+        }
+      }
+    }
+
+    get data() {
+      return this.image.data;
+    }
+    set data(data) {}
+  };
+  nativeVr = bindings.nativeVr;
+  nativeWindow = bindings.nativeWindow;
+};
 module.exports = exokit;
 
 if (require.main === module) {
