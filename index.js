@@ -795,6 +795,25 @@ class HTMLElement extends Node {
       return this.getElementsByTagName(selector);
     }
   }
+  matches(selector) {
+    let match;
+    if (match = selector.match(/^#(.+)$/)) {
+      const id = match[1];
+      return (
+        (this.getAttribute && this.getAttribute('id') === id) ||
+        (this.attrs && this.attrs.some(attr => attr.name === 'id' && attr.value === id))
+      );
+    } else if (match = selector.match(/^\.(.+)$/)) {
+      const className = match[1];
+      return (
+        (this.getAttribute && this.getAttribute('class') === className) ||
+        (this.attrs && this.attrs.some(attr => attr.name === 'class' && attr.value === className))
+      );
+    } else {
+      const tagName = selector;
+      return this.tagName === tagName;
+    }
+  }
   traverse(fn) {
     const _recurse = node => {
       const result = fn(node);
