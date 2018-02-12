@@ -1,22 +1,10 @@
 const path = require('path');
-
-const exokitWindows = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
-
-[
-  'nativeGl',
-  'nativeImage',
-  'nativeImageData',
-  'nativeImageBitmap',
-  'nativeCanvasRenderingContext2D',
-  'nativePath2D',
-  'nativeWindow',
-  'nativeVr',
-].forEach(k => { // XXX hook these in via exokit config option
-  global[k] = exokitWindows[k];
-});
-
 const exokit = require('exokit');
+const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
+exokit.setNativeBindingsModule(nativeBindingsModulePath);
 const {THREE} = exokit;
+const nativeBindings = require(nativeBindingsModulePath);
+const {nativeVr, nativeWindow} = nativeBindings;
 
 /* const {VERSION} = nativeGl;
 
@@ -72,7 +60,7 @@ nativeGl.viewport = function() {
 // CALLBACKS
 
 const nop = () => {};
-global.nativeWindow.events.emit = (type, data) => {
+nativeWindow.events.emit = (type, data) => {
   // console.log(type, data);
 
   switch (type) {
@@ -110,7 +98,7 @@ global.nativeWindow.events.emit = (type, data) => {
         data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
         data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
 
-        global.nativeWindow.setCursorPosition(window.innerWidth / 2, window.innerHeight / 2);
+        nativeWindow.setCursorPosition(window.innerWidth / 2, window.innerHeight / 2);
       }
       
       window.emit(type, data);
@@ -148,7 +136,9 @@ let fbo = null;
 let texture = null;
 let renderWidth = 0;
 let renderHeight = 0;
-global.nativeVr.requestPresent = function() {
+const depthNear = 0.1;
+const depthFar = 1000.0;
+nativeVr.requestPresent = function() {
   // while booting we sometimes get transient errors
   const _requestSystem = () => new Promise((accept, reject) => {
     let err = null;
@@ -156,7 +146,7 @@ global.nativeVr.requestPresent = function() {
       if (i < 20) {
         const system = (() => {
           try {
-            return global.nativeVr.system.VR_Init(global.nativeVr.EVRApplicationType.Scene);
+            return nativeVr.system.VR_Init(nativeVr.EVRApplicationType.Scene);
           } catch (newErr) {
             err = newErr;
             return null;
@@ -179,23 +169,28 @@ global.nativeVr.requestPresent = function() {
   return _requestSystem()
     .then(newSystem => {
       system = newSystem;
-      compositor = global.nativeVr.compositor.NewCompositor();
+      compositor = nativeVr.compositor.NewCompositor();
 
       const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
       renderWidth = halfWidth;
       renderHeight = height;
 
+      window.updateVrFrame({
+        renderWidth,
+        renderHeight,
+      });
+
       const width = halfWidth * 2;
-      const [msFb, msTex] = global.nativeWindow.getRenderTarget(width, height, 4);
+      const [msFb, msTex] = nativeWindow.getRenderTarget(width, height, 4);
       msFbo = msFb;
       msTexture = msTex;
-      const [fb, tex] = global.nativeWindow.getRenderTarget(width, height, 1);
+      const [fb, tex] = nativeWindow.getRenderTarget(width, height, 1);
       fbo = fb;
       texture = tex;
     });
 };
-global.nativeVr.exitPresent = function() {
-  global.nativeVr.system.VR_Shutdown();
+nativeVr.exitPresent = function() {
+  nativeVr.system.VR_Shutdown();
   system = null;
   compositor = null;
   
@@ -217,7 +212,7 @@ const FRAME_TIME_MIN = FRAME_TIME_MAX / 5;
 if (require.main === module) {
   const url = process.argv[2];
   
-  global.nativeWindow.create(innerWidth, innerHeight);
+  nativeWindow.create(innerWidth, innerHeight);
 
   exokit.fetch(url)
     .then(site => {
@@ -226,7 +221,7 @@ if (require.main === module) {
       window = site.window;
       window.innerWidth = innerWidth;
       window.innerHeight = innerHeight;
-      if (global.nativeVr.system.VR_IsHmdPresent()) { // XXX hook this up internally in exokit
+      if (nativeVr.system.VR_IsHmdPresent()) { // XXX hook this up internally in exokit
         window.navigator.setVRMode('vr');
       }
       window.addEventListener('error', err => {
@@ -266,7 +261,7 @@ if (require.main === module) {
             .multiply(hmdMatrix)
             .toArray(frameData.leftViewMatrix);
 
-          system.GetProjectionMatrix(0, vrDepthNear, vrDepthFar, localFloat32Array4);
+          system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.leftProjectionMatrix.set(localFloat32Array4);
 
@@ -277,7 +272,7 @@ if (require.main === module) {
             .multiply(hmdMatrix)
             .toArray(frameData.rightViewMatrix);
 
-          system.GetProjectionMatrix(1, vrDepthNear, vrDepthFar, localFloat32Array4);
+          system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.rightProjectionMatrix.set(localFloat32Array4);
 
@@ -339,26 +334,26 @@ if (require.main === module) {
           });
 
           // bind framebuffer for rendering
-          global.nativeWindow.bindFrameBuffer(msFbo);
+          nativeWindow.bindFrameBuffer(msFbo);
         } else {
           // bind framebuffer for rendering
-          global.nativeWindow.bindFrameBuffer(0);
+          nativeWindow.bindFrameBuffer(0);
         }
 
         // poll for window events
-        global.nativeWindow.pollEvents();
+        nativeWindow.pollEvents();
 
         // trigger requestAnimationFrame
         window.tickAnimationFrame();
 
         // submit to compositor
         if (compositor) {
-          global.nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
+          nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
           compositor.Submit(texture);
 
-          global.nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
+          nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
         }
-        global.nativeWindow.swapBuffers();
+        nativeWindow.swapBuffers();
 
         // wait for next frame
         const now = Date.now();
