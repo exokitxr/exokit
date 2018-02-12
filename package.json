@@ -13,8 +13,8 @@
     "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
-    "uglifyjs-webpack-plugin": "^1.1.6",
-    "webpack": "^3.10.0"
+    "uglifyjs-webpack-plugin": "^1.1.8",
+    "webpack": "^3.11.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
