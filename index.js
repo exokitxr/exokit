@@ -1388,7 +1388,7 @@ const _fromAST = (node, window, parentNode = null) => {
     commentNode.parentNode = parentNode;
     return commentNode;
   } else {
-    const tagName = node.tagName.toUpperCase();
+    const tagName = node.tagName && node.tagName.toUpperCase();
     const {attrs, value} = node;
     const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
     const element = HTMLElementTemplate ?
