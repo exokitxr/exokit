@@ -647,7 +647,7 @@ const _makeAttributesProxy = attrs => new Proxy(attrs, {
   },
 });
 class HTMLElement extends Node {
-  constructor(tagName = 'div', attrs = [], value = '') {
+  constructor(tagName = 'DIV', attrs = [], value = '') {
     super(null);
 
     this.tagName = tagName;
@@ -736,6 +736,8 @@ class HTMLElement extends Node {
     });
   }
   getElementByTagName(tagName) {
+    tagName = tagName.toUpperCase();
+
     return this.traverse(node => {
       if (node.tagName === tagName) {
         return node;
@@ -777,6 +779,8 @@ class HTMLElement extends Node {
     return result;
   }
   getElementsByTagName(tagName) {
+    tagName = tagName.toUpperCase();
+
     const result = [];
     this.traverse(node => {
       if (node.tagName === tagName) {
@@ -810,8 +814,8 @@ class HTMLElement extends Node {
         (this.attrs && this.attrs.some(attr => attr.name === 'class' && attr.value === className))
       );
     } else {
-      const tagName = selector;
-      return this.tagName === tagName;
+      const tagName = selector.toUpperCase();
+      return this.tagName === selector;
     }
   }
   traverse(fn) {
@@ -932,7 +936,7 @@ class HTMLElement extends Node {
 }
 class HTMLAnchorElement extends HTMLElement {
   constructor(attrs = [], value = '') {
-    super('a', attrs, value);
+    super('A', attrs, value);
   }
 
   get href() {
@@ -977,7 +981,7 @@ class HTMLLoadableElement extends HTMLElement {
 }
 class HTMLWindowElement extends HTMLLoadableElement {
   constructor() {
-    super('window');
+    super('WINDOW');
   }
 
   postMessage(data) {
@@ -1000,7 +1004,7 @@ class HTMLWindowElement extends HTMLLoadableElement {
 }
 class HTMLScriptElement extends HTMLLoadableElement {
   constructor(attrs = [], value = '') {
-    super('script', attrs, value);
+    super('SCRIPT', attrs, value);
 
     this.readyState = null;
 
@@ -1091,7 +1095,7 @@ const HTMLImageElement = (() => {
   if (typeof nativeImage !== 'undefined') {
     return class HTMLImageElement extends HTMLMediaElement {
       constructor(attrs = [], value = '') {
-        super('image', attrs, value);
+        super('IMG', attrs, value);
 
 
         this._src = '';
@@ -1183,7 +1187,7 @@ const HTMLImageElement = (() => {
   } else {
     return class HTMLImageElement extends HTMLMediaElement {
       constructor(attrs = [], value = '') {
-        super('image', attrs, value);
+        super('IMG', attrs, value);
 
         this.stack = new Error().stack;
 
@@ -1209,7 +1213,7 @@ const HTMLImageElement = (() => {
 })();
 class HTMLAudioElement extends HTMLMediaElement {
   constructor(attrs = [], value = '') {
-    super('audio', attrs, value);
+    super('AUDIO', attrs, value);
 
     this.on('attribute', (name, value) => {
       if (name === 'src') {
@@ -1251,7 +1255,7 @@ class HTMLAudioElement extends HTMLMediaElement {
 }
 class HTMLVideoElement extends HTMLMediaElement {
   constructor(attrs = [], value = '') {
-    super('video', attrs, value);
+    super('VIDEO', attrs, value);
 
     this.on('attribute', (name, value) => {
       if (name === 'src') {
@@ -1264,7 +1268,7 @@ class HTMLVideoElement extends HTMLMediaElement {
 }
 class HTMLIframeElement extends HTMLMediaElement {
   constructor(attrs = [], value = '') {
-    super('iframe', attrs, value);
+    super('IFRAME', attrs, value);
 
     this.on('attribute', (name, value) => {
       if (name === 'src') {
@@ -1299,7 +1303,7 @@ class HTMLIframeElement extends HTMLMediaElement {
 }
 class HTMLCanvasElement extends HTMLElement {
   constructor(attrs = [], value = '') {
-    super('canvas', attrs, value);
+    super('CANVAS', attrs, value);
 
     this._context = null;
 
@@ -1384,7 +1388,8 @@ const _fromAST = (node, window, parentNode = null) => {
     commentNode.parentNode = parentNode;
     return commentNode;
   } else {
-    const {tagName, attrs, value} = node;
+    const tagName = node.tagName.toUpperCase();
+    const {attrs, value} = node;
     const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
     const element = HTMLElementTemplate ?
       new HTMLElementTemplate(
@@ -1593,13 +1598,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     CommentNode: (Old => class CommentNode extends Old { constructor() { super(...arguments); this[windowSymbol] = window; this.emit('window'); } })(CommentNode),
   };
   window[htmlTagsSymbol] = {
-    a: window[htmlElementsSymbol].HTMLAnchorElement,
-    script: window[htmlElementsSymbol].HTMLScriptElement,
-    img: window[htmlElementsSymbol].HTMLImageElement,
-    audio: window[htmlElementsSymbol].HTMLAudioElement,
-    video: window[htmlElementsSymbol].HTMLVideoElement,
-    iframe: window[htmlElementsSymbol].HTMLIframeElement,
-    canvas: window[htmlElementsSymbol].HTMLCanvasElement,
+    A: window[htmlElementsSymbol].HTMLAnchorElement,
+    SCRIPT: window[htmlElementsSymbol].HTMLScriptElement,
+    IMG: window[htmlElementsSymbol].HTMLImageElement,
+    AUDIO: window[htmlElementsSymbol].HTMLAudioElement,
+    VIDEO: window[htmlElementsSymbol].HTMLVideoElement,
+    IFRAME: window[htmlElementsSymbol].HTMLIframeElement,
+    CANVAS: window[htmlElementsSymbol].HTMLCanvasElement,
   };
   window[optionsSymbol] = options;
   window.HTMLElement = window[htmlElementsSymbol].HTMLElement;
@@ -1677,9 +1682,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 };
 const _parseDocument = (s, options, window) => {
   const document = _fromAST(parse5.parse(s), window);
-  const html = document.childNodes.find(element => element.tagName === 'html');
-  const head = html.childNodes.find(element => element.tagName === 'head');
-  const body = html.childNodes.find(element => element.tagName === 'body');
+  const html = document.childNodes.find(element => element.tagName === 'HTML');
+  const head = html.childNodes.find(element => element.tagName === 'HEAD');
+  const body = html.childNodes.find(element => element.tagName === 'BODY');
 
   document.documentElement = document;
   document.readyState = null;
@@ -1687,7 +1692,7 @@ const _parseDocument = (s, options, window) => {
   document.body = body;
   document.location = url.parse(options.url);
   document.createElement = tagName => {
-    tagName = tagName.toLowerCase();
+    tagName = tagName.toUpperCase();
     const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
     return HTMLElementTemplate ? new HTMLElementTemplate() : new window[htmlElementsSymbol].HTMLElement(tagName);
   };
