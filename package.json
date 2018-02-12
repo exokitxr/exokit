@@ -22,8 +22,8 @@
   },
   "homepage": "https://github.com/modulesio/exokit-macos#readme",
   "dependencies": {
-    "exokit": "0.0.48",
+    "exokit": "0.0.60",
     "native-graphics-deps": "0.0.2",
-    "native-openvr-deps": "0.0.3"
+    "native-openvr-deps": "0.0.4"
   }
 }
