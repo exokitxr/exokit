@@ -1,6 +1,6 @@
 const path = require('path');
-const exokitWindows = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
-const {nativeVr} = exokitWindows;
+const bindings = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
+const {nativeVr} = bindings;
 
 nativeVr.EVRInitError = {
   None: 0,
@@ -129,4 +129,4 @@ nativeVr.ETrackedDeviceClass = {
   DisplayRedirect: 5,
 };
 
-module.exports = exokitWindows;
+module.exports = bindings;
