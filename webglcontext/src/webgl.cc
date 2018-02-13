@@ -593,28 +593,30 @@ NAN_METHOD(Viewport) {
 NAN_METHOD(CreateShader) {
   Nan::HandleScope scope;
 
-  GLint arg = info[0]->Int32Value();
+  GLint type = info[0]->Int32Value();
   /* #ifdef LOGGING
   cout<<"createShader "<<shader<<endl;
   #endif */
   // registerGLObj(GLOBJECT_TYPE_SHADER, shader);
 
-  GLuint shader = glCreateShader(arg);
+  GLuint shaderId = glCreateShader(type);
+  Local<Object> shaderObject = Nan::New<Object>();
+  shaderObject->Set(JS_STR("id"), JS_INT(shaderId));
 
-  info.GetReturnValue().Set(Nan::New<Number>(shader));
+  info.GetReturnValue().Set(shaderObject);
 }
 
 
 NAN_METHOD(ShaderSource) {
   Nan::HandleScope scope;
 
-  int id = info[0]->Int32Value();
+  GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
   String::Utf8Value code(info[1]);
   GLint length = code.length();
 
   const char* codes[] = {*code};
   const GLint lengths[] = {length};
-  glShaderSource(id, 1, codes, lengths);
+  glShaderSource(shaderId, 1, codes, lengths);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -623,8 +625,8 @@ NAN_METHOD(ShaderSource) {
 NAN_METHOD(CompileShader) {
   Nan::HandleScope scope;
 
-  GLint arg = info[0]->Int32Value();
-  glCompileShader(arg);
+  GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  glCompileShader(shaderId);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -642,22 +644,22 @@ NAN_METHOD(FrontFace) {
 NAN_METHOD(GetShaderParameter) {
   Nan::HandleScope scope;
 
-  int shader = info[0]->Int32Value();
-  int pname = info[1]->Int32Value();
+  GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLint pname = info[1]->Int32Value();
   int value;
   switch (pname) {
     case GL_DELETE_STATUS:
     case GL_COMPILE_STATUS:
-      glGetShaderiv(shader, pname, &value);
+      glGetShaderiv(shaderId, pname, &value);
       info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(value)));
       break;
     case GL_SHADER_TYPE:
-      glGetShaderiv(shader, pname, &value);
+      glGetShaderiv(shaderId, pname, &value);
       info.GetReturnValue().Set(JS_FLOAT(static_cast<unsigned long>(value)));
       break;
     case GL_INFO_LOG_LENGTH:
     case GL_SHADER_SOURCE_LENGTH:
-      glGetShaderiv(shader, pname, &value);
+      glGetShaderiv(shaderId, pname, &value);
       info.GetReturnValue().Set(JS_FLOAT(static_cast<long>(value)));
       break;
     default:
@@ -670,11 +672,11 @@ NAN_METHOD(GetShaderParameter) {
 NAN_METHOD(GetShaderInfoLog) {
   Nan::HandleScope scope;
 
-  int id = info[0]->Int32Value();
+  GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
   char Error[1024];
   int Len;
 
-  glGetShaderInfoLog(id, sizeof(Error), &Len, Error);
+  glGetShaderInfoLog(shaderId, sizeof(Error), &Len, Error);
 
   info.GetReturnValue().Set(JS_STR(Error, Len));
 }
@@ -697,9 +699,9 @@ NAN_METHOD(AttachShader) {
   Nan::HandleScope scope;
 
   int program = info[0]->Int32Value();
-  int shader = info[1]->Int32Value();
+  GLint shaderId = info[1]->ToObject()->Get(JS_STR("id"))->Int32Value();
 
-  glAttachShader(program, shader);
+  glAttachShader(program, shaderId);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -1710,9 +1712,9 @@ NAN_METHOD(DeleteRenderbuffer) {
 NAN_METHOD(DeleteShader) {
   Nan::HandleScope scope;
 
-  GLuint shader = info[0]->Uint32Value();
+  GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
 
-  glDeleteShader(shader);
+  glDeleteShader(shaderId);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -1731,9 +1733,9 @@ NAN_METHOD(DetachShader) {
   Nan::HandleScope scope;
 
   GLuint program = info[0]->Uint32Value();
-  GLuint shader = info[1]->Uint32Value();
+  GLint shaderId = info[1]->ToObject()->Get(JS_STR("id"))->Int32Value();
 
-  glDetachShader(program, shader);
+  glDetachShader(program, shaderId);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -1802,10 +1804,16 @@ NAN_METHOD(IsRenderbuffer) {
 NAN_METHOD(IsShader) {
   Nan::HandleScope scope;
 
-  GLuint arg = info[0]->Uint32Value();
-  bool ret = glIsShader(arg) != 0;
+  MaybeLocal<Object> arg = Nan::To<Object>(info[0]);
+  if (!arg.IsEmpty()) {
+    GLint shaderId = arg.ToLocalChecked()->Get(JS_STR("id"))->Int32Value();
 
-  info.GetReturnValue().Set(JS_BOOL(ret));
+    bool ret = glIsShader(shaderId) != 0;
+
+    info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(JS_BOOL(false));
+  }
 }
 
 NAN_METHOD(IsTexture) {
@@ -1833,13 +1841,13 @@ NAN_METHOD(RenderbufferStorage) {
 NAN_METHOD(GetShaderSource) {
   Nan::HandleScope scope;
 
-  int shader = info[0]->Int32Value();
+  GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
 
   GLint len;
-  glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &len);
+  glGetShaderiv(shaderId, GL_SHADER_SOURCE_LENGTH, &len);
   GLchar *source = new GLchar[len];
 
-  glGetShaderSource(shader, len, nullptr, source);
+  glGetShaderSource(shaderId, len, nullptr, source);
 
   Local<String> str = JS_STR(source, len);
   delete[] source;
@@ -1967,8 +1975,10 @@ NAN_METHOD(GetAttachedShaders) {
   glGetAttachedShaders(program, sizeof(shaders) / sizeof(shaders[0]), &count, shaders);
 
   Local<Array> shadersArr = Nan::New<Array>(count);
-  for(int i=0;i<count;i++) {
-    shadersArr->Set(i, JS_INT((int)shaders[i]));
+  for(int i = 0; i < count; i++) {
+    Local<Object> shaderObject = Nan::New<Object>();
+    shaderObject->Set(JS_STR("id"), JS_INT(shaders[i]));
+    shadersArr->Set(i, shaderObject);
   }
 
   info.GetReturnValue().Set(shadersArr);
