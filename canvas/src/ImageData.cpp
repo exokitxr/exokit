@@ -54,13 +54,12 @@ ImageData::crop(int x, int y, unsigned short w, unsigned short h, bool flipY) co
 
 std::unique_ptr<ImageData>
 ImageData::scale(unsigned short target_width, unsigned short target_height) const {
-  size_t target_size = calculateSize(target_width, target_height, num_channels);
+  size_t size = calculateSize(target_width, target_height, num_channels);
+  std::unique_ptr<unsigned char[]> outputData(new unsigned char[size]);
 
-  std::unique_ptr<unsigned char[]> output_data(new unsigned char[target_size]);
+  stbir_resize_uint8(data.get(), getWidth(), getHeight(), 0, outputData.get(), target_width, target_height, 0, num_channels);
 
-  stbir_resize_uint8(data.get(), getWidth(), getHeight(), 0, output_data.get(), target_width, target_height, 0, num_channels);
-
-  return unique_ptr<ImageData>(new ImageData(output_data.get(), target_width, target_height, num_channels));
+  return unique_ptr<ImageData>(new ImageData(outputData.get(), target_width, target_height, num_channels));
 }
 
 std::unique_ptr<ImageData>
