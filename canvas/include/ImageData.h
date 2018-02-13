@@ -43,7 +43,7 @@ namespace canvas {
 
     ImageData & operator=(const ImageData & other) = delete;
     
-    std::unique_ptr<ImageData> crop(int x, int y, unsigned short w, unsigned short h) const;
+    std::unique_ptr<ImageData> crop(int x, int y, unsigned short w, unsigned short h, bool flipY = false) const;
     std::unique_ptr<ImageData> scale(unsigned short target_width, unsigned short target_height) const;
     std::unique_ptr<ImageData> colorize(const Color & color) const;
     std::unique_ptr<ImageData> blur(float hradius, float vradius) const;

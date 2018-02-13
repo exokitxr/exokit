@@ -17,24 +17,39 @@ using namespace canvas;
 bool ImageData::flip = false;
 
 std::unique_ptr<ImageData>
-ImageData::crop(int x, int y, unsigned short w, unsigned short h) const {
+ImageData::crop(int x, int y, unsigned short w, unsigned short h, bool flipY) const {
   const unsigned short fullWidth = getWidth();
   const unsigned short fullHeight = getHeight();
 
-  x = std::min<unsigned short>(x, fullWidth);
-  y = std::min<unsigned short>(y, fullHeight);
+  const int minX = std::min<int>(std::max<int>(x, 0), fullWidth);
+  const int minY = std::min<int>(std::max<int>(y, 0), fullHeight);
+  const int maxX = std::min<int>(std::max<int>(x + w, 0), fullWidth);
+  const int maxY = std::min<int>(std::max<int>(y + h, 0), fullHeight);
 
-  const size_t target_size = calculateSize(w, h, num_channels);
+  const size_t size = calculateSize(w, h, num_channels);
+  std::unique_ptr<unsigned char[]> outputData(new unsigned char[size]);
+  memset(outputData.get(), 0, size);
 
-  std::unique_ptr<unsigned char[]> output_data(new unsigned char[target_size]);
-  memset(output_data.get(), 0, target_size);
-
-  const unsigned short lineWidth = std::min<unsigned short>(w, fullWidth - x);
-  for (int i = y; i < (y + h) && i < fullHeight; i++) {
-    memcpy(output_data.get() + ((i - y) * lineWidth * num_channels), data.get() + (i * fullWidth * num_channels) + (x * num_channels), lineWidth * num_channels);
+  const int copyWidth = maxX - minX;
+  if (!flipY) {
+    for (int i = minY; i < maxY; i++) {
+      memcpy(
+        outputData.get() + ((i - y) * copyWidth * num_channels) + ((minX - x) * num_channels),
+        data.get() + (i * fullWidth * num_channels) + (minX * num_channels),
+        copyWidth * num_channels
+      );
+    }
+  } else {
+    for (int i = minY; i < maxY; i++) {
+      memcpy(
+        outputData.get() + ((i - y) * copyWidth * num_channels) + ((minX - x) * num_channels),
+        data.get() + ((y + h - 1 - i) * fullWidth * num_channels) + (minX * num_channels),
+        copyWidth * num_channels
+      );
+    }
   }
 
-  return unique_ptr<ImageData>(new ImageData(output_data.get(), w, h, num_channels));
+  return unique_ptr<ImageData>(new ImageData(outputData.get(), w, h, num_channels));
 }
 
 std::unique_ptr<ImageData>
