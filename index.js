@@ -1225,6 +1225,21 @@ class HTMLCanvasElement extends HTMLElement {
     }
     return this._context;
   }
+
+  captureStream(frameRate) {
+    return {}; // XXX
+  }
+}
+class MediaRecorder extends EventEmitter {
+  constructor() {
+    super();
+  }
+
+  start() {}
+
+  stop() {}
+
+  requestData() {}
 }
 class TextNode extends Node {
   constructor(value) {
@@ -1495,6 +1510,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.ImageBitmap = ImageBitmap;
   window.Path2D = Path2D;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
+  window.MediaRecorder = MediaRecorder;
   window.Gamepad = Gamepad;
   window.VRStageParameters = VRStageParameters;
   window.VRDisplay = VRDisplay;
