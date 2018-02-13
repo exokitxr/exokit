@@ -23,6 +23,9 @@
   "homepage": "https://github.com/modulesio/exokit-macos#readme",
   "dependencies": {
     "exokit": "0.0.60",
+    "glsl-100-to-300": "^1.2.0",
+    "glsl-token-string": "^1.0.1",
+    "glsl-tokenizer": "^2.1.2",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.4"
   }

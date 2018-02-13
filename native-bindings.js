@@ -1,6 +1,30 @@
 const path = require('path');
 const bindings = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
-const {nativeVr} = bindings;
+const {nativeGl, nativeVr} = bindings;
+const glslTokenizer = require('glsl-tokenizer');
+const glslTokenString = require('glsl-token-string');
+const glsl100To300 = require('glsl-100-to-300');
+
+let shaderId = 0;
+bindings.nativeGl = (nativeGl => function WebGLContext() {
+  const result = new nativeGl();
+  result.createShader = (createShader => function(type) {
+    const result = createShader.call(this, type);
+    result.type = type;
+    return result;
+  })(result.createShader);
+  result.shaderSource = (shaderSource => function(shader, source) {
+    if (shader.type === result.VERTEX_SHADER) {
+      source = glslTokenString(glsl100To300.vertex(glslTokenizer(source)))
+        .replace(/^#version 300 es/, '#version 150');
+    } else if (shader.type === result.FRAGMENT_SHADER) {
+      source = glslTokenString(glsl100To300.fragment(glslTokenizer(source)))
+        .replace(/^#version 300 es/, '#version 150');
+    }
+    return shaderSource.call(this, shader, source);
+  })(result.shaderSource);
+  return result;
+})(bindings.nativeGl);
 
 nativeVr.EVRInitError = {
   None: 0,

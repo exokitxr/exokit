@@ -1,6 +1,7 @@
 #ifndef _GLFW_BINDINGS_H_
 #define _GLFW_BINDINGS_H_
 
+#include <stdio.h>
 #include <string>
 #include <sstream>
 
