@@ -646,7 +646,7 @@ Local<Object> makeGl() {
   ctor->SetClassName(JS_STR("WebGLContext"));
 
   // prototype
-  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  // Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
   return scope.Escape(ctor->GetFunction());
 }
