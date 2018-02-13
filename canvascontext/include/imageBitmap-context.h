@@ -20,6 +20,7 @@ public:
   unsigned int GetHeight();
   unsigned int GetNumChannels();
   unsigned char *GetData();
+  void Set(canvas::ImageData *imageData);
 
 protected:
   static NAN_METHOD(New);
@@ -28,7 +29,8 @@ protected:
   static NAN_GETTER(DataGetter);
   static NAN_METHOD(CreateImageBitmap);
 
-  ImageBitmap(Image *image);
+  ImageBitmap();
+  ImageBitmap(Image *image, int x, int y, unsigned int width, unsigned int height, bool flipY);
   ImageBitmap(unsigned int width, unsigned int height, unsigned char *data);
   virtual ~ImageBitmap();
 

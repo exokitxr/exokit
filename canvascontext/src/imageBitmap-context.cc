@@ -2,7 +2,6 @@
 
 using namespace v8;
 using namespace node;
-// using namespace std;
 
 Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons) {
   Nan::EscapableHandleScope scope;
@@ -27,19 +26,42 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons)
 }
 
 unsigned int ImageBitmap::GetWidth() {
-  return imageData->getWidth();
+  if (imageData != nullptr) {
+    return imageData->getWidth();
+  } else {
+    return 0;
+  }
 }
 
 unsigned int ImageBitmap::GetHeight() {
-  return imageData->getHeight();
+  if (imageData != nullptr) {
+    return imageData->getHeight();
+  } else {
+    return 0;
+  }
 }
 
 unsigned int ImageBitmap::GetNumChannels() {
-  return imageData->getNumChannels();
+  if (imageData != nullptr) {
+    return imageData->getNumChannels();
+  } else {
+    return 0;
+  }
 }
 
 unsigned char *ImageBitmap::GetData() {
-  return imageData->getData();
+  if (imageData != nullptr) {
+    return imageData->getData();
+  } else {
+    return nullptr;
+  }
+}
+
+void ImageBitmap::Set(canvas::ImageData *imageData) {
+  if (this->imageData != nullptr) {
+    delete this->imageData;
+  }
+  this->imageData = imageData;
 }
 
 NAN_METHOD(ImageBitmap::New) {
@@ -47,9 +69,14 @@ NAN_METHOD(ImageBitmap::New) {
 
   Local<Object> imageBitmapObj = info.This();
 
-  if (info[0]->IsObject()) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsNumber() && info[5]->IsBoolean()) {
     Image *image = ObjectWrap::Unwrap<Image>(info[0]->ToObject());
-    ImageBitmap *imageBitmap = new ImageBitmap(image);
+    int x = info[1]->Int32Value();
+    int y = info[2]->Int32Value();
+    unsigned int width = info[3]->Uint32Value();
+    unsigned int height = info[4]->Uint32Value();
+    bool flipY = info[5]->BooleanValue();
+    ImageBitmap *imageBitmap = new ImageBitmap(image, x, y, width, height, flipY);
     imageBitmap->Wrap(imageBitmapObj);
   } else {
     if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsArrayBufferView()) {
@@ -59,7 +86,8 @@ NAN_METHOD(ImageBitmap::New) {
       ImageBitmap *imageBitmap = new ImageBitmap(width, height, data);
       imageBitmap->Wrap(imageBitmapObj);
     } else {
-      return Nan::ThrowError("Invalid arguments");
+      ImageBitmap *imageBitmap = new ImageBitmap();
+      imageBitmap->Wrap(imageBitmapObj);
     }
   }
 
@@ -74,74 +102,104 @@ NAN_GETTER(ImageBitmap::WidthGetter) {
   Nan::HandleScope scope;
 
   ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(info.This());
-
-  info.GetReturnValue().Set(JS_INT(imageBitmap->GetWidth()));
+  if (imageBitmap->imageData != nullptr) {
+    info.GetReturnValue().Set(JS_INT(imageBitmap->GetWidth()));
+  } else {
+    info.GetReturnValue().Set(JS_INT(0));
+  }
 }
 
 NAN_GETTER(ImageBitmap::HeightGetter) {
   Nan::HandleScope scope;
 
   ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(info.This());
-
-  info.GetReturnValue().Set(JS_INT(imageBitmap->GetHeight()));
+  if (imageBitmap->imageData != nullptr) {
+    info.GetReturnValue().Set(JS_INT(imageBitmap->GetHeight()));
+  } else {
+    info.GetReturnValue().Set(JS_INT(0));
+  }
 }
 
 NAN_GETTER(ImageBitmap::DataGetter) {
   Nan::HandleScope scope;
 
   ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(info.This());
+  if (imageBitmap->imageData != nullptr) {
+    if (imageBitmap->dataArray.IsEmpty()) {
+      unsigned int width = imageBitmap->GetWidth();
+      unsigned int height = imageBitmap->GetHeight();
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageBitmap->GetData(), width * height * 4);
 
-  if (imageBitmap->dataArray.IsEmpty()) {
-    unsigned int width = imageBitmap->GetWidth();
-    unsigned int height = imageBitmap->GetHeight();
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageBitmap->GetData(), width * height * 4);
+      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+      imageBitmap->dataArray.Reset(uint8ClampedArray);
+    }
 
-    Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-    imageBitmap->dataArray.Reset(uint8ClampedArray);
+    info.GetReturnValue().Set(Nan::New(imageBitmap->dataArray));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
   }
-
-  info.GetReturnValue().Set(Nan::New(imageBitmap->dataArray));
 }
 
 NAN_METHOD(ImageBitmap::CreateImageBitmap) {
   Nan::HandleScope scope;
 
-  Local<Function> imageBitmapConstructor = Local<Function>::Cast(info.Callee()->Get(JS_STR("ImageBitmap")));
+  Local<Object> imageObj;
   if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
-    Local<Value> arg = info[0]->ToObject()->Get(JS_STR("image"));
-    Local<Value> argv[] = {
-      arg,
-    };
-    Local<Object> imageBitmapObj = imageBitmapConstructor->NewInstance(sizeof(argv) / sizeof(argv[0]), argv);
-
-    info.GetReturnValue().Set(imageBitmapObj);
+    Local<Value> imageValue = info[0]->ToObject()->Get(JS_STR("image"));
+    if (imageValue->IsObject()) {
+      imageObj = imageValue->ToObject();
+    } else {
+      return Nan::ThrowError("Invalid arguments");
+    }
   } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("Blob"))) {
     Local<ArrayBufferView> buffer = Local<ArrayBufferView>::Cast(info[0]->ToObject()->Get(JS_STR("buffer")));
     Local<ArrayBuffer> arrayBufer = buffer->Buffer();
 
     Local<Function> imageConstructor = Local<Function>::Cast(info.Callee()->Get(JS_STR("Image")));
-    Local<Value> argv1[] = {};
-    Local<Object> imageObj = imageConstructor->NewInstance(sizeof(argv1) / sizeof(argv1[0]), argv1);
+    Local<Value> argv[] = {};
+    imageObj = imageConstructor->NewInstance(sizeof(argv) / sizeof(argv[0]), argv);
+
     Image *image = ObjectWrap::Unwrap<Image>(imageObj);
-    image->Load((unsigned char *)arrayBufer->GetContents().Data() + buffer->ByteOffset(), buffer->ByteLength());
-
-    Local<Value> argv2[] = {
-      imageObj,
-    };
-    Local<Object> imageBitmapObj = imageBitmapConstructor->NewInstance(sizeof(argv2) / sizeof(argv2[0]), argv2);
-
-    info.GetReturnValue().Set(imageBitmapObj);
+    if (!image->Load((unsigned char *)arrayBufer->GetContents().Data() + buffer->ByteOffset(), buffer->ByteLength())) {
+      return Nan::ThrowError("Failed to load image");
+    }
   } else {
-    Nan::ThrowError("Invalid arguments");
+    return Nan::ThrowError("Invalid arguments");
   }
+
+  int x = info[1]->IsNumber() ? info[1]->Int32Value() : 0;
+  int y = info[2]->IsNumber() ? info[2]->Int32Value() : 0;
+  unsigned int width = info[3]->IsNumber() ? info[3]->Uint32Value() : ObjectWrap::Unwrap<Image>(imageObj)->GetWidth();
+  unsigned int height = info[4]->IsNumber() ? info[4]->Uint32Value() : ObjectWrap::Unwrap<Image>(imageObj)->GetHeight();
+  bool flipY = false;
+  if (info[5]->IsObject()) {
+    Local<Value> imageOrientationValue = info[5]->ToObject()->Get(JS_STR("imageOrientation"));
+    if (imageOrientationValue->IsString()) {
+      String::Utf8Value imageOrientationValueUtf8String(imageOrientationValue);
+      flipY = strcmp(*imageOrientationValueUtf8String, "flipY") == 0;
+    }
+  }
+
+  Local<Function> imageBitmapConstructor = Local<Function>::Cast(info.Callee()->Get(JS_STR("ImageBitmap")));
+  Local<Value> argv[] = {
+    imageObj,
+    Nan::New<Integer>(x),
+    Nan::New<Integer>(x),
+    Nan::New<Integer>(width),
+    Nan::New<Integer>(height),
+    Nan::New<Boolean>(flipY),
+  };
+  Local<Object> imageBitmapObj = imageBitmapConstructor->NewInstance(sizeof(argv) / sizeof(argv[0]), argv);
+
+  info.GetReturnValue().Set(imageBitmapObj);
 }
 
-ImageBitmap::ImageBitmap(Image *image) {
-  imageData = new canvas::ImageData(image->image->getData());
-}
-ImageBitmap::ImageBitmap(unsigned int width, unsigned int height, unsigned char *data) {
-  imageData = new canvas::ImageData(data, width, height, 4);
-}
+ImageBitmap::ImageBitmap() : imageData(nullptr) {}
+ImageBitmap::ImageBitmap(Image *image, int x, int y, unsigned int width, unsigned int height, bool flipY) :
+  imageData(image->image->getData().crop(x, y, width, height, flipY).release()) {}
+ImageBitmap::ImageBitmap(unsigned int width, unsigned int height, unsigned char *data) : imageData(new canvas::ImageData(data, width, height, 4)) {}
 ImageBitmap::~ImageBitmap () {
-  delete imageData;
+  if (imageData != nullptr) {
+    delete imageData;
+  }
 }
