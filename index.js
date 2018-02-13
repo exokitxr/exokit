@@ -766,7 +766,7 @@ class HTMLElement extends Node {
       );
     } else {
       const tagName = selector.toUpperCase();
-      return this.tagName === selector;
+      return this.tagName === tagName;
     }
   }
   traverse(fn) {
