@@ -145,9 +145,20 @@ class ImageData {
   }
 }
 class ImageBitmap {
-  constructor(image) {
-    this.width = image.width;
-    this.height = image.height;
+  constructor() {
+    if (arguments.length === 1) {
+      const [image] = arguments;
+      this.width = image.width;
+      this.height = image.height;
+      this.data = image.data;
+    } else if (arguments.length === 3) {
+      const [width, height, data] = arguments;
+      this.width = width;
+      this.height = height;
+      this.data = data;
+    } else {
+      throw new Error('invalid arguments');
+    }
   }
 }
 ImageBitmap.createImageBitmap = image => new ImageBitmap(image.width, image.height);
