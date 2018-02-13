@@ -9,6 +9,7 @@
 
 using namespace v8;
 using namespace node;
+using namespace std;
 
 class CanvasRenderingContext2D;
 
@@ -19,6 +20,7 @@ public:
   unsigned int GetHeight();
   unsigned int GetNumChannels();
   unsigned char *GetData();
+  void Set(canvas::ImageData *imageData);
 
 protected:
   static NAN_METHOD(New);
@@ -26,6 +28,7 @@ protected:
   static NAN_GETTER(HeightGetter);
   static NAN_GETTER(DataGetter);
 
+  ImageData();
   ImageData(unsigned int width, unsigned int height);
   virtual ~ImageData();
 

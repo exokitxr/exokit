@@ -2,7 +2,6 @@
 
 using namespace v8;
 using namespace node;
-// using namespace std;
 
 Handle<Object> ImageData::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
@@ -34,15 +33,28 @@ unsigned char *ImageData::GetData() {
   return imageData->getData();
 }
 
+void ImageData::Set(canvas::ImageData *imageData) {
+  if (this->imageData != nullptr) {
+    delete this->imageData;
+  }
+
+  this->imageData = imageData;
+}
+
 NAN_METHOD(ImageData::New) {
   Nan::HandleScope scope;
 
   Local<Object> imageDataObj = info.This();
 
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
-  ImageData *imageData = new ImageData(width, height);
-  imageData->Wrap(imageDataObj);
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    unsigned int width = info[0]->Uint32Value();
+    unsigned int height = info[1]->Uint32Value();
+    ImageData *imageData = new ImageData(width, height);
+    imageData->Wrap(imageDataObj);
+  } else {
+    ImageData *imageData = new ImageData();
+    imageData->Wrap(imageDataObj);
+  }
 
   Nan::SetAccessor(imageDataObj, JS_STR("width"), WidthGetter);
   Nan::SetAccessor(imageDataObj, JS_STR("height"), HeightGetter);
@@ -55,38 +67,48 @@ NAN_GETTER(ImageData::WidthGetter) {
   Nan::HandleScope scope;
 
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(info.This());
-
-  info.GetReturnValue().Set(JS_INT(imageData->GetWidth()));
+  if (imageData->imageData != nullptr) {
+    info.GetReturnValue().Set(JS_INT(imageData->GetWidth()));
+  } else {
+    info.GetReturnValue().Set(JS_INT(0));
+  }
 }
 
 NAN_GETTER(ImageData::HeightGetter) {
   Nan::HandleScope scope;
 
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(info.This());
-
-  info.GetReturnValue().Set(JS_INT(imageData->GetHeight()));
+  if (imageData->imageData != nullptr) {
+    info.GetReturnValue().Set(JS_INT(imageData->GetHeight()));
+  } else {
+    info.GetReturnValue().Set(JS_INT(0));
+  }
 }
 
 NAN_GETTER(ImageData::DataGetter) {
   Nan::HandleScope scope;
 
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(info.This());
+  if (imageData->imageData != nullptr) {
+    if (imageData->dataArray.IsEmpty()) {
+      unsigned int width = imageData->GetWidth();
+      unsigned int height = imageData->GetHeight();
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageData->GetData(), width * height * 4);
 
-  if (imageData->dataArray.IsEmpty()) {
-    unsigned int width = imageData->GetWidth();
-    unsigned int height = imageData->GetHeight();
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageData->GetData(), width * height * 4);
+      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+      imageData->dataArray.Reset(uint8ClampedArray);
+    }
 
-    Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-    imageData->dataArray.Reset(uint8ClampedArray);
+    info.GetReturnValue().Set(Nan::New(imageData->dataArray));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
   }
-
-  info.GetReturnValue().Set(Nan::New(imageData->dataArray));
 }
 
-ImageData::ImageData(unsigned int width, unsigned int height) {
-  imageData = new canvas::ImageData(width, height, 4);
-}
+ImageData::ImageData() : imageData(nullptr) {}
+ImageData::ImageData(unsigned int width, unsigned int height) : imageData(new canvas::ImageData(width, height, 4)) {}
 ImageData::~ImageData () {
-  delete imageData;
+  if (imageData != nullptr) {
+    delete imageData;
+  }
 }

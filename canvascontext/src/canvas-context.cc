@@ -723,34 +723,23 @@ NAN_METHOD(CanvasRenderingContext2D::GetImageData) {
   Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
-  unsigned int x = info[0]->Uint32Value();
-  unsigned int y = info[1]->Uint32Value();
+  int x = info[0]->Int32Value();
+  int y = info[1]->Int32Value();
   unsigned int w = info[2]->Uint32Value();
   unsigned int h = info[3]->Uint32Value();
 
-  canvas::Surface &surface = context->context->getDefaultSurface();
-  std::unique_ptr<canvas::Image> img(surface.createImage(1));
-  const canvas::ImageData &imgData = img->getData();
-  const unsigned char *srcData = imgData.getData();
-  size_t srcWidth = imgData.getWidth();
-  size_t srcHeight = imgData.getHeight();
+  canvas::Surface &canvasSurface = context->context->getDefaultSurface();
+  std::unique_ptr<canvas::Image> canvasImg(canvasSurface.createImage(1));
+  const canvas::ImageData &canvasImageData = canvasImg->getData();
+  unique_ptr<canvas::ImageData> croppedImageData(canvasImageData.crop(x, y, w, h));
 
-  /* Isolate *isolate = Isolate::GetCurrent();
-  Local<Context> isolateContext = isolate->GetCurrentContext();
-  Local<Object> global = isolateContext->Global(); */
   Local<Function> imageDataCons = Local<Function>::Cast(
     Local<Object>::Cast(info.This())->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("ImageData"))
   );
-  Local<Value> argv[] = {
-    Number::New(Isolate::GetCurrent(), w),
-    Number::New(Isolate::GetCurrent(), h),
-  };
+  Local<Value> argv[] = {};
   Local<Object> imageDataObj = imageDataCons->NewInstance(sizeof(argv) / sizeof(argv[0]), argv);
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(imageDataObj);
-  unsigned char *dstData = imageData->imageData->getData();
-  for (size_t i = 0; i < h; i++) {
-    memcpy(dstData + (i * w * 4), srcData + (y * srcWidth * 4) + (x * 4), w * 4);
-  }
+  imageData->Set(croppedImageData.release());
 
   info.GetReturnValue().Set(imageDataObj);
 }
