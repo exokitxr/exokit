@@ -162,6 +162,9 @@ class ImageBitmap {
   }
 }
 ImageBitmap.createImageBitmap = image => new ImageBitmap(image.width, image.height);
+WindowWorker.bind({
+  ImageBitmap,
+});
 class Path2D {
   moveTo() {}
   lineTo() {}
@@ -1672,6 +1675,9 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   ImageData = bindings.nativeImageData;
   ImageBitmap = bindings.nativeImageBitmap;
+  WindowWorker.bind({
+    ImageBitmap,
+  });
   Path2D = bindings.nativePath2D;
   CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
   WebGLContext = bindings.nativeGl;
