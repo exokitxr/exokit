@@ -186,21 +186,24 @@ void CanvasRenderingContext2D::Restore() {
 NAN_METHOD(CanvasRenderingContext2D::New) {
   Nan::HandleScope scope;
 
-  Local<Object> canvasObj = info.This();
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    unsigned int width = info[0]->Uint32Value();
+    unsigned int height = info[1]->Uint32Value();
+    CanvasRenderingContext2D *context = new CanvasRenderingContext2D(width, height);
+    Local<Object> canvasObj = info.This();
+    context->Wrap(canvasObj);
 
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
-  CanvasRenderingContext2D *context = new CanvasRenderingContext2D(width, height);
-  context->Wrap(canvasObj);
+    Nan::SetAccessor(canvasObj, JS_STR("width"), WidthGetter);
+    Nan::SetAccessor(canvasObj, JS_STR("height"), HeightGetter);
+    Nan::SetAccessor(canvasObj, JS_STR("data"), DataGetter);
+    Nan::SetAccessor(canvasObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
 
-  Nan::SetAccessor(canvasObj, JS_STR("width"), WidthGetter);
-  Nan::SetAccessor(canvasObj, JS_STR("height"), HeightGetter);
-  Nan::SetAccessor(canvasObj, JS_STR("data"), DataGetter);
-  Nan::SetAccessor(canvasObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
-  Nan::SetAccessor(canvasObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
-  Nan::SetAccessor(canvasObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
-
-  info.GetReturnValue().Set(canvasObj);
+    info.GetReturnValue().Set(canvasObj);
+  } else {
+    return Nan::ThrowError("Invalid arguments");
+  }
 }
 
 NAN_GETTER(CanvasRenderingContext2D::WidthGetter) {
@@ -704,9 +707,6 @@ NAN_METHOD(CanvasRenderingContext2D::CreateImageData) {
   double w = info[0]->NumberValue();
   double h = info[1]->NumberValue();
 
-  /* Isolate *isolate = Isolate::GetCurrent();
-  Local<Context> isolateContext = isolate->GetCurrentContext();
-  Local<Object> global = isolateContext->Global(); */
   Local<Function> imageDataCons = Local<Function>::Cast(
     Local<Object>::Cast(info.This())->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("ImageData"))
   );
