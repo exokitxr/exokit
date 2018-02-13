@@ -1,10 +1,6 @@
 #include <canvascontext/include/image-context.h>
 
 using namespace v8;
-// using namespace node;
-// using namespace std;
-
-// Persistent<Function> Image::constructor_template;
 
 Handle<Object> Image::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
@@ -15,36 +11,57 @@ Handle<Object> Image::Initialize(Isolate *isolate) {
   ctor->SetClassName(JS_STR("Image"));
 
   // prototype
-  // Nan::SetPrototypeMethod(ctor, "save",save);// NODE_SET_PROTOTYPE_METHOD(ctor, "save", save);
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
   Nan::SetMethod(proto,"load", LoadMethod);
-  // Nan::SetAccessor(proto,JS_STR("src"), SrcGetter, SrcSetter);
-  // Nan::Set(target, JS_STR("Image"), ctor->GetFunction());
-
-  // constructor_template.Reset(Isolate::GetCurrent(), ctor->GetFunction());
 
   return scope.Escape(ctor->GetFunction());
 }
 
 unsigned int Image::GetWidth() {
-  return image->getData().getWidth();
+  if (image != nullptr) {
+    return image->getData().getWidth();
+  } else {
+    return 0;
+  }
 }
 
 unsigned int Image::GetHeight() {
-  return image->getData().getHeight();
+  if (image != nullptr) {
+    return image->getData().getHeight();
+  } else {
+    return 0;
+  }
 }
 
 unsigned int Image::GetNumChannels() {
-  return image->getData().getNumChannels();
+  if (image != nullptr) {
+    return image->getData().getNumChannels();
+  } else {
+    return 0;
+  }
 }
 
 unsigned char *Image::GetData() {
-  return image->getData().getData();
+  if (image != nullptr) {
+    return image->getData().getData();
+  } else {
+    return nullptr;
+  }
 }
 
 bool Image::Load(const unsigned char *buffer, size_t size) {
+  if (image == nullptr) {
+    image = CanvasRenderingContext2D::canvasContextFactory->createImage().release();
+  }
   return image->decode(buffer, size);
+}
+
+void Image::Set(canvas::Image *image) {
+  if (this->image != nullptr) {
+    delete this->image;
+  }
+  this->image = image;
 }
 
 NAN_METHOD(Image::New) {
@@ -82,17 +99,20 @@ NAN_GETTER(Image::DataGetter) {
   Nan::HandleScope scope;
 
   Image *image = ObjectWrap::Unwrap<Image>(info.This());
+  if (image->image != nullptr) {
+    if (image->dataArray.IsEmpty()) {
+      unsigned int width = image->GetWidth();
+      unsigned int height = image->GetHeight();
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), image->GetData(), width * height * 4);
 
-  if (image->dataArray.IsEmpty()) {
-    unsigned int width = image->GetWidth();
-    unsigned int height = image->GetHeight();
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), image->GetData(), width * height * 4);
+      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+      image->dataArray.Reset(uint8ClampedArray);
+    }
 
-    Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-    image->dataArray.Reset(uint8ClampedArray);
+    info.GetReturnValue().Set(Nan::New(image->dataArray));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
   }
-
-  info.GetReturnValue().Set(Nan::New(image->dataArray));
 }
 
 NAN_METHOD(Image::LoadMethod) {
@@ -109,9 +129,9 @@ NAN_METHOD(Image::LoadMethod) {
   info.GetReturnValue().Set(JS_BOOL(result));
 }
 
-Image::Image () {
-  image = CanvasRenderingContext2D::canvasContextFactory->createImage().release();
-}
+Image::Image () : image(nullptr) {}
 Image::~Image () {
-  delete image;
+  if (image != nullptr) {
+    delete image;
+  }
 }

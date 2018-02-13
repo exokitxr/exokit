@@ -21,6 +21,7 @@ public:
   unsigned int GetNumChannels();
   unsigned char *GetData();
   bool Load(const unsigned char *buffer, size_t size);
+  void Set(canvas::Image *image);
 
 protected:
   static NAN_METHOD(New);
