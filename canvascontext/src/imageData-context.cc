@@ -13,16 +13,7 @@ Handle<Object> ImageData::Initialize(Isolate *isolate) {
   ctor->SetClassName(JS_STR("ImageData"));
 
   // prototype
-  // Nan::SetPrototypeMethod(ctor, "save",save);// NODE_SET_PROTOTYPE_METHOD(ctor, "save", save);
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-
-  Nan::SetAccessor(proto,JS_STR("width"), WidthGetter);
-  Nan::SetAccessor(proto,JS_STR("height"), HeightGetter);
-  Nan::SetAccessor(proto,JS_STR("data"), DataGetter);
-  // Nan::SetAccessor(proto,JS_STR("src"), SrcGetter, SrcSetter);
-  // Nan::Set(target, JS_STR("Image"), ctor->GetFunction());
-
-  // constructor_template.Reset(Isolate::GetCurrent(), ctor->GetFunction());
 
   return scope.Escape(ctor->GetFunction());
 }
@@ -46,12 +37,18 @@ unsigned char *ImageData::GetData() {
 NAN_METHOD(ImageData::New) {
   Nan::HandleScope scope;
 
+  Local<Object> imageDataObj = info.This();
+
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
   ImageData *imageData = new ImageData(width, height);
-  imageData->Wrap(info.This());
-  // registerImage(image);
-  info.GetReturnValue().Set(info.This());
+  imageData->Wrap(imageDataObj);
+
+  Nan::SetAccessor(imageDataObj, JS_STR("width"), WidthGetter);
+  Nan::SetAccessor(imageDataObj, JS_STR("height"), HeightGetter);
+  Nan::SetAccessor(imageDataObj, JS_STR("data"), DataGetter);
+
+  info.GetReturnValue().Set(imageDataObj);
 }
 
 NAN_GETTER(ImageData::WidthGetter) {

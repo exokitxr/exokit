@@ -16,10 +16,6 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons)
   // Nan::SetPrototypeMethod(ctor, "save",save);// NODE_SET_PROTOTYPE_METHOD(ctor, "save", save);
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Nan::SetAccessor(proto,JS_STR("width"), WidthGetter);
-  Nan::SetAccessor(proto,JS_STR("height"), HeightGetter);
-  Nan::SetAccessor(proto,JS_STR("data"), DataGetter);
-
   Local<Function> ctorFn = ctor->GetFunction();
 
   Local<Function> createImageBitmapFn = Nan::New<Function>(CreateImageBitmap);
@@ -55,11 +51,17 @@ unsigned char *ImageBitmap::GetData() {
 NAN_METHOD(ImageBitmap::New) {
   Nan::HandleScope scope;
 
+  Local<Object> imageBitmapObj = info.This();
+
   Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(info[0]));
   ImageBitmap *imageBitmap = new ImageBitmap(image);
-  imageBitmap->Wrap(info.This());
-  // registerImage(image);
-  info.GetReturnValue().Set(info.This());
+  imageBitmap->Wrap(imageBitmapObj);
+
+  Nan::SetAccessor(imageBitmapObj, JS_STR("width"), WidthGetter);
+  Nan::SetAccessor(imageBitmapObj, JS_STR("height"), HeightGetter);
+  Nan::SetAccessor(imageBitmapObj, JS_STR("data"), DataGetter);
+
+  info.GetReturnValue().Set(imageBitmapObj);
 }
 
 NAN_GETTER(ImageBitmap::WidthGetter) {

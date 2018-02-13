@@ -9,12 +9,10 @@ Handle<Object> Path2D::Initialize(Isolate *isolate) {
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
-  // Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("Path2D"));
 
   // prototype
-  // Nan::SetPrototypeMethod(ctor, "save",save);// NODE_SET_PROTOTYPE_METHOD(ctor, "save", save);
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
   Nan::SetMethod(proto,"moveTo", MoveTo);
@@ -24,10 +22,6 @@ Handle<Object> Path2D::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto,"arcTo", ArcTo);
   Nan::SetMethod(proto,"quadraticCurveTo", QuadraticCurveTo);
   Nan::SetMethod(proto,"clear", Clear);
-  // Nan::SetAccessor(proto,JS_STR("src"), SrcGetter, SrcSetter);
-  // Nan::Set(target, JS_STR("Image"), ctor->GetFunction());
-
-  // constructor_template.Reset(Isolate::GetCurrent(), ctor->GetFunction());
 
   return scope.Escape(ctor->GetFunction());
 }

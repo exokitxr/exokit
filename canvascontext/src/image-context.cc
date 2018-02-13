@@ -18,9 +18,6 @@ Handle<Object> Image::Initialize(Isolate *isolate) {
   // Nan::SetPrototypeMethod(ctor, "save",save);// NODE_SET_PROTOTYPE_METHOD(ctor, "save", save);
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Nan::SetAccessor(proto,JS_STR("width"), WidthGetter);
-  Nan::SetAccessor(proto,JS_STR("height"), HeightGetter);
-  Nan::SetAccessor(proto,JS_STR("data"), DataGetter);
   Nan::SetMethod(proto,"load", LoadMethod);
   // Nan::SetAccessor(proto,JS_STR("src"), SrcGetter, SrcSetter);
   // Nan::Set(target, JS_STR("Image"), ctor->GetFunction());
@@ -53,9 +50,16 @@ bool Image::Load(const unsigned char *buffer, size_t size) {
 NAN_METHOD(Image::New) {
   Nan::HandleScope scope;
 
+  Local<Object> imageObj = info.This();
+
   Image *image = new Image();
-  image->Wrap(info.This());
-  info.GetReturnValue().Set(info.This());
+  image->Wrap(imageObj);
+
+  Nan::SetAccessor(imageObj, JS_STR("width"), WidthGetter);
+  Nan::SetAccessor(imageObj, JS_STR("height"), HeightGetter);
+  Nan::SetAccessor(imageObj, JS_STR("data"), DataGetter);
+
+  info.GetReturnValue().Set(imageObj);
 }
 
 NAN_GETTER(Image::WidthGetter) {

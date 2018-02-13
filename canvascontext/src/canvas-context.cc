@@ -9,20 +9,12 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
-  // Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("CanvasRenderingContext2D"));
 
   // prototype
-  // Nan::SetPrototypeMethod(ctor, "save",save);// NODE_SET_PROTOTYPE_METHOD(ctor, "save", save);
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Nan::SetAccessor(proto,JS_STR("width"), WidthGetter);
-  Nan::SetAccessor(proto,JS_STR("height"), HeightGetter);
-  Nan::SetAccessor(proto,JS_STR("data"), DataGetter);
-  Nan::SetAccessor(proto,JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
-  Nan::SetAccessor(proto,JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
-  Nan::SetAccessor(proto,JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
   Nan::SetMethod(proto,"scale", Scale);
   Nan::SetMethod(proto,"rotate", Rotate);
   Nan::SetMethod(proto,"translate", Translate);
@@ -51,10 +43,6 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"createImageData", CreateImageData);
   Nan::SetMethod(proto,"getImageData", GetImageData);
   Nan::SetMethod(proto,"putImageData", PutImageData);
-  // Nan::SetAccessor(proto,JS_STR("src"), SrcGetter, SrcSetter);
-  // Nan::Set(target, JS_STR("Image"), ctor->GetFunction());
-
-  // constructor_template.Reset(Isolate::GetCurrent(), ctor->GetFunction());
 
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
@@ -198,11 +186,21 @@ void CanvasRenderingContext2D::Restore() {
 NAN_METHOD(CanvasRenderingContext2D::New) {
   Nan::HandleScope scope;
 
+  Local<Object> canvasObj = info.This();
+
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
   CanvasRenderingContext2D *context = new CanvasRenderingContext2D(width, height);
-  context->Wrap(info.This());
-  info.GetReturnValue().Set(info.This());
+  context->Wrap(canvasObj);
+
+  Nan::SetAccessor(canvasObj, JS_STR("width"), WidthGetter);
+  Nan::SetAccessor(canvasObj, JS_STR("height"), HeightGetter);
+  Nan::SetAccessor(canvasObj, JS_STR("data"), DataGetter);
+  Nan::SetAccessor(canvasObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
+  Nan::SetAccessor(canvasObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
+  Nan::SetAccessor(canvasObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
+
+  info.GetReturnValue().Set(canvasObj);
 }
 
 NAN_GETTER(CanvasRenderingContext2D::WidthGetter) {
