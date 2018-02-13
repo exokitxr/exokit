@@ -29,6 +29,7 @@ protected:
   static NAN_METHOD(CreateImageBitmap);
 
   ImageBitmap(Image *image);
+  ImageBitmap(unsigned int width, unsigned int height, unsigned char *data);
   virtual ~ImageBitmap();
 
 private:

@@ -13,7 +13,6 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons)
   ctor->SetClassName(JS_STR("ImageBitmap"));
 
   // prototype
-  // Nan::SetPrototypeMethod(ctor, "save",save);// NODE_SET_PROTOTYPE_METHOD(ctor, "save", save);
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
   Local<Function> ctorFn = ctor->GetFunction();
@@ -23,11 +22,6 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons)
   createImageBitmapFn->Set(JS_STR("Image"), imageCons);
 
   ctorFn->Set(JS_STR("createImageBitmap"), createImageBitmapFn);
-
-  // Nan::SetAccessor(proto,JS_STR("src"), SrcGetter, SrcSetter);
-  // Nan::Set(target, JS_STR("Image"), ctor->GetFunction());
-
-  // constructor_template.Reset(Isolate::GetCurrent(), ctor->GetFunction());
 
   return scope.Escape(ctorFn);
 }
@@ -53,9 +47,21 @@ NAN_METHOD(ImageBitmap::New) {
 
   Local<Object> imageBitmapObj = info.This();
 
-  Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(info[0]));
-  ImageBitmap *imageBitmap = new ImageBitmap(image);
-  imageBitmap->Wrap(imageBitmapObj);
+  if (info[0]->IsObject()) {
+    Image *image = ObjectWrap::Unwrap<Image>(info[0]->ToObject());
+    ImageBitmap *imageBitmap = new ImageBitmap(image);
+    imageBitmap->Wrap(imageBitmapObj);
+  } else {
+    if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsArrayBufferView()) {
+      unsigned int width = info[0]->Uint32Value();
+      unsigned int height = info[1]->Uint32Value();
+      unsigned char *data = (unsigned char *)Local<ArrayBufferView>::Cast(info[2])->Buffer()->GetContents().Data();
+      ImageBitmap *imageBitmap = new ImageBitmap(width, height, data);
+      imageBitmap->Wrap(imageBitmapObj);
+    } else {
+      return Nan::ThrowError("Invalid arguments");
+    }
+  }
 
   Nan::SetAccessor(imageBitmapObj, JS_STR("width"), WidthGetter);
   Nan::SetAccessor(imageBitmapObj, JS_STR("height"), HeightGetter);
@@ -132,6 +138,9 @@ NAN_METHOD(ImageBitmap::CreateImageBitmap) {
 
 ImageBitmap::ImageBitmap(Image *image) {
   imageData = new canvas::ImageData(image->image->getData());
+}
+ImageBitmap::ImageBitmap(unsigned int width, unsigned int height, unsigned char *data) {
+  imageData = new canvas::ImageData(data, width, height, 4);
 }
 ImageBitmap::~ImageBitmap () {
   delete imageData;
