@@ -6,6 +6,10 @@ const {THREE} = exokit;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVr, nativeWindow} = nativeBindings;
 
+// ENVIRONMENT
+
+process.execArgv = [];
+
 /* const {VERSION} = nativeGl;
 
 nativeGl = {};
