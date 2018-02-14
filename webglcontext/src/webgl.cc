@@ -119,6 +119,7 @@ NAN_METHOD(Uniform1f) {
   float x = (float)info[1]->NumberValue();
 
   glUniform1f(location, x);
+
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
