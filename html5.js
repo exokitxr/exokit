@@ -210,7 +210,7 @@ const FPS = 90;
 const FRAME_TIME_MAX = 1000 / FPS;
 const FRAME_TIME_MIN = FRAME_TIME_MAX / 5;
 if (require.main === module) {
-  const url = process.argv[2];
+  const url = process.argv[2] || 'http://localhost:8000';
   
   nativeWindow.create(innerWidth, innerHeight);
 
