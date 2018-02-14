@@ -161,7 +161,9 @@ class ImageBitmap {
     }
   }
 }
-ImageBitmap.createImageBitmap = image => new ImageBitmap(image.width, image.height);
+ImageBitmap.createImageBitmap = function() {
+  return Reflect.construct(ImageBitmap, arguments);
+};
 WindowWorker.bind({
   ImageBitmap,
 });
@@ -1560,7 +1562,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Blob = Blob;
   window.AudioContext = AudioContext;
   window.Path2D = Path2D;
-  window.createImageBitmap = image => Promise.resolve(ImageBitmap.createImageBitmap(image));
+  window.createImageBitmap = function() {
+    return Promise.resolve(ImageBitmap.createImageBitmap.apply(ImageBitmap, arguments));
+  };
   const rafCbs = [];
   window.requestAnimationFrame = fn => {
     rafCbs.push(fn);
