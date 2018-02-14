@@ -146,7 +146,7 @@ void Init(Handle<Object> exports) {
   canvas::Quartz2DContextFactory *canvasContextFactory = new canvas::Quartz2DContextFactory(1);
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
   
-  canvas::ImageData::setFlip(true);
+  // canvas::ImageData::setFlip(true);
 
   Local<Value> gl = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
