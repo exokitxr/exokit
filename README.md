@@ -8,6 +8,6 @@ yarn
 
 run:
 ```
-node . https://google.com
+node . http://localhost:8000
 ```
 
