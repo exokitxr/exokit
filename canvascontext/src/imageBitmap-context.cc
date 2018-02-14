@@ -82,7 +82,8 @@ NAN_METHOD(ImageBitmap::New) {
     if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsArrayBufferView()) {
       unsigned int width = info[0]->Uint32Value();
       unsigned int height = info[1]->Uint32Value();
-      unsigned char *data = (unsigned char *)Local<ArrayBufferView>::Cast(info[2])->Buffer()->GetContents().Data();
+      Local<ArrayBufferView> dataValue = Local<ArrayBufferView>::Cast(info[2]);
+      unsigned char *data = (unsigned char *)dataValue->Buffer()->GetContents().Data() + dataValue->ByteOffset();
       ImageBitmap *imageBitmap = new ImageBitmap(width, height, data);
       imageBitmap->Wrap(imageBitmapObj);
     } else {
