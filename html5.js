@@ -64,7 +64,7 @@ nativeWindow.events.emit = (type, data) => {
   // console.log(type, data);
 
   switch (type) {
-    case 'resize': {
+    case 'framebufferResize': {
       const {width, height} = data;
       innerWidth = width;
       innerHeight = height;
