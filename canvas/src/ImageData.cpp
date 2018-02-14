@@ -34,16 +34,16 @@ ImageData::crop(int x, int y, unsigned short w, unsigned short h, bool flipY) co
   if (!flipY) {
     for (int i = minY; i < maxY; i++) {
       memcpy(
-        outputData.get() + ((i - y) * copyWidth * num_channels) + ((minX - x) * num_channels),
-        data.get() + (i * fullWidth * num_channels) + (minX * num_channels),
+        (unsigned char *)outputData.get() + ((i - y) * copyWidth * num_channels) + ((minX - x) * num_channels),
+        (unsigned char *)data.get() + (i * fullWidth * num_channels) + (minX * num_channels),
         copyWidth * num_channels
       );
     }
   } else {
     for (int i = minY; i < maxY; i++) {
       memcpy(
-        outputData.get() + ((i - y) * copyWidth * num_channels) + ((minX - x) * num_channels),
-        data.get() + ((y + h - 1 - i) * fullWidth * num_channels) + (minX * num_channels),
+        (unsigned char *)outputData.get() + ((i - y) * copyWidth * num_channels) + ((minX - x) * num_channels),
+        (unsigned char *)data.get() + ((y + h - 1 - i) * fullWidth * num_channels) + (minX * num_channels),
         copyWidth * num_channels
       );
     }
