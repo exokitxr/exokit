@@ -8,7 +8,7 @@ const {nativeVr, nativeWindow} = nativeBindings;
 
 // ENVIRONMENT
 
-process.execArgv = [];
+process.execArgv = []; // do not inherit node arguments in forked child processes
 
 /* const {VERSION} = nativeGl;
 
