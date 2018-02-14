@@ -46,13 +46,13 @@ Quartz2DSurface::Quartz2DSurface(const std::shared_ptr<Quartz2DCache> & _cache, 
     memset(bitmapData, 0, bitmapByteCount);
   
     initializeContext();
-    flipY();
+    // flipY();
     CGContextDrawImage(gc, CGRectMake(0, 0, getActualWidth(), getActualHeight()), img);
 #ifdef MEMDEBUG
     if (CFGetRetainCount(img) != 1) cerr << "leaking memory 1!\n";
 #endif
     CGImageRelease(img);
-    flipY();
+    // flipY();
   } else {
     Surface::resize(16, 16, 16, 16, RGBA8);
     unsigned int bitmapByteCount = 4 * getActualWidth() * getActualHeight();
@@ -204,11 +204,11 @@ Quartz2DSurface::drawImage(const ImageData & _img, const Point & p, double w, do
   auto f = (has_alpha ? kCGImageAlphaPremultipliedLast : kCGImageAlphaNoneSkipLast);
   CGImageRef img = CGImageCreate(_img.getWidth(), _img.getHeight(), 8, num_channels * 8, num_channels * _img.getWidth(), cache->getColorSpace(), f, provider, 0, imageSmoothingEnabled, kCGRenderingIntentDefault);
   if (img) {
-    flipY();
+    // flipY();
     if (globalAlpha < 1.0f) CGContextSetAlpha(gc, globalAlpha);
     CGContextDrawImage(gc, CGRectMake(displayScale * p.x, getActualHeight() - 1 - displayScale * (p.y + h), displayScale * w, displayScale * h), img);
     if (globalAlpha < 1.0f) CGContextSetAlpha(gc, 1.0f);
-    flipY();
+    // flipY();
   
 #ifdef MEMDEBUG
     if (CFGetRetainCount(img) != 1) std::cerr << "leaking memory O!\n";

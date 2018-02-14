@@ -280,7 +280,7 @@ namespace canvas {
                                    (getNumChannels() == 4 ? kCGImageAlphaPremultipliedLast : kCGImageAlphaNoneSkipLast)); // | kCGBitmapByteOrder32Big);
         CGContextSetInterpolationQuality(gc, kCGInterpolationHigh);
         CGContextSetShouldAntialias(gc, true);
-	flipY();
+        flipY();
       }
     }
 
