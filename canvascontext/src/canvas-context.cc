@@ -736,8 +736,7 @@ NAN_METHOD(CanvasRenderingContext2D::GetImageData) {
   Local<Function> imageDataCons = Local<Function>::Cast(
     Local<Object>::Cast(info.This())->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("ImageData"))
   );
-  Local<Value> argv[] = {};
-  Local<Object> imageDataObj = imageDataCons->NewInstance(sizeof(argv) / sizeof(argv[0]), argv);
+  Local<Object> imageDataObj = imageDataCons->NewInstance(0, nullptr);
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(imageDataObj);
   imageData->Set(croppedImageData.release());
 

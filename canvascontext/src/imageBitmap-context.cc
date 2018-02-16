@@ -160,8 +160,7 @@ NAN_METHOD(ImageBitmap::CreateImageBitmap) {
       Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(buffer->Get(JS_STR("buffer")));
 
       Local<Function> imageConstructor = Local<Function>::Cast(info.Callee()->Get(JS_STR("Image")));
-      Local<Value> argv[] = {};
-      imageObj = imageConstructor->NewInstance(sizeof(argv) / sizeof(argv[0]), argv);
+      imageObj = imageConstructor->NewInstance(0, nullptr);
 
       Image *image = ObjectWrap::Unwrap<Image>(imageObj);
       if (!image->Load((unsigned char *)arrayBuffer->GetContents().Data() + byteOffset, byteLength)) {
