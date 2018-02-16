@@ -1,6 +1,26 @@
 const path = require('path');
-const exokitWindows = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
-const {nativeVr} = exokitWindows;
+const bindings = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
+const {nativeGl, nativeVr} = bindings;
+const webGlToOpenGl = require('webgl-to-opengl');
+
+let shaderId = 0;
+bindings.nativeGl = (nativeGl => function WebGLContext() {
+  const result = new nativeGl();
+  result.createShader = (createShader => function(type) {
+    const result = createShader.call(this, type);
+    result.type = type;
+    return result;
+  })(result.createShader);
+  result.shaderSource = (shaderSource => function(shader, source) {
+    if (shader.type === result.VERTEX_SHADER) {
+      source = webGlToOpenGl.vertex(source);
+    } else if (shader.type === result.FRAGMENT_SHADER) {
+      source = webGlToOpenGl.fragment(source);
+    }
+    return shaderSource.call(this, shader, source);
+  })(result.shaderSource);
+  return result;
+})(bindings.nativeGl);
 
 nativeVr.EVRInitError = {
   None: 0,
@@ -129,4 +149,4 @@ nativeVr.ETrackedDeviceClass = {
   DisplayRedirect: 5,
 };
 
-module.exports = exokitWindows;
+module.exports = bindings;

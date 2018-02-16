@@ -23,6 +23,7 @@
   "dependencies": {
     "exokit": "0.0.67",
     "native-graphics-deps": "0.0.2",
-    "native-openvr-deps": "0.0.4"
+    "native-openvr-deps": "0.0.4",
+    "webgl-to-opengl": "0.0.1"
   }
 }

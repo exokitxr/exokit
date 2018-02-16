@@ -147,7 +147,7 @@ void Init(Handle<Object> exports) {
   canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
   
-  canvas::ImageData::setFlip(true);
+  // canvas::ImageData::setFlip(true);
 
   Local<Value> gl = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
@@ -158,7 +158,7 @@ void Init(Handle<Object> exports) {
   Local<Value> imageData = makeImageData();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageData"), imageData);
 
-  Local<Value> imageBitmap = makeImageBitmap();
+  Local<Value> imageBitmap = makeImageBitmap(image);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageBitmap"), imageBitmap);
 
   Local<Value> canvas = makeCanvasRenderingContext2D(imageData);
