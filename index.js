@@ -13,7 +13,6 @@ const {XMLHttpRequest} = require('xmlhttprequest');
 const {Response, Blob} = fetch;
 const WebSocket = require('ws/lib/websocket');
 const {LocalStorage} = require('node-localstorage');
-const WindowWorker = require('window-worker');
 const windowEval = require('window-eval-native');
 const THREE = require('./lib/three-min.js');
 
@@ -164,9 +163,9 @@ class ImageBitmap {
 ImageBitmap.createImageBitmap = function() {
   return Reflect.construct(ImageBitmap, arguments);
 };
-WindowWorker.bind({
-  ImageBitmap,
-});
+class nativeWorker {
+  terminate() {}
+}
 class Path2D {
   moveTo() {}
   lineTo() {}
@@ -1544,7 +1543,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.XMLHttpRequest = XMLHttpRequest;
   window.WebSocket = WebSocket;
-  window.Worker = class Worker extends WindowWorker {
+  window.Worker = class Worker extends nativeWorker {
     constructor(src, workerOptions = {}) {
       workerOptions.baseUrl = options.baseUrl;
       if (nativeBindingsModulePath) {
@@ -1677,9 +1676,10 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   const bindings = require(nativeBindingsModule);
 
+  nativeWorker = bindings.nativeWorker;
   ImageData = bindings.nativeImageData;
   ImageBitmap = bindings.nativeImageBitmap;
-  WindowWorker.bind({
+  nativeWorker.bind({
     ImageBitmap,
   });
   Path2D = bindings.nativePath2D;
