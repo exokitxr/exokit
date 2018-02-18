@@ -6,10 +6,6 @@ const {THREE} = exokit;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVr, nativeWindow} = nativeBindings;
 
-// ENVIRONMENT
-
-process.execArgv = []; // do not inherit node arguments in forked child processes
-
 /* const {VERSION} = nativeGl;
 
 nativeGl = {};
