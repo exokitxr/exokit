@@ -142,13 +142,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
   }
 }
 
-void Init(Handle<Object> exports) {
-  canvas::ContextGDIPlus::initialize();
-  canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
-  CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
-  
-  canvas::ImageData::setFlip(true);
-
+void InitExports(Handle<Object> exports) {
   Local<Value> gl = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
 
@@ -175,6 +169,22 @@ void Init(Handle<Object> exports) {
   
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
+  
+  uintptr_t initFunctionAddress = (uintptr_t)InitExports;
+  Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
+  initFunctionAddressArray->Set(0, Nan::New<Integer>((uint32_t)(initFunctionAddress >> 32)));
+  initFunctionAddressArray->Set(1, Nan::New<Integer>((uint32_t)(initFunctionAddress & 0xFFFFFFFF)));
+  exports->Set(JS_STR("initFunctionAddress"), initFunctionAddressArray);
+}
+
+void Init(Handle<Object> exports) {
+  canvas::ContextGDIPlus::initialize();
+  canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
+  CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
+  
+  canvas::ImageData::setFlip(true);
+  
+  InitExports(exports);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, Init)
