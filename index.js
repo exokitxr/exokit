@@ -1687,12 +1687,12 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   const bindings = require(nativeBindingsModule);
 
   nativeWorker = bindings.nativeWorker;
-  ImageData = bindings.nativeImageData;
-  ImageBitmap = bindings.nativeImageBitmap;
   nativeWorker.setNativeRequire('nativeBindings', bindings.initFunctionAddress);
   nativeWorker.bind({
     ImageBitmap: bindings.nativeImageBitmap,
   });
+  ImageData = bindings.nativeImageData;
+  ImageBitmap = bindings.nativeImageBitmap;
   Path2D = bindings.nativePath2D;
   CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
   WebGLContext = bindings.nativeGl;
