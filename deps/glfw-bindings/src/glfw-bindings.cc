@@ -133,7 +133,7 @@ void APIENTRY windowSizeCB(GLFWwindow *window, int w, int h) {
   evt->Set(JS_STR("height"),JS_INT(h));
 
   Local<Value> argv[2] = {
-    JS_STR("resize"), // event name
+    JS_STR("windowResize"), // event name
     evt
   };
 
@@ -150,7 +150,7 @@ void APIENTRY windowFramebufferSizeCB(GLFWwindow *window, int w, int h) {
   evt->Set(JS_STR("height"),JS_INT(h));
 
   Local<Value> argv[2] = {
-    JS_STR("framebuffer_resize"), // event name
+    JS_STR("framebufferResize"), // event name
     evt
   };
 
