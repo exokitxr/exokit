@@ -20,7 +20,7 @@ const windowSymbol = Symbol();
 const htmlTagsSymbol = Symbol();
 const htmlElementsSymbol = Symbol();
 const optionsSymbol = Symbol();
-let nativeBindingsModulePath = null;
+let nativeBindings = false;
 
 let id = 0;
 const urls = new Map();
@@ -1546,9 +1546,19 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Worker = class Worker extends nativeWorker {
     constructor(src, workerOptions = {}) {
       workerOptions.baseUrl = options.baseUrl;
-      if (nativeBindingsModulePath) {
-        workerOptions.args = [nativeBindingsModulePath];
-        workerOptions.bindingsModule = path.join(__dirname, 'lib', 'worker-native-bindings.js');
+      if (nativeBindings) {
+        workerOptions.startScript = '\
+          const nativeBindings = requireNative("nativeBindings");\n\
+          global.ImageBitmap = nativeBindings.nativeImageBitmap;\n\
+          global.createImageBitmap = function() {\n\
+            return Promise.resolve(ImageBitmap.createImageBitmap.apply(ImageBitmap, arguments));\n\
+          };\n\
+          console.log("start script 1");\n\
+          const smiggles = require("smiggles");\n\
+          console.log("start script 2", nativeBindings.nativeImageBitmap);\n\
+          smiggles.bind({ImageBitmap: nativeBindings.nativeImageBitmap});\n\
+          console.log("start script 3");\n\
+        ';
       }
 
       if (src instanceof Blob) {
@@ -1672,15 +1682,16 @@ exokit.fetch = (src, options = {}) => fetch(src)
   });
 exokit.THREE = THREE;
 exokit.setNativeBindingsModule = nativeBindingsModule => {
-  nativeBindingsModulePath = nativeBindingsModule;
+  nativeBindings = true;
 
   const bindings = require(nativeBindingsModule);
 
   nativeWorker = bindings.nativeWorker;
   ImageData = bindings.nativeImageData;
   ImageBitmap = bindings.nativeImageBitmap;
+  nativeWorker.setNativeRequire('nativeBindings', bindings.initFunctionAddress);
   nativeWorker.bind({
-    ImageBitmap,
+    ImageBitmap: bindings.nativeImageBitmap,
   });
   Path2D = bindings.nativePath2D;
   CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
