@@ -21,10 +21,10 @@
   },
   "homepage": "https://github.com/modulesio/exokit-windows#readme",
   "dependencies": {
-    "exokit": "0.0.69",
+    "exokit": "0.0.70",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.4",
     "webgl-to-opengl": "0.0.1",
-    "window-worker": "0.0.42"
+    "window-worker": "0.0.43"
   }
 }
