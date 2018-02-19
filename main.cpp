@@ -142,38 +142,48 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
   }
 }
 
-void Init(Handle<Object> exports) {
-  canvas::Quartz2DContextFactory *canvasContextFactory = new canvas::Quartz2DContextFactory(1);
-  CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
-  
-  // canvas::ImageData::setFlip(true);
-
+void InitExports(Handle<Object> exports) {
   Local<Value> gl = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
-
+  
   Local<Value> image = makeImage();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImage"), image);
-
+  
   Local<Value> imageData = makeImageData();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageData"), imageData);
-
+  
   Local<Value> imageBitmap = makeImageBitmap(image);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageBitmap"), imageBitmap);
-
+  
   Local<Value> canvas = makeCanvasRenderingContext2D(imageData);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasRenderingContext2D"), canvas);
-
+  
   Local<Value> path2d = makePath2D();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
   
   /* Local<Value> glfw = makeGlfw();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
+   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
   
   Local<Value> window = makeWindow();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
   
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
+
+  uintptr_t initFunctionAddress = (uintptr_t)InitExports;
+  Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
+  initFunctionAddressArray->Set(0, Nan::New<Integer>((uint32_t)(initFunctionAddress >> 32)));
+  initFunctionAddressArray->Set(1, Nan::New<Integer>((uint32_t)(initFunctionAddress & 0xFFFFFFFF)));
+  exports->Set(JS_STR("initFunctionAddress"), initFunctionAddressArray);
+}
+  
+void Init(Handle<Object> exports) {
+  canvas::Quartz2DContextFactory *canvasContextFactory = new canvas::Quartz2DContextFactory(1);
+  CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
+  
+  // canvas::ImageData::setFlip(true);
+
+  InitExports(exports);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, Init)
