@@ -1101,19 +1101,19 @@ NAN_METHOD(ExtensionSupported) {
 GLFWwindow *windowHandle = nullptr;
 NAN_METHOD(Create) {
   glewExperimental = GL_TRUE;
-    
+
   glfwInit();
   atexit([]() {
     glfwTerminate();
   });
-  
+
   glfw::glfw_events.Reset(info.This()->Get(JS_STR("events"))->ToObject());
-  
+
   Nan::HandleScope scope;
-  
+
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
-  
+
   glfwDefaultWindowHints();
 
   // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
@@ -1134,7 +1134,7 @@ NAN_METHOD(Create) {
 
   if (windowHandle) {
     glfwMakeContextCurrent(windowHandle);
-    
+
     GLenum err = glewInit();
     if (!err) {
       glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -1143,13 +1143,13 @@ NAN_METHOD(Create) {
 
       glfwSwapBuffers(windowHandle);
       glfwSwapInterval(0);
-      
+
       /* int fbWidth, fbHeight;
       glfwGetFramebufferSize(windowHandle, &fbWidth, &fbHeight);
-      
+
       int wWidth, wHeight;
       glfwGetWindowSize(windowHandle, &wWidth, &wHeight); */
-      
+
       /* Local<Object> result = Object::New(Isolate::GetCurrent());
       result->Set(JS_STR("width"), JS_INT(fbWidth));
       result->Set(JS_STR("height"), JS_INT(fbHeight)); */
@@ -1172,7 +1172,7 @@ NAN_METHOD(Create) {
       glfwSetCursorPosCallback(windowHandle, cursorPosCB);
       glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
       glfwSetScrollCallback(windowHandle, scrollCB);
-      
+
       // info.GetReturnValue().Set(JS_NUM((uint64_t)windowHandle));
     } else {
       /* Problem: glewInit failed, something is seriously wrong. */
