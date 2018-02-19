@@ -1100,6 +1100,15 @@ NAN_METHOD(ExtensionSupported) {
 
 GLFWwindow *windowHandle = nullptr;
 NAN_METHOD(Create) {
+  glewExperimental = GL_TRUE;
+    
+  glfwInit();
+  atexit([]() {
+    glfwTerminate();
+  });
+  
+  glfw::glfw_events.Reset(info.This()->Get(JS_STR("events"))->ToObject());
+  
   Nan::HandleScope scope;
   
   unsigned int width = info[0]->Uint32Value();
@@ -1565,19 +1574,9 @@ NAN_METHOD(SetCursorPosition) {
 } */
 
 Local<Object> makeWindow() {
-  glewExperimental = GL_TRUE;
-    
-  glfwInit();
-  atexit([]() {
-    glfwTerminate();
-  });
-  
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
-  
-  Local<Object> events = Object::New(Isolate::GetCurrent());
-  glfw::glfw_events.Reset(events);
-  
+
   Local<Object> target = Object::New(isolate);
 
   Nan::SetMethod(target, "create", glfw::Create);
@@ -1588,7 +1587,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "getRenderTarget", glfw::GetRenderTarget);
   Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
-  target->Set(JS_STR("events"), events);
+  target->Set(JS_STR("events"), Object::New(Isolate::GetCurrent()));
   
   return scope.Escape(target);
 }
