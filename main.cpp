@@ -182,7 +182,7 @@ void Init(Handle<Object> exports) {
   canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
   CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
   
-  canvas::ImageData::setFlip(true);
+  // canvas::ImageData::setFlip(true);
   
   InitExports(exports);
 }
