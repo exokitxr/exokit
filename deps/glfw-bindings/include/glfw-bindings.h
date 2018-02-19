@@ -1,7 +1,6 @@
 #ifndef _GLFW_BINDINGS_H_
 #define _GLFW_BINDINGS_H_
 
-#include <stdio.h>
 #include <string>
 #include <sstream>
 
@@ -15,10 +14,10 @@
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
 
-// using namespace v8;
+using namespace v8;
 // using namespace node;
 
 // Local<Object> makeGlfw();
-v8::Local<v8::Object> makeWindow();
+Local<Object> makeWindow();
 
 #endif
