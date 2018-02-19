@@ -1704,7 +1704,6 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     constructor(attrs = [], value = '') {
       super('IMG', attrs, value);
 
-
       this._src = '';
       this.image = new bindings.nativeImage();
     }
