@@ -102,6 +102,10 @@ namespace canvas {
 #endif
 	g->SetCompositingQuality( Gdiplus::CompositingQualityHighQuality );
 	g->SetSmoothingMode( Gdiplus::SmoothingModeAntiAlias );
+  Gdiplus::Matrix m;
+  m.Translate(0, getActualHeight());
+  m.Scale(1.0, -1.0);
+  g->SetTransform(&m);
       }
     }
     void drawNativeSurface(GDIPlusSurface & img, const Point & p, double w, double h, float displayScale, float globalAlpha, bool imageSmoothingEnabled);
