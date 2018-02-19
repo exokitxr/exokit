@@ -1,7 +1,10 @@
 const path = require('path');
 const bindings = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
 const {nativeGl, nativeVr} = bindings;
+const WindowWorker = require('window-worker');
 const webGlToOpenGl = require('webgl-to-opengl');
+
+bindings.nativeWorker = WindowWorker;
 
 let shaderId = 0;
 bindings.nativeGl = (nativeGl => function WebGLContext() {
