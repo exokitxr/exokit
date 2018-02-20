@@ -1795,6 +1795,16 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
         }
       }
     }
+    
+    get width() {
+      return this.image.width;
+    }
+    set width(width) {}
+
+    get height() {
+      return this.image.height;
+    }
+    set height(height) {}
 
     get data() {
       return this.image.data;
