@@ -1094,10 +1094,21 @@ class HTMLImageElement extends HTMLSrcableElement {
     return 0; // XXX
   }
   set width(width) {}
+  
   get height() {
     return 0; // XXX
   }
   set height(height) {}
+  
+  get naturalWidth() {
+    return this.width;
+  }
+  set naturalWidth(naturalWidth) {}
+  
+  get naturalHeight() {
+    return this.height;
+  }
+  set naturalHeight(naturalHeight) {}
 };
 class HTMLAudioElement extends HTMLMediaElement {
   constructor(attrs = [], value = '') {
@@ -1197,6 +1208,7 @@ class HTMLCanvasElement extends HTMLElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'width') {
+        console.log('context handle width change', this._context);
         // console.log('gl canvas set width', this.width, this.height, this._context && this._context.resize, new Error().stack);
         this._context && this._context.resize && this._context.resize(this.width, this.height);
       } else if (name === 'height') {
@@ -1805,6 +1817,16 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
       return this.image.height;
     }
     set height(height) {}
+    
+    get naturalWidth() {
+      return this.width;
+    }
+    set naturalWidth(naturalWidth) {}
+    
+    get naturalHeight() {
+      return this.height;
+    }
+    set naturalHeight(naturalHeight) {}
 
     get data() {
       return this.image.data;
