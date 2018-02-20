@@ -26,43 +26,31 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons)
 }
 
 unsigned int ImageBitmap::GetWidth() {
-  if (imageData != nullptr) {
-    return imageData->getWidth();
-  } else {
-    return 0;
-  }
+  return bitmap.width();
 }
 
 unsigned int ImageBitmap::GetHeight() {
-  if (imageData != nullptr) {
-    return imageData->getHeight();
-  } else {
-    return 0;
-  }
+  return bitmap.height();
 }
 
 unsigned int ImageBitmap::GetNumChannels() {
-  if (imageData != nullptr) {
-    return imageData->getNumChannels();
-  } else {
-    return 0;
-  }
+  return 4;
 }
 
-unsigned char *ImageBitmap::GetData() {
+/* unsigned char *ImageBitmap::GetData() {
   if (imageData != nullptr) {
     return imageData->getData();
   } else {
     return nullptr;
   }
-}
+} */
 
-void ImageBitmap::Set(canvas::ImageData *imageData) {
+/* void ImageBitmap::Set(canvas::ImageData *imageData) {
   if (this->imageData != nullptr) {
     delete this->imageData;
   }
   this->imageData = imageData;
-}
+} */
 
 NAN_METHOD(ImageBitmap::New) {
   Nan::HandleScope scope;
@@ -76,16 +64,63 @@ NAN_METHOD(ImageBitmap::New) {
     unsigned int width = info[3]->Uint32Value();
     unsigned int height = info[4]->Uint32Value();
     bool flipY = info[5]->BooleanValue();
-    ImageBitmap *imageBitmap = new ImageBitmap(image, x, y, width, height, flipY);
-    imageBitmap->Wrap(imageBitmapObj);
+
+    SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
+    unique_ptr<char[]> address(new char[width * height * 4]);
+    SkPixmap pixmap(info, address.get(), width * 4);
+    bool ok = image->image->scalePixels(pixmap, SkFilterQuality::kNone_SkFilterQuality);
+
+    if (ok) {
+      if (flipY) {
+        unique_ptr<char[]> line(new char[width * 4]);
+
+        for (size_t i = 0; i < height / 2; i++) {
+          char *topAddress = address.get() + (i * width * 4);
+          char *bottomAddress = address.get() + ((height - 1 - i) * width * 4);
+          memcpy(line.get(), topAddress, width * 4);
+          memcpy(topAddress, bottomAddress, width * 4);
+          memcpy(bottomAddress, line.get(), width * 4);
+        }
+      }
+
+      SkBitmap bitmap;
+      bool ok = bitmap.installPixels(pixmap);
+
+      if (ok) {
+        ImageBitmap *imageBitmap = new ImageBitmap(bitmap);
+        imageBitmap->Wrap(imageBitmapObj);
+
+        address.release();
+      } else {
+        return Nan::ThrowError("Failed to install pixels");
+      }
+    } else {
+      return Nan::ThrowError("Failed to read pixels");
+    }
   } else {
     if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsArrayBufferView()) {
       unsigned int width = info[0]->Uint32Value();
       unsigned int height = info[1]->Uint32Value();
       Local<ArrayBufferView> dataValue = Local<ArrayBufferView>::Cast(info[2]);
-      unsigned char *data = (unsigned char *)dataValue->Buffer()->GetContents().Data() + dataValue->ByteOffset();
-      ImageBitmap *imageBitmap = new ImageBitmap(width, height, data);
-      imageBitmap->Wrap(imageBitmapObj);
+      char *data = (char *)dataValue->Buffer()->GetContents().Data() + dataValue->ByteOffset();
+
+      unique_ptr<char[]> address(new char[width * height * 4]);
+      memcpy(address.get(), data, width * height * 4);
+
+      SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
+      SkPixmap pixmap(info, address.get(), width * 4);
+
+      SkBitmap bitmap;
+      bool ok = bitmap.installPixels(pixmap);
+
+      if (ok) {
+        ImageBitmap *imageBitmap = new ImageBitmap(bitmap);
+        imageBitmap->Wrap(imageBitmapObj);
+
+        address.release();
+      } else {
+        return Nan::ThrowError("Failed to install pixels");
+      }
     } else {
       ImageBitmap *imageBitmap = new ImageBitmap();
       imageBitmap->Wrap(imageBitmapObj);
@@ -103,42 +138,37 @@ NAN_GETTER(ImageBitmap::WidthGetter) {
   Nan::HandleScope scope;
 
   ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(info.This());
-  if (imageBitmap->imageData != nullptr) {
-    info.GetReturnValue().Set(JS_INT(imageBitmap->GetWidth()));
-  } else {
-    info.GetReturnValue().Set(JS_INT(0));
-  }
+  info.GetReturnValue().Set(JS_INT(imageBitmap->GetWidth()));
 }
 
 NAN_GETTER(ImageBitmap::HeightGetter) {
   Nan::HandleScope scope;
 
   ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(info.This());
-  if (imageBitmap->imageData != nullptr) {
-    info.GetReturnValue().Set(JS_INT(imageBitmap->GetHeight()));
-  } else {
-    info.GetReturnValue().Set(JS_INT(0));
-  }
+  info.GetReturnValue().Set(JS_INT(imageBitmap->GetHeight()));
 }
 
 NAN_GETTER(ImageBitmap::DataGetter) {
   Nan::HandleScope scope;
 
   ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(info.This());
-  if (imageBitmap->imageData != nullptr) {
-    if (imageBitmap->dataArray.IsEmpty()) {
+  if (imageBitmap->dataArray.IsEmpty()) {
+    SkPixmap pixmap;
+    bool ok = imageBitmap->bitmap.peekPixels(&pixmap);
+
+    if (ok) {
       unsigned int width = imageBitmap->GetWidth();
       unsigned int height = imageBitmap->GetHeight();
-      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), imageBitmap->GetData(), width * height * 4);
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (void *)pixmap.addr(), width * height * 4); // XXX link lifetime
 
       Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
       imageBitmap->dataArray.Reset(uint8ClampedArray);
+    } else {
+      return info.GetReturnValue().Set(Nan::Null());
     }
-
-    info.GetReturnValue().Set(Nan::New(imageBitmap->dataArray));
-  } else {
-    info.GetReturnValue().Set(Nan::Null());
   }
+
+  info.GetReturnValue().Set(Nan::New(imageBitmap->dataArray));
 }
 
 NAN_METHOD(ImageBitmap::CreateImageBitmap) {
@@ -203,12 +233,13 @@ NAN_METHOD(ImageBitmap::CreateImageBitmap) {
   }
 }
 
-ImageBitmap::ImageBitmap() : imageData(nullptr) {}
-ImageBitmap::ImageBitmap(Image *image, int x, int y, unsigned int width, unsigned int height, bool flipY) :
-  imageData(image->image->getData().crop(x, y, width, height, flipY).release()) {}
-ImageBitmap::ImageBitmap(unsigned int width, unsigned int height, unsigned char *data) : imageData(new canvas::ImageData(data, width, height, 4)) {}
-ImageBitmap::~ImageBitmap () {
-  if (imageData != nullptr) {
-    delete imageData;
-  }
+ImageBitmap::ImageBitmap() {}
+/* ImageBitmap::ImageBitmap(unsigned int width, unsigned int height, unsigned char *data) {
+  this->bitmap = bitmap;
 }
+ImageBitmap::ImageBitmap(Image *image, int x, int y, unsigned int width, unsigned int height, bool flipY) :
+  imageData(image->image->getData().crop(x, y, width, height, flipY).release()) {} */
+ImageBitmap::ImageBitmap(const SkBitmap &bitmap) {
+  this->bitmap = bitmap;
+}
+ImageBitmap::~ImageBitmap () {}

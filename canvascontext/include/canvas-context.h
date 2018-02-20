@@ -7,6 +7,14 @@
 #include <canvas/include/Context.h>
 #include <canvas/include/Image.h>
 #include <canvas/include/ImageData.h>
+#include <canvas/include/web_color.h>
+#include <SkRefCnt.h>
+#include <SkScalar.h>
+#include <SkRect.h>
+#include <SkSurface.h>
+#include <SkCanvas.h>
+#include <SkPath.h>
+#include <SkPaint.h>
 
 using namespace v8;
 using namespace node;
@@ -32,23 +40,22 @@ public:
   void BeginPath();
   void ClosePath();
   void Clip();
-  void ResetClip();
   void Stroke();
-  void Stroke(Path2D &path2d);
+  void Stroke(const Path2D &path);
   void Fill();
-  void Fill(Path2D &path2d);
+  void Fill(const Path2D &path);
   void MoveTo(double x, double y);
   void LineTo(double x, double y);
-  void Arc(double x, double y, double radius, double startAngle, double endAngle, double anticlockwise);
+  void Arc(float x, float y, float radius, float startAngle, float endAngle, float anticlockwise);
   void ArcTo(double x1, double y1, double x2, double y2, double radius);
-  void Rect(double x, double y, double w, double h);
-  void FillRect(double x, double y, double w, double h);
-  void StrokeRect(double x, double y, double w, double h);
-  void ClearRect(double x, double y, double w, double h);
-  void FillText(const std::string &text, double x, double y);
-  void StrokeText(const std::string &text, double x, double y);
+  void Rect(float x, float y, float w, float h);
+  void FillRect(float x, float y, float w, float h);
+  void StrokeRect(float x, float y, float w, float h);
+  void ClearRect(float x, float y, float w, float h);
+  void FillText(const std::string &text, float x, float y);
+  void StrokeText(const std::string &text, float x, float y);
   void Resize(unsigned int w, unsigned int h);
-  void DrawImage(const canvas::ImageData &imageData, int sx, int sy, unsigned int sw, unsigned int sh, int dx, int dy, unsigned int dw, unsigned int dh);
+  void DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh);
   void Save();
   void Restore();
 
@@ -73,7 +80,6 @@ protected:
   static NAN_METHOD(BeginPath);
   static NAN_METHOD(ClosePath);
   static NAN_METHOD(Clip);
-  static NAN_METHOD(ResetClip);
   static NAN_METHOD(Stroke);
   static NAN_METHOD(Fill);
   static NAN_METHOD(MoveTo);
@@ -104,7 +110,11 @@ private:
   static canvas::ContextFactory *canvasContextFactory;
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
-  canvas::Context *context;
+  sk_sp<SkSurface> surface;
+  SkPath path;
+  SkPaint strokePaint;
+  SkPaint fillPaint;
+  SkPaint clearPaint;
 
   friend class Image;
   friend class ImageData;

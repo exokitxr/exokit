@@ -7,6 +7,9 @@
 #include <canvas/include/Context.h>
 #include <canvas/include/Image.h>
 #include <canvas/include/ImageData.h>
+#include <canvas/include/Resources.h>
+#include <SkData.h>
+#include <SkImage.h>
 
 using namespace v8;
 using namespace node;
@@ -19,9 +22,9 @@ public:
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();
-  unsigned char *GetData();
+  // unsigned char *GetData();
   bool Load(const unsigned char *buffer, size_t size);
-  void Set(canvas::Image *image);
+  // void Set(canvas::Image *image);
 
 protected:
   static NAN_METHOD(New);
@@ -31,10 +34,10 @@ protected:
   static NAN_METHOD(LoadMethod);
 
   Image();
-  virtual ~Image();
+  ~Image();
 
 private:
-  canvas::Image *image;
+  sk_sp<SkImage> image;
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
   friend class CanvasRenderingContext2D;

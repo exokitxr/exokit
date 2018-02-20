@@ -19,50 +19,51 @@ Handle<Object> Image::Initialize(Isolate *isolate) {
 }
 
 unsigned int Image::GetWidth() {
-  if (image != nullptr) {
-    return image->getData().getWidth();
+  if (image) {
+    return image->width();
   } else {
     return 0;
   }
 }
 
 unsigned int Image::GetHeight() {
-  if (image != nullptr) {
-    return image->getData().getHeight();
+  if (image) {
+    return image->height();
   } else {
     return 0;
   }
 }
 
 unsigned int Image::GetNumChannels() {
-  if (image != nullptr) {
-    return image->getData().getNumChannels();
-  } else {
-    return 0;
-  }
+  return 4;
 }
 
-unsigned char *Image::GetData() {
-  if (image != nullptr) {
+/* unsigned char *Image::GetData() {
+  if (image) {
     return image->getData().getData();
   } else {
     return nullptr;
   }
-}
+} */
 
 bool Image::Load(const unsigned char *buffer, size_t size) {
-  if (image == nullptr) {
-    image = CanvasRenderingContext2D::canvasContextFactory->createImage().release();
+  sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, size);
+  SkBitmap bitmap;
+  bool ok = DecodeDataToBitmap(data, &bitmap);
+
+  if (ok) {
+    bitmap.setImmutable();
+    image = SkImage::MakeFromBitmap(bitmap);
+
+    return true;
+  } else {
+    return false;
   }
-  return image->decode(buffer, size);
 }
 
-void Image::Set(canvas::Image *image) {
-  if (this->image != nullptr) {
-    delete this->image;
-  }
-  this->image = image;
-}
+/* void Image::Set(canvas::Image *image) {
+  this->image = image->image;
+} */
 
 NAN_METHOD(Image::New) {
   Nan::HandleScope scope;
@@ -83,7 +84,6 @@ NAN_GETTER(Image::WidthGetter) {
   Nan::HandleScope scope;
 
   Image *image = ObjectWrap::Unwrap<Image>(info.This());
-
   info.GetReturnValue().Set(JS_INT(image->GetWidth()));
 }
 
@@ -91,7 +91,6 @@ NAN_GETTER(Image::HeightGetter) {
   Nan::HandleScope scope;
 
   Image *image = ObjectWrap::Unwrap<Image>(info.This());
-
   info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -99,20 +98,23 @@ NAN_GETTER(Image::DataGetter) {
   Nan::HandleScope scope;
 
   Image *image = ObjectWrap::Unwrap<Image>(info.This());
-  if (image->image != nullptr) {
-    if (image->dataArray.IsEmpty()) {
+  if (image->dataArray.IsEmpty()) {
+    SkPixmap pixmap;
+    bool ok = image->image->peekPixels(&pixmap);
+
+    if (ok) {
       unsigned int width = image->GetWidth();
       unsigned int height = image->GetHeight();
-      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), image->GetData(), width * height * 4);
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (void *)pixmap.addr(), width * height * 4); // XXX link lifetime
 
       Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
       image->dataArray.Reset(uint8ClampedArray);
+    } else {
+      return info.GetReturnValue().Set(Nan::Null());
     }
-
-    info.GetReturnValue().Set(Nan::New(image->dataArray));
-  } else {
-    info.GetReturnValue().Set(Nan::Null());
   }
+
+  info.GetReturnValue().Set(Nan::New(image->dataArray));
 }
 
 NAN_METHOD(Image::LoadMethod) {
@@ -125,13 +127,8 @@ NAN_METHOD(Image::LoadMethod) {
   size_t size = contents.ByteLength();
 
   bool result = image->Load(data, size);
-
   info.GetReturnValue().Set(JS_BOOL(result));
 }
 
-Image::Image () : image(nullptr) {}
-Image::~Image () {
-  if (image != nullptr) {
-    delete image;
-  }
-}
+Image::Image () {}
+Image::~Image () {}

@@ -6,6 +6,7 @@
 #include <defines.h>
 #include <canvas/include/Context.h>
 #include <canvas/include/ImageData.h>
+#include <SkBitmap.h>
 
 using namespace v8;
 using namespace node;
@@ -19,8 +20,8 @@ public:
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();
-  unsigned char *GetData();
-  void Set(canvas::ImageData *imageData);
+  // unsigned char *GetData();
+  // void Set(canvas::ImageData *imageData);
 
 protected:
   static NAN_METHOD(New);
@@ -30,12 +31,13 @@ protected:
   static NAN_METHOD(CreateImageBitmap);
 
   ImageBitmap();
-  ImageBitmap(Image *image, int x, int y, unsigned int width, unsigned int height, bool flipY);
   ImageBitmap(unsigned int width, unsigned int height, unsigned char *data);
+  // ImageBitmap(Image *image, int x, int y, unsigned int width, unsigned int height, bool flipY);
+  ImageBitmap(const SkBitmap &bitmap);
   virtual ~ImageBitmap();
 
 private:
-  canvas::ImageData *imageData;
+  SkBitmap bitmap;
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
   friend class CanvasRenderingContext2D;

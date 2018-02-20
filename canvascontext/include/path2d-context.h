@@ -9,6 +9,7 @@
 #include <canvas/include/ImageData.h>
 #include <canvas/include/Point.h>
 #include <canvas/include/Path2D.h>
+#include <SkPath.h>
 
 using namespace v8;
 using namespace node;
@@ -16,12 +17,12 @@ using namespace node;
 class Path2D : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
-  void MoveTo(double x, double y);
-  void LineTo(double x, double y);
+  void MoveTo(float x, float y);
+  void LineTo(float x, float y);
   void ClosePath();
-  void Arc(double x, double y, double radius, double startAngle, double endAngle, double anticlockwise);
-  void ArcTo(double x1, double y1, double x2, double y2, double radius);
-  void QuadraticCurveTo(double cpx, double cpy, double x, double y);
+  void Arc(float x, float y, float radius, float startAngle, float endAngle, float anticlockwise);
+  void ArcTo(float x1, float y1, float x2, float y2, float radius);
+  void QuadraticCurveTo(float cpx, float cpy, float x, float y);
   void Clear();
 
 protected:
@@ -38,7 +39,7 @@ protected:
   virtual ~Path2D();
 
 private:
-  canvas::Path2D *path2d;
+  SkPath path;
 
   friend class CanvasRenderingContext2D;
 };

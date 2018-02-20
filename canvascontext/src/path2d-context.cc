@@ -26,26 +26,31 @@ Handle<Object> Path2D::Initialize(Isolate *isolate) {
   return scope.Escape(ctor->GetFunction());
 }
 
-void Path2D::MoveTo(double x, double y) {
-  path2d->moveTo(canvas::Point(x, y));
+void Path2D::MoveTo(float x, float y) {
+  path.moveTo(x, y);
 }
-void Path2D::LineTo(double x, double y) {
-  path2d->lineTo(canvas::Point(x, y));
+void Path2D::LineTo(float x, float y) {
+  path.lineTo(x, y);
 }
 void Path2D::ClosePath() {
-  path2d->closePath();
+  path.close();
 }
-void Path2D::Arc(double x, double y, double radius, double startAngle, double endAngle, double anticlockwise) {
-  path2d->arc(canvas::Point(x, y), radius, startAngle, endAngle, anticlockwise);
+void Path2D::Arc(float x, float y, float radius, float startAngle, float endAngle, float anticlockwise) {
+  if (anticlockwise) {
+    float temp = startAngle;
+    startAngle = endAngle;
+    endAngle = temp;
+  }
+  path.addArc({x - radius/2, y - radius/2, x + radius/2, y + radius/2}, startAngle, endAngle);
 }
-void Path2D::ArcTo(double x1, double y1, double x2, double y2, double radius) {
-  path2d->arcTo(canvas::Point(x1, y1), canvas::Point(x2, y2), radius);
+void Path2D::ArcTo(float x1, float y1, float x2, float y2, float radius) {
+  path.arcTo(x1, y1, x2 - x1, y2 - y1, radius);
 }
-void Path2D::QuadraticCurveTo(double cpx, double cpy, double x, double y) {
-  path2d->quadraticCurveTo(cpx, cpy, x, y, 1);
+void Path2D::QuadraticCurveTo(float cpx, float cpy, float x, float y) {
+  path.quadTo(cpx, cpy, x, y);
 }
 void Path2D::Clear() {
-  path2d->clear();
+  path.reset();
 }
 
 NAN_METHOD(Path2D::New) {
@@ -132,9 +137,5 @@ NAN_METHOD(Path2D::Clear) {
   path2d->Clear();
 }
 
-Path2D::Path2D() {
-  path2d = new canvas::Path2D();
-}
-Path2D::~Path2D () {
-  delete path2d;
-}
+Path2D::Path2D() {}
+Path2D::~Path2D () {}
