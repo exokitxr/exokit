@@ -2,6 +2,8 @@
 
 using namespace v8;
 
+static NSVGrasterizer *imageContextSvgRasterizer = nsvgCreateRasterizer();
+
 Handle<Object> Image::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
@@ -57,7 +59,45 @@ bool Image::Load(const unsigned char *buffer, size_t size) {
 
     return true;
   } else {
-    return false;
+    unique_ptr<char[]> svgString(new char[size + 1]);
+    memcpy(svgString.get(), buffer, size);
+    svgString[size] = 0;
+
+    NSVGimage *svgImage = nsvgParse(svgString.get(), "px", 96);
+    if (svgImage != nullptr) {
+      if (svgImage->width > 0 && svgImage->height > 0 && svgImage->shapes != nullptr) {
+        int w = svgImage->width;
+        int h = svgImage->height;
+        unsigned char *address = (unsigned char *)malloc(w * h * 4);
+        nsvgRasterize(imageContextSvgRasterizer, svgImage, 0, 0, 1, address, w, h, w * 4);
+
+        SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+        SkPixmap pixmap(info, address, w * 4);
+
+        SkBitmap bitmap;
+        bool ok = bitmap.installPixels(pixmap);
+        if (ok) {
+          bitmap.setImmutable();
+          image = SkImage::MakeFromBitmap(bitmap);
+
+          // std::cout << "image decode ok" << "\n";
+
+          return true;
+        } else {
+          free(address);
+
+          return false;
+        }
+      } else {
+        // std::cout << "image decode fail 1" << "\n";
+
+        return false;
+      }
+    } else {
+      // std::cout << "image decode fail 2" << "\n";
+      // throw ImageLoadingException(stbi_failure_reason());
+      return false;
+    }
   }
 }
 
@@ -126,8 +166,8 @@ NAN_METHOD(Image::LoadMethod) {
   unsigned char *data = (unsigned char *)contents.Data();
   size_t size = contents.ByteLength();
 
-  bool result = image->Load(data, size);
-  info.GetReturnValue().Set(JS_BOOL(result));
+  bool ok = image->Load(data, size);
+  info.GetReturnValue().Set(JS_BOOL(ok));
 }
 
 Image::Image () {}

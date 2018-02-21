@@ -951,6 +951,7 @@ NAN_METHOD(TexImage2D) {
 
   if (canvas::ImageData::getFlip()) {
     unique_ptr<char[]> pixelsV2(new char[widthV * heightV * 4]);
+
     flipImageData(pixelsV2.get(), pixelsV, widthV, heightV, 4);
 
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2.get());

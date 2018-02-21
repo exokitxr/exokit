@@ -8,9 +8,11 @@
 #include <canvas/include/Image.h>
 #include <canvas/include/ImageData.h>
 #include <canvas/include/web_color.h>
+#include <canvas/include/web_font.h>
 #include <SkRefCnt.h>
 #include <SkScalar.h>
 #include <SkRect.h>
+#include <SkTypeface.h>
 #include <SkSurface.h>
 #include <SkCanvas.h>
 #include <SkPath.h>
@@ -23,6 +25,19 @@ class Image;
 class ImageData;
 class ImageBitmap;
 class Path2D;
+
+enum class TextBaseline {
+  TOP,
+  HANGING,
+  MIDDLE,
+  ALPHABETIC,
+  IDEOGRAPHIC,
+  BOTTOM,
+};
+enum class Direction {
+  LEFT_TO_RIGHT,
+  RIGHT_TO_LEFT,
+};
 
 class CanvasRenderingContext2D : public ObjectWrap {
 public:
@@ -66,10 +81,30 @@ protected:
   static NAN_GETTER(DataGetter);
   static NAN_GETTER(LineWidthGetter);
   static NAN_SETTER(LineWidthSetter);
-  static NAN_GETTER(FillStyleGetter);
-  static NAN_SETTER(FillStyleSetter);
   static NAN_GETTER(StrokeStyleGetter);
   static NAN_SETTER(StrokeStyleSetter);
+  static NAN_GETTER(FillStyleGetter);
+  static NAN_SETTER(FillStyleSetter);
+  static NAN_GETTER(FontGetter);
+  static NAN_SETTER(FontSetter);
+  static NAN_GETTER(FontFamilyGetter);
+  static NAN_SETTER(FontFamilySetter);
+  static NAN_GETTER(FontSizeGetter);
+  static NAN_SETTER(FontSizeSetter);
+  static NAN_GETTER(FontWeightGetter);
+  static NAN_SETTER(FontWeightSetter);
+  static NAN_GETTER(LineHeightGetter);
+  static NAN_SETTER(LineHeightSetter);
+  static NAN_GETTER(FontStyleGetter);
+  static NAN_SETTER(FontStyleSetter);
+  static NAN_GETTER(FontVariantGetter);
+  static NAN_SETTER(FontVariantSetter);
+  static NAN_GETTER(TextAlignGetter);
+  static NAN_SETTER(TextAlignSetter);
+  static NAN_GETTER(TextBaselineGetter);
+  static NAN_SETTER(TextBaselineSetter);
+  static NAN_GETTER(DirectionGetter);
+  static NAN_SETTER(DirectionSetter);
   static NAN_METHOD(Scale);
   static NAN_METHOD(Rotate);
   static NAN_METHOD(Translate);
@@ -107,7 +142,7 @@ public:
   static void InitalizeStatic(canvas::ContextFactory *newCanvasContextFactory);
 
 private:
-  static canvas::ContextFactory *canvasContextFactory;
+  // static canvas::ContextFactory *canvasContextFactory;
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
   sk_sp<SkSurface> surface;
@@ -115,6 +150,11 @@ private:
   SkPaint strokePaint;
   SkPaint fillPaint;
   SkPaint clearPaint;
+  SkPaint::FontMetrics fontMetrics;
+  float lineHeight;
+  std::string textAlign;
+  TextBaseline textBaseline;
+  Direction direction;
 
   friend class Image;
   friend class ImageData;

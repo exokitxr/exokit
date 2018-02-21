@@ -40,23 +40,22 @@ unsigned int ImageData::GetNumChannels() {
 NAN_METHOD(ImageData::New) {
   Nan::HandleScope scope;
 
-  Local<Object> imageDataObj = info.This();
-
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    Local<Object> imageDataObj = info.This();
+
     unsigned int width = info[0]->Uint32Value();
     unsigned int height = info[1]->Uint32Value();
     ImageData *imageData = new ImageData(width, height);
     imageData->Wrap(imageDataObj);
+
+    Nan::SetAccessor(imageDataObj, JS_STR("width"), WidthGetter);
+    Nan::SetAccessor(imageDataObj, JS_STR("height"), HeightGetter);
+    Nan::SetAccessor(imageDataObj, JS_STR("data"), DataGetter);
+
+    return info.GetReturnValue().Set(imageDataObj);
   } else {
-    ImageData *imageData = new ImageData();
-    imageData->Wrap(imageDataObj);
+    return Nan::ThrowError("Invalid arguments");
   }
-
-  Nan::SetAccessor(imageDataObj, JS_STR("width"), WidthGetter);
-  Nan::SetAccessor(imageDataObj, JS_STR("height"), HeightGetter);
-  Nan::SetAccessor(imageDataObj, JS_STR("data"), DataGetter);
-
-  info.GetReturnValue().Set(imageDataObj);
 }
 
 NAN_GETTER(ImageData::WidthGetter) {
@@ -96,9 +95,10 @@ NAN_GETTER(ImageData::DataGetter) {
   info.GetReturnValue().Set(Nan::New(imageData->dataArray));
 }
 
-ImageData::ImageData() {}
 ImageData::ImageData(unsigned int width, unsigned int height) {
-  SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
-  bitmap.setInfo(info);
+  SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+  unsigned char *address = (unsigned char *)malloc(width * height * 4);
+  SkPixmap pixmap(info, address, width * 4);
+  bitmap.installPixels(pixmap);
 }
 ImageData::~ImageData () {}

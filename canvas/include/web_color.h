@@ -1,18 +1,7 @@
 #ifndef _WEB_COLOR_H_
 #define _WEB_COLOR_H_
 
-#include <string>
-#include <vector>
-#include <string.h>
-
-#if _WIN32
-  #define snprintf _snprintf
-  #define vsnprintf _vsnprintf
-  #define strcasecmp _stricmp
-  #define strncasecmp _strnicmp
-#else
-  #include <strings.h>
-#endif
+#include "web_string.h"
 
 using namespace std;
 

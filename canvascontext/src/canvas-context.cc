@@ -2,7 +2,11 @@
 
 using namespace v8;
 using namespace node;
-// using namespace std;
+
+void flipCanvasY(SkCanvas *canvas, float height) {
+  canvas->translate(0, canvas->imageInfo().height());
+  canvas->scale(1.0, -1.0);
+}
 
 Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons) {
   Nan::EscapableHandleScope scope;
@@ -139,7 +143,7 @@ void CanvasRenderingContext2D::Arc(float x, float y, float radius, float startAn
     startAngle = endAngle;
     endAngle = temp;
   }
-  path.addArc({x - radius/2, y - radius/2, x + radius/2, y + radius/2}, startAngle, endAngle);
+  path.addArc(SkRect::MakeLTRB(x - radius/2, y - radius/2, x + radius/2, y + radius/2), startAngle, endAngle);
 }
 
 void CanvasRenderingContext2D::ArcTo(double x1, double y1, double x2, double y2, double radius) {
@@ -147,42 +151,81 @@ void CanvasRenderingContext2D::ArcTo(double x1, double y1, double x2, double y2,
 }
 
 void CanvasRenderingContext2D::Rect(float x, float y, float w, float h) {
-  path.addRect({x, y, w, h});
+  path.addRect(SkRect::MakeXYWH(x, y, w, h));
 }
 
 void CanvasRenderingContext2D::FillRect(float x, float y, float w, float h) {
   SkPath path;
-  path.addRect({x, y, w, h});
+  path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, fillPaint);
 }
 
 void CanvasRenderingContext2D::StrokeRect(float x, float y, float w, float h) {
   SkPath path;
-  path.addRect({x, y, w, h});
+  path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, strokePaint);
 }
 
 void CanvasRenderingContext2D::ClearRect(float x, float y, float w, float h) {
   SkPath path;
-  path.addRect({x, y, w, h});
+  path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, clearPaint);
 }
 
+float getFontBaseline(const SkPaint::FontMetrics &fontMetrics, const TextBaseline &textBaseline, float lineHeight) {
+  // If the font is so tiny that the lroundf operations result in two
+  // different types of text baselines to return the same baseline, use
+  // floating point metrics (crbug.com/338908).
+  // If you changed the heuristic here, for consistency please also change it
+  // in SimpleFontData::platformInit().
+  // TODO(fserb): revisit this.
+  switch (textBaseline) {
+    case TextBaseline::TOP:
+      return fontMetrics.fAscent;
+    case TextBaseline::HANGING:
+      // According to
+      // http://wiki.apache.org/xmlgraphics-fop/LineLayout/AlignmentHandling
+      // "FOP (Formatting Objects Processor) puts the hanging baseline at 80% of
+      // the ascender height"
+      return fontMetrics.fAscent * 80.0f / 100.0f;
+    case TextBaseline::BOTTOM:
+    case TextBaseline::IDEOGRAPHIC:
+      return -fontMetrics.fDescent;
+    case TextBaseline::MIDDLE:
+      return -fontMetrics.fDescent + fontMetrics.fCapHeight * lineHeight / 2.0f;
+    case TextBaseline::ALPHABETIC:
+    default:
+      // Do nothing.
+      break;
+  }
+  return 0;
+}
+
 void CanvasRenderingContext2D::FillText(const std::string &text, float x, float y) {
-  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, fillPaint);
+  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fontMetrics, textBaseline, lineHeight), fillPaint);
 }
 
 void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, float y) {
-  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
+  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fontMetrics, textBaseline, lineHeight), strokePaint);
 }
 
 void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
-  surface = SkSurface::MakeRasterN32Premul(w, h);
+  SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+  surface = SkSurface::MakeRaster(info);
+  // flipCanvasY(surface->getCanvas());
 }
 
 void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh) {
+  surface->getCanvas()->save();
+  flipCanvasY(surface->getCanvas(), dy + dh);
+
   SkPaint paint;
-  surface->getCanvas()->drawImageRect(image, SkRect{sx, sy, sw, sh}, SkRect{dx, dy, dw, dh}, &paint);
+  paint.setColor(0xFFFFFFFF);
+  paint.setStyle(SkPaint::kFill_Style);
+  paint.setBlendMode(SkBlendMode::kSrcOver);
+  surface->getCanvas()->drawImageRect(image, SkRect::MakeXYWH(sx, sy, sw, sh), SkRect::MakeXYWH(dx, surface->getCanvas()->imageInfo().height() - dy - dh, dw, dh), &paint);
+
+  surface->getCanvas()->restore();
 }
 
 void CanvasRenderingContext2D::Save() {
@@ -207,12 +250,22 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
     Nan::SetAccessor(canvasObj, JS_STR("height"), HeightGetter);
     Nan::SetAccessor(canvasObj, JS_STR("data"), DataGetter);
     Nan::SetAccessor(canvasObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
     Nan::SetAccessor(canvasObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("font"), FontGetter, FontSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("fontFamily"), FontFamilyGetter, FontFamilySetter);
+    Nan::SetAccessor(canvasObj, JS_STR("fontSize"), FontSizeGetter, FontSizeSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("fontSize"), FontVariantGetter, FontVariantSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("fontWeight"), FontWeightGetter, FontWeightSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("lineHeight"), LineHeightGetter, LineHeightSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("fontStyle"), FontStyleGetter, FontStyleSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("textAlign"), TextAlignGetter, TextAlignSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("textBaseline"), TextBaselineGetter, TextBaselineSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("direction"), DirectionGetter, DirectionSetter);
 
     info.GetReturnValue().Set(canvasObj);
   } else {
-    return Nan::ThrowError("Invalid arguments");
+    return Nan::ThrowError("CanvasRenderingContext2D: invalid arguments");
   }
 }
 
@@ -241,10 +294,11 @@ NAN_GETTER(CanvasRenderingContext2D::DataGetter) {
 
     Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4); // XXX link lifetime
 
-    SkImageInfo imageInfo = SkImageInfo::MakeN32Premul(width, height);
+    SkImageInfo imageInfo = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
     bool ok = context->surface->getCanvas()->readPixels(imageInfo, arrayBuffer->GetContents().Data(), width * 4, 0, 0);
     if (ok) {
-      // nothing
+      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+      context->dataArray.Reset(uint8ClampedArray);
     } else {
       return info.GetReturnValue().Set(Nan::Null());
     }
@@ -263,24 +317,16 @@ NAN_GETTER(CanvasRenderingContext2D::LineWidthGetter) {
 NAN_SETTER(CanvasRenderingContext2D::LineWidthSetter) {
   Nan::HandleScope scope;
 
-  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  float lineWidth = info.Data()->NumberValue();
-  context->strokePaint.setStrokeWidth(lineWidth);
-}
+  if (value->IsNumber()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-NAN_GETTER(CanvasRenderingContext2D::FillStyleGetter) {
-  // nothing
-}
+    float lineWidth = value->NumberValue();
 
-NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
-  Nan::HandleScope scope;
-
-  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  v8::String::Utf8Value text(info.Data());
-  std::string fillStyle(*text, text.length());
-
-  canvas::web_color webColor = canvas::web_color::from_string(fillStyle.c_str());
-  context->fillPaint.setColor(((uint32_t)webColor.r << (8 * 3)) | ((uint32_t)webColor.g << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.a << (8 * 0)));
+    context->strokePaint.setStrokeWidth(lineWidth);
+    context->fillPaint.setStrokeWidth(lineWidth);
+  } else {
+    Nan::ThrowError("lineWidth: invalid arguments");
+  }
 }
 
 NAN_GETTER(CanvasRenderingContext2D::StrokeStyleGetter) {
@@ -290,12 +336,309 @@ NAN_GETTER(CanvasRenderingContext2D::StrokeStyleGetter) {
 NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
   Nan::HandleScope scope;
 
-  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  v8::String::Utf8Value text(info.Data());
-  std::string strokeStyle(*text, text.length());
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-  canvas::web_color webColor = canvas::web_color::from_string(strokeStyle.c_str());
-  context->strokePaint.setColor(((uint32_t)webColor.r << (8 * 3)) | ((uint32_t)webColor.g << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.a << (8 * 0)));
+    v8::String::Utf8Value text(value);
+    std::string strokeStyle(*text, text.length());
+
+    canvas::web_color webColor = canvas::web_color::from_string(strokeStyle.c_str());
+    context->strokePaint.setColor(((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0)));
+  } else {
+    Nan::ThrowError("strokeStyle: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::FillStyleGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    v8::String::Utf8Value text(value);
+    std::string fillStyle(*text, text.length());
+
+    canvas::web_color webColor = canvas::web_color::from_string(fillStyle.c_str());
+    context->fillPaint.setColor(((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0)));
+  } else {
+     Nan::ThrowError("fillStyle: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::FontGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::FontSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    Local<Object> contextObj = info.This();
+
+    v8::String::Utf8Value text(value);
+    std::string font(*text, text.length());
+
+    canvas::FontDeclaration declaration = canvas::parse_short_font(font);
+
+    contextObj->Set(JS_STR("fontFamily"), JS_STR(declaration.fontFamily));
+    contextObj->Set(JS_STR("fontStyle"), JS_STR(declaration.fontStyle));
+    contextObj->Set(JS_STR("fontVariant"), JS_STR(declaration.fontVariant));
+    contextObj->Set(JS_STR("fontWeight"), JS_STR(declaration.fontWeight));
+    contextObj->Set(JS_STR("fontSize"), JS_STR(declaration.fontSize));
+    contextObj->Set(JS_STR("lineHeight"), JS_STR(declaration.lineHeight));
+  } else {
+    Nan::ThrowError("font: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::FontFamilyGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::FontFamilySetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+    v8::String::Utf8Value text(value);
+    std::string fontFamily(*text, text.length());
+
+    SkTypeface *typeface = context->strokePaint.getTypeface();
+    SkFontStyle fontStyle = typeface ? typeface->fontStyle() : SkFontStyle();
+    context->strokePaint.setTypeface(SkTypeface::MakeFromName(fontFamily.c_str(), fontStyle));
+    context->fillPaint.setTypeface(SkTypeface::MakeFromName(fontFamily.c_str(), fontStyle));
+    context->strokePaint.getFontMetrics(&context->fontMetrics);
+  } else {
+    Nan::ThrowError("fontFamily: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::FontSizeGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::FontSizeSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsNumber() || value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+    double fontSize = value->NumberValue();
+
+    context->strokePaint.setTextSize(fontSize);
+    context->fillPaint.setTextSize(fontSize);
+    context->strokePaint.getFontMetrics(&context->fontMetrics);
+  } else {
+    Nan::ThrowError("fontSize: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::FontWeightGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsNumber() || value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+    v8::String::Utf8Value text(value);
+    std::string fontStyleString(*text, text.length());
+
+    unsigned int fontWeight;
+    if (fontStyleString == "normal") {
+      fontWeight = 400;
+    } else if (fontStyleString == "bold") {
+      fontWeight = 700;
+    } else {
+      fontWeight = value->IsNumber() ? value->Uint32Value() : 400;
+    }
+
+    SkTypeface *typeface = context->strokePaint.getTypeface();
+    SkFontStyle oldFontStyle = typeface ? typeface->fontStyle() : SkFontStyle();
+    SkFontStyle fontStyle(fontWeight, oldFontStyle.width(), oldFontStyle.slant());
+
+    SkString familyName;
+    typeface->getFamilyName(&familyName);
+    context->strokePaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
+    context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
+    context->strokePaint.getFontMetrics(&context->fontMetrics);
+  } else {
+    Nan::ThrowError("fontWeight: nvalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::LineHeightGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::LineHeightSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsNumber() || value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+    double lineHeight = value->NumberValue();
+
+    context->lineHeight = lineHeight;
+  } else {
+    Nan::ThrowError("lineHeight: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::FontStyleGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::FontStyleSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    v8::String::Utf8Value text(value);
+    std::string fontStyleString(*text, text.length());
+
+    SkFontStyle::Slant slant;
+    if (fontStyleString == "normal") {
+      slant = SkFontStyle::Slant::kUpright_Slant;
+    } else if (fontStyleString == "italic") {
+      slant = SkFontStyle::Slant::kItalic_Slant;
+    } else if (fontStyleString == "oblique") {
+      slant = SkFontStyle::Slant::kOblique_Slant;
+    } else {
+      slant = SkFontStyle::Slant::kUpright_Slant;
+    }
+
+    SkTypeface *typeface = context->strokePaint.getTypeface();
+    SkFontStyle oldFontStyle = typeface ? typeface->fontStyle() : SkFontStyle();
+    SkFontStyle fontStyle(oldFontStyle.weight(), oldFontStyle.width(), slant);
+
+    SkString familyName;
+    typeface->getFamilyName(&familyName);
+    context->strokePaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
+    context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
+    context->strokePaint.getFontMetrics(&context->fontMetrics);
+  } else {
+    Nan::ThrowError("fontStyle: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::FontVariantGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::FontVariantSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    // TODO
+  } else {
+    Nan::ThrowError("fontStyle: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::TextAlignGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::TextAlignSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    v8::String::Utf8Value text(value);
+    std::string textAlignString(*text, text.length());
+
+    if (textAlignString == "left") {
+      context->strokePaint.setTextAlign(SkPaint::kLeft_Align);
+      context->fillPaint.setTextAlign(SkPaint::kLeft_Align);
+    } else if (textAlignString == "right") {
+      context->strokePaint.setTextAlign(SkPaint::kRight_Align);
+      context->fillPaint.setTextAlign(SkPaint::kRight_Align);
+    } else if (textAlignString == "center") {
+      context->strokePaint.setTextAlign(SkPaint::kCenter_Align);
+      context->fillPaint.setTextAlign(SkPaint::kCenter_Align);
+    } else if (textAlignString == "start") {
+      if (context->direction == Direction::LEFT_TO_RIGHT) {
+        context->strokePaint.setTextAlign(SkPaint::kLeft_Align);
+        context->fillPaint.setTextAlign(SkPaint::kLeft_Align);
+      } else {
+        context->strokePaint.setTextAlign(SkPaint::kRight_Align);
+        context->fillPaint.setTextAlign(SkPaint::kRight_Align);
+      }
+    } else if (textAlignString == "end") {
+      if (context->direction == Direction::LEFT_TO_RIGHT) {
+        context->strokePaint.setTextAlign(SkPaint::kRight_Align);
+        context->fillPaint.setTextAlign(SkPaint::kRight_Align);
+      } else {
+        context->strokePaint.setTextAlign(SkPaint::kLeft_Align);
+        context->fillPaint.setTextAlign(SkPaint::kLeft_Align);
+      }
+    } else {
+      context->textAlign = "";
+    }
+  } else {
+    Nan::ThrowError("textAlign: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::TextBaselineGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::TextBaselineSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    v8::String::Utf8Value text(value);
+    std::string textBaselineString(*text, text.length());
+
+    if (textBaselineString == "top") {
+      context->textBaseline = TextBaseline::TOP;
+    } else if (textBaselineString == "hanging") {
+      context->textBaseline = TextBaseline::HANGING;
+    } else if (textBaselineString == "alphabetic") {
+      context->textBaseline = TextBaseline::ALPHABETIC;
+    } else if (textBaselineString == "ideographic") {
+      context->textBaseline = TextBaseline::IDEOGRAPHIC;
+    } else if (textBaselineString == "bottom") {
+      context->textBaseline = TextBaseline::BOTTOM;
+    } else {
+      context->textBaseline = TextBaseline::ALPHABETIC;
+    }
+  } else {
+    Nan::ThrowError("textBaseline: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::DirectionGetter) {
+  // nothing
+}
+
+NAN_SETTER(CanvasRenderingContext2D::DirectionSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    v8::String::Utf8Value text(value);
+    std::string direction(*text, text.length());
+
+    if (direction == "ltr") {
+      context->direction = Direction::LEFT_TO_RIGHT;
+    } else if (direction == "rtl") {
+      context->direction = Direction::RIGHT_TO_LEFT;
+    } else {
+      context->direction = Direction::LEFT_TO_RIGHT;
+    }
+  } else {
+    Nan::ThrowError("direction: invalid arguments");
+  }
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Scale) {
@@ -398,7 +741,6 @@ NAN_METHOD(CanvasRenderingContext2D::Stroke) {
 
   if (info[0]->BooleanValue() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("Path2D"))) {
     Path2D *path2d = ObjectWrap::Unwrap<Path2D>(Local<Object>::Cast(info[0]));
-
     context->Stroke(*path2d);
   } else {
     context->Stroke();
@@ -575,10 +917,6 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       bitmap.setImmutable();
       sk_sp<SkImage> image = SkImage::MakeFromBitmap(bitmap);
 
-      /* canvas::Surface &surface = otherContext->context->getDefaultSurface();
-      std::unique_ptr<canvas::Image> image = surface.createImage(1);
-      canvas::ImageData &imageData = image->getData(); */
-
       int x = info[1]->Int32Value();
       int y = info[2]->Int32Value();
       if (info.Length() > 3) {
@@ -595,7 +933,6 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
           unsigned int sw = otherContext->GetWidth();
           unsigned int sh = otherContext->GetHeight();
 
-          // context->DrawImage(imageData, 0, 0, sw, sh, x, y, dw, dh);
           context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
         }
       } else {
@@ -604,7 +941,6 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
         unsigned int dw = sw;
         unsigned int dh = sh;
 
-        // context->DrawImage(imageData, 0, 0, sw, sh, x, y, dw, dh);
         context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
       }
     } else {
@@ -739,15 +1075,20 @@ NAN_METHOD(CanvasRenderingContext2D::GetImageData) {
   };
   Local<Object> imageDataObj = imageDataCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(imageDataObj);
-  context->surface->getCanvas()->readPixels(imageData->bitmap, x, y);
 
-  info.GetReturnValue().Set(imageDataObj);
+  bool ok = context->surface->getCanvas()->readPixels(imageData->bitmap, x, y);
+  if (ok) {
+    return info.GetReturnValue().Set(imageDataObj);
+  } else {
+    return Nan::ThrowError("Failed to get pixels");
+  }
 }
 
 NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
   Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
+
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(info[0]));
   int x = info[1]->Int32Value();
   int y = info[2]->Int32Value();
@@ -760,16 +1101,26 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     unsigned int dw = imageData->GetWidth();
     unsigned int dh = imageData->GetHeight();
 
+    context->surface->getCanvas()->save();
+    flipCanvasY(context->surface->getCanvas(), y + dh);
+
     sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
-    context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, y, dw, dh);
+    context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh);
+
+    context->surface->getCanvas()->restore();
   } else {
     unsigned int sw = imageData->GetWidth();
     unsigned int sh = imageData->GetHeight();
     unsigned int dw = sw;
     unsigned int dh = sh;
 
+    context->surface->getCanvas()->save();
+    flipCanvasY(context->surface->getCanvas(), y + dh);
+
     sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
-    context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+    context->DrawImage(image.get(), 0, 0, sw, sh, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh);
+
+    context->surface->getCanvas()->restore();
   }
 }
 
@@ -788,14 +1139,30 @@ NAN_METHOD(CanvasRenderingContext2D::Restore) {
 }
 
 CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
-  surface = SkSurface::MakeRasterN32Premul(width, height);
+  SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+  surface = SkSurface::MakeRaster(info); // XXX can optimize this to not allocate until a width/height is set
+  // flipCanvasY(surface->getCanvas());
+
+  strokePaint.setTextSize(12);
   strokePaint.setStyle(SkPaint::kStroke_Style);
+  strokePaint.setBlendMode(SkBlendMode::kSrcOver);
+
+  fillPaint.setTextSize(12);
   fillPaint.setStyle(SkPaint::kFill_Style);
+  fillPaint.setBlendMode(SkBlendMode::kSrcOver);
+
+  clearPaint.setTextSize(12);
+  clearPaint.setColor(0x0);
   clearPaint.setStyle(SkPaint::kFill_Style);
+  clearPaint.setBlendMode(SkBlendMode::kSrc);
+
+  lineHeight = 1;
+
+  strokePaint.getFontMetrics(&fontMetrics);
 }
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}
 
-canvas::ContextFactory *CanvasRenderingContext2D::canvasContextFactory;
+// canvas::ContextFactory *CanvasRenderingContext2D::canvasContextFactory;
 void CanvasRenderingContext2D::InitalizeStatic(canvas::ContextFactory *newCanvasContextFactory) {
-  CanvasRenderingContext2D::canvasContextFactory = newCanvasContextFactory;
+  // CanvasRenderingContext2D::canvasContextFactory = newCanvasContextFactory;
 }

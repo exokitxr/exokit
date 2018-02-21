@@ -10,11 +10,11 @@
 #include <canvas/include/Resources.h>
 #include <SkData.h>
 #include <SkImage.h>
+#include <nanosvg.h>
+#include <nanosvgrast.h>
 
 using namespace v8;
 using namespace node;
-
-class CanvasRenderingContext2D;
 
 class Image : public ObjectWrap {
 public:

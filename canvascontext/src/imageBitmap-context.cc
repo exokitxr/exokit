@@ -65,18 +65,18 @@ NAN_METHOD(ImageBitmap::New) {
     unsigned int height = info[4]->Uint32Value();
     bool flipY = info[5]->BooleanValue();
 
-    SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
-    unique_ptr<char[]> address(new char[width * height * 4]);
-    SkPixmap pixmap(info, address.get(), width * 4);
+    SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+    unsigned char *address = (unsigned char *)malloc(width * height * 4);
+    SkPixmap pixmap(info, address, width * 4);
     bool ok = image->image->scalePixels(pixmap, SkFilterQuality::kNone_SkFilterQuality);
 
     if (ok) {
-      if (flipY) {
+      if (!flipY) { // the default representation is flipped; flip iff the user did not want this
         unique_ptr<char[]> line(new char[width * 4]);
 
         for (size_t i = 0; i < height / 2; i++) {
-          char *topAddress = address.get() + (i * width * 4);
-          char *bottomAddress = address.get() + ((height - 1 - i) * width * 4);
+          unsigned char *topAddress = address + (i * width * 4);
+          unsigned char *bottomAddress = address + ((height - 1 - i) * width * 4);
           memcpy(line.get(), topAddress, width * 4);
           memcpy(topAddress, bottomAddress, width * 4);
           memcpy(bottomAddress, line.get(), width * 4);
@@ -85,16 +85,17 @@ NAN_METHOD(ImageBitmap::New) {
 
       SkBitmap bitmap;
       bool ok = bitmap.installPixels(pixmap);
-
       if (ok) {
         ImageBitmap *imageBitmap = new ImageBitmap(bitmap);
         imageBitmap->Wrap(imageBitmapObj);
-
-        address.release();
       } else {
+        free(address);
+
         return Nan::ThrowError("Failed to install pixels");
       }
     } else {
+      free(address);
+
       return Nan::ThrowError("Failed to read pixels");
     }
   } else {
@@ -104,26 +105,24 @@ NAN_METHOD(ImageBitmap::New) {
       Local<ArrayBufferView> dataValue = Local<ArrayBufferView>::Cast(info[2]);
       char *data = (char *)dataValue->Buffer()->GetContents().Data() + dataValue->ByteOffset();
 
-      unique_ptr<char[]> address(new char[width * height * 4]);
-      memcpy(address.get(), data, width * height * 4);
+      unsigned char *address = (unsigned char *)malloc(width * height * 4);
+      memcpy(address, data, width * height * 4);
 
       SkImageInfo info = SkImageInfo::MakeN32Premul(width, height);
-      SkPixmap pixmap(info, address.get(), width * 4);
+      SkPixmap pixmap(info, address, width * 4);
 
       SkBitmap bitmap;
       bool ok = bitmap.installPixels(pixmap);
-
       if (ok) {
         ImageBitmap *imageBitmap = new ImageBitmap(bitmap);
         imageBitmap->Wrap(imageBitmapObj);
-
-        address.release();
       } else {
+        free(address);
+
         return Nan::ThrowError("Failed to install pixels");
       }
     } else {
-      ImageBitmap *imageBitmap = new ImageBitmap();
-      imageBitmap->Wrap(imageBitmapObj);
+      return Nan::ThrowError("Invalid arguments");
     }
   }
 

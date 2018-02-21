@@ -29,7 +29,6 @@ protected:
   static NAN_GETTER(HeightGetter);
   static NAN_GETTER(DataGetter);
 
-  ImageData();
   ImageData(unsigned int width, unsigned int height);
   virtual ~ImageData();
 

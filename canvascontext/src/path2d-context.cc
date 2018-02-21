@@ -41,7 +41,7 @@ void Path2D::Arc(float x, float y, float radius, float startAngle, float endAngl
     startAngle = endAngle;
     endAngle = temp;
   }
-  path.addArc({x - radius/2, y - radius/2, x + radius/2, y + radius/2}, startAngle, endAngle);
+  path.addArc(SkRect::MakeLTRB(x - radius/2, y - radius/2, x + radius/2, y + radius/2), startAngle, endAngle);
 }
 void Path2D::ArcTo(float x1, float y1, float x2, float y2, float radius) {
   path.arcTo(x1, y1, x2 - x1, y2 - y1, radius);

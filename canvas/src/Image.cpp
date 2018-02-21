@@ -14,7 +14,7 @@
 using namespace std;
 using namespace canvas;
 
-static NSVGrasterizer *svgRasterizer = nsvgCreateRasterizer();
+static NSVGrasterizer *imageSvgRasterizer = nsvgCreateRasterizer();
 
 bool
 Image::decode(const unsigned char * buffer, size_t size) {
@@ -46,7 +46,7 @@ Image::loadFromMemory(const unsigned char * buffer, size_t size) {
         int w = svgImage->width;
         int h = svgImage->height;
         unsigned char *imgDataBuffer = (unsigned char *)malloc(w * h * 4);
-        nsvgRasterize(svgRasterizer, svgImage, 0, 0, 1, imgDataBuffer, w, h, w * 4);
+        nsvgRasterize(imageSvgRasterizer, svgImage, 0, 0, 1, imgDataBuffer, w, h, w * 4);
 
         std::unique_ptr<ImageData> data = std::unique_ptr<ImageData>(new ImageData(imgDataBuffer, w, h, 4));
 
