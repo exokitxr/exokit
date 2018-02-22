@@ -39,8 +39,6 @@
         '-framework OpenGL',
         '-lglew', # brew install
         '-lglfw', # brew install
-        # '-lglfw3', # for local build
-        '-framework Cocoa',
         '-lskia',
         '-F <(module_root_dir)/node_modules/native-openvr-deps/bin/osx64',
         '-framework OpenVR',
