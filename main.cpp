@@ -10,7 +10,6 @@
 
 #include <v8.h>
 #include <bindings.h>
-#include <platform/windows/include/ContextGDIPlus.h>
 #include <glfw-bindings.h>
 #include <openvr-bindings.h>
 
@@ -178,11 +177,7 @@ void InitExports(Handle<Object> exports) {
 }
 
 void Init(Handle<Object> exports) {
-  canvas::ContextGDIPlus::initialize();
-  canvas::GDIPlusContextFactory *canvasContextFactory = new canvas::GDIPlusContextFactory();
-  CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
-  
-  // canvas::ImageData::setFlip(true);
+  canvas::ImageData::setFlip(true);
   
   InitExports(exports);
 }
