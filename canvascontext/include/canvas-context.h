@@ -138,9 +138,6 @@ protected:
   CanvasRenderingContext2D(unsigned int width, unsigned int height);
   virtual ~CanvasRenderingContext2D();
 
-public:
-  static void InitalizeStatic(canvas::ContextFactory *newCanvasContextFactory);
-
 private:
   // static canvas::ContextFactory *canvasContextFactory;
   Nan::Persistent<Uint8ClampedArray> dataArray;

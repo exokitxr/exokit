@@ -1161,8 +1161,3 @@ CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned 
   strokePaint.getFontMetrics(&fontMetrics);
 }
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}
-
-// canvas::ContextFactory *CanvasRenderingContext2D::canvasContextFactory;
-void CanvasRenderingContext2D::InitalizeStatic(canvas::ContextFactory *newCanvasContextFactory) {
-  // CanvasRenderingContext2D::canvasContextFactory = newCanvasContextFactory;
-}
