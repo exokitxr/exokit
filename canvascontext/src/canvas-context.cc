@@ -65,26 +65,26 @@ unsigned int CanvasRenderingContext2D::GetNumChannels() {
   return 4;
 }
 
-void CanvasRenderingContext2D::Scale(double x, double y) {
+void CanvasRenderingContext2D::Scale(float x, float y) {
   surface->getCanvas()->scale(x, y);
 }
 
-void CanvasRenderingContext2D::Rotate(double angle) {
+void CanvasRenderingContext2D::Rotate(float angle) {
   surface->getCanvas()->rotate(angle);
 }
 
-void CanvasRenderingContext2D::Translate(double x, double y) {
+void CanvasRenderingContext2D::Translate(float x, float y) {
   surface->getCanvas()->translate(x, y);
 }
 
-void CanvasRenderingContext2D::Transform(double a, double b, double c, double d, double e, double f) {
+void CanvasRenderingContext2D::Transform(float a, float b, float c, float d, float e, float f) {
   SkScalar affine[] = {a, b, c, d, e, f};
   SkMatrix m;
   m.setAffine(affine);
   surface->getCanvas()->setMatrix(m);
 }
 
-void CanvasRenderingContext2D::SetTransform(double a, double b, double c, double d, double e, double f) {
+void CanvasRenderingContext2D::SetTransform(float a, float b, float c, float d, float e, float f) {
   SkScalar affine[] = {a, b, c, d, e, f};
   SkMatrix m;
   m.setAffine(affine);
@@ -95,7 +95,7 @@ void CanvasRenderingContext2D::ResetTransform() {
   surface->getCanvas()->resetMatrix();
 }
 
-double CanvasRenderingContext2D::MeasureText(const std::string &text) {
+float CanvasRenderingContext2D::MeasureText(const std::string &text) {
   SkRect bounds;
   strokePaint.measureText(text.c_str(), text.length(), &bounds);
   return bounds.width();
@@ -129,11 +129,11 @@ void CanvasRenderingContext2D::Fill(const Path2D &path) {
   surface->getCanvas()->drawPath(path.path, fillPaint);
 }
 
-void CanvasRenderingContext2D::MoveTo(double x, double y) {
+void CanvasRenderingContext2D::MoveTo(float x, float y) {
   path.moveTo(x, y);
 }
 
-void CanvasRenderingContext2D::LineTo(double x, double y) {
+void CanvasRenderingContext2D::LineTo(float x, float y) {
   path.lineTo(x, y);
 }
 
@@ -146,7 +146,7 @@ void CanvasRenderingContext2D::Arc(float x, float y, float radius, float startAn
   path.addArc(SkRect::MakeLTRB(x - radius/2, y - radius/2, x + radius/2, y + radius/2), startAngle, endAngle);
 }
 
-void CanvasRenderingContext2D::ArcTo(double x1, double y1, double x2, double y2, double radius) {
+void CanvasRenderingContext2D::ArcTo(float x1, float y1, float x2, float y2, float radius) {
   path.arcTo(x1, y1, x2 - x1, y2 - y1, radius);
 }
 
