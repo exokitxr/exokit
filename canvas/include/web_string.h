@@ -20,7 +20,7 @@ using namespace std;
 namespace canvas
 {
   string::size_type find_close_bracket(const string &s, string::size_type off, char open_b, char close_b);
-  void split_string(const string& str, vector<string>& tokens, const string& delims, string& delims_preserve = string(""), const string& quote = string("\""));
+  void split_string(const string &str, vector<string> &tokens, const string &delims, const string &delims_preserve = string(""), const string &quote = string("\""));
   int value_index(const string &val, const string &strings, int defValue = -1, char delim = ';');
 	bool value_in_list(const string &val, const string &strings, char delim = ';');
 }

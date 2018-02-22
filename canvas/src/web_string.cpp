@@ -20,7 +20,7 @@ string::size_type canvas::find_close_bracket(const string &s, string::size_type 
 	return string::npos;
 }
 
-void canvas::split_string(const string& str, vector<string>& tokens, const string& delims, string& delims_preserve, const string& quote)
+void canvas::split_string(const string &str, vector<string> &tokens, const string &delims, const string &delims_preserve, const string &quote)
 {
 	if(str.empty() || (delims.empty() && delims_preserve.empty()))
 	{
