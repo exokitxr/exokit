@@ -10,7 +10,6 @@
 
 #include <v8.h>
 #include <glfw-bindings.h>
-#include <platform/macos/include/ContextQuartz2D.h>
 #include <bindings.h>
 #include <openvr-bindings.h>
 
@@ -178,10 +177,7 @@ void InitExports(Handle<Object> exports) {
 }
   
 void Init(Handle<Object> exports) {
-  canvas::Quartz2DContextFactory *canvasContextFactory = new canvas::Quartz2DContextFactory(1);
-  CanvasRenderingContext2D::InitalizeStatic(canvasContextFactory);
-  
-  // canvas::ImageData::setFlip(true);
+  canvas::ImageData::setFlip(true);
 
   InitExports(exports);
 }
