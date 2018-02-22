@@ -16,6 +16,9 @@
       'include_dirs': [
         '<(module_root_dir)/node_modules/native-graphics-deps/include',
         '<(module_root_dir)/node_modules/native-openvr-deps/headers',
+        '<(module_root_dir)/node_modules/native-canvas-deps/include/core',
+        '<(module_root_dir)/node_modules/native-canvas-deps/include/config',
+        '<(module_root_dir)/node_modules/native-canvas-deps/include/gpu',
         '<(module_root_dir)/deps/exokit-bindings',
         '<(module_root_dir)/deps/exokit-bindings/utf8',
         '<(module_root_dir)/deps/exokit-bindings/node',
@@ -32,6 +35,7 @@
         '<(module_root_dir)/deps/openvr/include',
       ],
       'library_dirs': [
+        '<(module_root_dir)/node_modules/native-canvas-deps/lib/macos',
       ],
       'libraries': [
         '-framework OpenGL',
@@ -39,6 +43,7 @@
         '-lglfw', # brew install
         # '-lglfw3', # for local build
         '-framework Cocoa',
+        '-lskia',
         '-F <(module_root_dir)/node_modules/native-openvr-deps/bin/osx64',
         '-framework OpenVR',
       ],
