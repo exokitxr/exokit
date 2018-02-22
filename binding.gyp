@@ -36,8 +36,8 @@
       ],
       'library_dirs': [
         '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64',
-        '<(module_root_dir)/node_modules/native-openvr-deps/lib/win64',
         '<(module_root_dir)/node_modules/native-canvas-deps/lib/windows',
+        '<(module_root_dir)/node_modules/native-openvr-deps/lib/win64',
       ],
       'libraries': [
         'opengl32.lib',
