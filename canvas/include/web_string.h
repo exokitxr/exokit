@@ -7,12 +7,16 @@
 #include <string.h>
 
 #if _WIN32
-  #define snprintf _snprintf
-  #define vsnprintf _vsnprintf
-  #define strcasecmp _stricmp
-  #define strncasecmp _strnicmp
+#define snprintf _snprintf
+#define vsnprintf _vsnprintf
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 #else
-  #include <strings.h>
+#include <strings.h>
+#endif
+
+#if __linux__
+#include <cwctype>
 #endif
 
 using namespace std;
