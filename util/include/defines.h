@@ -7,4 +7,13 @@
 #define JS_FLOAT(val) Nan::New<v8::Number>(val)
 #define JS_BOOL(val) Nan::New<v8::Boolean>(val)
 
+template <typename T>
+class shared_ptr_release_deleter {
+public:
+  void operator() (T *ptr) {
+    // nothing
+  }
+private:
+};
+
 #endif
