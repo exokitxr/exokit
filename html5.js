@@ -53,10 +53,6 @@ nativeGl.viewport = function() {
   _viewport.apply(this, arguments);
 }; */
 
-// BINDINGS
-
-
-
 // CALLBACKS
 
 const nop = () => {};
