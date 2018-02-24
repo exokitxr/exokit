@@ -24,6 +24,7 @@
   "dependencies": {
     "exokit": "0.0.72",
     "mkdirp": "^0.5.1",
+    "native-audio-deps": "0.0.3",
     "native-canvas-deps": "0.0.5",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.4",
