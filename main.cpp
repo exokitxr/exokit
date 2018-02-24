@@ -159,16 +159,19 @@ void InitExports(Handle<Object> exports) {
 
   Local<Value> path2d = makePath2D();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
-  
+
+  Local<Value> audio = makeAudio();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
+
   /* Local<Value> glfw = makeGlfw();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
-  
+
   Local<Value> window = makeWindow();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
-  
+
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
-  
+
   uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
   initFunctionAddressArray->Set(0, Nan::New<Integer>((uint32_t)(initFunctionAddress >> 32)));
@@ -178,7 +181,7 @@ void InitExports(Handle<Object> exports) {
 
 void Init(Handle<Object> exports) {
   canvas::ImageData::setFlip(true);
-  
+
   InitExports(exports);
 }
 
