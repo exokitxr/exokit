@@ -9,6 +9,7 @@
         '<!@(ls -1 deps/exokit-bindings/nanosvg/src/*.cpp)',
         '<!@(ls -1 deps/exokit-bindings/canvascontext/src/*.cc)',
         '<!@(ls -1 deps/exokit-bindings/webglcontext/src/*.cc)',
+        '<!@(ls -1 deps/exokit-bindings/webaudiocontext/src/*.cpp)',
         '<!@(ls -1 deps/glfw-bindings/src/*.cc)',
         '<!@(ls -1 deps/openvr/src/*.cpp)',
       ],
@@ -18,6 +19,7 @@
         '<(module_root_dir)/node_modules/native-canvas-deps/include/core',
         '<(module_root_dir)/node_modules/native-canvas-deps/include/config',
         '<(module_root_dir)/node_modules/native-canvas-deps/include/gpu',
+        '<(module_root_dir)/node_modules/native-audio-deps/include',
         '<(module_root_dir)/deps/exokit-bindings',
         '<(module_root_dir)/deps/exokit-bindings/utf8',
         '<(module_root_dir)/deps/exokit-bindings/node',
@@ -28,12 +30,14 @@
         '<(module_root_dir)/deps/exokit-bindings/nanosvg/include',
         '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
         '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
+        '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
         '<(module_root_dir)/deps/glfw/include',
         '<(module_root_dir)/deps/glfw-bindings/include',
         '<(module_root_dir)/deps/openvr/include',
       ],
       'library_dirs': [
         '<(module_root_dir)/node_modules/native-canvas-deps/lib/macos',
+        '<(module_root_dir)/node_modules/native-audio-deps/lib/macos',
       ],
       'libraries': [
         '-framework OpenGL',
@@ -41,6 +45,11 @@
         '-lglfw', # brew install
         '-lskia',
         '-F <(module_root_dir)/node_modules/native-openvr-deps/bin/osx64',
+        '-framework CoreAudio',
+        '-framework AudioUnit',
+        '-framework AudioToolbox',
+        '-llabsound',
+        '-lnyquist',
         '-framework OpenVR',
       ],
       'link_settings': {
