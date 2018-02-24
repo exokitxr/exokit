@@ -690,3 +690,34 @@ Local<Object> makePath2D() {
 
   return scope.Escape(Path2D::Initialize(isolate));
 }
+
+Local<Object> makeAudio() {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  Local<Object> exports = Nan::New<Object>();
+
+  exports->Set(JS_STR("Audio"), webaudio::Audio::Initialize(isolate));
+  Local<Value> audioParamCons = webaudio::AudioParam::Initialize(isolate);
+  exports->Set(JS_STR("AudioParam"), audioParamCons);
+  Local<Value> fakeAudioParamCons = webaudio::FakeAudioParam::Initialize(isolate);
+  exports->Set(JS_STR("FakeAudioParam"), fakeAudioParamCons);
+  Local<Value> audioListenerCons = webaudio::AudioListener::Initialize(isolate, fakeAudioParamCons);
+  exports->Set(JS_STR("AudioListener"), audioListenerCons);
+  Local<Value> audioSourceNodeCons = webaudio::AudioSourceNode::Initialize(isolate);
+  exports->Set(JS_STR("AudioSourceNode"), audioSourceNodeCons);
+  Local<Value> audioDestinationNodeCons = webaudio::AudioDestinationNode::Initialize(isolate);
+  exports->Set(JS_STR("AudioDestinationNode"), audioDestinationNodeCons);
+  Local<Value> gainNodeCons = webaudio::GainNode::Initialize(isolate, audioParamCons);
+  exports->Set(JS_STR("GainNode"), gainNodeCons);
+  Local<Value> analyserNodeCons = webaudio::AnalyserNode::Initialize(isolate);
+  exports->Set(JS_STR("AnalyserNode"), analyserNodeCons);
+  Local<Value> pannerNodeCons = webaudio::PannerNode::Initialize(isolate, fakeAudioParamCons);
+  exports->Set(JS_STR("PannerNode"), pannerNodeCons);
+  Local<Value> stereoPannerNodeCons = webaudio::StereoPannerNode::Initialize(isolate, audioParamCons);
+  exports->Set(JS_STR("StereoPannerNode"), stereoPannerNodeCons);
+  exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, pannerNodeCons, stereoPannerNodeCons));
+
+  return scope.Escape(exports);
+}
