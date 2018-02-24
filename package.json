@@ -21,8 +21,12 @@
   },
   "homepage": "https://github.com/modulesio/exokit-linux#readme",
   "dependencies": {
-    "exokit": "0.0.59",
+    "exokit": "0.0.72",
+    "mkdirp": "^0.5.1",
+    "native-canvas-deps": "0.0.5",
     "native-graphics-deps": "0.0.2",
-    "native-openvr-deps": "0.0.4"
+    "native-openvr-deps": "0.0.4",
+    "webgl-to-opengl": "0.0.2",
+    "window-worker": "0.0.45"
   }
 }
