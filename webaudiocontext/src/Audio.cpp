@@ -38,19 +38,74 @@ NAN_METHOD(Audio::New) {
   info.GetReturnValue().Set(audioObj);
 }
 
-void Audio::Load(uint8_t *bufferValue, size_t bufferLength, const char *extensionValue) {
-  lab::ContextRenderLock lock(defaultAudioContext.get(), "Audio::Load");
+const char *getAudioType(const vector<uint8_t> &buf) {
+	if (
+    buf.size() >= 4 &&
+    buf[0] == 102 &&
+    buf[1] == 76 &&
+    buf[2] == 97 &&
+    buf[3] == 67
+  ) {
+    return "flac";
+  } else if (
+    buf.size() >= 3 &&
+    (
+      (
+        buf[0] == 73 &&
+        buf[1] == 68 &&
+        buf[2] == 51
+      ) || (
+        buf[0] == 255 &&
+        buf[1] == 251
+      )
+    )
+  ) {
+    return "mp3";
+  } else if (
+    buf.size() >= 4 &&
+    buf[0] == 79 &&
+		buf[1] == 103 &&
+		buf[2] == 103 &&
+    buf[3] == 83
+  ) {
+    return "ogg";
+  } else if (
+    buf.size() >= 12 &&
+    buf[0] == 82 &&
+		buf[1] == 73 &&
+		buf[2] == 70 &&
+    buf[3] == 70 &&
+    buf[8] == 87 &&
+    buf[9] == 65 &&
+    buf[10] == 86 &&
+    buf[11] == 69
+  ) {
+    return "wav";
+  } else {
+    return nullptr;
+  }
+}
 
+void Audio::Load(uint8_t *bufferValue, size_t bufferLength) {
   vector<uint8_t> buffer(bufferLength);
   memcpy(buffer.data(), bufferValue, bufferLength);
-  
-  string extension(extensionValue);
 
-  audioBus = lab::MakeBusFromMemory(buffer, extension, false);
-  audioNode.reset(new lab::SampledAudioNode());
-  audioNode->setBus(lock, audioBus);
-  
-  defaultAudioContext->connect(defaultAudioContext->destination(), audioNode, 0, 0); // XXX make this node connection manual
+  const char *extensionString = getAudioType(buffer);
+  if (extensionString != nullptr) {
+    string extension(extensionString);
+
+    audioBus = lab::MakeBusFromMemory(buffer, extension, false);
+    audioNode.reset(new lab::SampledAudioNode());
+
+    {
+      lab::ContextRenderLock lock(defaultAudioContext.get(), "Audio::Load");
+      audioNode->setBus(lock, audioBus);
+    }
+
+    defaultAudioContext->connect(defaultAudioContext->destination(), audioNode, 0, 0); // default connection
+  } else {
+    Nan::ThrowError("could not detect audio format");
+  }
 }
 
 void Audio::Play() {
@@ -62,14 +117,13 @@ void Audio::Pause() {
 }
 
 NAN_METHOD(Audio::Load) {
-  if (info[0]->IsTypedArray() && info[1]->IsString()) {
+  if (info[0]->IsTypedArray()) {
     Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
     Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
-    v8::String::Utf8Value extensionValue(info[1]->ToString());
     
-    audio->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength(), *extensionValue);
+    audio->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
   } else {
     Nan::ThrowError("invalid arguments");
   }
