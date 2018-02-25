@@ -702,11 +702,11 @@ Local<Object> makeAudio() {
   Local<Value> audioParamCons = webaudio::AudioParam::Initialize(isolate);
   exports->Set(JS_STR("AudioParam"), audioParamCons);
   Local<Value> fakeAudioParamCons = webaudio::FakeAudioParam::Initialize(isolate);
-  exports->Set(JS_STR("FakeAudioParam"), fakeAudioParamCons);
+  // exports->Set(JS_STR("FakeAudioParam"), fakeAudioParamCons);
   Local<Value> audioListenerCons = webaudio::AudioListener::Initialize(isolate, fakeAudioParamCons);
   exports->Set(JS_STR("AudioListener"), audioListenerCons);
   Local<Value> audioSourceNodeCons = webaudio::AudioSourceNode::Initialize(isolate);
-  exports->Set(JS_STR("AudioSourceNode"), audioSourceNodeCons);
+  // exports->Set(JS_STR("AudioSourceNode"), audioSourceNodeCons);
   Local<Value> audioDestinationNodeCons = webaudio::AudioDestinationNode::Initialize(isolate);
   exports->Set(JS_STR("AudioDestinationNode"), audioDestinationNodeCons);
   Local<Value> gainNodeCons = webaudio::GainNode::Initialize(isolate, audioParamCons);
