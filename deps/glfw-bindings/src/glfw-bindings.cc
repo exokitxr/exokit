@@ -1108,10 +1108,10 @@ NAN_METHOD(Create) {
   glfwDefaultWindowHints();
 
   // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
-  //GLFW.OpenWindowHint(GLFW.OPENGL_FORWARD_COMPAT, 1);
-  //GLFW.OpenWindowHint(GLFW.OPENGL_VERSION_MAJOR, 3);
-  //GLFW.OpenWindowHint(GLFW.OPENGL_VERSION_MINOR, 2);
-  //GLFW.OpenWindowHint(GLFW.OPENGL_PROFILE, GLFW.OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_RESIZABLE, 1);
   glfwWindowHint(GLFW_VISIBLE, 1);
   glfwWindowHint(GLFW_DECORATED, 1);
@@ -1167,6 +1167,10 @@ NAN_METHOD(Create) {
       glfwSetCursorPosCallback(windowHandle, cursorPosCB);
       glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
       glfwSetScrollCallback(windowHandle, scrollCB);
+
+      GLuint vao;
+      glGenVertexArrays(1, &vao);
+      glBindVertexArray(vao);
       
       // info.GetReturnValue().Set(JS_NUM((uint64_t)windowHandle));
     } else {
