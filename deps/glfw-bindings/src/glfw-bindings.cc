@@ -87,21 +87,17 @@ NAN_METHOD(GetMonitors) {
 }
 
 /* @Module: Window handling */
-Nan::Persistent<Object> glfw_events;
+Local<Object> *localEvents = nullptr;
 int lastX = 0, lastY = 0;
 bool windowCreated=false;
 
 void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   // Nan::HandleScope scope;
-  // MakeCallback(glfw_events, "emit", argc, argv);
-  if(Nan::New(glfw_events)->Has(JS_STR("emit"))) {
-    // Local<Function> callback = Nan::New(glfw_events)->Get(JS_STR("emit")).As<Function>();
-    Nan::Callback callback(Nan::New(glfw_events)->Get(JS_STR("emit")).As<Function>());
 
-    if (!callback.IsEmpty()) {
-      // callback->Call(Context::GetCurrent()->Global(),argc,argv);
-      callback.Call(argc, argv);
-    }
+  Local<Value> emit = (*localEvents)->Get(JS_STR("emit"));
+  if (emit->IsFunction()) {
+    Nan::Callback callback(Local<Function>::Cast(emit));
+    callback.Call(argc, argv);
   }
 }
 
@@ -724,7 +720,7 @@ NAN_METHOD(glfw_CreateWindow) {
     glfwSetWindowSize(window, width,height);
 
   // Set callback functions
-  glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
+  // glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
 
   // window callbacks
   glfwSetWindowPosCallback( window, windowPosCB );
@@ -1107,8 +1103,6 @@ NAN_METHOD(Create) {
     glfwTerminate();
   });
 
-  glfw::glfw_events.Reset(info.This()->Get(JS_STR("events"))->ToObject());
-
   Nan::HandleScope scope;
 
   unsigned int width = info[0]->Uint32Value();
@@ -1198,7 +1192,12 @@ NAN_METHOD(Create) {
 }
 
 NAN_METHOD(PollEvents) {
+  Local<Object> arg = Local<Object>::Cast(info[0]);
+  localEvents = &arg;
+
   glfwPollEvents();
+
+  localEvents = nullptr;
 }
 
 NAN_METHOD(SwapBuffers) {
@@ -1595,7 +1594,6 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "getRenderTarget", glfw::GetRenderTarget);
   Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
-  target->Set(JS_STR("events"), Object::New(Isolate::GetCurrent()));
-  
+
   return scope.Escape(target);
 }
