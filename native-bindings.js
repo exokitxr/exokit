@@ -6,7 +6,6 @@ const webGlToOpenGl = require('webgl-to-opengl');
 
 bindings.nativeWorker = WindowWorker;
 
-const glslVersion = '300 es';
 bindings.nativeGl = (nativeGl => function WebGLContext() {
   const result = new nativeGl();
   result.createShader = (createShader => function(type) {
@@ -16,9 +15,9 @@ bindings.nativeGl = (nativeGl => function WebGLContext() {
   })(result.createShader);
   result.shaderSource = (shaderSource => function(shader, source) {
     if (shader.type === result.VERTEX_SHADER) {
-      source = webGlToOpenGl.vertex(source, glslVersion);
+      source = webGlToOpenGl.vertex(source);
     } else if (shader.type === result.FRAGMENT_SHADER) {
-      source = webGlToOpenGl.fragment(source, glslVersion);
+      source = webGlToOpenGl.fragment(source);
     }
     return shaderSource.call(this, shader, source);
   })(result.shaderSource);
