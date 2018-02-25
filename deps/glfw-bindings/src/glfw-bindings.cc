@@ -1093,6 +1093,13 @@ NAN_METHOD(ExtensionSupported) {
 
 GLFWwindow *windowHandle = nullptr;
 NAN_METHOD(Create) {
+  glewExperimental = GL_TRUE;
+
+  glfwInit();
+  atexit([]() {
+    glfwTerminate();
+  });
+
   Nan::HandleScope scope;
   
   unsigned int width = info[0]->Uint32Value();
@@ -1567,13 +1574,6 @@ NAN_METHOD(SetCursorPosition) {
 } */
 
 Local<Object> makeWindow() {
-  glewExperimental = GL_TRUE;
-
-  glfwInit();
-  atexit([]() {
-    glfwTerminate();
-  });
-
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
 
