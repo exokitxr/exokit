@@ -1101,10 +1101,10 @@ NAN_METHOD(Create) {
   });
 
   Nan::HandleScope scope;
-  
+
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
-  
+
   glfwDefaultWindowHints();
 
   // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
