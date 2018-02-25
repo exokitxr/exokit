@@ -159,6 +159,9 @@ void InitExports(Handle<Object> exports) {
 
   Local<Value> path2d = makePath2D();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
+
+  Local<Value> audio = makeAudio();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
   
   /* Local<Value> glfw = makeGlfw();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
