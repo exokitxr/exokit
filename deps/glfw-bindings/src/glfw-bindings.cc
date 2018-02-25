@@ -1114,6 +1114,10 @@ NAN_METHOD(Create) {
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
   glfwWindowHint(GLFW_REFRESH_RATE, 0);
 
+  glfwSetErrorCallback([](int err, const char *errString) {
+    fprintf(stderr, "%s", errString);
+  });
+
   windowHandle = glfwCreateWindow(width, height, "exokit", nullptr, nullptr);
 
   if (windowHandle) {
