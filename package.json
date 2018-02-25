@@ -26,7 +26,7 @@
     "native-canvas-deps": "0.0.5",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.4",
-    "webgl-to-opengl": "0.0.1",
-    "window-worker": "0.0.44"
+    "webgl-to-opengl": "0.0.2",
+    "window-worker": "0.0.46"
   }
 }
