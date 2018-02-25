@@ -1122,7 +1122,7 @@ NAN_METHOD(Create) {
 
   if (windowHandle) {
     glfwMakeContextCurrent(windowHandle);
-    
+
     GLenum err = glewInit();
     if (!err) {
       glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -1131,13 +1131,13 @@ NAN_METHOD(Create) {
 
       glfwSwapBuffers(windowHandle);
       glfwSwapInterval(0);
-      
+
       /* int fbWidth, fbHeight;
       glfwGetFramebufferSize(windowHandle, &fbWidth, &fbHeight);
-      
+
       int wWidth, wHeight;
       glfwGetWindowSize(windowHandle, &wWidth, &wHeight); */
-      
+
       /* Local<Object> result = Object::New(Isolate::GetCurrent());
       result->Set(JS_STR("width"), JS_INT(fbWidth));
       result->Set(JS_STR("height"), JS_INT(fbHeight)); */
