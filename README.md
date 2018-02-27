@@ -50,7 +50,7 @@ What Exokit *cannot* do:
 
 #### Why?
 
-The web is imporant. The most important part of the web is that it's open. The web is not open if you need to be a genius to build a web browser.
+The web is important. The most important part of the web is that it's open. The web is not open if you need to be a genius to build a web browser.
 
 Despite modern browsers being nominally open source, their code is impenetrable. You've probably never compiled a web browser, and almost certainly never added things. Despite the amount of time you spend in a browser.
 
