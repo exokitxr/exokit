@@ -8,8 +8,6 @@ before_install:
 install:
 - npm install
 - tar -czf exokit-macos.tar.gz --exclude=".*" *
-before_deploy:
-- git tag "build-$TRAVIS_BUILD_NUMBER"
 deploy:
   provider: releases
   api_key:
@@ -18,6 +16,7 @@ deploy:
   body: "Exokit macOS git release"
   on:
     repo: modulesio/exokit-macos
+    tags: true
   skip_cleanup: true
 notifications:
   slack: exokit:ZezcBTTBFxiGDGOhRSrtWKOJ
