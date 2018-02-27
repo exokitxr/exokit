@@ -36,7 +36,6 @@
         '<(module_root_dir)/deps/openvr/include',
       ],
       'library_dirs': [
-        '<(module_root_dir)/node_modules/native-graphics-deps/linux/lib/x64',
         '<(module_root_dir)/node_modules/native-canvas-deps/lib/linux',
         '<(module_root_dir)/node_modules/native-audio-deps/lib/linux',
         '<(module_root_dir)/node_modules/native-openvr-deps/lib/linux64',
