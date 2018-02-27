@@ -4,6 +4,6 @@ node_js:
 os:
   - osx
 before_install:
-  - brew install glew
+  - brew install glfw glew
 notifications:
   slack: exokit:ZezcBTTBFxiGDGOhRSrtWKOJ
