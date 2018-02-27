@@ -4,7 +4,7 @@
   "description": "Javascript web browser for the post-screen world",
   "main": "html5.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Error: no test specified\" && exit 0",
     "postinstall": "node postinstall.js"
   },
   "repository": {
