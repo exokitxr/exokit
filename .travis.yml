@@ -3,3 +3,5 @@ node_js:
   - '9'
 os:
   - osx
+before_install:
+  - brew install glew
