@@ -8,6 +8,8 @@ before_install:
 install:
 - npm install
 - tar -czf exokit.tar.gz --exclude=".*" *
+before_deploy:
+- git tag "build-$TRAVIS_BUILD_NUMBER"
 deploy:
   provider: releases
   api_key:
