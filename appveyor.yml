@@ -34,7 +34,7 @@ artifacts:
     name: exokit
 
 deploy:
-  release: exokit-$(APPVEYOR_BUILD_NUMBER)
+  release: build-$(APPVEYOR_BUILD_NUMBER)
   description: 'Exokit git release'
   provider: GitHub
   auth_token:
