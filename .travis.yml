@@ -5,6 +5,6 @@ os:
   - linux
 before_install:
   - sudo apt-get update
-  - sudo apt-get install -y libglfw3-dev libglew-dev
+  - sudo apt-get install -y libglfw-dev libglew-dev
 notifications:
   slack: exokit:ZezcBTTBFxiGDGOhRSrtWKOJ
