@@ -5,3 +5,5 @@ os:
   - osx
 before_install:
   - brew install glew
+notifications:
+  slack: exokit:ZezcBTTBFxiGDGOhRSrtWKOJ
