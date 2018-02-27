@@ -19,12 +19,14 @@ before_install:
 install:
 - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
 - npm install
+- tar -czf exokit.tar.gz --exclude=".*" *
 deploy:
   provider: releases
   api_key:
     secure: V0ORRM3ShzW559F1Dc/PSdIVxh4q4dVr6qsg0a11xkUqes4pb0M8ATAXMi0zzFiF2nKr5knSXaOsjC8p9QJOOPMw8vP/XW634CAQ0uSMFbEHMQysaHwCs8mAKnqlIa940Z0mraulNqY9mqyexLg7cOhfDN2gOvBxjS2PZUJ7DuvB7OaB11uXT5bEdEGj5ZxzXgu411BQ6FxT07gZGPNOuaxoChW+5aBVGyuPHJmCWWZcu+ee4X6+pHN9A4Aj/wNaAhh7Fc90QUNVnfzT3lSJvPZzonfHuGr4RUOEjtloialoyv5E/X8MenS6uYELUHaow+Ev6qVXENuFyBkqNgsJD2pVQRbDXG5JaFDw7Z7ijgY9APlwvVUxJPQ86MhB4KkwLeRJK3Qiw15n3VDtmUbf+QCWS65ZF1mqGfCqwgQawy5Ei1cPGfOWaHU3w0uaXiKPOd9v12BImRn4CvC/6tKFxfNWUMMa/t/ke/BlY2wKmFqjpT+c6tRszf9D2r3gt46bJxhsLDhMgsZDHPIPbfi7QS22HBFCOMKzdKkd7mPvB4CbbH1/AT0L0B6EK4YRC924OEI89yEhZuKGKHeAbtPlCjeGPciWS0Z4pqS3dwSh1UC+82YDmU379AsT464Q3TtS8HONSoFVzDonedl5A6z475WVIQYLxUfRJB7fiTpnC2Q=
-  file: ''
+  file: 'exokit.tar.gz'
   on:
     repo: modulesio/exokit-linux
+  skip_cleanup: true
 notifications:
   slack: exokit:ZezcBTTBFxiGDGOhRSrtWKOJ
