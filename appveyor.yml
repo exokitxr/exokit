@@ -34,17 +34,17 @@ artifacts:
     name: exokit-windows
 
 deploy:
-  release: build-$(APPVEYOR_BUILD_NUMBER)
+  release: build-$(APPVEYOR_REPO_TAG_NAME)
   description: 'Exokit Windows git release'
   provider: GitHub
   auth_token:
-    secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN # your encrypted token from GitHub
+    secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN
   artifact: "exokit-windows.zip"
   draft: false
   prerelease: false
   on:
-    branch: master                 # release from master branch only
-    # appveyor_repo_tag: true        # deploy on tag push only
+    branch: master
+    appveyor_repo_tag: true
 
 notifications:
   - provider: Slack
