@@ -7,14 +7,15 @@ before_install:
 - brew install glfw glew
 install:
 - npm install
-- tar -czf exokit.tar.gz --exclude=".*" *
+- tar -czf exokit-macos.tar.gz --exclude=".*" *
 before_deploy:
 - git tag "build-$TRAVIS_BUILD_NUMBER"
 deploy:
   provider: releases
   api_key:
     secure: aCVZI0mi3BU9mo7eDXbrQMPSxp/RL0FH1sZ15H+7aTsT0xu66StFR8fp2SQjWRZS+IVWXIXkvlcp0ND4GCmyEEfQMnRLPaXqCV1OujwbWESUZUWn4a76+RVV8zuNSSEMWMtjYOdpUyCGiu3cjbExKaoAFMy5aYAzCTggERqZNfMMZsmYkH3mAzWCYOmHuVYVqmwgjdjsA2ziP227TW4aHCewFDJjVZn5zaWZhfWccDEFvTiZY08QHr1cZYNr11qFG9YnPtr0KeXqOXggKzwO0BQGRwacvd2wLggMyKUkYgsaslIPNIAn1EcLtaN5JDSRef5cL3aIGCJw1RHoc2QgwTOrA7OCHp81g7ciExQpMv2yz4jtETmEdETtjaZM2BE3zjKFVvWKWeQAHVHHzeCUyYUk1zexJMWy1uskS16+Pj2KUSSMHq9GoEwU9p8yz/fO+/ANQCYfbI21rzSj3OIGnZgIAePG+NbhN3FCZv6M+QFyOxzQ3gkI/sUc/6EXDDjfN+RFJXQfT1QBDYWOmkxSJj6f6DnZdnu4eBru+R7kb/DKTmsKxHF4u0Gw1qye8U7fqENyKpqNXLSmU0PWdJ4a1PwHyIYefuXKy0rWBZKZBIVsBOnethjDgYGi+Mfe7PlREmb0iTnDzAlizcntMFCQt1eTsi6bmJogXfuv6G6Zc2c=
-  file: 'exokit.tar.gz'
+  file: 'exokit-macos.tar.gz'
+  body: "Exokit macOS git release"
   on:
     repo: modulesio/exokit-macos
   skip_cleanup: true
