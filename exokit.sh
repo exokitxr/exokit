@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./node_modules/isolator/lib/linux/isolator -- node . "$@"
+./node_modules/isolator/lib/linux/isolator -- ./node/node . "$@"
