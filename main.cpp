@@ -1,5 +1,3 @@
-// (c) 2014 Boris van Schooten
-//BEGIN_INCLUDE(all)
 #include <string.h>
 #include <cstring>
 #include <stdlib.h>
