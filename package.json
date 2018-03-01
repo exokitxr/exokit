@@ -23,13 +23,13 @@
   "homepage": "https://github.com/modulesio/exokit-macos#readme",
   "dependencies": {
     "exokit": "0.0.72",
-    "isolator": "0.0.6",
+    "isolator": "0.0.7",
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.3",
     "native-canvas-deps": "0.0.5",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.4",
-    "webgl-to-opengl": "0.0.1",
-    "window-worker": "0.0.44"
+    "webgl-to-opengl": "0.0.2",
+    "window-worker": "0.0.46"
   }
 }
