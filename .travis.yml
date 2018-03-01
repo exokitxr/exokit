@@ -1,0 +1,64 @@
+language: node_js
+node_js:
+- '9'
+os:
+- linux
+- mac
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test
+          packages:
+          - gcc-7
+          - g++-7
+          - binutils-2.26
+      env:
+      - CC=gcc-7 CXX=g++-7
+      before_install:
+      - sudo apt-get update
+      - sudo apt-get install -y libglfw-dev libglew-dev
+      install:
+      - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
+      - npm install
+      - wget "https://nodejs.org/dist/v9.7.0/node-v9.7.0-linux-x64.tar.gz" -O node.tar.gz
+      - tar -zxf node.tar.gz
+      - rm node.tar.gz
+      - mv "node-v9.7.0-linux-x64" node
+      - tar -czf exokit-linux.tar.gz --exclude=".*" *
+      before_deploy:
+      - git tag "$(TRAVIS_TAG)-linux"
+      deploy:
+        provider: releases
+        api_key:
+          secure: V0ORRM3ShzW559F1Dc/PSdIVxh4q4dVr6qsg0a11xkUqes4pb0M8ATAXMi0zzFiF2nKr5knSXaOsjC8p9QJOOPMw8vP/XW634CAQ0uSMFbEHMQysaHwCs8mAKnqlIa940Z0mraulNqY9mqyexLg7cOhfDN2gOvBxjS2PZUJ7DuvB7OaB11uXT5bEdEGj5ZxzXgu411BQ6FxT07gZGPNOuaxoChW+5aBVGyuPHJmCWWZcu+ee4X6+pHN9A4Aj/wNaAhh7Fc90QUNVnfzT3lSJvPZzonfHuGr4RUOEjtloialoyv5E/X8MenS6uYELUHaow+Ev6qVXENuFyBkqNgsJD2pVQRbDXG5JaFDw7Z7ijgY9APlwvVUxJPQ86MhB4KkwLeRJK3Qiw15n3VDtmUbf+QCWS65ZF1mqGfCqwgQawy5Ei1cPGfOWaHU3w0uaXiKPOd9v12BImRn4CvC/6tKFxfNWUMMa/t/ke/BlY2wKmFqjpT+c6tRszf9D2r3gt46bJxhsLDhMgsZDHPIPbfi7QS22HBFCOMKzdKkd7mPvB4CbbH1/AT0L0B6EK4YRC924OEI89yEhZuKGKHeAbtPlCjeGPciWS0Z4pqS3dwSh1UC+82YDmU379AsT464Q3TtS8HONSoFVzDonedl5A6z475WVIQYLxUfRJB7fiTpnC2Q=
+        file: 'exokit-linux.tar.gz'
+        body: "Exokit Linux git release"
+        on:
+          tags: true
+        skip_cleanup: true
+    - os: osx
+      before_install:
+      - brew install glfw glew
+      install:
+      - npm install
+      - curl "https://nodejs.org/dist/v9.7.0/node-v9.7.0-darwin-x64.tar.gz" >node.tar.gz
+      - tar -zxf node.tar.gz
+      - rm node.tar.gz
+      - mv "node-v9.7.0-darwin-x64" node
+      - tar -czf exokit-macos.tar.gz --exclude=".*" *
+      before_deploy:
+      - git tag "$(TRAVIS_TAG)-macos"
+      deploy:
+        provider: releases
+        api_key:
+          secure: aCVZI0mi3BU9mo7eDXbrQMPSxp/RL0FH1sZ15H+7aTsT0xu66StFR8fp2SQjWRZS+IVWXIXkvlcp0ND4GCmyEEfQMnRLPaXqCV1OujwbWESUZUWn4a76+RVV8zuNSSEMWMtjYOdpUyCGiu3cjbExKaoAFMy5aYAzCTggERqZNfMMZsmYkH3mAzWCYOmHuVYVqmwgjdjsA2ziP227TW4aHCewFDJjVZn5zaWZhfWccDEFvTiZY08QHr1cZYNr11qFG9YnPtr0KeXqOXggKzwO0BQGRwacvd2wLggMyKUkYgsaslIPNIAn1EcLtaN5JDSRef5cL3aIGCJw1RHoc2QgwTOrA7OCHp81g7ciExQpMv2yz4jtETmEdETtjaZM2BE3zjKFVvWKWeQAHVHHzeCUyYUk1zexJMWy1uskS16+Pj2KUSSMHq9GoEwU9p8yz/fO+/ANQCYfbI21rzSj3OIGnZgIAePG+NbhN3FCZv6M+QFyOxzQ3gkI/sUc/6EXDDjfN+RFJXQfT1QBDYWOmkxSJj6f6DnZdnu4eBru+R7kb/DKTmsKxHF4u0Gw1qye8U7fqENyKpqNXLSmU0PWdJ4a1PwHyIYefuXKy0rWBZKZBIVsBOnethjDgYGi+Mfe7PlREmb0iTnDzAlizcntMFCQt1eTsi6bmJogXfuv6G6Zc2c=
+        file: 'exokit-macos.tar.gz'
+        body: "Exokit macOS git release"
+        on:
+          tags: true
+        skip_cleanup: true
+notifications:
+  slack: exokit:ZezcBTTBFxiGDGOhRSrtWKOJ
