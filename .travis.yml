@@ -19,6 +19,11 @@ before_install:
 install:
 - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
 - npm install
+- wget "https://nodejs.org/dist/v9.7.0/node-v9.7.0-linux-x64.tar.gz" -O node.tar.gz
+- tar -zxf node.tar.gz
+- rm node.zip
+- mv "node-v9.7.0-linux-x64" node
+- rm -R node/node_modules
 - tar -czf exokit-linux.tar.gz --exclude=".*" *
 deploy:
   provider: releases
