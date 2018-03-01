@@ -23,7 +23,6 @@ install:
 - tar -zxf node.tar.gz
 - rm node.tar.gz
 - mv "node-v9.7.0-linux-x64" node
-- rm -R node/node_modules
 - tar -czf exokit-linux.tar.gz --exclude=".*" *
 deploy:
   provider: releases
