@@ -9,8 +9,8 @@
 #include <functional>
 
 #include <v8.h>
-#include <glfw-bindings.h>
 #include <bindings.h>
+#include <glfw-bindings.h>
 #include <openvr-bindings.h>
 
 using namespace v8;
@@ -164,8 +164,8 @@ void InitExports(Handle<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
 
   /* Local<Value> glfw = makeGlfw();
-   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
-  
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
+
   Local<Value> window = makeWindow();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
 
@@ -178,7 +178,7 @@ void InitExports(Handle<Object> exports) {
   initFunctionAddressArray->Set(1, Nan::New<Integer>((uint32_t)(initFunctionAddress & 0xFFFFFFFF)));
   exports->Set(JS_STR("initFunctionAddress"), initFunctionAddressArray);
 }
-  
+
 void Init(Handle<Object> exports) {
   canvas::ImageData::setFlip(true);
 
