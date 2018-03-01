@@ -26,7 +26,7 @@ matrix:
       - mv "node-v9.7.0-linux-x64" node
       - tar -czf exokit-linux.tar.gz --exclude=".*" *
       before_deploy:
-      - git tag "$(TRAVIS_TAG)-linux"
+      - git tag "$TRAVIS_TAG-linux"
       deploy:
         provider: releases
         api_key:
@@ -47,7 +47,7 @@ matrix:
       - mv "node-v9.7.0-darwin-x64" node
       - tar -czf exokit-macos.tar.gz --exclude=".*" *
       before_deploy:
-      - git tag "$(TRAVIS_TAG)-macos"
+      - git tag "$TRAVIS_TAG-macos"
       deploy:
         provider: releases
         api_key:
