@@ -1,7 +1,5 @@
 #include <glfw-bindings.h>
 
-using namespace v8;
-
 namespace glfw {
 
 NAN_METHOD(GetVersion) {
@@ -89,28 +87,23 @@ NAN_METHOD(GetMonitors) {
 }
 
 /* @Module: Window handling */
-Nan::Persistent<Object> glfw_events;
+Local<Object> *localEvents = nullptr;
 int lastX = 0, lastY = 0;
 bool windowCreated=false;
 
 void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   // Nan::HandleScope scope;
-  // MakeCallback(glfw_events, "emit", argc, argv);
-  if(Nan::New(glfw_events)->Has(JS_STR("emit"))) {
-    // Local<Function> callback = Nan::New(glfw_events)->Get(JS_STR("emit")).As<Function>();
-    Nan::Callback callback(Nan::New(glfw_events)->Get(JS_STR("emit")).As<Function>());
 
-    if (!callback.IsEmpty()) {
-      // callback->Call(Context::GetCurrent()->Global(),argc,argv);
-      callback.Call(argc, argv);
-    }
+  Local<Value> emit = (*localEvents)->Get(JS_STR("emit"));
+  if (emit->IsFunction()) {
+    Nan::Callback callback(Local<Function>::Cast(emit));
+    callback.Call(argc, argv);
   }
 }
 
 /* Window callbacks handling */
 void APIENTRY windowPosCB(GLFWwindow *window, int xpos, int ypos) {
   Nan::HandleScope scope;
-  //cout<<"resizeCB: "<<w<<" "<<h<<endl;
 
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("window_pos"));
@@ -127,7 +120,6 @@ void APIENTRY windowPosCB(GLFWwindow *window, int xpos, int ypos) {
 
 void APIENTRY windowSizeCB(GLFWwindow *window, int w, int h) {
   Nan::HandleScope scope;
-  //cout<<"resizeCB: "<<w<<" "<<h<<endl;
 
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("resize"));
@@ -144,7 +136,6 @@ void APIENTRY windowSizeCB(GLFWwindow *window, int w, int h) {
 
 void APIENTRY windowFramebufferSizeCB(GLFWwindow *window, int w, int h) {
   Nan::HandleScope scope;
-  //cout<<"resizeCB: "<<w<<" "<<h<<endl;
 
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
@@ -726,7 +717,7 @@ NAN_METHOD(glfw_CreateWindow) {
     glfwSetWindowSize(window, width,height);
 
   // Set callback functions
-  glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
+  // glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
 
   // window callbacks
   glfwSetWindowPosCallback( window, windowPosCB );
@@ -1109,8 +1100,6 @@ NAN_METHOD(Create) {
     glfwTerminate();
   });
 
-  glfw::glfw_events.Reset(info.This()->Get(JS_STR("events"))->ToObject());
-
   Nan::HandleScope scope;
 
   unsigned int width = info[0]->Uint32Value();
@@ -1200,7 +1189,12 @@ NAN_METHOD(Create) {
 }
 
 NAN_METHOD(PollEvents) {
+  Local<Object> arg = Local<Object>::Cast(info[0]);
+  localEvents = &arg;
+
   glfwPollEvents();
+
+  localEvents = nullptr;
 }
 
 NAN_METHOD(SwapBuffers) {
@@ -1597,7 +1591,6 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "getRenderTarget", glfw::GetRenderTarget);
   Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
-  target->Set(JS_STR("events"), Object::New(Isolate::GetCurrent()));
-  
+
   return scope.Escape(target);
 }

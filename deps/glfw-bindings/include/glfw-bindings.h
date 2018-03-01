@@ -14,8 +14,10 @@
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
 
-// NOTE: cannot use namespace v8 here because of ambiguity with Quartz2D headers
+using namespace v8;
+// using namespace node;
 
-v8::Local<v8::Object> makeWindow();
+// Local<Object> makeGlfw();
+Local<Object> makeWindow();
 
 #endif
