@@ -7,6 +7,11 @@ before_install:
 - brew install glfw glew
 install:
 - npm install
+- curl "https://nodejs.org/dist/v9.7.0/node-v9.7.0-darwin-x64.tar.gz" >node.tar.gz
+- tar -zxf node.tar.gz
+- rm node.tar.gz
+- mv "node-v9.7.0-darwin-x64" node
+- rm -R node/node_modules
 - tar -czf exokit-macos.tar.gz --exclude=".*" *
 deploy:
   provider: releases
