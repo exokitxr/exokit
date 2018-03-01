@@ -1,5 +1,5 @@
 const path = require('path');
-const exokit = require('exokit');
+const exokit = require('exokit-core');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 exokit.setNativeBindingsModule(nativeBindingsModulePath);
 const {THREE} = exokit;
