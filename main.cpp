@@ -162,13 +162,13 @@ void InitExports(Handle<Object> exports) {
 
   Local<Value> audio = makeAudio();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
-  
+
   /* Local<Value> glfw = makeGlfw();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
-  
+
   Local<Value> window = makeWindow();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
-  
+
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
 
