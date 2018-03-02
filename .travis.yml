@@ -28,11 +28,11 @@ matrix:
     deploy:
       provider: releases
       api_key:
-        secure: SIYOZJ8fekw3orMfJgvHD0luf/JthUE1D3Ra9wUpOuwBzvRyfVdjI9umhNVKO2tMqSm+92WBvazRDDDEoP9+DBxbDfv6fZnxOKz9F26ZkeBIeyK3eVLyt642pTKTClJle/uAs4L7qi/SMXunUHmMpJmAJUB6Zoma+N5X7+L7nlyb8sQU5oXWR3GrSe2LPHWrjU9xr6+bqx3Odg7CsEPubSY/OWg8vQSXsoS+YPl1R/qs/g+MBYQX3Bu0lmXuYUDxdU9hKEgOukV8vFhQQ7VsQqzXFrNumFbnfjhgitpY0ORIowAZ+P5d9aTiwP+J6i1EOcXaBxCJampxpTLn8jWMbJ9M6HsNJNq0ZXtqVZbxuBoRLE+BcuHZNKa/FMaPbFGzPr588MFaHcS1E6P4UDFY8o0hMtyoW8uyuA/a2qnGI4B6uVb34wFUPSs1IaMcz7JhnBUdYgztXvfRTG57fu674D++V09hUDfQoJ0H8m+rdhcGaXgbXc4fxZJbx+1ynSnWLhvFanUxFHEK4gjM1Y8H5TSh70NxnDk+KYAeW4iInyEp11pmlfhdL0tuqmMJnP2koAJiDg5VJIaZVj9c5XQPOIdZqebTpHBkbDimns1cDK1ygNpChnJBhhd3vU9QXvr39TwYke4DlF8OcwtH875oLabyJT2p/eMjVLl/P8RjVZE=
-      file: 'exokit-linux.tar.gz'
-      body: "Exokit git release"
+        secure: kEIjaNjqi4lnHMePkebADeLzEiw9fZXr6tCs8+eTyB81Y55M8NrySygT4CTBg4Reb0GWJ+0lYyoQbFYc+ZTJ1q+JrBMMwWCE5ie65/4UOlond/2oIt6CUUavKoHq8JC5+WvpBpPGN0jYgxZyusmZIDLZ4mHJfnoUzizUyCmaybZKMVeOqhgHyfHgfp4hAnd00WGfbGPju49vjCMwQI0ErRoG/xL7qfSSl8q7Ke6Rx/sgFo1eVkhOHziv/bnu3DrkrhcUn7obG2o1mpQZBBCH3pXTfDmxr/WeLeq4wNfXdPlUhyXxduoi+34QavyZ7eRl6nzQLFRLEWwrGNIztWPRA8UShpNjWPM/wRXxoUzZAidN6YMrtSe3Bp/+PvJxYhfNPiKqJZhThwK/KYSXBKkLQGJFTtqmFdrBPQqjp+XrXzASO6khtMuCrmNhU8lZBVdc9LQ8aLP27FI68NIsHEHZBkSPoNT4MHyjjdhVwb1yg3jlMWDhZNAEWymJHt9vtDzh59R/JurpgRrhsZV9Yuoakb5cEX/jwTYrolvX7eT9/e/D1AYGybuSBw+Qp2/0lqOJhRXEiVj1P7VppmPe6krcagxftbhI8uA7VkvSieS7HhdzuBY5Lq9YDebgYztw5C6Jp7omnkpWGLOfmhOG4dFHSIzIVCDd+S9bm16ign6Eob8=
+      file: exokit-linux.tar.gz
+      body: Exokit git release
       on:
-        repo: modulesio/exokit-windows
+        repo: modulesio/exokit
         tags: true
       skip_cleanup: true
   - os: osx
@@ -48,11 +48,11 @@ matrix:
     deploy:
       provider: releases
       api_key:
-        secure: SIYOZJ8fekw3orMfJgvHD0luf/JthUE1D3Ra9wUpOuwBzvRyfVdjI9umhNVKO2tMqSm+92WBvazRDDDEoP9+DBxbDfv6fZnxOKz9F26ZkeBIeyK3eVLyt642pTKTClJle/uAs4L7qi/SMXunUHmMpJmAJUB6Zoma+N5X7+L7nlyb8sQU5oXWR3GrSe2LPHWrjU9xr6+bqx3Odg7CsEPubSY/OWg8vQSXsoS+YPl1R/qs/g+MBYQX3Bu0lmXuYUDxdU9hKEgOukV8vFhQQ7VsQqzXFrNumFbnfjhgitpY0ORIowAZ+P5d9aTiwP+J6i1EOcXaBxCJampxpTLn8jWMbJ9M6HsNJNq0ZXtqVZbxuBoRLE+BcuHZNKa/FMaPbFGzPr588MFaHcS1E6P4UDFY8o0hMtyoW8uyuA/a2qnGI4B6uVb34wFUPSs1IaMcz7JhnBUdYgztXvfRTG57fu674D++V09hUDfQoJ0H8m+rdhcGaXgbXc4fxZJbx+1ynSnWLhvFanUxFHEK4gjM1Y8H5TSh70NxnDk+KYAeW4iInyEp11pmlfhdL0tuqmMJnP2koAJiDg5VJIaZVj9c5XQPOIdZqebTpHBkbDimns1cDK1ygNpChnJBhhd3vU9QXvr39TwYke4DlF8OcwtH875oLabyJT2p/eMjVLl/P8RjVZE=
-      file: 'exokit-macos.tar.gz'
-      body: "Exokit git release"
+        secure: kEIjaNjqi4lnHMePkebADeLzEiw9fZXr6tCs8+eTyB81Y55M8NrySygT4CTBg4Reb0GWJ+0lYyoQbFYc+ZTJ1q+JrBMMwWCE5ie65/4UOlond/2oIt6CUUavKoHq8JC5+WvpBpPGN0jYgxZyusmZIDLZ4mHJfnoUzizUyCmaybZKMVeOqhgHyfHgfp4hAnd00WGfbGPju49vjCMwQI0ErRoG/xL7qfSSl8q7Ke6Rx/sgFo1eVkhOHziv/bnu3DrkrhcUn7obG2o1mpQZBBCH3pXTfDmxr/WeLeq4wNfXdPlUhyXxduoi+34QavyZ7eRl6nzQLFRLEWwrGNIztWPRA8UShpNjWPM/wRXxoUzZAidN6YMrtSe3Bp/+PvJxYhfNPiKqJZhThwK/KYSXBKkLQGJFTtqmFdrBPQqjp+XrXzASO6khtMuCrmNhU8lZBVdc9LQ8aLP27FI68NIsHEHZBkSPoNT4MHyjjdhVwb1yg3jlMWDhZNAEWymJHt9vtDzh59R/JurpgRrhsZV9Yuoakb5cEX/jwTYrolvX7eT9/e/D1AYGybuSBw+Qp2/0lqOJhRXEiVj1P7VppmPe6krcagxftbhI8uA7VkvSieS7HhdzuBY5Lq9YDebgYztw5C6Jp7omnkpWGLOfmhOG4dFHSIzIVCDd+S9bm16ign6Eob8=
+      file: exokit-macos.tar.gz
+      body: Exokit git release
       on:
-        repo: modulesio/exokit-windows
+        repo: modulesio/exokit
         tags: true
       skip_cleanup: true
 notifications:
