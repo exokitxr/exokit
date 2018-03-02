@@ -22,7 +22,7 @@
   "homepage": "https://github.com/modulesio/exokit-windows#readme",
   "dependencies": {
     "exokit-core": "0.0.73",
-    "isolator": "0.0.8",
+    "isolator": "0.0.9",
     "native-audio-deps": "0.0.3",
     "native-canvas-deps": "0.0.5",
     "native-graphics-deps": "0.0.2",
