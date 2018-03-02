@@ -3,7 +3,7 @@
     {
       'target_name': 'exokit',
       'conditions': [
-        ['OS=="windows"', {
+        ['OS=="win"', {
           'sources': [
             'main.cpp',
             'deps/exokit-bindings/bindings/src/*.cc',
