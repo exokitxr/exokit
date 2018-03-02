@@ -25,14 +25,12 @@ matrix:
     - rm node.tar.gz
     - mv "node-v9.7.0-linux-x64" node
     - tar -czf exokit-linux.tar.gz --exclude=".*" *
-    before_deploy:
-    - git tag "$TRAVIS_TAG-linux"
     deploy:
       provider: releases
       api_key:
         secure: SIYOZJ8fekw3orMfJgvHD0luf/JthUE1D3Ra9wUpOuwBzvRyfVdjI9umhNVKO2tMqSm+92WBvazRDDDEoP9+DBxbDfv6fZnxOKz9F26ZkeBIeyK3eVLyt642pTKTClJle/uAs4L7qi/SMXunUHmMpJmAJUB6Zoma+N5X7+L7nlyb8sQU5oXWR3GrSe2LPHWrjU9xr6+bqx3Odg7CsEPubSY/OWg8vQSXsoS+YPl1R/qs/g+MBYQX3Bu0lmXuYUDxdU9hKEgOukV8vFhQQ7VsQqzXFrNumFbnfjhgitpY0ORIowAZ+P5d9aTiwP+J6i1EOcXaBxCJampxpTLn8jWMbJ9M6HsNJNq0ZXtqVZbxuBoRLE+BcuHZNKa/FMaPbFGzPr588MFaHcS1E6P4UDFY8o0hMtyoW8uyuA/a2qnGI4B6uVb34wFUPSs1IaMcz7JhnBUdYgztXvfRTG57fu674D++V09hUDfQoJ0H8m+rdhcGaXgbXc4fxZJbx+1ynSnWLhvFanUxFHEK4gjM1Y8H5TSh70NxnDk+KYAeW4iInyEp11pmlfhdL0tuqmMJnP2koAJiDg5VJIaZVj9c5XQPOIdZqebTpHBkbDimns1cDK1ygNpChnJBhhd3vU9QXvr39TwYke4DlF8OcwtH875oLabyJT2p/eMjVLl/P8RjVZE=
       file: 'exokit-linux.tar.gz'
-      body: "Exokit Linux git release"
+      body: "Exokit git release"
       on:
         repo: modulesio/exokit-windows
         tags: true
@@ -47,14 +45,12 @@ matrix:
     - rm node.tar.gz
     - mv "node-v9.7.0-darwin-x64" node
     - tar -czf exokit-macos.tar.gz --exclude=".*" *
-    before_deploy:
-    - git tag "$TRAVIS_TAG-macos"
     deploy:
       provider: releases
       api_key:
         secure: SIYOZJ8fekw3orMfJgvHD0luf/JthUE1D3Ra9wUpOuwBzvRyfVdjI9umhNVKO2tMqSm+92WBvazRDDDEoP9+DBxbDfv6fZnxOKz9F26ZkeBIeyK3eVLyt642pTKTClJle/uAs4L7qi/SMXunUHmMpJmAJUB6Zoma+N5X7+L7nlyb8sQU5oXWR3GrSe2LPHWrjU9xr6+bqx3Odg7CsEPubSY/OWg8vQSXsoS+YPl1R/qs/g+MBYQX3Bu0lmXuYUDxdU9hKEgOukV8vFhQQ7VsQqzXFrNumFbnfjhgitpY0ORIowAZ+P5d9aTiwP+J6i1EOcXaBxCJampxpTLn8jWMbJ9M6HsNJNq0ZXtqVZbxuBoRLE+BcuHZNKa/FMaPbFGzPr588MFaHcS1E6P4UDFY8o0hMtyoW8uyuA/a2qnGI4B6uVb34wFUPSs1IaMcz7JhnBUdYgztXvfRTG57fu674D++V09hUDfQoJ0H8m+rdhcGaXgbXc4fxZJbx+1ynSnWLhvFanUxFHEK4gjM1Y8H5TSh70NxnDk+KYAeW4iInyEp11pmlfhdL0tuqmMJnP2koAJiDg5VJIaZVj9c5XQPOIdZqebTpHBkbDimns1cDK1ygNpChnJBhhd3vU9QXvr39TwYke4DlF8OcwtH875oLabyJT2p/eMjVLl/P8RjVZE=
       file: 'exokit-macos.tar.gz'
-      body: "Exokit macOS git release"
+      body: "Exokit git release"
       on:
         repo: modulesio/exokit-windows
         tags: true
