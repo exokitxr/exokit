@@ -211,6 +211,13 @@ const FPS = 90;
 const FRAME_TIME_MAX = 1000 / FPS;
 const FRAME_TIME_MIN = FRAME_TIME_MAX / 5;
 if (require.main === module) {
+  const _check = () => {
+    if (os.platform() === 'linux' && !process.env['DISPLAY']) {
+      return Promise.reject(new Error('DISPLAY environment variable not set; cannot create window'));
+    } else {
+      return Promise.resolve();
+    }
+  };
   const _prepare = () => {
     let rootPath = null;
     let runtimePath = null;
@@ -420,7 +427,8 @@ if (require.main === module) {
       });
   };
 
-  _prepare()
+  _check()
+    .then(() => _prepare())
     .then(() => _start());
 }
 
