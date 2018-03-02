@@ -160,14 +160,24 @@ NAN_GETTER(Image::DataGetter) {
 NAN_METHOD(Image::LoadMethod) {
   Nan::HandleScope scope;
 
-  Image *image = ObjectWrap::Unwrap<Image>(info.This());
-  Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
-  v8::ArrayBuffer::Contents contents = arrayBuffer->GetContents();
-  unsigned char *data = (unsigned char *)contents.Data();
-  size_t size = contents.ByteLength();
+  if (info[0]->IsArrayBuffer()) {
+    Image *image = ObjectWrap::Unwrap<Image>(info.This());
 
-  bool ok = image->Load(data, size);
-  info.GetReturnValue().Set(JS_BOOL(ok));
+    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+
+    bool ok = image->Load((unsigned char *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength());
+    info.GetReturnValue().Set(JS_BOOL(ok));
+  } else if (info[0]->IsTypedArray()) {
+    Image *image = ObjectWrap::Unwrap<Image>(info.This());
+
+    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
+    Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
+
+    bool ok = image->Load((unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
+    info.GetReturnValue().Set(JS_BOOL(ok));
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
 }
 
 Image::Image () {}

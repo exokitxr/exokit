@@ -9,12 +9,12 @@ Audio::~Audio() {}
 
 Handle<Object> Audio::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
-  
+
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("Audio"));
-  
+
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "load", Load);
@@ -22,7 +22,7 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "pause", Pause);
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
-  
+
   Local<Function> ctorFn = ctor->GetFunction();
 
   return scope.Escape(ctorFn);
@@ -117,12 +117,18 @@ void Audio::Pause() {
 }
 
 NAN_METHOD(Audio::Load) {
-  if (info[0]->IsTypedArray()) {
+  if (info[0]->IsArrayBuffer()) {
+    Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+
+    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+
+    audio->Load((uint8_t *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength());
+  } else if (info[0]->IsTypedArray()) {
     Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
     Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
-    
+
     audio->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
   } else {
     Nan::ThrowError("invalid arguments");
@@ -141,7 +147,7 @@ NAN_METHOD(Audio::Pause) {
 
 NAN_GETTER(Audio::CurrentTimeGetter) {
   Nan::HandleScope scope;
-  
+
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
   double now = defaultAudioContext->currentTime();
@@ -154,7 +160,7 @@ NAN_GETTER(Audio::CurrentTimeGetter) {
 
 NAN_GETTER(Audio::DurationGetter) {
   Nan::HandleScope scope;
-  
+
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
   double duration = audio->audioNode->duration();
