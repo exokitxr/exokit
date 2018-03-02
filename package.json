@@ -23,6 +23,7 @@
   "dependencies": {
     "exokit-core": "0.0.73",
     "isolator": "0.0.9",
+    "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.3",
     "native-canvas-deps": "0.0.5",
     "native-graphics-deps": "0.0.2",

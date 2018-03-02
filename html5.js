@@ -1,4 +1,7 @@
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const mkdirp = require('mkdirp');
 const exokit = require('exokit-core');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 exokit.setNativeBindingsModule(nativeBindingsModulePath);
@@ -208,158 +211,217 @@ const FPS = 90;
 const FRAME_TIME_MAX = 1000 / FPS;
 const FRAME_TIME_MIN = FRAME_TIME_MAX / 5;
 if (require.main === module) {
-  const url = process.argv[2] || 'http://localhost:8000';
-  
-  nativeWindow.create(innerWidth, innerHeight);
+  const _prepare = () => {
+    let rootPath = null;
+    let runtimePath = null;
+    const platform = os.platform();
+    if (platform === 'linux') {
+      rootPath = path.join(os.userInfo().homedir, '.config/openvr');
+      runtimePath = path.join(__dirname, 'node_modules', 'native-openvr-deps/bin/linux64');
+    } else if (platform === 'darwin') {
+      rootPath = path.join('/Users/', os.userInfo().username, '/Library/Application Support/OpenVR/.openvr');
+      runtimePath = path.join(__dirname, '/node_modules/native-openvr-deps/bin/osx64');
+    }
 
-  exokit.fetch(url)
-    .then(site => {
-      console.log('node site loaded');
+    if (rootPath !== null) {
+      const openvrPathsPath = path.join(rootPath, 'openvrpaths.vrpath');
 
-      window = site.window;
-      window.innerWidth = innerWidth;
-      window.innerHeight = innerHeight;
-      if (nativeVr.system.VR_IsHmdPresent()) { // XXX hook this up internally in exokit
-        window.navigator.setVRMode('vr');
-      }
-      window.addEventListener('error', err => {
-        console.warn('got error', err.error.stack);
+      return new Promise((accept, reject) => {
+        fs.lstat(openvrPathsPath, (err, stats) => {
+          if (err) {
+            if (err.code === 'ENOENT') {
+              mkdirp(rootPath, err => {
+                if (!err) {
+                  const jsonString = JSON.stringify({
+                    "config" : [ rootPath ],
+                    "external_drivers" : null,
+                    "jsonid" : "vrpathreg",
+                    "log" : [ rootPath ],
+                    "runtime" : [
+                       runtimePath,
+                     ],
+                    "version" : 1
+                  }, null, 2);
+                  fs.writeFile(openvrPathsPath, jsonString, err => {
+                    if (!err) {
+                      accept();
+                    } else {
+                      reject(err);
+                    }
+                  });
+                } else {
+                  reject(err);
+                }
+              });
+            } else {
+              reject(err);
+            }
+          } else {
+            accept();
+          }
+        });
       });
+    } else {
+      return Promise.resolve();
+    }
+  };
+  const _start = () => {
+    const url = process.argv[2] || 'http://localhost:8000';
+    
+    nativeWindow.create(innerWidth, innerHeight);
 
-      let lastFrameTime = Date.now();
-      const leftGamepad = new window.Gamepad('left', 0);
-      const rightGamepad = new window.Gamepad('right', 1);
-      const gamepads = [null, null];
-      const frameData = new window.VRFrameData();
-      const stageParameters = new window.VRStageParameters();
-      const _recurse = () => {
-        if (compositor) {
-          // wait for frame
-          compositor.WaitGetPoses(
-            system,
-            localFloat32Array, // hmd
-            localFloat32Array2, // left controller
-            localFloat32Array3 // right controller
-          );
-          _normalizeMatrixArray(localFloat32Array);
-          _normalizeMatrixArray(localFloat32Array2);
-          _normalizeMatrixArray(localFloat32Array3);
+    return exokit.fetch(url)
+      .then(site => {
+        console.log('node site loaded');
 
-          // build frame data
-          const hmdMatrix = localMatrix.fromArray(localFloat32Array);
-
-          hmdMatrix.decompose(localVector, localQuaternion, localVector2);
-          frameData.pose.set(localVector, localQuaternion);
-
-          hmdMatrix.getInverse(hmdMatrix);
-
-          system.GetEyeToHeadTransform(0, localFloat32Array4);
-          localMatrix2.fromArray(localFloat32Array4)
-            .getInverse(localMatrix2)
-            .multiply(hmdMatrix)
-            .toArray(frameData.leftViewMatrix);
-
-          system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
-          _normalizeMatrixArray(localFloat32Array4);
-          frameData.leftProjectionMatrix.set(localFloat32Array4);
-
-          system.GetEyeToHeadTransform(1, localFloat32Array4);
-          _normalizeMatrixArray(localFloat32Array4);
-          localMatrix2.fromArray(localFloat32Array4)
-            .getInverse(localMatrix2)
-            .multiply(hmdMatrix)
-            .toArray(frameData.rightViewMatrix);
-
-          system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
-          _normalizeMatrixArray(localFloat32Array4);
-          frameData.rightProjectionMatrix.set(localFloat32Array4);
-
-          // build stage parameters
-          system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
-          _normalizeMatrixArray(localFloat32Array4);
-          stageParameters.sittingToStandingTransform.set(localFloat32Array4);
-          
-          // build gamepads data
-          system.GetControllerState(0, localGamepadArray);
-          if (!isNaN(localGamepadArray[0])) {
-            leftGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
-            leftGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
-            leftGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
-            leftGamepad.buttons[3].pressed = localGamepadArray[2] !== 0; // menu
-
-            leftGamepad.buttons[0].touched = localGamepadArray[9] !== 0; // pad
-            leftGamepad.buttons[1].touched = localGamepadArray[10] !== 0; // trigger
-            leftGamepad.buttons[2].touched = localGamepadArray[8] !== 0; // grip
-            leftGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
-
-            leftGamepad.axes[0] = localGamepadArray[11];
-            leftGamepad.axes[1] = localGamepadArray[12];
-
-            gamepads[0] = leftGamepad;
-          } else {
-            gamepads[0] = null;
-          }
-          
-          system.GetControllerState(1, localGamepadArray);
-          if (!isNaN(localGamepadArray[0])) {
-            rightGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
-            rightGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
-            rightGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
-            rightGamepad.buttons[3].pressed = localGamepadArray[2] !== 0; // menu
-
-            rightGamepad.buttons[0].touched = localGamepadArray[9] !== 0; // pad
-            rightGamepad.buttons[1].touched = localGamepadArray[10] !== 0; // trigger
-            rightGamepad.buttons[2].touched = localGamepadArray[8] !== 0; // grip
-            rightGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
-
-            rightGamepad.axes[0] = localGamepadArray[11];
-            rightGamepad.axes[1] = localGamepadArray[12];
-
-            gamepads[1] = rightGamepad;
-          } else {
-            gamepads[1] = null;
-          }
-
-          // update vr frame
-          window.updateVrFrame({
-            depthNear: 0.1,
-            depthFar: 1000.0,
-            renderWidth,
-            renderHeight,
-            frameData,
-            stageParameters,
-            gamepads,
-          });
-
-          // bind framebuffer for rendering
-          nativeWindow.bindFrameBuffer(msFbo);
-        } else {
-          // bind framebuffer for rendering
-          nativeWindow.bindFrameBuffer(0);
+        window = site.window;
+        window.innerWidth = innerWidth;
+        window.innerHeight = innerHeight;
+        if (nativeVr.system.VR_IsHmdPresent()) { // XXX hook this up internally in exokit
+          window.navigator.setVRMode('vr');
         }
+        window.addEventListener('error', err => {
+          console.warn('got error', err.error.stack);
+        });
 
-        // poll for window events
-        nativeWindow.pollEvents(windowEvents);
+        let lastFrameTime = Date.now();
+        const leftGamepad = new window.Gamepad('left', 0);
+        const rightGamepad = new window.Gamepad('right', 1);
+        const gamepads = [null, null];
+        const frameData = new window.VRFrameData();
+        const stageParameters = new window.VRStageParameters();
+        const _recurse = () => {
+          if (compositor) {
+            // wait for frame
+            compositor.WaitGetPoses(
+              system,
+              localFloat32Array, // hmd
+              localFloat32Array2, // left controller
+              localFloat32Array3 // right controller
+            );
+            _normalizeMatrixArray(localFloat32Array);
+            _normalizeMatrixArray(localFloat32Array2);
+            _normalizeMatrixArray(localFloat32Array3);
 
-        // trigger requestAnimationFrame
-        window.tickAnimationFrame();
+            // build frame data
+            const hmdMatrix = localMatrix.fromArray(localFloat32Array);
 
-        // submit to compositor
-        if (compositor) {
-          nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
-          compositor.Submit(texture);
+            hmdMatrix.decompose(localVector, localQuaternion, localVector2);
+            frameData.pose.set(localVector, localQuaternion);
 
-          nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
-        }
-        nativeWindow.swapBuffers();
+            hmdMatrix.getInverse(hmdMatrix);
 
-        // wait for next frame
-        const now = Date.now();
-        setTimeout(_recurse, Math.min(Math.max(FRAME_TIME_MAX - (now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX));
-        lastFrameTime = now;
-      };
-      _recurse();
-    });
+            system.GetEyeToHeadTransform(0, localFloat32Array4);
+            localMatrix2.fromArray(localFloat32Array4)
+              .getInverse(localMatrix2)
+              .multiply(hmdMatrix)
+              .toArray(frameData.leftViewMatrix);
+
+            system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
+            _normalizeMatrixArray(localFloat32Array4);
+            frameData.leftProjectionMatrix.set(localFloat32Array4);
+
+            system.GetEyeToHeadTransform(1, localFloat32Array4);
+            _normalizeMatrixArray(localFloat32Array4);
+            localMatrix2.fromArray(localFloat32Array4)
+              .getInverse(localMatrix2)
+              .multiply(hmdMatrix)
+              .toArray(frameData.rightViewMatrix);
+
+            system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
+            _normalizeMatrixArray(localFloat32Array4);
+            frameData.rightProjectionMatrix.set(localFloat32Array4);
+
+            // build stage parameters
+            system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
+            _normalizeMatrixArray(localFloat32Array4);
+            stageParameters.sittingToStandingTransform.set(localFloat32Array4);
+            
+            // build gamepads data
+            system.GetControllerState(0, localGamepadArray);
+            if (!isNaN(localGamepadArray[0])) {
+              leftGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
+              leftGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
+              leftGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
+              leftGamepad.buttons[3].pressed = localGamepadArray[2] !== 0; // menu
+
+              leftGamepad.buttons[0].touched = localGamepadArray[9] !== 0; // pad
+              leftGamepad.buttons[1].touched = localGamepadArray[10] !== 0; // trigger
+              leftGamepad.buttons[2].touched = localGamepadArray[8] !== 0; // grip
+              leftGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
+
+              leftGamepad.axes[0] = localGamepadArray[11];
+              leftGamepad.axes[1] = localGamepadArray[12];
+
+              gamepads[0] = leftGamepad;
+            } else {
+              gamepads[0] = null;
+            }
+            
+            system.GetControllerState(1, localGamepadArray);
+            if (!isNaN(localGamepadArray[0])) {
+              rightGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
+              rightGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
+              rightGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
+              rightGamepad.buttons[3].pressed = localGamepadArray[2] !== 0; // menu
+
+              rightGamepad.buttons[0].touched = localGamepadArray[9] !== 0; // pad
+              rightGamepad.buttons[1].touched = localGamepadArray[10] !== 0; // trigger
+              rightGamepad.buttons[2].touched = localGamepadArray[8] !== 0; // grip
+              rightGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
+
+              rightGamepad.axes[0] = localGamepadArray[11];
+              rightGamepad.axes[1] = localGamepadArray[12];
+
+              gamepads[1] = rightGamepad;
+            } else {
+              gamepads[1] = null;
+            }
+
+            // update vr frame
+            window.updateVrFrame({
+              depthNear: 0.1,
+              depthFar: 1000.0,
+              renderWidth,
+              renderHeight,
+              frameData,
+              stageParameters,
+              gamepads,
+            });
+
+            // bind framebuffer for rendering
+            nativeWindow.bindFrameBuffer(msFbo);
+          } else {
+            // bind framebuffer for rendering
+            nativeWindow.bindFrameBuffer(0);
+          }
+
+          // poll for window events
+          nativeWindow.pollEvents(windowEvents);
+
+          // trigger requestAnimationFrame
+          window.tickAnimationFrame();
+
+          // submit to compositor
+          if (compositor) {
+            nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
+            compositor.Submit(texture);
+
+            nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
+          }
+          nativeWindow.swapBuffers();
+
+          // wait for next frame
+          const now = Date.now();
+          setTimeout(_recurse, Math.min(Math.max(FRAME_TIME_MAX - (now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX));
+          lastFrameTime = now;
+        };
+        _recurse();
+      });
+  };
+
+  _prepare()
+    .then(() => _start());
 }
 
 process.on('uncaughtException', err => {
