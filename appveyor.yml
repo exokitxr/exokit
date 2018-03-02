@@ -40,7 +40,7 @@ artifacts:
 
 deploy:
   release: $(APPVEYOR_REPO_TAG_NAME)-windows
-  description: 'Exokit Windows git release'
+  description: 'Exokit git release'
   provider: GitHub
   auth_token:
     secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN
