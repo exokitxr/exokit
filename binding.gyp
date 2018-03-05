@@ -129,6 +129,11 @@
             '<(module_root_dir)/node_modules/native-audio-deps/lib/linux',
             '<(module_root_dir)/node_modules/native-video-deps/lib/linux',
             '<(module_root_dir)/node_modules/native-openvr-deps/lib/linux64',
+            '<(module_root_dir)/node_modules/native-video-deps/lib/linux/libavformat',
+            '<(module_root_dir)/node_modules/native-video-deps/lib/linux/libavcodec',
+            '<(module_root_dir)/node_modules/native-video-deps/lib/linux/libavutil',
+            '<(module_root_dir)/node_modules/native-video-deps/lib/linux/libswscale',
+            '<(module_root_dir)/node_modules/native-video-deps/lib/linux/libswresample',
           ],
           'libraries': [
             '-lGLEW',
@@ -145,10 +150,11 @@
           ],
           'ldflags': [
             '-Wl,-Bsymbolic',
-            '-Wl,-rpath,./node_modules/native-video-deps/libavformat',
-            '-Wl,-rpath,./node_modules/native-video-deps/libavcodec',
-            '-Wl,-rpath,./node_modules/native-video-deps/libavutil',
-            '-Wl,-rpath,./node_modules/native-video-deps/libswscale',
+            '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavformat',
+            '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavcodec',
+            '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavutil',
+            '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libswscale',
+            '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libswresample',
             '-Wl,-R./node_modules/native-openvr-deps/bin/linux64',
           ],
           'defines': ['NOMINMAX'],
@@ -191,7 +197,7 @@
           'library_dirs': [
             '<(module_root_dir)/node_modules/native-canvas-deps/lib/macos',
             '<(module_root_dir)/node_modules/native-audio-deps/lib/macos',
-            '<(module_root_dir)/node_modules/native-video-deps/lib/linux',
+            '<(module_root_dir)/node_modules/native-video-deps/lib/macos',
           ],
           'libraries': [
             '-framework OpenGL',
@@ -212,11 +218,8 @@
           ],
           'link_settings': {
             'libraries': [
-              '-Wl,-rpath,./node_modules/native-video-deps/libavformat',
-              '-Wl,-rpath,./node_modules/native-video-deps/libavcodec',
-              '-Wl,-rpath,./node_modules/native-video-deps/libavutil',
-              '-Wl,-rpath,./node_modules/native-video-deps/libswscale',
-              '-Wl,-rpath,./node_modules/native-video-deps/libswresample',
+              '-Wl,-rpath,./node_modules/native-audio-deps/lib/macos',
+              '-Wl,-rpath,./node_modules/native-video-deps/lib/macos',
               '-Wl,-rpath,./node_modules/native-openvr-deps/bin/osx64',
               '-framework OpenVR',
             ],
