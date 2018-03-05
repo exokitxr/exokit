@@ -97,8 +97,9 @@ void Audio::Load(uint8_t *bufferValue, size_t bufferLength) {
     audioBus = lab::MakeBusFromMemory(buffer, extension, false);
     audioNode.reset(new lab::SampledAudioNode());
 
+    lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
     {
-      lab::ContextRenderLock lock(defaultAudioContext.get(), "Audio::Load");
+      lab::ContextRenderLock lock(defaultAudioContext, "Audio::Load");
       audioNode->setBus(lock, audioBus);
     }
 
@@ -150,7 +151,7 @@ NAN_GETTER(Audio::CurrentTimeGetter) {
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
-  double now = defaultAudioContext->currentTime();
+  double now = getDefaultAudioContext()->currentTime();
   double startTime = audio->audioNode->startTime();
   double duration = audio->audioNode->duration();
   double currentTime = std::min<double>(std::max<double>(startTime - now, 0), duration);

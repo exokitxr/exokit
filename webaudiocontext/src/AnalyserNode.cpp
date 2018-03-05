@@ -89,7 +89,7 @@ NAN_SETTER(AnalyserNode::FftSizeSetter) {
           break;
         }
       }
-      defaultAudioContext->connect(newAudioNode, oldSrcNode, 0, oldSrcOutputIndex);
+      getDefaultAudioContext()->connect(newAudioNode, oldSrcNode, 0, oldSrcOutputIndex);
     }
     shared_ptr<lab::AudioNodeOutput> oldDst = oldAudioNode->output(0);
     if (oldDst && oldDst->node()) {
@@ -103,7 +103,7 @@ NAN_SETTER(AnalyserNode::FftSizeSetter) {
           break;
         }
       }
-      defaultAudioContext->connect(oldDstNode, newAudioNode, oldDstInputIndex, 0);
+      getDefaultAudioContext()->connect(oldDstNode, newAudioNode, oldDstInputIndex, 0);
     }
   } else {
     Nan::ThrowError("value: invalid arguments");

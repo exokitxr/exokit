@@ -22,7 +22,7 @@ using namespace node;
 
 namespace webaudio {
   
-extern unique_ptr<lab::AudioContext> defaultAudioContext;
+lab::AudioContext *getDefaultAudioContext();
 
 class AudioContext : public ObjectWrap {
 public:

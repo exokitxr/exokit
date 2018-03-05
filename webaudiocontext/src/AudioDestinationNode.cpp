@@ -52,7 +52,7 @@ NAN_METHOD(AudioDestinationNode::New) {
 NAN_GETTER(AudioDestinationNode::MaxChannelCountGetter) {
   Nan::HandleScope scope;
   
-  info.GetReturnValue().Set(JS_INT(defaultAudioContext->maxNumberOfChannels));
+  info.GetReturnValue().Set(JS_INT(getDefaultAudioContext()->maxNumberOfChannels));
 }
 
 }

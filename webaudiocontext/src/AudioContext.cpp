@@ -2,17 +2,21 @@
 
 namespace webaudio {
   
-unique_ptr<lab::AudioContext> defaultAudioContext;
+unique_ptr<lab::AudioContext> _defaultAudioContext = nullptr;
 
-AudioContext::AudioContext() {
-  if (!defaultAudioContext) {
-    defaultAudioContext = lab::MakeRealtimeAudioContext();
+lab::AudioContext *getDefaultAudioContext() {
+  if (!_defaultAudioContext) {
+    _defaultAudioContext = lab::MakeRealtimeAudioContext();
     
     atexit([]() {
-      defaultAudioContext.reset();
+      _defaultAudioContext.reset();
     });
   }
-  audioContext = defaultAudioContext.get();
+  return _defaultAudioContext.get();
+}
+
+AudioContext::AudioContext() {
+  audioContext = getDefaultAudioContext();
 }
 
 AudioContext::~AudioContext() {}
@@ -259,13 +263,15 @@ NAN_METHOD(AudioContext::Resume) {
 NAN_GETTER(AudioContext::CurrentTimeGetter) {
   Nan::HandleScope scope;
 
-  info.GetReturnValue().Set(JS_NUM(defaultAudioContext->currentTime()));
+  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
+  info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->currentTime()));
 }
 
 NAN_GETTER(AudioContext::SampleRateGetter) {
   Nan::HandleScope scope;
 
-  info.GetReturnValue().Set(JS_NUM(defaultAudioContext->sampleRate()));
+  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
+  info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->sampleRate()));
 }
 
 }

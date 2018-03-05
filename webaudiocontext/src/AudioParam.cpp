@@ -72,7 +72,7 @@ NAN_GETTER(AudioParam::ValueGetter) {
 
   float value;
   {
-    lab::ContextRenderLock lock(defaultAudioContext.get(), "AudioParam::ValueGetter");
+    lab::ContextRenderLock lock(getDefaultAudioContext(), "AudioParam::ValueGetter");
     value = audioParam->audioParam->value(lock);
   }
 
