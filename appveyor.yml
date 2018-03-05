@@ -1,11 +1,5 @@
 version: 0.0.{build}
 
-# branches to build
-branches:
-  # whitelist
-  only:
-    - master
-
 # Test against the latest version of this Node.js version
 environment:
   nodejs_version: "9"
