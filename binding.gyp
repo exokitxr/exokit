@@ -196,7 +196,6 @@
             '-lavformat',
             '-lavcodec',
             '-lavutil',
-            '-lavfilter',
             '-lswscale',
           ],
           'link_settings': {
@@ -204,7 +203,6 @@
               '-Wl,-rpath,./node_modules/native-video-deps/libavformat',
               '-Wl,-rpath,./node_modules/native-video-deps/libavcodec',
               '-Wl,-rpath,./node_modules/native-video-deps/libavutil',
-              '-Wl,-rpath,./node_modules/native-video-deps/libavfilter',
               '-Wl,-rpath,./node_modules/native-video-deps/libswscale',
               '-Wl,-rpath,./node_modules/native-openvr-deps/bin/osx64',
               '-framework OpenVR',
