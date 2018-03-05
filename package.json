@@ -24,11 +24,11 @@
     "exokit-core": "0.0.74",
     "isolator": "0.0.9",
     "mkdirp": "^0.5.1",
-    "native-audio-deps": "0.0.5",
+    "native-audio-deps": "0.0.8",
     "native-canvas-deps": "0.0.5",
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.4",
-    "native-video-deps": "0.0.8",
+    "native-video-deps": "0.0.9",
     "webgl-to-opengl": "0.0.2",
     "window-worker": "0.0.46"
   }
