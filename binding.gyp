@@ -157,11 +157,12 @@
           ],
           'include_dirs': [
             '<(module_root_dir)/node_modules/native-graphics-deps/include',
-            '<(module_root_dir)/node_modules/native-openvr-deps/headers',
             '<(module_root_dir)/node_modules/native-canvas-deps/include/core',
             '<(module_root_dir)/node_modules/native-canvas-deps/include/config',
             '<(module_root_dir)/node_modules/native-canvas-deps/include/gpu',
             '<(module_root_dir)/node_modules/native-audio-deps/include',
+            '<(module_root_dir)/node_modules/native-video-deps/include',
+            '<(module_root_dir)/node_modules/native-openvr-deps/headers',
             '<(module_root_dir)/deps/exokit-bindings',
             '<(module_root_dir)/deps/exokit-bindings/utf8',
             '<(module_root_dir)/deps/exokit-bindings/node',
@@ -180,6 +181,7 @@
           'library_dirs': [
             '<(module_root_dir)/node_modules/native-canvas-deps/lib/macos',
             '<(module_root_dir)/node_modules/native-audio-deps/lib/macos',
+            '<(module_root_dir)/node_modules/native-video-deps/lib/linux',
           ],
           'libraries': [
             '-framework OpenGL',
@@ -193,10 +195,20 @@
             '-llabsound',
             '-lnyquist',
             '-framework OpenVR',
+            '-lavformat',
+            '-lavcodec',
+            '-lavutil',
+            '-lavfilter',
+            '-lswscale',
           ],
           'link_settings': {
             'libraries': [
-              '-Wl,-rpath,<(module_root_dir)/node_modules/native-openvr-deps/bin/osx64',
+              '-Wl,-rpath,./node_modules/native-video-deps/libavformat',
+              '-Wl,-rpath,./node_modules/native-video-deps/libavcodec',
+              '-Wl,-rpath,./node_modules/native-video-deps/libavutil',
+              '-Wl,-rpath,./node_modules/native-video-deps/libavfilter',
+              '-Wl,-rpath,./node_modules/native-video-deps/libswscale',
+              '-Wl,-rpath,./node_modules/native-openvr-deps/bin/osx64',
               '-framework OpenVR',
             ],
           },
