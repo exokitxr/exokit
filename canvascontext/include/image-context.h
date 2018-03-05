@@ -12,6 +12,7 @@
 #include <SkImage.h>
 #include <nanosvg.h>
 #include <nanosvgrast.h>
+#include <string>
 
 using namespace v8;
 using namespace node;
@@ -23,7 +24,7 @@ public:
   unsigned int GetHeight();
   unsigned int GetNumChannels();
   // unsigned char *GetData();
-  bool Load(const unsigned char *buffer, size_t size);
+  bool Load(const unsigned char *buffer, size_t size, std::string *error = nullptr);
   // void Set(canvas::Image *image);
 
 protected:

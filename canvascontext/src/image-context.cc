@@ -48,7 +48,7 @@ unsigned int Image::GetNumChannels() {
   }
 } */
 
-bool Image::Load(const unsigned char *buffer, size_t size) {
+bool Image::Load(const unsigned char *buffer, size_t size, std::string *error) {
   sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, size);
   SkBitmap bitmap;
   bool ok = DecodeDataToBitmap(data, &bitmap);
@@ -80,21 +80,27 @@ bool Image::Load(const unsigned char *buffer, size_t size) {
           bitmap.setImmutable();
           image = SkImage::MakeFromBitmap(bitmap);
 
-          // std::cout << "image decode ok" << "\n";
-
           return true;
         } else {
+          if (error) {
+            *error = "failed to install svg pixels";
+          }
+
           free(address);
 
           return false;
         }
       } else {
-        // std::cout << "image decode fail 1" << "\n";
+        if (error) {
+          *error = "invalid svg parameters";
+        }
 
         return false;
       }
     } else {
-      // std::cout << "image decode fail 2" << "\n";
+      if (error) {
+        *error = "unknown image type";
+      }
       // throw ImageLoadingException(stbi_failure_reason());
       return false;
     }
@@ -165,16 +171,22 @@ NAN_METHOD(Image::LoadMethod) {
 
     Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
 
-    bool ok = image->Load((unsigned char *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength());
-    info.GetReturnValue().Set(JS_BOOL(ok));
+    std::string error;
+    bool ok = image->Load((unsigned char *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength(), &error);
+    if (!ok) {
+      Nan::ThrowError(error.c_str());
+    }
   } else if (info[0]->IsTypedArray()) {
     Image *image = ObjectWrap::Unwrap<Image>(info.This());
 
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
     Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
 
-    bool ok = image->Load((unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
-    info.GetReturnValue().Set(JS_BOOL(ok));
+    std::string error;
+    bool ok = image->Load((unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength(), &error);
+    if (!ok) {
+      Nan::ThrowError(error.c_str());
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }
