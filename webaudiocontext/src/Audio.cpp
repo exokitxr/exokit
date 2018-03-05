@@ -38,63 +38,14 @@ NAN_METHOD(Audio::New) {
   info.GetReturnValue().Set(audioObj);
 }
 
-const char *getAudioType(const vector<uint8_t> &buf) {
-	if (
-    buf.size() >= 4 &&
-    buf[0] == 102 &&
-    buf[1] == 76 &&
-    buf[2] == 97 &&
-    buf[3] == 67
-  ) {
-    return "flac";
-  } else if (
-    buf.size() >= 3 &&
-    (
-      (
-        buf[0] == 73 &&
-        buf[1] == 68 &&
-        buf[2] == 51
-      ) || (
-        buf[0] == 255 &&
-        buf[1] == 251
-      )
-    )
-  ) {
-    return "mp3";
-  } else if (
-    buf.size() >= 4 &&
-    buf[0] == 79 &&
-		buf[1] == 103 &&
-		buf[2] == 103 &&
-    buf[3] == 83
-  ) {
-    return "ogg";
-  } else if (
-    buf.size() >= 12 &&
-    buf[0] == 82 &&
-		buf[1] == 73 &&
-		buf[2] == 70 &&
-    buf[3] == 70 &&
-    buf[8] == 87 &&
-    buf[9] == 65 &&
-    buf[10] == 86 &&
-    buf[11] == 69
-  ) {
-    return "wav";
-  } else {
-    return nullptr;
-  }
-}
-
 void Audio::Load(uint8_t *bufferValue, size_t bufferLength) {
   vector<uint8_t> buffer(bufferLength);
   memcpy(buffer.data(), bufferValue, bufferLength);
 
-  const char *extensionString = getAudioType(buffer);
-  if (extensionString != nullptr) {
-    string extension(extensionString);
+  string error;
 
-    audioBus = lab::MakeBusFromMemory(buffer, extension, false);
+  audioBus = lab::MakeBusFromMemory(buffer, false, &error);
+  if (audioBus) {
     audioNode.reset(new lab::SampledAudioNode());
 
     lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
@@ -105,7 +56,7 @@ void Audio::Load(uint8_t *bufferValue, size_t bufferLength) {
 
     defaultAudioContext->connect(defaultAudioContext->destination(), audioNode, 0, 0); // default connection
   } else {
-    Nan::ThrowError("could not detect audio format");
+    Nan::ThrowError(error.c_str());
   }
 }
 
