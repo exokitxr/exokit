@@ -28,7 +28,6 @@ void AppData::resetState() {
     packet = nullptr;
   }
   if (codec_ctx) {
-    av_free(codec_ctx->buffer);
     avcodec_close(codec_ctx);
     codec_ctx = nullptr;
   }
@@ -37,6 +36,7 @@ void AppData::resetState() {
     fmt_ctx = nullptr;
   }
   if (io_ctx) {
+    av_free(io_ctx->buffer);
     av_free(io_ctx);
     io_ctx = nullptr;
   }
