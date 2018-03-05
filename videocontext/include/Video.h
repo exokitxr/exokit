@@ -30,6 +30,8 @@ public:
   bool set(vector<unsigned char> &memory);
   static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
   static int64_t bufferSeek(void *opaque, int64_t offset, int whence);
+  double getTimeBase();
+  bool advanceToFrameAt(double timestamp);
 
 public:
   std::vector<unsigned char> data;
@@ -73,7 +75,6 @@ protected:
   static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);
   static NAN_METHOD(UpdateAll);
-  double getTimeBase();
   double getRequiredCurrentTime();
   double getRequiredCurrentTimeS();
   double getFrameCurrentTimeS();
