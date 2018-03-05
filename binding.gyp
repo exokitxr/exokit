@@ -198,17 +198,17 @@
             '-lglew', # brew install
             '-lglfw', # brew install
             '-lskia',
-            '-F <(module_root_dir)/node_modules/native-openvr-deps/bin/osx64',
             '-framework CoreAudio',
             '-framework AudioUnit',
             '-framework AudioToolbox',
             '-llabsound',
-            '-lnyquist',
-            '-framework OpenVR',
             '-lavformat',
             '-lavcodec',
             '-lavutil',
             '-lswscale',
+            '-lswresample',
+            '-F <(module_root_dir)/node_modules/native-openvr-deps/bin/osx64',
+            '-framework OpenVR',
           ],
           'link_settings': {
             'libraries': [
@@ -216,6 +216,7 @@
               '-Wl,-rpath,./node_modules/native-video-deps/libavcodec',
               '-Wl,-rpath,./node_modules/native-video-deps/libavutil',
               '-Wl,-rpath,./node_modules/native-video-deps/libswscale',
+              '-Wl,-rpath,./node_modules/native-video-deps/libswresample',
               '-Wl,-rpath,./node_modules/native-openvr-deps/bin/osx64',
               '-framework OpenVR',
             ],
