@@ -46,7 +46,6 @@ public:
 	AVCodecContext *codec_ctx;
 	AVCodec *decoder;
 	AVPacket *packet;
-	bool packetValid;
 	AVFrame *av_frame;
 	AVFrame *gl_frame;
 	struct SwsContext *conv_ctx;

@@ -10,7 +10,7 @@ const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
 AppData::AppData() :
   dataPos(0),
   buffer((unsigned char *)av_malloc(kBufferSize)),
-  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), packetValid(false), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
+  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
 AppData::~AppData() {
   resetState();
   av_free(buffer);
