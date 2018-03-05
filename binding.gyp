@@ -13,6 +13,7 @@
             'deps/exokit-bindings/webglcontext/src/*.cc',
             'deps/exokit-bindings/platform/windows/src/*.cpp',
             'deps/exokit-bindings/webaudiocontext/src/*.cpp',
+            'deps/exokit-bindings/videocontext/src/*.cpp',
             'deps/glfw-bindings/src/*.cc',
             'deps/openvr/src/*.cpp',
           ],
@@ -22,6 +23,7 @@
             '<(module_root_dir)/node_modules/native-canvas-deps/include/config',
             '<(module_root_dir)/node_modules/native-canvas-deps/include/gpu',
             '<(module_root_dir)/node_modules/native-audio-deps/include',
+            '<(module_root_dir)/node_modules/native-video-deps/include',
             '<(module_root_dir)/node_modules/native-openvr-deps/headers',
             '<(module_root_dir)/deps/exokit-bindings',
             '<(module_root_dir)/deps/exokit-bindings/utf8',
@@ -34,6 +36,7 @@
             '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
             '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
             '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
             '<(module_root_dir)/deps/glfw/include',
             '<(module_root_dir)/deps/glfw-bindings/include',
             '<(module_root_dir)/deps/openvr/include',
@@ -42,6 +45,7 @@
             '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64',
             '<(module_root_dir)/node_modules/native-canvas-deps/lib/windows',
             '<(module_root_dir)/node_modules/native-audio-deps/lib/windows',
+            '<(module_root_dir)/node_modules/native-video-deps/lib/win',
             '<(module_root_dir)/node_modules/native-openvr-deps/lib/win64',
           ],
           'libraries': [
@@ -53,6 +57,10 @@
             'LabSound.lib',
             'libnyquist.lib',
             'openvr_api.lib',
+            'avformat.lib',
+            'avcodec.lib',
+            'avutil.lib',
+            'swscale.lib',
           ],
           'copies': [
             {
@@ -60,6 +68,10 @@
               'files': [
                 '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glew32.dll',
                 '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glfw3.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avformat-58.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avcodec-58.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avutil-56.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/swscale-5.dll',
                 '<(module_root_dir)/node_modules/native-openvr-deps/bin/win64/openvr_api.dll',
               ]
             }
