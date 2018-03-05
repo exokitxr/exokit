@@ -55,12 +55,12 @@
             'gdiplus.lib',
             'skia.lib',
             'LabSound.lib',
-            'libnyquist.lib',
-            'openvr_api.lib',
             'avformat.lib',
             'avcodec.lib',
             'avutil.lib',
             'swscale.lib',
+            'swresample.lib',
+            'openvr_api.lib',
           ],
           'copies': [
             {
@@ -72,6 +72,7 @@
                 '<(module_root_dir)/node_modules/native-video-deps/lib/win/avcodec-58.dll',
                 '<(module_root_dir)/node_modules/native-video-deps/lib/win/avutil-56.dll',
                 '<(module_root_dir)/node_modules/native-video-deps/lib/win/swscale-5.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/swresample-3.dll',
                 '<(module_root_dir)/node_modules/native-openvr-deps/bin/win64/openvr_api.dll',
               ]
             }
