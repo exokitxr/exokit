@@ -129,7 +129,6 @@
             '-lavformat',
             '-lavcodec',
             '-lavutil',
-            '-lavfilter',
             '-lswscale',
           ],
           'ldflags': [
@@ -137,7 +136,6 @@
             '-Wl,-rpath,./node_modules/native-video-deps/libavformat',
             '-Wl,-rpath,./node_modules/native-video-deps/libavcodec',
             '-Wl,-rpath,./node_modules/native-video-deps/libavutil',
-            '-Wl,-rpath,./node_modules/native-video-deps/libavfilter',
             '-Wl,-rpath,./node_modules/native-video-deps/libswscale',
             '-Wl,-R./node_modules/native-openvr-deps/bin/linux64',
           ],
