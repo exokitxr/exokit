@@ -417,11 +417,14 @@ NAN_SETTER(Video::CurrentTimeSetter) {
 
   if (value->IsNumber()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
-    double newValueS = value->NumberValue();
 
-    video->startTime = av_gettime() - (int64_t)(newValueS * 1e6);
-    av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->data.getTimeBase()), AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY);
-    video->data.advanceToFrameAt(newValueS);
+    if (video->data.fmt_ctx && video->data.stream_idx != -1) {
+      double newValueS = value->NumberValue();
+
+      video->startTime = av_gettime() - (int64_t)(newValueS * 1e6);
+      av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->data.getTimeBase()), AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY);
+      video->data.advanceToFrameAt(newValueS);
+    }
   } else {
     Nan::ThrowError("value: invalid arguments");
   }
