@@ -4,7 +4,8 @@
 
 namespace webaudio {
 
-Audio::Audio() {}
+Audio::Audio() : audioNode(new lab::SampledAudioNode()) {}
+
 Audio::~Audio() {}
 
 Handle<Object> Audio::Initialize(Isolate *isolate) {
@@ -46,8 +47,6 @@ void Audio::Load(uint8_t *bufferValue, size_t bufferLength) {
 
   audioBus = lab::MakeBusFromMemory(buffer, false, &error);
   if (audioBus) {
-    audioNode.reset(new lab::SampledAudioNode());
-
     lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
     {
       lab::ContextRenderLock lock(defaultAudioContext, "Audio::Load");
