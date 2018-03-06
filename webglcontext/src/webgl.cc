@@ -949,14 +949,18 @@ NAN_METHOD(TexImage2D) {
   // int num;
   char *pixelsV = (char *)getImageData(pixels);
 
-  if (canvas::ImageData::getFlip()) {
-    unique_ptr<char[]> pixelsV2(new char[widthV * heightV * 4]);
+  if (pixelsV != nullptr) {
+    if (canvas::ImageData::getFlip()) {
+      unique_ptr<char[]> pixelsV2(new char[widthV * heightV * 4]);
 
-    flipImageData(pixelsV2.get(), pixelsV, widthV, heightV, 4);
+      flipImageData(pixelsV2.get(), pixelsV, widthV, heightV, 4);
 
-    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2.get());
+      glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2.get());
+    } else {
+      glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV);
+    }
   } else {
-    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV);
+    Nan::ThrowError("Invalid texture argument");
   }
 }
 
@@ -1880,13 +1884,17 @@ NAN_METHOD(TexSubImage2D) {
   // int num;
   char *pixels = (char *)getImageData(info[8]);
 
-  if (canvas::ImageData::getFlip()) {
-    unique_ptr<char[]> pixels2(new char[width * height * 4]);
-    flipImageData(pixels2.get(), pixels, width, height, 4);
+  if (pixels != nullptr) {
+    if (canvas::ImageData::getFlip()) {
+      unique_ptr<char[]> pixels2(new char[width * height * 4]);
+      flipImageData(pixels2.get(), pixels, width, height, 4);
 
-    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels2.get());
+      glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels2.get());
+    } else {
+      glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    }
   } else {
-    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    Nan::ThrowError("Invalid texture argument");
   }
 
   /* if (pixels != nullptr) {
@@ -1908,7 +1916,11 @@ NAN_METHOD(ReadPixels) {
   GLenum type = info[5]->Int32Value();
   char *pixels = (char *)getImageData(info[6]);
 
-  glReadPixels(x, y, width, height, format, type, pixels);
+  if (pixels != nullptr) {
+    glReadPixels(x, y, width, height, format, type, pixels);
+  } else {
+    Nan::ThrowError("Invalid texture argument");
+  }
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
