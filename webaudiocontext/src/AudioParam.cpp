@@ -20,6 +20,12 @@ Handle<Object> AudioParam::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("minValue"), MinValueGetter);
   Nan::SetAccessor(proto, JS_STR("value"), ValueGetter, ValueSetter);
   Nan::SetMethod(proto, "setValueAtTime", SetValueAtTime);
+  Nan::SetMethod(proto, "linearRampToValueAtTime", LinearRampToValueAtTime);
+  Nan::SetMethod(proto, "exponentialRampToValueAtTime", ExponentialRampToValueAtTime);
+  Nan::SetMethod(proto, "setTargetAtTime", SetTargetAtTime);
+  Nan::SetMethod(proto, "setValueCurveAtTime", SetValueCurveAtTime);
+  Nan::SetMethod(proto, "cancelScheduledValues", CancelScheduledValues);
+  Nan::SetMethod(proto, "cancelAndHoldAtTime", CancelAndHoldAtTime);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
