@@ -721,3 +721,15 @@ Local<Object> makeAudio() {
 
   return scope.Escape(exports);
 }
+
+Local<Object> makeVideo() {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  Local<Object> exports = Nan::New<Object>();
+
+  exports->Set(JS_STR("Video"), ffmpeg::Video::Initialize(isolate));
+
+  return scope.Escape(exports);
+}

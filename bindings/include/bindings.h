@@ -18,5 +18,6 @@ v8::Local<v8::Object> makeImageBitmap(Local<Value> imageCons);
 v8::Local<v8::Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons);
 v8::Local<v8::Object> makePath2D();
 v8::Local<v8::Object> makeAudio();
+v8::Local<v8::Object> makeVideo();
 
 #endif
