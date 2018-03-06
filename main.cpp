@@ -161,6 +161,9 @@ void InitExports(Handle<Object> exports) {
   Local<Value> audio = makeAudio();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
 
+  Local<Value> video = makeVideo();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVideo"), video);
+
   /* Local<Value> glfw = makeGlfw();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
 
