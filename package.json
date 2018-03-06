@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/modulesio/exokit-windows#readme",
   "dependencies": {
-    "exokit-core": "0.0.76",
+    "exokit-core": "0.0.77",
     "isolator": "0.0.9",
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.11",
