@@ -1,13 +1,13 @@
 #include <AudioContext.h>
 
 namespace webaudio {
-  
+
 unique_ptr<lab::AudioContext> _defaultAudioContext = nullptr;
 
 lab::AudioContext *getDefaultAudioContext() {
   if (!_defaultAudioContext) {
     _defaultAudioContext = lab::MakeRealtimeAudioContext();
-    
+
     atexit([]() {
       _defaultAudioContext.reset();
     });
@@ -143,7 +143,7 @@ NAN_METHOD(AudioContext::New) {
   };
   Local<Object> audioDestinationNodeObj = audioDestinationNodeConstructor->NewInstance(sizeof(argv1)/sizeof(argv1[0]), argv1);
   audioContextObj->Set(JS_STR("destination"), audioDestinationNodeObj);
-  
+
   Local<Function> audioListenerConstructor = Local<Function>::Cast(audioContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioListener")));
   Local<Value> argv2[] = {
     audioContextObj,
@@ -164,12 +164,14 @@ NAN_METHOD(AudioContext::Close) {
 NAN_METHOD(AudioContext::CreateMediaElementSource) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("Audio"))) {
+  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLAudioElement"))) {
+    Local<Object> htmlAudioElement = Local<Object>::Cast(info[0]);
+
     Local<Object> audioContextObj = info.This();
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
     Local<Function> audioDestinationNodeConstructor = Local<Function>::Cast(audioContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioSourceNode")));
-    Local<Object> audioNodeObj = audioContext->CreateMediaElementSource(audioDestinationNodeConstructor, Local<Object>::Cast(info[0]), audioContextObj);
+    Local<Object> audioNodeObj = audioContext->CreateMediaElementSource(audioDestinationNodeConstructor, htmlAudioElement, audioContextObj);
 
     info.GetReturnValue().Set(audioNodeObj);
   } else {
