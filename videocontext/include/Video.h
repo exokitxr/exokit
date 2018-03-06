@@ -27,7 +27,7 @@ public:
   ~AppData();
 
   void resetState();
-  bool set(vector<unsigned char> &memory);
+  bool set(vector<unsigned char> &memory, string *error = nullptr);
   static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
   static int64_t bufferSeek(void *opaque, int64_t offset, int whence);
   double getTimeBase();
@@ -52,7 +52,7 @@ public:
 class Video : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
-  bool Load(uint8_t *bufferValue, size_t bufferLength);
+  bool Load(uint8_t *bufferValue, size_t bufferLength, string *error = nullptr);
   void Update();
   void Play();
   void Pause();

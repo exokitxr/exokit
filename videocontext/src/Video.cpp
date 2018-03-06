@@ -42,7 +42,7 @@ void AppData::resetState() {
   }
 }
 
-bool AppData::set(vector<unsigned char> &memory) {
+bool AppData::set(vector<unsigned char> &memory, string *error) {
   data = std::move(memory);
   resetState();
 
@@ -51,13 +51,17 @@ bool AppData::set(vector<unsigned char> &memory) {
   io_ctx = avio_alloc_context((unsigned char *)av_malloc(kBufferSize), kBufferSize, 0, this, bufferRead, NULL, bufferSeek);
   fmt_ctx->pb = io_ctx;
   if (avformat_open_input(&fmt_ctx, "memory input", NULL, NULL) < 0) {
-    // std::cout << "failed to open input" << std::endl;
+    if (error) {
+      *error = "failed to open input";
+    }
     return false;
   }
 
   // find stream info
   if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
-    // std::cout << "failed to get stream info" << std::endl;
+    if (error) {
+      *error = "failed to get stream info";
+    }
     return false;
   }
 
@@ -75,7 +79,9 @@ bool AppData::set(vector<unsigned char> &memory) {
   }
 
   if (stream_idx == -1) {
-    // std::cout << "failed to find video stream" << std::endl;
+    if (error) {
+      *error = "failed to find video stream";
+    }
     return false;
   }
 
@@ -85,13 +91,17 @@ bool AppData::set(vector<unsigned char> &memory) {
   // find the decoder
   decoder = avcodec_find_decoder(codec_ctx->codec_id);
   if (decoder == NULL) {
-    // std::cout << "failed to find decoder" << std::endl;
+    if (error) {
+      *error = "failed to find decoder";
+    }
     return false;
   }
 
   // open the decoder
   if (avcodec_open2(codec_ctx, decoder, NULL) < 0) {
-    // std::cout << "failed to open codec" << std::endl;
+    if (error) {
+      *error = "failed to open codec";
+    }
     return false;
   }
 
@@ -154,8 +164,6 @@ bool AppData::advanceToFrameAt(double timestamp) {
       packetValid = true;
       if (ret == AVERROR_EOF) {
         break;
-        // av_free_packet(packet);
-        // return false;
       } else if (ret < 0) {
         // std::cout << "Unknown error " << ret << "\n";
         av_free_packet(packet);
@@ -252,7 +260,7 @@ NAN_METHOD(Video::New) {
   info.GetReturnValue().Set(videoObj);
 }
 
-bool Video::Load(unsigned char *bufferValue, size_t bufferLength) {
+bool Video::Load(unsigned char *bufferValue, size_t bufferLength, string *error) {
   // reset state
   loaded = false;
   dataArray.Reset();
@@ -261,7 +269,8 @@ bool Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   // initialize custom data structure
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
-  if (data.set(bufferData)) { // takes ownership of bufferData
+
+  if (data.set(bufferData, error)) { // takes ownership of bufferData
     // scan to the first frame
     advanceToFrameAt(0);
 
@@ -309,14 +318,29 @@ uint32_t Video::GetHeight() {
 }
 
 NAN_METHOD(Video::Load) {
-  if (info[0]->IsTypedArray()) {
+  if (info[0]->IsArrayBuffer()) {
+    Video *video = ObjectWrap::Unwrap<Video>(info.This());
+
+    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+
+    string error;
+    if (video->Load((uint8_t *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength(), &error)) {
+      // nothing
+    } else {
+      Nan::ThrowError(error.c_str());
+    }
+  } else if (info[0]->IsTypedArray()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
     Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
-    
-    bool ok = video->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
-    info.GetReturnValue().Set(JS_BOOL(ok));
+
+    string error;
+    if (video->Load((unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength())) {
+      // nothing
+    } else {
+      Nan::ThrowError(error.c_str());
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }
