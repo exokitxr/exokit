@@ -423,7 +423,7 @@ NAN_SETTER(Video::CurrentTimeSetter) {
 
       video->startTime = av_gettime() - (int64_t)(newValueS * 1e6);
       av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->data.getTimeBase()), AVSEEK_FLAG_BACKWARD);
-      video->data.advanceToFrameAt(0);
+      video->advanceToFrameAt(0);
     }
   } else {
     Nan::ThrowError("value: invalid arguments");
