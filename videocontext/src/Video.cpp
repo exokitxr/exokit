@@ -394,7 +394,7 @@ NAN_GETTER(Video::DataGetter) {
   }
 
   Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
-  if (video->dataDirty) {
+  if (video->loaded && video->dataDirty) {
     Local<ArrayBuffer> arrayBuffer = uint8ClampedArray->Buffer();
     memcpy((unsigned char *)arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset(), video->data.gl_frame->data[0], dataSize);
     video->dataDirty = false;
@@ -418,7 +418,7 @@ NAN_SETTER(Video::CurrentTimeSetter) {
   if (value->IsNumber()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-    if (video->data.fmt_ctx && video->data.stream_idx != -1) {
+    if (video->loaded) {
       double newValueS = value->NumberValue();
 
       video->startTime = av_gettime() - (int64_t)(newValueS * 1e6);
@@ -435,7 +435,7 @@ NAN_GETTER(Video::DurationGetter) {
   
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-  double duration = video->data.fmt_ctx ? ((double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE) : 1;
+  double duration = video->loaded ? ((double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE) : 1;
   info.GetReturnValue().Set(JS_NUM(duration));
 }
 
