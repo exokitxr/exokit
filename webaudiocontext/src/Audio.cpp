@@ -23,6 +23,7 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "pause", Pause);
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
+  Nan::SetAccessor(proto, JS_STR("loop"), LoopGetter, LoopSetter);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
@@ -115,8 +116,30 @@ NAN_GETTER(Audio::DurationGetter) {
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
   double duration = audio->audioNode->duration();
-
   info.GetReturnValue().Set(JS_NUM(duration));
+}
+
+NAN_GETTER(Audio::LoopGetter) {
+  Nan::HandleScope scope;
+
+  Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+
+  bool loop = audio->audioNode->loop();
+  info.GetReturnValue().Set(JS_BOOL(loop));
+}
+
+NAN_SETTER(Audio::LoopSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsBoolean()) {
+    bool loop = value->BooleanValue();
+
+    Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+
+    audio->audioNode->setLoop(loop);
+  } else {
+    Nan::ThrowError("loop: invalid arguments");
+  }
 }
 
 }
