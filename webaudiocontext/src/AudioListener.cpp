@@ -55,7 +55,7 @@ NAN_METHOD(AudioListener::New) {
     Local<Object> positionZAudioParamObj = fakeAudioParamConstructor->NewInstance(0, nullptr);
     FakeAudioParam *positionZAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(positionZAudioParamObj);
     positionZAudioParam->getter = [=]() { return labAudioListener->position().z; };
-    positionYAudioParam->setter = [=](float z) { lab::FloatPoint3D position = labAudioListener->position(); position.z = z; labAudioListener->setPosition(position); };
+    positionZAudioParam->setter = [=](float z) { lab::FloatPoint3D position = labAudioListener->position(); position.z = z; labAudioListener->setPosition(position); };
     audioListenerObj->Set(JS_STR("positionZ"), positionZAudioParamObj);
 
     Local<Object> forwardXAudioParamObj = fakeAudioParamConstructor->NewInstance(0, nullptr);
