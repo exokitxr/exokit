@@ -208,7 +208,11 @@ bool AppData::advanceToFrameAt(double timestamp) {
 }
 
 double AppData::getTimeBase() {
-  return (double)video_stream->time_base.num / (double)video_stream->time_base.den;
+  if (video_stream) {
+    return (double)video_stream->time_base.num / (double)video_stream->time_base.den;
+  } else {
+    return 1;
+  }
 }
 
 Video::Video() : loaded(false), playing(false), startTime(0), dataDirty(true) {
@@ -428,7 +432,7 @@ NAN_GETTER(Video::DurationGetter) {
   
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-  double duration = (double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE;
+  double duration = video->data.fmt_ctx ? ((double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE) : 1;
   info.GetReturnValue().Set(JS_NUM(duration));
 }
 
@@ -450,7 +454,9 @@ double Video::getRequiredCurrentTimeS() {
 }
 
 double Video::getFrameCurrentTimeS() {
-  return (data.getTimeBase() * (double)data.av_frame->pts);
+  double pts = data.av_frame ? (double)data.av_frame->pts : 0;
+  double timeBase = data.getTimeBase();
+  return pts * timeBase;
 }
 
 bool Video::advanceToFrameAt(double timestamp) {	
