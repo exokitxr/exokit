@@ -59,7 +59,6 @@ NAN_GETTER(FakeAudioParam::ValueGetter) {
   FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
   float value = fakeAudioParam->getter();
-
   info.GetReturnValue().Set(JS_NUM(value));
 }
 
@@ -70,7 +69,6 @@ NAN_SETTER(FakeAudioParam::ValueSetter) {
     FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
     float newValue = value->NumberValue();
-
     fakeAudioParam->setter(newValue);
   } else {
     Nan::ThrowError("value: invalid arguments");
