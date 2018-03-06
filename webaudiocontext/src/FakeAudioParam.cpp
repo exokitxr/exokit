@@ -19,6 +19,13 @@ Handle<Object> FakeAudioParam::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("maxValue"), MaxValueGetter);
   Nan::SetAccessor(proto, JS_STR("minValue"), MinValueGetter);
   Nan::SetAccessor(proto, JS_STR("value"), ValueGetter, ValueSetter);
+  Nan::SetMethod(proto, "setValueAtTime", SetValueAtTime);
+  Nan::SetMethod(proto, "linearRampToValueAtTime", LinearRampToValueAtTime);
+  Nan::SetMethod(proto, "exponentialRampToValueAtTime", ExponentialRampToValueAtTime);
+  Nan::SetMethod(proto, "setTargetAtTime", SetTargetAtTime);
+  Nan::SetMethod(proto, "setValueCurveAtTime", SetValueCurveAtTime);
+  Nan::SetMethod(proto, "cancelScheduledValues", CancelScheduledValues);
+  Nan::SetMethod(proto, "cancelAndHoldAtTime", CancelAndHoldAtTime);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
@@ -72,6 +79,78 @@ NAN_SETTER(FakeAudioParam::ValueSetter) {
     fakeAudioParam->setter(newValue);
   } else {
     Nan::ThrowError("value: invalid arguments");
+  }
+}
+
+NAN_METHOD(FakeAudioParam::SetValueAtTime) {
+  if (info[0]->IsNumber()) {
+    FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
+
+    float newValue = info[0]->NumberValue();
+    fakeAudioParam->setter(newValue);
+  } else {
+    Nan::ThrowError("setValueAtTime: invalid arguments");
+  }
+}
+
+NAN_METHOD(FakeAudioParam::LinearRampToValueAtTime) {
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
+
+    float newValue = info[0]->NumberValue();
+    fakeAudioParam->setter(newValue);
+  } else {
+    Nan::ThrowError("linearRampToValueAtTime: invalid arguments");
+  }
+}
+
+NAN_METHOD(FakeAudioParam::ExponentialRampToValueAtTime) {
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
+
+    float newValue = info[0]->NumberValue();
+    fakeAudioParam->setter(newValue);
+  } else {
+    Nan::ThrowError("exponentialRampToValueAtTime: invalid arguments");
+  }
+}
+
+NAN_METHOD(FakeAudioParam::SetTargetAtTime) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
+    FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
+
+    float newValue = info[0]->NumberValue();
+    fakeAudioParam->setter(newValue);
+  } else {
+    Nan::ThrowError("setTargetAtTime: invalid arguments");
+  }
+}
+
+NAN_METHOD(FakeAudioParam::SetValueCurveAtTime) {
+  if (info[0]->IsFloat32Array() && info[1]->IsNumber() && info[2]->IsNumber()) {
+    FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
+
+    Local<Float32Array> curveValue = Local<Float32Array>::Cast(info[0]);
+    float newValue = curveValue->Length() == 0 ? 0 : curveValue->Get(curveValue->Length() - 1)->NumberValue();
+    fakeAudioParam->setter(newValue);
+  } else {
+    Nan::ThrowError("setValueCurveAtTime: invalid arguments");
+  }
+}
+
+NAN_METHOD(FakeAudioParam::CancelScheduledValues) {
+  if (info[0]->IsNumber()) {
+    // nothing
+  } else {
+    Nan::ThrowError("cancelScheduledValues: invalid arguments");
+  }
+}
+
+NAN_METHOD(FakeAudioParam::CancelAndHoldAtTime) {
+  if (info[0]->IsNumber()) {
+    // nothing
+  } else {
+    Nan::ThrowError("cancelAndHoldAtTime: invalid arguments");
   }
 }
 
