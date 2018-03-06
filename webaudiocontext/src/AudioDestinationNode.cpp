@@ -45,7 +45,7 @@ NAN_METHOD(AudioDestinationNode::New) {
 
     info.GetReturnValue().Set(audioDestinationNodeObj);
   } else {
-    Nan::ThrowError("invalid arguments");
+    Nan::ThrowError("AudioDestinationNode: invalid arguments");
   }
 }
 
