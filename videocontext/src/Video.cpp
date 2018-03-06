@@ -5,7 +5,7 @@ using namespace v8;
 namespace ffmpeg {
 
 const int kBufferSize = 4 * 1024;
-const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
+const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGB32;
 
 AppData::AppData() :
   dataPos(0),
