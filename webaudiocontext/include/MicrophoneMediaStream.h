@@ -26,6 +26,8 @@ protected:
 
 protected:
   std::shared_ptr<lab::AudioHardwareSourceNode> audioNode;
+
+  friend class AudioSourceNode;
 };
 
 }

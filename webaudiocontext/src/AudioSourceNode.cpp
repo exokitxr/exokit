@@ -50,8 +50,20 @@ NAN_METHOD(AudioSourceNode::New) {
 
         info.GetReturnValue().Set(audioSourceNodeObj);
       } else {
-        Nan::ThrowError("AudioContext::CreateMediaElementSource: invalid audio element state");
+        Nan::ThrowError("AudioSourceNode: invalid audio element state");
       }
+    } else if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
+      Local<Object> microphoneMediaStreamObj = Local<Object>::Cast(info[0]);
+      MicrophoneMediaStream *microphoneMediaStream = ObjectWrap::Unwrap<MicrophoneMediaStream>(Local<Object>::Cast(microphoneMediaStreamObj));
+
+      AudioSourceNode *audioSourceNode = new AudioSourceNode();
+      Local<Object> audioSourceNodeObj = info.This();
+      audioSourceNode->Wrap(audioSourceNodeObj);
+
+      audioSourceNode->context.Reset(audioContextObj);
+      audioSourceNode->audioNode = microphoneMediaStream->audioNode;
+
+      info.GetReturnValue().Set(audioSourceNodeObj);
     } else {
       Nan::ThrowError("AudioSourceNode: invalid media element");
     }

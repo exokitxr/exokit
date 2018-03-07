@@ -70,8 +70,14 @@ Local<Object> AudioContext::CreateMediaElementSource(Local<Function> audioDestin
   return audioSourceNodeObj;
 }
 
-void AudioContext::CreateMediaStreamSource() {
-  Nan::ThrowError("AudioContext::CreateMediaStreamSource: not implemented"); // TODO
+Local<Object> AudioContext::CreateMediaStreamSource(Local<Function> audioSourceNodeConstructor, Local<Object> mediaStream, Local<Object> audioContextObj) {
+  Local<Value> argv[] = {
+    mediaStream,
+    audioContextObj,
+  };
+  Local<Object> audioSourceNodeObj = audioSourceNodeConstructor->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+
+  return audioSourceNodeObj;
 }
 
 void AudioContext::CreateMediaStreamDestination() {
@@ -182,8 +188,19 @@ NAN_METHOD(AudioContext::CreateMediaElementSource) {
 NAN_METHOD(AudioContext::CreateMediaStreamSource) {
   Nan::HandleScope scope;
 
-  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
-  audioContext->CreateMediaStreamSource();
+  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
+    Local<Object> microphoneMediaStream = Local<Object>::Cast(info[0]);
+
+    Local<Object> audioContextObj = info.This();
+    AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
+    Local<Function> audioSourceNodeConstructor = Local<Function>::Cast(audioContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioSourceNode")));
+    Local<Object> audioNodeObj = audioContext->CreateMediaStreamSource(audioSourceNodeConstructor, microphoneMediaStream, audioContextObj);
+
+    info.GetReturnValue().Set(audioNodeObj);
+  } else {
+    Nan::ThrowError("AudioContext::CreateMediaElementSource: invalid arguments");
+  }
 }
 
 NAN_METHOD(AudioContext::CreateMediaStreamDestination) {

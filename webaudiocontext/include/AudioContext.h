@@ -30,7 +30,7 @@ public:
   static Handle<Object> Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> stereoPannerNodeCons);
   void Close();
   Local<Object> CreateMediaElementSource(Local<Function> audioDestinationNodeConstructor, Local<Object> mediaElement, Local<Object> audioContextObj);
-  void CreateMediaStreamSource();
+  Local<Object> CreateMediaStreamSource(Local<Function> audioSourceNodeConstructor, Local<Object> mediaStream, Local<Object> audioContextObj);
   void CreateMediaStreamDestination();
   void CreateMediaStreamTrackSource();
   Local<Object> CreateGain(Local<Function> gainNodeConstructor, Local<Object> audioContextObj);
