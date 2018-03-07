@@ -717,6 +717,8 @@ Local<Object> makeAudio() {
   exports->Set(JS_STR("PannerNode"), pannerNodeCons);
   Local<Value> stereoPannerNodeCons = webaudio::StereoPannerNode::Initialize(isolate, audioParamCons);
   exports->Set(JS_STR("StereoPannerNode"), stereoPannerNodeCons);
+  Local<Value> microphoneMediaStreamCons = webaudio::MicrophoneMediaStream::Initialize(isolate);
+  exports->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
   exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, pannerNodeCons, stereoPannerNodeCons));
 
   return scope.Escape(exports);

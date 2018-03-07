@@ -15,6 +15,7 @@
 #include <PannerNode.h>
 #include <StereoPannerNode.h>
 #include <AudioListener.h>
+#include <MicrophoneMediaStream.h>
 
 using namespace std;
 using namespace v8;
