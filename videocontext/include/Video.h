@@ -47,6 +47,7 @@ public:
 	AVFrame *av_frame;
 	AVFrame *gl_frame;
 	struct SwsContext *conv_ctx;
+  double lastTimestamp;
 };
 
 class Video : public ObjectWrap {

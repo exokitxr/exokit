@@ -9,7 +9,7 @@ const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGB24;
 
 AppData::AppData() :
   dataPos(0),
-  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
+  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr), lastTimestamp(0) {}
 AppData::~AppData() {
   resetState();
 }
@@ -113,6 +113,13 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   avpicture_fill((AVPicture *)gl_frame, internal_buffer, kPixelFormat, codec_ctx->width, codec_ctx->height);
   packet = (AVPacket *)av_malloc(sizeof(AVPacket));
 
+  // allocate the converter
+  conv_ctx = sws_getContext(
+    codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
+    codec_ctx->width, codec_ctx->height, kPixelFormat,
+    SWS_BICUBIC, NULL, NULL, NULL
+  );
+
   return true;
 }
 
@@ -152,9 +159,12 @@ bool AppData::advanceToFrameAt(double timestamp) {
   double timeBase = getTimeBase();
 
   for (;;) {
-    bool packetOk = false;
+    if (lastTimestamp >= timestamp) {
+      return true;
+    }
+
     bool packetValid = false;
-    while (!packetValid || !(packetOk = packet->stream_index == stream_idx && ((double)packet->pts * timeBase) >= timestamp)) {
+    for (;;) {
       if (packetValid) {
         av_free_packet(packet);
         packetValid = false;
@@ -163,47 +173,32 @@ bool AppData::advanceToFrameAt(double timestamp) {
       int ret = av_read_frame(fmt_ctx, packet);
       packetValid = true;
       if (ret == AVERROR_EOF) {
-        break;
+        av_free_packet(packet);
+        return true;
       } else if (ret < 0) {
         // std::cout << "Unknown error " << ret << "\n";
         av_free_packet(packet);
         return false;
       } else {
-        continue;
+        if (packet->stream_index == stream_idx) {
+          break;
+        }
       }
     }
     // we have a valid packet at this point
-    if (packetOk) {
-      int frame_finished = 0;
-
-      if (avcodec_decode_video2(codec_ctx, av_frame, &frame_finished, packet) < 0) {
-        av_free_packet(packet);
-        return false;
-      }
-
-      if (frame_finished) {
-        if (!conv_ctx) {
-          conv_ctx = sws_getContext(
-            codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
-            codec_ctx->width, codec_ctx->height, kPixelFormat,
-            SWS_BICUBIC, NULL, NULL, NULL);
-        }
-
-        sws_scale(conv_ctx, av_frame->data, av_frame->linesize, 0, codec_ctx->height, gl_frame->data, gl_frame->linesize);
-
-        av_free_packet(packet);
-
-        return true;
-      } else {
-        av_free_packet(packet);
-
-        continue;
-      }
-    } else {
-      // std::cout << "Do not have packet up to " << timestamp << "\n";
+    int frame_finished = 0;
+    if (avcodec_decode_video2(codec_ctx, av_frame, &frame_finished, packet) < 0) {
       av_free_packet(packet);
       return false;
     }
+
+    sws_scale(conv_ctx, av_frame->data, av_frame->linesize, 0, codec_ctx->height, gl_frame->data, gl_frame->linesize);
+
+    if (frame_finished) {
+      lastTimestamp = (double)packet->pts * timeBase;
+    }
+
+    av_free_packet(packet);
   }
 }
 
@@ -229,12 +224,12 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   avformat_network_init();
 
   Nan::EscapableHandleScope scope;
-  
+
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("Video"));
-  
+
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "load", Load);
@@ -246,7 +241,7 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
-  
+
   Local<Function> ctorFn = ctor->GetFunction();
 
   ctorFn->Set(JS_STR("updateAll"), Nan::New<Function>(UpdateAll));
@@ -405,7 +400,7 @@ NAN_GETTER(Video::DataGetter) {
 
 NAN_GETTER(Video::CurrentTimeGetter) {
   Nan::HandleScope scope;
-  
+
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
   double currentTime = video->getFrameCurrentTimeS();
@@ -419,20 +414,28 @@ NAN_SETTER(Video::CurrentTimeSetter) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
     if (video->loaded) {
-      double newValueS = value->NumberValue();
+      double timestamp = value->NumberValue();
 
-      video->startTime = av_gettime() - (int64_t)(newValueS * 1e6);
-      av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->data.getTimeBase()), AVSEEK_FLAG_BACKWARD);
-      video->advanceToFrameAt(0);
+      video->startTime = av_gettime() - (int64_t)(timestamp * 1e6);
+      video->data.dataPos = 0;
+      if (av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t)(timestamp / video->data.video_stream->time_base.num * video->data.video_stream->time_base.den), AVSEEK_FLAG_BACKWARD) >= 0) {
+        avcodec_flush_buffers(video->data.codec_ctx);
+        av_free(video->data.av_frame);
+        video->data.av_frame = av_frame_alloc();
+        video->data.lastTimestamp = 0;
+        video->advanceToFrameAt(video->getRequiredCurrentTimeS());
+      } else {
+        Nan::ThrowError("currentTime: failed to seek");
+      }
     }
   } else {
-    Nan::ThrowError("value: invalid arguments");
+    Nan::ThrowError("currentTime: invalid arguments");
   }
 }
 
 NAN_GETTER(Video::DurationGetter) {
   Nan::HandleScope scope;
-  
+
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
   double duration = video->loaded ? ((double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE) : 1;
@@ -449,7 +452,7 @@ double Video::getRequiredCurrentTimeS() {
   if (playing) {
     int64_t now = av_gettime();
     int64_t timeDiff = now - startTime;
-    double timeDiffS = (double)timeDiff / 1e6;
+    double timeDiffS = std::max<double>((double)timeDiff / 1e6, 0);
     return timeDiffS;
   } else {
     return getFrameCurrentTimeS();
@@ -462,7 +465,7 @@ double Video::getFrameCurrentTimeS() {
   return pts * timeBase;
 }
 
-bool Video::advanceToFrameAt(double timestamp) {	
+bool Video::advanceToFrameAt(double timestamp) {
   if (data.advanceToFrameAt(timestamp)) {
     dataDirty = true;
 
