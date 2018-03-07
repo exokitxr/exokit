@@ -78,14 +78,6 @@
             }
           ],
           'defines': ['NOMINMAX'],
-          'msvs_settings' : {
-            'VCCLCompilerTool' : {
-              'AdditionalOptions' : ['/O2','/Oy','/GL','/GF','/Gm-','/EHsc','/MT','/GS','/Gy','/GR-','/Gd']
-            },
-            'VCLinkerTool' : {
-              'AdditionalOptions' : ['/OPT:REF','/OPT:ICF','/LTCG']
-            },
-          },
         }],
         ['OS=="linux"', {
           'sources': [
