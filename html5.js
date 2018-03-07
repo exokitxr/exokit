@@ -7,7 +7,7 @@ const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 exokit.setNativeBindingsModule(nativeBindingsModulePath);
 const {THREE} = exokit;
 const nativeBindings = require(nativeBindingsModulePath);
-const {nativeVr, nativeWindow} = nativeBindings;
+const {nativeVideo, nativeVr, nativeWindow} = nativeBindings;
 
 /* const {VERSION} = nativeGl;
 
@@ -405,6 +405,9 @@ if (require.main === module) {
 
           // poll for window events
           nativeWindow.pollEvents(windowEvents);
+
+          // update media frames
+          nativeVideo.Video.updateAll();
 
           // trigger requestAnimationFrame
           window.tickAnimationFrame();
