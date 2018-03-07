@@ -1,6 +1,6 @@
 const path = require('path');
 const bindings = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
-const {nativeVr} = bindings;
+const {nativeAudio, nativeVr} = bindings;
 const WindowWorker = require('window-worker');
 const webGlToOpenGl = require('webgl-to-opengl');
 
@@ -23,6 +23,9 @@ bindings.nativeGl = (nativeGl => function WebGLContext() {
   })(result.shaderSource);
   return result;
 })(bindings.nativeGl);
+
+const {PannerNode} = nativeAudio;
+PannerNode.setPath(path.join(require.resolve(__dirname, 'node_modules', 'node-native-audio-deps', 'assets', 'hrtf')));
 
 nativeVr.EVRInitError = {
   None: 0,
