@@ -89,9 +89,9 @@ inline void *getImageData(Local<Value> arg, int *num = nullptr) {
   return pixels;
 }
 
-inline void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t numChannels) {
-  size_t stride = width * numChannels;
-  size_t size = width * height * numChannels;
+inline void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize) {
+  size_t stride = width * pixelSize;
+  size_t size = width * height * pixelSize;
   for (size_t i = 0; i < height; i++) {
     memcpy(dstData + (i * stride), srcData + size - stride - (i * stride), stride);
   }
@@ -107,9 +107,9 @@ inline void flipImageData(char *dstData, char *srcData, size_t width, size_t hei
     info.GetReturnValue().Set(JS_INT(-1));
   }else{
     //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-    info.GetReturnValue().Set(JS_INT(0));  
-  } 
-  
+    info.GetReturnValue().Set(JS_INT(0));
+  }
+
 } */
 
 NAN_METHOD(Uniform1f) {
@@ -563,7 +563,7 @@ NAN_METHOD(GetAttribLocation) {
   String::Utf8Value name(info[1]);
 
   GLint result = glGetAttribLocation(program, *name);
-    
+
   info.GetReturnValue().Set(Nan::New<Number>(result));
 }
 
@@ -712,7 +712,7 @@ NAN_METHOD(LinkProgram) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
-  glLinkProgram(arg); 
+  glLinkProgram(arg);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -854,6 +854,56 @@ inline bool hasWidthHeight(Local<Value> &value) {
   }
 }
 
+size_t getFormatSize(int format) {
+  switch (format) {
+    case GL_RED:
+    case GL_RED_INTEGER:
+    case GL_DEPTH_COMPONENT:
+    case GL_LUMINANCE:
+    case GL_ALPHA:
+      return 1;
+    case GL_RG:
+    case GL_RG_INTEGER:
+    case GL_DEPTH_STENCIL:
+    case GL_LUMINANCE_ALPHA:
+      return 2;
+    case GL_RGB:
+    case GL_RGB_INTEGER:
+      return 3;
+    case GL_RGBA:
+    case GL_RGBA_INTEGER:
+      return 4;
+    default:
+      return 4;
+  }
+}
+
+size_t getTypeSize(int type) {
+  switch (type) {
+    case GL_UNSIGNED_BYTE:
+    case GL_BYTE:
+      return 1;
+    case GL_UNSIGNED_SHORT:
+    case GL_SHORT:
+    case GL_HALF_FLOAT:
+    case GL_UNSIGNED_SHORT_5_6_5:
+    case GL_UNSIGNED_SHORT_4_4_4_4:
+    case GL_UNSIGNED_SHORT_5_5_5_1:
+      return 2;
+    case GL_UNSIGNED_INT:
+    case GL_INT:
+    case GL_FLOAT:
+    case GL_UNSIGNED_INT_2_10_10_10_REV:
+    case GL_UNSIGNED_INT_10F_11F_11F_REV:
+    case GL_UNSIGNED_INT_5_9_9_9_REV:
+    case GL_UNSIGNED_INT_24_8:
+    case GL_FLOAT_32_UNSIGNED_INT_24_8_REV:
+      return 4;
+    default:
+      return 4;
+  }
+}
+
 NAN_METHOD(TexImage2D) {
   Isolate *isolate = Isolate::GetCurrent();
 
@@ -951,9 +1001,10 @@ NAN_METHOD(TexImage2D) {
 
   if (pixelsV != nullptr) {
     if (canvas::ImageData::getFlip()) {
-      unique_ptr<char[]> pixelsV2(new char[widthV * heightV * 4]);
+      size_t pixelSize = getFormatSize(formatV) * getTypeSize(typeV);
+      unique_ptr<char[]> pixelsV2(new char[widthV * heightV * pixelSize]);
 
-      flipImageData(pixelsV2.get(), pixelsV, widthV, heightV, 4);
+      flipImageData(pixelsV2.get(), pixelsV, widthV, heightV, pixelSize);
 
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2.get());
     } else {
@@ -1840,7 +1891,7 @@ NAN_METHOD(RenderbufferStorage) {
   GLsizei height = info[3]->Uint32Value();
 
   glRenderbufferStorage(target, internalformat, width, height);
-  
+
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
@@ -1886,8 +1937,9 @@ NAN_METHOD(TexSubImage2D) {
 
   if (pixels != nullptr) {
     if (canvas::ImageData::getFlip()) {
-      unique_ptr<char[]> pixels2(new char[width * height * 4]);
-      flipImageData(pixels2.get(), pixels, width, height, 4);
+      size_t pixelSize = getFormatSize(format) * getTypeSize(type);
+      unique_ptr<char[]> pixels2(new char[width * height * pixelSize]);
+      flipImageData(pixels2.get(), pixels, width, height, pixelSize);
 
       glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels2.get());
     } else {
@@ -2041,13 +2093,13 @@ NAN_METHOD(GetParameter) {
   {
     // return a string
     char * params = (char *)glGetString(name);
-    
+
     if (params != NULL) {
       info.GetReturnValue().Set(JS_STR(params));
     } else {
       info.GetReturnValue().Set(Nan::Undefined());
     }
-    
+
     break;
   }
   case GL_VERSION:
