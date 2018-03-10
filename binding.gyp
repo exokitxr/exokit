@@ -130,7 +130,6 @@
           'libraries': [
             '-lGLEW',
             '-lglfw',
-            '-lcairo',
             '-lskia',
             '-lLabSound',
             '-lavformat',
