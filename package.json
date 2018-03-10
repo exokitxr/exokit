@@ -4,6 +4,7 @@
   "description": "Javascript web browser for the post-screen world",
   "main": "html5.js",
   "scripts": {
+    "preinstall": "node scripts/preinstall.js",
     "test": "echo \"Error: no test specified\" && exit 0"
   },
   "repository": {
