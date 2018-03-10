@@ -5,6 +5,7 @@
   "main": "html5.js",
   "scripts": {
     "preinstall": "node scripts/preinstall.js",
+    "install": "node-gyp rebuild",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 0"
   },
