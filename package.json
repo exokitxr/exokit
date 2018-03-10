@@ -4,8 +4,7 @@
   "description": "Javascript web browser for the post-screen world",
   "main": "html5.js",
   "scripts": {
-    "preinstall": "node scripts/preinstall.js",
-    "install": "node-gyp rebuild",
+    "install": "node scripts/preinstall.js && node-gyp rebuild",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 0"
   },
