@@ -35,6 +35,7 @@
     "native-graphics-deps": "0.0.2",
     "native-openvr-deps": "0.0.4",
     "native-video-deps": "0.0.10",
+    "rimraf": "^2.6.2",
     "webgl-to-opengl": "0.0.2",
     "window-worker": "0.0.46"
   }
