@@ -20,6 +20,9 @@
     "url": "https://github.com/modulesio/exokit-windows/issues"
   },
   "homepage": "https://github.com/modulesio/exokit-windows#readme",
+  "engines": {
+    "node": "9"
+  },
   "dependencies": {
     "exokit-core": "0.0.84",
     "isolator": "0.0.9",
