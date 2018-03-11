@@ -2,6 +2,18 @@
 
 namespace glfw {
 
+Local<Array> pointerToArray(void *ptr) {
+  uintptr_t n = (uintptr_t)ptr;
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, JS_NUM((uint32_t)(n >> 32)));
+  result->Set(1, JS_NUM((uint32_t)(n & 0xFFFFFFFF)));
+  return result;
+}
+void *arrayToPointer(Local<Array> array) {
+  uintptr_t n = ((uintptr_t)array->Get(0)->Uint32Value() << 32) | (uintptr_t)array->Get(1)->Uint32Value();
+  return (void *)n;
+}
+
 NAN_METHOD(GetVersion) {
   Nan::HandleScope scope;
   int major, minor, rev;
@@ -87,7 +99,8 @@ NAN_METHOD(GetMonitors) {
 }
 
 /* @Module: Window handling */
-int lastX = 0, lastY = 0;
+GLFWwindow *currentWindow = nullptr;
+int lastX = 0, lastY = 0; // XXX track this per-window
 Local<Object> *localEvents = nullptr;
 
 void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
@@ -109,13 +122,13 @@ void APIENTRY windowPosCB(GLFWwindow *window, int xpos, int ypos) {
   evt->Set(JS_STR("type"),JS_STR("window_pos"));
   evt->Set(JS_STR("xpos"),JS_INT(xpos));
   evt->Set(JS_STR("ypos"),JS_INT(ypos));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("window_pos"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowSizeCB(GLFWwindow *window, int w, int h) {
@@ -126,13 +139,13 @@ void APIENTRY windowSizeCB(GLFWwindow *window, int w, int h) {
   evt->Set(JS_STR("type"),JS_STR("resize"));
   evt->Set(JS_STR("width"),JS_INT(w));
   evt->Set(JS_STR("height"),JS_INT(h));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("windowResize"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowFramebufferSizeCB(GLFWwindow *window, int w, int h) {
@@ -143,13 +156,13 @@ void APIENTRY windowFramebufferSizeCB(GLFWwindow *window, int w, int h) {
   evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
   evt->Set(JS_STR("width"),JS_INT(w));
   evt->Set(JS_STR("height"),JS_INT(h));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("framebufferResize"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowDropCB(GLFWwindow *window, int count, const char **paths) {
@@ -159,23 +172,26 @@ void APIENTRY windowDropCB(GLFWwindow *window, int count, const char **paths) {
   for (int i = 0; i < count; i++) {
     evt->Set(i, JS_STR(paths[i]));
   }
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("drop"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowCloseCB(GLFWwindow *window) {
   Nan::HandleScope scope;
 
-  Local<Value> argv[1] = {
-    JS_STR("quit"), // event name
-  };
+  Local<Object> evt = Nan::New<Object>();
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  CallEmitter(1, argv);
+  Local<Value> argv[] = {
+    JS_STR("quit"), // event name
+    evt,
+  };
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowRefreshCB(GLFWwindow *window) {
@@ -183,14 +199,13 @@ void APIENTRY windowRefreshCB(GLFWwindow *window) {
 
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("refresh"));
-  evt->Set(JS_STR("window"),JS_NUM((uint64_t) window));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("refresh"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowIconifyCB(GLFWwindow *window, int iconified) {
@@ -199,13 +214,13 @@ void APIENTRY windowIconifyCB(GLFWwindow *window, int iconified) {
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("iconified"));
   evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("iconified"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowFocusCB(GLFWwindow *window, int focused) {
@@ -214,13 +229,13 @@ void APIENTRY windowFocusCB(GLFWwindow *window, int focused) {
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("focused"));
   evt->Set(JS_STR("focused"),JS_BOOL(focused));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("focused"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 static int jsKeyCode[]={
@@ -398,9 +413,9 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
   evt->Set(JS_STR("keyCode"),JS_INT(key));
   evt->Set(JS_STR("charCode"),JS_INT(charCode));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR(&actionNames[action << 3]), // event name
-    evt
+    evt,
   };
 
   CallEmitter(2, argv);
@@ -427,13 +442,13 @@ void APIENTRY cursorPosCB(GLFWwindow* window, double x, double y) {
   evt->Set(JS_STR("shiftKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS));
   evt->Set(JS_STR("altKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS));
   evt->Set(JS_STR("metaKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("mousemove"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY cursorEnterCB(GLFWwindow* window, int entered) {
@@ -443,12 +458,11 @@ void APIENTRY cursorEnterCB(GLFWwindow* window, int entered) {
   evt->Set(JS_STR("type"),JS_STR("mouseenter"));
   evt->Set(JS_STR("entered"),JS_INT(entered));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("mouseenter"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY mouseButtonCB(GLFWwindow *window, int button, int action, int mods) {
@@ -467,12 +481,11 @@ void APIENTRY mouseButtonCB(GLFWwindow *window, int button, int action, int mods
   evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
   evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR(action ? "mousedown" : "mouseup"), // event name
     evt
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 
   if (!action) {
     Local<Object> evt = Nan::New<Object>();
@@ -488,12 +501,11 @@ void APIENTRY mouseButtonCB(GLFWwindow *window, int button, int action, int mods
     evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
     evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
 
-    Local<Value> argv[2] = {
+    Local<Value> argv[] = {
       JS_STR("click"), // event name
-      evt
+      evt,
     };
-
-    CallEmitter(2, argv);
+    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
   }
 }
 
@@ -506,22 +518,20 @@ void APIENTRY scrollCB(GLFWwindow *window, double xoffset, double yoffset) {
   evt->Set(JS_STR("wheelDeltaY"),JS_NUM(yoffset*120));
   evt->Set(JS_STR("wheelDelta"),JS_NUM(yoffset*120));
 
-  Local<Value> argv[2] = {
+  Local<Value> argv[] = {
     JS_STR("mousewheel"), // event name
-    evt
+    evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 int APIENTRY windowCloseCB() {
   Nan::HandleScope scope;
 
-  Local<Value> argv[1] = {
+  Local<Value> argv[] = {
     JS_STR("quit"), // event name
   };
-
-  CallEmitter(1, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 
   return 1;
 }
@@ -669,18 +679,6 @@ NAN_METHOD(GetJoystickName) {
   int joy = info[0]->Uint32Value();
   const char* response = glfwGetJoystickName(joy);
   info.GetReturnValue().Set(JS_STR(response));
-}
-
-Local<Array> pointerToArray(void *ptr) {
-  uintptr_t n = (uintptr_t)ptr;
-  Local<Array> result = Nan::New<Array>(2);
-  result->Set(0, JS_NUM((uint32_t)(n >> 32)));
-  result->Set(1, JS_NUM((uint32_t)(n & 0xFFFFFFFF)));
-  return result;
-}
-void *arrayToPointer(Local<Array> array) {
-  uintptr_t n = ((uintptr_t)array->Get(0)->Uint32Value() << 32) | (uintptr_t)array->Get(1)->Uint32Value();
-  return (void *)n;
 }
 
 /* NAN_METHOD(glfw_CreateWindow) {
@@ -952,12 +950,6 @@ NAN_METHOD(SetInputMode) {
   return;
 }
 
-/* NAN_METHOD(PollEvents) {
-  Nan::HandleScope scope;
-  glfwPollEvents();
-  return;
-}  */
-
 NAN_METHOD(WaitEvents) {
   Nan::HandleScope scope;
   glfwWaitEvents();
@@ -1067,6 +1059,7 @@ NAN_METHOD(Create) {
 
   if (windowHandle) {
     glfwMakeContextCurrent(windowHandle);
+    currentWindow = windowHandle;
 
     GLenum err = glewInit();
     if (!err) {

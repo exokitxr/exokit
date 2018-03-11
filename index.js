@@ -63,7 +63,21 @@ nativeGl.viewport = function() {
 
 // CALLBACKS
 
-const nop = () => {};;
+const canvasSymbol = Symbol();
+const windowHandleSymbol = Symbol();
+const contexts = [];
+nativeBindings.nativeGl = (Old => class WebGLContext extends Old { // XXX switch to context before all gl calls
+  constructor(canvas) {
+    super(canvas);
+
+    this[canvasSymbol] = canvas;
+    this[windowHandleSymbol] = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight);
+
+    contexts.push(this);
+  }
+})(nativeBindings.nativeGl);
+
+const nop = () => {};
 
 const zeroMatrix = new THREE.Matrix4();
 const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
@@ -84,7 +98,7 @@ const _normalizeMatrixArray = float32Array => {
 
 let system = null;
 let compositor = null;
-let msFbo = null;
+let msFbo = null; // XXX track this per-context
 let msTexture = null;
 let fbo = null;
 let texture = null;
@@ -135,18 +149,24 @@ nativeVr.requestPresent = function() {
       });
 
       const width = halfWidth * 2;
-      const [msFb, msTex] = nativeWindow.getRenderTarget(width, height, 4);
+      const [msFb, msTex] = nativeWindow.getRenderTarget(width, height, 4); // XXX switch to context first
       msFbo = msFb;
       msTexture = msTex;
       const [fb, tex] = nativeWindow.getRenderTarget(width, height, 1);
       fbo = fb;
       texture = tex;
+
+      // nativeWindow.bindFrameBuffer(msFbo); // XXX unlock this
     });
 };
 nativeVr.exitPresent = function() {
   nativeVr.system.VR_Shutdown();
   system = null;
   compositor = null;
+
+  // XXX switch to context first
+
+  // nativeWindow.bindFrameBuffer(0); // XXX unlock this
   
   return Promise.resolve();
 };
@@ -158,7 +178,7 @@ module.exports = exokit;
 // MAIN
 
 let window = null;
-let innerWidth = 1280;
+let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
 const FPS = 90;
 const FRAME_TIME_MAX = 1000 / FPS;
@@ -223,8 +243,6 @@ if (require.main === module) {
     }
   };
   const _start = () => {
-    const windowHandle = nativeWindow.create(innerWidth, innerHeight);
-
     const url = process.argv[2];
     if (url) {
       return exokit.fetch(url)
@@ -234,19 +252,22 @@ if (require.main === module) {
           window = site.window;
           window.innerWidth = innerWidth;
           window.innerHeight = innerHeight;
-          if (nativeVr.system.VR_IsHmdPresent()) { // XXX hook this up internally in exokit
+          if (nativeVr.system.VR_IsHmdPresent()) {
             window.navigator.setVRMode('vr');
           }
           window.addEventListener('error', err => {
             console.warn('got error', err.error.stack);
           });
 
+          let lastPointerLockElement = null;
           window.document.addEventListener('pointerlockchange', () => {
-            if (window.document.pointerLockElement) {
-              nativeWindow.setCursorMode(windowHandle, false);
-            } else {
-              nativeWindow.setCursorMode(windowHandle, true);
+            const {pointerLockElement} = window.document;
+            if (pointerLockElement && pointerLockElement[windowHandleSymbol]) {
+              nativeWindow.setCursorMode(pointerLockElement[windowHandleSymbol], false);
+            } else if (lastPointerLockElement && lastPointerLockElement[windowHandleSymbol]) {
+              nativeWindow.setCursorMode(lastPointerLockElement[windowHandleSymbol], true);
             }
+            lastPointerLockElement = pointerLockElement;
           });
 
           let lastFrameTime = Date.now();
@@ -353,13 +374,17 @@ if (require.main === module) {
                 stageParameters,
                 gamepads,
               });
-
-              // bind framebuffer for rendering
-              nativeWindow.bindFrameBuffer(msFbo);
-            } else {
-              // bind framebuffer for rendering
-              nativeWindow.bindFrameBuffer(0);
             }
+
+            // bind framebuffer for rendering
+            /* for (let i = 0; i < contexts.length; i++) {
+              const context = contexts[i];
+              if (compositor) {
+                nativeWindow.bindFrameBuffer(msFbo); // XXX switch to context first
+              } else {
+                nativeWindow.bindFrameBuffer(0);
+              }
+            } */
 
             // poll for window events
             nativeWindow.pollEvents({
@@ -397,11 +422,12 @@ if (require.main === module) {
                     data.preventStopPropagation = nop;
                     data.preventStopImmediatePropagation = nop;
 
-                    if (window.document.pointerLockElement) {
+                    const context = contexts.find(context => _windowHandleEquals(context[windowHandleSymbol], data.windowHandle));
+                    if (window.document.pointerLockElement === context[canvasSymbol]) {
                       data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
                       data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
 
-                      nativeWindow.setCursorPosition(windowHandle, window.innerWidth / 2, window.innerHeight / 2);
+                      nativeWindow.setCursorPosition(context[windowHandleSymbol], window.innerWidth / 2, window.innerHeight / 2);
                     }
 
                     window.emit(type, data);
@@ -421,14 +447,17 @@ if (require.main === module) {
             // trigger requestAnimationFrame
             window.tickAnimationFrame();
 
-            // submit to compositor
-            if (compositor) {
-              nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
-              compositor.Submit(texture);
+            // submit frame
+            for (let i = 0; i < contexts.length; i++) {
+              const context = contexts[i];
+              if (compositor) {
+                nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight); // XXX switch to context first
+                compositor.Submit(texture);
 
-              nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
+                nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
+              }
+              nativeWindow.swapBuffers(context[windowHandleSymbol]);
             }
-            nativeWindow.swapBuffers(windowHandle);
 
             // wait for next frame
             const now = Date.now();
