@@ -241,6 +241,14 @@ if (require.main === module) {
             console.warn('got error', err.error.stack);
           });
 
+          window.document.addEventListener('pointerlockchange', () => {
+            if (window.document.pointerLockElement) {
+              nativeWindow.setCursorMode(windowHandle, false);
+            } else {
+              nativeWindow.setCursorMode(windowHandle, true);
+            }
+          });
+
           let lastFrameTime = Date.now();
           const leftGamepad = new window.Gamepad('left', 0);
           const rightGamepad = new window.Gamepad('right', 1);
