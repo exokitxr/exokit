@@ -463,10 +463,16 @@ NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
     SkFontStyle oldFontStyle = typeface ? typeface->fontStyle() : SkFontStyle();
     SkFontStyle fontStyle(fontWeight, oldFontStyle.width(), oldFontStyle.slant());
 
-    SkString familyName;
-    typeface->getFamilyName(&familyName);
-    context->strokePaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
-    context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
+    const char *familyNameString;
+    if (typeface) {
+      SkString familyName;
+      typeface->getFamilyName(&familyName);
+      familyNameString = familyName.c_str();
+    } else {
+      familyNameString = nullptr;
+    }
+    context->strokePaint.setTypeface(SkTypeface::MakeFromName(familyNameString, fontStyle));
+    context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyNameString, fontStyle));
     context->strokePaint.getFontMetrics(&context->fontMetrics);
   } else {
     Nan::ThrowError("fontWeight: invalid arguments");
@@ -518,10 +524,16 @@ NAN_SETTER(CanvasRenderingContext2D::FontStyleSetter) {
     SkFontStyle oldFontStyle = typeface ? typeface->fontStyle() : SkFontStyle();
     SkFontStyle fontStyle(oldFontStyle.weight(), oldFontStyle.width(), slant);
 
-    SkString familyName;
-    typeface->getFamilyName(&familyName);
-    context->strokePaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
-    context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
+    const char *familyNameString;
+    if (typeface) {
+      SkString familyName;
+      typeface->getFamilyName(&familyName);
+      familyNameString = familyName.c_str();
+    } else {
+      familyNameString = nullptr;
+    }
+    context->strokePaint.setTypeface(SkTypeface::MakeFromName(familyNameString, fontStyle));
+    context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyNameString, fontStyle));
     context->strokePaint.getFontMetrics(&context->fontMetrics);
   } else {
     Nan::ThrowError("fontStyle: invalid arguments");
