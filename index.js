@@ -432,6 +432,7 @@ if (require.main === module) {
                   }
                   case 'quit': {
                     nativeWindow.destroy(data.windowHandle);
+                    contexts.splice(contexts.findIndex(context => _windowHandleEquals(context[windowHandleSymbol], data.windowHandle)), 1);
                     break;
                   }
                 }
