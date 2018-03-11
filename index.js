@@ -431,7 +431,7 @@ if (require.main === module) {
                     break;
                   }
                   case 'quit': {
-                    process.exit();
+                    nativeWindow.destroy(data.windowHandle);
                     break;
                   }
                 }
