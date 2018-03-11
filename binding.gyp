@@ -193,14 +193,17 @@
             '<(module_root_dir)/deps/openvr/include',
           ],
           'library_dirs': [
+            '<(module_root_dir)/node_modules/native-graphics-deps/lib/macos/glew',
+            '<(module_root_dir)/node_modules/native-graphics-deps/lib/macos/glfw',
             '<(module_root_dir)/node_modules/native-canvas-deps/lib/macos',
             '<(module_root_dir)/node_modules/native-audio-deps/lib/macos',
             '<(module_root_dir)/node_modules/native-video-deps/lib/macos',
           ],
           'libraries': [
             '-framework OpenGL',
-            '-lglew', # brew install
-            '-lglfw', # brew install
+            '-framework Cocoa',
+            '-lGLEW',
+            '-lglfw3',
             '-lskia',
             '-framework CoreAudio',
             '-framework AudioUnit',
