@@ -223,7 +223,7 @@ if (require.main === module) {
     }
   };
   const _start = () => {
-    nativeWindow.create(innerWidth, innerHeight);
+    const windowHandle = nativeWindow.create(innerWidth, innerHeight);
 
     const url = process.argv[2];
     if (url) {
@@ -393,7 +393,7 @@ if (require.main === module) {
                       data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
                       data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
 
-                      nativeWindow.setCursorPosition(window.innerWidth / 2, window.innerHeight / 2);
+                      nativeWindow.setCursorPosition(windowHandle, window.innerWidth / 2, window.innerHeight / 2);
                     }
 
                     window.emit(type, data);
@@ -420,7 +420,7 @@ if (require.main === module) {
 
               nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
             }
-            nativeWindow.swapBuffers();
+            nativeWindow.swapBuffers(windowHandle);
 
             // wait for next frame
             const now = Date.now();
