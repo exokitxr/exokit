@@ -69,6 +69,7 @@ const contexts = [];
 nativeBindings.nativeGl = (Old => class WebGLContext extends Old { // XXX switch to context before all gl calls
   constructor(canvas) {
     super(canvas);
+const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
     this[canvasSymbol] = canvas;
     this[windowHandleSymbol] = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight);
