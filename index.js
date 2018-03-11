@@ -547,6 +547,9 @@ if (require.main === module) {
         }
       });
       replHistory(r, path.join(process.env.HOME || process.cwd(), '.exokit_history'));
+      r.on('exit', () => {
+        process.exit();
+      });
     }
   };
 
