@@ -2,7 +2,7 @@
   "name": "exokit",
   "version": "0.0.13",
   "description": "Javascript web browser for the post-screen world",
-  "main": "html5.js",
+  "main": "index.js",
   "scripts": {
     "install": "node scripts/preinstall.js && node-gyp rebuild",
     "start": "node .",
