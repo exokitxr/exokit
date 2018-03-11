@@ -42,7 +42,8 @@
             '<(module_root_dir)/deps/openvr/include',
           ],
           'library_dirs': [
-            '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64',
+            '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glew',
+            '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glfw',
             '<(module_root_dir)/node_modules/native-canvas-deps/lib/windows',
             '<(module_root_dir)/node_modules/native-audio-deps/lib/windows',
             '<(module_root_dir)/node_modules/native-video-deps/lib/win',
@@ -66,8 +67,8 @@
             {
               'destination': '<(module_root_dir)/build/Release/',
               'files': [
-                '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glew32.dll',
-                '<(module_root_dir)/node_modules/native-graphics-deps/windows/lib/x64/glfw3.dll',
+                '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glew/glew32.dll',
+                '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glfw/glfw3.dll',
                 '<(module_root_dir)/node_modules/native-video-deps/lib/win/avformat-58.dll',
                 '<(module_root_dir)/node_modules/native-video-deps/lib/win/avcodec-58.dll',
                 '<(module_root_dir)/node_modules/native-video-deps/lib/win/avutil-56.dll',
