@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Javascript web browser for the post-screen world",
   "main": "html5.js",
   "scripts": {
