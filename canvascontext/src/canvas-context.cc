@@ -469,7 +469,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
     context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyName.c_str(), fontStyle));
     context->strokePaint.getFontMetrics(&context->fontMetrics);
   } else {
-    Nan::ThrowError("fontWeight: nvalid arguments");
+    Nan::ThrowError("fontWeight: invalid arguments");
   }
 }
 
