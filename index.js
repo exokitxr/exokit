@@ -7,6 +7,7 @@ const vm = require('vm');
 const repl = require('repl');
 const mkdirp = require('mkdirp');
 const exokit = require('exokit-core');
+const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 exokit.setNativeBindingsModule(nativeBindingsModulePath);
 const {THREE} = exokit;
@@ -435,6 +436,8 @@ if (require.main === module) {
         vm.createContext(window);
       }
 
+      const _getPrompt = () => `<${emojis[Math.floor(Math.random() * emojis.length)]}> `;
+
       let lastUnderscore = window._;
       const replEval = (cmd, context, filename, callback) => {
         let result, err = null, match;
@@ -473,6 +476,9 @@ if (require.main === module) {
             window._ = result;
             lastUnderscore = result;
           }
+          if (result !== undefined) {
+            r.setPrompt(_getPrompt());
+          }
         } else {
           if (err.name === 'SyntaxError') {
             err = new repl.Recoverable(err);
@@ -481,7 +487,7 @@ if (require.main === module) {
         callback(err, result);
       };
       const r = repl.start({
-        prompt: '<> ',
+        prompt: _getPrompt(),
         eval: replEval,
       });
     }
