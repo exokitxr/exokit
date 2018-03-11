@@ -1126,6 +1126,11 @@ NAN_METHOD(Create) {
   }
 }
 
+NAN_METHOD(Destroy) {
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  glfwDestroyWindow(window);
+}
+
 NAN_METHOD(PollEvents) {
   Local<Object> arg = Local<Object>::Cast(info[0]);
   localEvents = &arg;
@@ -1525,6 +1530,7 @@ Local<Object> makeWindow() {
   Local<Object> target = Object::New(isolate);
 
   Nan::SetMethod(target, "create", glfw::Create);
+  Nan::SetMethod(target, "destroy", glfw::Destroy);
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
