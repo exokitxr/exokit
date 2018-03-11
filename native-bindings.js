@@ -6,22 +6,29 @@ const webGlToOpenGl = require('webgl-to-opengl');
 
 bindings.nativeWorker = WindowWorker;
 
-bindings.nativeGl = (nativeGl => function WebGLContext() {
-  const result = new nativeGl();
-  result.createShader = (createShader => function(type) {
-    const result = createShader.call(this, type);
-    result.type = type;
-    return result;
-  })(result.createShader);
-  result.shaderSource = (shaderSource => function(shader, source) {
-    if (shader.type === result.VERTEX_SHADER) {
-      source = webGlToOpenGl.vertex(source);
-    } else if (shader.type === result.FRAGMENT_SHADER) {
-      source = webGlToOpenGl.fragment(source);
+bindings.nativeGl = (nativeGl => {
+  function WebGLContext(canvas) {
+    const gl = new nativeGl();
+    gl.createShader = (createShader => function(type) {
+      const result = createShader.call(this, type);
+      result.type = type;
+      return result;
+    })(gl.createShader);
+    gl.shaderSource = (shaderSource => function(shader, source) {
+      if (shader.type === gl.VERTEX_SHADER) {
+        source = webGlToOpenGl.vertex(source);
+      } else if (shader.type === gl.FRAGMENT_SHADER) {
+        source = webGlToOpenGl.fragment(source);
+      }
+      return shaderSource.call(this, shader, source);
+    })(gl.shaderSource);
+    if (WebGLContext.onconstruct) {
+      WebGLContext.onconstruct(gl, canvas);
     }
-    return shaderSource.call(this, shader, source);
-  })(result.shaderSource);
-  return result;
+    return gl;
+  }
+  WebGLContext.onconstruct = null;
+  return WebGLContext;
 })(bindings.nativeGl);
 
 const {PannerNode} = nativeAudio;
