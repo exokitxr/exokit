@@ -259,10 +259,10 @@ if (require.main === module) {
           let lastPointerLockElement = null;
           window.document.addEventListener('pointerlockchange', () => {
             const {pointerLockElement} = window.document;
-            if (pointerLockElement && pointerLockElement[windowHandleSymbol]) {
-              nativeWindow.setCursorMode(pointerLockElement[windowHandleSymbol], false);
-            } else if (lastPointerLockElement && lastPointerLockElement[windowHandleSymbol]) {
-              nativeWindow.setCursorMode(lastPointerLockElement[windowHandleSymbol], true);
+            if (pointerLockElement && pointerLockElement._context && pointerLockElement._context.constructor && pointerLockElement._context.constructor.name === 'WebGLContext') {
+              nativeWindow.setCursorMode(pointerLockElement._context[windowHandleSymbol], false);
+            } else if (lastPointerLockElement && lastPointerLockElement._context && lastPointerLockElement._context.constructor && lastPointerLockElement._context.constructor.name === 'WebGLContext') {
+              nativeWindow.setCursorMode(lastPointerLockElement._context[windowHandleSymbol], true);
             }
             lastPointerLockElement = pointerLockElement;
           });
