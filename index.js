@@ -165,7 +165,7 @@ nativeVr.exitPresent = function() {
   // XXX switch to context first
 
   // nativeWindow.bindFrameBuffer(0); // XXX unlock this
-  
+
   return Promise.resolve();
 };
 
