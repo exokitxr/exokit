@@ -63,59 +63,7 @@ nativeGl.viewport = function() {
 
 // CALLBACKS
 
-const nop = () => {};
-const windowEvents = {
-  emit: (type, data) => {
-    // console.log(type, data);
-
-    switch (type) {
-      case 'framebufferResize': {
-        const {width, height} = data;
-        innerWidth = width;
-        innerHeight = height;
-
-        if (window) {
-          window.innerWidth = innerWidth;
-          window.innerHeight = innerHeight;
-          window.emit('resize');
-        }
-        break;
-      }
-      case 'keydown':
-      case 'keyup':
-      case 'keypress':
-      case 'mousedown':
-      case 'mouseup':
-      case 'click': {
-        data.preventDefault = nop;
-        data.preventStopPropagation = nop;
-        data.preventStopImmediatePropagation = nop;
-        
-        window.emit(type, data);
-        break;
-      }
-      case 'mousemove': {
-        data.preventDefault = nop;
-        data.preventStopPropagation = nop;
-        data.preventStopImmediatePropagation = nop;
-        
-        if (window.document.pointerLockElement) {
-          data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
-          data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
-
-          nativeWindow.setCursorPosition(window.innerWidth / 2, window.innerHeight / 2);
-        }
-        
-        window.emit(type, data);
-        break;
-      }
-      case 'quit': {
-        process.exit();
-        break;
-      }
-    }
-  },
-};
+const nop = () => {};;
 
 const zeroMatrix = new THREE.Matrix4();
 const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
@@ -406,7 +354,58 @@ if (require.main === module) {
             }
 
             // poll for window events
-            nativeWindow.pollEvents(windowEvents);
+            nativeWindow.pollEvents(const windowEvents = {
+              emit: (type, data) => {
+                // console.log(type, data);
+
+                switch (type) {
+                  case 'framebufferResize': {
+                    const {width, height} = data;
+                    innerWidth = width;
+                    innerHeight = height;
+
+                    if (window) {
+                      window.innerWidth = innerWidth;
+                      window.innerHeight = innerHeight;
+                      window.emit('resize');
+                    }
+                    break;
+                  }
+                  case 'keydown':
+                  case 'keyup':
+                  case 'keypress':
+                  case 'mousedown':
+                  case 'mouseup':
+                  case 'click': {
+                    data.preventDefault = nop;
+                    data.preventStopPropagation = nop;
+                    data.preventStopImmediatePropagation = nop;
+
+                    window.emit(type, data);
+                    break;
+                  }
+                  case 'mousemove': {
+                    data.preventDefault = nop;
+                    data.preventStopPropagation = nop;
+                    data.preventStopImmediatePropagation = nop;
+
+                    if (window.document.pointerLockElement) {
+                      data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
+                      data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
+
+                      nativeWindow.setCursorPosition(window.innerWidth / 2, window.innerHeight / 2);
+                    }
+
+                    window.emit(type, data);
+                    break;
+                  }
+                  case 'quit': {
+                    process.exit();
+                    break;
+                  }
+                }
+              },
+            });
 
             // update media frames
             nativeVideo.Video.updateAll();
