@@ -31,7 +31,7 @@
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.12",
     "native-canvas-deps": "0.0.5",
-    "native-graphics-deps": "0.0.3",
+    "native-graphics-deps": "0.0.6",
     "native-openvr-deps": "0.0.4",
     "native-video-deps": "0.0.10",
     "rimraf": "^2.6.2",
