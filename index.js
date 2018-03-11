@@ -470,7 +470,10 @@ if (require.main === module) {
         vm.createContext(window);
       }
 
-      const _getPrompt = () => `<${emojis[Math.floor(Math.random() * emojis.length)]}> `;
+      const _getPrompt = os.platform() !== 'win32' ?
+        () => `[${emojis[Math.floor(Math.random() * emojis.length)]}] `
+      :
+        () => '[x] ';
 
       let lastUnderscore = window._;
       const replEval = (cmd, context, filename, callback) => {
