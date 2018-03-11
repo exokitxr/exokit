@@ -354,7 +354,7 @@ if (require.main === module) {
             }
 
             // poll for window events
-            nativeWindow.pollEvents(const windowEvents = {
+            nativeWindow.pollEvents({
               emit: (type, data) => {
                 // console.log(type, data);
 
