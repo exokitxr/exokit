@@ -8,161 +8,169 @@
 #include "bindings.h"
 
 // Used to be a macro, hence the uppercase name.
-#define JS_GL_SET_CONSTANT(name, constant) target->Set(JS_STR( name ), JS_INT(constant))
+#define JS_GL_SET_CONSTANT(name, constant) proto->Set(JS_STR( name ), JS_INT(constant))
 
 //#define JS_GL_SET_CONSTANT(name, value) NODE_DEFINE_CONSTANTNODE_DEFINE_CONSTANT
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
-NAN_METHOD(newGl) {
-  Nan::HandleScope scope;
+Handle<Object> WebGLContext::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
 
-  Local<Object> target(info.This());
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("WebGLContext"));
 
-  Nan::SetMethod(target, "uniform1f", webgl::Uniform1f);
-  Nan::SetMethod(target, "uniform2f", webgl::Uniform2f);
-  Nan::SetMethod(target, "uniform3f", webgl::Uniform3f);
-  Nan::SetMethod(target, "uniform4f", webgl::Uniform4f);
-  Nan::SetMethod(target, "uniform1i", webgl::Uniform1i);
-  Nan::SetMethod(target, "uniform2i", webgl::Uniform2i);
-  Nan::SetMethod(target, "uniform3i", webgl::Uniform3i);
-  Nan::SetMethod(target, "uniform4i", webgl::Uniform4i);
-  Nan::SetMethod(target, "uniform1fv", webgl::Uniform1fv);
-  Nan::SetMethod(target, "uniform2fv", webgl::Uniform2fv);
-  Nan::SetMethod(target, "uniform3fv", webgl::Uniform3fv);
-  Nan::SetMethod(target, "uniform4fv", webgl::Uniform4fv);
-  Nan::SetMethod(target, "uniform1iv", webgl::Uniform1iv);
-  Nan::SetMethod(target, "uniform2iv", webgl::Uniform2iv);
-  Nan::SetMethod(target, "uniform3iv", webgl::Uniform3iv);
-  Nan::SetMethod(target, "uniform4iv", webgl::Uniform4iv);
-  Nan::SetMethod(target, "pixelStorei", webgl::PixelStorei);
-  Nan::SetMethod(target, "bindAttribLocation", webgl::BindAttribLocation);
-  Nan::SetMethod(target, "getError", webgl::GetError);
-  Nan::SetMethod(target, "drawArrays", webgl::DrawArrays);
-  Nan::SetMethod(target, "drawArraysInstancedANGLE", webgl::DrawArraysInstancedANGLE);
-  Nan::SetMethod(target, "uniformMatrix2fv", webgl::UniformMatrix2fv);
-  Nan::SetMethod(target, "uniformMatrix3fv", webgl::UniformMatrix3fv);
-  Nan::SetMethod(target, "uniformMatrix4fv", webgl::UniformMatrix4fv);
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Nan::SetMethod(target, "generateMipmap", webgl::GenerateMipmap);
+  Nan::SetAccessor(proto, JS_STR("oncall"), OnCallGetter, OnCallSetter);
 
-  Nan::SetMethod(target, "getAttribLocation", webgl::GetAttribLocation);
-  Nan::SetMethod(target, "depthFunc", webgl::DepthFunc);
-  Nan::SetMethod(target, "viewport", webgl::Viewport);
-  Nan::SetMethod(target, "createShader", webgl::CreateShader);
-  Nan::SetMethod(target, "shaderSource", webgl::ShaderSource);
-  Nan::SetMethod(target, "compileShader", webgl::CompileShader);
-  Nan::SetMethod(target, "getShaderParameter", webgl::GetShaderParameter);
-  Nan::SetMethod(target, "getShaderInfoLog", webgl::GetShaderInfoLog);
-  Nan::SetMethod(target, "createProgram", webgl::CreateProgram);
-  Nan::SetMethod(target, "attachShader", webgl::AttachShader);
-  Nan::SetMethod(target, "linkProgram", webgl::LinkProgram);
-  Nan::SetMethod(target, "getProgramParameter", webgl::GetProgramParameter);
-  Nan::SetMethod(target, "getUniformLocation", webgl::GetUniformLocation);
-  Nan::SetMethod(target, "clearColor", webgl::ClearColor);
-  Nan::SetMethod(target, "clearDepth", webgl::ClearDepth);
+  Nan::SetMethod(proto, "uniform1f", glOnCallWrap<webgl::Uniform1f>);
+  Nan::SetMethod(proto, "uniform2f", glOnCallWrap<webgl::Uniform2f>);
+  Nan::SetMethod(proto, "uniform3f", glOnCallWrap<webgl::Uniform3f>);
+  Nan::SetMethod(proto, "uniform4f", glOnCallWrap<webgl::Uniform4f>);
+  Nan::SetMethod(proto, "uniform1i", glOnCallWrap<webgl::Uniform1i>);
+  Nan::SetMethod(proto, "uniform2i", glOnCallWrap<webgl::Uniform2i>);
+  Nan::SetMethod(proto, "uniform3i", glOnCallWrap<webgl::Uniform3i>);
+  Nan::SetMethod(proto, "uniform4i", glOnCallWrap<webgl::Uniform4i>);
+  Nan::SetMethod(proto, "uniform1fv", glOnCallWrap<webgl::Uniform1fv>);
+  Nan::SetMethod(proto, "uniform2fv", glOnCallWrap<webgl::Uniform2fv>);
+  Nan::SetMethod(proto, "uniform3fv", glOnCallWrap<webgl::Uniform3fv>);
+  Nan::SetMethod(proto, "uniform4fv", glOnCallWrap<webgl::Uniform4fv>);
+  Nan::SetMethod(proto, "uniform1iv", glOnCallWrap<webgl::Uniform1iv>);
+  Nan::SetMethod(proto, "uniform2iv", glOnCallWrap<webgl::Uniform2iv>);
+  Nan::SetMethod(proto, "uniform3iv", glOnCallWrap<webgl::Uniform3iv>);
+  Nan::SetMethod(proto, "uniform4iv", glOnCallWrap<webgl::Uniform4iv>);
+  Nan::SetMethod(proto, "pixelStorei", glOnCallWrap<webgl::PixelStorei>);
+  Nan::SetMethod(proto, "bindAttribLocation", glOnCallWrap<webgl::BindAttribLocation>);
+  Nan::SetMethod(proto, "getError", glOnCallWrap<webgl::GetError>);
+  Nan::SetMethod(proto, "drawArrays", glOnCallWrap<webgl::DrawArrays>);
+  Nan::SetMethod(proto, "drawArraysInstancedANGLE", glOnCallWrap<webgl::DrawArraysInstancedANGLE>);
+  Nan::SetMethod(proto, "uniformMatrix2fv", glOnCallWrap<webgl::UniformMatrix2fv>);
+  Nan::SetMethod(proto, "uniformMatrix3fv", glOnCallWrap<webgl::UniformMatrix3fv>);
+  Nan::SetMethod(proto, "uniformMatrix4fv", glOnCallWrap<webgl::UniformMatrix4fv>);
 
-  Nan::SetMethod(target, "disable", webgl::Disable);
-  Nan::SetMethod(target, "createTexture", webgl::CreateTexture);
-  Nan::SetMethod(target, "bindTexture", webgl::BindTexture);
-  // Nan::SetMethod(target, "flipTextureData", webgl::FlipTextureData);
-  Nan::SetMethod(target, "texImage2D", webgl::TexImage2D);
-  Nan::SetMethod(target, "texParameteri", webgl::TexParameteri);
-  Nan::SetMethod(target, "texParameterf", webgl::TexParameterf);
-  Nan::SetMethod(target, "clear", webgl::Clear);
-  Nan::SetMethod(target, "useProgram", webgl::UseProgram);
-  Nan::SetMethod(target, "createFramebuffer", webgl::CreateFramebuffer);
-  Nan::SetMethod(target, "bindFramebuffer", webgl::BindFramebuffer);
-  Nan::SetMethod(target, "framebufferTexture2D", webgl::FramebufferTexture2D);
-  Nan::SetMethod(target, "createBuffer", webgl::CreateBuffer);
-  Nan::SetMethod(target, "bindBuffer", webgl::BindBuffer);
-  Nan::SetMethod(target, "bufferData", webgl::BufferData);
-  Nan::SetMethod(target, "bufferSubData", webgl::BufferSubData);
-  Nan::SetMethod(target, "enable", webgl::Enable);
-  Nan::SetMethod(target, "blendEquation", webgl::BlendEquation);
-  Nan::SetMethod(target, "blendFunc", webgl::BlendFunc);
-  Nan::SetMethod(target, "enableVertexAttribArray", webgl::EnableVertexAttribArray);
-  Nan::SetMethod(target, "vertexAttribPointer", webgl::VertexAttribPointer);
-  Nan::SetMethod(target, "activeTexture", webgl::ActiveTexture);
-  Nan::SetMethod(target, "drawElements", webgl::DrawElements);
-  Nan::SetMethod(target, "drawElementsInstancedANGLE", webgl::DrawElementsInstancedANGLE);
-  Nan::SetMethod(target, "flush", webgl::Flush);
-  Nan::SetMethod(target, "finish", webgl::Finish);
+  Nan::SetMethod(proto, "generateMipmap", glOnCallWrap<webgl::GenerateMipmap>);
 
-  Nan::SetMethod(target, "vertexAttrib1f", webgl::VertexAttrib1f);
-  Nan::SetMethod(target, "vertexAttrib2f", webgl::VertexAttrib2f);
-  Nan::SetMethod(target, "vertexAttrib3f", webgl::VertexAttrib3f);
-  Nan::SetMethod(target, "vertexAttrib4f", webgl::VertexAttrib4f);
-  Nan::SetMethod(target, "vertexAttrib1fv", webgl::VertexAttrib1fv);
-  Nan::SetMethod(target, "vertexAttrib2fv", webgl::VertexAttrib2fv);
-  Nan::SetMethod(target, "vertexAttrib3fv", webgl::VertexAttrib3fv);
-  Nan::SetMethod(target, "vertexAttrib4fv", webgl::VertexAttrib4fv);
-  Nan::SetMethod(target, "vertexAttribDivisorANGLE", webgl::VertexAttribDivisorANGLE);
+  Nan::SetMethod(proto, "getAttribLocation", glOnCallWrap<webgl::GetAttribLocation>);
+  Nan::SetMethod(proto, "depthFunc", glOnCallWrap<webgl::DepthFunc>);
+  Nan::SetMethod(proto, "viewport", glOnCallWrap<webgl::Viewport>);
+  Nan::SetMethod(proto, "createShader", glOnCallWrap<webgl::CreateShader>);
+  Nan::SetMethod(proto, "shaderSource", glOnCallWrap<webgl::ShaderSource>);
+  Nan::SetMethod(proto, "compileShader", glOnCallWrap<webgl::CompileShader>);
+  Nan::SetMethod(proto, "getShaderParameter", glOnCallWrap<webgl::GetShaderParameter>);
+  Nan::SetMethod(proto, "getShaderInfoLog", glOnCallWrap<webgl::GetShaderInfoLog>);
+  Nan::SetMethod(proto, "createProgram", glOnCallWrap<webgl::CreateProgram>);
+  Nan::SetMethod(proto, "attachShader", glOnCallWrap<webgl::AttachShader>);
+  Nan::SetMethod(proto, "linkProgram", glOnCallWrap<webgl::LinkProgram>);
+  Nan::SetMethod(proto, "getProgramParameter", glOnCallWrap<webgl::GetProgramParameter>);
+  Nan::SetMethod(proto, "getUniformLocation", glOnCallWrap<webgl::GetUniformLocation>);
+  Nan::SetMethod(proto, "clearColor", glOnCallWrap<webgl::ClearColor>);
+  Nan::SetMethod(proto, "clearDepth", glOnCallWrap<webgl::ClearDepth>);
 
-  Nan::SetMethod(target, "blendColor", webgl::BlendColor);
-  Nan::SetMethod(target, "blendEquationSeparate", webgl::BlendEquationSeparate);
-  Nan::SetMethod(target, "blendFuncSeparate", webgl::BlendFuncSeparate);
-  Nan::SetMethod(target, "clearStencil", webgl::ClearStencil);
-  Nan::SetMethod(target, "colorMask", webgl::ColorMask);
-  Nan::SetMethod(target, "copyTexImage2D", webgl::CopyTexImage2D);
-  Nan::SetMethod(target, "copyTexSubImage2D", webgl::CopyTexSubImage2D);
-  Nan::SetMethod(target, "cullFace", webgl::CullFace);
-  Nan::SetMethod(target, "depthMask", webgl::DepthMask);
-  Nan::SetMethod(target, "depthRange", webgl::DepthRange);
-  Nan::SetMethod(target, "disableVertexAttribArray", webgl::DisableVertexAttribArray);
-  Nan::SetMethod(target, "hint", webgl::Hint);
-  Nan::SetMethod(target, "isEnabled", webgl::IsEnabled);
-  Nan::SetMethod(target, "lineWidth", webgl::LineWidth);
-  Nan::SetMethod(target, "polygonOffset", webgl::PolygonOffset);
+  Nan::SetMethod(proto, "disable", glOnCallWrap<webgl::Disable>);
+  Nan::SetMethod(proto, "createTexture", glOnCallWrap<webgl::CreateTexture>);
+  Nan::SetMethod(proto, "bindTexture", glOnCallWrap<webgl::BindTexture>);
+  // Nan::SetMethod(proto, "flipTextureData", glOnCallWrap<webgl::FlipTextureData>);
+  Nan::SetMethod(proto, "texImage2D", glOnCallWrap<webgl::TexImage2D>);
+  Nan::SetMethod(proto, "texParameteri", glOnCallWrap<webgl::TexParameteri>);
+  Nan::SetMethod(proto, "texParameterf", glOnCallWrap<webgl::TexParameterf>);
+  Nan::SetMethod(proto, "clear", glOnCallWrap<webgl::Clear>);
+  Nan::SetMethod(proto, "useProgram", glOnCallWrap<webgl::UseProgram>);
+  Nan::SetMethod(proto, "createFramebuffer", glOnCallWrap<webgl::CreateFramebuffer>);
+  Nan::SetMethod(proto, "bindFramebuffer", glOnCallWrap<webgl::BindFramebuffer>);
+  Nan::SetMethod(proto, "framebufferTexture2D", glOnCallWrap<webgl::FramebufferTexture2D>);
+  Nan::SetMethod(proto, "createBuffer", glOnCallWrap<webgl::CreateBuffer>);
+  Nan::SetMethod(proto, "bindBuffer", glOnCallWrap<webgl::BindBuffer>);
+  Nan::SetMethod(proto, "bufferData", glOnCallWrap<webgl::BufferData>);
+  Nan::SetMethod(proto, "bufferSubData", glOnCallWrap<webgl::BufferSubData>);
+  Nan::SetMethod(proto, "enable", glOnCallWrap<webgl::Enable>);
+  Nan::SetMethod(proto, "blendEquation", glOnCallWrap<webgl::BlendEquation>);
+  Nan::SetMethod(proto, "blendFunc", glOnCallWrap<webgl::BlendFunc>);
+  Nan::SetMethod(proto, "enableVertexAttribArray", glOnCallWrap<webgl::EnableVertexAttribArray>);
+  Nan::SetMethod(proto, "vertexAttribPointer", glOnCallWrap<webgl::VertexAttribPointer>);
+  Nan::SetMethod(proto, "activeTexture", glOnCallWrap<webgl::ActiveTexture>);
+  Nan::SetMethod(proto, "drawElements", glOnCallWrap<webgl::DrawElements>);
+  Nan::SetMethod(proto, "drawElementsInstancedANGLE", glOnCallWrap<webgl::DrawElementsInstancedANGLE>);
+  Nan::SetMethod(proto, "flush", glOnCallWrap<webgl::Flush>);
+  Nan::SetMethod(proto, "finish", glOnCallWrap<webgl::Finish>);
 
-  Nan::SetMethod(target, "scissor", webgl::Scissor);
-  Nan::SetMethod(target, "stencilFunc", webgl::StencilFunc);
-  Nan::SetMethod(target, "stencilFuncSeparate", webgl::StencilFuncSeparate);
-  Nan::SetMethod(target, "stencilMask", webgl::StencilMask);
-  Nan::SetMethod(target, "stencilMaskSeparate", webgl::StencilMaskSeparate);
-  Nan::SetMethod(target, "stencilOp", webgl::StencilOp);
-  Nan::SetMethod(target, "stencilOpSeparate", webgl::StencilOpSeparate);
-  Nan::SetMethod(target, "bindRenderbuffer", webgl::BindRenderbuffer);
-  Nan::SetMethod(target, "createRenderbuffer", webgl::CreateRenderbuffer);
+  Nan::SetMethod(proto, "vertexAttrib1f", glOnCallWrap<webgl::VertexAttrib1f>);
+  Nan::SetMethod(proto, "vertexAttrib2f", glOnCallWrap<webgl::VertexAttrib2f>);
+  Nan::SetMethod(proto, "vertexAttrib3f", glOnCallWrap<webgl::VertexAttrib3f>);
+  Nan::SetMethod(proto, "vertexAttrib4f", glOnCallWrap<webgl::VertexAttrib4f>);
+  Nan::SetMethod(proto, "vertexAttrib1fv", glOnCallWrap<webgl::VertexAttrib1fv>);
+  Nan::SetMethod(proto, "vertexAttrib2fv", glOnCallWrap<webgl::VertexAttrib2fv>);
+  Nan::SetMethod(proto, "vertexAttrib3fv", glOnCallWrap<webgl::VertexAttrib3fv>);
+  Nan::SetMethod(proto, "vertexAttrib4fv", glOnCallWrap<webgl::VertexAttrib4fv>);
+  Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glOnCallWrap<webgl::VertexAttribDivisorANGLE>);
 
-  Nan::SetMethod(target, "deleteBuffer", webgl::DeleteBuffer);
-  Nan::SetMethod(target, "deleteFramebuffer", webgl::DeleteFramebuffer);
-  Nan::SetMethod(target, "deleteProgram", webgl::DeleteProgram);
-  Nan::SetMethod(target, "deleteRenderbuffer", webgl::DeleteRenderbuffer);
-  Nan::SetMethod(target, "deleteShader", webgl::DeleteShader);
-  Nan::SetMethod(target, "deleteTexture", webgl::DeleteTexture);
-  Nan::SetMethod(target, "detachShader", webgl::DetachShader);
-  Nan::SetMethod(target, "framebufferRenderbuffer", webgl::FramebufferRenderbuffer);
-  Nan::SetMethod(target, "getVertexAttribOffset", webgl::GetVertexAttribOffset);
+  Nan::SetMethod(proto, "blendColor", webgl::BlendColor);
+  Nan::SetMethod(proto, "blendEquationSeparate", webgl::BlendEquationSeparate);
+  Nan::SetMethod(proto, "blendFuncSeparate", webgl::BlendFuncSeparate);
+  Nan::SetMethod(proto, "clearStencil", webgl::ClearStencil);
+  Nan::SetMethod(proto, "colorMask", webgl::ColorMask);
+  Nan::SetMethod(proto, "copyTexImage2D", webgl::CopyTexImage2D);
+  Nan::SetMethod(proto, "copyTexSubImage2D", webgl::CopyTexSubImage2D);
+  Nan::SetMethod(proto, "cullFace", webgl::CullFace);
+  Nan::SetMethod(proto, "depthMask", webgl::DepthMask);
+  Nan::SetMethod(proto, "depthRange", webgl::DepthRange);
+  Nan::SetMethod(proto, "disableVertexAttribArray", webgl::DisableVertexAttribArray);
+  Nan::SetMethod(proto, "hint", webgl::Hint);
+  Nan::SetMethod(proto, "isEnabled", webgl::IsEnabled);
+  Nan::SetMethod(proto, "lineWidth", webgl::LineWidth);
+  Nan::SetMethod(proto, "polygonOffset", webgl::PolygonOffset);
 
-  Nan::SetMethod(target, "isBuffer", webgl::IsBuffer);
-  Nan::SetMethod(target, "isFramebuffer", webgl::IsFramebuffer);
-  Nan::SetMethod(target, "isProgram", webgl::IsProgram);
-  Nan::SetMethod(target, "isRenderbuffer", webgl::IsRenderbuffer);
-  Nan::SetMethod(target, "isShader", webgl::IsShader);
-  Nan::SetMethod(target, "isTexture", webgl::IsTexture);
+  Nan::SetMethod(proto, "scissor", webgl::Scissor);
+  Nan::SetMethod(proto, "stencilFunc", webgl::StencilFunc);
+  Nan::SetMethod(proto, "stencilFuncSeparate", webgl::StencilFuncSeparate);
+  Nan::SetMethod(proto, "stencilMask", webgl::StencilMask);
+  Nan::SetMethod(proto, "stencilMaskSeparate", webgl::StencilMaskSeparate);
+  Nan::SetMethod(proto, "stencilOp", webgl::StencilOp);
+  Nan::SetMethod(proto, "stencilOpSeparate", webgl::StencilOpSeparate);
+  Nan::SetMethod(proto, "bindRenderbuffer", webgl::BindRenderbuffer);
+  Nan::SetMethod(proto, "createRenderbuffer", webgl::CreateRenderbuffer);
 
-  Nan::SetMethod(target, "renderbufferStorage", webgl::RenderbufferStorage);
-  Nan::SetMethod(target, "getShaderSource", webgl::GetShaderSource);
-  Nan::SetMethod(target, "validateProgram", webgl::ValidateProgram);
+  Nan::SetMethod(proto, "deleteBuffer", webgl::DeleteBuffer);
+  Nan::SetMethod(proto, "deleteFramebuffer", webgl::DeleteFramebuffer);
+  Nan::SetMethod(proto, "deleteProgram", webgl::DeleteProgram);
+  Nan::SetMethod(proto, "deleteRenderbuffer", webgl::DeleteRenderbuffer);
+  Nan::SetMethod(proto, "deleteShader", webgl::DeleteShader);
+  Nan::SetMethod(proto, "deleteTexture", webgl::DeleteTexture);
+  Nan::SetMethod(proto, "detachShader", webgl::DetachShader);
+  Nan::SetMethod(proto, "framebufferRenderbuffer", webgl::FramebufferRenderbuffer);
+  Nan::SetMethod(proto, "getVertexAttribOffset", webgl::GetVertexAttribOffset);
 
-  Nan::SetMethod(target, "texSubImage2D", webgl::TexSubImage2D);
-  Nan::SetMethod(target, "readPixels", webgl::ReadPixels);
-  Nan::SetMethod(target, "getTexParameter", webgl::GetTexParameter);
-  Nan::SetMethod(target, "getActiveAttrib", webgl::GetActiveAttrib);
-  Nan::SetMethod(target, "getActiveUniform", webgl::GetActiveUniform);
-  Nan::SetMethod(target, "getAttachedShaders", webgl::GetAttachedShaders);
-  Nan::SetMethod(target, "getParameter", webgl::GetParameter);
-  Nan::SetMethod(target, "getBufferParameter", webgl::GetBufferParameter);
-  Nan::SetMethod(target, "getFramebufferAttachmentParameter", webgl::GetFramebufferAttachmentParameter);
-  Nan::SetMethod(target, "getProgramInfoLog", webgl::GetProgramInfoLog);
-  Nan::SetMethod(target, "getRenderbufferParameter", webgl::GetRenderbufferParameter);
-  Nan::SetMethod(target, "getVertexAttrib", webgl::GetVertexAttrib);
-  Nan::SetMethod(target, "getSupportedExtensions", webgl::GetSupportedExtensions);
-  Nan::SetMethod(target, "getExtension", webgl::GetExtension);
-  Nan::SetMethod(target, "checkFramebufferStatus", webgl::CheckFramebufferStatus);
+  Nan::SetMethod(proto, "isBuffer", glOnCallWrap<webgl::IsBuffer>);
+  Nan::SetMethod(proto, "isFramebuffer", glOnCallWrap<webgl::IsFramebuffer>);
+  Nan::SetMethod(proto, "isProgram", glOnCallWrap<webgl::IsProgram>);
+  Nan::SetMethod(proto, "isRenderbuffer", glOnCallWrap<webgl::IsRenderbuffer>);
+  Nan::SetMethod(proto, "isShader", glOnCallWrap<webgl::IsShader>);
+  Nan::SetMethod(proto, "isTexture", glOnCallWrap<webgl::IsTexture>);
 
-  Nan::SetMethod(target, "frontFace", webgl::FrontFace);
+  Nan::SetMethod(proto, "renderbufferStorage", glOnCallWrap<webgl::RenderbufferStorage>);
+  Nan::SetMethod(proto, "getShaderSource", glOnCallWrap<webgl::GetShaderSource>);
+  Nan::SetMethod(proto, "validateProgram", glOnCallWrap<webgl::ValidateProgram>);
+
+  Nan::SetMethod(proto, "texSubImage2D", glOnCallWrap<webgl::TexSubImage2D>);
+  Nan::SetMethod(proto, "readPixels", glOnCallWrap<webgl::ReadPixels>);
+  Nan::SetMethod(proto, "getTexParameter", glOnCallWrap<webgl::GetTexParameter>);
+  Nan::SetMethod(proto, "getActiveAttrib", glOnCallWrap<webgl::GetActiveAttrib>);
+  Nan::SetMethod(proto, "getActiveUniform", glOnCallWrap<webgl::GetActiveUniform>);
+  Nan::SetMethod(proto, "getAttachedShaders", glOnCallWrap<webgl::GetAttachedShaders>);
+  Nan::SetMethod(proto, "getParameter", glOnCallWrap<webgl::GetParameter>);
+  Nan::SetMethod(proto, "getBufferParameter", glOnCallWrap<webgl::GetBufferParameter>);
+  Nan::SetMethod(proto, "getFramebufferAttachmentParameter", glOnCallWrap<webgl::GetFramebufferAttachmentParameter>);
+  Nan::SetMethod(proto, "getProgramInfoLog", glOnCallWrap<webgl::GetProgramInfoLog>);
+  Nan::SetMethod(proto, "getRenderbufferParameter", glOnCallWrap<webgl::GetRenderbufferParameter>);
+  Nan::SetMethod(proto, "getVertexAttrib", glOnCallWrap<webgl::GetVertexAttrib>);
+  Nan::SetMethod(proto, "getSupportedExtensions", glOnCallWrap<webgl::GetSupportedExtensions>);
+  Nan::SetMethod(proto, "getExtension", glOnCallWrap<webgl::GetExtension>);
+  Nan::SetMethod(proto, "checkFramebufferStatus", glOnCallWrap<webgl::CheckFramebufferStatus>);
+
+  Nan::SetMethod(proto, "frontFace", glOnCallWrap<webgl::FrontFace>);
 
   // OpenGL ES 2.1 constants
 
@@ -633,22 +641,46 @@ NAN_METHOD(newGl) {
   // external
   JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
 
-  info.GetReturnValue().Set(info.This());
+  Local<Function> ctorFn = ctor->GetFunction();
+  return scope.Escape(ctorFn);
+}
+
+WebGLContext::WebGLContext() {}
+
+WebGLContext::~WebGLContext() {}
+
+NAN_METHOD(WebGLContext::New) {
+  Nan::HandleScope scope;
+
+  WebGLContext *gl = new WebGLContext();
+  Local<Object> glObj = info.This();
+  gl->Wrap(glObj);
+
+  info.GetReturnValue().Set(glObj);
+}
+
+NAN_GETTER(WebGLContext::OnCallGetter) {
+  Nan::HandleScope scope;
+
+  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+  Local<Function> oncall = Nan::New(gl->oncall);
+  info.GetReturnValue().Set(oncall);
+}
+
+NAN_SETTER(WebGLContext::OnCallSetter) {
+  Nan::HandleScope scope;
+
+  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+
+  if (value->IsFunction()) {
+    gl->oncall.Reset(Local<Function>::Cast(value));
+  } else {
+    gl->oncall.Reset();
+  }
 }
 
 Local<Object> makeGl() {
-  Isolate *isolate = Isolate::GetCurrent();
-
-  Nan::EscapableHandleScope scope;
-
-  // constructor
-  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(newGl);
-  ctor->SetClassName(JS_STR("WebGLContext"));
-
-  // prototype
-  // Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-
-  return scope.Escape(ctor->GetFunction());
+  return WebGLContext::Initialize(Isolate::GetCurrent());
 }
 
 Local<Object> makeImage() {
