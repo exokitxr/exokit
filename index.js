@@ -528,6 +528,14 @@ if (require.main === module) {
         prompt: _getPrompt(),
         eval: replEval,
       });
+      r.defineCommand('go', {
+        help: 'Navigate to <url>',
+        action(url) {
+          window.location.href = url;
+          this.clearBufferedCommand();
+          this.displayPrompt();
+        }
+      });
       replHistory(r, path.join(process.env.HOME || process.cwd(), '.exokit_history'));
     }
   };
