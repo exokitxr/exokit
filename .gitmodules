@@ -1,6 +1,3 @@
 [submodule "deps/exokit-bindings"]
 	path = deps/exokit-bindings
 	url = https://github.com/modulesio/exokit-bindings
-[submodule "deps/glfw"]
-	path = deps/glfw
-	url = https://github.com/glfw/glfw
