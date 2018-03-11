@@ -6,6 +6,7 @@ const os = require('os');
 const vm = require('vm');
 const repl = require('repl');
 const mkdirp = require('mkdirp');
+const replHistory = require('repl.history');
 const exokit = require('exokit-core');
 const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
@@ -527,6 +528,7 @@ if (require.main === module) {
         prompt: _getPrompt(),
         eval: replEval,
       });
+      replHistory(r, path.join(process.env.HOME || process.cwd(), '.exokit_history'));
     }
   };
 
