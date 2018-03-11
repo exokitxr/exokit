@@ -37,7 +37,6 @@
             '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
             '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
-            '<(module_root_dir)/deps/glfw/include',
             '<(module_root_dir)/deps/glfw-bindings/include',
             '<(module_root_dir)/deps/openvr/include',
           ],
