@@ -66,17 +66,13 @@ nativeGl.viewport = function() {
 const canvasSymbol = Symbol();
 const windowHandleSymbol = Symbol();
 const contexts = [];
-nativeBindings.nativeGl = (Old => class WebGLContext extends Old { // XXX switch to context before all gl calls
-  constructor(canvas) {
-    super(canvas);
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
+nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
+  gl[canvasSymbol] = canvas;
+  gl[windowHandleSymbol] = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight);
 
-    this[canvasSymbol] = canvas;
-    this[windowHandleSymbol] = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight);
-
-    contexts.push(this);
-  }
-})(nativeBindings.nativeGl);
+  contexts.push(gl);
+};
 
 const nop = () => {};
 
