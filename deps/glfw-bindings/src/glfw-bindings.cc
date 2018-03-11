@@ -825,6 +825,13 @@ NAN_METHOD(BlitFrameBuffer) {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+NAN_METHOD(SetCurrentWindowContext) {
+  Nan::HandleScope scope;
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  glfwMakeContextCurrent(window);
+  return;
+}
+
 NAN_METHOD(DestroyWindow) {
   Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
@@ -995,7 +1002,7 @@ NAN_METHOD(SetCursorPos) {
 }
 
 /* @Module Context handling */
-NAN_METHOD(MakeContextCurrent) {
+/* NAN_METHOD(MakeContextCurrent) {
   Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   glfwMakeContextCurrent(window);
@@ -1013,7 +1020,7 @@ NAN_METHOD(SwapInterval) {
   int interval=info[0]->Int32Value();
   glfwSwapInterval(interval);
   return;
-}
+} */
 
 /* Extension support */
 NAN_METHOD(ExtensionSupported) {
@@ -1525,6 +1532,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "getRenderTarget", glfw::GetRenderTarget);
   Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
+  Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 
   return scope.Escape(target);
 }
