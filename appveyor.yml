@@ -33,7 +33,7 @@ artifacts:
     name: exokit-windows
 
 deploy:
-  release: $(APPVEYOR_REPO_TAG_NAME)-windows
+  release: $(APPVEYOR_REPO_TAG_NAME)
   description: 'Exokit git release'
   provider: GitHub
   auth_token:
