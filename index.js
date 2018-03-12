@@ -480,7 +480,12 @@ if (require.main === module) {
     const url = process.argv[2];
     if (url) {
       return exokit.load(url)
-        .then(window => _bindWindow(window, _bindWindow));
+        .then(window => {
+          const _bindHeadlessWindow = newWindow => {
+            _bindWindow(newWindow, _bindHeadlessWindow);
+          };
+          _bindHeadlessWindow(window);
+        });
     } else {
       let window;
       const _bindReplWindow = newWindow => {
