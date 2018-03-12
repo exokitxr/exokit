@@ -440,7 +440,9 @@ if (require.main === module) {
               }
               case 'quit': {
                 nativeWindow.destroy(data.windowHandle);
-                contexts.splice(contexts.findIndex(context => _windowHandleEquals(context.getWindowHandle(), data.windowHandle)), 1);
+                
+                const context = contexts.splice(contexts.findIndex(context => _windowHandleEquals(context.getWindowHandle(), data.windowHandle)), 1)[0];
+                context.destroy();
                 break;
               }
             }
