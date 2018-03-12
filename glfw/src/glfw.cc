@@ -467,24 +467,27 @@ void APIENTRY cursorEnterCB(GLFWwindow* window, int entered) {
 void APIENTRY mouseButtonCB(GLFWwindow *window, int button, int action, int mods) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
-  evt->Set(JS_STR("button"),JS_INT(button));
-  evt->Set(JS_STR("which"),JS_INT(button));
-  evt->Set(JS_STR("clientX"),JS_INT(lastX));
-  evt->Set(JS_STR("clientY"),JS_INT(lastY));
-  evt->Set(JS_STR("pageX"),JS_INT(lastX));
-  evt->Set(JS_STR("pageY"),JS_INT(lastY));
-  evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
-  evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
-  evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
-  evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+  {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
+    evt->Set(JS_STR("button"),JS_INT(button));
+    evt->Set(JS_STR("which"),JS_INT(button));
+    evt->Set(JS_STR("clientX"),JS_INT(lastX));
+    evt->Set(JS_STR("clientY"),JS_INT(lastY));
+    evt->Set(JS_STR("pageX"),JS_INT(lastX));
+    evt->Set(JS_STR("pageY"),JS_INT(lastY));
+    evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
+    evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
+    evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
+    evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR(action ? "mousedown" : "mouseup"), // event name
-    evt
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR(action ? "mousedown" : "mouseup"), // event name
+      evt
+    };
+    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 
   if (!action) {
     Local<Object> evt = Nan::New<Object>();
