@@ -506,6 +506,8 @@ if (require.main === module) {
 
       let lastUnderscore = window._;
       const replEval = (cmd, context, filename, callback) => {
+        cmd = cmd.slice(0, -1); // remove trailing \n
+
         let result, err = null, match;
 
         if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
