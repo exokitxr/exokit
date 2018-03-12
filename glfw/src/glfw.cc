@@ -741,7 +741,7 @@ NAN_METHOD(GetJoystickName) {
   info.GetReturnValue().Set(pointerToArray(window));
 } */
 
-NAN_METHOD(GetRenderTarget) {
+NAN_METHOD(CreateRenderTarget) {
   Nan::HandleScope scope;
   int width = info[0]->Uint32Value();
   int height = info[1]->Uint32Value();
@@ -791,6 +791,20 @@ NAN_METHOD(GetRenderTarget) {
   }
 }
 
+NAN_METHOD(DestroyRenderTarget) {
+  Nan::HandleScope scope;
+
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    GLuint fbo = info[0]->Uint32Value();
+    GLuint tex = info[1]->Uint32Value();
+
+    glDeleteFramebuffers(1, &fbo);
+    glDeleteTextures(1, &tex);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 NAN_METHOD(BindFrameBuffer) {
   Nan::HandleScope scope;
   GLuint fbo = info[0]->Uint32Value();
@@ -818,7 +832,7 @@ NAN_METHOD(BlitFrameBuffer) {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-    
+
 void SetCurrentWindowContext(GLFWwindow *window) {
   if (currentWindow != window) {
     glfwMakeContextCurrent(window);
@@ -1512,7 +1526,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
-  Nan::SetMethod(target, "getRenderTarget", glfw::GetRenderTarget);
+  Nan::SetMethod(target, "createRenderTarget", glfw::CreateRenderTarget);
+  Nan::SetMethod(target, "destroyRenderTarget", glfw::DestroyRenderTarget);
   Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
