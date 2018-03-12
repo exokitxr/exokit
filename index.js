@@ -154,7 +154,7 @@ nativeVr.requestPresent = function(layers) {
           renderHeight,
         });
 
-        nativeWindow.setWindowHandle(context.getWindowHandle());
+        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
         const width = halfWidth * 2;
         const [msFb, msTex] = nativeWindow.getRenderTarget(width, height, 4); // XXX make this per-context
@@ -173,7 +173,7 @@ nativeVr.requestPresent = function(layers) {
 nativeVr.exitPresent = function() {
   nativeVr.system.VR_Shutdown();
 
-  nativeWindow.setWindowHandle(vrPresentState.context.getWindowHandle());
+  nativeWindow.setCurrentWindowContext(vrPresentState.context.getWindowHandle());
   nativeWindow.bindFrameBuffer(0);
 
   // XXX destroy the old render target
