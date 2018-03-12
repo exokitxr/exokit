@@ -527,18 +527,7 @@ void APIENTRY scrollCB(GLFWwindow *window, double xoffset, double yoffset) {
   CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-int APIENTRY windowCloseCB() {
-  Nan::HandleScope scope;
-
-  Local<Value> argv[] = {
-    JS_STR("quit"), // event name
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
-
-  return 1;
-}
-
-NAN_METHOD(testJoystick) {
+/* NAN_METHOD(testJoystick) {
   Nan::HandleScope scope;
 
   int width = info[0]->Uint32Value();
@@ -603,7 +592,7 @@ NAN_METHOD(testScene) {
   glColor3f(0.f, 0.f, 1.f);
   glVertex3f(0.f+z, 0.6f, 0.f);
   glEnd();
-}
+} */
 
 NAN_METHOD(WindowHint) {
   Nan::HandleScope scope;
