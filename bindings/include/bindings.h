@@ -22,24 +22,26 @@ protected:
   ~WebGLContext();
 
   static NAN_METHOD(New);
+  static NAN_METHOD(Destroy);
   static NAN_METHOD(GetWindowHandle);
   static NAN_METHOD(SetWindowHandle);
 
+  bool live;
   GLFWwindow *windowHandle;
 
   template<NAN_METHOD(F)>
-  static NAN_METHOD(setContextWrap) {
-    {
-      Nan::HandleScope scope;
+  static NAN_METHOD(glCallWrap) {
+    Nan::HandleScope scope;
 
-      Local<Object> glObj = info.This();
-      WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(glObj);
+    Local<Object> glObj = info.This();
+    WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(glObj);
+    if (gl->live) {
       if (gl->windowHandle) {
         glfw::SetCurrentWindowContext(gl->windowHandle);
       }
-    }
 
-    F(info);
+      F(info);
+    }
   }
 };
 
