@@ -17,6 +17,11 @@
 using namespace v8;
 // using namespace node;
 
+namespace glfw {
+  Local<Array> pointerToArray(void *ptr);
+  void *arrayToPointer(Local<Array> array);
+}
+
 // Local<Object> makeGlfw();
 Local<Object> makeWindow();
 

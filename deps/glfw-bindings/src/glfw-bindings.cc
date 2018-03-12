@@ -9,6 +9,7 @@ Local<Array> pointerToArray(void *ptr) {
   result->Set(1, JS_NUM((uint32_t)(n & 0xFFFFFFFF)));
   return result;
 }
+
 void *arrayToPointer(Local<Array> array) {
   uintptr_t n = ((uintptr_t)array->Get(0)->Uint32Value() << 32) | (uintptr_t)array->Get(1)->Uint32Value();
   return (void *)n;
@@ -1109,7 +1110,7 @@ NAN_METHOD(Create) {
       GLuint vao;
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
-      
+
       info.GetReturnValue().Set(pointerToArray(windowHandle));
     } else {
       /* Problem: glewInit failed, something is seriously wrong. */
@@ -1177,10 +1178,10 @@ NAN_METHOD(SetCursorPosition) {
   atexit([]() {
     glfwTerminate();
   });
-  
+
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
-  
+
   Local<Object> target = Object::New(isolate);
 
   // GLFW initialization, termination and version querying
@@ -1519,7 +1520,7 @@ NAN_METHOD(SetCursorPosition) {
   // test scene
   JS_GLFW_SET_METHOD(testScene);
   JS_GLFW_SET_METHOD(testJoystick);
-  
+
   return scope.Escape(target);
 } */
 
