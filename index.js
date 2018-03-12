@@ -188,6 +188,62 @@ nativeVr.exitPresent = function() {
   return Promise.resolve();
 };
 
+nativeWindow.setEventHandler((type, data) => {
+  // console.log(type, data);
+
+  const {windowHandle} = data;
+  const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), windowHandle));
+  const canvas = context[canvasSymbol];
+  const window = canvas.ownerDocument.defaultView;
+
+  if (context) {
+    switch (type) {
+      case 'framebufferResize': {
+        const {width, height} = data;
+        innerWidth = width;
+        innerHeight = height;
+
+        window.innerWidth = innerWidth;
+        window.innerHeight = innerHeight;
+        window.dispatchEvent(new window.Event('resize'));
+        break;
+      }
+      case 'keydown':
+      case 'keyup':
+      case 'keypress': {
+        window.dispatchEvent(new window.KeyboardEvent(type, data));
+        break;
+      }
+      case 'mousedown':
+      case 'mouseup':
+      case 'click': {
+        window.dispatchEvent(new window.MouseEvent(type, data));
+        break;
+      }
+      case 'mousemove': {
+        if (window.document.pointerLockElement === canvas) {
+          data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
+          data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
+
+          nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
+        }
+
+        window.dispatchEvent(new window.MouseEvent(type, data));
+        break;
+      }
+      case 'quit': {
+        nativeWindow.destroy(windowHandle);
+
+        contexts.splice(contexts.indexOf(context), 1);
+        context.destroy();
+        break;
+      }
+    }
+  } else {
+    console.warn('got native window event with no matching context', {type, data});
+  }
+});
+
 // EXPORTS
 
 module.exports = exokit;
@@ -389,57 +445,7 @@ if (require.main === module) {
         }
 
         // poll for window events
-        nativeWindow.pollEvents({
-          emit: (type, data) => {
-            // console.log(type, data);
-
-            switch (type) {
-              case 'framebufferResize': {
-                const {width, height} = data;
-                innerWidth = width;
-                innerHeight = height;
-
-                if (window) {
-                  window.innerWidth = innerWidth;
-                  window.innerHeight = innerHeight;
-                  window.dispatchEvent(new window.Event('resize'));
-                }
-                break;
-              }
-              case 'keydown':
-              case 'keyup':
-              case 'keypress': {
-                window.dispatchEvent(new window.KeyboardEvent(type, data));
-                break;
-              }
-              case 'mousedown':
-              case 'mouseup':
-              case 'click': {
-                window.dispatchEvent(new window.MouseEvent(type, data));
-                break;
-              }
-              case 'mousemove': {
-                const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), data.windowHandle));
-                if (window.document.pointerLockElement === context[canvasSymbol]) {
-                  data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
-                  data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
-
-                  nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
-                }
-
-                window.dispatchEvent(new window.MouseEvent(type, data));
-                break;
-              }
-              case 'quit': {
-                nativeWindow.destroy(data.windowHandle);
-                
-                const context = contexts.splice(contexts.findIndex(context => _windowHandleEquals(context.getWindowHandle(), data.windowHandle)), 1)[0];
-                context.destroy();
-                break;
-              }
-            }
-          },
-        });
+        nativeWindow.pollEvents();
 
         // update media frames
         nativeVideo.Video.updateAll();
