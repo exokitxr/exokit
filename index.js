@@ -369,16 +369,6 @@ if (require.main === module) {
           });
         }
 
-        /* // bind framebuffer for rendering
-        for (let i = 0; i < contexts.length; i++) {
-          const context = contexts[i];
-          if (compositor) {
-            nativeWindow.bindFrameBuffer(msFbo); // XXX switch to context first
-          } else {
-            nativeWindow.bindFrameBuffer(0);
-          }
-        } */
-
         // poll for window events
         nativeWindow.pollEvents({
           emit: (type, data) => {
