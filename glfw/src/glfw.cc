@@ -101,15 +101,14 @@ NAN_METHOD(GetMonitors) {
 /* @Module: Window handling */
 GLFWwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
-Local<Object> *localEvents = nullptr;
+std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 
 void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   // Nan::HandleScope scope;
 
-  Local<Value> emit = (*localEvents)->Get(JS_STR("emit"));
-  if (emit->IsFunction()) {
-    Nan::Callback callback(Local<Function>::Cast(emit));
-    callback.Call(argc, argv);
+  if (eventHandler && !(*eventHandler).IsEmpty()) {
+    Local<Function> eventHandlerFn = Nan::New(*eventHandler);
+    eventHandlerFn->Call(Nan::Null(), argc, argv);
   }
 }
 
@@ -323,8 +322,8 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
   evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
   evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
 
-  int which=key, charCode=key;
-
+  int which = key;
+  int charCode = key;
   switch (key) {
     case GLFW_KEY_ESCAPE:       key = 27; break;
     case GLFW_KEY_ENTER:        key = 13; break;
@@ -408,10 +407,10 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
     case GLFW_KEY_RIGHT_BRACKET: key = 221; break; // ]
     case GLFW_KEY_APOSTROPHE:   key = 222; break; // '
   }
-
   evt->Set(JS_STR("which"),JS_INT(which));
   evt->Set(JS_STR("keyCode"),JS_INT(key));
   evt->Set(JS_STR("charCode"),JS_INT(charCode));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR(&actionNames[action << 3]), // event name
@@ -456,6 +455,7 @@ void APIENTRY cursorEnterCB(GLFWwindow* window, int entered) {
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("mouseenter"));
   evt->Set(JS_STR("entered"),JS_INT(entered));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("mouseenter"), // event name
@@ -502,6 +502,7 @@ void APIENTRY mouseButtonCB(GLFWwindow *window, int button, int action, int mods
     evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
     evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
     evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
       JS_STR("click"), // event name
@@ -519,6 +520,7 @@ void APIENTRY scrollCB(GLFWwindow *window, double xoffset, double yoffset) {
   evt->Set(JS_STR("wheelDeltaX"),JS_NUM(xoffset*120));
   evt->Set(JS_STR("wheelDeltaY"),JS_NUM(yoffset*120));
   evt->Set(JS_STR("wheelDelta"),JS_NUM(yoffset*120));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("mousewheel"), // event name
@@ -1118,13 +1120,15 @@ NAN_METHOD(Destroy) {
   glfwDestroyWindow(window);
 }
 
+NAN_METHOD(SetEventHandler) {
+  if (!eventHandler) {
+    eventHandler.reset(new Nan::Persistent<Function>());
+  }
+  (*eventHandler).Reset(Local<Function>::Cast(info[0]));
+}
+
 NAN_METHOD(PollEvents) {
-  Local<Object> arg = Local<Object>::Cast(info[0]);
-  localEvents = &arg;
-
   glfwPollEvents();
-
-  localEvents = nullptr;
 }
 
 NAN_METHOD(SwapBuffers) {
@@ -1518,6 +1522,7 @@ Local<Object> makeWindow() {
 
   Nan::SetMethod(target, "create", glfw::Create);
   Nan::SetMethod(target, "destroy", glfw::Destroy);
+  Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);

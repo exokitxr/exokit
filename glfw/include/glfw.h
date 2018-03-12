@@ -16,6 +16,7 @@
 
 using namespace v8;
 // using namespace node;
+// using namespace std;
 
 namespace glfw {
   Local<Array> pointerToArray(void *ptr);
