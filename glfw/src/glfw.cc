@@ -417,8 +417,7 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
     JS_STR(&actionNames[action << 3]), // event name
     evt,
   };
-
-  CallEmitter(2, argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY cursorPosCB(GLFWwindow* window, double x, double y) {
