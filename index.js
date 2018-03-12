@@ -146,7 +146,7 @@ nativeVr.requestPresent = function(layers) {
           renderWidth,
           renderHeight,
         });
-        
+
         nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
         const width = halfWidth * 2;
@@ -154,7 +154,7 @@ nativeVr.requestPresent = function(layers) {
         const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
 
         nativeWindow.bindFrameBuffer(msFbo);
-        
+
         vrPresentState.isPresenting = true;
         vrPresentState.system = newSystem;
         vrPresentState.compositor = nativeVr.compositor.NewCompositor();
@@ -170,7 +170,7 @@ nativeVr.requestPresent = function(layers) {
 };
 nativeVr.exitPresent = function() {
   nativeVr.system.VR_Shutdown();
-  
+
   nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex);
   nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex);
 
@@ -453,7 +453,7 @@ if (require.main === module) {
           const context = contexts[i];
           if (vrPresentState.context === context) {
             nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-            
+
             nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
             vrPresentState.compositor.Submit(vrPresentState.tex);
 
