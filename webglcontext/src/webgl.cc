@@ -996,10 +996,13 @@ NAN_METHOD(TexImage2D) {
   int borderV = border->Int32Value();
   int formatV = format->Int32Value();
   int typeV = type->Int32Value();
-  // int num;
-  char *pixelsV = (char *)getImageData(pixels);
 
-  if (pixelsV != nullptr) {
+  // int num;
+  char *pixelsV;
+
+  if (pixels->IsNull()) {
+    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, nullptr);
+  } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     if (canvas::ImageData::getFlip()) {
       size_t pixelSize = getFormatSize(formatV) * getTypeSize(typeV);
       unique_ptr<char[]> pixelsV2(new char[widthV * heightV * pixelSize]);
@@ -1011,7 +1014,7 @@ NAN_METHOD(TexImage2D) {
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV);
     }
   } else {
-    Nan::ThrowError("Invalid texture argument");
+    Nan::ThrowError(String::Concat(JS_STR("Invalid texture argument: "), pixels->ToString()));
   }
 }
 
