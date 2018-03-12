@@ -65,12 +65,12 @@ nativeGl.viewport = function() {
 // CALLBACKS
 
 const canvasSymbol = Symbol();
-const windowHandleSymbol = Symbol();
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   gl[canvasSymbol] = canvas;
-  gl[windowHandleSymbol] = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight);
+  const windowHandle = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight);
+  gl.setWindowHandle(windowHandle);
 
   contexts.push(gl);
 };
@@ -255,9 +255,9 @@ if (require.main === module) {
       window.document.addEventListener('pointerlockchange', () => {
         const {pointerLockElement} = window.document;
         if (pointerLockElement && pointerLockElement._context && pointerLockElement._context.constructor && pointerLockElement._context.constructor.name === 'WebGLContext') {
-          nativeWindow.setCursorMode(pointerLockElement._context[windowHandleSymbol], false);
+          nativeWindow.setCursorMode(pointerLockElement._context.getWindowHandle(), false);
         } else if (lastPointerLockElement && lastPointerLockElement._context && lastPointerLockElement._context.constructor && lastPointerLockElement._context.constructor.name === 'WebGLContext') {
-          nativeWindow.setCursorMode(lastPointerLockElement._context[windowHandleSymbol], true);
+          nativeWindow.setCursorMode(lastPointerLockElement._context.getWindowHandle(), true);
         }
         lastPointerLockElement = pointerLockElement;
       });
@@ -415,12 +415,12 @@ if (require.main === module) {
                 data.preventStopPropagation = nop;
                 data.preventStopImmediatePropagation = nop;
 
-                const context = contexts.find(context => _windowHandleEquals(context[windowHandleSymbol], data.windowHandle));
+                const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), data.windowHandle));
                 if (window.document.pointerLockElement === context[canvasSymbol]) {
                   data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
                   data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
 
-                  nativeWindow.setCursorPosition(context[windowHandleSymbol], window.innerWidth / 2, window.innerHeight / 2);
+                  nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
                 }
 
                 window.emit(type, data);
@@ -428,7 +428,7 @@ if (require.main === module) {
               }
               case 'quit': {
                 nativeWindow.destroy(data.windowHandle);
-                contexts.splice(contexts.findIndex(context => _windowHandleEquals(context[windowHandleSymbol], data.windowHandle)), 1);
+                contexts.splice(contexts.findIndex(context => _windowHandleEquals(context.getWindowHandle(), data.windowHandle)), 1);
                 break;
               }
             }
@@ -450,7 +450,7 @@ if (require.main === module) {
 
             nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
           }
-          nativeWindow.swapBuffers(context[windowHandleSymbol]);
+          nativeWindow.swapBuffers(context.getWindowHandle());
         }
 
         // wait for next frame
