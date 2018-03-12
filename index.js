@@ -452,10 +452,14 @@ if (require.main === module) {
         for (let i = 0; i < contexts.length; i++) {
           const context = contexts[i];
           if (vrPresentState.context === context) {
-            nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight); // XXX switch to context first
+            nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+            
+            nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
             vrPresentState.compositor.Submit(texture);
 
             nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
+
+            nativeWindow.bindFrameBuffer(msFbo);
           }
           nativeWindow.swapBuffers(context.getWindowHandle());
         }
