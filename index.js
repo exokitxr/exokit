@@ -69,8 +69,7 @@ const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   gl[canvasSymbol] = canvas;
-  const windowHandle = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight);
-  gl.setWindowHandle(windowHandle);
+  gl.setWindowHandle(nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight));
 
   contexts.push(gl);
 };
