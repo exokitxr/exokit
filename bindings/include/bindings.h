@@ -8,6 +8,7 @@
 #include <imageBitmap-context.h>
 #include <canvas-context.h>
 #include <path2d-context.h>
+#include <glfw.h>
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
@@ -21,21 +22,20 @@ protected:
   ~WebGLContext();
 
   static NAN_METHOD(New);
-  static NAN_GETTER(OnCallGetter);
-  static NAN_SETTER(OnCallSetter);
+  static NAN_METHOD(GetWindowHandle);
+  static NAN_METHOD(SetWindowHandle);
 
-  Nan::Persistent<Function> oncall;
+  GLFWwindow *windowHandle;
 
   template<NAN_METHOD(F)>
-  static NAN_METHOD(glOnCallWrap) {
+  static NAN_METHOD(setContextWrap) {
     {
       Nan::HandleScope scope;
 
       Local<Object> glObj = info.This();
       WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(glObj);
-      if (!gl->oncall.IsEmpty()) {
-        Local<Function> oncallFn = Nan::New(gl->oncall);
-        oncallFn->Call(glObj, 0, nullptr);
+      if (gl->windowHandle) {
+        glfw::SetCurrentWindowContext(gl->windowHandle);
       }
     }
 
