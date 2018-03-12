@@ -75,8 +75,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   contexts.push(gl);
 };
 
-const nop = () => {};
-
 const zeroMatrix = new THREE.Matrix4();
 const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
@@ -405,28 +403,23 @@ if (require.main === module) {
                 if (window) {
                   window.innerWidth = innerWidth;
                   window.innerHeight = innerHeight;
-                  window.emit('resize');
+                  window.dispatchEvent(new window.Event('resize'));
                 }
                 break;
               }
               case 'keydown':
               case 'keyup':
-              case 'keypress':
+              case 'keypress': {
+                window.dispatchEvent(new window.KeyboardEvent(type, data));
+                break;
+              }
               case 'mousedown':
               case 'mouseup':
               case 'click': {
-                data.preventDefault = nop;
-                data.preventStopPropagation = nop;
-                data.preventStopImmediatePropagation = nop;
-
-                window.emit(type, data);
+                window.dispatchEvent(new window.MouseEvent(type, data));
                 break;
               }
               case 'mousemove': {
-                data.preventDefault = nop;
-                data.preventStopPropagation = nop;
-                data.preventStopImmediatePropagation = nop;
-
                 const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), data.windowHandle));
                 if (window.document.pointerLockElement === context[canvasSymbol]) {
                   data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
@@ -435,7 +428,7 @@ if (require.main === module) {
                   nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
                 }
 
-                window.emit(type, data);
+                window.dispatchEvent(new window.MouseEvent(type, data));
                 break;
               }
               case 'quit': {
