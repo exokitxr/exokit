@@ -99,11 +99,11 @@ const vrPresentState = {
   system: null,
   compositor: null,
   context: null,
+  msFbo: null,
+  msTex: null,
+  fbo: null,
+  tex: null,
 };
-let msFbo = null; // XXX track this per-context
-let msTexture = null;
-let fbo = null;
-let texture = null;
 let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
@@ -140,11 +140,6 @@ nativeVr.requestPresent = function(layers) {
 
     return _requestSystem()
       .then(newSystem => {
-        vrPresentState.isPresenting = true;
-        vrPresentState.system = newSystem;
-        vrPresentState.compositor = nativeVr.compositor.NewCompositor();
-        vrPresentState.context = context;
-
         const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
         renderWidth = halfWidth;
         renderHeight = height;
@@ -153,18 +148,23 @@ nativeVr.requestPresent = function(layers) {
           renderWidth,
           renderHeight,
         });
-
+        
         nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
         const width = halfWidth * 2;
-        const [msFb, msTex] = nativeWindow.getRenderTarget(width, height, 4); // XXX make this per-context
-        msFbo = msFb;
-        msTexture = msTex;
-        const [fb, tex] = nativeWindow.getRenderTarget(width, height, 1);
-        fbo = fb;
-        texture = tex;
+        const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
+        const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
 
         nativeWindow.bindFrameBuffer(msFbo);
+        
+        vrPresentState.isPresenting = true;
+        vrPresentState.system = newSystem;
+        vrPresentState.compositor = nativeVr.compositor.NewCompositor();
+        vrPresentState.context = context;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.fbo = fbo;
+        vrPresentState.tex = tex;
       });
   } else {
     return Promise.reject(new Error('no HTMLCanvasElement source with WebGLContext provided'));
@@ -172,16 +172,21 @@ nativeVr.requestPresent = function(layers) {
 };
 nativeVr.exitPresent = function() {
   nativeVr.system.VR_Shutdown();
+  
+  nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex);
+  nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex);
 
   nativeWindow.setCurrentWindowContext(vrPresentState.context.getWindowHandle());
   nativeWindow.bindFrameBuffer(0);
-
-  // XXX destroy the old render target
 
   vrPresentState.isPresenting = false;
   vrPresentState.system = null;
   vrPresentState.compositor = null;
   vrPresentState.context = null;
+  vrPresentState.msFbo = null;
+  vrPresentState.msTex = null;
+  vrPresentState.fbo = null;
+  vrPresentState.tex = null;
 
   return Promise.resolve();
 };
@@ -454,12 +459,12 @@ if (require.main === module) {
           if (vrPresentState.context === context) {
             nativeWindow.setCurrentWindowContext(context.getWindowHandle());
             
-            nativeWindow.blitFrameBuffer(msFbo, fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
-            vrPresentState.compositor.Submit(texture);
+            nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
+            vrPresentState.compositor.Submit(vrPresentState.tex);
 
-            nativeWindow.blitFrameBuffer(fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
+            nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
 
-            nativeWindow.bindFrameBuffer(msFbo);
+            nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
           }
           nativeWindow.swapBuffers(context.getWindowHandle());
         }
