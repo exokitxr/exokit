@@ -8,7 +8,7 @@
 
 #include <v8.h>
 #include <bindings.h>
-#include <glfw-bindings.h>
+#include <glfw.h>
 #include <openvr-bindings.h>
 
 using namespace v8;
