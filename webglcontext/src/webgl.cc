@@ -1935,18 +1935,22 @@ NAN_METHOD(TexSubImage2D) {
   GLsizei height = info[5]->Int32Value();
   GLenum format = info[6]->Int32Value();
   GLenum type = info[7]->Int32Value();
-  // int num;
-  char *pixels = (char *)getImageData(info[8]);
+  Local<Value> pixels = info[8];
 
-  if (pixels != nullptr) {
+  // int num;
+  char *pixelsV;
+
+  if (pixels->IsNull()) {
+    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, nullptr);
+  } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     if (canvas::ImageData::getFlip()) {
       size_t pixelSize = getFormatSize(format) * getTypeSize(type);
-      unique_ptr<char[]> pixels2(new char[width * height * pixelSize]);
-      flipImageData(pixels2.get(), pixels, width, height, pixelSize);
+      unique_ptr<char[]> pixelsV2(new char[width * height * pixelSize]);
+      flipImageData(pixelsV2.get(), pixelsV, width, height, pixelSize);
 
-      glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels2.get());
+      glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixelsV2.get());
     } else {
-      glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+      glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixelsV);
     }
   } else {
     Nan::ThrowError("Invalid texture argument");
