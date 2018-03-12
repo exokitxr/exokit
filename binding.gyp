@@ -14,7 +14,7 @@
             'deps/exokit-bindings/platform/windows/src/*.cpp',
             'deps/exokit-bindings/webaudiocontext/src/*.cpp',
             'deps/exokit-bindings/videocontext/src/*.cpp',
-            'deps/glfw-bindings/src/*.cc',
+            'deps/exokit-bindings/glfw/src/*.cc',
             'deps/openvr/src/*.cpp',
           ],
           'include_dirs': [
@@ -37,7 +37,7 @@
             '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
             '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
-            '<(module_root_dir)/deps/glfw-bindings/include',
+            '<(module_root_dir)/deps/exokit-bindings/glfw/include',
             '<(module_root_dir)/deps/openvr/include',
           ],
           'library_dirs': [
@@ -89,7 +89,7 @@
             '<!@(ls -1 deps/exokit-bindings/webglcontext/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/webaudiocontext/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/videocontext/src/*.cpp)',
-            '<!@(ls -1 deps/glfw-bindings/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/glfw/src/*.cc)',
             '<!@(ls -1 deps/openvr/src/*.cpp)',
           ],
           'include_dirs': [
@@ -112,7 +112,7 @@
             '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
             '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
-            '<(module_root_dir)/deps/glfw-bindings/include',
+            '<(module_root_dir)/deps/exokit-bindings/glfw/include',
             '<(module_root_dir)/deps/openvr/include',
           ],
           'library_dirs': [
@@ -166,7 +166,7 @@
             '<!@(ls -1 deps/exokit-bindings/webglcontext/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/webaudiocontext/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/videocontext/src/*.cpp)',
-            '<!@(ls -1 deps/glfw-bindings/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/glfw/src/*.cc)',
             '<!@(ls -1 deps/openvr/src/*.cpp)',
           ],
           'include_dirs': [
@@ -189,8 +189,7 @@
             '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
             '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
-            '<(module_root_dir)/deps/glfw/include',
-            '<(module_root_dir)/deps/glfw-bindings/include',
+            '<(module_root_dir)/deps/exokit-bindings/glfw/include',
             '<(module_root_dir)/deps/openvr/include',
           ],
           'library_dirs': [
