@@ -569,6 +569,19 @@ if (require.main === module) {
           this.displayPrompt();
         }
       });
+      r.defineCommand('redirect', {
+        help: 'Redirect <url1> to <url2>',
+        action(url) {
+          const [url1, url2] = url.split(' ');
+          if (url1 && url2) {
+            window.redirect(url1, url2);
+          } else {
+            console.warn('invalid arguments');
+          }
+          this.clearBufferedCommand();
+          this.displayPrompt();
+        }
+      });
       replHistory(r, path.join(process.env.HOME || process.cwd(), '.exokit_history'));
       r.on('exit', () => {
         process.exit();
