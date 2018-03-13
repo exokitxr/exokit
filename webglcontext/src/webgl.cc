@@ -1003,7 +1003,7 @@ NAN_METHOD(TexImage2D) {
   if (pixels->IsNull()) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, nullptr);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
-    if (canvas::ImageData::getFlip()) {
+    if (canvas::ImageData::getFlip() && !pixels->IsArrayBufferView()) {
       size_t pixelSize = getFormatSize(formatV) * getTypeSize(typeV);
       unique_ptr<char[]> pixelsV2(new char[widthV * heightV * pixelSize]);
 
@@ -1943,7 +1943,7 @@ NAN_METHOD(TexSubImage2D) {
   if (pixels->IsNull()) {
     glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, nullptr);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
-    if (canvas::ImageData::getFlip()) {
+    if (canvas::ImageData::getFlip() && !pixels->IsArrayBufferView()) {
       size_t pixelSize = getFormatSize(format) * getTypeSize(type);
       unique_ptr<char[]> pixelsV2(new char[width * height * pixelSize]);
       flipImageData(pixelsV2.get(), pixelsV, width, height, pixelSize);
