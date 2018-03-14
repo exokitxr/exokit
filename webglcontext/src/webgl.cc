@@ -88,6 +88,16 @@ inline void *getImageData(Local<Value> arg, int *num = nullptr) {
   return pixels;
 }
 
+inline void reformatImageData(char *dstData, char *srcData, size_t dstPixelSize, size_t srcPixelSize, size_t numPixels) {
+  size_t clipSize = srcPixelSize - dstPixelSize;
+  for (size_t i = 0; i < numPixels; i++) {
+    for (size_t j = 0; j < dstPixelSize; j++) {
+      dstData[i * dstPixelSize + j] = srcData[i * srcPixelSize + srcPixelSize - clipSize - 1 - j];
+    }
+    // memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize + clipSize, dstPixelSize);
+  }
+}
+
 inline void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize) {
   size_t stride = width * pixelSize;
   size_t size = width * height * pixelSize;
@@ -1073,15 +1083,27 @@ NAN_METHOD(TexImage2D) {
   if (pixels->IsNull()) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, nullptr);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
-    if (canvas::ImageData::getFlip() && !pixels->IsArrayBufferView()) {
-      size_t pixelSize = getFormatSize(formatV) * getTypeSize(typeV);
-      unique_ptr<char[]> pixelsV2(new char[widthV * heightV * pixelSize]);
-
-      flipImageData(pixelsV2.get(), pixelsV, widthV, heightV, pixelSize);
-
-      glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2.get());
+    size_t formatSize = getFormatSize(formatV);
+    size_t typeSize = getTypeSize(typeV);
+    size_t pixelSize = formatSize * typeSize;
+    char *pixelsV2;
+    unique_ptr<char[]> pixelsV2Buffer;
+    if (formatSize != 4 && !pixels->IsArrayBufferView()) {
+      pixelsV2Buffer.reset(new char[widthV * heightV * pixelSize]);
+      pixelsV2 = pixelsV2Buffer.get();
+      reformatImageData(pixelsV2, pixelsV, formatSize * typeSize, 4 * typeSize, widthV * heightV);
     } else {
-      glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV);
+      pixelsV2 = pixelsV;
+    }
+
+    if (canvas::ImageData::getFlip() && !pixels->IsArrayBufferView()) {
+      unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
+
+      flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
+
+      glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV3Buffer.get());
+    } else {
+      glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2);
     }
   } else {
     Nan::ThrowError(String::Concat(JS_STR("Invalid texture argument: "), pixels->ToString()));
@@ -1997,30 +2019,42 @@ NAN_METHOD(ValidateProgram) {
 NAN_METHOD(TexSubImage2D) {
   Nan::HandleScope scope;
 
-  GLenum target = info[0]->Int32Value();
-  GLint level = info[1]->Int32Value();
-  GLint xoffset = info[2]->Int32Value();
-  GLint yoffset = info[3]->Int32Value();
-  GLsizei width = info[4]->Int32Value();
-  GLsizei height = info[5]->Int32Value();
-  GLenum format = info[6]->Int32Value();
-  GLenum type = info[7]->Int32Value();
+  GLenum targetV = info[0]->Int32Value();
+  GLint levelV = info[1]->Int32Value();
+  GLint xoffsetV = info[2]->Int32Value();
+  GLint yoffsetV = info[3]->Int32Value();
+  GLsizei widthV = info[4]->Int32Value();
+  GLsizei heightV = info[5]->Int32Value();
+  GLenum formatV = info[6]->Int32Value();
+  GLenum typeV = info[7]->Int32Value();
   Local<Value> pixels = info[8];
 
   // int num;
   char *pixelsV;
 
   if (pixels->IsNull()) {
-    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, nullptr);
+    glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, nullptr);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
-    if (canvas::ImageData::getFlip() && !pixels->IsArrayBufferView()) {
-      size_t pixelSize = getFormatSize(format) * getTypeSize(type);
-      unique_ptr<char[]> pixelsV2(new char[width * height * pixelSize]);
-      flipImageData(pixelsV2.get(), pixelsV, width, height, pixelSize);
-
-      glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixelsV2.get());
+    size_t formatSize = getFormatSize(formatV);
+    size_t typeSize = getTypeSize(typeV);
+    size_t pixelSize = formatSize * typeSize;
+    char *pixelsV2;
+    unique_ptr<char[]> pixelsV2Buffer;
+    if (formatSize != 4 && !pixels->IsArrayBufferView()) {
+      pixelsV2Buffer.reset(new char[widthV * heightV * pixelSize]);
+      pixelsV2 = pixelsV2Buffer.get();
+      reformatImageData(pixelsV2, pixelsV, formatSize * typeSize, 4 * typeSize, widthV * heightV);
     } else {
-      glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixelsV);
+      pixelsV2 = pixelsV;
+    }
+
+    if (canvas::ImageData::getFlip() && !pixels->IsArrayBufferView()) {
+      unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
+      flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
+
+      glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, pixelsV3Buffer.get());
+    } else {
+      glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, pixelsV2);
     }
   } else {
     Nan::ThrowError("Invalid texture argument");
