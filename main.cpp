@@ -151,12 +151,15 @@ void InitExports(Handle<Object> exports) {
 
   Local<Value> imageBitmap = makeImageBitmap(image);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageBitmap"), imageBitmap);
-
-  Local<Value> canvas = makeCanvasRenderingContext2D(imageData);
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasRenderingContext2D"), canvas);
-
+  
   Local<Value> path2d = makePath2D();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
+
+  Local<Value> canvasGradient = makeCanvasGradient();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasGradient"), canvasGradient);
+
+  Local<Value> canvas = makeCanvasRenderingContext2D(imageData, canvasGradient);
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasRenderingContext2D"), canvas);
 
   Local<Value> audio = makeAudio();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
