@@ -34,7 +34,7 @@ sk_sp<SkShader> CanvasGradient::getShader() const {
     };
     return SkGradientShader::MakeLinear(points, colors.data(), positions.data(), colors.size(), SkShader::kClamp_TileMode, 0, nullptr);
   } else if (type == CanvasGradient::RadialType) {
-    return SkGradientShader::MakeRadial(SkPoint::Make(x0, y0), r0, colors.data(), positions.data(), colors.size(), SkShader::kClamp_TileMode, 0, nullptr);
+    return SkGradientShader::MakeRadial(SkPoint::Make(x1, y1), r1, colors.data(), positions.data(), colors.size(), SkShader::kClamp_TileMode, 0, nullptr);
   } else {
     return nullptr;
   }
