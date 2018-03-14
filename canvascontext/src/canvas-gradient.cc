@@ -26,6 +26,20 @@ CanvasGradient::CanvasGradient(float x0, float y0, float r0, float x1, float y1,
 
 CanvasGradient::~CanvasGradient () {}
 
+sk_sp<SkShader> CanvasGradient::getShader() const {
+  if (type == CanvasGradient::LinearType) {
+    SkPoint points[] = {
+      SkPoint::Make(x0, y0),
+      SkPoint::Make(x1, y1),
+    };
+    return SkGradientShader::MakeLinear(points, colors.data(), positions.data(), colors.size(), SkShader::kClamp_TileMode, 0, nullptr);
+  } else if (type == CanvasGradient::RadialType) {
+    return SkGradientShader::MakeRadial(SkPoint::Make(x0, y0), r0, colors.data(), positions.data(), colors.size(), SkShader::kClamp_TileMode, 0, nullptr);
+  } else {
+    return nullptr;
+  }
+}
+
 void CanvasGradient::AddColorStop(float offset, SkColor color) {
   positions.push_back(offset);
   colors.push_back(color);
@@ -34,7 +48,7 @@ void CanvasGradient::AddColorStop(float offset, SkColor color) {
 NAN_METHOD(CanvasGradient::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
+  if (info.Length() == 4 && info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
     float x0 = info[0]->NumberValue();
     float y0 = info[1]->NumberValue();
     float x1 = info[2]->NumberValue();
@@ -42,9 +56,8 @@ NAN_METHOD(CanvasGradient::New) {
 
     CanvasGradient *canvasGradient = new CanvasGradient(x0, y0, x1, y1);
     canvasGradient->Wrap(info.This());
-    // registerImage(image);
     info.GetReturnValue().Set(info.This());
-  } else if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsNumber() && info[5]->IsNumber()) {
+  } else if (info.Length() == 6 && info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsNumber() && info[5]->IsNumber()) {
     float x0 = info[0]->NumberValue();
     float y0 = info[1]->NumberValue();
     float r0 = info[2]->NumberValue();
@@ -54,7 +67,6 @@ NAN_METHOD(CanvasGradient::New) {
 
     CanvasGradient *canvasGradient = new CanvasGradient(x0, y0, r0, x1, y1, r1);
     canvasGradient->Wrap(info.This());
-    // registerImage(image);
     info.GetReturnValue().Set(info.This());
   } else {
     Nan::ThrowError("invalid arguments");

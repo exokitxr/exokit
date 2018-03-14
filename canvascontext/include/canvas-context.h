@@ -25,6 +25,7 @@ class Image;
 class ImageData;
 class ImageBitmap;
 class Path2D;
+class CanvasGradient;
 
 enum class TextBaseline {
   TOP,
@@ -41,7 +42,7 @@ enum class Direction {
 
 class CanvasRenderingContext2D : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons);
+  static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons);
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();
@@ -127,6 +128,8 @@ protected:
   static NAN_METHOD(ClearRect);
   static NAN_METHOD(FillText);
   static NAN_METHOD(StrokeText);
+  static NAN_METHOD(CreateLinearGradient);
+  static NAN_METHOD(CreateRadialGradient);
   static NAN_METHOD(Resize);
   static NAN_METHOD(DrawImage);
   static NAN_METHOD(CreateImageData);
@@ -163,5 +166,6 @@ private:
 #include "imageData-context.h"
 #include "imageBitmap-context.h"
 #include "path2d-context.h"
+#include "canvas-gradient.h"
 
 #endif

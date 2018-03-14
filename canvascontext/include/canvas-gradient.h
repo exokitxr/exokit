@@ -12,6 +12,7 @@
 #include <SkRefCnt.h>
 #include <SkScalar.h>
 #include <SkPaint.h>
+#include <SkGradientShader.h>
 
 using namespace v8;
 using namespace node;
@@ -19,6 +20,13 @@ using namespace node;
 class CanvasGradient : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
+
+  enum GradientType {
+    LinearType,
+    RadialType,
+  };
+
+  sk_sp<SkShader> getShader() const;
 
 protected:
   CanvasGradient(float x0, float y0, float x1, float y1);
@@ -29,11 +37,6 @@ protected:
 
   static NAN_METHOD(New);
   static NAN_METHOD(AddColorStop);
-
-  enum GradientType {
-    LinearType,
-    RadialType,
-  };
 
   GradientType type;
   float x0;

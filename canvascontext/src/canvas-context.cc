@@ -8,7 +8,7 @@ void flipCanvasY(SkCanvas *canvas, float height) {
   canvas->scale(1.0, -1.0);
 }
 
-Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons) {
+Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -41,6 +41,8 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"clearRect", ClearRect);
   Nan::SetMethod(proto,"fillText", FillText);
   Nan::SetMethod(proto,"strokeText", StrokeText);
+  Nan::SetMethod(proto,"createLinearGradient", CreateLinearGradient);
+  Nan::SetMethod(proto,"createRadialGradient", CreateRadialGradient);
   Nan::SetMethod(proto,"resize", Resize);
   Nan::SetMethod(proto,"drawImage", DrawImage);
   Nan::SetMethod(proto,"createImageData", CreateImageData);
@@ -49,6 +51,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
 
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
+  ctorFn->Set(JS_STR("CanvasGradient"), canvasGradientCons);
 
   return scope.Escape(ctorFn);
 }
@@ -344,6 +347,12 @@ NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
 
     canvas::web_color webColor = canvas::web_color::from_string(strokeStyle.c_str());
     context->strokePaint.setColor(((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0)));
+    context->fillPaint.setShader(nullptr);
+  } else if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+    CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
+    context->fillPaint.setShader(canvasGradient->getShader());
   } else {
     Nan::ThrowError("strokeStyle: invalid arguments");
   }
@@ -358,11 +367,18 @@ NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
     v8::String::Utf8Value text(value);
     std::string fillStyle(*text, text.length());
 
     canvas::web_color webColor = canvas::web_color::from_string(fillStyle.c_str());
     context->fillPaint.setColor(((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0)));
+    context->fillPaint.setShader(nullptr);
+  } else if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+    CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
+    context->fillPaint.setShader(canvasGradient->getShader());
   } else {
      Nan::ThrowError("fillStyle: invalid arguments");
   }
@@ -766,7 +782,6 @@ NAN_METHOD(CanvasRenderingContext2D::Fill) {
 
   if (info[0]->BooleanValue() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("Path2D"))) {
     Path2D *path2d = ObjectWrap::Unwrap<Path2D>(Local<Object>::Cast(info[0]));
-
     context->Fill(*path2d);
   } else {
     context->Fill();
@@ -902,6 +917,46 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeText) {
   context->StrokeText(string, x, y);
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
+}
+
+NAN_METHOD(CanvasRenderingContext2D::CreateLinearGradient) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
+    Local<Object> contextObj = Local<Object>::Cast(info.This());
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(contextObj);
+
+    Local<Function> canvasGradientCons = Local<Function>::Cast(contextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("CanvasGradient")));
+    Local<Value> argv[] = {
+      info[0],
+      info[1],
+      info[2],
+      info[3],
+    };
+    Local<Object> canvasGradientObj = canvasGradientCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+    info.GetReturnValue().Set(canvasGradientObj);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(CanvasRenderingContext2D::CreateRadialGradient) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsNumber() && info[5]->IsNumber()) {
+    Local<Object> contextObj = Local<Object>::Cast(info.This());
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(contextObj);
+
+    Local<Function> canvasGradientCons = Local<Function>::Cast(contextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("CanvasGradient")));
+    Local<Value> argv[] = {
+      info[0],
+      info[1],
+      info[2],
+      info[3],
+      info[4],
+      info[5],
+    };
+    Local<Object> canvasGradientObj = canvasGradientCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+    info.GetReturnValue().Set(canvasGradientObj);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Resize) {
