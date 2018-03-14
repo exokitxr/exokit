@@ -456,17 +456,21 @@ if (require.main === module) {
         // submit frame
         for (let i = 0; i < contexts.length; i++) {
           const context = contexts[i];
-          if (vrPresentState.context === context) {
-            nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+          if (context.isDirty()) {
+            if (vrPresentState.context === context) {
+              nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-            nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
-            vrPresentState.compositor.Submit(vrPresentState.tex);
+              nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
+              vrPresentState.compositor.Submit(vrPresentState.tex);
 
-            nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
+              nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
 
-            nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
+              nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
+            }
+            nativeWindow.swapBuffers(context.getWindowHandle());
+            
+            context.clearDirty();
           }
-          nativeWindow.swapBuffers(context.getWindowHandle());
         }
 
         // wait for next frame
