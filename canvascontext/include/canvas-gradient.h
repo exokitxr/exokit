@@ -33,7 +33,7 @@ protected:
   CanvasGradient(float x0, float y0, float r0, float x1, float y1, float r1);
   virtual ~CanvasGradient();
 
-  void AddColorStop(float offset, SkColor color);
+  void AddColorStop(SkScalar offset, SkColor color);
 
   static NAN_METHOD(New);
   static NAN_METHOD(AddColorStop);

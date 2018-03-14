@@ -40,7 +40,7 @@ sk_sp<SkShader> CanvasGradient::getShader() const {
   }
 }
 
-void CanvasGradient::AddColorStop(float offset, SkColor color) {
+void CanvasGradient::AddColorStop(SkScalar offset, SkColor color) {
   positions.push_back(offset);
   colors.push_back(color);
 }
@@ -79,7 +79,7 @@ NAN_METHOD(CanvasGradient::AddColorStop) {
   if (info[0]->IsNumber() && info[1]->IsString()) {
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(info.This());
     
-    float offset = info[0]->NumberValue();
+    SkScalar offset = info[0]->NumberValue();
     v8::String::Utf8Value colorUtf8Value(Local<String>::Cast(info[1]));
     canvas::web_color webColor = canvas::web_color::from_string(*colorUtf8Value);
 
