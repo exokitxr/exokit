@@ -1,6 +1,5 @@
 #include <cstring>
 #include <vector>
-// #include <iostream>
 
 #include <webglcontext/include/webgl.h>
 #include <canvascontext/include/imageData-context.h>
@@ -904,6 +903,75 @@ size_t getTypeSize(int type) {
   }
 }
 
+int formatMap[] = {
+  GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE,
+  GL_RGBA8_SNORM, GL_RGBA, GL_BYTE,
+  GL_RGBA4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4,
+  GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV,
+  GL_RGB5_A1, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1,
+  GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT,
+  GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT_OES,
+  GL_RGBA32F, GL_RGBA, GL_FLOAT,
+  GL_RGBA8UI, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE,
+  GL_RGBA8I, GL_RGBA_INTEGER, GL_BYTE,
+  GL_RGBA16UI, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT,
+  GL_RGBA16I, GL_RGBA_INTEGER, GL_SHORT,
+  GL_RGBA32UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT,
+  GL_RGBA32I, GL_RGBA_INTEGER, GL_INT,
+  GL_RGB10_A2UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT_2_10_10_10_REV,
+  GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE,
+  GL_RGB8_SNORM, GL_RGB, GL_BYTE,
+  GL_RGB565, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
+  GL_R11F_G11F_B10F, GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV,
+  GL_RGB9_E5, GL_RGB, GL_UNSIGNED_INT_5_9_9_9_REV,
+  GL_RGB16F, GL_RGB, GL_HALF_FLOAT,
+  GL_RGB16F, GL_RGB, GL_HALF_FLOAT_OES,
+  GL_RGB32F, GL_RGB, GL_FLOAT,
+  GL_RGB8UI, GL_RGB_INTEGER, GL_UNSIGNED_BYTE,
+  GL_RGB8I, GL_RGB_INTEGER, GL_BYTE,
+  GL_RGB16UI, GL_RGB_INTEGER, GL_UNSIGNED_SHORT,
+  GL_RGB16I, GL_RGB_INTEGER, GL_SHORT,
+  GL_RGB32UI, GL_RGB_INTEGER, GL_UNSIGNED_INT,
+  GL_RGB32I, GL_RGB_INTEGER, GL_INT,
+  GL_RG8, GL_RG, GL_UNSIGNED_BYTE,
+  GL_RG8_SNORM, GL_RG, GL_BYTE,
+  GL_RG16F, GL_RG, GL_HALF_FLOAT,
+  GL_RG16F, GL_RG, GL_HALF_FLOAT_OES,
+  GL_RG32F, GL_RG, GL_FLOAT,
+  GL_RG8UI, GL_RG_INTEGER, GL_UNSIGNED_BYTE,
+  GL_RG8I, GL_RG_INTEGER, GL_BYTE,
+  GL_RG16UI, GL_RG_INTEGER, GL_UNSIGNED_SHORT,
+  GL_RG16I, GL_RG_INTEGER, GL_SHORT,
+  GL_RG32UI, GL_RG_INTEGER, GL_UNSIGNED_INT,
+  GL_RG32I, GL_RG_INTEGER, GL_INT,
+  GL_R8, GL_RED, GL_UNSIGNED_BYTE,
+  GL_R8_SNORM, GL_RED, GL_BYTE,
+  GL_R16F, GL_RED, GL_HALF_FLOAT,
+  GL_R16F, GL_RED, GL_HALF_FLOAT_OES,
+  GL_R32F, GL_RED, GL_FLOAT,
+  GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+  GL_R8I, GL_RED_INTEGER, GL_BYTE,
+  GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT,
+  GL_R16I, GL_RED_INTEGER, GL_SHORT,
+  GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT,
+  GL_R32I, GL_RED_INTEGER, GL_INT,
+};
+
+int normalizeInternalFormat(int internalformat, int format, int type) {
+  if (internalformat == GL_RED || internalformat == GL_RG || internalformat == GL_RGB || internalformat == GL_RGBA) {
+    for (size_t i = 0; i < sizeof(formatMap)/3; i++) {
+      int b = formatMap[i * 3 + 1];
+      int c = formatMap[i * 3 + 2];
+      if (format == b && type == c) {
+        int a = formatMap[i * 3 + 0];
+        internalformat = a;
+        break;
+      }
+    }
+  }
+  return internalformat;
+}
+
 NAN_METHOD(TexImage2D) {
   Isolate *isolate = Isolate::GetCurrent();
 
@@ -996,6 +1064,8 @@ NAN_METHOD(TexImage2D) {
   int borderV = border->Int32Value();
   int formatV = format->Int32Value();
   int typeV = type->Int32Value();
+
+  internalformatV = normalizeInternalFormat(internalformatV, formatV, typeV);
 
   // int num;
   char *pixelsV;
