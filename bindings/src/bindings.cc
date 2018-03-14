@@ -28,6 +28,8 @@ Handle<Object> WebGLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "destroy", Destroy);
   Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
   Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
+  Nan::SetMethod(proto, "isDirty", IsDirty);
+  Nan::SetMethod(proto, "clearDirty", ClearDirty);
 
   Nan::SetMethod(proto, "uniform1f", glCallWrap<webgl::Uniform1f>);
   Nan::SetMethod(proto, "uniform2f", glCallWrap<webgl::Uniform2f>);
@@ -647,7 +649,7 @@ Handle<Object> WebGLContext::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-WebGLContext::WebGLContext() : live(true), windowHandle(nullptr) {}
+WebGLContext::WebGLContext() : live(true), windowHandle(nullptr), dirty(false) {}
 
 WebGLContext::~WebGLContext() {}
 
@@ -688,6 +690,20 @@ NAN_METHOD(WebGLContext::SetWindowHandle) {
   } else {
     gl->windowHandle = nullptr;
   }
+}
+
+NAN_METHOD(WebGLContext::IsDirty) {
+  Nan::HandleScope scope;
+
+  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+  info.GetReturnValue().Set(JS_BOOL(gl->dirty));
+}
+
+NAN_METHOD(WebGLContext::ClearDirty) {
+  Nan::HandleScope scope;
+
+  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+  gl->dirty = false;
 }
 
 Local<Object> makeGl() {

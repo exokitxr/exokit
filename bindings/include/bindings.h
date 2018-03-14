@@ -25,9 +25,12 @@ protected:
   static NAN_METHOD(Destroy);
   static NAN_METHOD(GetWindowHandle);
   static NAN_METHOD(SetWindowHandle);
+  static NAN_METHOD(IsDirty);
+  static NAN_METHOD(ClearDirty);
 
   bool live;
   GLFWwindow *windowHandle;
+  bool dirty;
 
   template<NAN_METHOD(F)>
   static NAN_METHOD(glCallWrap) {
@@ -39,6 +42,8 @@ protected:
       if (gl->windowHandle) {
         glfw::SetCurrentWindowContext(gl->windowHandle);
       }
+
+      gl->dirty = true;
 
       F(info);
     }
