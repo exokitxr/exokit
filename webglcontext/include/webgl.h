@@ -226,6 +226,8 @@ protected:
   bool live;
   GLFWwindow *windowHandle;
   bool dirty;
+  bool flipY;
+  bool premultiplyAlpha;
 
   template<NAN_METHOD(F)>
   static NAN_METHOD(glCallWrap) {

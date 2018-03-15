@@ -672,7 +672,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false) {}
+WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), flipY(true), premultiplyAlpha(true) {}
 
 WebGLRenderingContext::~WebGLRenderingContext() {}
 
@@ -1087,7 +1087,15 @@ NAN_METHOD(WebGLRenderingContext::PixelStorei) {
   int pname = info[0]->Int32Value();
   int param = info[1]->Int32Value();
 
-  glPixelStorei(pname, param);
+  if (pname == UNPACK_FLIP_Y_WEBGL) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+    gl->flipY = (bool)param;
+  } else if (pname == UNPACK_PREMULTIPLY_ALPHA_WEBGL) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+    gl->premultiplyAlpha = (bool)param;
+  } else {
+    glPixelStorei(pname, param);
+  }
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -2881,13 +2889,27 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
   case GL_SAMPLE_COVERAGE_INVERT:
   case GL_SCISSOR_TEST:
   case GL_STENCIL_TEST:
-  case UNPACK_FLIP_Y_WEBGL:
-  case UNPACK_PREMULTIPLY_ALPHA_WEBGL:
   {
     // return a boolean
     GLboolean params;
     glGetBooleanv(name, &params);
     info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(params)));
+    break;
+  }
+  case UNPACK_FLIP_Y_WEBGL: {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+    // return a boolean
+    GLboolean params;
+    glGetBooleanv(name, &params);
+    info.GetReturnValue().Set(JS_BOOL(gl->flipY));
+    break;
+  }
+  case UNPACK_PREMULTIPLY_ALPHA_WEBGL: {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+    // return a boolean
+    GLboolean params;
+    glGetBooleanv(name, &params);
+    info.GetReturnValue().Set(JS_BOOL(gl->premultiplyAlpha));
     break;
   }
   case GL_DEPTH_CLEAR_VALUE:
