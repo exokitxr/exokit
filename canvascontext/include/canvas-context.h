@@ -71,7 +71,7 @@ public:
   void FillText(const std::string &text, float x, float y);
   void StrokeText(const std::string &text, float x, float y);
   void Resize(unsigned int w, unsigned int h);
-  void DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh);
+  void DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, bool flipY);
   void Save();
   void Restore();
 

@@ -218,9 +218,11 @@ void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
   // flipCanvasY(surface->getCanvas());
 }
 
-void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh) {
-  surface->getCanvas()->save();
-  flipCanvasY(surface->getCanvas(), dy + dh);
+void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, bool flipY) {
+  if (flipY) {
+    surface->getCanvas()->save();
+    flipCanvasY(surface->getCanvas(), dy + dh);
+  }
 
   SkPaint paint;
   paint.setColor(0xFFFFFFFF);
@@ -228,7 +230,9 @@ void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float s
   paint.setBlendMode(SkBlendMode::kSrcOver);
   surface->getCanvas()->drawImageRect(image, SkRect::MakeXYWH(sx, sy, sw, sh), SkRect::MakeXYWH(dx, surface->getCanvas()->imageInfo().height() - dy - dh, dw, dh), &paint);
 
-  surface->getCanvas()->restore();
+  if (flipY) {
+    surface->getCanvas()->restore();
+  }
 }
 
 void CanvasRenderingContext2D::Save() {
@@ -995,14 +999,14 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
           unsigned int dw = info[7]->Uint32Value();
           unsigned int dh = info[8]->Uint32Value();
 
-          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh);
+          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
         } else {
           unsigned int dw = info[3]->Uint32Value();
           unsigned int dh = info[4]->Uint32Value();
           unsigned int sw = otherContext->GetWidth();
           unsigned int sh = otherContext->GetHeight();
 
-          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
         }
       } else {
         unsigned int sw = otherContext->GetWidth();
@@ -1010,7 +1014,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
         unsigned int dw = sw;
         unsigned int dh = sh;
 
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
       }
     } else {
       return Nan::ThrowError("Failed to read pixels");
@@ -1029,14 +1033,14 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
         unsigned int dw = info[7]->Uint32Value();
         unsigned int dh = info[8]->Uint32Value();
 
-        context->DrawImage(image->image.get(), x, y, sw, sh, dx, dy, dw, dh);
+        context->DrawImage(image->image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
       } else {
         unsigned int dw = info[3]->Uint32Value();
         unsigned int dh = info[4]->Uint32Value();
         unsigned int sw = image->GetWidth();
         unsigned int sh = image->GetHeight();
 
-        context->DrawImage(image->image.get(), 0, 0, sw, sh, x, y, dw, dh);
+        context->DrawImage(image->image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
       }
     } else {
       unsigned int sw = image->GetWidth();
@@ -1044,7 +1048,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       unsigned int dw = sw;
       unsigned int dh = sh;
 
-      context->DrawImage(image->image.get(), 0, 0, sw, sh, x, y, dw, dh);
+      context->DrawImage(image->image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
     }
   } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
     ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(info[0]));
@@ -1061,14 +1065,14 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
         unsigned int dw = info[7]->Uint32Value();
         unsigned int dh = info[8]->Uint32Value();
 
-        context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh);
+        context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
       } else {
         unsigned int dw = info[3]->Uint32Value();
         unsigned int dh = info[4]->Uint32Value();
         unsigned int sw = imageData->GetWidth();
         unsigned int sh = imageData->GetHeight();
 
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
       }
     } else {
       unsigned int sw = imageData->GetWidth();
@@ -1076,7 +1080,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       unsigned int dw = sw;
       unsigned int dh = sh;
 
-      context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+      context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
     }
   } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))) {
     ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(Local<Object>::Cast(info[0]));
@@ -1093,14 +1097,14 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
         unsigned int dw = info[7]->Uint32Value();
         unsigned int dh = info[8]->Uint32Value();
 
-        context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh);
+        context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, true);
       } else {
         unsigned int dw = info[3]->Uint32Value();
         unsigned int dh = info[4]->Uint32Value();
         unsigned int sw = imageBitmap->GetWidth();
         unsigned int sh = imageBitmap->GetHeight();
 
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, true);
       }
     } else {
       unsigned int sw = imageBitmap->GetWidth();
@@ -1108,7 +1112,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       unsigned int dw = sw;
       unsigned int dh = sh;
 
-      context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+      context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, true);
     }
   }
 }
@@ -1180,7 +1184,7 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     flipCanvasY(context->surface->getCanvas(), y + dh);
 
     sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
-    context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh);
+    context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
 
     context->surface->getCanvas()->restore();
   } else {
@@ -1193,7 +1197,7 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     flipCanvasY(context->surface->getCanvas(), y + dh);
 
     sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
-    context->DrawImage(image.get(), 0, 0, sw, sh, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh);
+    context->DrawImage(image.get(), 0, 0, sw, sh, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
 
     context->surface->getCanvas()->restore();
   }
