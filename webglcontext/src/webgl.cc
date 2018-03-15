@@ -2107,18 +2107,22 @@ NAN_METHOD(GetActiveAttrib) {
   GLuint index = info[1]->Int32Value();
 
   char name[1024];
-  GLsizei length;
+  GLsizei length = 0;
   GLsizei size;
   GLenum type;
 
   glGetActiveAttrib(program, index, sizeof(name), &length, &size, &type, name);
 
-  Local<Object> activeInfo = Nan::New<Object>();
-  activeInfo->Set(JS_STR("size"), JS_INT(size));
-  activeInfo->Set(JS_STR("type"), JS_INT((int)type));
-  activeInfo->Set(JS_STR("name"), JS_STR(name, length));
+  if (length > 0) {
+    Local<Object> activeInfo = Nan::New<Object>();
+    activeInfo->Set(JS_STR("size"), JS_INT(size));
+    activeInfo->Set(JS_STR("type"), JS_INT((int)type));
+    activeInfo->Set(JS_STR("name"), JS_STR(name, length));
 
-  info.GetReturnValue().Set(activeInfo);
+    info.GetReturnValue().Set(activeInfo);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 NAN_METHOD(GetActiveUniform) {
@@ -2128,18 +2132,22 @@ NAN_METHOD(GetActiveUniform) {
   GLuint index = info[1]->Int32Value();
 
   char name[1024];
-  GLsizei length;
+  GLsizei length = 0;
   GLsizei size;
   GLenum type;
 
   glGetActiveUniform(program, index, sizeof(name), &length, &size, &type, name);
 
-  Local<Object> activeInfo = Nan::New<Object>();
-  activeInfo->Set(JS_STR("size"), JS_INT(size));
-  activeInfo->Set(JS_STR("type"), JS_INT((int)type));
-  activeInfo->Set(JS_STR("name"), JS_STR(name, length));
+  if (length > 0) {
+    Local<Object> activeInfo = Nan::New<Object>();
+    activeInfo->Set(JS_STR("size"), JS_INT(size));
+    activeInfo->Set(JS_STR("type"), JS_INT((int)type));
+    activeInfo->Set(JS_STR("name"), JS_STR(name, length));
 
-  info.GetReturnValue().Set(activeInfo);
+    info.GetReturnValue().Set(activeInfo);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 NAN_METHOD(GetAttachedShaders) {
