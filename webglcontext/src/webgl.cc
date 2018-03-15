@@ -2467,7 +2467,8 @@ NAN_METHOD(GetExtension) {
     strcmp(sname, "OES_texture_half_float") == 0 ||
     strcmp(sname, "OES_texture_half_float_linear") == 0 ||
     strcmp(sname, "OES_element_index_uint") == 0 ||
-    strcmp(sname, "OES_standard_derivatives") == 0
+    strcmp(sname, "OES_standard_derivatives") == 0 ||
+    strcmp(sname, "EXT_shader_texture_lod") == 0
   ) {
     info.GetReturnValue().Set(Object::New(Isolate::GetCurrent()));
   } else if (strcmp(sname, "WEBGL_depth_texture") == 0) {
