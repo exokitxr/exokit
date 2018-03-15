@@ -205,30 +205,39 @@ nativeWindow.setEventHandler((type, data) => {
 
         window.innerWidth = innerWidth;
         window.innerHeight = innerHeight;
-        window.dispatchEvent(new window.Event('resize'));
+        const e = new window.Event('resize');
+        [window.document, window].every(target => {
+          target.dispatchEvent(e);
+          return !e.propagationStopped;
+        });
         break;
       }
       case 'keydown':
       case 'keyup':
       case 'keypress': {
-        window.dispatchEvent(new window.KeyboardEvent(type, data));
+        const e = new window.KeyboardEvent(type, data);
+        [window.document, window].every(target => {
+          target.dispatchEvent(e);
+          return !e.propagationStopped;
+        });
         break;
       }
       case 'mousedown':
       case 'mouseup':
       case 'click': {
-        window.dispatchEvent(new window.MouseEvent(type, data));
+        const e = new window.MouseEvent(type, data);
+        [window.document, window].every(target => {
+          target.dispatchEvent(e);
+          return !e.propagationStopped;
+        });
         break;
       }
       case 'mousemove': {
-        if (window.document.pointerLockElement === canvas) {
-          data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
-          data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
-
-          nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
-        }
-
-        window.dispatchEvent(new window.MouseEvent(type, data));
+        const e = new window.MouseEvent(type, data);
+        [window.document, window].every(target => {
+          target.dispatchEvent(e);
+          return !e.propagationStopped;
+        });
         break;
       }
       case 'quit': {
