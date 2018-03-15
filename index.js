@@ -233,7 +233,6 @@ nativeWindow.setEventHandler((type, data) => {
         break;
       }
       case 'wheel': {
-        console.log('got wheel event', type);
         const e = new window.WheelEvent(type, data);
         [window.document, window].every(target => {
           target.dispatchEvent(e);
