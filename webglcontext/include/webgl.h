@@ -133,6 +133,7 @@ NAN_METHOD(VertexAttrib2fv);
 NAN_METHOD(VertexAttrib3fv);
 NAN_METHOD(VertexAttrib4fv);
 NAN_METHOD(VertexAttribDivisorANGLE);
+NAN_METHOD(DrawBuffersWEBGL);
 
 NAN_METHOD(BlendColor);
 NAN_METHOD(BlendEquationSeparate);

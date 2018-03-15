@@ -1527,6 +1527,21 @@ NAN_METHOD(VertexAttribDivisorANGLE) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(DrawBuffersWEBGL) {
+  Nan::HandleScope scope;
+
+  Local<Array> buffersArray = Local<Array>::Cast(info[0]);
+  GLenum buffers[32];
+  size_t numBuffers = std::min<size_t>(buffersArray->Length(), sizeof(buffers)/sizeof(buffers[0]));
+  for (size_t i = 0; i < numBuffers; i++) {
+    buffers[i] = buffersArray->Get(i)->Uint32Value();
+  }
+
+  glDrawBuffers(numBuffers, buffers);
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
 NAN_METHOD(BlendColor) {
   Nan::HandleScope scope;
 
@@ -2488,6 +2503,49 @@ NAN_METHOD(GetExtension) {
     Nan::SetMethod(result, "drawArraysInstancedANGLE", webgl::DrawArraysInstancedANGLE);
     Nan::SetMethod(result, "drawElementsInstancedANGLE", webgl::DrawElementsInstancedANGLE);
     Nan::SetMethod(result, "vertexAttribDivisorANGLE", webgl::VertexAttribDivisorANGLE);
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "WEBGL_draw_buffers") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+
+    Nan::SetMethod(result, "drawBuffersWEBGL", webgl::DrawBuffersWEBGL);
+
+    result->Set(JS_STR("COLOR_ATTACHMENT0_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT0));
+    result->Set(JS_STR("COLOR_ATTACHMENT1_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT1));
+    result->Set(JS_STR("COLOR_ATTACHMENT2_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT2));
+    result->Set(JS_STR("COLOR_ATTACHMENT3_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT3));
+    result->Set(JS_STR("COLOR_ATTACHMENT4_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT4));
+    result->Set(JS_STR("COLOR_ATTACHMENT5_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT5));
+    result->Set(JS_STR("COLOR_ATTACHMENT6_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT6));
+    result->Set(JS_STR("COLOR_ATTACHMENT7_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT7));
+    result->Set(JS_STR("COLOR_ATTACHMENT8_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT8));
+    result->Set(JS_STR("COLOR_ATTACHMENT9_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT9));
+    result->Set(JS_STR("COLOR_ATTACHMENT10_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT10));
+    result->Set(JS_STR("COLOR_ATTACHMENT11_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT11));
+    result->Set(JS_STR("COLOR_ATTACHMENT12_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT12));
+    result->Set(JS_STR("COLOR_ATTACHMENT13_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT13));
+    result->Set(JS_STR("COLOR_ATTACHMENT14_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT14));
+    result->Set(JS_STR("COLOR_ATTACHMENT15_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT15));
+
+    result->Set(JS_STR("DRAW_BUFFER0_WEBGL"), JS_INT(GL_DRAW_BUFFER0));
+    result->Set(JS_STR("DRAW_BUFFER1_WEBGL"), JS_INT(GL_DRAW_BUFFER1));
+    result->Set(JS_STR("DRAW_BUFFER2_WEBGL"), JS_INT(GL_DRAW_BUFFER2));
+    result->Set(JS_STR("DRAW_BUFFER3_WEBGL"), JS_INT(GL_DRAW_BUFFER3));
+    result->Set(JS_STR("DRAW_BUFFER4_WEBGL"), JS_INT(GL_DRAW_BUFFER4));
+    result->Set(JS_STR("DRAW_BUFFER5_WEBGL"), JS_INT(GL_DRAW_BUFFER5));
+    result->Set(JS_STR("DRAW_BUFFER6_WEBGL"), JS_INT(GL_DRAW_BUFFER6));
+    result->Set(JS_STR("DRAW_BUFFER7_WEBGL"), JS_INT(GL_DRAW_BUFFER7));
+    result->Set(JS_STR("DRAW_BUFFER8_WEBGL"), JS_INT(GL_DRAW_BUFFER8));
+    result->Set(JS_STR("DRAW_BUFFER9_WEBGL"), JS_INT(GL_DRAW_BUFFER9));
+    result->Set(JS_STR("DRAW_BUFFER10_WEBGL"), JS_INT(GL_DRAW_BUFFER10));
+    result->Set(JS_STR("DRAW_BUFFER11_WEBGL"), JS_INT(GL_DRAW_BUFFER11));
+    result->Set(JS_STR("DRAW_BUFFER12_WEBGL"), JS_INT(GL_DRAW_BUFFER12));
+    result->Set(JS_STR("DRAW_BUFFER13_WEBGL"), JS_INT(GL_DRAW_BUFFER13));
+    result->Set(JS_STR("DRAW_BUFFER14_WEBGL"), JS_INT(GL_DRAW_BUFFER14));
+    result->Set(JS_STR("DRAW_BUFFER15_WEBGL"), JS_INT(GL_DRAW_BUFFER15));
+
+    result->Set(JS_STR("MAX_COLOR_ATTACHMENTS_WEBGL"), JS_INT(GL_MAX_COLOR_ATTACHMENTS));
+    result->Set(JS_STR("MAX_DRAW_BUFFERS_WEBGL"), JS_INT(GL_MAX_DRAW_BUFFERS));
+
     info.GetReturnValue().Set(result);
   } else {
     info.GetReturnValue().Set(Null(Isolate::GetCurrent()));
