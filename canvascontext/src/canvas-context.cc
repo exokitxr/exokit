@@ -990,10 +990,12 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
         if (info.Length() > 5) {
           unsigned int sw = info[3]->Uint32Value();
           unsigned int sh = info[4]->Uint32Value();
-          unsigned int dw = info[5]->Uint32Value();
-          unsigned int dh = info[6]->Uint32Value();
+          unsigned int dx = info[5]->Uint32Value();
+          unsigned int dy = info[6]->Uint32Value();
+          unsigned int dw = info[7]->Uint32Value();
+          unsigned int dh = info[8]->Uint32Value();
 
-          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh);
         } else {
           unsigned int dw = info[3]->Uint32Value();
           unsigned int dh = info[4]->Uint32Value();
@@ -1022,10 +1024,12 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       if (info.Length() > 5) {
         unsigned int sw = info[3]->Uint32Value();
         unsigned int sh = info[4]->Uint32Value();
-        unsigned int dw = info[5]->Uint32Value();
-        unsigned int dh = info[6]->Uint32Value();
+        unsigned int dx = info[5]->Uint32Value();
+        unsigned int dy = info[6]->Uint32Value();
+        unsigned int dw = info[7]->Uint32Value();
+        unsigned int dh = info[8]->Uint32Value();
 
-        context->DrawImage(image->image.get(), 0, 0, sw, sh, x, y, dw, dh);
+        context->DrawImage(image->image.get(), x, y, sw, sh, dx, dy, dw, dh);
       } else {
         unsigned int dw = info[3]->Uint32Value();
         unsigned int dh = info[4]->Uint32Value();
@@ -1052,10 +1056,12 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       if (info.Length() > 5) {
         unsigned int sw = info[3]->Uint32Value();
         unsigned int sh = info[4]->Uint32Value();
-        unsigned int dw = info[5]->Uint32Value();
-        unsigned int dh = info[6]->Uint32Value();
+        unsigned int dx = info[5]->Uint32Value();
+        unsigned int dy = info[6]->Uint32Value();
+        unsigned int dw = info[7]->Uint32Value();
+        unsigned int dh = info[8]->Uint32Value();
 
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+        context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh);
       } else {
         unsigned int dw = info[3]->Uint32Value();
         unsigned int dh = info[4]->Uint32Value();
@@ -1082,10 +1088,12 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       if (info.Length() > 5) {
         unsigned int sw = info[3]->Uint32Value();
         unsigned int sh = info[4]->Uint32Value();
-        unsigned int dw = info[5]->Uint32Value();
-        unsigned int dh = info[6]->Uint32Value();
+        unsigned int dx = info[5]->Uint32Value();
+        unsigned int dy = info[6]->Uint32Value();
+        unsigned int dw = info[7]->Uint32Value();
+        unsigned int dh = info[8]->Uint32Value();
 
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
+        context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh);
       } else {
         unsigned int dw = info[3]->Uint32Value();
         unsigned int dh = info[4]->Uint32Value();
