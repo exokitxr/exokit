@@ -7,7 +7,7 @@ const webGlToOpenGl = require('webgl-to-opengl');
 bindings.nativeWorker = WindowWorker;
 
 bindings.nativeGl = (nativeGl => {
-  function WebGLContext(canvas) {
+  function WebGLRenderingContext(canvas) {
     const gl = new nativeGl();
     gl.createShader = (createShader => function(type) {
       const result = createShader.call(this, type);
@@ -44,13 +44,13 @@ bindings.nativeGl = (nativeGl => {
       path = webGlToOpenGl.mapName(path);
       return getUniformLocation.call(this, program, path);
     })(gl.getUniformLocation);
-    if (WebGLContext.onconstruct) {
-      WebGLContext.onconstruct(gl, canvas);
+    if (WebGLRenderingContext.onconstruct) {
+      WebGLRenderingContext.onconstruct(gl, canvas);
     }
     return gl;
   }
-  WebGLContext.onconstruct = null;
-  return WebGLContext;
+  WebGLRenderingContext.onconstruct = null;
+  return WebGLRenderingContext;
 })(bindings.nativeGl);
 
 const {PannerNode} = nativeAudio;

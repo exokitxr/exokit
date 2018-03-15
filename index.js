@@ -131,7 +131,7 @@ const _requestSystem = () => new Promise((accept, reject) => {
   _recurse();
 });
 nativeVr.requestPresent = function(layers) {
-  const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLContext');
+  const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
   if (layer) {
     const context = layer.source._context;
 
@@ -164,7 +164,7 @@ nativeVr.requestPresent = function(layers) {
         vrPresentState.tex = tex;
       });
   } else {
-    return Promise.reject(new Error('no HTMLCanvasElement source with WebGLContext provided'));
+    return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
   }
 };
 nativeVr.exitPresent = function() {
@@ -329,9 +329,9 @@ if (require.main === module) {
       let lastPointerLockElement = null;
       window.document.addEventListener('pointerlockchange', () => {
         const {pointerLockElement} = window.document;
-        if (pointerLockElement && pointerLockElement._context && pointerLockElement._context.constructor && pointerLockElement._context.constructor.name === 'WebGLContext') {
+        if (pointerLockElement && pointerLockElement._context && pointerLockElement._context.constructor && pointerLockElement._context.constructor.name === 'WebGLRenderingContext') {
           nativeWindow.setCursorMode(pointerLockElement._context.getWindowHandle(), false);
-        } else if (lastPointerLockElement && lastPointerLockElement._context && lastPointerLockElement._context.constructor && lastPointerLockElement._context.constructor.name === 'WebGLContext') {
+        } else if (lastPointerLockElement && lastPointerLockElement._context && lastPointerLockElement._context.constructor && lastPointerLockElement._context.constructor.name === 'WebGLRenderingContext') {
           nativeWindow.setCursorMode(lastPointerLockElement._context.getWindowHandle(), true);
         }
         lastPointerLockElement = pointerLockElement;
