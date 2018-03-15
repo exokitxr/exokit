@@ -516,14 +516,15 @@ void APIENTRY scrollCB(GLFWwindow *window, double xoffset, double yoffset) {
   Nan::HandleScope scope;
 
   Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("mousewheel"));
-  evt->Set(JS_STR("wheelDeltaX"),JS_NUM(xoffset*120));
-  evt->Set(JS_STR("wheelDeltaY"),JS_NUM(yoffset*120));
-  evt->Set(JS_STR("wheelDelta"),JS_NUM(yoffset*120));
+  evt->Set(JS_STR("type"),JS_STR("wheel"));
+  evt->Set(JS_STR("deltaX"),JS_NUM(-xoffset*120));
+  evt->Set(JS_STR("deltaY"),JS_NUM(-yoffset*120));
+  evt->Set(JS_STR("deltaZ"),JS_INT(0));
+  evt->Set(JS_STR("deltaMode"),JS_INT(0));
   evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
-    JS_STR("mousewheel"), // event name
+    JS_STR("wheel"), // event name
     evt,
   };
   CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
