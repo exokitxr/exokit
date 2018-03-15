@@ -188,6 +188,12 @@ nativeVr.exitPresent = function() {
   return Promise.resolve();
 };
 
+const _dispatchCanvasEvent = (canvas, event) => {
+  [canvas, canvas.ownerDocument.defaultView].every(target => {
+    target.dispatchEvent(event);
+    return !event.propagationStopped;
+  });
+};
 nativeWindow.setEventHandler((type, data) => {
   // console.log(type, data);
 
@@ -205,47 +211,27 @@ nativeWindow.setEventHandler((type, data) => {
 
         window.innerWidth = innerWidth;
         window.innerHeight = innerHeight;
-        const e = new window.Event('resize');
-        [window.document, window].every(target => {
-          target.dispatchEvent(e);
-          return !e.propagationStopped;
-        });
+        _dispatchCanvasEvent(canvas, new window.Event('resize'));
         break;
       }
       case 'keydown':
       case 'keyup':
       case 'keypress': {
-        const e = new window.KeyboardEvent(type, data);
-        [window.document, window].every(target => {
-          target.dispatchEvent(e);
-          return !e.propagationStopped;
-        });
+        _dispatchCanvasEvent(canvas, new window.KeyboardEvent(type, data));
         break;
       }
       case 'mousedown':
       case 'mouseup':
       case 'click': {
-        const e = new window.MouseEvent(type, data);
-        [window.document, window].every(target => {
-          target.dispatchEvent(e);
-          return !e.propagationStopped;
-        });
+        _dispatchCanvasEvent(canvas, new window.MouseEvent(type, data));
         break;
       }
       case 'wheel': {
-        const e = new window.WheelEvent(type, data);
-        [window.document, window].every(target => {
-          target.dispatchEvent(e);
-          return !e.propagationStopped;
-        });
+        _dispatchCanvasEvent(canvas, new window.WheelEvent(type, data));
         break;
       }
       case 'mousemove': {
-        const e = new window.MouseEvent(type, data);
-        [window.document, window].every(target => {
-          target.dispatchEvent(e);
-          return !e.propagationStopped;
-        });
+        _dispatchCanvasEvent(canvas, new window.MouseEvent(type, data));
         break;
       }
       case 'quit': {
