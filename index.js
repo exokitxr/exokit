@@ -232,6 +232,15 @@ nativeWindow.setEventHandler((type, data) => {
         });
         break;
       }
+      case 'wheel': {
+        console.log('got wheel event', type);
+        const e = new window.WheelEvent(type, data);
+        [window.document, window].every(target => {
+          target.dispatchEvent(e);
+          return !e.propagationStopped;
+        });
+        break;
+      }
       case 'mousemove': {
         const e = new window.MouseEvent(type, data);
         [window.document, window].every(target => {
