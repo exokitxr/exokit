@@ -14,13 +14,13 @@
 #include <AudioContext.h>
 #include <Video.h>
 
-class WebGLContext : public ObjectWrap {
+class WebGLRenderingContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
 
 protected:
-  WebGLContext();
-  ~WebGLContext();
+  WebGLRenderingContext();
+  ~WebGLRenderingContext();
 
   static NAN_METHOD(New);
   static NAN_METHOD(Destroy);
@@ -38,7 +38,7 @@ protected:
     Nan::HandleScope scope;
 
     Local<Object> glObj = info.This();
-    WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(glObj);
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
     if (gl->live) {
       if (gl->windowHandle) {
         glfw::SetCurrentWindowContext(gl->windowHandle);

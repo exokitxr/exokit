@@ -14,13 +14,13 @@
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
-Handle<Object> WebGLContext::Initialize(Isolate *isolate) {
+Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
-  ctor->SetClassName(JS_STR("WebGLContext"));
+  ctor->SetClassName(JS_STR("WebGLRenderingContext"));
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
@@ -649,31 +649,31 @@ Handle<Object> WebGLContext::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-WebGLContext::WebGLContext() : live(true), windowHandle(nullptr), dirty(false) {}
+WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false) {}
 
-WebGLContext::~WebGLContext() {}
+WebGLRenderingContext::~WebGLRenderingContext() {}
 
-NAN_METHOD(WebGLContext::New) {
+NAN_METHOD(WebGLRenderingContext::New) {
   Nan::HandleScope scope;
 
-  WebGLContext *gl = new WebGLContext();
+  WebGLRenderingContext *gl = new WebGLRenderingContext();
   Local<Object> glObj = info.This();
   gl->Wrap(glObj);
 
   info.GetReturnValue().Set(glObj);
 }
 
-NAN_METHOD(WebGLContext::Destroy) {
+NAN_METHOD(WebGLRenderingContext::Destroy) {
   Nan::HandleScope scope;
 
-  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   gl->live = false;
 }
 
-NAN_METHOD(WebGLContext::GetWindowHandle) {
+NAN_METHOD(WebGLRenderingContext::GetWindowHandle) {
   Nan::HandleScope scope;
 
-  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   if (gl->windowHandle) {
     info.GetReturnValue().Set(glfw::pointerToArray(gl->windowHandle));
   } else {
@@ -681,10 +681,10 @@ NAN_METHOD(WebGLContext::GetWindowHandle) {
   }
 }
 
-NAN_METHOD(WebGLContext::SetWindowHandle) {
+NAN_METHOD(WebGLRenderingContext::SetWindowHandle) {
   Nan::HandleScope scope;
 
-  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   if (info[0]->IsArray()) {
     gl->windowHandle = (GLFWwindow *)glfw::arrayToPointer(Local<Array>::Cast(info[0]));
   } else {
@@ -692,22 +692,22 @@ NAN_METHOD(WebGLContext::SetWindowHandle) {
   }
 }
 
-NAN_METHOD(WebGLContext::IsDirty) {
+NAN_METHOD(WebGLRenderingContext::IsDirty) {
   Nan::HandleScope scope;
 
-  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   info.GetReturnValue().Set(JS_BOOL(gl->dirty));
 }
 
-NAN_METHOD(WebGLContext::ClearDirty) {
+NAN_METHOD(WebGLRenderingContext::ClearDirty) {
   Nan::HandleScope scope;
 
-  WebGLContext *gl = ObjectWrap::Unwrap<WebGLContext>(info.This());
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   gl->dirty = false;
 }
 
 Local<Object> makeGl() {
-  return WebGLContext::Initialize(Isolate::GetCurrent());
+  return WebGLRenderingContext::Initialize(Isolate::GetCurrent());
 }
 
 Local<Object> makeImage() {
