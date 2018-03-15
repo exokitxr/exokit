@@ -14,43 +14,6 @@
 #include <AudioContext.h>
 #include <Video.h>
 
-class WebGLRenderingContext : public ObjectWrap {
-public:
-  static Handle<Object> Initialize(Isolate *isolate);
-
-protected:
-  WebGLRenderingContext();
-  ~WebGLRenderingContext();
-
-  static NAN_METHOD(New);
-  static NAN_METHOD(Destroy);
-  static NAN_METHOD(GetWindowHandle);
-  static NAN_METHOD(SetWindowHandle);
-  static NAN_METHOD(IsDirty);
-  static NAN_METHOD(ClearDirty);
-
-  bool live;
-  GLFWwindow *windowHandle;
-  bool dirty;
-
-  template<NAN_METHOD(F)>
-  static NAN_METHOD(glCallWrap) {
-    Nan::HandleScope scope;
-
-    Local<Object> glObj = info.This();
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
-    if (gl->live) {
-      if (gl->windowHandle) {
-        glfw::SetCurrentWindowContext(gl->windowHandle);
-      }
-
-      gl->dirty = true;
-
-      F(info);
-    }
-  }
-};
-
 v8::Local<v8::Object> makeGl();
 v8::Local<v8::Object> makeImage();
 v8::Local<v8::Object> makeImageData();

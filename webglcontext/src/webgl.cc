@@ -1,5 +1,6 @@
 #include <cstring>
 #include <vector>
+#include <iostream>
 
 #include <webglcontext/include/webgl.h>
 #include <canvascontext/include/imageData-context.h>
@@ -11,11 +12,6 @@
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "glesjs", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "glesjs", __VA_ARGS__)) */
-
-#define CHECK_ARRAY_BUFFER(val) if(!val->IsArrayBufferView()) \
-        {Nan::ThrowTypeError("Only support array buffer"); return;}
-
-namespace webgl {
 
 // using namespace node;
 using namespace v8;
@@ -34,6 +30,707 @@ using namespace std;
 void registerGLObj(GLObjectType type, GLuint obj);
 void unregisterGLObj(GLuint obj); */
 
+// WebGLRenderingContext
+
+// Used to be a macro, hence the uppercase name.
+#define JS_GL_SET_CONSTANT(name, constant) proto->Set(JS_STR( name ), JS_INT(constant))
+
+#define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
+
+Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("WebGLRenderingContext"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+
+  Nan::SetMethod(proto, "destroy", Destroy);
+  Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
+  Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
+  Nan::SetMethod(proto, "isDirty", IsDirty);
+  Nan::SetMethod(proto, "clearDirty", ClearDirty);
+
+  Nan::SetMethod(proto, "uniform1f", glCallWrap<Uniform1f>);
+  Nan::SetMethod(proto, "uniform2f", glCallWrap<Uniform2f>);
+  Nan::SetMethod(proto, "uniform3f", glCallWrap<Uniform3f>);
+  Nan::SetMethod(proto, "uniform4f", glCallWrap<Uniform4f>);
+  Nan::SetMethod(proto, "uniform1i", glCallWrap<Uniform1i>);
+  Nan::SetMethod(proto, "uniform2i", glCallWrap<Uniform2i>);
+  Nan::SetMethod(proto, "uniform3i", glCallWrap<Uniform3i>);
+  Nan::SetMethod(proto, "uniform4i", glCallWrap<Uniform4i>);
+  Nan::SetMethod(proto, "uniform1fv", glCallWrap<Uniform1fv>);
+  Nan::SetMethod(proto, "uniform2fv", glCallWrap<Uniform2fv>);
+  Nan::SetMethod(proto, "uniform3fv", glCallWrap<Uniform3fv>);
+  Nan::SetMethod(proto, "uniform4fv", glCallWrap<Uniform4fv>);
+  Nan::SetMethod(proto, "uniform1iv", glCallWrap<Uniform1iv>);
+  Nan::SetMethod(proto, "uniform2iv", glCallWrap<Uniform2iv>);
+  Nan::SetMethod(proto, "uniform3iv", glCallWrap<Uniform3iv>);
+  Nan::SetMethod(proto, "uniform4iv", glCallWrap<Uniform4iv>);
+  Nan::SetMethod(proto, "pixelStorei", glCallWrap<PixelStorei>);
+  Nan::SetMethod(proto, "bindAttribLocation", glCallWrap<BindAttribLocation>);
+  Nan::SetMethod(proto, "getError", glCallWrap<GetError>);
+  Nan::SetMethod(proto, "drawArrays", glCallWrap<DrawArrays>);
+  Nan::SetMethod(proto, "drawArraysInstancedANGLE", glCallWrap<DrawArraysInstancedANGLE>);
+  Nan::SetMethod(proto, "uniformMatrix2fv", glCallWrap<UniformMatrix2fv>);
+  Nan::SetMethod(proto, "uniformMatrix3fv", glCallWrap<UniformMatrix3fv>);
+  Nan::SetMethod(proto, "uniformMatrix4fv", glCallWrap<UniformMatrix4fv>);
+
+  Nan::SetMethod(proto, "generateMipmap", glCallWrap<GenerateMipmap>);
+
+  Nan::SetMethod(proto, "getAttribLocation", glCallWrap<GetAttribLocation>);
+  Nan::SetMethod(proto, "depthFunc", glCallWrap<DepthFunc>);
+  Nan::SetMethod(proto, "viewport", glCallWrap<Viewport>);
+  Nan::SetMethod(proto, "createShader", glCallWrap<CreateShader>);
+  Nan::SetMethod(proto, "shaderSource", glCallWrap<ShaderSource>);
+  Nan::SetMethod(proto, "compileShader", glCallWrap<CompileShader>);
+  Nan::SetMethod(proto, "getShaderParameter", glCallWrap<GetShaderParameter>);
+  Nan::SetMethod(proto, "getShaderInfoLog", glCallWrap<GetShaderInfoLog>);
+  Nan::SetMethod(proto, "createProgram", glCallWrap<CreateProgram>);
+  Nan::SetMethod(proto, "attachShader", glCallWrap<AttachShader>);
+  Nan::SetMethod(proto, "linkProgram", glCallWrap<LinkProgram>);
+  Nan::SetMethod(proto, "getProgramParameter", glCallWrap<GetProgramParameter>);
+  Nan::SetMethod(proto, "getUniformLocation", glCallWrap<GetUniformLocation>);
+  Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
+  Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
+
+  Nan::SetMethod(proto, "disable", glCallWrap<Disable>);
+  Nan::SetMethod(proto, "createTexture", glCallWrap<CreateTexture>);
+  Nan::SetMethod(proto, "bindTexture", glCallWrap<BindTexture>);
+  // Nan::SetMethod(proto, "flipTextureData", glCallWrap<FlipTextureData>);
+  Nan::SetMethod(proto, "texImage2D", glCallWrap<TexImage2D>);
+  Nan::SetMethod(proto, "texParameteri", glCallWrap<TexParameteri>);
+  Nan::SetMethod(proto, "texParameterf", glCallWrap<TexParameterf>);
+  Nan::SetMethod(proto, "clear", glCallWrap<Clear>);
+  Nan::SetMethod(proto, "useProgram", glCallWrap<UseProgram>);
+  Nan::SetMethod(proto, "createFramebuffer", glCallWrap<CreateFramebuffer>);
+  Nan::SetMethod(proto, "bindFramebuffer", glCallWrap<BindFramebuffer>);
+  Nan::SetMethod(proto, "framebufferTexture2D", glCallWrap<FramebufferTexture2D>);
+  Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
+  Nan::SetMethod(proto, "bindBuffer", glCallWrap<BindBuffer>);
+  Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
+  Nan::SetMethod(proto, "bufferSubData", glCallWrap<BufferSubData>);
+  Nan::SetMethod(proto, "enable", glCallWrap<Enable>);
+  Nan::SetMethod(proto, "blendEquation", glCallWrap<BlendEquation>);
+  Nan::SetMethod(proto, "blendFunc", glCallWrap<BlendFunc>);
+  Nan::SetMethod(proto, "enableVertexAttribArray", glCallWrap<EnableVertexAttribArray>);
+  Nan::SetMethod(proto, "vertexAttribPointer", glCallWrap<VertexAttribPointer>);
+  Nan::SetMethod(proto, "activeTexture", glCallWrap<ActiveTexture>);
+  Nan::SetMethod(proto, "drawElements", glCallWrap<DrawElements>);
+  Nan::SetMethod(proto, "drawElementsInstancedANGLE", glCallWrap<DrawElementsInstancedANGLE>);
+  Nan::SetMethod(proto, "flush", glCallWrap<Flush>);
+  Nan::SetMethod(proto, "finish", glCallWrap<Finish>);
+
+  Nan::SetMethod(proto, "vertexAttrib1f", glCallWrap<VertexAttrib1f>);
+  Nan::SetMethod(proto, "vertexAttrib2f", glCallWrap<VertexAttrib2f>);
+  Nan::SetMethod(proto, "vertexAttrib3f", glCallWrap<VertexAttrib3f>);
+  Nan::SetMethod(proto, "vertexAttrib4f", glCallWrap<VertexAttrib4f>);
+  Nan::SetMethod(proto, "vertexAttrib1fv", glCallWrap<VertexAttrib1fv>);
+  Nan::SetMethod(proto, "vertexAttrib2fv", glCallWrap<VertexAttrib2fv>);
+  Nan::SetMethod(proto, "vertexAttrib3fv", glCallWrap<VertexAttrib3fv>);
+  Nan::SetMethod(proto, "vertexAttrib4fv", glCallWrap<VertexAttrib4fv>);
+  Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glCallWrap<VertexAttribDivisorANGLE>);
+
+  Nan::SetMethod(proto, "blendColor", BlendColor);
+  Nan::SetMethod(proto, "blendEquationSeparate", BlendEquationSeparate);
+  Nan::SetMethod(proto, "blendFuncSeparate", BlendFuncSeparate);
+  Nan::SetMethod(proto, "clearStencil", ClearStencil);
+  Nan::SetMethod(proto, "colorMask", ColorMask);
+  Nan::SetMethod(proto, "copyTexImage2D", CopyTexImage2D);
+  Nan::SetMethod(proto, "copyTexSubImage2D", CopyTexSubImage2D);
+  Nan::SetMethod(proto, "cullFace", CullFace);
+  Nan::SetMethod(proto, "depthMask", DepthMask);
+  Nan::SetMethod(proto, "depthRange", DepthRange);
+  Nan::SetMethod(proto, "disableVertexAttribArray", DisableVertexAttribArray);
+  Nan::SetMethod(proto, "hint", Hint);
+  Nan::SetMethod(proto, "isEnabled", IsEnabled);
+  Nan::SetMethod(proto, "lineWidth", LineWidth);
+  Nan::SetMethod(proto, "polygonOffset", PolygonOffset);
+
+  Nan::SetMethod(proto, "scissor", Scissor);
+  Nan::SetMethod(proto, "stencilFunc", StencilFunc);
+  Nan::SetMethod(proto, "stencilFuncSeparate", StencilFuncSeparate);
+  Nan::SetMethod(proto, "stencilMask", StencilMask);
+  Nan::SetMethod(proto, "stencilMaskSeparate", StencilMaskSeparate);
+  Nan::SetMethod(proto, "stencilOp", StencilOp);
+  Nan::SetMethod(proto, "stencilOpSeparate", StencilOpSeparate);
+  Nan::SetMethod(proto, "bindRenderbuffer", BindRenderbuffer);
+  Nan::SetMethod(proto, "createRenderbuffer", CreateRenderbuffer);
+
+  Nan::SetMethod(proto, "deleteBuffer", DeleteBuffer);
+  Nan::SetMethod(proto, "deleteFramebuffer", DeleteFramebuffer);
+  Nan::SetMethod(proto, "deleteProgram", DeleteProgram);
+  Nan::SetMethod(proto, "deleteRenderbuffer", DeleteRenderbuffer);
+  Nan::SetMethod(proto, "deleteShader", DeleteShader);
+  Nan::SetMethod(proto, "deleteTexture", DeleteTexture);
+  Nan::SetMethod(proto, "detachShader", DetachShader);
+  Nan::SetMethod(proto, "framebufferRenderbuffer", FramebufferRenderbuffer);
+  Nan::SetMethod(proto, "getVertexAttribOffset", GetVertexAttribOffset);
+
+  Nan::SetMethod(proto, "isBuffer", glCallWrap<IsBuffer>);
+  Nan::SetMethod(proto, "isFramebuffer", glCallWrap<IsFramebuffer>);
+  Nan::SetMethod(proto, "isProgram", glCallWrap<IsProgram>);
+  Nan::SetMethod(proto, "isRenderbuffer", glCallWrap<IsRenderbuffer>);
+  Nan::SetMethod(proto, "isShader", glCallWrap<IsShader>);
+  Nan::SetMethod(proto, "isTexture", glCallWrap<IsTexture>);
+
+  Nan::SetMethod(proto, "renderbufferStorage", glCallWrap<RenderbufferStorage>);
+  Nan::SetMethod(proto, "getShaderSource", glCallWrap<GetShaderSource>);
+  Nan::SetMethod(proto, "validateProgram", glCallWrap<ValidateProgram>);
+
+  Nan::SetMethod(proto, "texSubImage2D", glCallWrap<TexSubImage2D>);
+  Nan::SetMethod(proto, "readPixels", glCallWrap<ReadPixels>);
+  Nan::SetMethod(proto, "getTexParameter", glCallWrap<GetTexParameter>);
+  Nan::SetMethod(proto, "getActiveAttrib", glCallWrap<GetActiveAttrib>);
+  Nan::SetMethod(proto, "getActiveUniform", glCallWrap<GetActiveUniform>);
+  Nan::SetMethod(proto, "getAttachedShaders", glCallWrap<GetAttachedShaders>);
+  Nan::SetMethod(proto, "getParameter", glCallWrap<GetParameter>);
+  Nan::SetMethod(proto, "getBufferParameter", glCallWrap<GetBufferParameter>);
+  Nan::SetMethod(proto, "getFramebufferAttachmentParameter", glCallWrap<GetFramebufferAttachmentParameter>);
+  Nan::SetMethod(proto, "getProgramInfoLog", glCallWrap<GetProgramInfoLog>);
+  Nan::SetMethod(proto, "getRenderbufferParameter", glCallWrap<GetRenderbufferParameter>);
+  Nan::SetMethod(proto, "getVertexAttrib", glCallWrap<GetVertexAttrib>);
+  Nan::SetMethod(proto, "getSupportedExtensions", glCallWrap<GetSupportedExtensions>);
+  Nan::SetMethod(proto, "getExtension", glCallWrap<GetExtension>);
+  Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
+
+  Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
+
+  // OpenGL ES 2.1 constants
+
+  /* ClearBufferMask */
+  JS_GL_CONSTANT(DEPTH_BUFFER_BIT);
+  JS_GL_CONSTANT(STENCIL_BUFFER_BIT);
+  JS_GL_CONSTANT(COLOR_BUFFER_BIT);
+
+  /* Boolean */
+  JS_GL_CONSTANT(FALSE);
+  JS_GL_CONSTANT(TRUE);
+
+  /* BeginMode */
+  JS_GL_CONSTANT(POINTS);
+  JS_GL_CONSTANT(LINES);
+  JS_GL_CONSTANT(LINE_LOOP);
+  JS_GL_CONSTANT(LINE_STRIP);
+  JS_GL_CONSTANT(TRIANGLES);
+  JS_GL_CONSTANT(TRIANGLE_STRIP);
+  JS_GL_CONSTANT(TRIANGLE_FAN);
+
+  /* AlphaFunction (not supported in ES20) */
+  /*      GL_NEVER */
+  /*      GL_LESS */
+  /*      GL_EQUAL */
+  /*      GL_LEQUAL */
+  /*      GL_GREATER */
+  /*      GL_NOTEQUAL */
+  /*      GL_GEQUAL */
+  /*      GL_ALWAYS */
+
+  /* BlendingFactorDest */
+  JS_GL_CONSTANT(ZERO);
+  JS_GL_CONSTANT(ONE);
+  JS_GL_CONSTANT(SRC_COLOR);
+  JS_GL_CONSTANT(ONE_MINUS_SRC_COLOR);
+  JS_GL_CONSTANT(SRC_ALPHA);
+  JS_GL_CONSTANT(ONE_MINUS_SRC_ALPHA);
+  JS_GL_CONSTANT(DST_ALPHA);
+  JS_GL_CONSTANT(ONE_MINUS_DST_ALPHA);
+
+  /* BlendingFactorSrc */
+  /*      GL_ZERO */
+  /*      GL_ONE */
+  JS_GL_CONSTANT(DST_COLOR);
+  JS_GL_CONSTANT(ONE_MINUS_DST_COLOR);
+  JS_GL_CONSTANT(SRC_ALPHA_SATURATE);
+  /*      GL_SRC_ALPHA */
+  /*      GL_ONE_MINUS_SRC_ALPHA */
+  /*      GL_DST_ALPHA */
+  /*      GL_ONE_MINUS_DST_ALPHA */
+
+  /* BlendEquationSeparate */
+  JS_GL_CONSTANT(FUNC_ADD);
+  JS_GL_CONSTANT(BLEND_EQUATION);
+  JS_GL_CONSTANT(BLEND_EQUATION_RGB);    /* same as BLEND_EQUATION */
+  JS_GL_CONSTANT(BLEND_EQUATION_ALPHA);
+
+  /* BlendSubtract */
+  JS_GL_CONSTANT(FUNC_SUBTRACT);
+  JS_GL_CONSTANT(FUNC_REVERSE_SUBTRACT);
+
+  /* Separate Blend Functions */
+  JS_GL_CONSTANT(BLEND_DST_RGB);
+  JS_GL_CONSTANT(BLEND_SRC_RGB);
+  JS_GL_CONSTANT(BLEND_DST_ALPHA);
+  JS_GL_CONSTANT(BLEND_SRC_ALPHA);
+  JS_GL_CONSTANT(CONSTANT_COLOR);
+  JS_GL_CONSTANT(ONE_MINUS_CONSTANT_COLOR);
+  JS_GL_CONSTANT(CONSTANT_ALPHA);
+  JS_GL_CONSTANT(ONE_MINUS_CONSTANT_ALPHA);
+  JS_GL_CONSTANT(BLEND_COLOR);
+
+  /* Buffer Objects */
+  JS_GL_CONSTANT(ARRAY_BUFFER);
+  JS_GL_CONSTANT(ELEMENT_ARRAY_BUFFER);
+  JS_GL_CONSTANT(ARRAY_BUFFER_BINDING);
+  JS_GL_CONSTANT(ELEMENT_ARRAY_BUFFER_BINDING);
+
+  JS_GL_CONSTANT(STREAM_DRAW);
+  JS_GL_CONSTANT(STATIC_DRAW);
+  JS_GL_CONSTANT(DYNAMIC_DRAW);
+
+  JS_GL_CONSTANT(BUFFER_SIZE);
+  JS_GL_CONSTANT(BUFFER_USAGE);
+
+  JS_GL_CONSTANT(CURRENT_VERTEX_ATTRIB);
+
+  /* CullFaceMode */
+  JS_GL_CONSTANT(FRONT);
+  JS_GL_CONSTANT(BACK);
+  JS_GL_CONSTANT(FRONT_AND_BACK);
+
+  /* DepthFunction */
+  /*      GL_NEVER */
+  /*      GL_LESS */
+  /*      GL_EQUAL */
+  /*      GL_LEQUAL */
+  /*      GL_GREATER */
+  /*      GL_NOTEQUAL */
+  /*      GL_GEQUAL */
+  /*      GL_ALWAYS */
+
+  /* EnableCap */
+  JS_GL_CONSTANT(TEXTURE_2D);
+  JS_GL_CONSTANT(CULL_FACE);
+  JS_GL_CONSTANT(BLEND);
+  JS_GL_CONSTANT(DITHER);
+  JS_GL_CONSTANT(STENCIL_TEST);
+  JS_GL_CONSTANT(DEPTH_TEST);
+  JS_GL_CONSTANT(SCISSOR_TEST);
+  JS_GL_CONSTANT(POLYGON_OFFSET_FILL);
+  JS_GL_CONSTANT(SAMPLE_ALPHA_TO_COVERAGE);
+  JS_GL_CONSTANT(SAMPLE_COVERAGE);
+
+  /* ErrorCode */
+  JS_GL_CONSTANT(NO_ERROR);
+  JS_GL_CONSTANT(INVALID_ENUM);
+  JS_GL_CONSTANT(INVALID_VALUE);
+  JS_GL_CONSTANT(INVALID_OPERATION);
+  JS_GL_CONSTANT(OUT_OF_MEMORY);
+
+  /* FrontFaceDirection */
+  JS_GL_CONSTANT(CW);
+  JS_GL_CONSTANT(CCW);
+
+  /* GetPName */
+  JS_GL_CONSTANT(LINE_WIDTH);
+  JS_GL_CONSTANT(ALIASED_POINT_SIZE_RANGE);
+  JS_GL_CONSTANT(ALIASED_LINE_WIDTH_RANGE);
+  JS_GL_CONSTANT(CULL_FACE_MODE);
+  JS_GL_CONSTANT(FRONT_FACE);
+  JS_GL_CONSTANT(DEPTH_RANGE);
+  JS_GL_CONSTANT(DEPTH_WRITEMASK);
+  JS_GL_CONSTANT(DEPTH_CLEAR_VALUE);
+  JS_GL_CONSTANT(DEPTH_FUNC);
+  JS_GL_CONSTANT(STENCIL_CLEAR_VALUE);
+  JS_GL_CONSTANT(STENCIL_FUNC);
+  JS_GL_CONSTANT(STENCIL_FAIL);
+  JS_GL_CONSTANT(STENCIL_PASS_DEPTH_FAIL);
+  JS_GL_CONSTANT(STENCIL_PASS_DEPTH_PASS);
+  JS_GL_CONSTANT(STENCIL_REF);
+  JS_GL_CONSTANT(STENCIL_VALUE_MASK);
+  JS_GL_CONSTANT(STENCIL_WRITEMASK);
+  JS_GL_CONSTANT(STENCIL_BACK_FUNC);
+  JS_GL_CONSTANT(STENCIL_BACK_FAIL);
+  JS_GL_CONSTANT(STENCIL_BACK_PASS_DEPTH_FAIL);
+  JS_GL_CONSTANT(STENCIL_BACK_PASS_DEPTH_PASS);
+  JS_GL_CONSTANT(STENCIL_BACK_REF);
+  JS_GL_CONSTANT(STENCIL_BACK_VALUE_MASK);
+  JS_GL_CONSTANT(STENCIL_BACK_WRITEMASK);
+  JS_GL_CONSTANT(VIEWPORT);
+  JS_GL_CONSTANT(SCISSOR_BOX);
+  /*      GL_SCISSOR_TEST */
+  JS_GL_CONSTANT(COLOR_CLEAR_VALUE);
+  JS_GL_CONSTANT(COLOR_WRITEMASK);
+  JS_GL_CONSTANT(UNPACK_ALIGNMENT);
+  JS_GL_CONSTANT(PACK_ALIGNMENT);
+  JS_GL_CONSTANT(MAX_TEXTURE_SIZE);
+  JS_GL_CONSTANT(MAX_VIEWPORT_DIMS);
+  JS_GL_CONSTANT(SUBPIXEL_BITS);
+  JS_GL_CONSTANT(RED_BITS);
+  JS_GL_CONSTANT(GREEN_BITS);
+  JS_GL_CONSTANT(BLUE_BITS);
+  JS_GL_CONSTANT(ALPHA_BITS);
+  JS_GL_CONSTANT(DEPTH_BITS);
+  JS_GL_CONSTANT(STENCIL_BITS);
+  JS_GL_CONSTANT(POLYGON_OFFSET_UNITS);
+  /*      GL_POLYGON_OFFSET_FILL */
+  JS_GL_CONSTANT(POLYGON_OFFSET_FACTOR);
+  JS_GL_CONSTANT(TEXTURE_BINDING_2D);
+  JS_GL_CONSTANT(SAMPLE_BUFFERS);
+  JS_GL_CONSTANT(SAMPLES);
+  JS_GL_CONSTANT(SAMPLE_COVERAGE_VALUE);
+  JS_GL_CONSTANT(SAMPLE_COVERAGE_INVERT);
+
+  /* GetTextureParameter */
+  /*      GL_TEXTURE_MAG_FILTER */
+  /*      GL_TEXTURE_MIN_FILTER */
+  /*      GL_TEXTURE_WRAP_S */
+  /*      GL_TEXTURE_WRAP_T */
+
+  JS_GL_CONSTANT(NUM_COMPRESSED_TEXTURE_FORMATS);
+  JS_GL_CONSTANT(COMPRESSED_TEXTURE_FORMATS);
+
+  /* HintMode */
+  JS_GL_CONSTANT(DONT_CARE);
+  JS_GL_CONSTANT(FASTEST);
+  JS_GL_CONSTANT(NICEST);
+
+  /* HintTarget */
+  JS_GL_CONSTANT(GENERATE_MIPMAP_HINT);
+
+  /* DataType */
+  JS_GL_CONSTANT(BYTE);
+  JS_GL_CONSTANT(UNSIGNED_BYTE);
+  JS_GL_CONSTANT(SHORT);
+  JS_GL_CONSTANT(UNSIGNED_SHORT);
+  JS_GL_CONSTANT(INT);
+  JS_GL_CONSTANT(UNSIGNED_INT);
+  JS_GL_CONSTANT(FLOAT);
+#ifndef __APPLE__
+  JS_GL_CONSTANT(FIXED);
+#endif
+
+  /* PixelFormat */
+  JS_GL_CONSTANT(DEPTH_COMPONENT);
+  JS_GL_CONSTANT(ALPHA);
+  JS_GL_CONSTANT(RGB);
+  JS_GL_CONSTANT(RGBA);
+  JS_GL_CONSTANT(LUMINANCE);
+  JS_GL_CONSTANT(LUMINANCE_ALPHA);
+
+  /* PixelType */
+  /*      GL_UNSIGNED_BYTE */
+  JS_GL_CONSTANT(UNSIGNED_SHORT_4_4_4_4);
+  JS_GL_CONSTANT(UNSIGNED_SHORT_5_5_5_1);
+  JS_GL_CONSTANT(UNSIGNED_SHORT_5_6_5);
+
+  /* Shaders */
+  JS_GL_CONSTANT(FRAGMENT_SHADER);
+  JS_GL_CONSTANT(VERTEX_SHADER);
+  JS_GL_CONSTANT(MAX_VERTEX_ATTRIBS);
+#ifndef __APPLE__
+  JS_GL_CONSTANT(MAX_VERTEX_UNIFORM_VECTORS);
+  JS_GL_CONSTANT(MAX_VARYING_VECTORS);
+#endif
+  JS_GL_CONSTANT(MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+  JS_GL_CONSTANT(MAX_VERTEX_TEXTURE_IMAGE_UNITS);
+  JS_GL_CONSTANT(MAX_TEXTURE_IMAGE_UNITS);
+#ifndef __APPLE__
+  JS_GL_CONSTANT(MAX_FRAGMENT_UNIFORM_VECTORS);
+#endif
+  JS_GL_CONSTANT(SHADER_TYPE);
+  JS_GL_CONSTANT(DELETE_STATUS);
+  JS_GL_CONSTANT(LINK_STATUS);
+  JS_GL_CONSTANT(VALIDATE_STATUS);
+  JS_GL_CONSTANT(ATTACHED_SHADERS);
+  JS_GL_CONSTANT(ACTIVE_UNIFORMS);
+  JS_GL_CONSTANT(ACTIVE_UNIFORM_MAX_LENGTH);
+  JS_GL_CONSTANT(ACTIVE_ATTRIBUTES);
+  JS_GL_CONSTANT(ACTIVE_ATTRIBUTE_MAX_LENGTH);
+  JS_GL_CONSTANT(SHADING_LANGUAGE_VERSION);
+  JS_GL_CONSTANT(CURRENT_PROGRAM);
+
+  /* StencilFunction */
+  JS_GL_CONSTANT(NEVER);
+  JS_GL_CONSTANT(LESS);
+  JS_GL_CONSTANT(EQUAL);
+  JS_GL_CONSTANT(LEQUAL);
+  JS_GL_CONSTANT(GREATER);
+  JS_GL_CONSTANT(NOTEQUAL);
+  JS_GL_CONSTANT(GEQUAL);
+  JS_GL_CONSTANT(ALWAYS);
+
+  /* StencilOp */
+  /*      GL_ZERO */
+  JS_GL_CONSTANT(KEEP);
+  JS_GL_CONSTANT(REPLACE);
+  JS_GL_CONSTANT(INCR);
+  JS_GL_CONSTANT(DECR);
+  JS_GL_CONSTANT(INVERT);
+  JS_GL_CONSTANT(INCR_WRAP);
+  JS_GL_CONSTANT(DECR_WRAP);
+
+  /* StringName */
+  JS_GL_CONSTANT(VENDOR);
+  JS_GL_CONSTANT(RENDERER);
+  JS_GL_CONSTANT(VERSION);
+  JS_GL_CONSTANT(EXTENSIONS);
+
+  /* TextureMagFilter */
+  JS_GL_CONSTANT(NEAREST);
+  JS_GL_CONSTANT(LINEAR);
+
+  /* TextureMinFilter */
+  /*      GL_NEAREST */
+  /*      GL_LINEAR */
+  JS_GL_CONSTANT(NEAREST_MIPMAP_NEAREST);
+  JS_GL_CONSTANT(LINEAR_MIPMAP_NEAREST);
+  JS_GL_CONSTANT(NEAREST_MIPMAP_LINEAR);
+  JS_GL_CONSTANT(LINEAR_MIPMAP_LINEAR);
+
+  /* TextureParameterName */
+  JS_GL_CONSTANT(TEXTURE_MAG_FILTER);
+  JS_GL_CONSTANT(TEXTURE_MIN_FILTER);
+  JS_GL_CONSTANT(TEXTURE_WRAP_S);
+  JS_GL_CONSTANT(TEXTURE_WRAP_T);
+
+  /* TextureTarget */
+  /*      GL_TEXTURE_2D */
+  JS_GL_CONSTANT(TEXTURE);
+
+  JS_GL_CONSTANT(TEXTURE_CUBE_MAP);
+  JS_GL_CONSTANT(TEXTURE_BINDING_CUBE_MAP);
+  JS_GL_CONSTANT(TEXTURE_CUBE_MAP_POSITIVE_X);
+  JS_GL_CONSTANT(TEXTURE_CUBE_MAP_NEGATIVE_X);
+  JS_GL_CONSTANT(TEXTURE_CUBE_MAP_POSITIVE_Y);
+  JS_GL_CONSTANT(TEXTURE_CUBE_MAP_NEGATIVE_Y);
+  JS_GL_CONSTANT(TEXTURE_CUBE_MAP_POSITIVE_Z);
+  JS_GL_CONSTANT(TEXTURE_CUBE_MAP_NEGATIVE_Z);
+  JS_GL_CONSTANT(MAX_CUBE_MAP_TEXTURE_SIZE);
+
+  /* TextureUnit */
+  JS_GL_CONSTANT(TEXTURE0);
+  JS_GL_CONSTANT(TEXTURE1);
+  JS_GL_CONSTANT(TEXTURE2);
+  JS_GL_CONSTANT(TEXTURE3);
+  JS_GL_CONSTANT(TEXTURE4);
+  JS_GL_CONSTANT(TEXTURE5);
+  JS_GL_CONSTANT(TEXTURE6);
+  JS_GL_CONSTANT(TEXTURE7);
+  JS_GL_CONSTANT(TEXTURE8);
+  JS_GL_CONSTANT(TEXTURE9);
+  JS_GL_CONSTANT(TEXTURE10);
+  JS_GL_CONSTANT(TEXTURE11);
+  JS_GL_CONSTANT(TEXTURE12);
+  JS_GL_CONSTANT(TEXTURE13);
+  JS_GL_CONSTANT(TEXTURE14);
+  JS_GL_CONSTANT(TEXTURE15);
+  JS_GL_CONSTANT(TEXTURE16);
+  JS_GL_CONSTANT(TEXTURE17);
+  JS_GL_CONSTANT(TEXTURE18);
+  JS_GL_CONSTANT(TEXTURE19);
+  JS_GL_CONSTANT(TEXTURE20);
+  JS_GL_CONSTANT(TEXTURE21);
+  JS_GL_CONSTANT(TEXTURE22);
+  JS_GL_CONSTANT(TEXTURE23);
+  JS_GL_CONSTANT(TEXTURE24);
+  JS_GL_CONSTANT(TEXTURE25);
+  JS_GL_CONSTANT(TEXTURE26);
+  JS_GL_CONSTANT(TEXTURE27);
+  JS_GL_CONSTANT(TEXTURE28);
+  JS_GL_CONSTANT(TEXTURE29);
+  JS_GL_CONSTANT(TEXTURE30);
+  JS_GL_CONSTANT(TEXTURE31);
+  JS_GL_CONSTANT(ACTIVE_TEXTURE);
+
+  /* TextureWrapMode */
+  JS_GL_CONSTANT(REPEAT);
+  JS_GL_CONSTANT(CLAMP_TO_EDGE);
+  JS_GL_CONSTANT(MIRRORED_REPEAT);
+
+  /* Uniform Types */
+  JS_GL_CONSTANT(FLOAT_VEC2);
+  JS_GL_CONSTANT(FLOAT_VEC3);
+  JS_GL_CONSTANT(FLOAT_VEC4);
+  JS_GL_CONSTANT(INT_VEC2);
+  JS_GL_CONSTANT(INT_VEC3);
+  JS_GL_CONSTANT(INT_VEC4);
+  JS_GL_CONSTANT(BOOL);
+  JS_GL_CONSTANT(BOOL_VEC2);
+  JS_GL_CONSTANT(BOOL_VEC3);
+  JS_GL_CONSTANT(BOOL_VEC4);
+  JS_GL_CONSTANT(FLOAT_MAT2);
+  JS_GL_CONSTANT(FLOAT_MAT3);
+  JS_GL_CONSTANT(FLOAT_MAT4);
+  JS_GL_CONSTANT(SAMPLER_2D);
+  JS_GL_CONSTANT(SAMPLER_CUBE);
+
+  /* Vertex Arrays */
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_ENABLED);
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_SIZE);
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_STRIDE);
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_TYPE);
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_NORMALIZED);
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_POINTER);
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_BUFFER_BINDING);
+
+  /* Read Format */
+#ifndef __APPLE__
+  JS_GL_CONSTANT(IMPLEMENTATION_COLOR_READ_TYPE);
+  JS_GL_CONSTANT(IMPLEMENTATION_COLOR_READ_FORMAT);
+#endif
+
+  /* Shader Source */
+  JS_GL_CONSTANT(COMPILE_STATUS);
+  JS_GL_CONSTANT(INFO_LOG_LENGTH);
+  JS_GL_CONSTANT(SHADER_SOURCE_LENGTH);
+#ifndef __APPLE__
+  JS_GL_CONSTANT(SHADER_COMPILER);
+#endif
+
+  /* Shader Binary */
+#ifndef __APPLE__
+  JS_GL_CONSTANT(SHADER_BINARY_FORMATS);
+  JS_GL_CONSTANT(NUM_SHADER_BINARY_FORMATS);
+#endif
+
+  /* Shader Precision-Specified Types */
+#ifndef __APPLE__
+  JS_GL_CONSTANT(LOW_FLOAT);
+  JS_GL_CONSTANT(MEDIUM_FLOAT);
+  JS_GL_CONSTANT(HIGH_FLOAT);
+  JS_GL_CONSTANT(LOW_INT);
+  JS_GL_CONSTANT(MEDIUM_INT);
+  JS_GL_CONSTANT(HIGH_INT);
+#endif
+
+  /* Framebuffer Object. */
+  JS_GL_CONSTANT(FRAMEBUFFER);
+  JS_GL_CONSTANT(RENDERBUFFER);
+
+  JS_GL_CONSTANT(RGBA4);
+  JS_GL_CONSTANT(RGB5_A1);
+#ifndef __APPLE__
+  //JS_GL_CONSTANT(RGB565);
+#endif
+  JS_GL_CONSTANT(DEPTH_COMPONENT16);
+  // JS_GL_CONSTANT(STENCIL_INDEX);
+  JS_GL_CONSTANT(STENCIL_INDEX8);
+  JS_GL_CONSTANT(DEPTH_STENCIL);
+  JS_GL_CONSTANT(DEPTH24_STENCIL8);
+
+  JS_GL_CONSTANT(RENDERBUFFER_WIDTH);
+  JS_GL_CONSTANT(RENDERBUFFER_HEIGHT);
+  JS_GL_CONSTANT(RENDERBUFFER_INTERNAL_FORMAT);
+  JS_GL_CONSTANT(RENDERBUFFER_RED_SIZE);
+  JS_GL_CONSTANT(RENDERBUFFER_GREEN_SIZE);
+  JS_GL_CONSTANT(RENDERBUFFER_BLUE_SIZE);
+  JS_GL_CONSTANT(RENDERBUFFER_ALPHA_SIZE);
+  JS_GL_CONSTANT(RENDERBUFFER_DEPTH_SIZE);
+  JS_GL_CONSTANT(RENDERBUFFER_STENCIL_SIZE);
+
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE);
+
+  JS_GL_CONSTANT(COLOR_ATTACHMENT0);
+  JS_GL_CONSTANT(DEPTH_ATTACHMENT);
+  JS_GL_CONSTANT(STENCIL_ATTACHMENT);
+  JS_GL_CONSTANT(DEPTH_STENCIL_ATTACHMENT);
+
+  JS_GL_CONSTANT(NONE);
+
+  JS_GL_CONSTANT(FRAMEBUFFER_COMPLETE);
+  JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
+  JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
+#ifndef __APPLE__
+  //JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_DIMENSIONS);
+#endif
+  JS_GL_CONSTANT(FRAMEBUFFER_UNSUPPORTED);
+
+  JS_GL_CONSTANT(FRAMEBUFFER_BINDING);
+  JS_GL_CONSTANT(RENDERBUFFER_BINDING);
+  JS_GL_CONSTANT(MAX_RENDERBUFFER_SIZE);
+
+  JS_GL_CONSTANT(INVALID_FRAMEBUFFER_OPERATION);
+
+  /* WebGL-specific enums */
+  JS_GL_SET_CONSTANT("UNPACK_FLIP_Y_WEBGL", UNPACK_FLIP_Y_WEBGL);
+  JS_GL_SET_CONSTANT("UNPACK_PREMULTIPLY_ALPHA_WEBGL", UNPACK_PREMULTIPLY_ALPHA_WEBGL);
+  JS_GL_SET_CONSTANT("CONTEXT_LOST_WEBGL", CONTEXT_LOST_WEBGL);
+  JS_GL_SET_CONSTANT("UNPACK_COLORSPACE_CONVERSION_WEBGL", UNPACK_COLORSPACE_CONVERSION_WEBGL);
+  JS_GL_SET_CONSTANT("BROWSER_DEFAULT_WEBGL", BROWSER_DEFAULT_WEBGL);
+
+  //////////////////////////////
+  // NOT in WebGL spec
+  //////////////////////////////
+
+  // PBO
+  JS_GL_SET_CONSTANT("PIXEL_PACK_BUFFER" , 0x88EB);
+  JS_GL_SET_CONSTANT("PIXEL_UNPACK_BUFFER" , 0x88EC);
+  JS_GL_SET_CONSTANT("PIXEL_PACK_BUFFER_BINDING" , 0x88ED);
+  JS_GL_SET_CONSTANT("PIXEL_UNPACK_BUFFER_BINDING", 0x88EF);
+
+  // external
+  JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+  return scope.Escape(ctorFn);
+}
+
+WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false) {}
+
+WebGLRenderingContext::~WebGLRenderingContext() {}
+
+NAN_METHOD(WebGLRenderingContext::New) {
+  Nan::HandleScope scope;
+
+  WebGLRenderingContext *gl = new WebGLRenderingContext();
+  Local<Object> glObj = info.This();
+  gl->Wrap(glObj);
+
+  info.GetReturnValue().Set(glObj);
+}
+
+NAN_METHOD(WebGLRenderingContext::Destroy) {
+  Nan::HandleScope scope;
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  gl->live = false;
+}
+
+NAN_METHOD(WebGLRenderingContext::GetWindowHandle) {
+  Nan::HandleScope scope;
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  if (gl->windowHandle) {
+    info.GetReturnValue().Set(glfw::pointerToArray(gl->windowHandle));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::SetWindowHandle) {
+  Nan::HandleScope scope;
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  if (info[0]->IsArray()) {
+    gl->windowHandle = (GLFWwindow *)glfw::arrayToPointer(Local<Array>::Cast(info[0]));
+  } else {
+    gl->windowHandle = nullptr;
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::IsDirty) {
+  Nan::HandleScope scope;
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  info.GetReturnValue().Set(JS_BOOL(gl->dirty));
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearDirty) {
+  Nan::HandleScope scope;
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  gl->dirty = false;
+}
+
+// GL CALLS
+
 // A 32-bit and 64-bit compatible way of converting a pointer to a GLuint.
 static GLuint ToGLuint(const void* ptr) {
   return static_cast<GLuint>(reinterpret_cast<size_t>(ptr));
@@ -47,9 +744,7 @@ inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
   }
 
   if (!arg->IsNull()) {
-    if (arg->IsArray()) {
-      Nan::ThrowError("Not support array type");
-    } else if (arg->IsObject()) {
+    if (arg->IsArrayBufferView()) {
       Local<ArrayBufferView> arr = Local<ArrayBufferView>::Cast(arg);
       if (num) {
         *num = arr->ByteLength()/sizeof(Type);
@@ -106,22 +801,7 @@ inline void flipImageData(char *dstData, char *srcData, size_t width, size_t hei
   }
 }
 
-/* NAN_METHOD(Init) {
-  Nan::HandleScope scope;
-  GLenum err = glewInit();
-  if (GLEW_OK != err)
-  {
-    // Problem: glewInit failed, something is seriously wrong.
-    fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-    info.GetReturnValue().Set(JS_INT(-1));
-  }else{
-    //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-    info.GetReturnValue().Set(JS_INT(0));
-  }
-
-} */
-
-NAN_METHOD(Uniform1f) {
+NAN_METHOD(WebGLRenderingContext::Uniform1f) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -132,7 +812,7 @@ NAN_METHOD(Uniform1f) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform2f) {
+NAN_METHOD(WebGLRenderingContext::Uniform2f) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -144,7 +824,7 @@ NAN_METHOD(Uniform2f) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform3f) {
+NAN_METHOD(WebGLRenderingContext::Uniform3f) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -157,7 +837,7 @@ NAN_METHOD(Uniform3f) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform4f) {
+NAN_METHOD(WebGLRenderingContext::Uniform4f) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -171,7 +851,7 @@ NAN_METHOD(Uniform4f) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform1i) {
+NAN_METHOD(WebGLRenderingContext::Uniform1i) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -182,7 +862,7 @@ NAN_METHOD(Uniform1i) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform2i) {
+NAN_METHOD(WebGLRenderingContext::Uniform2i) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -194,7 +874,7 @@ NAN_METHOD(Uniform2i) {
   // o.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform3i) {
+NAN_METHOD(WebGLRenderingContext::Uniform3i) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -207,7 +887,7 @@ NAN_METHOD(Uniform3i) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform4i) {
+NAN_METHOD(WebGLRenderingContext::Uniform4i) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -221,7 +901,7 @@ NAN_METHOD(Uniform4i) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform1fv) {
+NAN_METHOD(WebGLRenderingContext::Uniform1fv) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -242,7 +922,7 @@ NAN_METHOD(Uniform1fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform2fv) {
+NAN_METHOD(WebGLRenderingContext::Uniform2fv) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -265,7 +945,7 @@ NAN_METHOD(Uniform2fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform3fv) {
+NAN_METHOD(WebGLRenderingContext::Uniform3fv) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -288,7 +968,7 @@ NAN_METHOD(Uniform3fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform4fv) {
+NAN_METHOD(WebGLRenderingContext::Uniform4fv) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -311,7 +991,7 @@ NAN_METHOD(Uniform4fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform1iv) {
+NAN_METHOD(WebGLRenderingContext::Uniform1iv) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -332,7 +1012,7 @@ NAN_METHOD(Uniform1iv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform2iv) {
+NAN_METHOD(WebGLRenderingContext::Uniform2iv) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -355,7 +1035,7 @@ NAN_METHOD(Uniform2iv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform3iv) {
+NAN_METHOD(WebGLRenderingContext::Uniform3iv) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -378,7 +1058,7 @@ NAN_METHOD(Uniform3iv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Uniform4iv) {
+NAN_METHOD(WebGLRenderingContext::Uniform4iv) {
   Nan::HandleScope scope;
 
   int location = info[0]->Int32Value();
@@ -401,7 +1081,7 @@ NAN_METHOD(Uniform4iv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(PixelStorei) {
+NAN_METHOD(WebGLRenderingContext::PixelStorei) {
   Nan::HandleScope scope;
 
   int pname = info[0]->Int32Value();
@@ -412,7 +1092,7 @@ NAN_METHOD(PixelStorei) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(BindAttribLocation) {
+NAN_METHOD(WebGLRenderingContext::BindAttribLocation) {
   Nan::HandleScope scope;
 
   int program = info[0]->Int32Value();
@@ -425,7 +1105,7 @@ NAN_METHOD(BindAttribLocation) {
 }
 
 
-NAN_METHOD(GetError) {
+NAN_METHOD(WebGLRenderingContext::GetError) {
   Nan::HandleScope scope;
 
   GLint error = glGetError();
@@ -434,7 +1114,7 @@ NAN_METHOD(GetError) {
 }
 
 
-NAN_METHOD(DrawArrays) {
+NAN_METHOD(WebGLRenderingContext::DrawArrays) {
   Nan::HandleScope scope;
 
   int mode = info[0]->Int32Value();
@@ -446,7 +1126,7 @@ NAN_METHOD(DrawArrays) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DrawArraysInstancedANGLE) {
+NAN_METHOD(WebGLRenderingContext::DrawArraysInstancedANGLE) {
   Nan::HandleScope scope;
 
   int mode = info[0]->Int32Value();
@@ -459,7 +1139,7 @@ NAN_METHOD(DrawArraysInstancedANGLE) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(UniformMatrix2fv) {
+NAN_METHOD(WebGLRenderingContext::UniformMatrix2fv) {
   Nan::HandleScope scope;
 
   GLint location = info[0]->Int32Value();
@@ -491,7 +1171,7 @@ NAN_METHOD(UniformMatrix2fv) {
   }
 }
 
-NAN_METHOD(UniformMatrix3fv) {
+NAN_METHOD(WebGLRenderingContext::UniformMatrix3fv) {
   Nan::HandleScope scope;
 
   GLint location = info[0]->Int32Value();
@@ -523,7 +1203,7 @@ NAN_METHOD(UniformMatrix3fv) {
   }
 }
 
-NAN_METHOD(UniformMatrix4fv) {
+NAN_METHOD(WebGLRenderingContext::UniformMatrix4fv) {
   Nan::HandleScope scope;
 
   GLint location = info[0]->Int32Value();
@@ -555,7 +1235,7 @@ NAN_METHOD(UniformMatrix4fv) {
   }
 }
 
-NAN_METHOD(GenerateMipmap) {
+NAN_METHOD(WebGLRenderingContext::GenerateMipmap) {
   Nan::HandleScope scope;
 
   GLint target = info[0]->Int32Value();
@@ -565,7 +1245,7 @@ NAN_METHOD(GenerateMipmap) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(GetAttribLocation) {
+NAN_METHOD(WebGLRenderingContext::GetAttribLocation) {
   Nan::HandleScope scope;
 
   int program = info[0]->Int32Value();
@@ -577,7 +1257,7 @@ NAN_METHOD(GetAttribLocation) {
 }
 
 
-NAN_METHOD(DepthFunc) {
+NAN_METHOD(WebGLRenderingContext::DepthFunc) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -587,7 +1267,7 @@ NAN_METHOD(DepthFunc) {
 }
 
 
-NAN_METHOD(Viewport) {
+NAN_METHOD(WebGLRenderingContext::Viewport) {
   Nan::HandleScope scope;
 
   int x = info[0]->Int32Value();
@@ -600,7 +1280,7 @@ NAN_METHOD(Viewport) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(CreateShader) {
+NAN_METHOD(WebGLRenderingContext::CreateShader) {
   Nan::HandleScope scope;
 
   GLint type = info[0]->Int32Value();
@@ -617,7 +1297,7 @@ NAN_METHOD(CreateShader) {
 }
 
 
-NAN_METHOD(ShaderSource) {
+NAN_METHOD(WebGLRenderingContext::ShaderSource) {
   Nan::HandleScope scope;
 
   GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
@@ -632,7 +1312,7 @@ NAN_METHOD(ShaderSource) {
 }
 
 
-NAN_METHOD(CompileShader) {
+NAN_METHOD(WebGLRenderingContext::CompileShader) {
   Nan::HandleScope scope;
 
   GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
@@ -641,7 +1321,7 @@ NAN_METHOD(CompileShader) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(FrontFace) {
+NAN_METHOD(WebGLRenderingContext::FrontFace) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -651,7 +1331,7 @@ NAN_METHOD(FrontFace) {
 }
 
 
-NAN_METHOD(GetShaderParameter) {
+NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
   Nan::HandleScope scope;
 
   GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
@@ -679,7 +1359,7 @@ NAN_METHOD(GetShaderParameter) {
   //info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(GetShaderInfoLog) {
+NAN_METHOD(WebGLRenderingContext::GetShaderInfoLog) {
   Nan::HandleScope scope;
 
   GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
@@ -692,7 +1372,7 @@ NAN_METHOD(GetShaderInfoLog) {
 }
 
 
-NAN_METHOD(CreateProgram) {
+NAN_METHOD(WebGLRenderingContext::CreateProgram) {
   Nan::HandleScope scope;
 
   GLuint program = glCreateProgram();
@@ -705,7 +1385,7 @@ NAN_METHOD(CreateProgram) {
 }
 
 
-NAN_METHOD(AttachShader) {
+NAN_METHOD(WebGLRenderingContext::AttachShader) {
   Nan::HandleScope scope;
 
   int program = info[0]->Int32Value();
@@ -717,7 +1397,7 @@ NAN_METHOD(AttachShader) {
 }
 
 
-NAN_METHOD(LinkProgram) {
+NAN_METHOD(WebGLRenderingContext::LinkProgram) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -727,7 +1407,7 @@ NAN_METHOD(LinkProgram) {
 }
 
 
-NAN_METHOD(GetProgramParameter) {
+NAN_METHOD(WebGLRenderingContext::GetProgramParameter) {
   Nan::HandleScope scope;
 
   int program = info[0]->Int32Value();
@@ -755,7 +1435,7 @@ NAN_METHOD(GetProgramParameter) {
 }
 
 
-NAN_METHOD(GetUniformLocation) {
+NAN_METHOD(WebGLRenderingContext::GetUniformLocation) {
   Nan::HandleScope scope;
 
   int program = info[0]->Int32Value();
@@ -767,7 +1447,7 @@ NAN_METHOD(GetUniformLocation) {
 }
 
 
-NAN_METHOD(ClearColor) {
+NAN_METHOD(WebGLRenderingContext::ClearColor) {
   Nan::HandleScope scope;
 
   float red = (float)info[0]->NumberValue();
@@ -781,7 +1461,7 @@ NAN_METHOD(ClearColor) {
 }
 
 
-NAN_METHOD(ClearDepth) {
+NAN_METHOD(WebGLRenderingContext::ClearDepth) {
   Nan::HandleScope scope;
 
   GLfloat depth = info[0]->NumberValue();
@@ -790,7 +1470,7 @@ NAN_METHOD(ClearDepth) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Disable) {
+NAN_METHOD(WebGLRenderingContext::Disable) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -799,7 +1479,7 @@ NAN_METHOD(Disable) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Enable) {
+NAN_METHOD(WebGLRenderingContext::Enable) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -809,7 +1489,7 @@ NAN_METHOD(Enable) {
 }
 
 
-NAN_METHOD(CreateTexture) {
+NAN_METHOD(WebGLRenderingContext::CreateTexture) {
   Nan::HandleScope scope;
 
   GLuint texture;
@@ -822,7 +1502,7 @@ NAN_METHOD(CreateTexture) {
 }
 
 
-NAN_METHOD(BindTexture) {
+NAN_METHOD(WebGLRenderingContext::BindTexture) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
@@ -834,7 +1514,7 @@ NAN_METHOD(BindTexture) {
 }
 
 /* char texPixels[4096 * 4096 * 4];
-NAN_METHOD(FlipTextureData) {
+NAN_METHOD(WebGLRenderingContext::FlipTextureData) {
   Nan::HandleScope scope;
 
   int num;
@@ -982,7 +1662,7 @@ int normalizeInternalFormat(int internalformat, int format, int type) {
   return internalformat;
 }
 
-NAN_METHOD(TexImage2D) {
+NAN_METHOD(WebGLRenderingContext::TexImage2D) {
   Isolate *isolate = Isolate::GetCurrent();
 
   Nan::HandleScope scope;
@@ -1080,6 +1760,8 @@ NAN_METHOD(TexImage2D) {
   // int num;
   char *pixelsV;
 
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   if (pixels->IsNull()) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, nullptr);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
@@ -1096,7 +1778,7 @@ NAN_METHOD(TexImage2D) {
       pixelsV2 = pixelsV;
     }
 
-    if (canvas::ImageData::getFlip() && !pixels->IsArrayBufferView()) {
+    if (canvas::ImageData::getFlip() && gl->flipY && !pixels->IsArrayBufferView()) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
 
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
@@ -1111,7 +1793,7 @@ NAN_METHOD(TexImage2D) {
 }
 
 
-NAN_METHOD(TexParameteri) {
+NAN_METHOD(WebGLRenderingContext::TexParameteri) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
@@ -1123,7 +1805,7 @@ NAN_METHOD(TexParameteri) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(TexParameterf) {
+NAN_METHOD(WebGLRenderingContext::TexParameterf) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
@@ -1136,7 +1818,7 @@ NAN_METHOD(TexParameterf) {
 }
 
 
-NAN_METHOD(Clear) {
+NAN_METHOD(WebGLRenderingContext::Clear) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -1146,7 +1828,7 @@ NAN_METHOD(Clear) {
 }
 
 
-NAN_METHOD(UseProgram) {
+NAN_METHOD(WebGLRenderingContext::UseProgram) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -1155,7 +1837,7 @@ NAN_METHOD(UseProgram) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(CreateBuffer) {
+NAN_METHOD(WebGLRenderingContext::CreateBuffer) {
   Nan::HandleScope scope;
 
   GLuint buffer;
@@ -1167,7 +1849,7 @@ NAN_METHOD(CreateBuffer) {
   info.GetReturnValue().Set(Nan::New<Number>(buffer));
 }
 
-NAN_METHOD(BindBuffer) {
+NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
@@ -1179,7 +1861,7 @@ NAN_METHOD(BindBuffer) {
 }
 
 
-NAN_METHOD(CreateFramebuffer) {
+NAN_METHOD(WebGLRenderingContext::CreateFramebuffer) {
   Nan::HandleScope scope;
 
   GLuint buffer;
@@ -1192,7 +1874,7 @@ NAN_METHOD(CreateFramebuffer) {
 }
 
 
-NAN_METHOD(BindFramebuffer) {
+NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
@@ -1204,7 +1886,7 @@ NAN_METHOD(BindFramebuffer) {
 }
 
 
-NAN_METHOD(FramebufferTexture2D) {
+NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
@@ -1218,15 +1900,13 @@ NAN_METHOD(FramebufferTexture2D) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(BufferData) {
+NAN_METHOD(WebGLRenderingContext::BufferData) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
   if(info[1]->IsObject()) {
     Local<Object> obj = Local<Object>::Cast(info[1]);
     GLenum usage = info[2]->Int32Value();
-
-    CHECK_ARRAY_BUFFER(obj);
 
     int element_size = 1;
     Local<ArrayBufferView> arr = Local<ArrayBufferView>::Cast(obj);
@@ -1245,7 +1925,7 @@ NAN_METHOD(BufferData) {
 }
 
 
-NAN_METHOD(BufferSubData) {
+NAN_METHOD(WebGLRenderingContext::BufferSubData) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
@@ -1263,7 +1943,7 @@ NAN_METHOD(BufferSubData) {
 }
 
 
-NAN_METHOD(BlendEquation) {
+NAN_METHOD(WebGLRenderingContext::BlendEquation) {
   Nan::HandleScope scope;
 
   GLint mode = info[0]->Int32Value();
@@ -1273,7 +1953,7 @@ NAN_METHOD(BlendEquation) {
 }
 
 
-NAN_METHOD(BlendFunc) {
+NAN_METHOD(WebGLRenderingContext::BlendFunc) {
   Nan::HandleScope scope;
 
   GLint sfactor = info[0]->Int32Value();
@@ -1285,7 +1965,7 @@ NAN_METHOD(BlendFunc) {
 }
 
 
-NAN_METHOD(EnableVertexAttribArray) {
+NAN_METHOD(WebGLRenderingContext::EnableVertexAttribArray) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -1295,7 +1975,7 @@ NAN_METHOD(EnableVertexAttribArray) {
 }
 
 
-NAN_METHOD(VertexAttribPointer) {
+NAN_METHOD(WebGLRenderingContext::VertexAttribPointer) {
   Nan::HandleScope scope;
 
   int indx = info[0]->Int32Value();
@@ -1312,7 +1992,7 @@ NAN_METHOD(VertexAttribPointer) {
 }
 
 
-NAN_METHOD(ActiveTexture) {
+NAN_METHOD(WebGLRenderingContext::ActiveTexture) {
   Nan::HandleScope scope;
 
   int arg = info[0]->Int32Value();
@@ -1322,7 +2002,7 @@ NAN_METHOD(ActiveTexture) {
 }
 
 
-NAN_METHOD(DrawElements) {
+NAN_METHOD(WebGLRenderingContext::DrawElements) {
   Nan::HandleScope scope;
 
   int mode = info[0]->Int32Value();
@@ -1335,7 +2015,7 @@ NAN_METHOD(DrawElements) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DrawElementsInstancedANGLE) {
+NAN_METHOD(WebGLRenderingContext::DrawElementsInstancedANGLE) {
   Nan::HandleScope scope;
 
   int mode = info[0]->Int32Value();
@@ -1350,7 +2030,7 @@ NAN_METHOD(DrawElementsInstancedANGLE) {
 }
 
 
-NAN_METHOD(Flush) {
+NAN_METHOD(WebGLRenderingContext::Flush) {
   // Nan::HandleScope scope;
 
   glFlush();
@@ -1358,7 +2038,7 @@ NAN_METHOD(Flush) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Finish) {
+NAN_METHOD(WebGLRenderingContext::Finish) {
   // Nan::HandleScope scope;
 
   glFinish();
@@ -1366,7 +2046,7 @@ NAN_METHOD(Finish) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttrib1f) {
+NAN_METHOD(WebGLRenderingContext::VertexAttrib1f) {
   Nan::HandleScope scope;
 
   GLuint indx = info[0]->Int32Value();
@@ -1377,7 +2057,7 @@ NAN_METHOD(VertexAttrib1f) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttrib2f) {
+NAN_METHOD(WebGLRenderingContext::VertexAttrib2f) {
   Nan::HandleScope scope;
 
   GLuint indx = info[0]->Int32Value();
@@ -1389,7 +2069,7 @@ NAN_METHOD(VertexAttrib2f) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttrib3f) {
+NAN_METHOD(WebGLRenderingContext::VertexAttrib3f) {
   Nan::HandleScope scope;
 
   GLuint indx = info[0]->Int32Value();
@@ -1402,7 +2082,7 @@ NAN_METHOD(VertexAttrib3f) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttrib4f) {
+NAN_METHOD(WebGLRenderingContext::VertexAttrib4f) {
   Nan::HandleScope scope;
 
   GLuint indx = info[0]->Int32Value();
@@ -1416,7 +2096,7 @@ NAN_METHOD(VertexAttrib4f) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttrib1fv) {
+NAN_METHOD(WebGLRenderingContext::VertexAttrib1fv) {
   Nan::HandleScope scope;
 
   int indx = info[0]->Int32Value();
@@ -1441,7 +2121,7 @@ NAN_METHOD(VertexAttrib1fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttrib2fv) {
+NAN_METHOD(WebGLRenderingContext::VertexAttrib2fv) {
   Nan::HandleScope scope;
 
   int indx = info[0]->Int32Value();
@@ -1466,7 +2146,7 @@ NAN_METHOD(VertexAttrib2fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttrib3fv) {
+NAN_METHOD(WebGLRenderingContext::VertexAttrib3fv) {
   Nan::HandleScope scope;
 
   int indx = info[0]->Int32Value();
@@ -1491,7 +2171,7 @@ NAN_METHOD(VertexAttrib3fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttrib4fv) {
+NAN_METHOD(WebGLRenderingContext::VertexAttrib4fv) {
   Nan::HandleScope scope;
 
   int indx = info[0]->Int32Value();
@@ -1516,7 +2196,7 @@ NAN_METHOD(VertexAttrib4fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(VertexAttribDivisorANGLE) {
+NAN_METHOD(WebGLRenderingContext::VertexAttribDivisorANGLE) {
   Nan::HandleScope scope;
 
   unsigned int index = info[0]->Uint32Value();
@@ -1527,7 +2207,7 @@ NAN_METHOD(VertexAttribDivisorANGLE) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DrawBuffersWEBGL) {
+NAN_METHOD(WebGLRenderingContext::DrawBuffersWEBGL) {
   Nan::HandleScope scope;
 
   Local<Array> buffersArray = Local<Array>::Cast(info[0]);
@@ -1542,7 +2222,7 @@ NAN_METHOD(DrawBuffersWEBGL) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(BlendColor) {
+NAN_METHOD(WebGLRenderingContext::BlendColor) {
   Nan::HandleScope scope;
 
   GLclampf r = (float)info[0]->NumberValue();
@@ -1555,7 +2235,7 @@ NAN_METHOD(BlendColor) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(BlendEquationSeparate) {
+NAN_METHOD(WebGLRenderingContext::BlendEquationSeparate) {
   Nan::HandleScope scope;
 
   GLenum modeRGB = info[0]->Int32Value();
@@ -1566,7 +2246,7 @@ NAN_METHOD(BlendEquationSeparate) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(BlendFuncSeparate) {
+NAN_METHOD(WebGLRenderingContext::BlendFuncSeparate) {
   Nan::HandleScope scope;
 
   GLenum srcRGB = info[0]->Int32Value();
@@ -1579,7 +2259,7 @@ NAN_METHOD(BlendFuncSeparate) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(ClearStencil) {
+NAN_METHOD(WebGLRenderingContext::ClearStencil) {
   Nan::HandleScope scope;
 
   GLint s = info[0]->Int32Value();
@@ -1589,7 +2269,7 @@ NAN_METHOD(ClearStencil) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(ColorMask) {
+NAN_METHOD(WebGLRenderingContext::ColorMask) {
   Nan::HandleScope scope;
 
   GLboolean r = info[0]->BooleanValue();
@@ -1602,7 +2282,7 @@ NAN_METHOD(ColorMask) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(CopyTexImage2D) {
+NAN_METHOD(WebGLRenderingContext::CopyTexImage2D) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -1619,7 +2299,7 @@ NAN_METHOD(CopyTexImage2D) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(CopyTexSubImage2D) {
+NAN_METHOD(WebGLRenderingContext::CopyTexSubImage2D) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -1636,7 +2316,7 @@ NAN_METHOD(CopyTexSubImage2D) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(CullFace) {
+NAN_METHOD(WebGLRenderingContext::CullFace) {
   Nan::HandleScope scope;
 
   GLenum mode = info[0]->Int32Value();
@@ -1646,7 +2326,7 @@ NAN_METHOD(CullFace) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DepthMask) {
+NAN_METHOD(WebGLRenderingContext::DepthMask) {
   Nan::HandleScope scope;
 
   GLboolean flag = info[0]->BooleanValue();
@@ -1656,7 +2336,7 @@ NAN_METHOD(DepthMask) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DepthRange) {
+NAN_METHOD(WebGLRenderingContext::DepthRange) {
   Nan::HandleScope scope;
 
   GLclampf zNear = (float) info[0]->NumberValue();
@@ -1667,7 +2347,7 @@ NAN_METHOD(DepthRange) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DisableVertexAttribArray) {
+NAN_METHOD(WebGLRenderingContext::DisableVertexAttribArray) {
   Nan::HandleScope scope;
 
   GLuint index = info[0]->Int32Value();
@@ -1677,7 +2357,7 @@ NAN_METHOD(DisableVertexAttribArray) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Hint) {
+NAN_METHOD(WebGLRenderingContext::Hint) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -1688,7 +2368,7 @@ NAN_METHOD(Hint) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(IsEnabled) {
+NAN_METHOD(WebGLRenderingContext::IsEnabled) {
   Nan::HandleScope scope;
 
   GLenum cap = info[0]->Int32Value();
@@ -1697,7 +2377,7 @@ NAN_METHOD(IsEnabled) {
   info.GetReturnValue().Set(Nan::New<Boolean>(ret));
 }
 
-NAN_METHOD(LineWidth) {
+NAN_METHOD(WebGLRenderingContext::LineWidth) {
   Nan::HandleScope scope;
 
   GLfloat width = (float) info[0]->NumberValue();
@@ -1706,7 +2386,7 @@ NAN_METHOD(LineWidth) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(PolygonOffset) {
+NAN_METHOD(WebGLRenderingContext::PolygonOffset) {
   Nan::HandleScope scope;
 
   GLfloat factor = (float) info[0]->NumberValue();
@@ -1717,7 +2397,7 @@ NAN_METHOD(PolygonOffset) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(SampleCoverage) {
+NAN_METHOD(WebGLRenderingContext::SampleCoverage) {
   Nan::HandleScope scope;
 
   GLclampf value = info[0]->NumberValue();
@@ -1728,7 +2408,7 @@ NAN_METHOD(SampleCoverage) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(Scissor) {
+NAN_METHOD(WebGLRenderingContext::Scissor) {
   Nan::HandleScope scope;
 
   GLint x = info[0]->Int32Value();
@@ -1741,7 +2421,7 @@ NAN_METHOD(Scissor) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(StencilFunc) {
+NAN_METHOD(WebGLRenderingContext::StencilFunc) {
   Nan::HandleScope scope;
 
   GLenum func = info[0]->Int32Value();
@@ -1753,7 +2433,7 @@ NAN_METHOD(StencilFunc) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(StencilFuncSeparate) {
+NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
   Nan::HandleScope scope;
 
   GLenum face = info[0]->Int32Value();
@@ -1766,7 +2446,7 @@ NAN_METHOD(StencilFuncSeparate) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(StencilMask) {
+NAN_METHOD(WebGLRenderingContext::StencilMask) {
   Nan::HandleScope scope;
 
   GLuint mask = info[0]->Uint32Value();
@@ -1776,7 +2456,7 @@ NAN_METHOD(StencilMask) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(StencilMaskSeparate) {
+NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
   Nan::HandleScope scope;
 
   GLenum face = info[0]->Int32Value();
@@ -1787,7 +2467,7 @@ NAN_METHOD(StencilMaskSeparate) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(StencilOp) {
+NAN_METHOD(WebGLRenderingContext::StencilOp) {
   Nan::HandleScope scope;
 
   GLenum fail = info[0]->Int32Value();
@@ -1799,7 +2479,7 @@ NAN_METHOD(StencilOp) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(StencilOpSeparate) {
+NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
   Nan::HandleScope scope;
 
   GLenum face = info[0]->Int32Value();
@@ -1812,7 +2492,7 @@ NAN_METHOD(StencilOpSeparate) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(BindRenderbuffer) {
+NAN_METHOD(WebGLRenderingContext::BindRenderbuffer) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -1823,7 +2503,7 @@ NAN_METHOD(BindRenderbuffer) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(CreateRenderbuffer) {
+NAN_METHOD(WebGLRenderingContext::CreateRenderbuffer) {
   Nan::HandleScope scope;
 
   GLuint renderbuffers;
@@ -1836,7 +2516,7 @@ NAN_METHOD(CreateRenderbuffer) {
   info.GetReturnValue().Set(Nan::New<Number>(renderbuffers));
 }
 
-NAN_METHOD(DeleteBuffer) {
+NAN_METHOD(WebGLRenderingContext::DeleteBuffer) {
   Nan::HandleScope scope;
 
   GLuint buffer = info[0]->Uint32Value();
@@ -1846,7 +2526,7 @@ NAN_METHOD(DeleteBuffer) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DeleteFramebuffer) {
+NAN_METHOD(WebGLRenderingContext::DeleteFramebuffer) {
   Nan::HandleScope scope;
 
   GLuint buffer = info[0]->Uint32Value();
@@ -1856,7 +2536,7 @@ NAN_METHOD(DeleteFramebuffer) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DeleteProgram) {
+NAN_METHOD(WebGLRenderingContext::DeleteProgram) {
   Nan::HandleScope scope;
 
   GLuint program = info[0]->Uint32Value();
@@ -1866,7 +2546,7 @@ NAN_METHOD(DeleteProgram) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DeleteRenderbuffer) {
+NAN_METHOD(WebGLRenderingContext::DeleteRenderbuffer) {
   Nan::HandleScope scope;
 
   GLuint renderbuffer = info[0]->Uint32Value();
@@ -1876,7 +2556,7 @@ NAN_METHOD(DeleteRenderbuffer) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DeleteShader) {
+NAN_METHOD(WebGLRenderingContext::DeleteShader) {
   Nan::HandleScope scope;
 
   GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
@@ -1886,7 +2566,7 @@ NAN_METHOD(DeleteShader) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DeleteTexture) {
+NAN_METHOD(WebGLRenderingContext::DeleteTexture) {
   Nan::HandleScope scope;
 
   GLuint texture = info[0]->Uint32Value();
@@ -1896,7 +2576,7 @@ NAN_METHOD(DeleteTexture) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(DetachShader) {
+NAN_METHOD(WebGLRenderingContext::DetachShader) {
   Nan::HandleScope scope;
 
   GLuint program = info[0]->Uint32Value();
@@ -1907,7 +2587,7 @@ NAN_METHOD(DetachShader) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(FramebufferRenderbuffer) {
+NAN_METHOD(WebGLRenderingContext::FramebufferRenderbuffer) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -1920,7 +2600,7 @@ NAN_METHOD(FramebufferRenderbuffer) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(GetVertexAttribOffset) {
+NAN_METHOD(WebGLRenderingContext::GetVertexAttribOffset) {
   Nan::HandleScope scope;
 
   GLuint index = info[0]->Uint32Value();
@@ -1932,7 +2612,7 @@ NAN_METHOD(GetVertexAttribOffset) {
   info.GetReturnValue().Set(JS_INT(ToGLuint(ret)));
 }
 
-NAN_METHOD(IsBuffer) {
+NAN_METHOD(WebGLRenderingContext::IsBuffer) {
   Nan::HandleScope scope;
 
   GLuint arg = info[0]->Uint32Value();
@@ -1941,7 +2621,7 @@ NAN_METHOD(IsBuffer) {
   info.GetReturnValue().Set(Nan::New<Boolean>(ret));
 }
 
-NAN_METHOD(IsFramebuffer) {
+NAN_METHOD(WebGLRenderingContext::IsFramebuffer) {
   Nan::HandleScope scope;
 
   GLuint arg = info[0]->Uint32Value();
@@ -1950,7 +2630,7 @@ NAN_METHOD(IsFramebuffer) {
   info.GetReturnValue().Set(JS_BOOL(ret));
 }
 
-NAN_METHOD(IsProgram) {
+NAN_METHOD(WebGLRenderingContext::IsProgram) {
   Nan::HandleScope scope;
 
   GLuint arg = info[0]->Uint32Value();
@@ -1959,7 +2639,7 @@ NAN_METHOD(IsProgram) {
   info.GetReturnValue().Set(JS_BOOL(ret));
 }
 
-NAN_METHOD(IsRenderbuffer) {
+NAN_METHOD(WebGLRenderingContext::IsRenderbuffer) {
   Nan::HandleScope scope;
 
   GLuint arg = info[0]->Uint32Value();
@@ -1968,7 +2648,7 @@ NAN_METHOD(IsRenderbuffer) {
   info.GetReturnValue().Set(JS_BOOL(ret));
 }
 
-NAN_METHOD(IsShader) {
+NAN_METHOD(WebGLRenderingContext::IsShader) {
   Nan::HandleScope scope;
 
   MaybeLocal<Object> arg = Nan::To<Object>(info[0]);
@@ -1983,7 +2663,7 @@ NAN_METHOD(IsShader) {
   }
 }
 
-NAN_METHOD(IsTexture) {
+NAN_METHOD(WebGLRenderingContext::IsTexture) {
   Nan::HandleScope scope;
 
   GLuint arg = info[0]->Uint32Value();
@@ -1992,7 +2672,7 @@ NAN_METHOD(IsTexture) {
   info.GetReturnValue().Set(JS_BOOL(ret));
 }
 
-NAN_METHOD(RenderbufferStorage) {
+NAN_METHOD(WebGLRenderingContext::RenderbufferStorage) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -2005,7 +2685,7 @@ NAN_METHOD(RenderbufferStorage) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(GetShaderSource) {
+NAN_METHOD(WebGLRenderingContext::GetShaderSource) {
   Nan::HandleScope scope;
 
   GLint shaderId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
@@ -2022,7 +2702,7 @@ NAN_METHOD(GetShaderSource) {
   info.GetReturnValue().Set(str);
 }
 
-NAN_METHOD(ValidateProgram) {
+NAN_METHOD(WebGLRenderingContext::ValidateProgram) {
   Nan::HandleScope scope;
 
   GLint arg = info[0]->Int32Value();
@@ -2031,7 +2711,7 @@ NAN_METHOD(ValidateProgram) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(TexSubImage2D) {
+NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
   Nan::HandleScope scope;
 
   GLenum targetV = info[0]->Int32Value();
@@ -2046,6 +2726,8 @@ NAN_METHOD(TexSubImage2D) {
 
   // int num;
   char *pixelsV;
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
   if (pixels->IsNull()) {
     glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, nullptr);
@@ -2063,7 +2745,7 @@ NAN_METHOD(TexSubImage2D) {
       pixelsV2 = pixelsV;
     }
 
-    if (canvas::ImageData::getFlip() && !pixels->IsArrayBufferView()) {
+    if (canvas::ImageData::getFlip() && gl->flipY && !pixels->IsArrayBufferView()) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
 
@@ -2083,7 +2765,7 @@ NAN_METHOD(TexSubImage2D) {
   } */
 }
 
-NAN_METHOD(ReadPixels) {
+NAN_METHOD(WebGLRenderingContext::ReadPixels) {
   Nan::HandleScope scope;
 
   GLint x = info[0]->Int32Value();
@@ -2103,7 +2785,7 @@ NAN_METHOD(ReadPixels) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(GetTexParameter) {
+NAN_METHOD(WebGLRenderingContext::GetTexParameter) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -2115,7 +2797,7 @@ NAN_METHOD(GetTexParameter) {
   info.GetReturnValue().Set(Nan::New<Number>(value));
 }
 
-NAN_METHOD(GetActiveAttrib) {
+NAN_METHOD(WebGLRenderingContext::GetActiveAttrib) {
   Nan::HandleScope scope;
 
   GLuint program = info[0]->Int32Value();
@@ -2140,7 +2822,7 @@ NAN_METHOD(GetActiveAttrib) {
   }
 }
 
-NAN_METHOD(GetActiveUniform) {
+NAN_METHOD(WebGLRenderingContext::GetActiveUniform) {
   Nan::HandleScope scope;
 
   GLuint program = info[0]->Int32Value();
@@ -2165,7 +2847,7 @@ NAN_METHOD(GetActiveUniform) {
   }
 }
 
-NAN_METHOD(GetAttachedShaders) {
+NAN_METHOD(WebGLRenderingContext::GetAttachedShaders) {
   Nan::HandleScope scope;
 
   GLuint program = info[0]->Int32Value();
@@ -2184,7 +2866,7 @@ NAN_METHOD(GetAttachedShaders) {
   info.GetReturnValue().Set(shadersArr);
 }
 
-NAN_METHOD(GetParameter) {
+NAN_METHOD(WebGLRenderingContext::GetParameter) {
   Nan::HandleScope scope;
 
   GLenum name = info[0]->Int32Value();
@@ -2199,8 +2881,8 @@ NAN_METHOD(GetParameter) {
   case GL_SAMPLE_COVERAGE_INVERT:
   case GL_SCISSOR_TEST:
   case GL_STENCIL_TEST:
-  case 0x9240 /* UNPACK_FLIP_Y_WEBGL */:
-  case 0x9241 /* UNPACK_PREMULTIPLY_ALPHA_WEBGL*/:
+  case UNPACK_FLIP_Y_WEBGL:
+  case UNPACK_PREMULTIPLY_ALPHA_WEBGL:
   {
     // return a boolean
     GLboolean params;
@@ -2338,7 +3020,7 @@ NAN_METHOD(GetParameter) {
   //info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(GetBufferParameter) {
+NAN_METHOD(WebGLRenderingContext::GetBufferParameter) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -2350,7 +3032,7 @@ NAN_METHOD(GetBufferParameter) {
   info.GetReturnValue().Set(JS_INT(params));
 }
 
-NAN_METHOD(GetFramebufferAttachmentParameter) {
+NAN_METHOD(WebGLRenderingContext::GetFramebufferAttachmentParameter) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -2363,7 +3045,7 @@ NAN_METHOD(GetFramebufferAttachmentParameter) {
   info.GetReturnValue().Set(JS_INT(params));
 }
 
-NAN_METHOD(GetProgramInfoLog) {
+NAN_METHOD(WebGLRenderingContext::GetProgramInfoLog) {
   Nan::HandleScope scope;
 
   GLuint program = info[0]->Int32Value();
@@ -2375,7 +3057,7 @@ NAN_METHOD(GetProgramInfoLog) {
   info.GetReturnValue().Set(JS_STR(Error, Len));
 }
 
-NAN_METHOD(GetRenderbufferParameter) {
+NAN_METHOD(WebGLRenderingContext::GetRenderbufferParameter) {
   Nan::HandleScope scope;
 
   int target = info[0]->Int32Value();
@@ -2387,7 +3069,7 @@ NAN_METHOD(GetRenderbufferParameter) {
   info.GetReturnValue().Set(JS_INT(value));
 }
 
-NAN_METHOD(GetUniform) {
+NAN_METHOD(WebGLRenderingContext::GetUniform) {
   Nan::HandleScope scope;
 
   GLuint program = info[0]->Int32Value();
@@ -2405,7 +3087,7 @@ NAN_METHOD(GetUniform) {
   info.GetReturnValue().Set(arr);
 }
 
-NAN_METHOD(GetVertexAttrib) {
+NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
   Nan::HandleScope scope;
 
   GLuint index = info[0]->Int32Value();
@@ -2446,7 +3128,7 @@ NAN_METHOD(GetVertexAttrib) {
   //info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(GetSupportedExtensions) {
+NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   Nan::HandleScope scope;
 
   char *extensions = (char *)glGetString(GL_EXTENSIONS);
@@ -2455,7 +3137,7 @@ NAN_METHOD(GetSupportedExtensions) {
 }
 
 // TODO GetExtension(name) return the extension name if found, should be an object...
-NAN_METHOD(GetExtension) {
+NAN_METHOD(WebGLRenderingContext::GetExtension) {
   Nan::HandleScope scope;
 
   String::Utf8Value name(info[0]);
@@ -2501,14 +3183,14 @@ NAN_METHOD(GetExtension) {
   } else if (strcmp(sname, "ANGLE_instanced_arrays") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
     result->Set(String::NewFromUtf8(Isolate::GetCurrent(), "GL_VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE"), Number::New(Isolate::GetCurrent(), GL_VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE));
-    Nan::SetMethod(result, "drawArraysInstancedANGLE", webgl::DrawArraysInstancedANGLE);
-    Nan::SetMethod(result, "drawElementsInstancedANGLE", webgl::DrawElementsInstancedANGLE);
-    Nan::SetMethod(result, "vertexAttribDivisorANGLE", webgl::VertexAttribDivisorANGLE);
+    Nan::SetMethod(result, "drawArraysInstancedANGLE", DrawArraysInstancedANGLE);
+    Nan::SetMethod(result, "drawElementsInstancedANGLE", DrawElementsInstancedANGLE);
+    Nan::SetMethod(result, "vertexAttribDivisorANGLE", VertexAttribDivisorANGLE);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "WEBGL_draw_buffers") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
 
-    Nan::SetMethod(result, "drawBuffersWEBGL", webgl::DrawBuffersWEBGL);
+    Nan::SetMethod(result, "drawBuffersWEBGL", DrawBuffersWEBGL);
 
     result->Set(JS_STR("COLOR_ATTACHMENT0_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT0));
     result->Set(JS_STR("COLOR_ATTACHMENT1_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT1));
@@ -2553,7 +3235,7 @@ NAN_METHOD(GetExtension) {
   }
 }
 
-NAN_METHOD(CheckFramebufferStatus) {
+NAN_METHOD(WebGLRenderingContext::CheckFramebufferStatus) {
   Nan::HandleScope scope;
 
   GLenum target = info[0]->Int32Value();
@@ -2675,5 +3357,3 @@ void AtExit() {
 
   globjs.clear();
 } */
-
-} // end namespace webgl
