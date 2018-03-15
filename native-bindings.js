@@ -22,6 +22,28 @@ bindings.nativeGl = (nativeGl => {
       }
       return shaderSource.call(this, shader, source);
     })(gl.shaderSource);
+    gl.getActiveAttrib = (getActiveAttrib => function(program, index) {
+      const result = getActiveAttrib.call(this, program, index);
+      if (result) {
+        result.name = webGlToOpenGl.unmapName(result.name);
+      }
+      return result;
+    })(gl.getActiveAttrib);
+    gl.getActiveUniform = (getActiveUniform => function(program, index) {
+      const result = getActiveUniform.call(this, program, index);
+      if (result) {
+        result.name = webGlToOpenGl.unmapName(result.name);
+      }
+      return result;
+    })(gl.getActiveUniform);
+    gl.getAttribLocation = (getAttribLocation => function(program, path) {
+      path = webGlToOpenGl.mapName(path);
+      return getAttribLocation.call(this, program, path);
+    })(gl.getAttribLocation);
+    gl.getUniformLocation = (getUniformLocation => function(program, path) {
+      path = webGlToOpenGl.mapName(path);
+      return getUniformLocation.call(this, program, path);
+    })(gl.getUniformLocation);
     if (WebGLContext.onconstruct) {
       WebGLContext.onconstruct(gl, canvas);
     }
