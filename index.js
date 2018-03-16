@@ -67,9 +67,35 @@ nativeGl.viewport = function() {
 const canvasSymbol = Symbol();
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
+const _isAttached = el => {
+  if (el === el.ownerDocument.documentElement) {
+    return true;
+  } else if (el.parentNode) {
+    return _isAttached(el.parentNode);
+  } else {
+    return false;
+  }
+};
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   gl[canvasSymbol] = canvas;
-  gl.setWindowHandle(nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight));
+
+  const windowHandle = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight, _isAttached(canvas));
+  gl.setWindowHandle(windowHandle);
+
+  const onparent = () => {
+    if (_isAttached(canvas)) {
+      nativeWindow.show(windowHandle);
+    } else {
+      nativeWindow.hide(windowHandle);
+    }
+  };
+  canvas.on('parent', onparent);
+
+  gl.destroy = (destroy => function() {
+    nativeWindow.destroy(windowHandle);
+    canvas._context = null;
+    canvas.removeListener('parent', onparent);
+  })(gl.destroy);
 
   contexts.push(gl);
 };
@@ -235,10 +261,8 @@ nativeWindow.setEventHandler((type, data) => {
         break;
       }
       case 'quit': {
-        nativeWindow.destroy(windowHandle);
-
-        contexts.splice(contexts.indexOf(context), 1);
         context.destroy();
+        contexts.splice(contexts.indexOf(context), 1);
         break;
       }
     }
