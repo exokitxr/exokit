@@ -1,6 +1,5 @@
 #include <cstring>
 #include <vector>
-#include <iostream>
 
 #include <webglcontext/include/webgl.h>
 #include <canvascontext/include/imageData-context.h>
@@ -2880,164 +2879,239 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
 
   GLenum name = info[0]->Int32Value();
 
-  switch(name) {
-  case GL_BLEND:
-  case GL_CULL_FACE:
-  case GL_DEPTH_TEST:
-  case GL_DEPTH_WRITEMASK:
-  case GL_DITHER:
-  case GL_POLYGON_OFFSET_FILL:
-  case GL_SAMPLE_COVERAGE_INVERT:
-  case GL_SCISSOR_TEST:
-  case GL_STENCIL_TEST:
-  {
-    // return a boolean
-    GLboolean params;
-    glGetBooleanv(name, &params);
-    info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(params)));
-    break;
-  }
-  case UNPACK_FLIP_Y_WEBGL: {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-    // return a boolean
-    GLboolean params;
-    glGetBooleanv(name, &params);
-    info.GetReturnValue().Set(JS_BOOL(gl->flipY));
-    break;
-  }
-  case UNPACK_PREMULTIPLY_ALPHA_WEBGL: {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-    // return a boolean
-    GLboolean params;
-    glGetBooleanv(name, &params);
-    info.GetReturnValue().Set(JS_BOOL(gl->premultiplyAlpha));
-    break;
-  }
-  case GL_DEPTH_CLEAR_VALUE:
-  case GL_LINE_WIDTH:
-  case GL_POLYGON_OFFSET_FACTOR:
-  case GL_POLYGON_OFFSET_UNITS:
-  case GL_SAMPLE_COVERAGE_VALUE:
-  {
-    // return a float
-    GLfloat params;
-    glGetFloatv(name, &params);
-    info.GetReturnValue().Set(JS_FLOAT(params));
-    break;
-  }
-  case GL_RENDERER:
-  case GL_SHADING_LANGUAGE_VERSION:
-  case GL_VENDOR:
-  case GL_EXTENSIONS:
-  {
-    // return a string
-    char * params = (char *)glGetString(name);
-
-    if (params != NULL) {
-      info.GetReturnValue().Set(JS_STR(params));
-    } else {
-      info.GetReturnValue().Set(Nan::Undefined());
+  switch (name) {
+    case GL_BLEND:
+    case GL_CULL_FACE:
+    case GL_DEPTH_TEST:
+    case GL_DEPTH_WRITEMASK:
+    case GL_DITHER:
+    case GL_POLYGON_OFFSET_FILL:
+    case GL_SAMPLE_COVERAGE_INVERT:
+    case GL_SCISSOR_TEST:
+    case GL_STENCIL_TEST:
+    {
+      // return a boolean
+      GLboolean params;
+      glGetBooleanv(name, &params);
+      info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(params)));
+      break;
     }
+    case GL_ACTIVE_TEXTURE:
+    case GL_ALPHA_BITS:
+    case GL_BLEND_DST_ALPHA:
+    case GL_BLEND_DST_RGB:
+    case GL_BLEND_EQUATION:
+    case GL_BLEND_EQUATION_ALPHA:
+    // case GL_BLEND_EQUATION_RGB: // === GL_BLEND_EQUATION
+    case GL_BLEND_SRC_ALPHA:
+    case GL_BLEND_SRC_RGB:
+    case GL_BLUE_BITS:
+    case GL_CULL_FACE_MODE:
+    case GL_DEPTH_BITS:
+    case GL_DEPTH_FUNC:
+    case GL_FRONT_FACE:
+    case GL_GENERATE_MIPMAP_HINT:
+    case GL_GREEN_BITS:
+    case GL_IMPLEMENTATION_COLOR_READ_FORMAT:
+    case GL_IMPLEMENTATION_COLOR_READ_TYPE:
+    case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+    case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+    case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
+    case GL_MAX_RENDERBUFFER_SIZE:
+    case GL_MAX_TEXTURE_IMAGE_UNITS:
+    case GL_MAX_TEXTURE_SIZE:
+    case GL_MAX_VARYING_VECTORS:
+    case GL_MAX_VERTEX_ATTRIBS:
+    case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
+    case GL_MAX_VERTEX_UNIFORM_VECTORS:
+    case GL_PACK_ALIGNMENT:
+    case GL_RED_BITS:
+    case GL_SAMPLE_BUFFERS:
+    case GL_SAMPLES:
+    case GL_STENCIL_BACK_FAIL:
+    case GL_STENCIL_BACK_FUNC:
+    case GL_STENCIL_BACK_PASS_DEPTH_FAIL:
+    case GL_STENCIL_BACK_PASS_DEPTH_PASS:
+    case GL_STENCIL_BACK_REF:
+    case GL_STENCIL_BACK_VALUE_MASK:
+    case GL_STENCIL_BACK_WRITEMASK:
+    case GL_STENCIL_BITS:
+    case GL_STENCIL_CLEAR_VALUE:
+    case GL_STENCIL_FAIL:
+    case GL_STENCIL_FUNC:
+    case GL_STENCIL_PASS_DEPTH_FAIL:
+    case GL_STENCIL_PASS_DEPTH_PASS:
+    case GL_STENCIL_REF:
+    case GL_STENCIL_VALUE_MASK:
+    case GL_STENCIL_WRITEMASK:
+    case GL_SUBPIXEL_BITS:
+    case GL_UNPACK_ALIGNMENT:
+    case UNPACK_COLORSPACE_CONVERSION_WEBGL:
+    {
+      // return an int
+      GLint param;
+      glGetIntegerv(name, &param);
+      info.GetReturnValue().Set(JS_INT(param));
+      break;
+    }
+    case GL_DEPTH_CLEAR_VALUE:
+    case GL_LINE_WIDTH:
+    case GL_POLYGON_OFFSET_FACTOR:
+    case GL_POLYGON_OFFSET_UNITS:
+    case GL_SAMPLE_COVERAGE_VALUE:
+    {
+      // return a float
+      GLfloat params;
+      glGetFloatv(name, &params);
+      info.GetReturnValue().Set(JS_FLOAT(params));
+      break;
+    }
+    case GL_RENDERER:
+    case GL_SHADING_LANGUAGE_VERSION:
+    case GL_VENDOR:
+    case GL_EXTENSIONS:
+    {
+      // return a string
+      char * params = (char *)glGetString(name);
 
-    break;
-  }
-  case GL_VERSION:
-  {
-    info.GetReturnValue().Set(JS_STR("WebGL 1"));
+      if (params != NULL) {
+        info.GetReturnValue().Set(JS_STR(params));
+      } else {
+        info.GetReturnValue().Set(Nan::Undefined());
+      }
 
-    break;
-  }
-  case GL_MAX_VIEWPORT_DIMS:
-  {
-    // return a int32[2]
-    GLint params[2];
-    glGetIntegerv(name, params);
+      break;
+    }
+    case GL_VERSION:
+    {
+      info.GetReturnValue().Set(JS_STR("WebGL 1"));
 
-    Local<Array> arr = Nan::New<Array>(2);
-    arr->Set(0,JS_INT(params[0]));
-    arr->Set(1,JS_INT(params[1]));
-    info.GetReturnValue().Set(arr);
-    break;
-  }
-  case GL_SCISSOR_BOX:
-  case GL_VIEWPORT:
-  {
-    // return a int32[4]
-    GLint params[4];
-    glGetIntegerv(name, params);
+      break;
+    }
+    case GL_MAX_VIEWPORT_DIMS:
+    {
+      // return a int32[2]
+      GLint params[2];
+      glGetIntegerv(name, params);
 
-    Local<Array> arr = Nan::New<Array>(4);
-    arr->Set(0,JS_INT(params[0]));
-    arr->Set(1,JS_INT(params[1]));
-    arr->Set(2,JS_INT(params[2]));
-    arr->Set(3,JS_INT(params[3]));
-    info.GetReturnValue().Set(arr);
-    break;
-  }
-  case GL_ALIASED_LINE_WIDTH_RANGE:
-  case GL_ALIASED_POINT_SIZE_RANGE:
-  case GL_DEPTH_RANGE:
-  {
-    // return a float[2]
-    GLfloat params[2];
-    glGetFloatv(name, params);
+      Local<Array> arr = Nan::New<Array>(2);
+      arr->Set(0,JS_INT(params[0]));
+      arr->Set(1,JS_INT(params[1]));
+      info.GetReturnValue().Set(arr);
+      break;
+    }
+    case GL_SCISSOR_BOX:
+    case GL_VIEWPORT:
+    {
+      // return a int32[4]
+      GLint params[4];
+      glGetIntegerv(name, params);
 
-    Local<Array> arr = Nan::New<Array>(2);
-    arr->Set(0,JS_FLOAT(params[0]));
-    arr->Set(1,JS_FLOAT(params[1]));
-    info.GetReturnValue().Set(arr);
-    break;
-  }
-  case GL_BLEND_COLOR:
-  case GL_COLOR_CLEAR_VALUE:
-  {
-    // return a float[4]
-    GLfloat params[4];
-    glGetFloatv(name, params);
+      Local<Array> arr = Nan::New<Array>(4);
+      arr->Set(0,JS_INT(params[0]));
+      arr->Set(1,JS_INT(params[1]));
+      arr->Set(2,JS_INT(params[2]));
+      arr->Set(3,JS_INT(params[3]));
+      info.GetReturnValue().Set(arr);
+      break;
+    }
+    case GL_ALIASED_LINE_WIDTH_RANGE:
+    case GL_ALIASED_POINT_SIZE_RANGE:
+    case GL_DEPTH_RANGE:
+    {
+      // return a float[2]
+      GLfloat params[2];
+      glGetFloatv(name, params);
 
-    Local<Array> arr = Nan::New<Array>(4);
-    arr->Set(0,JS_FLOAT(params[0]));
-    arr->Set(1,JS_FLOAT(params[1]));
-    arr->Set(2,JS_FLOAT(params[2]));
-    arr->Set(3,JS_FLOAT(params[3]));
-    info.GetReturnValue().Set(arr);
-    break;
-  }
-  case GL_COLOR_WRITEMASK:
-  {
-    // return a boolean[4]
-    GLboolean params[4];
-    glGetBooleanv(name, params);
+      Local<Array> arr = Nan::New<Array>(2);
+      arr->Set(0,JS_FLOAT(params[0]));
+      arr->Set(1,JS_FLOAT(params[1]));
+      info.GetReturnValue().Set(arr);
+      break;
+    }
+    case GL_BLEND_COLOR:
+    case GL_COLOR_CLEAR_VALUE:
+    {
+      // return a float[4]
+      GLfloat params[4];
+      glGetFloatv(name, params);
 
-    Local<Array> arr = Nan::New<Array>(4);
-    arr->Set(0,JS_BOOL(params[0]==1));
-    arr->Set(1,JS_BOOL(params[1]==1));
-    arr->Set(2,JS_BOOL(params[2]==1));
-    arr->Set(3,JS_BOOL(params[3]==1));
-    info.GetReturnValue().Set(arr);
-    break;
-  }
-  case GL_ARRAY_BUFFER_BINDING:
-  case GL_CURRENT_PROGRAM:
-  case GL_ELEMENT_ARRAY_BUFFER_BINDING:
-  case GL_FRAMEBUFFER_BINDING:
-  case GL_RENDERBUFFER_BINDING:
-  case GL_TEXTURE_BINDING_2D:
-  case GL_TEXTURE_BINDING_CUBE_MAP:
-  {
-    GLint params;
-    glGetIntegerv(name, &params);
+      Local<Array> arr = Nan::New<Array>(4);
+      arr->Set(0,JS_FLOAT(params[0]));
+      arr->Set(1,JS_FLOAT(params[1]));
+      arr->Set(2,JS_FLOAT(params[2]));
+      arr->Set(3,JS_FLOAT(params[3]));
+      info.GetReturnValue().Set(arr);
+      break;
+    }
+    case GL_COLOR_WRITEMASK:
+    {
+      // return a boolean[4]
+      GLboolean params[4];
+      glGetBooleanv(name, params);
 
-    info.GetReturnValue().Set(JS_INT(params));
-    break;
-  }
-  default: {
-    // return a long
-    GLint params;
-    glGetIntegerv(name, &params);
+      Local<Array> arr = Nan::New<Array>(4);
+      arr->Set(0,JS_BOOL(params[0]==1));
+      arr->Set(1,JS_BOOL(params[1]==1));
+      arr->Set(2,JS_BOOL(params[2]==1));
+      arr->Set(3,JS_BOOL(params[3]==1));
+      info.GetReturnValue().Set(arr);
+      break;
+    }
+    case GL_ARRAY_BUFFER_BINDING:
+    case GL_CURRENT_PROGRAM:
+    case GL_ELEMENT_ARRAY_BUFFER_BINDING:
+    case GL_FRAMEBUFFER_BINDING:
+    case GL_RENDERBUFFER_BINDING:
+    case GL_TEXTURE_BINDING_2D:
+    case GL_TEXTURE_BINDING_CUBE_MAP:
+    {
+      GLint params;
+      glGetIntegerv(name, &params);
 
-    info.GetReturnValue().Set(JS_INT(params));
-  }
+      info.GetReturnValue().Set(JS_INT(params));
+      break;
+    }
+    case GL_COMPRESSED_TEXTURE_FORMATS:
+    {
+      GLint numFormats;
+      glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &numFormats);
+
+      unique_ptr<GLint[]> params(new GLint[numFormats]);
+      glGetIntegerv(name, params.get());
+
+      Local<Array> arr = Nan::New<Array>(numFormats);
+      for (size_t i = 0; i < numFormats; i++) {
+        arr->Set(i, JS_INT(params[i]));
+      }
+      info.GetReturnValue().Set(arr);
+      break;
+    }
+    case UNPACK_FLIP_Y_WEBGL: {
+      WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+      // return a boolean
+      GLboolean params;
+      glGetBooleanv(name, &params);
+      info.GetReturnValue().Set(JS_BOOL(gl->flipY));
+      break;
+    }
+    case UNPACK_PREMULTIPLY_ALPHA_WEBGL: {
+      WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+      // return a boolean
+      GLboolean params;
+      glGetBooleanv(name, &params);
+      info.GetReturnValue().Set(JS_BOOL(gl->premultiplyAlpha));
+      break;
+    }
+    default: {
+      /* // return a long
+      GLint params;
+      glGetIntegerv(name, &params);
+
+      info.GetReturnValue().Set(JS_INT(params)); */
+      Nan::ThrowError("invalid arguments");
+      break;
+    }
   }
 
   //info.GetReturnValue().Set(Nan::Undefined());
