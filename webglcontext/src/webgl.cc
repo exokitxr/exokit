@@ -101,6 +101,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "bindTexture", glCallWrap<BindTexture>);
   // Nan::SetMethod(proto, "flipTextureData", glCallWrap<FlipTextureData>);
   Nan::SetMethod(proto, "texImage2D", glCallWrap<TexImage2D>);
+  Nan::SetMethod(proto, "compressedTexImage2D", glCallWrap<CompressedTexImage2D>);
   Nan::SetMethod(proto, "texParameteri", glCallWrap<TexParameteri>);
   Nan::SetMethod(proto, "texParameterf", glCallWrap<TexParameterf>);
   Nan::SetMethod(proto, "clear", glCallWrap<Clear>);
@@ -1800,6 +1801,45 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::CompressedTexImage2D) {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::HandleScope scope;
+
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsNumber() && info[5]->IsNumber()) {
+    char *dataV;
+    size_t dataLengthV;
+    if (info[6]->IsArrayBufferView()) {
+      Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[6]);
+      Local<ArrayBuffer> buffer = arrayBufferView->Buffer();
+      dataV = (char *)buffer->GetContents().Data() + arrayBufferView->ByteOffset();
+      dataLengthV = arrayBufferView->ByteLength();
+    } else if (info[6]->IsNull()) {
+      dataV = nullptr;
+      dataLengthV = 0;
+    } else {
+      return Nan::ThrowError("compressedTexImage2D: invalid arguments");
+    }
+
+    Local<Value> target = info[0];
+    Local<Value> level = info[1];
+    Local<Value> internalformat = info[2];
+    Local<Value> width = info[3];
+    Local<Value> height = info[4];
+    Local<Value> border = info[5];
+
+    int targetV = target->Int32Value();
+    int levelV = level->Int32Value();
+    int internalformatV = internalformat->Int32Value();
+    int widthV = width->Int32Value();
+    int heightV = height->Int32Value();
+    int borderV = border->Int32Value();
+
+    glCompressedTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, dataLengthV, dataV);
+  } else {
+    Nan::ThrowError("compressedTexImage2D: invalid arguments");
+  }
+}
 
 NAN_METHOD(WebGLRenderingContext::TexParameteri) {
   Nan::HandleScope scope;

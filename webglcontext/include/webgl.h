@@ -124,6 +124,7 @@ protected:
   static NAN_METHOD(BindTexture);
   static NAN_METHOD(FlipTextureData);
   static NAN_METHOD(TexImage2D);
+  static NAN_METHOD(CompressedTexImage2D);
   static NAN_METHOD(TexParameteri);
   static NAN_METHOD(TexParameterf);
   static NAN_METHOD(Clear);
