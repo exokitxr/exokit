@@ -471,7 +471,7 @@ if (require.main === module) {
               nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
             }
             nativeWindow.swapBuffers(context.getWindowHandle());
-            
+
             context.clearDirty();
           }
         }
