@@ -786,10 +786,10 @@ inline void *getImageData(Local<Value> arg, int *num = nullptr) {
 inline void reformatImageData(char *dstData, char *srcData, size_t dstPixelSize, size_t srcPixelSize, size_t numPixels) {
   // size_t clipSize = srcPixelSize - dstPixelSize;
   for (size_t i = 0; i < numPixels; i++) {
-    for (size_t j = 0; j < dstPixelSize; j++) {
-      dstData[i * dstPixelSize + j] = srcData[i * srcPixelSize + j];
-      // dstData[i * dstPixelSize + j] = srcData[i * srcPixelSize + srcPixelSize - clipSize - 1 - j];
-    }
+    memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize, dstPixelSize);
+    /* for (size_t j = 0; j < dstPixelSize; j++) {
+      dstData[i * dstPixelSize + j] = srcData[i * srcPixelSize + srcPixelSize - clipSize - 1 - j];
+    } */
     // memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize + clipSize, dstPixelSize);
   }
 }
