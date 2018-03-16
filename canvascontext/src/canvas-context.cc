@@ -1022,6 +1022,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
 
     int x = info[1]->Int32Value();
     int y = info[2]->Int32Value();
+
     if (info.Length() > 3) {
       if (info.Length() > 5) {
         unsigned int sw = info[3]->Uint32Value();
@@ -1049,7 +1050,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
     }
   } else {
-    return Nan::ThrowError("Failed to read pixels");
+    Nan::ThrowError("drawImage: invalid arguments");
   }
 }
 
@@ -1154,27 +1155,29 @@ NAN_METHOD(CanvasRenderingContext2D::Restore) {
 }
 
 sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
-  if (arg->IsObject()) {
-    if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"))) {
-      CanvasRenderingContext2D *otherContext = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(arg));
+  if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
+    Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(arg->ToObject()->Get(JS_STR("image"))));
+    return image->image;
+  } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
+    ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(arg));
+    return SkImage::MakeFromBitmap(imageData->bitmap);
+  } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))) {
+    ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(Local<Object>::Cast(arg));
+    return SkImage::MakeFromBitmap(imageBitmap->bitmap);
+  } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
+    Local<Value> otherContextObj = arg->ToObject()->Get(JS_STR("_context"));
+    if (otherContextObj->IsObject() && otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"))) {
+      CanvasRenderingContext2D *otherContext = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(otherContextObj));
 
+      SkCanvas *canvas = otherContext->surface->getCanvas();
       SkBitmap bitmap;
-      bool ok = otherContext->surface->getCanvas()->readPixels(bitmap, 0, 0);
+      bool ok = bitmap.tryAllocPixels(canvas->imageInfo()) && canvas->readPixels(bitmap, 0, 0);
       if (ok) {
         bitmap.setImmutable();
         return SkImage::MakeFromBitmap(bitmap);
       } else {
         return nullptr;
       }
-    } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
-      Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(arg->ToObject()->Get(JS_STR("image"))));
-      return image->image;
-    } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
-      ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(arg));
-      return SkImage::MakeFromBitmap(imageData->bitmap);
-    } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))) {
-      ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(Local<Object>::Cast(arg));
-      return SkImage::MakeFromBitmap(imageBitmap->bitmap);
     } else {
       return nullptr;
     }
