@@ -3,6 +3,8 @@
 
 #include <v8.h>
 #include <nan/nan.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <defines.h>
 #include <canvas/include/Context.h>
 #include <canvas/include/Image.h>
