@@ -173,5 +173,6 @@ private:
 #include "imageBitmap-context.h"
 #include "path2d-context.h"
 #include "canvas-gradient.h"
+#include "canvas-pattern.h"
 
 #endif

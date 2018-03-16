@@ -22,6 +22,10 @@ CanvasPattern::CanvasPattern(sk_sp<SkShader> shader) : shader(shader) {}
 
 CanvasPattern::~CanvasPattern () {}
 
+sk_sp<SkShader> CanvasPattern::getShader() const {
+  return shader;
+}
+
 NAN_METHOD(CanvasPattern::New) {
   Nan::HandleScope scope;
 

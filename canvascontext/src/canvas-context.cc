@@ -368,6 +368,11 @@ NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasGradient->getShader());
+  } else if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+    CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
+    context->fillPaint.setShader(canvasPattern->getShader());
   } else {
     Nan::ThrowError("strokeStyle: invalid arguments");
   }
@@ -394,6 +399,11 @@ NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasGradient->getShader());
+  } else if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+    CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
+    context->fillPaint.setShader(canvasPattern->getShader());
   } else {
      Nan::ThrowError("fillStyle: invalid arguments");
   }

@@ -14,6 +14,8 @@ class CanvasPattern : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
 
+  sk_sp<SkShader> getShader() const;
+
 protected:
   CanvasPattern(sk_sp<SkShader> shader);
   virtual ~CanvasPattern();
