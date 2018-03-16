@@ -147,7 +147,6 @@ protected:
   virtual ~CanvasRenderingContext2D();
 
 private:
-  // static canvas::ContextFactory *canvasContextFactory;
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
   sk_sp<SkSurface> surface;
