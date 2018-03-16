@@ -35,12 +35,12 @@ Local<Object> makeImageBitmap(Local<Value> imageCons) {
   return scope.Escape(ImageBitmap::Initialize(isolate, imageCons));
 }
 
-Local<Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons, Local<Value> canvasGradientCons) {
+Local<Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
   Isolate *isolate = Isolate::GetCurrent();
 
   Nan::EscapableHandleScope scope;
 
-  return scope.Escape(CanvasRenderingContext2D::Initialize(isolate, imageDataCons, canvasGradientCons));
+  return scope.Escape(CanvasRenderingContext2D::Initialize(isolate, imageDataCons, canvasGradientCons, canvasPatternCons));
 }
 
 Local<Object> makePath2D() {
@@ -57,6 +57,14 @@ Local<Object> makeCanvasGradient() {
   Nan::EscapableHandleScope scope;
 
   return scope.Escape(CanvasGradient::Initialize(isolate));
+}
+
+Local<Object> makeCanvasPattern() {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  return scope.Escape(CanvasPattern::Initialize(isolate));
 }
 
 Local<Object> makeAudio() {

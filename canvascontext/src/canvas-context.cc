@@ -3,12 +3,21 @@
 using namespace v8;
 using namespace node;
 
+bool isImageValue(Local<Value> arg) {
+  return (arg->IsObject() && (
+    arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D")) ||
+    arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement")) ||
+    arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData")) ||
+    arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))
+  ));
+}
+
 void flipCanvasY(SkCanvas *canvas, float height) {
   canvas->translate(0, canvas->imageInfo().height());
   canvas->scale(1.0, -1.0);
 }
 
-Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons) {
+Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -43,6 +52,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"strokeText", StrokeText);
   Nan::SetMethod(proto,"createLinearGradient", CreateLinearGradient);
   Nan::SetMethod(proto,"createRadialGradient", CreateRadialGradient);
+  Nan::SetMethod(proto,"createPattern", CreatePattern);
   Nan::SetMethod(proto,"resize", Resize);
   Nan::SetMethod(proto,"drawImage", DrawImage);
   Nan::SetMethod(proto,"createImageData", CreateImageData);
@@ -52,6 +62,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
   ctorFn->Set(JS_STR("CanvasGradient"), canvasGradientCons);
+  ctorFn->Set(JS_STR("CanvasPattern"), canvasPatternCons);
 
   return scope.Escape(ctorFn);
 }
@@ -963,6 +974,23 @@ NAN_METHOD(CanvasRenderingContext2D::CreateRadialGradient) {
   }
 }
 
+NAN_METHOD(CanvasRenderingContext2D::CreatePattern) {
+  if (isImageValue(info[0])) {
+    Local<Object> contextObj = Local<Object>::Cast(info.This());
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(contextObj);
+
+    Local<Function> canvasPatternCons = Local<Function>::Cast(contextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("CanvasPattern")));
+    Local<Value> argv[] = {
+      info[0],
+      info[1],
+    };
+    Local<Object> canvasPatternObj = canvasPatternCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+    info.GetReturnValue().Set(canvasPatternObj);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 NAN_METHOD(CanvasRenderingContext2D::Resize) {
   Nan::HandleScope scope;
 
@@ -978,84 +1006,12 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
 NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
   Nan::HandleScope scope;
 
-  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"))) {
-    CanvasRenderingContext2D *otherContext = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info[0]));
+  sk_sp<SkImage> image = getImage(info[0]);
+  if (image) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    SkBitmap bitmap;
-    bool ok = otherContext->surface->getCanvas()->readPixels(bitmap, 0, 0);
-    if (ok) {
-      bitmap.setImmutable();
-      sk_sp<SkImage> image = SkImage::MakeFromBitmap(bitmap);
-
-      int x = info[1]->Int32Value();
-      int y = info[2]->Int32Value();
-      if (info.Length() > 3) {
-        if (info.Length() > 5) {
-          unsigned int sw = info[3]->Uint32Value();
-          unsigned int sh = info[4]->Uint32Value();
-          unsigned int dx = info[5]->Uint32Value();
-          unsigned int dy = info[6]->Uint32Value();
-          unsigned int dw = info[7]->Uint32Value();
-          unsigned int dh = info[8]->Uint32Value();
-
-          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
-        } else {
-          unsigned int dw = info[3]->Uint32Value();
-          unsigned int dh = info[4]->Uint32Value();
-          unsigned int sw = otherContext->GetWidth();
-          unsigned int sh = otherContext->GetHeight();
-
-          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
-        }
-      } else {
-        unsigned int sw = otherContext->GetWidth();
-        unsigned int sh = otherContext->GetHeight();
-        unsigned int dw = sw;
-        unsigned int dh = sh;
-
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
-      }
-    } else {
-      return Nan::ThrowError("Failed to read pixels");
-    }
-  } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
-    Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(info[0]->ToObject()->Get(JS_STR("image"))));
     int x = info[1]->Int32Value();
     int y = info[2]->Int32Value();
-
-    if (info.Length() > 3) {
-      if (info.Length() > 5) {
-        unsigned int sw = info[3]->Uint32Value();
-        unsigned int sh = info[4]->Uint32Value();
-        unsigned int dx = info[5]->Uint32Value();
-        unsigned int dy = info[6]->Uint32Value();
-        unsigned int dw = info[7]->Uint32Value();
-        unsigned int dh = info[8]->Uint32Value();
-
-        context->DrawImage(image->image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
-      } else {
-        unsigned int dw = info[3]->Uint32Value();
-        unsigned int dh = info[4]->Uint32Value();
-        unsigned int sw = image->GetWidth();
-        unsigned int sh = image->GetHeight();
-
-        context->DrawImage(image->image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
-      }
-    } else {
-      unsigned int sw = image->GetWidth();
-      unsigned int sh = image->GetHeight();
-      unsigned int dw = sw;
-      unsigned int dh = sh;
-
-      context->DrawImage(image->image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
-    }
-  } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
-    ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(info[0]));
-    int x = info[1]->Int32Value();
-    int y = info[2]->Int32Value();
-
-    sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
     if (info.Length() > 3) {
       if (info.Length() > 5) {
         unsigned int sw = info[3]->Uint32Value();
@@ -1069,51 +1025,21 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
       } else {
         unsigned int dw = info[3]->Uint32Value();
         unsigned int dh = info[4]->Uint32Value();
-        unsigned int sw = imageData->GetWidth();
-        unsigned int sh = imageData->GetHeight();
+        unsigned int sw = image->width();
+        unsigned int sh = image->height();
 
         context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
       }
     } else {
-      unsigned int sw = imageData->GetWidth();
-      unsigned int sh = imageData->GetHeight();
+      unsigned int sw = image->width();
+      unsigned int sh = image->height();
       unsigned int dw = sw;
       unsigned int dh = sh;
 
       context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
     }
-  } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))) {
-    ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(Local<Object>::Cast(info[0]));
-    int x = info[1]->Int32Value();
-    int y = info[2]->Int32Value();
-
-    sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageBitmap->bitmap);
-    if (info.Length() > 3) {
-      if (info.Length() > 5) {
-        unsigned int sw = info[3]->Uint32Value();
-        unsigned int sh = info[4]->Uint32Value();
-        unsigned int dx = info[5]->Uint32Value();
-        unsigned int dy = info[6]->Uint32Value();
-        unsigned int dw = info[7]->Uint32Value();
-        unsigned int dh = info[8]->Uint32Value();
-
-        context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, true);
-      } else {
-        unsigned int dw = info[3]->Uint32Value();
-        unsigned int dh = info[4]->Uint32Value();
-        unsigned int sw = imageBitmap->GetWidth();
-        unsigned int sh = imageBitmap->GetHeight();
-
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, true);
-      }
-    } else {
-      unsigned int sw = imageBitmap->GetWidth();
-      unsigned int sh = imageBitmap->GetHeight();
-      unsigned int dw = sw;
-      unsigned int dh = sh;
-
-      context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, true);
-    }
+  } else {
+    return Nan::ThrowError("Failed to read pixels");
   }
 }
 
@@ -1217,6 +1143,36 @@ NAN_METHOD(CanvasRenderingContext2D::Restore) {
   context->Restore();
 }
 
+sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
+  if (arg->IsObject()) {
+    if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"))) {
+      CanvasRenderingContext2D *otherContext = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(arg));
+
+      SkBitmap bitmap;
+      bool ok = otherContext->surface->getCanvas()->readPixels(bitmap, 0, 0);
+      if (ok) {
+        bitmap.setImmutable();
+        return SkImage::MakeFromBitmap(bitmap);
+      } else {
+        return nullptr;
+      }
+    } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
+      Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(arg->ToObject()->Get(JS_STR("image"))));
+      return image->image;
+    } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
+      ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(arg));
+      return SkImage::MakeFromBitmap(imageData->bitmap);
+    } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))) {
+      ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(Local<Object>::Cast(arg));
+      return SkImage::MakeFromBitmap(imageBitmap->bitmap);
+    } else {
+      return nullptr;
+    }
+  } else {
+    return nullptr;
+  }
+}
+
 CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
   SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
   surface = SkSurface::MakeRaster(info); // XXX can optimize this to not allocate until a width/height is set
@@ -1239,4 +1195,5 @@ CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned 
 
   strokePaint.getFontMetrics(&fontMetrics);
 }
+
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}

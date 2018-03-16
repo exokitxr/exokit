@@ -44,7 +44,7 @@ enum class Direction {
 
 class CanvasRenderingContext2D : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons);
+  static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons);
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();
@@ -132,6 +132,7 @@ protected:
   static NAN_METHOD(StrokeText);
   static NAN_METHOD(CreateLinearGradient);
   static NAN_METHOD(CreateRadialGradient);
+  static NAN_METHOD(CreatePattern);
   static NAN_METHOD(Resize);
   static NAN_METHOD(DrawImage);
   static NAN_METHOD(CreateImageData);
@@ -139,6 +140,8 @@ protected:
   static NAN_METHOD(PutImageData);
   static NAN_METHOD(Save);
   static NAN_METHOD(Restore);
+
+  static sk_sp<SkImage> getImage(Local<Value> arg);
 
   CanvasRenderingContext2D(unsigned int width, unsigned int height);
   virtual ~CanvasRenderingContext2D();
@@ -162,6 +165,8 @@ private:
   friend class ImageData;
   friend class ImageBitmap;
   friend class Path2D;
+  friend class CanvasGradient;
+  friend class CanvasPattern;
 };
 
 #include "image-context.h"

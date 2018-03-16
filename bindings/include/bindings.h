@@ -9,6 +9,7 @@
 #include <canvas-context.h>
 #include <path2d-context.h>
 #include <canvas-gradient.h>
+#include <canvas-pattern.h>
 #include <glfw.h>
 #include <webgl.h>
 #include <AudioContext.h>
@@ -18,9 +19,10 @@ v8::Local<v8::Object> makeGl();
 v8::Local<v8::Object> makeImage();
 v8::Local<v8::Object> makeImageData();
 v8::Local<v8::Object> makeImageBitmap(Local<Value> imageCons);
-v8::Local<v8::Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons, Local<Value> canvasGradientCons);
+v8::Local<v8::Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons);
 v8::Local<v8::Object> makePath2D();
 v8::Local<v8::Object> makeCanvasGradient();
+v8::Local<v8::Object> makeCanvasPattern();
 v8::Local<v8::Object> makeAudio();
 v8::Local<v8::Object> makeVideo();
 
