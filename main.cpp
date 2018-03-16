@@ -157,8 +157,11 @@ void InitExports(Handle<Object> exports) {
 
   Local<Value> canvasGradient = makeCanvasGradient();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasGradient"), canvasGradient);
+  
+  Local<Value> canvasPattern = makeCanvasPattern();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasPattern"), canvasPattern);
 
-  Local<Value> canvas = makeCanvasRenderingContext2D(imageData, canvasGradient);
+  Local<Value> canvas = makeCanvasRenderingContext2D(imageData, canvasGradient, canvasPattern);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasRenderingContext2D"), canvas);
 
   Local<Value> audio = makeAudio();
