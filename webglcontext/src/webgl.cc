@@ -399,9 +399,9 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   JS_GL_CONSTANT(INT);
   JS_GL_CONSTANT(UNSIGNED_INT);
   JS_GL_CONSTANT(FLOAT);
-#ifndef __APPLE__
+// #ifndef __APPLE__
   JS_GL_CONSTANT(FIXED);
-#endif
+// #endif
 
   /* PixelFormat */
   JS_GL_CONSTANT(DEPTH_COMPONENT);
@@ -421,16 +421,16 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   JS_GL_CONSTANT(FRAGMENT_SHADER);
   JS_GL_CONSTANT(VERTEX_SHADER);
   JS_GL_CONSTANT(MAX_VERTEX_ATTRIBS);
-#ifndef __APPLE__
+// #ifndef __APPLE__
   JS_GL_CONSTANT(MAX_VERTEX_UNIFORM_VECTORS);
   JS_GL_CONSTANT(MAX_VARYING_VECTORS);
-#endif
+// #endif
   JS_GL_CONSTANT(MAX_COMBINED_TEXTURE_IMAGE_UNITS);
   JS_GL_CONSTANT(MAX_VERTEX_TEXTURE_IMAGE_UNITS);
   JS_GL_CONSTANT(MAX_TEXTURE_IMAGE_UNITS);
-#ifndef __APPLE__
+// #ifndef __APPLE__
   JS_GL_CONSTANT(MAX_FRAGMENT_UNIFORM_VECTORS);
-#endif
+// #endif
   JS_GL_CONSTANT(SHADER_TYPE);
   JS_GL_CONSTANT(DELETE_STATUS);
   JS_GL_CONSTANT(LINK_STATUS);
@@ -568,34 +568,34 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_BUFFER_BINDING);
 
   /* Read Format */
-#ifndef __APPLE__
+// #ifndef __APPLE__
   JS_GL_CONSTANT(IMPLEMENTATION_COLOR_READ_TYPE);
   JS_GL_CONSTANT(IMPLEMENTATION_COLOR_READ_FORMAT);
-#endif
+// #endif
 
   /* Shader Source */
   JS_GL_CONSTANT(COMPILE_STATUS);
   JS_GL_CONSTANT(INFO_LOG_LENGTH);
   JS_GL_CONSTANT(SHADER_SOURCE_LENGTH);
-#ifndef __APPLE__
+// #ifndef __APPLE__
   JS_GL_CONSTANT(SHADER_COMPILER);
-#endif
+// #endif
 
   /* Shader Binary */
-#ifndef __APPLE__
+// #ifndef __APPLE__
   JS_GL_CONSTANT(SHADER_BINARY_FORMATS);
   JS_GL_CONSTANT(NUM_SHADER_BINARY_FORMATS);
-#endif
+// #endif
 
   /* Shader Precision-Specified Types */
-#ifndef __APPLE__
+// #ifndef __APPLE__
   JS_GL_CONSTANT(LOW_FLOAT);
   JS_GL_CONSTANT(MEDIUM_FLOAT);
   JS_GL_CONSTANT(HIGH_FLOAT);
   JS_GL_CONSTANT(LOW_INT);
   JS_GL_CONSTANT(MEDIUM_INT);
   JS_GL_CONSTANT(HIGH_INT);
-#endif
+// #endif
 
   /* Framebuffer Object. */
   JS_GL_CONSTANT(FRAMEBUFFER);
@@ -603,9 +603,9 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
 
   JS_GL_CONSTANT(RGBA4);
   JS_GL_CONSTANT(RGB5_A1);
-#ifndef __APPLE__
+// #ifndef __APPLE__
   //JS_GL_CONSTANT(RGB565);
-#endif
+// #endif
   JS_GL_CONSTANT(DEPTH_COMPONENT16);
   // JS_GL_CONSTANT(STENCIL_INDEX);
   JS_GL_CONSTANT(STENCIL_INDEX8);
@@ -637,9 +637,9 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   JS_GL_CONSTANT(FRAMEBUFFER_COMPLETE);
   JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
   JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
-#ifndef __APPLE__
+// #ifndef __APPLE__
   //JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_DIMENSIONS);
-#endif
+// #endif
   JS_GL_CONSTANT(FRAMEBUFFER_UNSUPPORTED);
 
   JS_GL_CONSTANT(FRAMEBUFFER_BINDING);
