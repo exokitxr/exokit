@@ -910,16 +910,16 @@ NAN_METHOD(RestoreWindow) {
   glfwRestoreWindow(window);
 }
 
-NAN_METHOD(HideWindow) {
-  Nan::HandleScope scope;
-  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwHideWindow(window);
-}
-
-NAN_METHOD(ShowWindow) {
+NAN_METHOD(Show) {
   Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   glfwShowWindow(window);
+}
+
+NAN_METHOD(Hide) {
+  Nan::HandleScope scope;
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  glfwHideWindow(window);
 }
 
 NAN_METHOD(WindowShouldClose) {
@@ -1052,8 +1052,11 @@ NAN_METHOD(Create) {
 
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
+  bool visible = info[2]->BooleanValue();
 
-  GLFWwindow *windowHandle = glfwCreateWindow(width, height, "exokit", nullptr, nullptr);
+  glfwWindowHint(GLFW_VISIBLE, visible);
+
+  GLFWwindow *windowHandle = glfwCreateWindow(width, height, "ExoKit", nullptr, nullptr);
 
   if (windowHandle) {
     SetCurrentWindowContext(windowHandle);
@@ -1523,6 +1526,8 @@ Local<Object> makeWindow() {
 
   Nan::SetMethod(target, "create", glfw::Create);
   Nan::SetMethod(target, "destroy", glfw::Destroy);
+  Nan::SetMethod(target, "show", glfw::Show);
+  Nan::SetMethod(target, "hide", glfw::Hide);
   Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
