@@ -240,7 +240,18 @@ nativeWindow.setEventHandler((type, data) => {
         _dispatchCanvasEvent(canvas, new window.Event('resize'));
         break;
       }
-      case 'keydown':
+      case 'keydown': {
+        if (data.keyCode === 27 && window.top.document.pointerLockElement) {
+          window.top.document.exitPointerLock();
+        }
+        
+        const e = new window.KeyboardEvent(type, data);
+        _dispatchCanvasEvent(canvas, e, true);
+        if (!e.handled) {
+          window.document.documentElement.dispatchEvent(e, false);
+        }
+        break;
+      }
       case 'keyup':
       case 'keypress': {
         const e = new window.KeyboardEvent(type, data);
@@ -275,7 +286,7 @@ nativeWindow.setEventHandler((type, data) => {
 
           nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
         }
-        
+
         const e = new window.MouseEvent(type, data);
         _dispatchCanvasEvent(canvas, e, true);
         if (!e.handled) {
