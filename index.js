@@ -214,9 +214,9 @@ nativeVr.exitPresent = function() {
   return Promise.resolve();
 };
 
-const _dispatchCanvasEvent = (canvas, event) => {
+const _dispatchCanvasEvent = (canvas, event, bubble = true) => {
   [canvas, canvas.ownerDocument.defaultView].every(target => {
-    target.dispatchEvent(event);
+    target.dispatchEvent(event, bubble);
     return !event.propagationStopped;
   });
 };
@@ -243,17 +243,29 @@ nativeWindow.setEventHandler((type, data) => {
       case 'keydown':
       case 'keyup':
       case 'keypress': {
-        _dispatchCanvasEvent(canvas, new window.KeyboardEvent(type, data));
+        const e = new window.KeyboardEvent(type, data);
+        _dispatchCanvasEvent(canvas, e, true);
+        if (!e.handled) {
+          window.document.documentElement.dispatchEvent(e, false);
+        }
         break;
       }
       case 'mousedown':
       case 'mouseup':
       case 'click': {
-        _dispatchCanvasEvent(canvas, new window.MouseEvent(type, data));
+        const e = new window.MouseEvent(type, data);
+        _dispatchCanvasEvent(canvas, e, true);
+        if (!e.handled) {
+          window.document.documentElement.dispatchEvent(e, false);
+        }
         break;
       }
       case 'wheel': {
-        _dispatchCanvasEvent(canvas, new window.WheelEvent(type, data));
+        const e = new window.WheelEvent(type, data);
+        _dispatchCanvasEvent(canvas, e, true);
+        if (!e.handled) {
+          window.document.documentElement.dispatchEvent(e, false);
+        }
         break;
       }
       case 'mousemove': {
@@ -263,8 +275,12 @@ nativeWindow.setEventHandler((type, data) => {
 
           nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
         }
-
-        _dispatchCanvasEvent(canvas, new window.MouseEvent(type, data));
+        
+        const e = new window.MouseEvent(type, data);
+        _dispatchCanvasEvent(canvas, e, true);
+        if (!e.handled) {
+          window.document.documentElement.dispatchEvent(e, false);
+        }
         break;
       }
       case 'quit': {
