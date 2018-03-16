@@ -360,15 +360,17 @@ if (require.main === module) {
         console.warn('got error', err.error.stack);
       });
 
-      let lastPointerLockElement = null;
       window.document.addEventListener('pointerlockchange', () => {
         const {pointerLockElement} = window.document;
-        if (pointerLockElement && pointerLockElement._context && pointerLockElement._context.constructor && pointerLockElement._context.constructor.name === 'WebGLRenderingContext') {
-          nativeWindow.setCursorMode(pointerLockElement._context.getWindowHandle(), false);
-        } else if (lastPointerLockElement && lastPointerLockElement._context && lastPointerLockElement._context.constructor && lastPointerLockElement._context.constructor.name === 'WebGLRenderingContext') {
-          nativeWindow.setCursorMode(lastPointerLockElement._context.getWindowHandle(), true);
+        if (pointerLockElement) {
+          for (let i = 0; i < contexts.length; i++) {
+            nativeWindow.setCursorMode(contexts[i].getWindowHandle(), false);
+          }
+        } else {
+          for (let i = 0; i < contexts.length; i++) {
+            nativeWindow.setCursorMode(contexts[i].getWindowHandle(), true);
+          }
         }
-        lastPointerLockElement = pointerLockElement;
       });
 
       let lastFrameTime = Date.now();
