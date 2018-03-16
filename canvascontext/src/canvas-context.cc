@@ -141,12 +141,12 @@ void CanvasRenderingContext2D::LineTo(float x, float y) {
 }
 
 void CanvasRenderingContext2D::Arc(float x, float y, float radius, float startAngle, float endAngle, float anticlockwise) {
+  startAngle = startAngle / M_PI * 360;
+  endAngle = endAngle / M_PI * 360;
   if (anticlockwise) {
-    float temp = startAngle;
-    startAngle = endAngle;
-    endAngle = temp;
+    endAngle -= 360;
   }
-  path.addArc(SkRect::MakeLTRB(x - radius, y - radius, x + radius, y + radius), startAngle / M_PI * 360, endAngle / M_PI * 360);
+  path.addArc(SkRect::MakeLTRB(x - radius, y - radius, x + radius, y + radius), startAngle, endAngle);
 }
 
 void CanvasRenderingContext2D::ArcTo(float x1, float y1, float x2, float y2, float radius) {
