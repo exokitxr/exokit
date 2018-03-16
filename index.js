@@ -244,7 +244,9 @@ nativeWindow.setEventHandler((type, data) => {
         if (data.keyCode === 27 && window.top.document.pointerLockElement) {
           window.top.document.exitPointerLock();
         }
-        
+
+        // XXX The capture phase in these events is a hack. It's only needed because sibling overlay elements sometimes expect to capture events instead of the canvas.
+        // The correct way to handle this would be to compute the CSS and bubble up from the correct element.
         const e = new window.KeyboardEvent(type, data);
         _dispatchCanvasEvent(canvas, e, true);
         if (!e.handled) {
