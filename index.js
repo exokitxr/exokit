@@ -257,6 +257,13 @@ nativeWindow.setEventHandler((type, data) => {
         break;
       }
       case 'mousemove': {
+        if (window.document.pointerLockElement) {
+          data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
+          data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
+
+          nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
+        }
+
         _dispatchCanvasEvent(canvas, new window.MouseEvent(type, data));
         break;
       }
