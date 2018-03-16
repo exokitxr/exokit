@@ -2999,6 +2999,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case GL_POLYGON_OFFSET_FACTOR:
     case GL_POLYGON_OFFSET_UNITS:
     case GL_SAMPLE_COVERAGE_VALUE:
+    case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT:
     {
       // return a float
       GLfloat params;
