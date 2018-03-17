@@ -214,9 +214,9 @@ nativeVr.exitPresent = function() {
   return Promise.resolve();
 };
 
-const _dispatchCanvasEvent = (canvas, event, bubble = true) => {
+const _dispatchCanvasEvent = (canvas, event) => {
   [canvas, canvas.ownerDocument.defaultView].every(target => {
-    target.dispatchEvent(event, bubble);
+    target.dispatchEvent(event);
     return !event.propagationStopped;
   });
 };
@@ -245,40 +245,39 @@ nativeWindow.setEventHandler((type, data) => {
           window.top.document.exitPointerLock();
         }
 
-        // XXX The capture phase in these events is a hack. It's only needed because sibling overlay elements sometimes expect to capture events instead of the canvas.
-        // The correct way to handle this would be to compute the CSS and bubble up from the correct element.
         const e = new window.KeyboardEvent(type, data);
-        _dispatchCanvasEvent(canvas, e, true);
-        if (!e.handled) {
-          window.document.documentElement.dispatchEvent(e, false);
-        }
+        _dispatchCanvasEvent(canvas, e);
         break;
       }
       case 'keyup':
       case 'keypress': {
         const e = new window.KeyboardEvent(type, data);
-        _dispatchCanvasEvent(canvas, e, true);
-        if (!e.handled) {
-          window.document.documentElement.dispatchEvent(e, false);
-        }
+        _dispatchCanvasEvent(canvas, e);
         break;
       }
       case 'mousedown':
       case 'mouseup':
       case 'click': {
         const e = new window.MouseEvent(type, data);
-        _dispatchCanvasEvent(canvas, e, true);
-        if (!e.handled) {
-          window.document.documentElement.dispatchEvent(e, false);
+        
+        // XXX The overlay detection here is a hack.
+        // It's only needed because sibling overlay elements sometimes expect to capture events instead of the canvas.
+        // The correct way to handle this is to compute actual layout with something like reworkcss + Yoga.
+        let overlayEl;
+        if (ovarlayEl = window.document.documentElement.traverse(el => {
+          if (el.nodeType === window.Node.ELEMENT_NODE && el.style.position === 'absolute' && el.style.width === '100%' && el.style.height === '100%') {
+            return el;
+          }
+        })) {
+          ovarlayEl.dispatchEvent(e);
+        } else {
+          _dispatchCanvasEvent(canvas, e);
         }
         break;
       }
       case 'wheel': {
         const e = new window.WheelEvent(type, data);
-        _dispatchCanvasEvent(canvas, e, true);
-        if (!e.handled) {
-          window.document.documentElement.dispatchEvent(e, false);
-        }
+        _dispatchCanvasEvent(canvas, e);
         break;
       }
       case 'mousemove': {
@@ -291,9 +290,6 @@ nativeWindow.setEventHandler((type, data) => {
 
         const e = new window.MouseEvent(type, data);
         _dispatchCanvasEvent(canvas, e, true);
-        if (!e.handled) {
-          window.document.documentElement.dispatchEvent(e, false);
-        }
         break;
       }
       case 'quit': {
