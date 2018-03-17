@@ -858,7 +858,7 @@ NAN_METHOD(WebGLRenderingContext::Uniform4f) {
   float z = (float)info[3]->NumberValue();
   float w = (float)info[4]->NumberValue();
 
-  glUniform3f(location, x, y, z);
+  glUniform4f(location, x, y, z, w);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
