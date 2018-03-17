@@ -784,13 +784,24 @@ inline void *getImageData(Local<Value> arg, int *num = nullptr) {
 }
 
 inline void reformatImageData(char *dstData, char *srcData, size_t dstPixelSize, size_t srcPixelSize, size_t numPixels) {
-  // size_t clipSize = srcPixelSize - dstPixelSize;
-  for (size_t i = 0; i < numPixels; i++) {
-    memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize, dstPixelSize);
-    /* for (size_t j = 0; j < dstPixelSize; j++) {
-      dstData[i * dstPixelSize + j] = srcData[i * srcPixelSize + srcPixelSize - clipSize - 1 - j];
-    } */
-    // memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize + clipSize, dstPixelSize);
+  if (dstPixelSize < srcPixelSize) {
+    // size_t clipSize = srcPixelSize - dstPixelSize;
+    for (size_t i = 0; i < numPixels; i++) {
+      memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize, dstPixelSize);
+      /* for (size_t j = 0; j < dstPixelSize; j++) {
+        dstData[i * dstPixelSize + j] = srcData[i * srcPixelSize + srcPixelSize - clipSize - 1 - j];
+      } */
+      // memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize + clipSize, dstPixelSize);
+    }
+  } else if (dstPixelSize > srcPixelSize) {
+    size_t clipSize = dstPixelSize - srcPixelSize;
+    for (size_t i = 0; i < numPixels; i++) {
+      memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize, srcPixelSize);
+      memset(dstData + i * dstPixelSize + srcPixelSize, 0xFF, clipSize);
+    }
+  } else {
+    // the call was pointless, but fulfill the contract anyway
+    memcpy(dstData, srcData, dstPixelSize * numPixels);
   }
 }
 
@@ -1679,6 +1690,26 @@ int normalizeInternalFormat(int internalformat, int format, int type) {
   return internalformat;
 }
 
+int getImageFormat(Local<Value> arg) {
+  if (arg->IsArrayBufferView()) {
+    return GL_RGBA;
+  } else {
+    Local<Value> constructorName = arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
+    if (
+      constructorName->StrictEquals(JS_STR("HTMLImageElement")) ||
+      constructorName->StrictEquals(JS_STR("ImageData")) ||
+      constructorName->StrictEquals(JS_STR("ImageBitmap")) ||
+      constructorName->StrictEquals(JS_STR("HTMLCanvasElement"))
+    ) {
+      return GL_RGBA;
+    } else if (constructorName->StrictEquals(JS_STR("HTMLVideoElement"))) {
+      return GL_RGB;
+    } else {
+      return -1;
+    }
+  }
+}
+
 NAN_METHOD(WebGLRenderingContext::TexImage2D) {
   Isolate *isolate = Isolate::GetCurrent();
 
@@ -1785,13 +1816,15 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     size_t formatSize = getFormatSize(formatV);
     size_t typeSize = getTypeSize(typeV);
     size_t pixelSize = formatSize * typeSize;
+    size_t srcFormatV = getImageFormat(pixels);
+    size_t srcFormatSize = getFormatSize(srcFormatV);
     char *pixelsV2;
     unique_ptr<char[]> pixelsV2Buffer;
-    bool needsReformat = formatSize != 4 && !pixels->IsArrayBufferView();
+    bool needsReformat = formatSize != srcFormatSize;
     if (needsReformat) {
       pixelsV2Buffer.reset(new char[widthV * heightV * pixelSize]);
       pixelsV2 = pixelsV2Buffer.get();
-      reformatImageData(pixelsV2, pixelsV, formatSize * typeSize, 4 * typeSize, widthV * heightV);
+      reformatImageData(pixelsV2, pixelsV, formatSize * typeSize, srcFormatSize * typeSize, widthV * heightV);
 
       glPixelStorei(GL_PACK_ALIGNMENT, 1);
       glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
