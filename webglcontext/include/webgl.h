@@ -229,6 +229,8 @@ protected:
   bool dirty;
   bool flipY;
   bool premultiplyAlpha;
+  GLint packAlignment;
+  GLint unpackAlignment;
 
   template<NAN_METHOD(F)>
   static NAN_METHOD(glCallWrap) {

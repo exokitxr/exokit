@@ -672,7 +672,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), flipY(true), premultiplyAlpha(true) {}
+WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), flipY(true), premultiplyAlpha(true), packAlignment(4), unpackAlignment(4) {}
 
 WebGLRenderingContext::~WebGLRenderingContext() {}
 
@@ -1094,6 +1094,14 @@ NAN_METHOD(WebGLRenderingContext::PixelStorei) {
   } else if (pname == UNPACK_PREMULTIPLY_ALPHA_WEBGL) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
     gl->premultiplyAlpha = (bool)param;
+  } else if (pname == GL_PACK_ALIGNMENT) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+    gl->packAlignment = param;
+    glPixelStorei(pname, param);
+  } else if (pname == GL_UNPACK_ALIGNMENT) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+    gl->unpackAlignment = param;
+    glPixelStorei(pname, param);
   } else {
     glPixelStorei(pname, param);
   }
@@ -1779,10 +1787,14 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     size_t pixelSize = formatSize * typeSize;
     char *pixelsV2;
     unique_ptr<char[]> pixelsV2Buffer;
-    if (formatSize != 4 && !pixels->IsArrayBufferView()) {
+    bool needsReformat = formatSize != 4 && !pixels->IsArrayBufferView();
+    if (needsReformat) {
       pixelsV2Buffer.reset(new char[widthV * heightV * pixelSize]);
       pixelsV2 = pixelsV2Buffer.get();
       reformatImageData(pixelsV2, pixelsV, formatSize * typeSize, 4 * typeSize, widthV * heightV);
+
+      glPixelStorei(GL_PACK_ALIGNMENT, 1);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     } else {
       pixelsV2 = pixelsV;
     }
@@ -1795,6 +1807,11 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV3Buffer.get());
     } else {
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2);
+    }
+
+    if (needsReformat) {
+      glPixelStorei(GL_PACK_ALIGNMENT, gl->packAlignment);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, gl->unpackAlignment);
     }
   } else {
     Nan::ThrowError(String::Concat(JS_STR("Invalid texture argument: "), pixels->ToString()));
