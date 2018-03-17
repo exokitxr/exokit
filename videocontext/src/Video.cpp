@@ -155,12 +155,12 @@ int64_t AppData::bufferSeek(void *opaque, int64_t offset, int whence) {
   }
 }
 
-bool AppData::advanceToFrameAt(double timestamp) {
+FrameStatus AppData::advanceToFrameAt(double timestamp) {
   double timeBase = getTimeBase();
 
   for (;;) {
     if (lastTimestamp >= timestamp) {
-      return true;
+      return FRAME_STATUS_OK;
     }
 
     bool packetValid = false;
@@ -174,11 +174,11 @@ bool AppData::advanceToFrameAt(double timestamp) {
       packetValid = true;
       if (ret == AVERROR_EOF) {
         av_free_packet(packet);
-        return true;
+        return FRAME_STATUS_EOF;
       } else if (ret < 0) {
         // std::cout << "Unknown error " << ret << "\n";
         av_free_packet(packet);
-        return false;
+        return FRAME_STATUS_ERROR;
       } else {
         if (packet->stream_index == stream_idx) {
           break;
@@ -189,7 +189,7 @@ bool AppData::advanceToFrameAt(double timestamp) {
     int frame_finished = 0;
     if (avcodec_decode_video2(codec_ctx, av_frame, &frame_finished, packet) < 0) {
       av_free_packet(packet);
-      return false;
+      return FRAME_STATUS_ERROR;
     }
 
     sws_scale(conv_ctx, av_frame->data, av_frame->linesize, 0, codec_ctx->height, gl_frame->data, gl_frame->linesize);
@@ -451,28 +451,26 @@ NAN_METHOD(Video::UpdateAll) {
 double Video::getRequiredCurrentTimeS() {
   if (playing) {
     int64_t now = av_gettime();
-    int64_t timeDiff = now - startTime;
-    double timeDiffS = std::max<double>((double)timeDiff / 1e6, 0);
-    return timeDiffS;
+    int64_t startTimeDiff = now - startTime;
+    double startTimeDiffS = std::max<double>((double)startTimeDiff / 1e6, 0);
+    return startFrameTime + startTimeDiffS;
   } else {
     return getFrameCurrentTimeS();
   }
 }
 
 double Video::getFrameCurrentTimeS() {
-  double pts = data.av_frame ? (double)data.av_frame->pts : 0;
+  double pts = data.av_frame ? (double)std::max<int64_t>(data.av_frame->pts, 0) : 0;
   double timeBase = data.getTimeBase();
   return pts * timeBase;
 }
 
-bool Video::advanceToFrameAt(double timestamp) {
-  if (data.advanceToFrameAt(timestamp)) {
+FrameStatus Video::advanceToFrameAt(double timestamp) {
+  FrameStatus status = data.advanceToFrameAt(timestamp);
+  if (status == FRAME_STATUS_OK) {
     dataDirty = true;
-
-    return true;
-  } else {
-    return false;
   }
+  return status;
 }
 
 std::vector<Video *> videos;

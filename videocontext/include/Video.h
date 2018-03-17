@@ -21,6 +21,12 @@ using namespace node;
 
 namespace ffmpeg {
 
+enum FrameStatus {
+  FRAME_STATUS_OK,
+  FRAME_STATUS_ERROR,
+  FRAME_STATUS_EOF,
+};
+
 class AppData {
 public:
   AppData();
@@ -31,7 +37,7 @@ public:
   static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
   static int64_t bufferSeek(void *opaque, int64_t offset, int whence);
   double getTimeBase();
-  bool advanceToFrameAt(double timestamp);
+  FrameStatus advanceToFrameAt(double timestamp);
 
 public:
   std::vector<unsigned char> data;
@@ -76,8 +82,8 @@ protected:
   double getRequiredCurrentTime();
   double getRequiredCurrentTimeS();
   double getFrameCurrentTimeS();
-  bool advanceToFrameAt(double timestamp);
-  
+  FrameStatus advanceToFrameAt(double timestamp);
+
   Video();
   ~Video();
 
