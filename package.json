@@ -26,7 +26,7 @@
     "node": "9"
   },
   "dependencies": {
-    "exokit-core": "0.0.129",
+    "exokit-core": "0.0.130",
     "isolator": "0.0.9",
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.12",
