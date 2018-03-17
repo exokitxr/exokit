@@ -63,6 +63,7 @@ public:
   void Update();
   void Play();
   void Pause();
+  void SeekTo(double timestamp);
   uint32_t GetWidth();
   uint32_t GetHeight();
 

@@ -303,6 +303,24 @@ void Video::Pause() {
   }
 }
 
+void Video::SeekTo(double timestamp) {
+  if (loaded) {
+    startTime = av_gettime() - (int64_t)(timestamp * 1e6);
+
+    data.dataPos = 0;
+    if (av_seek_frame(data.fmt_ctx, data.stream_idx, (int64_t)(timestamp / data.video_stream->time_base.num * data.video_stream->time_base.den), AVSEEK_FLAG_BACKWARD) >= 0) {
+      avcodec_flush_buffers(data.codec_ctx);
+      av_free(data.av_frame);
+      data.av_frame = av_frame_alloc();
+      data.lastTimestamp = 0;
+
+      advanceToFrameAt(getRequiredCurrentTimeS());
+    } else {
+      Nan::ThrowError("currentTime: failed to seek");
+    }
+  }
+}
+
 uint32_t Video::GetWidth() {
   if (loaded) {
     return data.codec_ctx->width;
@@ -416,21 +434,8 @@ NAN_SETTER(Video::CurrentTimeSetter) {
   if (value->IsNumber()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-    if (video->loaded) {
-      double timestamp = value->NumberValue();
-
-      video->startTime = av_gettime() - (int64_t)(timestamp * 1e6);
-      video->data.dataPos = 0;
-      if (av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t)(timestamp / video->data.video_stream->time_base.num * video->data.video_stream->time_base.den), AVSEEK_FLAG_BACKWARD) >= 0) {
-        avcodec_flush_buffers(video->data.codec_ctx);
-        av_free(video->data.av_frame);
-        video->data.av_frame = av_frame_alloc();
-        video->data.lastTimestamp = 0;
-        video->advanceToFrameAt(video->getRequiredCurrentTimeS());
-      } else {
-        Nan::ThrowError("currentTime: failed to seek");
-      }
-    }
+    double timestamp = value->NumberValue();
+    video->SeekTo(timestamp);
   } else {
     Nan::ThrowError("currentTime: invalid arguments");
   }
