@@ -271,11 +271,14 @@ bool Video::Load(unsigned char *bufferValue, size_t bufferLength, string *error)
 
   if (data.set(bufferData, error)) { // takes ownership of bufferData
     // scan to the first frame
-    advanceToFrameAt(0);
+    FrameStatus status = advanceToFrameAt(0);
+    if (status == FRAME_STATUS_OK) {
+      loaded = true;
 
-    loaded = true;
-
-    return true;
+      return true;
+    } else {
+      return false;
+    }
   } else {
     return false;
   }
