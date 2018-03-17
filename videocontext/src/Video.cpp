@@ -299,7 +299,7 @@ void Video::Update() {
 }
 
 void Video::Play() {
-  if (loaded && !playing) {
+  if (!playing) {
     playing = true;
     startTime = av_gettime();
     startFrameTime = getFrameCurrentTimeS();
@@ -307,9 +307,7 @@ void Video::Play() {
 }
 
 void Video::Pause() {
-  if (loaded && playing) {
-    playing = false;
-  }
+  playing = false;
 }
 
 void Video::SeekTo(double timestamp) {
@@ -495,9 +493,13 @@ double Video::getRequiredCurrentTimeS() {
 }
 
 double Video::getFrameCurrentTimeS() {
-  double pts = data.av_frame ? (double)std::max<int64_t>(data.av_frame->pts, 0) : 0;
-  double timeBase = data.getTimeBase();
-  return pts * timeBase;
+  if (loaded) {
+    double pts = data.av_frame ? (double)std::max<int64_t>(data.av_frame->pts, 0) : 0;
+    double timeBase = data.getTimeBase();
+    return pts * timeBase;
+  } else {
+    return 0;
+  }
 }
 
 FrameStatus Video::advanceToFrameAt(double timestamp) {
