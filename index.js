@@ -245,14 +245,12 @@ nativeWindow.setEventHandler((type, data) => {
           window.top.document.exitPointerLock();
         }
 
-        const e = new window.KeyboardEvent(type, data);
-        _dispatchCanvasEvent(canvas, e);
+        _dispatchCanvasEvent(canvas, new window.KeyboardEvent(type, data));
         break;
       }
       case 'keyup':
       case 'keypress': {
-        const e = new window.KeyboardEvent(type, data);
-        _dispatchCanvasEvent(canvas, e);
+        _dispatchCanvasEvent(canvas, new window.KeyboardEvent(type, data));
         break;
       }
       case 'mousedown':
@@ -278,8 +276,7 @@ nativeWindow.setEventHandler((type, data) => {
         break;
       }
       case 'wheel': {
-        const e = new window.WheelEvent(type, data);
-        _dispatchCanvasEvent(canvas, e);
+        _dispatchCanvasEvent(canvas, new window.WheelEvent(type, data));
         break;
       }
       case 'mousemove': {
@@ -290,8 +287,7 @@ nativeWindow.setEventHandler((type, data) => {
           nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
         }
 
-        const e = new window.MouseEvent(type, data);
-        _dispatchCanvasEvent(canvas, e, true);
+        _dispatchCanvasEvent(canvas, new window.MouseEvent(type, data));
         break;
       }
       case 'quit': {
