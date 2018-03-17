@@ -1158,6 +1158,8 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
     Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(arg->ToObject()->Get(JS_STR("image"))));
     return image->image;
+  } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLVideoElement"))) {
+    return nullptr; // XXX support this
   } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
     ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(arg));
     return SkImage::MakeFromBitmap(imageData->bitmap);
