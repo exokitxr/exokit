@@ -210,7 +210,7 @@ double AppData::getTimeBase() {
   }
 }
 
-Video::Video() : loaded(false), playing(false), startTime(0), dataDirty(true) {
+Video::Video() : loaded(false), playing(false), loop(false), startTime(0), startFrameTime(0), dataDirty(true) {
   videos.push_back(this);
 }
 
@@ -238,6 +238,7 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "pause", Pause);
   Nan::SetAccessor(proto, JS_STR("width"), WidthGetter);
   Nan::SetAccessor(proto, JS_STR("height"), HeightGetter);
+  Nan::SetAccessor(proto, JS_STR("loop"), LoopGetter, LoopSetter);
   Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
@@ -286,19 +287,27 @@ bool Video::Load(unsigned char *bufferValue, size_t bufferLength, string *error)
 
 void Video::Update() {
   if (loaded && playing) {
-    advanceToFrameAt(getRequiredCurrentTimeS());
+    FrameStatus status = advanceToFrameAt(getRequiredCurrentTimeS());
+    if (status == FRAME_STATUS_EOF) {
+      if (loop) {
+        SeekTo(0);
+      } else {
+        Pause();
+      }
+    }
   }
 }
 
 void Video::Play() {
-  if (loaded) {
+  if (loaded && !playing) {
     playing = true;
     startTime = av_gettime();
+    startFrameTime = getFrameCurrentTimeS();
   }
 }
 
 void Video::Pause() {
-  if (loaded) {
+  if (loaded && playing) {
     playing = false;
   }
 }
@@ -393,6 +402,24 @@ NAN_GETTER(Video::HeightGetter) {
 
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
   info.GetReturnValue().Set(JS_INT(video->GetHeight()));
+}
+
+NAN_GETTER(Video::LoopGetter) {
+  Nan::HandleScope scope;
+
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
+  info.GetReturnValue().Set(JS_BOOL(video->loop));
+}
+
+NAN_SETTER(Video::LoopSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsBoolean()) {
+    Video *video = ObjectWrap::Unwrap<Video>(info.This());
+    video->loop = value->BooleanValue();
+  } else {
+    Nan::ThrowError("loop: invalid arguments`");
+  }
 }
 
 NAN_GETTER(Video::DataGetter) {

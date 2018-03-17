@@ -75,6 +75,8 @@ protected:
   static NAN_METHOD(Pause);
   static NAN_GETTER(WidthGetter);
   static NAN_GETTER(HeightGetter);
+  static NAN_GETTER(LoopGetter);
+  static NAN_SETTER(LoopSetter);
   static NAN_GETTER(DataGetter);
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_SETTER(CurrentTimeSetter);
@@ -92,7 +94,9 @@ protected:
     AppData data;
     bool loaded;
     bool playing;
+    bool loop;
     int64_t startTime;
+    double startFrameTime;
     Nan::Persistent<Uint8ClampedArray> dataArray;
     bool dataDirty;
 };
