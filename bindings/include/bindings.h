@@ -14,6 +14,7 @@
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
+#include <magicleap.h>
 
 v8::Local<v8::Object> makeGl();
 v8::Local<v8::Object> makeImage();
