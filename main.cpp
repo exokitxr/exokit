@@ -48,7 +48,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onResize
 
   {
     HandleScope handle_scope(Isolate::GetCurrent());
-    
+
     unsigned int width = 1;
     unsigned int height = 1;
 
@@ -151,13 +151,13 @@ void InitExports(Handle<Object> exports) {
 
   Local<Value> imageBitmap = makeImageBitmap(image);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageBitmap"), imageBitmap);
-  
+
   Local<Value> path2d = makePath2D();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
 
   Local<Value> canvasGradient = makeCanvasGradient();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasGradient"), canvasGradient);
-  
+
   Local<Value> canvasPattern = makeCanvasPattern();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasPattern"), canvasPattern);
 
@@ -178,6 +178,9 @@ void InitExports(Handle<Object> exports) {
 
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
+
+  Local<Value> ml = makeMl();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 
   uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
