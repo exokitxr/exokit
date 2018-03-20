@@ -13,8 +13,16 @@
     "url": "git+https://github.com/modulesio/exokit-windows.git"
   },
   "keywords": [
+    "browser",
     "webvr",
-    "native"
+    "webgl",
+    "webvr",
+    "webar",
+    "webxr",
+    "vr",
+    "ar",
+    "native",
+    "magic leap"
   ],
   "author": "Avaer Kazmer <a@modules.io>",
   "license": "ISC",
