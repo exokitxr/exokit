@@ -257,7 +257,7 @@ nativeWindow.setEventHandler((type, data) => {
       case 'mouseup':
       case 'click': {
         const e = new window.MouseEvent(type, data);
-        
+
         // XXX The overlay detection here is a hack.
         // It's only needed because sibling overlay elements sometimes expect to capture events instead of the canvas.
         // The correct way to handle this is to compute actual layout with something like reworkcss + Yoga.
@@ -268,9 +268,9 @@ nativeWindow.setEventHandler((type, data) => {
           }
         }))) {
           dispatchEl.dispatchEvent(e);
-        } else {
-          _dispatchCanvasEvent(canvas, e);
         }
+
+        _dispatchCanvasEvent(canvas, e);
         break;
       }
       case 'wheel': {
