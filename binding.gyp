@@ -131,7 +131,6 @@
             }
           ],
           'defines': [
-            'MAGICLEAP',
             'NOMINMAX',
           ],
         }],
