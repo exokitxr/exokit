@@ -23,10 +23,10 @@ after_test:
   - ps: |
       git submodule update --init --recursive
       npm install
-      wget "https://nodejs.org/dist/v9.7.1/node-v9.7.1-win-x64.zip" -OutFile node.zip
+      wget "https://nodejs.org/dist/v9.8.0/node-v9.8.0-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
-      mv "node-v9.7.1-win-x64" node
+      mv "node-v9.8.0-win-x64" node
       rm -R node/node_modules
       7z a exokit-windows.zip * -xr'!.git'
 
