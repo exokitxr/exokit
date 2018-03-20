@@ -130,7 +130,10 @@
               ]
             }
           ],
-          'defines': ['NOMINMAX'],
+          'defines': [
+            'MAGICLEAP',
+            'NOMINMAX',
+          ],
         }],
         ['OS=="linux"', {
           'sources': [

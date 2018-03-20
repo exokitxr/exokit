@@ -179,8 +179,10 @@ void InitExports(Handle<Object> exports) {
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
 
+#ifdef MAGICLEAP
   Local<Value> ml = makeMl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
+#endif
 
   uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
