@@ -26,7 +26,7 @@
     "node": "9"
   },
   "dependencies": {
-    "exokit-core": "0.0.143",
+    "exokit-core": "0.0.144",
     "isolator": "0.0.9",
     "magicleap": "0.0.1",
     "mkdirp": "^0.5.1",
