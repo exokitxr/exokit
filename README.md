@@ -11,6 +11,8 @@ exokit https://example.com # run site in WebGL/VR/AR
 
 Exokit can do everything a browser can do -- _except render HTML_.
 
+It's plain OpenGL and standard libraries under the hood, so it plays nice with Windows, Linux, macOS, and even Magic Leap!
+
 ## What? Isn't that useless?
 
 Exokit can't render HTML, but it _can_ draw Canvas and WebGL -- natively, and fast -- as well as take keyboard/mouse/mixed reality input with the regular APIs. It's a browser for the post-(2D) world.
@@ -39,7 +41,6 @@ What Exokit *can* do:
 - Run on Android/iOS
 - Run tests
 - Power a web bot
-- jQuery, if you really want
 
 What Exokit *cannot* do:
 
