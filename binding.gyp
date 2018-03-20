@@ -14,7 +14,6 @@
             'deps/exokit-bindings/platform/windows/src/*.cpp',
             'deps/exokit-bindings/webaudiocontext/src/*.cpp',
             'deps/exokit-bindings/videocontext/src/*.cpp',
-            'deps/exokit-bindings/magicleap/src/*.cc',
             'deps/exokit-bindings/glfw/src/*.cc',
             'deps/openvr/src/*.cpp',
           ],
@@ -27,7 +26,6 @@
             '<(module_root_dir)/node_modules/native-audio-deps/include',
             '<(module_root_dir)/node_modules/native-video-deps/include',
             '<(module_root_dir)/node_modules/native-openvr-deps/headers',
-            '<(module_root_dir)/node_modules/magicleap/include',
             '<(module_root_dir)/deps/exokit-bindings',
             '<(module_root_dir)/deps/exokit-bindings/utf8',
             '<(module_root_dir)/deps/exokit-bindings/node',
@@ -40,7 +38,6 @@
             '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
             '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
-            '<(module_root_dir)/deps/exokit-bindings/magicleap/include',
             '<(module_root_dir)/deps/exokit-bindings/glfw/include',
             '<(module_root_dir)/deps/openvr/include',
           ],
@@ -66,6 +63,34 @@
             'swscale.lib',
             'swresample.lib',
             'openvr_api.lib',
+          ],
+          'copies': [
+            {
+              'destination': '<(module_root_dir)/build/Release/',
+              'files': [
+                '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glew/glew32.dll',
+                '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glfw/glfw3.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avformat-58.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avcodec-58.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avutil-56.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/swscale-5.dll',
+                '<(module_root_dir)/node_modules/native-video-deps/lib/win/swresample-3.dll',
+                '<(module_root_dir)/node_modules/native-openvr-deps/bin/win64/openvr_api.dll',
+              ]
+            }
+          ],
+          'defines': [
+            'NOMINMAX',
+          ],
+        }],
+        ['OS=="win" && "<!(echo %MAGICLEAP%)" != "%MAGICLEAP%"', {
+          'sources': [
+            'deps/exokit-bindings/magicleap/src/*.cc',
+          ],
+          'include_dirs': [
+            '<(module_root_dir)/node_modules/magicleap/include',
+          ],
+          'libraries': [
             'ml_app_analytics.lib',
             'ml_audio.lib',
             'ml_camera.lib',
@@ -95,14 +120,6 @@
             {
               'destination': '<(module_root_dir)/build/Release/',
               'files': [
-                '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glew/glew32.dll',
-                '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glfw/glfw3.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avformat-58.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avcodec-58.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avutil-56.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/swscale-5.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/swresample-3.dll',
-                '<(module_root_dir)/node_modules/native-openvr-deps/bin/win64/openvr_api.dll',
                 '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_app_analytics.dll',
                 '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_audio.dll',
                 '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_camera.dll',
@@ -127,11 +144,8 @@
                 '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_screens.dll',
                 '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_secure_storage.dll',
                 '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_sharedfile.dll',
-              ]
+              ],
             }
-          ],
-          'defines': [
-            'NOMINMAX',
           ],
         }],
         ['OS=="linux"', {
