@@ -1,3 +1,5 @@
+#ifdef MAGICLEAP
+
 #include <magicleap.h>
 
 using namespace v8;
@@ -233,3 +235,5 @@ Handle<Object> makeMl() {
 
   return scope.Escape(ml::MLContext::Initialize(isolate));
 }
+
+#endif
