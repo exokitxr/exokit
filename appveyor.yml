@@ -23,16 +23,19 @@ after_test:
   - ps: |
       git submodule update --init --recursive
       npm install
+      7z a exokit-windows.zip * -xr'!.git'
       wget "https://nodejs.org/dist/v9.8.0/node-v9.8.0-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
       mv "node-v9.8.0-win-x64" node
       rm -R node/node_modules
-      7z a exokit-windows.zip * -xr'!.git'
+      7z a exokit-windows-full.zip * -xr'!.git'
 
 artifacts:
   - path: "exokit-windows.zip"
     name: exokit-windows
+  - path: "exokit-windows-full.zip"
+    name: exokit-windows-full
 
 deploy:
   description: 'Exokit git release'
