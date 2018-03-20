@@ -3,6 +3,8 @@ version: 0.0.{build}
 # Test against the latest version of this Node.js version
 environment:
   nodejs_version: "9"
+  MAGICLEAP:
+    secure: 4mAodSQiCUr1X1maLOYyj4nYCb87r4J54Wb1jw1EE9tT4tpcbic6hpDynrSu7Ep3
 
 # Install scripts. (runs after repo cloning)
 install:
