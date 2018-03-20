@@ -83,7 +83,7 @@
             'NOMINMAX',
           ],
         }],
-        ['OS=="win" && "<!(echo %MAGICLEAP%)" != "%MAGICLEAP%"', {
+        ['"<!(echo %MAGICLEAP%)" != "%MAGICLEAP%"', {
           'sources': [
             'deps/exokit-bindings/magicleap/src/*.cc',
           ],
