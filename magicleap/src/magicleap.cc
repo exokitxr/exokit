@@ -35,7 +35,9 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   ctor->SetClassName(JS_STR("MLContext"));
 
   // prototype
-  // Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "waitGetPoses", WaitGetPoses);
+  Nan::SetMethod(proto, "submitFrame", SubmitFrame);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
@@ -113,6 +115,64 @@ NAN_METHOD(MLContext::Init) {
   info.GetReturnValue().Set(JS_BOOL(true));
 }
 
+NAN_METHOD(MLContext::WaitGetPoses) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+
+  if (info[0]->IsUint32Array() && info[1]->IsUint32Array()) {
+    if (mlContext->application_context.dummy_value) {
+      Local<Uint32Array> framebuffersArray = Local<Uint32Array>::Cast(info[0]);
+      Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[1]);
+
+      MLGraphicsFrameParams frame_params;
+
+      MLStatus out_status;
+      if (!MLGraphicsInitFrameParams(&frame_params, &out_status)) {
+        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
+      }
+      frame_params.surface_scale = 1.0f;
+      frame_params.projection_type = MLGraphicsProjectionType_ReversedInfiniteZ;
+      frame_params.near_clip = 1.0f;
+      frame_params.focus_distance = 1.0f;
+
+      MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array, &out_status);
+      if (out_status != MLStatus_OK) {
+        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
+      }
+
+      framebuffersArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
+      framebuffersArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
+
+      const MLRectf& viewport = mlContext->virtual_camera_array.viewport;
+      viewportArray->Set(0, JS_INT((int)viewport.x));
+      viewportArray->Set(1, JS_INT((int)viewport.y));
+      viewportArray->Set(2, JS_INT((unsigned int)viewport.w));
+      viewportArray->Set(3, JS_INT((unsigned int)viewport.h));
+    } else {
+      Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
+    }
+  } else {
+    Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::SubmitFrame) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+
+  for (int camera = 0; camera < 2; ++camera) {
+    MLStatus out_status;
+    MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, mlContext->virtual_camera_array.virtual_cameras[camera].sync_object, &out_status);
+    if (out_status != MLStatus_OK) {
+      ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", out_status);
+    }
+  }
+
+  MLStatus out_status;
+  MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle, &out_status);
+  if (out_status != MLStatus_OK) {
+    ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
+  }
+}
+
 NAN_METHOD(MLContext::Update) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
@@ -130,9 +190,7 @@ NAN_METHOD(MLContext::Update) {
     frame_params.near_clip = 1.0f;
     frame_params.focus_distance = 1.0f;
 
-    MLHandle frame_handle;
-    MLGraphicsVirtualCameraInfoArray virtual_camera_array;
-    MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &frame_handle, &virtual_camera_array, &out_status);
+    MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array, &out_status);
     if (out_status != MLStatus_OK) {
       ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
     }
@@ -142,10 +200,10 @@ NAN_METHOD(MLContext::Update) {
 
     for (int camera = 0; camera < 2; ++camera) {
       /* glBindFramebuffer(GL_FRAMEBUFFER, graphics_context.framebuffer_id);
-      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, virtual_camera_array.color_id, 0, camera);
-      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, virtual_camera_array.depth_id, 0, camera); */
+      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, camera);
+      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, camera); */
 
-      const MLRectf& viewport = virtual_camera_array.viewport;
+      const MLRectf& viewport = mlContext->virtual_camera_array.viewport;
       /* glViewport((GLint)viewport.x, (GLint)viewport.y,
                  (GLsizei)viewport.w, (GLsizei)viewport.h);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -155,9 +213,9 @@ NAN_METHOD(MLContext::Update) {
         glClearColor(0.0, 0.0, factor, 0.0);
       }
       glBindFramebuffer(GL_FRAMEBUFFER, 0); */
-      MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, virtual_camera_array.virtual_cameras[camera].sync_object, &out_status);
+      MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, mlContext->virtual_camera_array.virtual_cameras[camera].sync_object, &out_status);
     }
-    MLGraphicsEndFrame(mlContext->graphics_client, frame_handle, &out_status);
+    MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle, &out_status);
     if (out_status != MLStatus_OK) {
       ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
     }

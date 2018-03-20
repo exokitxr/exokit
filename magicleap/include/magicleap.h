@@ -38,11 +38,15 @@ protected:
 
   static NAN_METHOD(New);
   static NAN_METHOD(Init);
+  static NAN_METHOD(WaitGetPoses);
+  static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(Update);
 
 protected:
   struct application_context_t application_context;
   MLHandle graphics_client;
+  MLHandle frame_handle;
+  MLGraphicsVirtualCameraInfoArray virtual_camera_array;
 };
 
 }
