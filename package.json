@@ -36,7 +36,7 @@
   "dependencies": {
     "exokit-core": "0.0.148",
     "isolator": "0.0.9",
-    "magicleap": "0.0.4",
+    "magicleap": "0.0.5",
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.16",
     "native-canvas-deps": "0.0.10",
