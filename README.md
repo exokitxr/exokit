@@ -47,8 +47,7 @@ What Exokit *cannot* do:
 - Render a web page
 - CSS
 - Interactive HTML forms
-- A million legacy APIs
-- Security; wrap it in something like Docker
+- Legacy APIs
 
 ## FAQ
 
