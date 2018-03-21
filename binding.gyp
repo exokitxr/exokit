@@ -224,7 +224,9 @@
             '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libswresample',
             '-Wl,-R./node_modules/native-openvr-deps/bin/linux64',
           ],
-          'defines': ['NOMINMAX'],
+          'defines': [
+            'NOMINMAX',
+          ],
         }],
         ['OS=="mac"', {
           'sources': [
