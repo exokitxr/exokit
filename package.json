@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/modulesio/exokit-windows.git"
+    "url": "git+https://github.com/webmixedreality/exokit-windows.git"
   },
   "keywords": [
     "browser",
@@ -27,9 +27,9 @@
   "author": "Avaer Kazmer <a@modules.io>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/modulesio/exokit-windows/issues"
+    "url": "https://github.com/webmixedreality/exokit-windows/issues"
   },
-  "homepage": "https://github.com/modulesio/exokit-windows#readme",
+  "homepage": "https://github.com/webmixedreality/exokit-windows#readme",
   "engines": {
     "node": "9"
   },
