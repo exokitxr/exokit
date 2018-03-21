@@ -88,6 +88,7 @@
                 'deps/exokit-bindings/magicleap/src/*.cc',
               ],
               'include_dirs': [
+                '<(module_root_dir)/deps/exokit-bindings/magicleap/include',
                 '<(module_root_dir)/node_modules/magicleap/include',
               ],
               'libraries': [
