@@ -169,10 +169,8 @@ NAN_METHOD(VR_GetInitToken)
   info.GetReturnValue().Set(Nan::New<Number>(result));
 }
 
-Local<Object> makeVr() {
-  v8::EscapableHandleScope scope(Isolate::GetCurrent());
-  
-  Local<Object> exports = Object::New(Isolate::GetCurrent());
+NAN_METHOD(GetContext) {
+  Local<Object> context = Object::New(Isolate::GetCurrent());
 
   v8::Local<v8::Object> system = v8::Object::New(v8::Isolate::GetCurrent());
   system->Set(Nan::New("VR_Init").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_Init)->GetFunction());
@@ -184,15 +182,25 @@ Local<Object> makeVr() {
   system->Set(Nan::New("VR_GetVRInitErrorAsEnglishDescription").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsEnglishDescription)->GetFunction());
   system->Set(Nan::New("VR_GetInitToken").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_GetInitToken)->GetFunction());
   IVRSystem::Init(system);
-  exports->Set(Nan::New("system").ToLocalChecked(), system);
+  context->Set(Nan::New("system").ToLocalChecked(), system);
 
   v8::Local<v8::Object> compositor = v8::Object::New(v8::Isolate::GetCurrent());
   compositor->Set(Nan::New("NewCompositor").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(NewCompositor)->GetFunction());
   IVRCompositor::Init(compositor);
-  exports->Set(Nan::New("compositor").ToLocalChecked(), compositor);
+  context->Set(Nan::New("compositor").ToLocalChecked(), compositor);
+
+  /* context->Set(Nan::New("width").ToLocalChecked(), Nan::New<Integer>(1280));
+  context->Set(Nan::New("height").ToLocalChecked(), Nan::New<Integer>(1024)); */
+
+  info.GetReturnValue().Set(context);
+}
+
+Local<Object> makeVr() {
+  v8::EscapableHandleScope scope(Isolate::GetCurrent());
   
-  /* exports->Set(Nan::New("width").ToLocalChecked(), Nan::New<Integer>(1280));
-  exports->Set(Nan::New("height").ToLocalChecked(), Nan::New<Integer>(1024)); */
+  Local<Object> exports = Object::New(Isolate::GetCurrent());
+
+  exports->Set(Nan::New("getContext").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(GetContext)->GetFunction());
 
   return scope.Escape(exports);
 }
