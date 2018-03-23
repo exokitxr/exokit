@@ -159,6 +159,7 @@ const _requestSystem = () => new Promise((accept, reject) => {
   _recurse();
 });
 nativeVr.requestPresent = function(layers) {
+  console.log('rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrequest present', new Error().stack);
   const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
   if (layer) {
     const context = layer.source._context;
@@ -182,6 +183,8 @@ nativeVr.requestPresent = function(layers) {
 
         nativeWindow.bindFrameBuffer(msFbo);
 
+        console.log('set compositor');
+        
         vrPresentState.isPresenting = true;
         vrPresentState.system = newSystem;
         vrPresentState.compositor = nativeVr.compositor.NewCompositor();
