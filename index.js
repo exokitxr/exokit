@@ -120,10 +120,11 @@ const _normalizeMatrixArray = float32Array => {
 };
 
 const vrPresentState = {
+  vrContext: null,
   isPresenting: false,
   system: null,
   compositor: null,
-  context: null,
+  glContext: null,
   msFbo: null,
   msTex: null,
   fbo: null,
@@ -133,13 +134,19 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 1000.0;
-const _requestSystem = () => new Promise((accept, reject) => {
+const _requestContext = () => {
+  if (!vrPresentState.vrContext) {
+    vrPresentState.vrContext = nativeVr.getContext();
+  }
+  return Promise.resole(vrPresentState.vrContext);
+};
+const _requestSystem = vrContext => new Promise((accept, reject) => {
   let err = null;
   const _recurse = (i = 0) => { // while booting we sometimes get transient errors
     if (i < 20) {
       const system = (() => {
         try {
-          return nativeVr.system.VR_Init(nativeVr.EVRApplicationType.Scene);
+          return vrContext.system.VR_Init(nativeVr.EVRApplicationType.Scene);
         } catch (newErr) {
           err = newErr;
           return null;
@@ -164,36 +171,37 @@ nativeVr.requestPresent = function(layers) {
   if (layer) {
     const context = layer.source._context;
 
-    return _requestSystem()
-      .then(newSystem => {
-        const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
-        renderWidth = halfWidth;
-        renderHeight = height;
+    return _requestContext()
+      .then(vrContext =>
+        _requestSystem(vrContext)
+          .then(newSystem => {
+            const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
+            renderWidth = halfWidth;
+            renderHeight = height;
 
-        window.updateVrFrame({
-          renderWidth,
-          renderHeight,
-        });
+            window.updateVrFrame({
+              renderWidth,
+              renderHeight,
+            });
 
-        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+            nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-        const width = halfWidth * 2;
-        const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
-        const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
+            const width = halfWidth * 2;
+            const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
+            const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
 
-        nativeWindow.bindFrameBuffer(msFbo);
+            nativeWindow.bindFrameBuffer(msFbo);
 
-        console.log('set compositor');
-        
-        vrPresentState.isPresenting = true;
-        vrPresentState.system = newSystem;
-        vrPresentState.compositor = nativeVr.compositor.NewCompositor();
-        vrPresentState.context = context;
-        vrPresentState.msFbo = msFbo;
-        vrPresentState.msTex = msTex;
-        vrPresentState.fbo = fbo;
-        vrPresentState.tex = tex;
-      });
+            vrPresentState.isPresenting = true;
+            vrPresentState.system = newSystem;
+            vrPresentState.compositor = vrContext.compositor.NewCompositor();
+            vrPresentState.glContext = context;
+            vrPresentState.msFbo = msFbo;
+            vrPresentState.msTex = msTex;
+            vrPresentState.fbo = fbo;
+            vrPresentState.tex = tex;
+          })
+        );
   } else {
     return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
   }
@@ -204,13 +212,13 @@ nativeVr.exitPresent = function() {
   nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex);
   nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex);
 
-  nativeWindow.setCurrentWindowContext(vrPresentState.context.getWindowHandle());
+  nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
   nativeWindow.bindFrameBuffer(0);
 
   vrPresentState.isPresenting = false;
   vrPresentState.system = null;
   vrPresentState.compositor = null;
-  vrPresentState.context = null;
+  vrPresentState.glContext = null;
   vrPresentState.msFbo = null;
   vrPresentState.msTex = null;
   vrPresentState.fbo = null;
@@ -519,7 +527,7 @@ if (require.main === module) {
         for (let i = 0; i < contexts.length; i++) {
           const context = contexts[i];
           if (context.isDirty()) {
-            if (vrPresentState.context === context) {
+            if (vrPresentState.glContext === context) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
               nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
