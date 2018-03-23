@@ -138,7 +138,7 @@ const _requestContext = () => {
   if (!vrPresentState.vrContext) {
     vrPresentState.vrContext = nativeVr.getContext();
   }
-  return Promise.resole(vrPresentState.vrContext);
+  return Promise.resolve(vrPresentState.vrContext);
 };
 const _requestSystem = vrContext => new Promise((accept, reject) => {
   let err = null;
