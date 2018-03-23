@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+process.chdir(__dirname); // needed for global bin to find libraries
+
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
