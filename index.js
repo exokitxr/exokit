@@ -120,6 +120,7 @@ const _normalizeMatrixArray = float32Array => {
 };
 
 const vrPresentState = {
+  vrContext: null,
   isPresenting: false,
   system: null,
   compositor: null,
@@ -133,7 +134,13 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 1000.0;
-const _requestSystem = () => new Promise((accept, reject) => {
+const _requestContext = () => {
+  if (!vrPresentState.vrContext) {
+    vrPresentState.vrContext = nativeVr.getContext();
+  }
+  return Promise.resolve(vrPresentState.vrContext);
+};
+const _requestSystem = vrContext => new Promise((accept, reject) => {
   let err = null;
   const _recurse = (i = 0) => { // while booting we sometimes get transient errors
     if (i < 20) {
@@ -161,36 +168,41 @@ const _requestSystem = () => new Promise((accept, reject) => {
 nativeVr.requestPresent = function(layers) {
   const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
   if (layer) {
-    const context = layer.source._context;
+    const canvas = layer.source;
+    const context = canvas._context;
+    const window = canvas.ownerDocument.defaultView;
 
-    return _requestSystem()
-      .then(newSystem => {
-        const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
-        renderWidth = halfWidth;
-        renderHeight = height;
+    return _requestContext()
+      .then(vrContext =>
+        _requestSystem()
+          .then(newSystem => {
+            const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
+            renderWidth = halfWidth;
+            renderHeight = height;
 
-        window.updateVrFrame({
-          renderWidth,
-          renderHeight,
-        });
+            window.updateVrFrame({
+              renderWidth,
+              renderHeight,
+            });
 
-        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+            nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-        const width = halfWidth * 2;
-        const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
-        const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
+            const width = halfWidth * 2;
+            const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
+            const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
 
-        nativeWindow.bindFrameBuffer(msFbo);
+            nativeWindow.bindFrameBuffer(msFbo);
 
-        vrPresentState.isPresenting = true;
-        vrPresentState.system = newSystem;
-        vrPresentState.compositor = nativeVr.compositor.NewCompositor();
-        vrPresentState.glContext = context;
-        vrPresentState.msFbo = msFbo;
-        vrPresentState.msTex = msTex;
-        vrPresentState.fbo = fbo;
-        vrPresentState.tex = tex;
-      });
+            vrPresentState.isPresenting = true;
+            vrPresentState.system = newSystem;
+            vrPresentState.compositor = vrContext.compositor.NewCompositor();
+            vrPresentState.glContext = context;
+            vrPresentState.msFbo = msFbo;
+            vrPresentState.msTex = msTex;
+            vrPresentState.fbo = fbo;
+            vrPresentState.tex = tex;
+          })
+      );
   } else {
     return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
   }
@@ -409,7 +421,7 @@ if (require.main === module) {
         if (vrPresentState.isPresenting) {
           // wait for frame
           vrPresentState.compositor.WaitGetPoses(
-            system,
+            vrPresentState.system,
             localFloat32Array, // hmd
             localFloat32Array2, // left controller
             localFloat32Array3 // right controller
@@ -426,34 +438,34 @@ if (require.main === module) {
 
           hmdMatrix.getInverse(hmdMatrix);
 
-          system.GetEyeToHeadTransform(0, localFloat32Array4);
+          vrPresentState.system.GetEyeToHeadTransform(0, localFloat32Array4);
           localMatrix2.fromArray(localFloat32Array4)
             .getInverse(localMatrix2)
             .multiply(hmdMatrix)
             .toArray(frameData.leftViewMatrix);
 
-          system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
+          vrPresentState.system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.leftProjectionMatrix.set(localFloat32Array4);
 
-          system.GetEyeToHeadTransform(1, localFloat32Array4);
+          vrPresentState.system.GetEyeToHeadTransform(1, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           localMatrix2.fromArray(localFloat32Array4)
             .getInverse(localMatrix2)
             .multiply(hmdMatrix)
             .toArray(frameData.rightViewMatrix);
 
-          system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
+          vrPresentState.system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.rightProjectionMatrix.set(localFloat32Array4);
 
           // build stage parameters
-          system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
+          vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           stageParameters.sittingToStandingTransform.set(localFloat32Array4);
 
           // build gamepads data
-          system.GetControllerState(0, localGamepadArray);
+          vrPresentState.system.GetControllerState(0, localGamepadArray);
           if (!isNaN(localGamepadArray[0])) {
             leftGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
             leftGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
@@ -473,7 +485,7 @@ if (require.main === module) {
             gamepads[0] = null;
           }
 
-          system.GetControllerState(1, localGamepadArray);
+          vrPresentState.system.GetControllerState(1, localGamepadArray);
           if (!isNaN(localGamepadArray[0])) {
             rightGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
             rightGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
