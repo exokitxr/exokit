@@ -41,7 +41,7 @@
     "native-audio-deps": "0.0.19",
     "native-canvas-deps": "0.0.13",
     "native-graphics-deps": "0.0.14",
-    "native-openvr-deps": "0.0.12",
+    "native-openvr-deps": "0.0.13",
     "native-video-deps": "0.0.16",
     "repl.history": "^0.1.4",
     "rimraf": "^2.6.2",
