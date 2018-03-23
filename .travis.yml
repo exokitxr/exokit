@@ -36,7 +36,7 @@ matrix:
       file: exokit-linux.tar.gz
       body: Exokit git release
       on:
-        repo: modulesio/exokit
+        repo: webmixedreality/exokit
         tags: true
       skip_cleanup: true
     - provider: releases
@@ -45,7 +45,7 @@ matrix:
       file: exokit-linux-full.tar.gz
       body: Exokit git release
       on:
-        repo: modulesio/exokit
+        repo: webmixedreality/exokit
         tags: true
       skip_cleanup: true
   - os: osx
@@ -67,7 +67,7 @@ matrix:
       file: exokit-macos.tar.gz
       body: Exokit git release
       on:
-        repo: modulesio/exokit
+        repo: webmixedreality/exokit
         tags: true
       skip_cleanup: true
     - provider: releases
@@ -76,7 +76,7 @@ matrix:
       file: exokit-macos-full.tar.gz
       body: Exokit git release
       on:
-        repo: modulesio/exokit
+        repo: webmixedreality/exokit
         tags: true
       skip_cleanup: true
 notifications:
