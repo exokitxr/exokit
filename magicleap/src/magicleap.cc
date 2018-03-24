@@ -59,6 +59,9 @@ NAN_METHOD(MLContext::New) {
 NAN_METHOD(MLContext::Init) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
+  Nan::HandleScope scope;
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+
   // let system know our app has started
   MLLifecycleCallbacks lifecycle_callbacks = {};
   lifecycle_callbacks.on_stop = onStop;
@@ -92,7 +95,7 @@ NAN_METHOD(MLContext::Init) {
   }
 
   MLGraphicsOptions graphics_options = { 0, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float };
-  MLHandle opengl_context = reinterpret_cast<MLHandle>(glfwGetCurrentContext());
+  MLHandle opengl_context = reinterpret_cast<MLHandle>(window);
   mlContext->graphics_client = ML_INVALID_HANDLE;
   MLStatus graphics_create_status = MLStatus_OK;
   MLGraphicsCreateClientGL(&graphics_options, opengl_context, &mlContext->graphics_client, &graphics_create_status);
@@ -172,57 +175,6 @@ NAN_METHOD(MLContext::SubmitFrame) {
   MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle, &out_status);
   if (out_status != MLStatus_OK) {
     ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
-  }
-}
-
-NAN_METHOD(MLContext::Update) {
-  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-
-  // auto start = std::chrono::steady_clock::now();
-
-  while (mlContext->application_context.dummy_value) {
-    MLGraphicsFrameParams frame_params;
-
-    MLStatus out_status;
-    if (!MLGraphicsInitFrameParams(&frame_params, &out_status)) {
-      ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
-    }
-    frame_params.surface_scale = 1.0f;
-    frame_params.projection_type = MLGraphicsProjectionType_ReversedInfiniteZ;
-    frame_params.near_clip = 1.0f;
-    frame_params.focus_distance = 1.0f;
-
-    MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array, &out_status);
-    if (out_status != MLStatus_OK) {
-      ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
-    }
-
-    // auto msRuntime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
-    // auto factor = labs(msRuntime % 2000 - 1000) / 1000.0;
-
-    for (int camera = 0; camera < 2; ++camera) {
-      /* glBindFramebuffer(GL_FRAMEBUFFER, graphics_context.framebuffer_id);
-      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, camera);
-      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, camera); */
-
-      const MLRectf& viewport = mlContext->virtual_camera_array.viewport;
-      /* glViewport((GLint)viewport.x, (GLint)viewport.y,
-                 (GLsizei)viewport.w, (GLsizei)viewport.h);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      if (camera == 0) {
-        glClearColor(1.0 - factor, 0.0, 0.0, 0.0);
-      } else {
-        glClearColor(0.0, 0.0, factor, 0.0);
-      }
-      glBindFramebuffer(GL_FRAMEBUFFER, 0); */
-      MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, mlContext->virtual_camera_array.virtual_cameras[camera].sync_object, &out_status);
-    }
-    MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle, &out_status);
-    if (out_status != MLStatus_OK) {
-      ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
-    }
-
-    // graphics_context.swapBuffers();
   }
 }
 

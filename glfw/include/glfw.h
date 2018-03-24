@@ -15,12 +15,8 @@
 #include <GLFW/glfw3.h>
 
 using namespace v8;
-// using namespace node;
-// using namespace std;
 
 namespace glfw {
-  Local<Array> pointerToArray(void *ptr);
-  void *arrayToPointer(Local<Array> array);
   void SetCurrentWindowContext(GLFWwindow *window);
 }
 

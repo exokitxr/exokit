@@ -698,7 +698,7 @@ NAN_METHOD(WebGLRenderingContext::GetWindowHandle) {
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   if (gl->windowHandle) {
-    info.GetReturnValue().Set(glfw::pointerToArray(gl->windowHandle));
+    info.GetReturnValue().Set(pointerToArray(gl->windowHandle));
   } else {
     info.GetReturnValue().Set(Nan::Null());
   }
@@ -709,7 +709,7 @@ NAN_METHOD(WebGLRenderingContext::SetWindowHandle) {
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   if (info[0]->IsArray()) {
-    gl->windowHandle = (GLFWwindow *)glfw::arrayToPointer(Local<Array>::Cast(info[0]));
+    gl->windowHandle = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   } else {
     gl->windowHandle = nullptr;
   }
