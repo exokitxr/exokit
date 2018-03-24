@@ -7,6 +7,7 @@
           'sources': [
             'main.cpp',
             'deps/exokit-bindings/bindings/src/*.cc',
+            'deps/exokit-bindings/util/src/*.cc',
             'deps/exokit-bindings/canvas/src/*.cpp',
             'deps/exokit-bindings/nanosvg/src/*.cpp',
             'deps/exokit-bindings/canvascontext/src/*.cc',
@@ -158,6 +159,7 @@
           'sources': [
             'main.cpp',
             '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/nanosvg/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/canvascontext/src/*.cc)',
@@ -238,6 +240,7 @@
           'sources': [
             'main.cpp',
             '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/nanosvg/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/canvascontext/src/*.cc)',
