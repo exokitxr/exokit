@@ -808,7 +808,7 @@ NAN_METHOD(BlitFrameBuffer) {
     sw, sh,
     0,0,
     dw, dh,
-    GL_COLOR_BUFFER_BIT,
+    GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
     GL_LINEAR);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
