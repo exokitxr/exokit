@@ -786,6 +786,27 @@ NAN_METHOD(DestroyRenderTarget) {
   }
 }
 
+NAN_METHOD(CreateFramebuffer) {
+  Nan::HandleScope scope;
+
+  GLuint fbo;
+  glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+  info.GetReturnValue().Set(JS_NUM(fbo));
+}
+
+NAN_METHOD(FramebufferTextureLayer) {
+  Nan::HandleScope scope;
+
+  GLuint colorTex = info[0]->Uint32Value();
+  GLuint depthTex = info[1]->Uint32Value();
+  GLint layer = info[2]->Int32Value();
+
+  glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex, 0, layer);
+  glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTex, 0, layer);
+}
+
 NAN_METHOD(BindFrameBuffer) {
   Nan::HandleScope scope;
   GLuint fbo = info[0]->Uint32Value();
@@ -1522,6 +1543,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
   Nan::SetMethod(target, "createRenderTarget", glfw::CreateRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", glfw::DestroyRenderTarget);
+  Nan::SetMethod(target, "createFramebuffer", glfw::CreateFramebuffer);
+  Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
   Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
