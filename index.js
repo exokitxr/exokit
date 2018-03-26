@@ -244,10 +244,7 @@ let isMlPresenting = false;
 let mlFbo = null;
 let mlGlContext = null;
 if (nativeMl) {
-  console.log('ml init 1'); // XXX
-  mlContext = new nativeMl(() => {
-    console.log('ml init 2');
-  });
+  mlContext = new nativeMl();
   nativeMl.requestPresent = function(layers) {
     if (!isMlPresenting) {
       const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
