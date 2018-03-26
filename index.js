@@ -15,7 +15,7 @@ const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 exokit.setNativeBindingsModule(nativeBindingsModulePath);
 const {THREE} = exokit;
 const nativeBindings = require(nativeBindingsModulePath);
-const {nativeVideo, nativeVr, nativeWindow} = nativeBindings;
+const {nativeVideo, nativeVr, nativeMl, nativeWindow} = nativeBindings;
 
 /* const {VERSION} = nativeGl;
 
@@ -108,6 +108,12 @@ const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array4 = new Float32Array(16);
 const localGamepadArray = new Float32Array(16);
+
+const framebufferArray = new Uint32Array(2);
+const transformArray = new Float32Array(7 * 2);
+const projectionArray = new Float32Array(16 * 2);
+const viewportArray = new Uint32Array(4);
+
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
@@ -166,45 +172,49 @@ const _requestSystem = vrContext => new Promise((accept, reject) => {
   _recurse();
 });
 nativeVr.requestPresent = function(layers) {
-  const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
-  if (layer) {
-    const canvas = layer.source;
-    const context = canvas._context;
-    const window = canvas.ownerDocument.defaultView;
+  if (!vrPresentState.isPresenting) {
+    const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
+    if (layer) {
+      const canvas = layer.source;
+      const context = canvas._context;
+      const window = canvas.ownerDocument.defaultView;
 
-    return _requestContext()
-      .then(vrContext =>
-        _requestSystem()
-          .then(newSystem => {
-            const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
-            renderWidth = halfWidth;
-            renderHeight = height;
+      return _requestContext()
+        .then(vrContext =>
+          _requestSystem()
+            .then(newSystem => {
+              const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
+              renderWidth = halfWidth;
+              renderHeight = height;
 
-            window.updateVrFrame({
-              renderWidth,
-              renderHeight,
-            });
+              window.top.updateVrFrame({
+                renderWidth,
+                renderHeight,
+              });
 
-            nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+              nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-            const width = halfWidth * 2;
-            const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
-            const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
+              const width = halfWidth * 2;
+              const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
+              const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
 
-            nativeWindow.bindFrameBuffer(msFbo);
+              nativeWindow.bindFrameBuffer(msFbo);
 
-            vrPresentState.isPresenting = true;
-            vrPresentState.system = newSystem;
-            vrPresentState.compositor = vrContext.compositor.NewCompositor();
-            vrPresentState.glContext = context;
-            vrPresentState.msFbo = msFbo;
-            vrPresentState.msTex = msTex;
-            vrPresentState.fbo = fbo;
-            vrPresentState.tex = tex;
-          })
-      );
+              vrPresentState.isPresenting = true;
+              vrPresentState.system = newSystem;
+              vrPresentState.compositor = vrContext.compositor.NewCompositor();
+              vrPresentState.glContext = context;
+              vrPresentState.msFbo = msFbo;
+              vrPresentState.msTex = msTex;
+              vrPresentState.fbo = fbo;
+              vrPresentState.tex = tex;
+            })
+        );
+    } else {
+      return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
+    }
   } else {
-    return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
+    return Promise.reject(new Error('already presenting'));
   }
 };
 nativeVr.exitPresent = function() {
@@ -229,6 +239,59 @@ nativeVr.exitPresent = function() {
 
   return Promise.resolve();
 };
+let mlContext = null;
+let isMlPresenting = false;
+let mlFbo = null;
+let mlGlContext = null;
+if (nativeMl) {
+  mlContext = new nativeMl();
+  nativeMl.requestPresent = function(layers) {
+    if (!isMlPresenting) {
+      const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
+      if (layer) {
+        const canvas = layer.source;
+        const context = canvas._context;
+        const window = canvas.ownerDocument.defaultView;
+
+        const windowHandle = context.getWindowHandle();
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
+        const initResult = mlContext.Init(windowHandle);
+        if (initResult) {
+          isMlPresenting = true;
+
+          mlFbo = nativeWindow.createFramebuffer();
+          nativeWindow.bindFrameBuffer(mlFbo);
+
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray);
+          for (let i = 0; i < 2; i++) {
+            nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
+          }
+          window.top.updateMlFrame(transformArray, projectionArray, viewportArray);
+          mlContext.SubmitFrame();
+
+          mlGlContext = context;
+
+          return Promise.resolve();
+        } else {
+          return Promise.reject(new Error('simulator not attached'));
+        }
+      } else {
+        return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
+      }
+    } else {
+      return Promise.reject(new Error('already presenting'));
+    }
+  };
+  nativeMl.exitPresent = function() {
+    if (isMlPresenting) {
+      throw new Error('not implemented'); // XXX
+      // nativeWindow.bindFrameBuffer(0);
+    }
+
+    return Promise.resolve();
+  };
+}
 
 const _dispatchCanvasEvent = (canvas, event) => {
   [canvas, canvas.ownerDocument.defaultView].every(target => {
@@ -321,7 +384,6 @@ module.exports = exokit;
 
 // MAIN
 
-let window = null;
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
 const FPS = 90;
@@ -390,9 +452,6 @@ if (require.main === module) {
     const _bindWindow = (window, newWindowCb) => {
       window.innerWidth = innerWidth;
       window.innerHeight = innerHeight;
-      if (nativeVr.VR_IsHmdPresent()) {
-        window.navigator.setVRMode('vr');
-      }
       window.addEventListener('error', err => {
         console.warn('got error', err.error.stack);
       });
@@ -506,7 +565,7 @@ if (require.main === module) {
           }
 
           // update vr frame
-          window.updateVrFrame({
+          window.top.updateVrFrame({
             depthNear: 0.1,
             depthFar: 1000.0,
             renderWidth,
@@ -515,6 +574,10 @@ if (require.main === module) {
             stageParameters,
             gamepads,
           });
+        } else if (isMlPresenting) {
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray);
+
+          window.top.updateMlFrame(transformArray, projectionArray, viewportArray);
         }
 
         // poll for window events
@@ -539,6 +602,12 @@ if (require.main === module) {
               nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
 
               nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
+            } else if (mlGlContext === context) {
+              nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+
+              mlContext.SubmitFrame();
+
+              nativeWindow.blitFrameBuffer(mlFbo, 0, viewportArray[2], viewportArray[3], window.innerWidth, window.innerHeight);
             }
             nativeWindow.swapBuffers(context.getWindowHandle());
 
@@ -569,13 +638,13 @@ if (require.main === module) {
           _bindHeadlessWindow(window);
         });
     } else {
-      let window;
+      let window = null;
       const _bindReplWindow = newWindow => {
-        window = newWindow;
-        _bindWindow(window, _bindReplWindow);
-        if (!vm.isContext(window)) {
-          vm.createContext(window);
+        _bindWindow(newWindow, _bindReplWindow);
+        if (!vm.isContext(newWindow)) {
+          vm.createContext(newWindow);
         }
+        window = newWindow;
       };
       _bindReplWindow(exokit());
 

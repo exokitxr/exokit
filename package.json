@@ -34,9 +34,9 @@
     "node": "9"
   },
   "dependencies": {
-    "exokit-core": "0.0.157",
+    "exokit-core": "0.0.162",
     "isolator": "0.0.9",
-    "magicleap": "0.0.12",
+    "magicleap": "0.0.13",
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.19",
     "native-canvas-deps": "0.0.13",
