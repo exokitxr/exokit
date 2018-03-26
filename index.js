@@ -387,7 +387,6 @@ module.exports = exokit;
 
 // MAIN
 
-let window = null;
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
 const FPS = 90;
@@ -642,13 +641,13 @@ if (require.main === module) {
           _bindHeadlessWindow(window);
         });
     } else {
-      let window;
+      let window = null;
       const _bindReplWindow = newWindow => {
-        window = newWindow;
-        _bindWindow(window, _bindReplWindow);
-        if (!vm.isContext(window)) {
-          vm.createContext(window);
+        _bindWindow(newWindow, _bindReplWindow);
+        if (!vm.isContext(newWindow)) {
+          vm.createContext(newWindow);
         }
+        window = newWindow;
       };
       _bindReplWindow(exokit());
 
