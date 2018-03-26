@@ -456,10 +456,6 @@ if (require.main === module) {
     const _bindWindow = (window, newWindowCb) => {
       window.innerWidth = innerWidth;
       window.innerHeight = innerHeight;
-      window.navigator.setVRMode('ml');
-      /* if (nativeVr.VR_IsHmdPresent()) {
-        window.navigator.setVRMode('vr');
-      } */
       window.addEventListener('error', err => {
         console.warn('got error', err.error.stack);
       });
