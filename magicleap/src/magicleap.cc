@@ -14,14 +14,19 @@ MLLifecycleCallbacks lifecycle_callbacks = {};
 MLLifecycleErrorCode lifecycle_status;
 std::thread *initThread;
 uv_async_t async;
+bool initialized = false;
 Nan::Persistent<Function> initCb;
+
+bool isPresent() {
+  return initialized && lifecycle_status == MLLifecycleErrorCode_Success;
+}
 
 void asyncCb(uv_async_t *handle) {
   Nan::HandleScope scope;
 
   Local<Function> initCbFn = Nan::New(initCb);
   Local<Value> args[] = {
-    JS_BOOL(lifecycle_status == MLLifecycleErrorCode_Success),
+    JS_BOOL(isPresent()),
   };
   initCbFn->Call(Nan::Null(), sizeof(args)/sizeof(args[0]), args);
 }
@@ -52,6 +57,8 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("MLContext"));
+  Nan::SetMethod(ctor, "IsPresent", IsPresent);
+  Nan::SetMethod(ctor, "OnPresentChange", OnPresentChange);
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
@@ -67,32 +74,25 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
 NAN_METHOD(MLContext::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsFunction()) {
-    Local<Object> mlContextObj = info.This();
-    MLContext *mlContext = new MLContext();
-    mlContext->Wrap(mlContextObj);
+  Local<Object> mlContextObj = info.This();
+  MLContext *mlContext = new MLContext();
+  mlContext->Wrap(mlContextObj);
 
-    if (!initThread) {
-      Local<Function> initCbFn = Local<Function>::Cast(info[0]);
-      initCb.Reset(initCbFn);
+  if (!initThread) {
+    uv_async_init(uv_default_loop(), &async, asyncCb);
 
-      uv_async_init(uv_default_loop(), &async, asyncCb);
+    initThread = new std::thread(LifecycleInit);
 
-      initThread = new std::thread(LifecycleInit);
+    std::atexit([]() {
+      initThread->join();
+      delete initThread;
+      initThread = nullptr;
 
-      std::atexit([]() {
-        initThread->join();
-        delete initThread;
-        initThread = nullptr;
-
-        quick_exit(0);
-      });
-    }
-
-    info.GetReturnValue().Set(mlContextObj);
-  } else {
-    Nan::ThrowError("MLContext: invalid arguments");
+      quick_exit(0);
+    });
   }
+
+  info.GetReturnValue().Set(mlContextObj);
 }
 
 NAN_METHOD(MLContext::Init) {
@@ -226,6 +226,19 @@ NAN_METHOD(MLContext::SubmitFrame) {
   }
 }
 
+NAN_METHOD(MLContext::IsPresent) {
+  info.GetReturnValue().Set(JS_BOOL(isPresent()));
+}
+
+NAN_METHOD(MLContext::OnPresentChange) {
+  if (info[0]->IsFunction()) {
+    Local<Function> initCbFn = Local<Function>::Cast(info[0]);
+    initCb.Reset(initCbFn);
+  } else {
+    Nan::ThrowError("not implemented");
+  }
+}
+
 void MLContext::LifecycleInit() {
   application_context.dummy_value = 2;
 
@@ -234,6 +247,8 @@ void MLContext::LifecycleInit() {
   lifecycle_callbacks.on_resume = onResume;
 
   lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+
+  initialized = true;
 
   uv_async_send(&async);
 }
