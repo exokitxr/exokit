@@ -12,6 +12,7 @@
 #include <node.h>
 #include <nan/nan.h>
 #include <defines.h>
+#include <thread>
 #include <glfw.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
@@ -40,12 +41,13 @@ protected:
   static NAN_METHOD(Init);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(SubmitFrame);
-  static NAN_METHOD(Update);
+  static void LifecycleInit();
 
 protected:
-  struct application_context_t application_context;
   MLHandle graphics_client;
   MLHandle frame_handle;
+  MLHandle head_tracker;
+  MLHeadTrackingStaticData head_static_data;
   MLGraphicsVirtualCameraInfoArray virtual_camera_array;
 };
 

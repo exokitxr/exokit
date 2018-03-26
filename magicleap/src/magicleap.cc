@@ -1,6 +1,7 @@
 #ifdef MAGICLEAP
 
 #include <magicleap.h>
+#include <uv.h>
 
 using namespace v8;
 using namespace std;
@@ -8,6 +9,22 @@ using namespace std;
 namespace ml {
 
 const char application_name[] = "com.magicleap.simpleglapp";
+application_context_t application_context;
+MLLifecycleCallbacks lifecycle_callbacks = {};
+MLLifecycleErrorCode lifecycle_status;
+std::thread *initThread;
+uv_async_t async;
+Nan::Persistent<Function> initCb;
+
+void asyncCb(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  Local<Function> initCbFn = Nan::New(initCb);
+  Local<Value> args[] = {
+    JS_BOOL(lifecycle_status == MLLifecycleErrorCode_Success),
+  };
+  initCbFn->Call(Nan::Null(), sizeof(args)/sizeof(args[0]), args);
+}
 
 static void onStop(void* application_context) {
   ((struct application_context_t*)application_context)->dummy_value = 0;
@@ -38,8 +55,9 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "waitGetPoses", WaitGetPoses);
-  Nan::SetMethod(proto, "submitFrame", SubmitFrame);
+  Nan::SetMethod(proto, "Init", Init);
+  Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
+  Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
@@ -49,11 +67,32 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
 NAN_METHOD(MLContext::New) {
   Nan::HandleScope scope;
 
-  Local<Object> mlContextObj = info.This();
-  MLContext *mlContext = new MLContext();
-  mlContext->Wrap(mlContextObj);
+  if (info[0]->IsFunction()) {
+    Local<Object> mlContextObj = info.This();
+    MLContext *mlContext = new MLContext();
+    mlContext->Wrap(mlContextObj);
 
-  info.GetReturnValue().Set(mlContextObj);
+    if (!initThread) {
+      Local<Function> initCbFn = Local<Function>::Cast(info[0]);
+      initCb.Reset(initCbFn);
+
+      uv_async_init(uv_default_loop(), &async, asyncCb);
+
+      initThread = new std::thread(LifecycleInit);
+
+      std::atexit([]() {
+        initThread->join();
+        delete initThread;
+        initThread = nullptr;
+
+        quick_exit(0);
+      });
+    }
+
+    info.GetReturnValue().Set(mlContextObj);
+  } else {
+    Nan::ThrowError("MLContext: invalid arguments");
+  }
 }
 
 NAN_METHOD(MLContext::Init) {
@@ -62,15 +101,6 @@ NAN_METHOD(MLContext::Init) {
   Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
-  // let system know our app has started
-  MLLifecycleCallbacks lifecycle_callbacks = {};
-  lifecycle_callbacks.on_stop = onStop;
-  lifecycle_callbacks.on_pause = onPause;
-  lifecycle_callbacks.on_resume = onResume;
-
-  mlContext->application_context.dummy_value = 2;
-
-  MLLifecycleErrorCode lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&mlContext->application_context);
   if (lifecycle_status != MLLifecycleErrorCode_Success) {
     ML_LOG(Error, "%s: Failed to initialize lifecycle.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
@@ -107,10 +137,9 @@ NAN_METHOD(MLContext::Init) {
     return;
   }
 
-  MLHandle head_tracker = MLHeadTrackingCreate();
-  MLHeadTrackingStaticData head_static_data;
-  if (MLHandleIsValid(head_tracker)) {
-    MLHeadTrackingGetStaticData(head_tracker, &head_static_data);
+  mlContext->head_tracker = MLHeadTrackingCreate();
+  if (MLHandleIsValid(mlContext->head_tracker)) {
+    MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data);
   } else {
     ML_LOG(Error, "%s: Failed to create head tracker.", application_name);
   }
@@ -123,10 +152,12 @@ NAN_METHOD(MLContext::Init) {
 NAN_METHOD(MLContext::WaitGetPoses) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsUint32Array() && info[1]->IsUint32Array()) {
-    if (mlContext->application_context.dummy_value) {
-      Local<Uint32Array> framebuffersArray = Local<Uint32Array>::Cast(info[0]);
-      Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[1]);
+  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array()) {
+    if (application_context.dummy_value) {
+      Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
+      Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
+      Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[2]);
+      Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[3]);
 
       MLGraphicsFrameParams frame_params;
 
@@ -144,8 +175,25 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
       }
 
-      framebuffersArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
-      framebuffersArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
+      framebufferArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
+      framebufferArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
+
+      for (int i = 0; i < 2; i++) {
+        const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
+        const MLTransform &transform = cameraInfo.transform;
+        transformArray->Set(i*7 + 0, JS_NUM(transform.position.x));
+        transformArray->Set(i*7 + 1, JS_NUM(transform.position.y));
+        transformArray->Set(i*7 + 2, JS_NUM(transform.position.z));
+        transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
+        transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
+        transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
+        transformArray->Set(i*7 + 6, JS_NUM(transform.rotation.w));
+
+        const MLMat4f &projection = cameraInfo.projection;
+        for (int j = 0; j < 16; j++) {
+          projectionArray->Set(i*16 + j, JS_NUM(projection.matrix_colmajor[j]));
+        }
+      }
 
       const MLRectf& viewport = mlContext->virtual_camera_array.viewport;
       viewportArray->Set(0, JS_INT((int)viewport.x));
@@ -163,9 +211,9 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  for (int camera = 0; camera < 2; ++camera) {
+  for (int i = 0; i < 2; i++) {
     MLStatus out_status;
-    MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, mlContext->virtual_camera_array.virtual_cameras[camera].sync_object, &out_status);
+    MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, mlContext->virtual_camera_array.virtual_cameras[i].sync_object, &out_status);
     if (out_status != MLStatus_OK) {
       ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", out_status);
     }
@@ -176,6 +224,18 @@ NAN_METHOD(MLContext::SubmitFrame) {
   if (out_status != MLStatus_OK) {
     ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
   }
+}
+
+void MLContext::LifecycleInit() {
+  application_context.dummy_value = 2;
+
+  lifecycle_callbacks.on_stop = onStop;
+  lifecycle_callbacks.on_pause = onPause;
+  lifecycle_callbacks.on_resume = onResume;
+
+  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+
+  uv_async_send(&async);
 }
 
 }
