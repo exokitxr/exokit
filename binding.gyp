@@ -122,6 +122,10 @@
                 {
                   'destination': '<(module_root_dir)/build/Release/',
                   'files': [
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/assimp-vc140-mt.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/GesturesMixer.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/glfw3.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/InputControllerMixer.dll',
                     '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_app_analytics.dll',
                     '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_audio.dll',
                     '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_camera.dll',
@@ -146,6 +150,14 @@
                     '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_screens.dll',
                     '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_secure_storage.dll',
                     '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_sharedfile.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/ml_virtual_device.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/OrientationMixer.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/PassthroughMixer.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/portaudio_x64.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/PositionMixer.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/protobuf-cpp-full.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/z.dll',
+                    '<(module_root_dir)/node_modules/magicleap/lib/win64/zmq.dll',
                   ],
                 }
               ],
