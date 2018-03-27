@@ -145,10 +145,7 @@ NAN_METHOD(MLContext::Init) {
 
   ML_LOG(Info, "%s: Start loop.", application_name);
 
-  GLuint framebuffers[2];
-  glGenFramebuffers(2, framebuffers);
-  mlContext->framebuffer_id = framebuffers[0];
-  mlContext->temp_framebuffer_id = framebuffers[1];
+  glGenFramebuffers(1, &mlContext->framebuffer_id);
 
   info.GetReturnValue().Set(JS_BOOL(true));
 }
@@ -226,12 +223,8 @@ NAN_METHOD(MLContext::SubmitFrame) {
     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, camera);
     // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, camera);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, mlContext->temp_framebuffer_id);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0);
-    // glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0);
-
     glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->temp_framebuffer_id);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
 
     glBlitFramebuffer(0, 0,
       width, height,
