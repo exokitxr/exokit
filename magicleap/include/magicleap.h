@@ -47,6 +47,8 @@ protected:
 
 protected:
   MLHandle graphics_client;
+  GLuint framebuffer_id;
+  GLuint temp_framebuffer_id;
   MLHandle frame_handle;
   MLHandle head_tracker;
   MLHeadTrackingStaticData head_static_data;

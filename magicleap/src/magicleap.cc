@@ -145,6 +145,11 @@ NAN_METHOD(MLContext::Init) {
 
   ML_LOG(Info, "%s: Start loop.", application_name);
 
+  GLuint framebuffers[2];
+  glGenFramebuffers(2, framebuffers);
+  mlContext->framebuffer_id = framebuffers[0];
+  mlContext->temp_framebuffer_id = framebuffers[1];
+
   info.GetReturnValue().Set(JS_BOOL(true));
 }
 
@@ -209,15 +214,40 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  for (int i = 0; i < 2; i++) {
-    MLStatus out_status;
-    MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, mlContext->virtual_camera_array.virtual_cameras[i].sync_object, &out_status);
+  GLuint src_framebuffer_id = info[0]->Uint32Value();
+  unsigned int width = info[1]->Uint32Value();
+  unsigned int height = info[2]->Uint32Value();
+
+  const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
+
+  MLStatus out_status;
+  for (int camera = 0; camera < 2; ++camera) {
+    glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
+    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, camera);
+    // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, camera);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, mlContext->temp_framebuffer_id);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0);
+    // glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->temp_framebuffer_id);
+
+    glBlitFramebuffer(0, 0,
+      width, height,
+      viewport.x, viewport.y,
+      viewport.w * 2, viewport.h,
+      GL_COLOR_BUFFER_BIT,
+      GL_LINEAR);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, mlContext->virtual_camera_array.virtual_cameras[camera].sync_object, &out_status);
     if (out_status != MLStatus_OK) {
       ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", out_status);
     }
   }
 
-  MLStatus out_status;
   MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle, &out_status);
   if (out_status != MLStatus_OK) {
     ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
