@@ -226,10 +226,10 @@ NAN_METHOD(MLContext::SubmitFrame) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
 
-    glBlitFramebuffer(0, 0,
-      width, height,
+    glBlitFramebuffer(camera == 0 ? 0 : width/2, 0,
+      camera == 0 ? width/2 : width, height,
       viewport.x, viewport.y,
-      viewport.w * 2, viewport.h,
+      viewport.w, viewport.h,
       GL_COLOR_BUFFER_BIT,
       GL_LINEAR);
 
