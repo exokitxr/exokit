@@ -98,7 +98,6 @@ NAN_METHOD(MLContext::New) {
 NAN_METHOD(MLContext::Init) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   if (lifecycle_status != MLLifecycleErrorCode_Success) {
