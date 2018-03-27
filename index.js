@@ -242,6 +242,7 @@ nativeVr.exitPresent = function() {
 let mlContext = null;
 let isMlPresenting = false;
 let mlFbo = null;
+let mlTex = null;
 let mlGlContext = null;
 if (nativeMl) {
   mlContext = new nativeMl();
@@ -260,15 +261,18 @@ if (nativeMl) {
         if (initResult) {
           isMlPresenting = true;
 
-          mlFbo = nativeWindow.createFramebuffer();
-          nativeWindow.bindFrameBuffer(mlFbo);
+          const [fbo, tex] = nativeWindow.createRenderTarget(window.innerWidth, window.innerHeight, 1);
+          mlFbo = fbo;
+          mlTex = tex;
 
           mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray);
-          for (let i = 0; i < 2; i++) {
+          /* for (let i = 0; i < 2; i++) {
             nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
-          }
+          } */
           window.top.updateMlFrame(transformArray, projectionArray, viewportArray);
-          mlContext.SubmitFrame();
+          mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
+
+          nativeWindow.bindFrameBuffer(mlFbo);
 
           mlGlContext = context;
 
@@ -578,6 +582,8 @@ if (require.main === module) {
           mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray);
 
           window.top.updateMlFrame(transformArray, projectionArray, viewportArray);
+
+          // nativeWindow.bindFrameBuffer(mlFbo);
         }
 
         // poll for window events
@@ -605,9 +611,11 @@ if (require.main === module) {
             } else if (mlGlContext === context) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-              mlContext.SubmitFrame();
+              mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
-              nativeWindow.blitFrameBuffer(mlFbo, 0, viewportArray[2], viewportArray[3], window.innerWidth, window.innerHeight);
+              nativeWindow.blitFrameBuffer(mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight);
+
+              nativeWindow.bindFrameBuffer(mlFbo);
             }
             nativeWindow.swapBuffers(context.getWindowHandle());
 
