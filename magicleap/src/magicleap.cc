@@ -158,9 +158,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[2]);
       Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[3]);
 
-      MLGraphicsFrameParams frame_params;
-
       MLStatus out_status;
+      MLGraphicsFrameParams frame_params;
       if (!MLGraphicsInitFrameParams(&frame_params, &out_status)) {
         ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
       }
