@@ -123,7 +123,7 @@ NAN_METHOD(MLContext::Init) {
     return;
   }
 
-  MLGraphicsOptions graphics_options = { 0, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float };
+  MLGraphicsOptions graphics_options = { MLGraphicsFlags_NoDepth, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float };
   MLHandle opengl_context = reinterpret_cast<MLHandle>(window);
   mlContext->graphics_client = ML_INVALID_HANDLE;
   MLStatus graphics_create_status = MLStatus_OK;
