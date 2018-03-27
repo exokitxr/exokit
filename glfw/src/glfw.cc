@@ -825,14 +825,14 @@ NAN_METHOD(BlitFrameBuffer) {
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
 
-  glBlitFramebuffer(0,0,
+  glBlitFramebuffer(0, 0,
     sw, sh,
-    0,0,
+    0, 0,
     dw, dh,
-    GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+    GL_COLOR_BUFFER_BIT,
     GL_LINEAR);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0); // XXX
 }
 
 void SetCurrentWindowContext(GLFWwindow *window) {
