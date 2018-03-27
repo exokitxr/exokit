@@ -786,7 +786,7 @@ NAN_METHOD(DestroyRenderTarget) {
   }
 }
 
-NAN_METHOD(CreateFramebuffer) {
+/* NAN_METHOD(CreateFramebuffer) {
   Nan::HandleScope scope;
 
   GLuint fbo;
@@ -805,7 +805,7 @@ NAN_METHOD(FramebufferTextureLayer) {
 
   glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex, 0, layer);
   glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTex, 0, layer);
-}
+} */
 
 NAN_METHOD(BindFrameBuffer) {
   Nan::HandleScope scope;
@@ -1543,8 +1543,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
   Nan::SetMethod(target, "createRenderTarget", glfw::CreateRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", glfw::DestroyRenderTarget);
-  Nan::SetMethod(target, "createFramebuffer", glfw::CreateFramebuffer);
-  Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
+  // Nan::SetMethod(target, "createFramebuffer", glfw::CreateFramebuffer);
+  // Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
   Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
