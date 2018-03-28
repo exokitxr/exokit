@@ -821,6 +821,9 @@ NAN_METHOD(BlitFrameBuffer) {
   int sh = info[3]->Uint32Value();
   int dw = info[4]->Uint32Value();
   int dh = info[5]->Uint32Value();
+  bool color = info[6]->BooleanValue();
+  bool depth = info[7]->BooleanValue();
+  bool stencil = info[8]->BooleanValue();
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
@@ -829,7 +832,9 @@ NAN_METHOD(BlitFrameBuffer) {
     sw, sh,
     0, 0,
     dw, dh,
-    GL_COLOR_BUFFER_BIT,
+    (color ? GL_COLOR_BUFFER_BIT : 0) |
+    (depth ? GL_DEPTH_BUFFER_BIT : 0) |
+    (stencil ? GL_STENCIL_BUFFER_BIT : 0),
     GL_LINEAR);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0); // XXX
