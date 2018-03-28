@@ -602,10 +602,10 @@ if (require.main === module) {
             if (vrPresentState.glContext === context) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-              nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight);
+              nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, true, true);
               vrPresentState.compositor.Submit(vrPresentState.tex);
 
-              nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight);
+              nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight, true, true, true);
 
               nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
             } else if (mlGlContext === context) {
@@ -613,7 +613,7 @@ if (require.main === module) {
 
               mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
-              nativeWindow.blitFrameBuffer(mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight);
+              nativeWindow.blitFrameBuffer(mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
 
               nativeWindow.bindFrameBuffer(mlFbo);
             }
