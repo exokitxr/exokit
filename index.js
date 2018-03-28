@@ -66,6 +66,8 @@ nativeGl.viewport = function() {
 
 // CALLBACKS
 
+const dataPath = __dirname;
+
 const canvasSymbol = Symbol();
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
@@ -638,7 +640,9 @@ if (require.main === module) {
 
     const url = process.argv[2];
     if (url) {
-      return exokit.load(url)
+      return exokit.load(url, {
+        dataPath,
+      })
         .then(window => {
           const _bindHeadlessWindow = newWindow => {
             _bindWindow(newWindow, _bindHeadlessWindow);
@@ -654,7 +658,9 @@ if (require.main === module) {
         }
         window = newWindow;
       };
-      _bindReplWindow(exokit());
+      _bindReplWindow(exokit({
+        dataPath,
+      }));
 
       const _getPrompt = os.platform() !== 'win32' ?
         () => `[${emojis[Math.floor(Math.random() * emojis.length)]}] `
