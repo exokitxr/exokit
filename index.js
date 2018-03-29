@@ -532,6 +532,12 @@ if (require.main === module) {
           // build gamepads data
           vrPresentState.system.GetControllerState(0, localGamepadArray);
           if (!isNaN(localGamepadArray[0])) {
+            // matrix
+            localMatrix.fromArray(localFloat32Array2);
+            localMatrix.decompose(localVector, localQuaternion, localVector2);
+            localVector.toArray(leftGamepad.position);
+            localQuaternion.toArray(leftGamepad.orientation);
+            
             leftGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
             leftGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
             leftGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
@@ -552,6 +558,12 @@ if (require.main === module) {
 
           vrPresentState.system.GetControllerState(1, localGamepadArray);
           if (!isNaN(localGamepadArray[0])) {
+            // matrix
+            localMatrix.fromArray(localFloat32Array3);
+            localMatrix.decompose(localVector, localQuaternion, localVector2);
+            localVector.toArray(rightGamepad.position);
+            localQuaternion.toArray(rightGamepad.orientation);
+            
             rightGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
             rightGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
             rightGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
