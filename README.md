@@ -103,4 +103,4 @@ The core is Javascript and is platform-agnostic. Porting work is restricted to t
 
 - [Avaer](//github.com/modulesio) - Tech Lead
 - [Shawn](//github.com/shawwn) - Tech, Business
-- [Noah](//github.com/Noah_A_S) - ExoKit Community Manager
+- [Noah](//github.com/NoahSchiffman) - ExoKit Community Manager
