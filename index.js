@@ -611,7 +611,7 @@ if (require.main === module) {
 
               nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight, true, false, false);
 
-              nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
+              nativeWindow.bindFrameBuffer(0);
             } else if (mlGlContext === context) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
