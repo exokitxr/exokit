@@ -580,12 +580,14 @@ if (require.main === module) {
             stageParameters,
             gamepads,
           });
+          
+          nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
         } else if (isMlPresenting) {
           mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray);
 
           window.top.updateMlFrame(transformArray, projectionArray, viewportArray);
 
-          // nativeWindow.bindFrameBuffer(mlFbo);
+          nativeWindow.bindFrameBuffer(mlFbo);
         }
 
         // poll for window events
