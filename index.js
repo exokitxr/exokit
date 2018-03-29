@@ -535,8 +535,8 @@ if (require.main === module) {
             // matrix
             localMatrix.fromArray(localFloat32Array2);
             localMatrix.decompose(localVector, localQuaternion, localVector2);
-            localVector.toArray(leftGamepad.position);
-            localQuaternion.toArray(leftGamepad.orientation);
+            localVector.toArray(leftGamepad.pose.position);
+            localQuaternion.toArray(leftGamepad.pose.orientation);
             
             leftGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
             leftGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
@@ -561,8 +561,8 @@ if (require.main === module) {
             // matrix
             localMatrix.fromArray(localFloat32Array3);
             localMatrix.decompose(localVector, localQuaternion, localVector2);
-            localVector.toArray(rightGamepad.position);
-            localQuaternion.toArray(rightGamepad.orientation);
+            localVector.toArray(rightGamepad.pose.position);
+            localQuaternion.toArray(rightGamepad.pose.orientation);
             
             rightGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
             rightGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
