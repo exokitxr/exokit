@@ -267,7 +267,6 @@ if (nativeMl) {
           mlFbo = fbo;
           mlTex = tex;
 
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray);
           /* for (let i = 0; i < 2; i++) {
             nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
           } */
@@ -537,7 +536,7 @@ if (require.main === module) {
             localMatrix.decompose(localVector, localQuaternion, localVector2);
             localVector.toArray(leftGamepad.pose.position);
             localQuaternion.toArray(leftGamepad.pose.orientation);
-            
+
             leftGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
             leftGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
             leftGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
@@ -563,7 +562,7 @@ if (require.main === module) {
             localMatrix.decompose(localVector, localQuaternion, localVector2);
             localVector.toArray(rightGamepad.pose.position);
             localQuaternion.toArray(rightGamepad.pose.orientation);
-            
+
             rightGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
             rightGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
             rightGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
@@ -592,7 +591,7 @@ if (require.main === module) {
             stageParameters,
             gamepads,
           });
-          
+
           nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
         } else if (isMlPresenting) {
           mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray);
