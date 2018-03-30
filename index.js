@@ -143,7 +143,7 @@ const vrPresentState = {
 let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
-const depthFar = 1000.0;
+const depthFar = 10000.0;
 const _requestContext = () => {
   if (!vrPresentState.vrContext) {
     vrPresentState.vrContext = nativeVr.getContext();
@@ -588,8 +588,8 @@ if (require.main === module) {
 
           // update vr frame
           window.top.updateVrFrame({
-            depthNear: 0.1,
-            depthFar: 1000.0,
+            depthNear,
+            depthFar,
             renderWidth,
             renderHeight,
             frameData,
