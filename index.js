@@ -115,6 +115,8 @@ const framebufferArray = new Uint32Array(2);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
 const viewportArray = new Uint32Array(4);
+const planesArray = new Float32Array((3 + 4 + 2) * 32);
+const numPlanesArray = new Uint32Array(1);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -267,10 +269,13 @@ if (nativeMl) {
           mlFbo = fbo;
           mlTex = tex;
 
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray);
+
           /* for (let i = 0; i < 2; i++) {
             nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
           } */
-          window.top.updateMlFrame(transformArray, projectionArray, viewportArray);
+
+          window.top.updateMlFrame(transformArray, projectionArray, viewportArray, planesArray, numPlanesArray[0]);
           mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
           nativeWindow.bindFrameBuffer(mlFbo);
@@ -594,9 +599,9 @@ if (require.main === module) {
 
           nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
         } else if (isMlPresenting) {
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray);
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray);
 
-          window.top.updateMlFrame(transformArray, projectionArray, viewportArray);
+          window.top.updateMlFrame(transformArray, projectionArray, viewportArray, planesArray, numPlanesArray[0]);
 
           nativeWindow.bindFrameBuffer(mlFbo);
         }
