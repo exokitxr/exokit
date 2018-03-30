@@ -17,18 +17,21 @@
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
 #include <ml_perception.h>
+#include <ml_planes.h>
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
 
 using namespace v8;
 using namespace node;
 
+#define MAX_NUM_PLANES 32
+
 namespace ml {
   
 struct application_context_t {
   int dummy_value;
 };
-  
+
 class MLContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
@@ -52,6 +55,11 @@ protected:
   MLHandle head_tracker;
   MLHeadTrackingStaticData head_static_data;
   MLGraphicsVirtualCameraInfoArray virtual_camera_array;
+  MLHandle planesHandle;
+  MLHandle planesQuery;
+  MLHandle planesQueryHandle;
+  MLPlane planes[MAX_NUM_PLANES];
+  uint32_t numPlanes;
 };
 
 }

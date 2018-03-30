@@ -46,7 +46,7 @@ static void onResume(void* application_context) {
   ML_LOG(Info, "%s: On resume called.", application_name);
 }
 
-MLContext::MLContext() {}
+MLContext::MLContext() : planesQueryHandle(ML_INVALID_HANDLE) {}
 
 MLContext::~MLContext() {}
 
@@ -147,18 +147,25 @@ NAN_METHOD(MLContext::Init) {
 
   glGenFramebuffers(1, &mlContext->framebuffer_id);
 
+  mlContext->planesHandle = MLPlanesCreate();
+  if (!MLHandleIsValid(mlContext->planesHandle)) {
+    ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
+  }
+
   info.GetReturnValue().Set(JS_BOOL(true));
 }
 
 NAN_METHOD(MLContext::WaitGetPoses) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array()) {
+  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array()) {
     if (application_context.dummy_value) {
       Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
       Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[2]);
       Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[3]);
+      Local<Float32Array> planesArray = Local<Float32Array>::Cast(info[4]);
+      Local<Uint32Array> numPlanesArray = Local<Uint32Array>::Cast(info[5]);
 
       MLStatus out_status;
       MLGraphicsFrameParams frame_params;
@@ -200,6 +207,34 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       viewportArray->Set(1, JS_INT((int)viewport.y));
       viewportArray->Set(2, JS_INT((unsigned int)viewport.w));
       viewportArray->Set(3, JS_INT((unsigned int)viewport.h));
+
+      if (MLHandleIsValid(mlContext->planesQueryHandle)) {
+        MLPlanesQueryResult planesQueryResult = MLPlanesQueryGetResults(mlContext->planesHandle, mlContext->planesQueryHandle, mlContext->planes, &mlContext->numPlanes);
+        if (planesQueryResult == MLPlanesQueryResult_Success) {
+          for (size_t i = 0; i < mlContext->numPlanes; i++) {
+            const MLPlane &plane = mlContext->planes[i];
+            size_t baseIndex = i * (3 + 4 + 2);
+            planesArray->Set(baseIndex + 0, JS_NUM(plane.position.x));
+            planesArray->Set(baseIndex + 1, JS_NUM(plane.position.y));
+            planesArray->Set(baseIndex + 2, JS_NUM(plane.position.z));
+            planesArray->Set(baseIndex + 3, JS_NUM(plane.rotation.x));
+            planesArray->Set(baseIndex + 4, JS_NUM(plane.rotation.y));
+            planesArray->Set(baseIndex + 5, JS_NUM(plane.rotation.z));
+            planesArray->Set(baseIndex + 6, JS_NUM(plane.rotation.w));
+            planesArray->Set(baseIndex + 7, JS_NUM(plane.width));
+            planesArray->Set(baseIndex + 8, JS_NUM(plane.height));
+          }
+          numPlanesArray->Set(0, JS_INT(mlContext->numPlanes));
+
+          mlContext->planesQueryHandle = ML_INVALID_HANDLE;
+        } else if (planesQueryResult == MLPlanesQueryResult_Failure) {
+          mlContext->planesQueryHandle = ML_INVALID_HANDLE;
+        } else if (planesQueryResult == MLPlanesQueryResult_Pending) {
+          // nothing, we wait
+        } else {
+          ML_LOG(Error, "MLPlanesQueryGetResults complained: %d %d %d %d %d", planesQueryResult, MLPlanesQueryResult_Success, MLPlanesQueryResult_Failure, MLPlanesQueryResult_Pending, MLPlanesQueryResult_Ensure32Bits);
+        }
+      }
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
     }
@@ -244,6 +279,28 @@ NAN_METHOD(MLContext::SubmitFrame) {
   MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle, &out_status);
   if (out_status != MLStatus_OK) {
     ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
+  }
+
+  if (!MLHandleIsValid(mlContext->planesQueryHandle)) {
+    MLPlanesQuery query;
+    query.flags = MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All;
+    query.bounds_center.x = 0;
+    query.bounds_center.y = 0;
+    query.bounds_center.z = 0;
+    query.bounds_rotation.x = 0;
+    query.bounds_rotation.y = 0;
+    query.bounds_rotation.z = 0;
+    query.bounds_rotation.w = 1;
+    query.bounds_extents.x = 10;
+    query.bounds_extents.y = 10;
+    query.bounds_extents.z = 10;
+    query.min_hole_length = 0.5;
+    query.min_plane_area = 0.25;
+    query.max_results = sizeof(mlContext->planes)/sizeof(mlContext->planes[0]);
+    mlContext->planesQueryHandle = MLPlanesQueryBegin(mlContext->planesHandle, &query);
+    if (!MLHandleIsValid(mlContext->planesQueryHandle)) {
+      ML_LOG(Error, "%s: Failed to query planes.", application_name);
+    }
   }
 }
 
