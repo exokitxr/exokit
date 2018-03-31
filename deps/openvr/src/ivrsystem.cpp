@@ -228,21 +228,11 @@ NAN_METHOD(IVRSystem::GetProjectionRaw)
   float fLeft, fRight, fTop, fBottom;
   obj->self_->GetProjectionRaw(eEye, &fLeft, &fRight, &fTop, &fBottom);
 
-  Local<Object> result = Nan::New<Object>();
-  {
-    Local<String> left_prop = Nan::New<String>("left").ToLocalChecked();
-    Nan::Set(result, left_prop, Nan::New<Number>(fLeft));
-
-    Local<String> right_prop = Nan::New<String>("right").ToLocalChecked();
-    Nan::Set(result, right_prop, Nan::New<Number>(fRight));
-
-    Local<String> top_prop = Nan::New<String>("top").ToLocalChecked();
-    Nan::Set(result, top_prop, Nan::New<Number>(fTop));
-
-    Local<String> bottom_prop = Nan::New<String>("bottom").ToLocalChecked();
-    Nan::Set(result, bottom_prop, Nan::New<Number>(fBottom));
-  }
-  info.GetReturnValue().Set(result);
+  Local<Float32Array> float32Array = Local<Float32Array>::Cast(info[1]);
+  float32Array->Set(0, Nan::New<Number>(fLeft));
+  float32Array->Set(1, Nan::New<Number>(fRight));
+  float32Array->Set(2, Nan::New<Number>(fTop));
+  float32Array->Set(3, Nan::New<Number>(fBottom));
 }
 
 //=============================================================================
