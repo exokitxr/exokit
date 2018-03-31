@@ -88,19 +88,19 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const windowHandle = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight, _isAttached(canvas));
   gl.setWindowHandle(windowHandle);
 
-  const onparent = () => {
+  const ondomchange = () => {
     if (_isAttached(canvas)) {
       nativeWindow.show(windowHandle);
     } else {
       nativeWindow.hide(windowHandle);
     }
   };
-  canvas.on('parent', onparent);
+  canvas.ownerDocument.on('domchange', ondomchange);
 
   gl.destroy = (destroy => function() {
     nativeWindow.destroy(windowHandle);
     canvas._context = null;
-    canvas.removeListener('parent', onparent);
+    canvas.ownerDocument.removeListener('domchange', ondomchange);
   })(gl.destroy);
 
   contexts.push(gl);
