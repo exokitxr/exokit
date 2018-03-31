@@ -72,12 +72,14 @@ const canvasSymbol = Symbol();
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 const _isAttached = el => {
-  if (el === el.ownerDocument.documentElement) {
-    return true;
-  } else if (el.parentNode) {
-    return _isAttached(el.parentNode);
-  } else {
-    return false;
+  for (;;) {
+    if (el === el.ownerDocument.documentElement) {
+      return true;
+    } else if (el.parentNode) {
+      el = el.parentNode;
+    } else {
+      return false;
+    }
   }
 };
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
