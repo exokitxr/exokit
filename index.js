@@ -109,6 +109,8 @@ const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array4 = new Float32Array(16);
+const localFovArray = new Float32Array(4);
+const localFovArray2 = new Float32Array(4);
 const localGamepadArray = new Float32Array(16);
 
 const maxNumPlanes = 32 * 3;
@@ -512,23 +514,39 @@ if (require.main === module) {
           vrPresentState.system.GetEyeToHeadTransform(0, localFloat32Array4);
           localMatrix2.fromArray(localFloat32Array4)
             .getInverse(localMatrix2)
-            .multiply(hmdMatrix)
-            .toArray(frameData.leftViewMatrix);
+            .multiply(hmdMatrix);
+          localMatrix2.toArray(frameData.leftViewMatrix);
+          localMatrix2.decompose(localVector, localQuaternion, localVector2);
+          const leftOffset = localVector.length();
 
           vrPresentState.system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.leftProjectionMatrix.set(localFloat32Array4);
+          
+          vrPresentState.system.GetProjectionRaw(0, localFovArray);
+          for (let i = 0; i < localFovArray.length; i++) {
+            localFovArray[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
+          }
+          const leftFov = localFovArray;
 
           vrPresentState.system.GetEyeToHeadTransform(1, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           localMatrix2.fromArray(localFloat32Array4)
             .getInverse(localMatrix2)
-            .multiply(hmdMatrix)
-            .toArray(frameData.rightViewMatrix);
+            .multiply(hmdMatrix);
+          localMatrix2.toArray(frameData.rightViewMatrix);
+          localMatrix2.decompose(localVector, localQuaternion, localVector2);
+          const rightOffset = localVector.length();
 
           vrPresentState.system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.rightProjectionMatrix.set(localFloat32Array4);
+          
+          vrPresentState.system.GetProjectionRaw(1, localFovArray2);
+          for (let i = 0; i < localFovArray2.length; i++) {
+            localFovArray2[i] = Math.atan(localFovArray2[i]) / Math.PI * 180;
+          }
+          const rightFov = localFovArray2;
 
           // build stage parameters
           vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
@@ -594,6 +612,10 @@ if (require.main === module) {
             depthFar,
             renderWidth,
             renderHeight,
+            leftOffset,
+            leftFov,
+            rightOffset,
+            rightFov,
             frameData,
             stageParameters,
             gamepads,
