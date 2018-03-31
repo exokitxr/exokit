@@ -676,7 +676,7 @@ if (require.main === module) {
         }
         window = newWindow;
       };
-      _bindReplWindow(exokit({
+      _bindReplWindow(exokit('', {
         dataPath,
       }));
 
