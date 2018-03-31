@@ -205,7 +205,7 @@ NAN_METHOD(IVRSystem::GetProjectionRaw)
 {
   IVRSystem* obj = ObjectWrap::Unwrap<IVRSystem>(info.Holder());
 
-  if (info.Length() != 1)
+  if (info.Length() != 2)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
