@@ -1010,6 +1010,8 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
 
   context->Resize(w, h);
 
+  context->dataArray.Reset();
+
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
