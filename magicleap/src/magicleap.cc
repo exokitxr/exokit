@@ -31,6 +31,71 @@ void asyncCb(uv_async_t *handle) {
   initCbFn->Call(Nan::Null(), sizeof(args)/sizeof(args[0]), args);
 }
 
+void makePlanesQueryer(MLHandle &planesHandle) {
+  planesHandle = MLPlanesCreate();
+  if (!MLHandleIsValid(planesHandle)) {
+    ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
+  }
+}
+void beginPlanesQuery(MLHandle &planesHandle, MLHandle &planesQueryHandle, MLPlanesQueryFlags flags) {
+  if (!MLHandleIsValid(planesQueryHandle)) {
+    MLPlanesQuery query;
+    query.flags = flags;
+    query.bounds_center.x = 0;
+    query.bounds_center.y = 0;
+    query.bounds_center.z = 0;
+    query.bounds_rotation.x = 0;
+    query.bounds_rotation.y = 0;
+    query.bounds_rotation.z = 0;
+    query.bounds_rotation.w = 1;
+    query.bounds_extents.x = 10;
+    query.bounds_extents.y = 10;
+    query.bounds_extents.z = 10;
+    query.min_hole_length = 0.5;
+    query.min_plane_area = 0.25;
+    query.max_results = MAX_NUM_PLANES;
+
+    planesQueryHandle = MLPlanesQueryBegin(planesHandle, &query);
+    if (!MLHandleIsValid(planesQueryHandle)) {
+      ML_LOG(Error, "%s: Failed to query planes.", application_name);
+    }
+  }
+}
+void endPlanesQuery(MLHandle &planesHandle, MLHandle &planesQueryHandle, MLPlane *planes, uint32_t *numPlanes) {
+  if (MLHandleIsValid(planesQueryHandle)) {
+    MLPlanesQueryResult planesQueryResult = MLPlanesQueryGetResults(planesHandle, planesQueryHandle, planes, numPlanes);
+    if (planesQueryResult == MLPlanesQueryResult_Success) {
+      planesQueryHandle = ML_INVALID_HANDLE;
+    } else if (planesQueryResult == MLPlanesQueryResult_Failure) {
+      planesQueryHandle = ML_INVALID_HANDLE;
+
+      ML_LOG(Error, "MLPlanesQueryGetResults failed: %d %d %d %d %d", planesQueryResult, MLPlanesQueryResult_Success, MLPlanesQueryResult_Failure, MLPlanesQueryResult_Pending, MLPlanesQueryResult_Ensure32Bits);
+    } else if (planesQueryResult == MLPlanesQueryResult_Pending) {
+      // nothing, we wait
+    } else {
+      ML_LOG(Error, "MLPlanesQueryGetResults complained: %d %d %d %d %d", planesQueryResult, MLPlanesQueryResult_Success, MLPlanesQueryResult_Failure, MLPlanesQueryResult_Pending, MLPlanesQueryResult_Ensure32Bits);
+    }
+  }
+}
+void readPlanesQuery(MLPlane *planes, uint32_t numPlanes, int planeType, Local<Float32Array> &planesArray, uint32_t *planesIndex) {
+  for (int i = 0; i < numPlanes; i++) {
+    const MLPlane &plane = planes[i];
+    uint32_t baseIndex = (*planesIndex) * PLANE_ENTRY_SIZE;
+    planesArray->Set(baseIndex + 0, JS_NUM(plane.position.x));
+    planesArray->Set(baseIndex + 1, JS_NUM(plane.position.y));
+    planesArray->Set(baseIndex + 2, JS_NUM(plane.position.z));
+    planesArray->Set(baseIndex + 3, JS_NUM(plane.rotation.x));
+    planesArray->Set(baseIndex + 4, JS_NUM(plane.rotation.y));
+    planesArray->Set(baseIndex + 5, JS_NUM(plane.rotation.z));
+    planesArray->Set(baseIndex + 6, JS_NUM(plane.rotation.w));
+    planesArray->Set(baseIndex + 7, JS_NUM(plane.width));
+    planesArray->Set(baseIndex + 8, JS_NUM(plane.height));
+    planesArray->Set(baseIndex + 9, JS_INT(planeType));
+
+   (*planesIndex)++;
+  }
+}
+
 static void onStop(void* application_context) {
   ((struct application_context_t*)application_context)->dummy_value = 0;
   ML_LOG(Info, "%s: On stop called.", application_name);
@@ -46,7 +111,14 @@ static void onResume(void* application_context) {
   ML_LOG(Info, "%s: On resume called.", application_name);
 }
 
-MLContext::MLContext() : planesQueryHandle(ML_INVALID_HANDLE) {}
+MLContext::MLContext() :
+  planesFloorQueryHandle(ML_INVALID_HANDLE),
+  planesWallQueryHandle(ML_INVALID_HANDLE),
+  planesCeilingQueryHandle(ML_INVALID_HANDLE),
+  numFloorPlanes(0),
+  numWallPlanes(0),
+  numCeilingPlanes(0)
+  {}
 
 MLContext::~MLContext() {}
 
@@ -147,10 +219,9 @@ NAN_METHOD(MLContext::Init) {
 
   glGenFramebuffers(1, &mlContext->framebuffer_id);
 
-  mlContext->planesHandle = MLPlanesCreate();
-  if (!MLHandleIsValid(mlContext->planesHandle)) {
-    ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
-  }
+  makePlanesQueryer(mlContext->planesFloorHandle);
+  makePlanesQueryer(mlContext->planesWallHandle);
+  makePlanesQueryer(mlContext->planesCeilingHandle);
 
   info.GetReturnValue().Set(JS_BOOL(true));
 }
@@ -208,33 +279,16 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       viewportArray->Set(2, JS_INT((unsigned int)viewport.w));
       viewportArray->Set(3, JS_INT((unsigned int)viewport.h));
 
-      if (MLHandleIsValid(mlContext->planesQueryHandle)) {
-        MLPlanesQueryResult planesQueryResult = MLPlanesQueryGetResults(mlContext->planesHandle, mlContext->planesQueryHandle, mlContext->planes, &mlContext->numPlanes);
-        if (planesQueryResult == MLPlanesQueryResult_Success) {
-          for (size_t i = 0; i < mlContext->numPlanes; i++) {
-            const MLPlane &plane = mlContext->planes[i];
-            size_t baseIndex = i * (3 + 4 + 2);
-            planesArray->Set(baseIndex + 0, JS_NUM(plane.position.x));
-            planesArray->Set(baseIndex + 1, JS_NUM(plane.position.y));
-            planesArray->Set(baseIndex + 2, JS_NUM(plane.position.z));
-            planesArray->Set(baseIndex + 3, JS_NUM(plane.rotation.x));
-            planesArray->Set(baseIndex + 4, JS_NUM(plane.rotation.y));
-            planesArray->Set(baseIndex + 5, JS_NUM(plane.rotation.z));
-            planesArray->Set(baseIndex + 6, JS_NUM(plane.rotation.w));
-            planesArray->Set(baseIndex + 7, JS_NUM(plane.width));
-            planesArray->Set(baseIndex + 8, JS_NUM(plane.height));
-          }
-          numPlanesArray->Set(0, JS_INT(mlContext->numPlanes));
+      endPlanesQuery(mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, mlContext->floorPlanes, &mlContext->numFloorPlanes);
+      endPlanesQuery(mlContext->planesWallHandle, mlContext->planesWallQueryHandle, mlContext->wallPlanes, &mlContext->numWallPlanes);
+      endPlanesQuery(mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, mlContext->ceilingPlanes, &mlContext->numCeilingPlanes);
 
-          mlContext->planesQueryHandle = ML_INVALID_HANDLE;
-        } else if (planesQueryResult == MLPlanesQueryResult_Failure) {
-          mlContext->planesQueryHandle = ML_INVALID_HANDLE;
-        } else if (planesQueryResult == MLPlanesQueryResult_Pending) {
-          // nothing, we wait
-        } else {
-          ML_LOG(Error, "MLPlanesQueryGetResults complained: %d %d %d %d %d", planesQueryResult, MLPlanesQueryResult_Success, MLPlanesQueryResult_Failure, MLPlanesQueryResult_Pending, MLPlanesQueryResult_Ensure32Bits);
-        }
-      }
+      uint32_t planesIndex = 0;
+      readPlanesQuery(mlContext->floorPlanes, mlContext->numFloorPlanes, 0, planesArray, &planesIndex);
+      readPlanesQuery(mlContext->wallPlanes, mlContext->numWallPlanes, 1, planesArray, &planesIndex);
+      readPlanesQuery(mlContext->ceilingPlanes, mlContext->numCeilingPlanes, 2, planesArray, &planesIndex);
+
+      numPlanesArray->Set(0, JS_INT((int)planesIndex));
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
     }
@@ -281,27 +335,9 @@ NAN_METHOD(MLContext::SubmitFrame) {
     ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
   }
 
-  if (!MLHandleIsValid(mlContext->planesQueryHandle)) {
-    MLPlanesQuery query;
-    query.flags = MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All;
-    query.bounds_center.x = 0;
-    query.bounds_center.y = 0;
-    query.bounds_center.z = 0;
-    query.bounds_rotation.x = 0;
-    query.bounds_rotation.y = 0;
-    query.bounds_rotation.z = 0;
-    query.bounds_rotation.w = 1;
-    query.bounds_extents.x = 10;
-    query.bounds_extents.y = 10;
-    query.bounds_extents.z = 10;
-    query.min_hole_length = 0.5;
-    query.min_plane_area = 0.25;
-    query.max_results = sizeof(mlContext->planes)/sizeof(mlContext->planes[0]);
-    mlContext->planesQueryHandle = MLPlanesQueryBegin(mlContext->planesHandle, &query);
-    if (!MLHandleIsValid(mlContext->planesQueryHandle)) {
-      ML_LOG(Error, "%s: Failed to query planes.", application_name);
-    }
-  }
+  beginPlanesQuery(mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor));
+  beginPlanesQuery(mlContext->planesWallHandle, mlContext->planesWallQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Wall));
+  beginPlanesQuery(mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Ceiling));
 }
 
 NAN_METHOD(MLContext::IsPresent) {

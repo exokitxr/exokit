@@ -24,10 +24,11 @@
 using namespace v8;
 using namespace node;
 
-#define MAX_NUM_PLANES 32
+#define MAX_NUM_PLANES (32)
+#define PLANE_ENTRY_SIZE (3 + 4 + 2 + 1)
 
 namespace ml {
-  
+
 struct application_context_t {
   int dummy_value;
 };
@@ -55,11 +56,25 @@ protected:
   MLHandle head_tracker;
   MLHeadTrackingStaticData head_static_data;
   MLGraphicsVirtualCameraInfoArray virtual_camera_array;
-  MLHandle planesHandle;
-  MLHandle planesQuery;
-  MLHandle planesQueryHandle;
-  MLPlane planes[MAX_NUM_PLANES];
-  uint32_t numPlanes;
+
+  MLHandle planesFloorHandle;
+  MLHandle planesWallHandle;
+  MLHandle planesCeilingHandle;
+
+  MLHandle planesFloorQuery;
+  MLHandle planesWallQuery;
+  MLHandle planesCeilingQuery;
+
+  MLHandle planesFloorQueryHandle;
+  MLHandle planesWallQueryHandle;
+  MLHandle planesCeilingQueryHandle;
+
+  MLPlane floorPlanes[MAX_NUM_PLANES];
+  MLPlane wallPlanes[MAX_NUM_PLANES];
+  MLPlane ceilingPlanes[MAX_NUM_PLANES];
+  uint32_t numFloorPlanes;
+  uint32_t numWallPlanes;
+  uint32_t numCeilingPlanes;
 };
 
 }
