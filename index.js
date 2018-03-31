@@ -522,7 +522,7 @@ if (require.main === module) {
           vrPresentState.system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.leftProjectionMatrix.set(localFloat32Array4);
-          
+
           vrPresentState.system.GetProjectionRaw(0, localFovArray);
           for (let i = 0; i < localFovArray.length; i++) {
             localFovArray[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
@@ -541,7 +541,7 @@ if (require.main === module) {
           vrPresentState.system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
           _normalizeMatrixArray(localFloat32Array4);
           frameData.rightProjectionMatrix.set(localFloat32Array4);
-          
+
           vrPresentState.system.GetProjectionRaw(1, localFovArray2);
           for (let i = 0; i < localFovArray2.length; i++) {
             localFovArray2[i] = Math.atan(localFovArray2[i]) / Math.PI * 180;
