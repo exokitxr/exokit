@@ -111,11 +111,13 @@ const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array4 = new Float32Array(16);
 const localGamepadArray = new Float32Array(16);
 
+const maxNumPlanes = 32 * 3;
+const planeEntrySize = 3 + 4 + 2 + 1;
 const framebufferArray = new Uint32Array(2);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
 const viewportArray = new Uint32Array(4);
-const planesArray = new Float32Array((3 + 4 + 2) * 32);
+const planesArray = new Float32Array(planeEntrySize * maxNumPlanes);
 const numPlanesArray = new Uint32Array(1);
 
 const localVector = new THREE.Vector3();
