@@ -123,6 +123,8 @@ const projectionArray = new Float32Array(16 * 2);
 const viewportArray = new Uint32Array(4);
 const planesArray = new Float32Array(planeEntrySize * maxNumPlanes);
 const numPlanesArray = new Uint32Array(1);
+const controllersArray = new Float32Array((3 + 4) * 2);
+const gesturesArray = new Float32Array(4 * 2);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -275,13 +277,20 @@ if (nativeMl) {
           mlFbo = fbo;
           mlTex = tex;
 
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray);
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
 
           /* for (let i = 0; i < 2; i++) {
             nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
           } */
 
-          window.top.updateMlFrame(transformArray, projectionArray, viewportArray, planesArray, numPlanesArray[0]);
+          window.top.updateMlFrame({
+            transformArray,
+            projectionArray,
+            viewportArray,
+            planesArray,
+            numPlanes: numPlanesArray[0],
+            gamepads: [null, null],
+          });
           mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
           nativeWindow.bindFrameBuffer(mlFbo);
@@ -625,9 +634,42 @@ if (require.main === module) {
 
           nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
         } else if (isMlPresenting) {
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray);
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
+          
+          let controllersArrayIndex = 0;
+          leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
+          controllersArrayIndex += 3;
+          leftGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
+          controllersArrayIndex += 4;
+          
+          let gesturesArrayIndex = 0;
+          leftGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
+          gesturesArrayIndex += 3;
+          leftGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
+          gesturesArrayIndex++;
+          
+          gamepads[0] = leftGamepad;
+          
+          rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
+          controllersArrayIndex += 3;
+          rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
+          controllersArrayIndex += 4;
+          
+          rightGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
+          gesturesArrayIndex += 3;
+          rightGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
+          gesturesArrayIndex++;
+          
+          gamepads[1] = rightGamepad;
 
-          window.top.updateMlFrame(transformArray, projectionArray, viewportArray, planesArray, numPlanesArray[0]);
+          window.top.updateMlFrame({
+            transformArray,
+            projectionArray,
+            viewportArray,
+            planesArray,
+            numPlanes: numPlanesArray[0],
+            gamepads,
+          });
 
           nativeWindow.bindFrameBuffer(mlFbo);
         }
