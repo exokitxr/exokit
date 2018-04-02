@@ -95,6 +95,29 @@ void readPlanesQuery(MLPlane *planes, uint32_t numPlanes, int planeType, Local<F
    (*planesIndex)++;
   }
 }
+int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
+  if (gesture & MLGestureStaticHandState_NoHand) {
+    return 0;
+  } else if (gesture & MLGestureStaticHandState_Finger) {
+    return 1;
+  } else if (gesture & MLGestureStaticHandState_Fist) {
+    return 2;
+  } else if (gesture & MLGestureStaticHandState_Pinch) {
+    return 3;
+  } else if (gesture & MLGestureStaticHandState_Thumb) {
+    return 4;
+  } else if (gesture & MLGestureStaticHandState_L) {
+    return 5;
+  } else if (gesture & MLGestureStaticHandState_OpenHandBack) {
+    return 6;
+  } else if (gesture & MLGestureStaticHandState_Ok) {
+    return 7;
+  } else if (gesture & MLGestureStaticHandState_C) {
+    return 8;
+  } else {
+    return -1;
+  }
+}
 
 static void onStop(void* application_context) {
   ((struct application_context_t*)application_context)->dummy_value = 0;
@@ -223,13 +246,27 @@ NAN_METHOD(MLContext::Init) {
   makePlanesQueryer(mlContext->planesWallHandle);
   makePlanesQueryer(mlContext->planesCeilingHandle);
 
+  MLInputConfiguration inputConfiguration;
+  for (int i = 0; i < MLInput_MaxControllers; i++) {
+    inputConfiguration.dof[i] = MLInputControllerDof_6;
+  }
+  mlContext->inputTracker = MLInputCreate(&inputConfiguration);
+  if (!MLHandleIsValid(mlContext->inputTracker)) {
+    ML_LOG(Error, "%s: Failed to create input tracker.", application_name);
+  }
+
+  mlContext->gestureTracker = MLGestureTrackingCreate();
+  if (!MLHandleIsValid(mlContext->gestureTracker)) {
+    ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
+  }
+
   info.GetReturnValue().Set(JS_BOOL(true));
 }
 
 NAN_METHOD(MLContext::WaitGetPoses) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array()) {
+  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array() && info[6]->IsFloat32Array() && info[7]->IsFloat32Array()) {
     if (application_context.dummy_value) {
       Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
@@ -237,6 +274,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[3]);
       Local<Float32Array> planesArray = Local<Float32Array>::Cast(info[4]);
       Local<Uint32Array> numPlanesArray = Local<Uint32Array>::Cast(info[5]);
+      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[6]);
+      Local<Float32Array> gesturesArray = Local<Float32Array>::Cast(info[7]);
 
       MLStatus out_status;
       MLGraphicsFrameParams frame_params;
@@ -253,9 +292,11 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
       }
 
+      // framebuffer
       framebufferArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
       framebufferArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
 
+      // transform
       for (int i = 0; i < 2; i++) {
         const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
         const MLTransform &transform = cameraInfo.transform;
@@ -273,12 +314,14 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         }
       }
 
+      // viewport
       const MLRectf& viewport = mlContext->virtual_camera_array.viewport;
       viewportArray->Set(0, JS_INT((int)viewport.x));
       viewportArray->Set(1, JS_INT((int)viewport.y));
       viewportArray->Set(2, JS_INT((unsigned int)viewport.w));
       viewportArray->Set(3, JS_INT((unsigned int)viewport.h));
 
+      // planes
       endPlanesQuery(mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, mlContext->floorPlanes, &mlContext->numFloorPlanes);
       endPlanesQuery(mlContext->planesWallHandle, mlContext->planesWallQueryHandle, mlContext->wallPlanes, &mlContext->numWallPlanes);
       endPlanesQuery(mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, mlContext->ceilingPlanes, &mlContext->numCeilingPlanes);
@@ -287,8 +330,43 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       readPlanesQuery(mlContext->floorPlanes, mlContext->numFloorPlanes, 0, planesArray, &planesIndex);
       readPlanesQuery(mlContext->wallPlanes, mlContext->numWallPlanes, 1, planesArray, &planesIndex);
       readPlanesQuery(mlContext->ceilingPlanes, mlContext->numCeilingPlanes, 2, planesArray, &planesIndex);
-
       numPlanesArray->Set(0, JS_INT((int)planesIndex));
+
+      // controllers
+      MLInputControllerState controllerStates[MLInput_MaxControllers];
+      if (MLInputGetControllerState(mlContext->inputTracker, controllerStates)) {
+        for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
+          MLInputControllerState &controllerState = controllerStates[i];
+          MLVec3f &position = controllerState.position;
+          MLQuaternionf &orientation = controllerState.orientation;
+
+          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
+          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 1, JS_NUM(position.y));
+          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 2, JS_NUM(position.z));
+          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 3, JS_NUM(orientation.x));
+          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 4, JS_NUM(orientation.y));
+          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 5, JS_NUM(orientation.z));
+          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 6, JS_NUM(orientation.w));
+        }
+      }
+
+      // gestures
+      MLGestureData gestureData;
+      if (MLGestureGetData(mlContext->gestureTracker, &gestureData)) {
+        MLGestureOneHandedState &leftHand = gestureData.left_hand_state;
+        MLVec3f &leftCenter = leftHand.hand_center_normalized;
+        gesturesArray->Set(0*4 + 0, JS_NUM(leftCenter.x));
+        gesturesArray->Set(0*4 + 1, JS_NUM(leftCenter.y));
+        gesturesArray->Set(0*4 + 2, JS_NUM(leftCenter.z));
+        gesturesArray->Set(0*4 + 3, JS_NUM(gestureCategoryToIndex(leftHand.static_gesture_category)));
+
+        MLGestureOneHandedState &rightHand = gestureData.right_hand_state;
+        MLVec3f &rightCenter = rightHand.hand_center_normalized;
+        gesturesArray->Set(1*4 + 0, JS_NUM(rightCenter.x));
+        gesturesArray->Set(1*4 + 1, JS_NUM(rightCenter.y));
+        gesturesArray->Set(1*4 + 2, JS_NUM(rightCenter.z));
+        gesturesArray->Set(1*4 + 3, JS_NUM(gestureCategoryToIndex(rightHand.static_gesture_category)));
+      }
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
     }

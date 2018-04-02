@@ -18,6 +18,8 @@
 #include <ml_head_tracking.h>
 #include <ml_perception.h>
 #include <ml_planes.h>
+#include <ml_input.h>
+#include <ml_gesture.h>
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
 
@@ -26,6 +28,7 @@ using namespace node;
 
 #define MAX_NUM_PLANES (32)
 #define PLANE_ENTRY_SIZE (3 + 4 + 2 + 1)
+#define CONTROLLER_ENTRY_SIZE (3 + 4)
 
 namespace ml {
 
@@ -75,6 +78,9 @@ protected:
   uint32_t numFloorPlanes;
   uint32_t numWallPlanes;
   uint32_t numCeilingPlanes;
+
+  MLHandle inputTracker;
+  MLHandle gestureTracker;
 };
 
 }
