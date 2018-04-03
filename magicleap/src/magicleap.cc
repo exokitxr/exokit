@@ -316,7 +316,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
       }
       frame_params.surface_scale = 1.0f;
-      frame_params.projection_type = MLGraphicsProjectionType_ReversedInfiniteZ;
+      frame_params.projection_type = MLGraphicsProjectionType_Default;
       frame_params.near_clip = 1.0f;
       frame_params.focus_distance = 1.0f;
 
