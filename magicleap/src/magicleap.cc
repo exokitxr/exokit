@@ -455,17 +455,17 @@ NAN_METHOD(MLContext::WaitGetPoses) {
               memcpy(mlContext->triangles.data(), triangleStream.custom_array, trianglesSize);
 
               if (!meshArray->Get(0)->IsFloat32Array() || Local<Float32Array>::Cast(meshArray->Get(0))->Length() != numPositions) {
-                Local<ArrayBuffer> positionsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->positions.data(), numPositions);
+                Local<ArrayBuffer> positionsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->positions.data(), positionsSize);
                 Local<Float32Array> positionsFloat32Array = Float32Array::New(positionsArrayBuffer, 0, numPositions);
                 meshArray->Set(0, positionsFloat32Array);
               }
               if (!meshArray->Get(1)->IsFloat32Array() || Local<Float32Array>::Cast(meshArray->Get(1))->Length() != numNormals) {
-                Local<ArrayBuffer> normalsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->normals.data(), numNormals);
+                Local<ArrayBuffer> normalsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->normals.data(), normalsSize);
                 Local<Float32Array> normalsFloat32Array = Float32Array::New(normalsArrayBuffer, 0, numNormals);
                 meshArray->Set(1, normalsFloat32Array);
               }
               if (!meshArray->Get(2)->IsUint32Array() || Local<Uint32Array>::Cast(meshArray->Get(2))->Length() != numTriangles) {
-                Local<ArrayBuffer> trianglesArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->triangles.data(), numTriangles);
+                Local<ArrayBuffer> trianglesArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->triangles.data(), trianglesSize);
                 Local<Uint32Array> trianglesUint32Array = Uint32Array::New(trianglesArrayBuffer, 0, numTriangles);
                 meshArray->Set(2, trianglesUint32Array);
               }
