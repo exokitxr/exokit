@@ -18,6 +18,7 @@
 #include <ml_head_tracking.h>
 #include <ml_perception.h>
 #include <ml_planes.h>
+#include <ml_meshing.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
 #include <ml_lifecycle.h>
@@ -81,6 +82,15 @@ protected:
 
   MLHandle inputTracker;
   MLHandle gestureTracker;
+
+  MLHandle meshTracker;
+  MLDataArray meshData;
+  MLDataArrayDiff meshesDataDiff;
+  MLDataArray meshData2;
+  MLDataArrayDiff meshesDataDiff2;
+  std::vector<uint8_t> normals;
+  std::vector<uint8_t> positions;
+  std::vector<uint8_t> triangles;
 };
 
 }
