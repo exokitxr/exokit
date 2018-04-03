@@ -56,6 +56,7 @@ protected:
   static void LifecycleInit();
 
 protected:
+  // tracking
   MLHandle graphics_client;
   GLuint framebuffer_id;
   MLHandle frame_handle;
@@ -63,6 +64,11 @@ protected:
   MLHeadTrackingStaticData head_static_data;
   MLGraphicsVirtualCameraInfoArray virtual_camera_array;
 
+  // input
+  MLHandle inputTracker;
+  MLHandle gestureTracker;
+
+  // planes
   MLHandle planesFloorHandle;
   MLHandle planesWallHandle;
   MLHandle planesCeilingHandle;
@@ -82,12 +88,10 @@ protected:
   uint32_t numWallPlanes;
   uint32_t numCeilingPlanes;
 
-  MLHandle inputTracker;
-  MLHandle gestureTracker;
-
+  // meshing
   MLHandle meshTracker;
-  std::mutex mesherMutex;
   std::condition_variable mesherCv;
+  std::mutex mesherMutex;
 
   MLMeshingStaticData meshStaticData;
   MLDataArray meshData;
