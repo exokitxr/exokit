@@ -98,6 +98,7 @@ protected:
   std::condition_variable mesherCv;
   std::mutex mesherMutex;
 
+  bool haveMeshStaticData;
   MLMeshingStaticData meshStaticData;
   MLDataArray meshData;
   MLDataArrayDiff meshesDataDiff;

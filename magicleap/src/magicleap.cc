@@ -132,6 +132,7 @@ static void onResume(void* application_context) {
 MLContext::MLContext() :
   position{0, 0, 0},
   rotation{0, 0, 0, 1},
+  haveMeshStaticData(false),
   planesFloorQueryHandle(ML_INVALID_HANDLE),
   planesWallQueryHandle(ML_INVALID_HANDLE),
   planesCeilingQueryHandle(ML_INVALID_HANDLE),
@@ -259,6 +260,8 @@ NAN_METHOD(MLContext::Init) {
 
   std::thread([mlContext]() {
     MLMeshingSettings meshingSettings;
+    // meshingSettings.bounds_center = mlContext->position;
+    // meshingSettings.bounds_rotation = mlContext->rotation;
     meshingSettings.bounds_center.x = 0;
     meshingSettings.bounds_center.y = 0;
     meshingSettings.bounds_center.z = 0;
@@ -279,11 +282,13 @@ NAN_METHOD(MLContext::Init) {
     // meshingSettings.mesh_type = MLMeshingType_PointCloud;
     // meshingSettings.mesh_type = MLMeshingType_Blocks;
     meshingSettings.meshing_poll_time = 1e9;
+    // meshingSettings.meshing_poll_time = 0;
     meshingSettings.planarize = false;
     meshingSettings.remove_disconnected_components = false;
     meshingSettings.remove_mesh_skirt = false;
     meshingSettings.request_vertex_confidence = false;
     meshingSettings.target_number_triangles = 0;
+    // meshingSettings.target_number_triangles = 4000;
     meshingSettings.target_number_triangles_per_block = 0;
     mlContext->meshTracker = MLMeshingCreate(&meshingSettings);
     if (!MLHandleIsValid(mlContext->meshTracker)) {
@@ -293,11 +298,29 @@ NAN_METHOD(MLContext::Init) {
     MLDataArrayInitDiff(&mlContext->meshesDataDiff);
     MLDataArrayInitDiff(&mlContext->meshesDataDiff2);
 
+    std::mutex mesherCvMutex;
     for (;;) {
-      std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
+      std::unique_lock<std::mutex> uniqueLock(mesherCvMutex);
       mlContext->mesherCv.wait(uniqueLock);
 
-      if (!MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData)) {
+      /* {
+        std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
+        meshingSettings.bounds_center = mlContext->position;
+        meshingSettings.bounds_rotation = mlContext->rotation;
+      } */
+
+      /* if (!MLMeshingUpdate(mlContext->meshTracker, &meshingSettings)) {
+        ML_LOG(Error, "MLMeshingUpdate failed: %s", application_name);
+      } */
+
+      /* if (!MLMeshingRefresh(mlContext->meshTracker)) {
+        ML_LOG(Error, "MLMeshingRefresh failed: %s", application_name);
+      } */
+
+      if (MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData)) {
+        std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
+        mlContext->haveMeshStaticData = true;
+      } else {
         ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
       }
     }
