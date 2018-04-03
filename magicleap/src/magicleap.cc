@@ -260,37 +260,48 @@ NAN_METHOD(MLContext::Init) {
     ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
   }
 
-  MLMeshingSettings meshingSettings;
-  meshingSettings.bounds_center.x = 0;
-  meshingSettings.bounds_center.y = 0;
-  meshingSettings.bounds_center.z = 0;
-  meshingSettings.bounds_rotation.x = 0;
-  meshingSettings.bounds_rotation.y = 0;
-  meshingSettings.bounds_rotation.z = 0;
-  meshingSettings.bounds_rotation.w = 1;
-  meshingSettings.bounds_extents.x = 10;
-  meshingSettings.bounds_extents.y = 10;
-  meshingSettings.bounds_extents.z = 10;
-  meshingSettings.compute_normals = true;
-  meshingSettings.disconnected_component_area = 0.1;
-  meshingSettings.enable_meshing = true;
-  meshingSettings.fill_hole_length = 0.1;
-  meshingSettings.fill_holes = false;
-  meshingSettings.index_order_ccw = false;
-  meshingSettings.mesh_type = MLMeshingType_Full;
-  // meshingSettings.mesh_type = MLMeshingType_PointCloud;
-  // meshingSettings.mesh_type = MLMeshingType_Blocks;
-  meshingSettings.meshing_poll_time = 1e9;
-  meshingSettings.planarize = false;
-  meshingSettings.remove_disconnected_components = false;
-  meshingSettings.remove_mesh_skirt = false;
-  meshingSettings.request_vertex_confidence = false;
-  meshingSettings.target_number_triangles = 0;
-  meshingSettings.target_number_triangles_per_block = 0;
-  mlContext->meshTracker = MLMeshingCreate(&meshingSettings);
+  std::thread([mlContext]() {
+    MLMeshingSettings meshingSettings;
+    meshingSettings.bounds_center.x = 0;
+    meshingSettings.bounds_center.y = 0;
+    meshingSettings.bounds_center.z = 0;
+    meshingSettings.bounds_rotation.x = 0;
+    meshingSettings.bounds_rotation.y = 0;
+    meshingSettings.bounds_rotation.z = 0;
+    meshingSettings.bounds_rotation.w = 1;
+    meshingSettings.bounds_extents.x = 10;
+    meshingSettings.bounds_extents.y = 10;
+    meshingSettings.bounds_extents.z = 10;
+    meshingSettings.compute_normals = true;
+    meshingSettings.disconnected_component_area = 0.1;
+    meshingSettings.enable_meshing = true;
+    meshingSettings.fill_hole_length = 0.1;
+    meshingSettings.fill_holes = false;
+    meshingSettings.index_order_ccw = false;
+    meshingSettings.mesh_type = MLMeshingType_Full;
+    // meshingSettings.mesh_type = MLMeshingType_PointCloud;
+    // meshingSettings.mesh_type = MLMeshingType_Blocks;
+    meshingSettings.meshing_poll_time = 1e9;
+    meshingSettings.planarize = false;
+    meshingSettings.remove_disconnected_components = false;
+    meshingSettings.remove_mesh_skirt = false;
+    meshingSettings.request_vertex_confidence = false;
+    meshingSettings.target_number_triangles = 0;
+    meshingSettings.target_number_triangles_per_block = 0;
+    mlContext->meshTracker = MLMeshingCreate(&meshingSettings);
 
-  MLDataArrayInitDiff(&mlContext->meshesDataDiff);
-  MLDataArrayInitDiff(&mlContext->meshesDataDiff2);
+    MLDataArrayInitDiff(&mlContext->meshesDataDiff);
+    MLDataArrayInitDiff(&mlContext->meshesDataDiff2);
+
+    for (;;) {
+      std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
+      mlContext->mesherCv.wait(uniqueLock);
+
+      if (!MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData)) {
+        ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
+      }
+    }
+  });
 
   info.GetReturnValue().Set(JS_BOOL(true));
 }
@@ -406,80 +417,81 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       }
 
       // meshing
-      MLMeshingStaticData meshStaticData;
-      if (MLMeshingGetStaticData(mlContext->meshTracker, &meshStaticData)) {
-        MLCoordinateFrameUID coordinateFrame = meshStaticData.frame;
-        MLDataArrayHandle &meshesHandle = meshStaticData.meshes;
+      mlContext->mesherCv.notify_one();
 
-        MLDataArrayLockResult lockResult = MLDataArrayTryLock(meshesHandle, &mlContext->meshData, &mlContext->meshesDataDiff);
-        if (lockResult == MLDataArrayLockResult_New) {
-          if (mlContext->meshData.stream_count > 0) {
-            MLDataArrayStream &handleStream = mlContext->meshData.streams[0];
+      MLCoordinateFrameUID coordinateFrame = mlContext->meshStaticData.frame;
+      MLDataArrayHandle &meshesHandle = mlContext->meshStaticData.meshes;
 
-            if (handleStream.type == MLDataArrayType_Handle) {
-              MLDataArrayHandle &meshesHandle2 = *handleStream.handle_array;
+      MLDataArrayLockResult lockResult = MLDataArrayTryLock(meshesHandle, &mlContext->meshData, &mlContext->meshesDataDiff);
+      if (lockResult == MLDataArrayLockResult_New) {
+        if (mlContext->meshData.stream_count > 0) {
+          MLDataArrayStream &handleStream = mlContext->meshData.streams[0];
 
-              MLDataArrayLockResult lockResult2 = MLDataArrayTryLock(meshesHandle2, &mlContext->meshData2, &mlContext->meshesDataDiff2);
-              if (lockResult2 == MLDataArrayLockResult_New) {
-                uint32_t normalIndex = meshStaticData.normal_stream_index;
-                uint32_t positionIndex = meshStaticData.position_stream_index;
-                uint32_t triangleIndex = meshStaticData.triangle_index_stream_index;
+          if (handleStream.type == MLDataArrayType_Handle) {
+            MLDataArrayHandle &meshesHandle2 = *handleStream.handle_array;
 
-                MLDataArrayStream &normalStream = mlContext->meshData2.streams[normalIndex];
-                uint32_t numNormals = normalStream.count;
-                uint32_t normalsSize = numNormals * normalStream.data_size;
-                mlContext->normals.resize(normalsSize);
-                memcpy(mlContext->normals.data(), normalStream.custom_array, normalsSize);
+            MLDataArrayLockResult lockResult2 = MLDataArrayTryLock(meshesHandle2, &mlContext->meshData2, &mlContext->meshesDataDiff2);
+            if (lockResult2 == MLDataArrayLockResult_New) {
+              uint32_t normalIndex = mlContext->meshStaticData.normal_stream_index;
+              uint32_t positionIndex = mlContext->meshStaticData.position_stream_index;
+              uint32_t triangleIndex = mlContext->meshStaticData.triangle_index_stream_index;
 
-                MLDataArrayStream &positionStream = mlContext->meshData2.streams[positionIndex];
-                uint32_t numPositions = positionStream.count;
-                uint32_t positionsSize = numPositions * positionStream.data_size;
-                mlContext->positions.resize(positionsSize);
-                memcpy(mlContext->positions.data(), positionStream.custom_array, positionsSize);
+              MLDataArrayStream &normalStream = mlContext->meshData2.streams[normalIndex];
+              uint32_t numNormals = normalStream.count;
+              uint32_t normalsSize = numNormals * normalStream.data_size;
+              mlContext->normals.resize(normalsSize);
+              memcpy(mlContext->normals.data(), normalStream.custom_array, normalsSize);
 
-                MLDataArrayStream &triangleStream = mlContext->meshData2.streams[triangleIndex];
-                uint32_t numTriangles = triangleStream.count;
-                uint32_t trianglesSize = numTriangles * triangleStream.data_size;
-                mlContext->triangles.resize(trianglesSize);
-                memcpy(mlContext->triangles.data(), triangleStream.custom_array, trianglesSize);
+              MLDataArrayStream &positionStream = mlContext->meshData2.streams[positionIndex];
+              uint32_t numPositions = positionStream.count;
+              uint32_t positionsSize = numPositions * positionStream.data_size;
+              mlContext->positions.resize(positionsSize);
+              memcpy(mlContext->positions.data(), positionStream.custom_array, positionsSize);
 
-                if (!meshArray->Get(0)->IsFloat32Array() || Local<Float32Array>::Cast(meshArray->Get(0))->Length() != numPositions) {
-                  Local<ArrayBuffer> positionsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->positions.data(), numPositions);
-                  Local<Float32Array> positionsFloat32Array = Float32Array::New(positionsArrayBuffer, 0, numPositions);
-                  meshArray->Set(0, positionsFloat32Array);
-                }
-                if (!meshArray->Get(1)->IsFloat32Array() || Local<Float32Array>::Cast(meshArray->Get(1))->Length() != numNormals) {
-                  Local<ArrayBuffer> normalsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->normals.data(), numNormals);
-                  Local<Float32Array> normalsFloat32Array = Float32Array::New(normalsArrayBuffer, 0, numNormals);
-                  meshArray->Set(1, normalsFloat32Array);
-                }
-                if (!meshArray->Get(2)->IsUint32Array() || Local<Uint32Array>::Cast(meshArray->Get(2))->Length() != numTriangles) {
-                  Local<ArrayBuffer> trianglesArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->triangles.data(), numTriangles);
-                  Local<Uint32Array> trianglesUint32Array = Uint32Array::New(trianglesArrayBuffer, 0, numTriangles);
-                  meshArray->Set(2, trianglesUint32Array);
-                }
+              MLDataArrayStream &triangleStream = mlContext->meshData2.streams[triangleIndex];
+              uint32_t numTriangles = triangleStream.count;
+              uint32_t trianglesSize = numTriangles * triangleStream.data_size;
+              mlContext->triangles.resize(trianglesSize);
+              memcpy(mlContext->triangles.data(), triangleStream.custom_array, trianglesSize);
 
-                MLDataArrayUnlock(meshesHandle2);
-              } else if (lockResult2 == MLDataArrayLockResult_Unchanged) {
-                // nothing
-              } else {
-                ML_LOG(Error, "MLDataArrayTryLock inner failed: %d", lockResult);
+              if (!meshArray->Get(0)->IsFloat32Array() || Local<Float32Array>::Cast(meshArray->Get(0))->Length() != numPositions) {
+                Local<ArrayBuffer> positionsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->positions.data(), numPositions);
+                Local<Float32Array> positionsFloat32Array = Float32Array::New(positionsArrayBuffer, 0, numPositions);
+                meshArray->Set(0, positionsFloat32Array);
               }
+              if (!meshArray->Get(1)->IsFloat32Array() || Local<Float32Array>::Cast(meshArray->Get(1))->Length() != numNormals) {
+                Local<ArrayBuffer> normalsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->normals.data(), numNormals);
+                Local<Float32Array> normalsFloat32Array = Float32Array::New(normalsArrayBuffer, 0, numNormals);
+                meshArray->Set(1, normalsFloat32Array);
+              }
+              if (!meshArray->Get(2)->IsUint32Array() || Local<Uint32Array>::Cast(meshArray->Get(2))->Length() != numTriangles) {
+                Local<ArrayBuffer> trianglesArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->triangles.data(), numTriangles);
+                Local<Uint32Array> trianglesUint32Array = Uint32Array::New(trianglesArrayBuffer, 0, numTriangles);
+                meshArray->Set(2, trianglesUint32Array);
+              }
+
+              MLDataArrayUnlock(meshesHandle2);
+            } else if (lockResult2 == MLDataArrayLockResult_Unchanged) {
+              // nothing
+            } else if (lockResult2 == MLDataArrayLockResult_Locked) {
+              ML_LOG(Error, "MLDataArrayTryLock inner already locked: %d", lockResult2);
             } else {
-              ML_LOG(Error, "invalid handle stream type: %d", handleStream.type);
+              ML_LOG(Error, "MLDataArrayTryLock inner failed: %d", lockResult2);
             }
           } else {
-            ML_LOG(Error, "invalid stream count: %d", mlContext->meshData.stream_count);
+            ML_LOG(Error, "invalid handle stream type: %d", handleStream.type);
           }
-
-          MLDataArrayUnlock(meshesHandle);
-        } else if (lockResult == MLDataArrayLockResult_Unchanged) {
-          // nothing
         } else {
-          ML_LOG(Error, "MLDataArrayTryLock outer failed: %d", lockResult);
+          ML_LOG(Error, "invalid stream count: %d", mlContext->meshData.stream_count);
         }
+
+        MLDataArrayUnlock(meshesHandle);
+      } else if (lockResult == MLDataArrayLockResult_Unchanged) {
+        // nothing
+      } else if (lockResult == MLDataArrayLockResult_Locked) {
+        ML_LOG(Error, "MLDataArrayTryLock outer already locked: %d", lockResult);
       } else {
-        ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
+        ML_LOG(Error, "MLDataArrayTryLock outer failed: %d", lockResult);
       }
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");

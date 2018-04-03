@@ -13,6 +13,8 @@
 #include <nan/nan.h>
 #include <defines.h>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <glfw.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
@@ -84,6 +86,10 @@ protected:
   MLHandle gestureTracker;
 
   MLHandle meshTracker;
+  std::mutex mesherMutex;
+  std::condition_variable mesherCv;
+
+  MLMeshingStaticData meshStaticData;
   MLDataArray meshData;
   MLDataArrayDiff meshesDataDiff;
   MLDataArray meshData2;
