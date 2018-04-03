@@ -218,7 +218,7 @@ NAN_METHOD(MLContext::Init) {
     return;
   }
 
-  MLGraphicsOptions graphics_options = { MLGraphicsFlags_NoDepth, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float };
+  MLGraphicsOptions graphics_options = { MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float };
   MLHandle opengl_context = reinterpret_cast<MLHandle>(window);
   mlContext->graphics_client = ML_INVALID_HANDLE;
   MLStatus graphics_create_status = MLStatus_OK;
@@ -502,7 +502,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
   for (int camera = 0; camera < 2; ++camera) {
     glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, camera);
-    // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, camera);
+    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, camera);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
