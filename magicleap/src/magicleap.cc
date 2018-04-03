@@ -289,6 +289,9 @@ NAN_METHOD(MLContext::Init) {
     meshingSettings.target_number_triangles = 0;
     meshingSettings.target_number_triangles_per_block = 0;
     mlContext->meshTracker = MLMeshingCreate(&meshingSettings);
+    if (!MLHandleIsValid(mlContext->meshTracker)) {
+      ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
+    }
 
     MLDataArrayInitDiff(&mlContext->meshesDataDiff);
     MLDataArrayInitDiff(&mlContext->meshesDataDiff2);
