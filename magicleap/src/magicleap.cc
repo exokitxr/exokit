@@ -266,9 +266,9 @@ NAN_METHOD(MLContext::Init) {
     meshingSettings.bounds_rotation.y = 0;
     meshingSettings.bounds_rotation.z = 0;
     meshingSettings.bounds_rotation.w = 1;
-    meshingSettings.bounds_extents.x = 10;
-    meshingSettings.bounds_extents.y = 10;
-    meshingSettings.bounds_extents.z = 10;
+    meshingSettings.bounds_extents.x = 2;
+    meshingSettings.bounds_extents.y = 2;
+    meshingSettings.bounds_extents.z = 2;
     meshingSettings.compute_normals = true;
     meshingSettings.disconnected_component_area = 0.1;
     meshingSettings.enable_meshing = true;
