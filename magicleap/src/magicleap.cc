@@ -280,8 +280,8 @@ NAN_METHOD(MLContext::Init) {
     meshingSettings.remove_disconnected_components = false;
     meshingSettings.remove_mesh_skirt = false;
     meshingSettings.request_vertex_confidence = false;
-    // meshingSettings.target_number_triangles = 0;
-    meshingSettings.target_number_triangles = 10000;
+    meshingSettings.target_number_triangles = 0;
+    // meshingSettings.target_number_triangles = 10000;
     meshingSettings.target_number_triangles_per_block = 0;
     mlContext->meshTracker = MLMeshingCreate(&meshingSettings);
     if (!MLHandleIsValid(mlContext->meshTracker)) {
@@ -461,24 +461,24 @@ NAN_METHOD(MLContext::WaitGetPoses) {
                 if (lockResult2 == MLDataArrayLockResult_New) {
                   uint32_t positionIndex = mlContext->meshStaticData.position_stream_index;
                   MLDataArrayStream &positionStream = mlContext->meshData2.streams[positionIndex];
-                  uint32_t numPositions = positionStream.count;
-                  uint32_t positionsSize = numPositions * positionStream.data_size;
+                  uint32_t numPositionPoints = positionStream.count;
+                  uint32_t positionsSize = numPositionPoints * positionStream.data_size;
                   mlContext->positions.resize(positionsSize);
                   memcpy(mlContext->positions.data(), positionStream.custom_array, positionsSize);
 
                   Local<ArrayBuffer> positionsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->positions.data(), positionsSize);
-                  Local<Float32Array> positionsFloat32Array = Float32Array::New(positionsArrayBuffer, 0, numPositions);
+                  Local<Float32Array> positionsFloat32Array = Float32Array::New(positionsArrayBuffer, 0, numPositionPoints * 3);
                   meshArray->Set(0, positionsFloat32Array);
 
                   uint32_t normalIndex = mlContext->meshStaticData.normal_stream_index;
                   MLDataArrayStream &normalStream = mlContext->meshData2.streams[normalIndex];
-                  uint32_t numNormals = normalStream.count;
-                  uint32_t normalsSize = numNormals * normalStream.data_size;
+                  uint32_t numNormalPoints = normalStream.count;
+                  uint32_t normalsSize = numNormalPoints * normalStream.data_size;
                   mlContext->normals.resize(normalsSize);
                   memcpy(mlContext->normals.data(), normalStream.custom_array, normalsSize);
 
                   Local<ArrayBuffer> normalsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->normals.data(), normalsSize);
-                  Local<Float32Array> normalsFloat32Array = Float32Array::New(normalsArrayBuffer, 0, numNormals);
+                  Local<Float32Array> normalsFloat32Array = Float32Array::New(normalsArrayBuffer, 0, numNormalPoints * 3);
                   meshArray->Set(1, normalsFloat32Array);
 
                   uint32_t triangleIndex = mlContext->meshStaticData.triangle_index_stream_index;
