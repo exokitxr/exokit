@@ -104,8 +104,8 @@ protected:
   MLDataArrayDiff meshesDataDiff;
   MLDataArray meshData2;
   MLDataArrayDiff meshesDataDiff2;
-  std::vector<uint8_t> normals;
   std::vector<uint8_t> positions;
+  std::vector<uint8_t> normals;
   std::vector<uint8_t> triangles;
 };
 
