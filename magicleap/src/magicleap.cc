@@ -37,20 +37,15 @@ void makePlanesQueryer(MLHandle &planesHandle) {
     ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
   }
 }
-void beginPlanesQuery(MLHandle &planesHandle, MLHandle &planesQueryHandle, MLPlanesQueryFlags flags) {
+void beginPlanesQuery(const MLVec3f &position, const MLQuaternionf &rotation, MLHandle &planesHandle, MLHandle &planesQueryHandle, MLPlanesQueryFlags flags) {
   if (!MLHandleIsValid(planesQueryHandle)) {
     MLPlanesQuery query;
     query.flags = flags;
-    query.bounds_center.x = 0;
-    query.bounds_center.y = 0;
-    query.bounds_center.z = 0;
-    query.bounds_rotation.x = 0;
-    query.bounds_rotation.y = 0;
-    query.bounds_rotation.z = 0;
-    query.bounds_rotation.w = 1;
-    query.bounds_extents.x = 10;
-    query.bounds_extents.y = 10;
-    query.bounds_extents.z = 10;
+    query.bounds_center = position;
+    query.bounds_rotation = rotation;
+    query.bounds_extents.x = 2;
+    query.bounds_extents.y = 2;
+    query.bounds_extents.z = 2;
     query.min_hole_length = 0.5;
     query.min_plane_area = 0.25;
     query.max_results = MAX_NUM_PLANES;
@@ -135,6 +130,8 @@ static void onResume(void* application_context) {
 }
 
 MLContext::MLContext() :
+  position{0, 0, 0},
+  rotation{0, 0, 0, 1},
   planesFloorQueryHandle(ML_INVALID_HANDLE),
   planesWallQueryHandle(ML_INVALID_HANDLE),
   planesCeilingQueryHandle(ML_INVALID_HANDLE),
@@ -361,6 +358,16 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         }
       }
 
+      // position
+      {
+        std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
+
+        const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
+
+        mlContext->position = leftCameraTransform.position;
+        mlContext->rotation = leftCameraTransform.rotation;
+      }
+
       // viewport
       const MLRectf& viewport = mlContext->virtual_camera_array.viewport;
       viewportArray->Set(0, JS_INT((int)viewport.x));
@@ -507,6 +514,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
+  // blit
   GLuint src_framebuffer_id = info[0]->Uint32Value();
   unsigned int width = info[1]->Uint32Value();
   unsigned int height = info[2]->Uint32Value();
@@ -542,9 +550,10 @@ NAN_METHOD(MLContext::SubmitFrame) {
     ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
   }
 
-  beginPlanesQuery(mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor));
-  beginPlanesQuery(mlContext->planesWallHandle, mlContext->planesWallQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Wall));
-  beginPlanesQuery(mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Ceiling));
+  // planes
+  beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor));
+  beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesWallHandle, mlContext->planesWallQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Wall));
+  beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Ceiling));
 }
 
 NAN_METHOD(MLContext::IsPresent) {

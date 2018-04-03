@@ -64,6 +64,11 @@ protected:
   MLHeadTrackingStaticData head_static_data;
   MLGraphicsVirtualCameraInfoArray virtual_camera_array;
 
+  // position
+  std::mutex positionMutex;
+  MLVec3f position;
+  MLQuaternionf rotation;
+
   // input
   MLHandle inputTracker;
   MLHandle gestureTracker;
