@@ -125,6 +125,7 @@ const planesArray = new Float32Array(planeEntrySize * maxNumPlanes);
 const numPlanesArray = new Uint32Array(1);
 const controllersArray = new Float32Array((3 + 4) * 2);
 const gesturesArray = new Float32Array(4 * 2);
+const meshArray = [null, null, null];
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -277,7 +278,7 @@ if (nativeMl) {
           mlFbo = fbo;
           mlTex = tex;
 
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray, meshArray);
 
           /* for (let i = 0; i < 2; i++) {
             nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
@@ -290,6 +291,7 @@ if (nativeMl) {
             planesArray,
             numPlanes: numPlanesArray[0],
             gamepads: [null, null],
+            meshArray,
           });
           mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
@@ -634,7 +636,7 @@ if (require.main === module) {
 
           nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
         } else if (isMlPresenting) {
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray, meshArray);
           
           let controllersArrayIndex = 0;
           leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
@@ -669,6 +671,7 @@ if (require.main === module) {
             planesArray,
             numPlanes: numPlanesArray[0],
             gamepads,
+            meshArray,
           });
 
           nativeWindow.bindFrameBuffer(mlFbo);
