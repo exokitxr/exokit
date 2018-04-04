@@ -199,6 +199,8 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
 
   Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
 
+  Nan::SetMethod(proto, "setDefaultFramebuffer", SetDefaultFramebuffer);
+
   // OpenGL ES 2.1 constants
 
   /* ClearBufferMask */
@@ -672,7 +674,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), flipY(true), premultiplyAlpha(true), packAlignment(4), unpackAlignment(4) {}
+WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), defaultFramebuffer(0), flipY(true), premultiplyAlpha(true), packAlignment(4), unpackAlignment(4) {}
 
 WebGLRenderingContext::~WebGLRenderingContext() {}
 
@@ -1358,6 +1360,13 @@ NAN_METHOD(WebGLRenderingContext::FrontFace) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  GLuint framebuffer = info[0]->Uint32Value();
+  gl->defaultFramebuffer = framebuffer;
+}
+
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
   Nan::HandleScope scope;
@@ -1975,12 +1984,16 @@ NAN_METHOD(WebGLRenderingContext::CreateFramebuffer) {
 NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
   Nan::HandleScope scope;
 
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   int target = info[0]->Int32Value();
   int buffer = info[1]->IsNull() ? 0 : info[1]->Int32Value();
 
-  glBindFramebuffer(target, buffer);
+  if (buffer == 0) {
+    buffer = gl->defaultFramebuffer;
+  }
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glBindFramebuffer(target, buffer);
 }
 
 

@@ -224,9 +224,12 @@ protected:
 
   static NAN_METHOD(FrontFace);
 
+  static NAN_METHOD(SetDefaultFramebuffer);
+
   bool live;
   GLFWwindow *windowHandle;
   bool dirty;
+  GLuint defaultFramebuffer;
   bool flipY;
   bool premultiplyAlpha;
   GLint packAlignment;
