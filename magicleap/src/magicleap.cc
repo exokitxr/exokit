@@ -43,9 +43,9 @@ void beginPlanesQuery(const MLVec3f &position, const MLQuaternionf &rotation, ML
     query.flags = flags;
     query.bounds_center = position;
     query.bounds_rotation = rotation;
-    query.bounds_extents.x = 3;
-    query.bounds_extents.y = 3;
-    query.bounds_extents.z = 3;
+    query.bounds_extents.x = 10;
+    query.bounds_extents.y = 10;
+    query.bounds_extents.z = 10;
     query.min_hole_length = 0.5;
     query.min_plane_area = 0.25;
     query.max_results = MAX_NUM_PLANES;
@@ -262,9 +262,9 @@ NAN_METHOD(MLContext::Init) {
     MLMeshingSettings meshingSettings;
     meshingSettings.bounds_center = mlContext->position;
     meshingSettings.bounds_rotation = mlContext->rotation;
-    meshingSettings.bounds_extents.x = 3;
-    meshingSettings.bounds_extents.y = 3;
-    meshingSettings.bounds_extents.z = 3;
+    meshingSettings.bounds_extents.x = 10;
+    meshingSettings.bounds_extents.y = 10;
+    meshingSettings.bounds_extents.z = 10;
     meshingSettings.compute_normals = true;
     meshingSettings.disconnected_component_area = 0.1;
     meshingSettings.enable_meshing = true;
