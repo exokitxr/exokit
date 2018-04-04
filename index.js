@@ -162,6 +162,7 @@ nativeVr.requestPresent = function(layers) {
               const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
               const [fbo, tex] = nativeWindow.createRenderTarget(width, height, 1);
 
+              context.setDefaultFramebuffer(msFbo);
               nativeWindow.bindFrameBuffer(msFbo);
 
               vrPresentState.isPresenting = true;
@@ -188,7 +189,9 @@ nativeVr.exitPresent = function() {
     nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex);
     nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex);
 
-    nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
+    const context = vrPresentState.glContext;
+    nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+    context.setDefaultFramebuffer(0);
     nativeWindow.bindFrameBuffer(0);
 
     vrPresentState.isPresenting = false;
@@ -246,6 +249,7 @@ if (nativeMl) {
           });
           mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
+          context.setDefaultFramebuffer(mlFbo);
           nativeWindow.bindFrameBuffer(mlFbo);
 
           mlGlContext = context;
@@ -585,6 +589,7 @@ if (require.main === module) {
             gamepads,
           });
 
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.msFbo);
           nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
         } else if (isMlPresenting) {
           mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray, meshArray);
@@ -625,6 +630,7 @@ if (require.main === module) {
             meshArray,
           });
 
+          mlGlContext.setDefaultFramebuffer(mlFbo);
           nativeWindow.bindFrameBuffer(mlFbo);
         }
 
@@ -649,6 +655,7 @@ if (require.main === module) {
 
               nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth, renderHeight, window.innerWidth, window.innerHeight, true, false, false);
 
+              context.setDefaultFramebuffer(0);
               nativeWindow.bindFrameBuffer(0);
             } else if (mlGlContext === context) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
@@ -657,6 +664,7 @@ if (require.main === module) {
 
               nativeWindow.blitFrameBuffer(mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
 
+              context.setDefaultFramebuffer(mlFbo);
               nativeWindow.bindFrameBuffer(mlFbo);
             }
             nativeWindow.swapBuffers(context.getWindowHandle());
