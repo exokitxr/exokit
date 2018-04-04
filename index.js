@@ -17,55 +17,6 @@ const {THREE} = exokit;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeMl, nativeWindow} = nativeBindings;
 
-/* const {VERSION} = nativeGl;
-
-nativeGl = {};
-nativeGl.VERSION = VERSION; */
-/* nativeGl.enable = () => {};
-nativeGl.disable = () => {};
-nativeGl.clear = () => {};
-nativeGl.getExtension = () => null;
-nativeGl.getParameter = id => {
-  if (id === VERSION) {
-    return 'WebGL 1';
-  } else {
-    return {};
-  }
-};
-nativeGl.createTexture = () => {};
-nativeGl.bindTexture = () => {};
-nativeGl.texParameteri = () => {};
-const _texImage2D = nativeGl.prototype.texImage2D;
-nativeGl.prototype.texImage2D = function(a, b, c, d, e, f) {
-  if (f.stack) {
-    console.log('got teximage2d', f && f.constructor && f.constructor.name, f && f.stack);
-  }
-  try {
-    return _texImage2D.apply(this, arguments);
-  } catch(err) {
-    console.log('failed teximage2d', f && f.constructor && f.constructor.name);
-
-    throw err;
-  }
-};
-nativeGl.clearColor = () => {};
-nativeGl.clearDepth = () => {};
-nativeGl.clearStencil = () => {};
-nativeGl.depthFunc = () => {};
-nativeGl.frontFace = () => {};
-nativeGl.cullFace = () => {};
-nativeGl.blendEquationSeparate = () => {};
-nativeGl.blendFuncSeparate = () => {};
-nativeGl.blendEquation = () => {};
-nativeGl.blendFunc = () => {};
-const _viewport = nativeGl.viewport;
-nativeGl.viewport = function() {
-  console.log('gl viewport', arguments, new Error().stack);
-  _viewport.apply(this, arguments);
-}; */
-
-// CALLBACKS
-
 const dataPath = __dirname;
 
 const canvasSymbol = Symbol();
