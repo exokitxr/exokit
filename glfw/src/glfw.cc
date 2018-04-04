@@ -859,7 +859,7 @@ NAN_METHOD(DestroyWindow) {
   glfwDestroyWindow(window);
 }
 
-NAN_METHOD(SetWindowTitle) {
+/* NAN_METHOD(SetWindowTitle) {
   Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   String::Utf8Value str(info[1]->ToString());
@@ -870,7 +870,7 @@ NAN_METHOD(GetWindowSize) {
   Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   int w,h;
-  glfwGetWindowSize(window, &w, &h);
+  glfwq(window, &w, &h);
   Local<Object> result = Nan::New<Object>();
   result->Set(JS_STR("width"),JS_INT(w));
   result->Set(JS_STR("height"),JS_INT(h));
@@ -880,7 +880,7 @@ NAN_METHOD(GetWindowSize) {
 NAN_METHOD(SetWindowSize) {
   Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwSetWindowSize(window, info[1]->Uint32Value(),info[2]->Uint32Value());
+  glfwSetWindowSize(window, info[1]->Uint32Value(), info[2]->Uint32Value());
 }
 
 NAN_METHOD(SetWindowPos) {
@@ -921,7 +921,7 @@ NAN_METHOD(RestoreWindow) {
   Nan::HandleScope scope;
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   glfwRestoreWindow(window);
-}
+} */
 
 NAN_METHOD(Show) {
   Nan::HandleScope scope;
