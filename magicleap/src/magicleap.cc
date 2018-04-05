@@ -41,8 +41,15 @@ void beginPlanesQuery(const MLVec3f &position, const MLQuaternionf &rotation, ML
   if (!MLHandleIsValid(planesQueryHandle)) {
     MLPlanesQuery query;
     query.flags = flags;
-    query.bounds_center = position;
-    query.bounds_rotation = rotation;
+    /* query.bounds_center = position;
+    query.bounds_rotation = rotation; */
+    query.bounds_center.x = 0;
+    query.bounds_center.y = 0;
+    query.bounds_center.z = 0;
+    query.bounds_rotation.x = 0;
+    query.bounds_rotation.y = 0;
+    query.bounds_rotation.z = 0;
+    query.bounds_rotation.w = 1;
     query.bounds_extents.x = 10;
     query.bounds_extents.y = 10;
     query.bounds_extents.z = 10;
@@ -260,8 +267,15 @@ NAN_METHOD(MLContext::Init) {
 
   std::thread([mlContext]() {
     MLMeshingSettings meshingSettings;
-    meshingSettings.bounds_center = mlContext->position;
-    meshingSettings.bounds_rotation = mlContext->rotation;
+    /* meshingSettings.bounds_center = mlContext->position;
+    meshingSettings.bounds_rotation = mlContext->rotation; */
+    meshingSettings.bounds_center.x = 0;
+    meshingSettings.bounds_center.y = 0;
+    meshingSettings.bounds_center.z = 0;
+    meshingSettings.bounds_rotation.x = 0;
+    meshingSettings.bounds_rotation.y = 0;
+    meshingSettings.bounds_rotation.z = 0;
+    meshingSettings.bounds_rotation.w = 1;
     meshingSettings.bounds_extents.x = 10;
     meshingSettings.bounds_extents.y = 10;
     meshingSettings.bounds_extents.z = 10;
@@ -296,11 +310,11 @@ NAN_METHOD(MLContext::Init) {
       std::unique_lock<std::mutex> uniqueLock(mesherCvMutex);
       mlContext->mesherCv.wait(uniqueLock);
 
-      {
+      /* {
         std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
         meshingSettings.bounds_center = mlContext->position;
         meshingSettings.bounds_rotation = mlContext->rotation;
-      }
+      } */
 
       if (!MLMeshingUpdate(mlContext->meshTracker, &meshingSettings)) {
         ML_LOG(Error, "MLMeshingUpdate failed: %s", application_name);
