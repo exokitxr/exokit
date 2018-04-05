@@ -517,9 +517,9 @@ if (require.main === module) {
           const rightFov = localFovArray2;
 
           // build stage parameters
-          vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
-          _normalizeMatrixArray(localFloat32Array4);
-          stageParameters.sittingToStandingTransform.set(localFloat32Array4);
+          // vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
+          // _normalizeMatrixArray(localFloat32Array4);
+          // stageParameters.sittingToStandingTransform.set(localFloat32Array4);
 
           // build gamepads data
           vrPresentState.system.GetControllerState(0, localGamepadArray);
