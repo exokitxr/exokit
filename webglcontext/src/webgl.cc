@@ -1987,11 +1987,10 @@ NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
   int target = info[0]->Int32Value();
-  int buffer = info[1]->IsNull() ? 0 : info[1]->Int32Value();
-
-  if (buffer == 0) {
-    buffer = gl->defaultFramebuffer;
-  }
+  int buffer = info[1]->IsNull() ?
+    gl->defaultFramebuffer
+  :
+    info[1]->Int32Value();
 
   glBindFramebuffer(target, buffer);
 }
