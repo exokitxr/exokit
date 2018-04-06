@@ -1,3 +1,0 @@
-[submodule "deps/exokit-bindings"]
-	path = deps/exokit-bindings
-	url = https://github.com/modulesio/exokit-bindings
