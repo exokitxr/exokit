@@ -554,16 +554,19 @@ NAN_METHOD(MLContext::SubmitFrame) {
   const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
 
   MLStatus out_status;
-  for (int camera = 0; camera < 2; ++camera) {
+  for (int i = 0; i < 2; i++) {
+    MLGraphicsVirtualCameraInfo
+ &camera = mlContext->virtual_camera_array.virtual_cameras[i];
+
     glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, camera);
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, camera);
+    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
 
-    glBlitFramebuffer(camera == 0 ? 0 : width/2, 0,
-      camera == 0 ? width/2 : width, height,
+    glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
+      i == 0 ? width/2 : width, height,
       viewport.x, viewport.y,
       viewport.w, viewport.h,
       GL_COLOR_BUFFER_BIT,
@@ -571,7 +574,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, mlContext->virtual_camera_array.virtual_cameras[camera].sync_object, &out_status);
+    MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object, &out_status);
     if (out_status != MLStatus_OK) {
       ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", out_status);
     }
