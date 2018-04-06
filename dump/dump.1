@@ -1,0 +1,16 @@
+# dump.1
+
+- Bugfix VR stage offset in openvr system bindings (by deleting stage updates).
+- Added robots bounding boxes to collision scene.
+- Added trigger integration to MLSDK render loop.
+- Added trigger detection to robots scene controller placeholder boxes.
+- Replaced controller placeholder boxes with vive models.
+- Added waypoints drop via vive controllers.
+- Add robots tasking to waypoints.
+- Bugfix waypoints cancellation on robots task completion.
+- Added vive controller coloring on trigger.
+- Remove three.js core WebVR integration button.
+- Break out VR + ML + desktop flows into separate modes.
+- Add pointer lock keyboard + mouse controls.
+- Made robots collision camera in movement vector instead of slerped facing vector (makes more phyiscal sense).
+- Fixed Zeo regression where Worker `self` was missing some global exposures (`setInterval`). Regressed when rewriting `importScripts`.
