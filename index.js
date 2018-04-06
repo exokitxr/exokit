@@ -74,7 +74,7 @@ const projectionArray = new Float32Array(16 * 2);
 const viewportArray = new Uint32Array(4);
 const planesArray = new Float32Array(planeEntrySize * maxNumPlanes);
 const numPlanesArray = new Uint32Array(1);
-const controllersArray = new Float32Array((3 + 4) * 2);
+const controllersArray = new Float32Array((3 + 4 + 1) * 2);
 const gesturesArray = new Float32Array(4 * 2);
 const meshArray = [null, null, null];
 
@@ -599,6 +599,13 @@ if (require.main === module) {
           controllersArrayIndex += 3;
           leftGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
           controllersArrayIndex += 4;
+          const leftTriggerValue = controllersArray[controllersArrayIndex];
+          console.log('left trigger value', leftTriggerValue);
+          leftGamepad.buttons[1].value = leftTriggerValue;
+          const leftTriggerPushed = leftTriggerValue > 0.5;
+          leftGamepad.buttons[1].touched = leftTriggerPushed;
+          leftGamepad.buttons[1].pressed = leftTriggerPushed;
+          controllersArrayIndex++;
           
           let gesturesArrayIndex = 0;
           leftGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
@@ -612,6 +619,13 @@ if (require.main === module) {
           controllersArrayIndex += 3;
           rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
           controllersArrayIndex += 4;
+          const rightTriggerValue = controllersArray[controllersArrayIndex];
+          console.log('right trigger value', rightTriggerValue);
+          rightGamepad.buttons[1].value = leftTriggerValue;
+          const rightTriggerPushed = rightTriggerValue > 0.5;
+          rightGamepad.buttons[1].touched = rightTriggerPushed;
+          rightGamepad.buttons[1].pressed = rightTriggerPushed;
+          controllersArrayIndex++;
           
           rightGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
           gesturesArrayIndex += 3;
