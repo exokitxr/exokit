@@ -600,7 +600,6 @@ if (require.main === module) {
           leftGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
           controllersArrayIndex += 4;
           const leftTriggerValue = controllersArray[controllersArrayIndex];
-          console.log('left trigger value', leftTriggerValue);
           leftGamepad.buttons[1].value = leftTriggerValue;
           const leftTriggerPushed = leftTriggerValue > 0.5;
           leftGamepad.buttons[1].touched = leftTriggerPushed;
@@ -620,7 +619,6 @@ if (require.main === module) {
           rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
           controllersArrayIndex += 4;
           const rightTriggerValue = controllersArray[controllersArrayIndex];
-          console.log('right trigger value', rightTriggerValue);
           rightGamepad.buttons[1].value = leftTriggerValue;
           const rightTriggerPushed = rightTriggerValue > 0.5;
           rightGamepad.buttons[1].touched = rightTriggerPushed;
