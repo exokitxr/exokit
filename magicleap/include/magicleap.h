@@ -31,7 +31,7 @@ using namespace node;
 
 #define MAX_NUM_PLANES (32)
 #define PLANE_ENTRY_SIZE (3 + 4 + 2 + 1)
-#define CONTROLLER_ENTRY_SIZE (3 + 4)
+#define CONTROLLER_ENTRY_SIZE (3 + 4 + 1)
 
 namespace ml {
 

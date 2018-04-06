@@ -422,6 +422,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           MLInputControllerState &controllerState = controllerStates[i];
           MLVec3f &position = controllerState.position;
           MLQuaternionf &orientation = controllerState.orientation;
+          float trigger = controllerState.trigger_normalized;
 
           controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
           controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 1, JS_NUM(position.y));
@@ -430,6 +431,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 4, JS_NUM(orientation.y));
           controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 5, JS_NUM(orientation.z));
           controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 6, JS_NUM(orientation.w));
+          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 7, JS_NUM(trigger));
         }
       } else {
         ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
