@@ -381,10 +381,12 @@ const FRAME_TIME_MIN = FRAME_TIME_MAX / 5;
 if (require.main === module) {
   const args = (() => {
     const minimistArgs = minimist(process.argv.slice(2), {
-      string: [
+      boolean: [
         'p',
         'perf',
         'performance',
+      ],
+      string: [
         's',
         'size',
       ],
