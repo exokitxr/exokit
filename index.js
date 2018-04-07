@@ -401,7 +401,7 @@ if (require.main === module) {
     };
   })();
   if (args.size) {
-    const match = args.size.match(/^([0-9]+)x([0-9]+])$/);
+    const match = args.size.match(/^([0-9]+)x([0-9]+)$/);
     if (match) {
       const w = parseInt(match[1], 10);
       const h = parseInt(match[2], 10);
