@@ -457,8 +457,6 @@ if (require.main === module) {
       });
 
       let lastFrameTime = Date.now();
-      let lastSecond = Math.floor(lastFrameTime / 1000);
-      let fps = 0;
       const leftGamepad = new window.Gamepad('left', 0);
       const rightGamepad = new window.Gamepad('right', 1);
       const gamepads = [null, null];
@@ -696,18 +694,6 @@ if (require.main === module) {
         const now = Date.now();
         timeout = setTimeout(_recurse, Math.min(Math.max(FRAME_TIME_MAX - (now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX));
         lastFrameTime = now;
-
-        // compute FPS
-        const curSecond = Math.floor(now / 1000);
-        if (curSecond != lastSecond) {
-          for (let i = 0; i < contexts.length; i++) {
-            nativeWindow.setWindowTitle(contexts[i].getWindowHandle(), `ExoKit - ${fps} FPS`);
-          }
-          fps = 0;
-          lastSecond = curSecond;
-        } else {
-          fps++;
-        }
       };
       _recurse();
 
