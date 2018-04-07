@@ -376,8 +376,8 @@ module.exports = exokit;
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
 const FPS = 90;
-const FRAME_TIME_MAX = 1000 / FPS;
-const FRAME_TIME_MIN = FRAME_TIME_MAX / 5;
+const FRAME_TIME_MAX = ~~(1000 / FPS);
+const FRAME_TIME_MIN = 0;
 if (require.main === module) {
   const args = (() => {
     const minimistArgs = minimist(process.argv.slice(2), {
@@ -831,7 +831,7 @@ if (require.main === module) {
 
         // wait for next frame
         const now = Date.now();
-        timeout = setTimeout(_recurse, Math.min(Math.max(FRAME_TIME_MAX - (now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX));
+        timeout = setTimeout(_recurse, Math.min(Math.max(FRAME_TIME_MAX - ~~(now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX));
         lastFrameTime = now;
       };
       _recurse();
