@@ -486,7 +486,7 @@ if (require.main === module) {
         submit: 0,
         total: 0,
       };
-      const TIMESTAMP_FRAMES = 10;
+      const TIMESTAMP_FRAMES = 90;
       const leftGamepad = new window.Gamepad('left', 0);
       const rightGamepad = new window.Gamepad('right', 1);
       const gamepads = [null, null];
