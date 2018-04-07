@@ -37,13 +37,14 @@ const _isAttached = el => {
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   gl[canvasSymbol] = canvas;
 
-  const windowHandle = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight, _isAttached(canvas));
+  const canvasWidth = canvas.width || innerWidth;
+  const canvasHeight = canvas.height || innerHeight;
+  const windowHandle = nativeWindow.create(canvasWidth, canvasHeight, _isAttached(canvas));
   gl.setWindowHandle(windowHandle);
 
-  // XXX move this detection to native code on window construction
   const window = canvas.ownerDocument.defaultView;
-  const {width} = nativeWindow.getFramebufferSize(windowHandle);
-  window.devicePixelRatio = width / (canvas.width || innerWidth);
+  const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
+  window.devicePixelRatio = framebufferWidth / canvasWidth;
 
   const ondomchange = () => {
     if (_isAttached(canvas)) {
