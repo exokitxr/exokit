@@ -39,11 +39,11 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
   const windowHandle = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight, _isAttached(canvas));
   gl.setWindowHandle(windowHandle);
-  {
-    const window = canvas.ownerDocument.defaultView;
-    const {width, height} = nativeWindow.getFramebufferSize(windowHandle);
-    window.devicePixelRatio = width / (canvas.width || innerWidth);
-  }
+
+  // XXX move this detection to native code on window construction
+  const window = canvas.ownerDocument.defaultView;
+  const {width} = nativeWindow.getFramebufferSize(windowHandle);
+  window.devicePixelRatio = width / (canvas.width || innerWidth);
 
   const ondomchange = () => {
     if (_isAttached(canvas)) {
