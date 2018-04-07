@@ -482,7 +482,7 @@ if (require.main === module) {
         prepare: 0,
         events: 0,
         media: 0,
-        users: 0,
+        user: 0,
         submit: 0,
         total: 0,
       };
@@ -504,7 +504,7 @@ if (require.main === module) {
             timestamps.prepare = 0;
             timestamps.events = 0;
             timestamps.media = 0;
-            timestamps.users = 0;
+            timestamps.user = 0;
             timestamps.submit = 0;
             timestamps.total = 0;
           } else {
