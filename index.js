@@ -496,7 +496,7 @@ if (require.main === module) {
       const _recurse = () => {
         if (args.performance) {
           if (timestamps.frames >= TIMESTAMP_FRAMES) {
-            console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS ${timestamps.wait}ms wait ${timestamps.pose}ms pose ${timestamps.prepare}ms prepare ${timestamps.events}ms events ${timestamps.media}ms media ${timestamps.user}ms user ${timestamps.submit}ms submit`);
+            console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.wait}ms wait | ${timestamps.pose}ms pose | ${timestamps.prepare}ms prepare | ${timestamps.events}ms events | ${timestamps.media}ms media | ${timestamps.user}ms user | ${timestamps.submit}ms submit`);
 
             timestamps.frames = 0;
             timestamps.wait = 0;
