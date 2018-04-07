@@ -474,6 +474,19 @@ if (require.main === module) {
       });
 
       let lastFrameTime = Date.now();
+      const timestamps = {
+        frames: 0,
+        last: Date.now(),
+        wait: 0,
+        pose: 0,
+        prepare: 0,
+        events: 0,
+        media: 0,
+        users: 0,
+        submit: 0,
+        total: 0,
+      };
+      const TIMESTAMP_FRAMES = 10;
       const leftGamepad = new window.Gamepad('left', 0);
       const rightGamepad = new window.Gamepad('right', 1);
       const gamepads = [null, null];
@@ -481,6 +494,29 @@ if (require.main === module) {
       const stageParameters = new window.VRStageParameters();
       let timeout = null;
       const _recurse = () => {
+        if (args.performance) {
+          if (timestamps.frames >= TIMESTAMP_FRAMES) {
+            console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS ${timestamps.wait}ms wait ${timestamps.pose}ms pose ${timestamps.prepare}ms prepare ${timestamps.events}ms events ${timestamps.media}ms media ${timestamps.user}ms user ${timestamps.submit}ms submit`);
+
+            timestamps.frames = 0;
+            timestamps.wait = 0;
+            timestamps.pose = 0;
+            timestamps.prepare = 0;
+            timestamps.events = 0;
+            timestamps.media = 0;
+            timestamps.users = 0;
+            timestamps.submit = 0;
+            timestamps.total = 0;
+          } else {
+            timestamps.frames++;
+          }
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.wait += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
+        }
+
         if (vrPresentState.isPresenting) {
           // wait for frame
           vrPresentState.compositor.WaitGetPoses(
@@ -489,6 +525,13 @@ if (require.main === module) {
             localFloat32Array2, // left controller
             localFloat32Array3 // right controller
           );
+          if (args.performance) {
+            const now = Date.now();
+            const diff = now - timestamps.last;
+            timestamps.wait += diff;
+            timestamps.total += diff;
+            timestamps.last = now;
+          }
           _normalizeMatrixArray(localFloat32Array);
           _normalizeMatrixArray(localFloat32Array2);
           _normalizeMatrixArray(localFloat32Array3);
@@ -613,9 +656,24 @@ if (require.main === module) {
 
           vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.msFbo);
           nativeWindow.bindFrameBuffer(vrPresentState.msFbo);
+
+          if (args.performance) {
+            const now = Date.now();
+            const diff = now - timestamps.last;
+            timestamps.prepare += diff;
+            timestamps.total += diff;
+            timestamps.last = now;
+          }
         } else if (isMlPresenting) {
           mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray, meshArray);
-          
+          if (args.performance) {
+            const now = Date.now();
+            const diff = now - timestamps.last;
+            timestamps.pose += diff;
+            timestamps.total += diff;
+            timestamps.last = now;
+          }
+
           let controllersArrayIndex = 0;
           leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
           controllersArrayIndex += 3;
@@ -666,16 +724,53 @@ if (require.main === module) {
 
           mlGlContext.setDefaultFramebuffer(mlFbo);
           nativeWindow.bindFrameBuffer(mlFbo);
+
+          if (args.performance) {
+            const now = Date.now();
+            const diff = now - timestamps.last;
+            timestamps.prepare += diff;
+            timestamps.total += diff;
+            timestamps.last = now;
+          }
+        } else {
+          if (args.performance) {
+            const now = Date.now();
+            const diff = now - timestamps.last;
+            timestamps.pose += diff;
+            timestamps.total += diff;
+            timestamps.last = now;
+          }
         }
 
         // poll for window events
         nativeWindow.pollEvents();
+        if (args.performance) {
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.events += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
+        }
 
         // update media frames
         nativeVideo.Video.updateAll();
+        if (args.performance) {
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.media += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
+        }
 
         // trigger requestAnimationFrame
         window.tickAnimationFrame();
+        if (args.performance) {
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.user += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
+        }
 
         // submit frame
         for (let i = 0; i < contexts.length; i++) {
@@ -705,6 +800,13 @@ if (require.main === module) {
 
             context.clearDirty();
           }
+        }
+        if (args.performance) {
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.submit += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
         }
 
         // wait for next frame
