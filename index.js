@@ -38,6 +38,11 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
   const windowHandle = nativeWindow.create(canvas.width || innerWidth, canvas.height || innerHeight, _isAttached(canvas));
   gl.setWindowHandle(windowHandle);
+  {
+    const window = canvas.ownerDocument.defaultView;
+    const {width, height} = nativeWindow.getFramebufferSize(windowHandle);
+    window.devicePixelRatio = width / (canvas.width || innerWidth);
+  }
 
   const ondomchange = () => {
     if (_isAttached(canvas)) {
@@ -340,8 +345,8 @@ nativeWindow.setEventHandler((type, data) => {
       }
       case 'mousemove': {
         if (window.document.pointerLockElement) {
-          data.movementX = data.pageX - (window.innerWidth / window.devicePixelRatio / 2);
-          data.movementY = data.pageY - (window.innerHeight / window.devicePixelRatio / 2);
+          data.movementX = data.pageX - (window.innerWidth / 2);
+          data.movementY = data.pageY - (window.innerHeight / 2);
 
           nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
         }
