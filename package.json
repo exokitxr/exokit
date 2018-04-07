@@ -47,6 +47,6 @@
     "repl.history": "^0.1.4",
     "rimraf": "^2.6.2",
     "webgl-to-opengl": "0.0.3",
-    "window-worker": "0.0.54"
+    "window-worker": "0.0.55"
   }
 }
