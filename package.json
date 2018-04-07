@@ -4,6 +4,7 @@
   "description": "Javascript web browser for the post-screen world",
   "main": "index.js",
   "scripts": {
+    "build": "node-gyp build",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 0"
   },
