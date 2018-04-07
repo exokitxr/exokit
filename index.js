@@ -10,6 +10,7 @@ const repl = require('repl');
 const mkdirp = require('mkdirp');
 const replHistory = require('repl.history');
 const exokit = require('exokit-core');
+const minimist = require('minimist');
 const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 exokit.setNativeBindingsModule(nativeBindingsModulePath);
@@ -377,6 +378,22 @@ const FPS = 90;
 const FRAME_TIME_MAX = 1000 / FPS;
 const FRAME_TIME_MIN = FRAME_TIME_MAX / 5;
 if (require.main === module) {
+  const minimistArgs = minimist(process.argv.slice(2), {
+    string: [
+      'p',
+      'perf',
+      'performance',
+    ],
+    alias: {
+      p: 'performance',
+      perf: 'performance',
+    },
+  });
+  const args = {
+    url: minimistArgs._[0] || '',
+    performance: !!minimistArgs.performance,
+  };
+
   const _prepare = () => {
     if (!process.env['DISPLAY']) {
       process.env['DISPLAY'] = ':0.0';
@@ -703,7 +720,7 @@ if (require.main === module) {
       window.on('navigate', newWindowCb);
     };
 
-    let url = process.argv[2];
+    let {url} = args;
     if (url) {
       if (url.indexOf('://') < 0) {
         url = 'http://' + url;
