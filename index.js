@@ -379,21 +379,38 @@ const FPS = 90;
 const FRAME_TIME_MAX = 1000 / FPS;
 const FRAME_TIME_MIN = FRAME_TIME_MAX / 5;
 if (require.main === module) {
-  const minimistArgs = minimist(process.argv.slice(2), {
-    string: [
-      'p',
-      'perf',
-      'performance',
-    ],
-    alias: {
-      p: 'performance',
-      perf: 'performance',
-    },
-  });
-  const args = {
-    url: minimistArgs._[0] || '',
-    performance: !!minimistArgs.performance,
-  };
+  const args = (() => {
+    const minimistArgs = minimist(process.argv.slice(2), {
+      string: [
+        'p',
+        'perf',
+        'performance',
+        's',
+        'size',
+      ],
+      alias: {
+        p: 'performance',
+        perf: 'performance',
+        s: 'size',
+      },
+    });
+    return {
+      url: minimistArgs._[0] || '',
+      performance: !!minimistArgs.performance,
+      size: minimistArgs.size,
+    };
+  })();
+  if (args.size) {
+    const match = args.size.match(/^([0-9]+)x([0-9]+])$/);
+    if (match) {
+      const w = parseInt(match[1], 10);
+      const h = parseInt(match[2], 10);
+      if (w > 0 && h > 0) {
+        innerWidth = w;
+        innerHeight = h;
+      }
+    }
+  }
 
   const _prepare = () => {
     if (!process.env['DISPLAY']) {
