@@ -717,8 +717,11 @@ if (require.main === module) {
       window.on('navigate', newWindowCb);
     };
 
-    const url = process.argv[2];
+    let url = process.argv[2];
     if (url) {
+      if (url.indexOf('://') < 0) {
+        url = 'http://' + url;
+      }
       return exokit.load(url, {
         dataPath,
       })
