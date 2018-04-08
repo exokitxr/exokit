@@ -956,7 +956,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreateLinearGradient) {
       info[2],
       info[3],
     };
-    Local<Object> canvasGradientObj = canvasGradientCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Object> canvasGradientObj = canvasGradientCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
     info.GetReturnValue().Set(canvasGradientObj);
   } else {
     Nan::ThrowError("invalid arguments");
@@ -977,7 +977,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreateRadialGradient) {
       info[4],
       info[5],
     };
-    Local<Object> canvasGradientObj = canvasGradientCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Object> canvasGradientObj = canvasGradientCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
     info.GetReturnValue().Set(canvasGradientObj);
   } else {
     Nan::ThrowError("invalid arguments");
@@ -994,7 +994,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreatePattern) {
       info[0],
       info[1],
     };
-    Local<Object> canvasPatternObj = canvasPatternCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Object> canvasPatternObj = canvasPatternCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
     info.GetReturnValue().Set(canvasPatternObj);
   } else {
     Nan::ThrowError("invalid arguments");
@@ -1070,7 +1070,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreateImageData) {
     Number::New(Isolate::GetCurrent(), w),
     Number::New(Isolate::GetCurrent(), h),
   };
-  Local<Object> imageDataObj = imageDataCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+  Local<Object> imageDataObj = imageDataCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
 
   info.GetReturnValue().Set(imageDataObj);
 }
@@ -1091,7 +1091,7 @@ NAN_METHOD(CanvasRenderingContext2D::GetImageData) {
     Number::New(Isolate::GetCurrent(), w),
     Number::New(Isolate::GetCurrent(), h),
   };
-  Local<Object> imageDataObj = imageDataCons->NewInstance(sizeof(argv)/sizeof(argv[0]), argv);
+  Local<Object> imageDataObj = imageDataCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(imageDataObj);
 
   bool ok = context->surface->getCanvas()->readPixels(imageData->bitmap, x, y);

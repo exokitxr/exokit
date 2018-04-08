@@ -29,7 +29,7 @@ void callFunction(const char *funcname, const int argc, Local<Value> argv[]) {
   Local<Function> jsfunc = Local<Function>::Cast(jsfunc_val);
 
   // call function, 'this' points to global object
-  TryCatch try_catch;
+  TryCatch try_catch(Isolate::GetCurrent());
   Local<Value> result = jsfunc->Call(global, argc, argv);
 
   if (result.IsEmpty()) {

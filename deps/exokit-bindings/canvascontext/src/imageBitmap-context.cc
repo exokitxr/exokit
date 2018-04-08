@@ -13,12 +13,12 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons)
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  proto->Set(JS_STR("Image"), imageCons);
 
   Local<Function> ctorFn = ctor->GetFunction();
+  proto->Set(JS_STR("ImageBitmap"), ctorFn);
 
   Local<Function> createImageBitmapFn = Nan::New<Function>(CreateImageBitmap);
-  createImageBitmapFn->Set(JS_STR("ImageBitmap"), ctorFn);
-  createImageBitmapFn->Set(JS_STR("Image"), imageCons);
 
   ctorFn->Set(JS_STR("createImageBitmap"), createImageBitmapFn);
 
@@ -188,8 +188,8 @@ NAN_METHOD(ImageBitmap::CreateImageBitmap) {
       unsigned int byteLength = buffer->Get(JS_STR("byteLength"))->Uint32Value();
       Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(buffer->Get(JS_STR("buffer")));
 
-      Local<Function> imageConstructor = Local<Function>::Cast(info.Callee()->Get(JS_STR("Image")));
-      imageObj = imageConstructor->NewInstance(0, nullptr);
+      Local<Function> imageConstructor = Local<Function>::Cast(info.This()->Get(JS_STR("Image")));
+      imageObj = imageConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
 
       Image *image = ObjectWrap::Unwrap<Image>(imageObj);
       if (!image->Load((unsigned char *)arrayBuffer->GetContents().Data() + byteOffset, byteLength)) {
@@ -215,7 +215,7 @@ NAN_METHOD(ImageBitmap::CreateImageBitmap) {
     :
       false;
 
-    Local<Function> imageBitmapConstructor = Local<Function>::Cast(info.Callee()->Get(JS_STR("ImageBitmap")));
+    Local<Function> imageBitmapConstructor = Local<Function>::Cast(info.This()->Get(JS_STR("ImageBitmap")));
     Local<Value> argv[] = {
       imageObj,
       Nan::New<Integer>(x),
@@ -224,7 +224,7 @@ NAN_METHOD(ImageBitmap::CreateImageBitmap) {
       Nan::New<Integer>(height),
       Nan::New<Boolean>(flipY),
     };
-    Local<Object> imageBitmapObj = imageBitmapConstructor->NewInstance(sizeof(argv) / sizeof(argv[0]), argv);
+    Local<Object> imageBitmapObj = imageBitmapConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
 
     info.GetReturnValue().Set(imageBitmapObj);
   } else {
