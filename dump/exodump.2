@@ -1,0 +1,11 @@
+# exodump.2
+
+- Bugfix window-worker request script hang due to IPC buffers truncation.
+- Add --performance flag for logging.
+- Bugfix --performance flag not treated as boolean.
+- Create initial webmr hub browser frame.
+- Find performance bottleneck in three.js performance demo (= node 9 typed array set functions: https://bugs.chromium.org/p/v8/issues/detail?id=3590&desc=2).
+- Build raw-buffer module for Node 10.
+- Try to build remainder of native modules (raw-buffer, child-process-thread) for node 10.
+- Try Shawn's shmem as an alternative buffer IPC mechanism for child-process-thread/workers.
+- Table shmem due to Windows permissions issues from rusted code.
