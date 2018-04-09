@@ -15,7 +15,7 @@ Handle<Object> Image::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Nan::SetMethod(proto,"load", LoadMethod);
+  Nan::SetMethod(proto, "load", LoadMethod);
 
   return scope.Escape(ctor->GetFunction());
 }
