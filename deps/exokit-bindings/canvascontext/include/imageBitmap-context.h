@@ -28,7 +28,6 @@ protected:
   static NAN_GETTER(WidthGetter);
   static NAN_GETTER(HeightGetter);
   static NAN_GETTER(DataGetter);
-  static NAN_METHOD(CreateImageBitmap);
 
   ImageBitmap();
   ImageBitmap(unsigned int width, unsigned int height, unsigned char *data);

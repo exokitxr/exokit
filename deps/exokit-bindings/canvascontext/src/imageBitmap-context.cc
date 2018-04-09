@@ -13,14 +13,8 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons)
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  proto->Set(JS_STR("Image"), imageCons);
 
   Local<Function> ctorFn = ctor->GetFunction();
-  proto->Set(JS_STR("ImageBitmap"), ctorFn);
-
-  Local<Function> createImageBitmapFn = Nan::New<Function>(CreateImageBitmap);
-
-  ctorFn->Set(JS_STR("createImageBitmap"), createImageBitmapFn);
 
   return scope.Escape(ctorFn);
 }
@@ -168,68 +162,6 @@ NAN_GETTER(ImageBitmap::DataGetter) {
   }
 
   info.GetReturnValue().Set(Nan::New(imageBitmap->dataArray));
-}
-
-NAN_METHOD(ImageBitmap::CreateImageBitmap) {
-  Nan::HandleScope scope;
-
-  if (info[0]->IsObject()) {
-    Local<Object> imageObj;
-    if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
-      Local<Value> imageValue = info[0]->ToObject()->Get(JS_STR("image"));
-      if (imageValue->IsObject()) {
-        imageObj = imageValue->ToObject();
-      } else {
-        return Nan::ThrowError("Invalid arguments");
-      }
-    } else if (info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("Blob"))) {
-      Local<Object> buffer = info[0]->ToObject()->Get(JS_STR("buffer"))->ToObject();
-      unsigned int byteOffset = buffer->Get(JS_STR("byteOffset"))->Uint32Value();
-      unsigned int byteLength = buffer->Get(JS_STR("byteLength"))->Uint32Value();
-      Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(buffer->Get(JS_STR("buffer")));
-
-      Local<Function> imageConstructor = Local<Function>::Cast(info.This()->Get(JS_STR("Image")));
-      imageObj = imageConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
-
-      Image *image = ObjectWrap::Unwrap<Image>(imageObj);
-      if (!image->Load((unsigned char *)arrayBuffer->GetContents().Data() + byteOffset, byteLength)) {
-        return Nan::ThrowError("Failed to load image");
-      }
-    } else {
-      return Nan::ThrowError("Invalid arguments");
-    }
-
-    int x = info[1]->IsNumber() ? info[1]->Int32Value() : 0;
-    int y = info[2]->IsNumber() ? info[2]->Int32Value() : 0;
-    unsigned int width = info[3]->IsNumber() ? info[3]->Uint32Value() : ObjectWrap::Unwrap<Image>(imageObj)->GetWidth();
-    unsigned int height = info[4]->IsNumber() ? info[4]->Uint32Value() : ObjectWrap::Unwrap<Image>(imageObj)->GetHeight();
-
-    Local<Value> imageOrientationValue;
-    if (info[1]->IsObject()) {
-      imageOrientationValue = info[1]->ToObject()->Get(JS_STR("imageOrientation"));
-    } else if (info[5]->IsObject()) {
-      imageOrientationValue = info[5]->ToObject()->Get(JS_STR("imageOrientation"));
-    }
-    bool flipY = (!imageOrientationValue.IsEmpty() && imageOrientationValue->IsString()) ?
-      (strcmp(*String::Utf8Value(imageOrientationValue), "flipY") == 0)
-    :
-      false;
-
-    Local<Function> imageBitmapConstructor = Local<Function>::Cast(info.This()->Get(JS_STR("ImageBitmap")));
-    Local<Value> argv[] = {
-      imageObj,
-      Nan::New<Integer>(x),
-      Nan::New<Integer>(y),
-      Nan::New<Integer>(width),
-      Nan::New<Integer>(height),
-      Nan::New<Boolean>(flipY),
-    };
-    Local<Object> imageBitmapObj = imageBitmapConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
-
-    info.GetReturnValue().Set(imageBitmapObj);
-  } else {
-    Nan::ThrowError("Invalid arguments");
-  }
 }
 
 ImageBitmap::ImageBitmap() {}
