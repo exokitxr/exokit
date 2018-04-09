@@ -1,0 +1,11 @@
+# exodump.3
+
+- Find why Node 10 throws on bootloop -- natives syntax disabled by mainthread post-boot.
+- Revert reverts of Node 10 module ports.
+- Check whether LoadEnvironment for child-process-thread boots in node 9 nightlies (yes).
+- Find mangled dlsym names for global `allow_natives_syntax` for *nix and Windows.
+- Add double `allow_natives_syntax` dlsym hack to Node 10 performance.
+- Replace second `allow_natives_syntax` hack with child shipt boot passing the option as a flag.
+- Power remaining native bindings to Node 10.
+- Replace createImageBitmap with JS solution to avoid constructor hacks.
+- Bugfix natives Image/ImageBitmap requires for node 10.
