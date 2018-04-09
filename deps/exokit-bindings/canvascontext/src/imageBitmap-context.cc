@@ -3,7 +3,7 @@
 using namespace v8;
 using namespace node;
 
-Handle<Object> ImageBitmap::Initialize(Isolate *isolate, Local<Value> imageCons) {
+Handle<Object> ImageBitmap::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor

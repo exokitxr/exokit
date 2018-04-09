@@ -149,7 +149,7 @@ void InitExports(Handle<Object> exports) {
   Local<Value> imageData = makeImageData();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageData"), imageData);
 
-  Local<Value> imageBitmap = makeImageBitmap(image);
+  Local<Value> imageBitmap = makeImageBitmap();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageBitmap"), imageBitmap);
 
   Local<Value> path2d = makePath2D();

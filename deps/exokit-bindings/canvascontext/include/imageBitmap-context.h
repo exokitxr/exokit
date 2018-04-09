@@ -16,7 +16,7 @@ class Image;
 
 class ImageBitmap : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageCons);
+  static Handle<Object> Initialize(Isolate *isolate);
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();

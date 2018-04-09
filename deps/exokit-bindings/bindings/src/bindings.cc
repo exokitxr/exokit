@@ -27,12 +27,12 @@ Local<Object> makeImageData() {
   return scope.Escape(ImageData::Initialize(isolate));
 }
 
-Local<Object> makeImageBitmap(Local<Value> imageCons) {
+Local<Object> makeImageBitmap() {
   Isolate *isolate = Isolate::GetCurrent();
 
   Nan::EscapableHandleScope scope;
 
-  return scope.Escape(ImageBitmap::Initialize(isolate, imageCons));
+  return scope.Escape(ImageBitmap::Initialize(isolate));
 }
 
 Local<Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
