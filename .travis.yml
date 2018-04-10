@@ -26,6 +26,7 @@ matrix:
     - tar -zxf node.tar.gz
     - rm node.tar.gz
     - mv "node-v10.0.0-nightly2018040808a36a0666-linux-x64" node
+    - export PATH="$(pwd)/node/bin:$PATH"
     - ./node/bin/npm install
     - tar -czf exokit-linux-full.tar.gz --exclude=".*" *
     - rm -R node
@@ -58,6 +59,7 @@ matrix:
     - tar -zxf node.tar.gz
     - rm node.tar.gz
     - mv "node-v10.0.0-nightly2018040808a36a0666-darwin-x64" node
+    - export PATH="$(pwd)/node/bin:$PATH"
     - ./node/bin/npm install
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" *
     - rm -R node
