@@ -22,13 +22,14 @@ matrix:
     - sudo apt-get install -y libglfw-dev libglew-dev
     install:
     - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
-    - npm install
-    - tar -czf exokit-linux.tar.gz --exclude=".*" *
     - wget "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-linux-x64.tar.gz" -O node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
     - mv "node-v10.0.0-nightly2018040808a36a0666-linux-x64" node
+    - ./node/bin/npm install
     - tar -czf exokit-linux-full.tar.gz --exclude=".*" *
+    - rm -R node
+    - tar -czf exokit-linux.tar.gz --exclude=".*" *
     deploy:
     - provider: releases
       api_key:
@@ -53,13 +54,14 @@ matrix:
     before_install:
     - brew install glfw glew
     install:
-    - npm install
-    - tar -czf exokit-macos.tar.gz --exclude=".*" *
     - curl "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
     - mv "node-v10.0.0-nightly2018040808a36a0666-darwin-x64" node
+    - ./node/bin/npm install
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" *
+    - rm -R node
+    - tar -czf exokit-macos.tar.gz --exclude=".*" *
     deploy:
     - provider: releases
       api_key:
