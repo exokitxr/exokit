@@ -25,7 +25,7 @@ after_test:
       7z x node.zip
       rm node.zip
       mv "node-v10.0.0-nightly2018040808a36a0666-win-x64" node
-      .\node\bin\npm install
+      .\node\npm install
       7z a exokit-windows-full.zip * -xr'!.git'
       rm -r -fo node
       7z a exokit-windows.zip * -xr'!.git'
