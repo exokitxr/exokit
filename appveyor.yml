@@ -26,7 +26,7 @@ after_test:
       wget "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
-      mv "node-v9.8.0-win-x64" node
+      mv "node-v10.0.0-nightly2018040808a36a0666-win-x64" node
       rm -R node/node_modules
       7z a exokit-windows-full.zip * -xr'!.git'
 

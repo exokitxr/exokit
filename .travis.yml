@@ -27,7 +27,7 @@ matrix:
     - wget "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-linux-x64.tar.gz" -O node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
-    - mv "node-v9.8.0-linux-x64" node
+    - mv "node-v10.0.0-nightly2018040808a36a0666-linux-x64" node
     - tar -czf exokit-linux-full.tar.gz --exclude=".*" *
     deploy:
     - provider: releases
@@ -58,7 +58,7 @@ matrix:
     - curl "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
-    - mv "node-v9.8.0-darwin-x64" node
+    - mv "node-v10.0.0-nightly2018040808a36a0666-darwin-x64" node
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" *
     deploy:
     - provider: releases
