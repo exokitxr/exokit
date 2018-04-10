@@ -23,7 +23,7 @@ after_test:
   - ps: |
       npm install
       7z a exokit-windows.zip * -xr'!.git'
-      wget "https://nodejs.org/dist/v9.8.0/node-v9.8.0-win-x64.zip" -OutFile node.zip
+      wget "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
       mv "node-v9.8.0-win-x64" node

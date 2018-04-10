@@ -24,7 +24,7 @@ matrix:
     - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
     - npm install
     - tar -czf exokit-linux.tar.gz --exclude=".*" *
-    - wget "https://nodejs.org/dist/v9.8.0/node-v9.8.0-linux-x64.tar.gz" -O node.tar.gz
+    - wget "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-linux-x64.tar.gz" -O node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
     - mv "node-v9.8.0-linux-x64" node
@@ -55,7 +55,7 @@ matrix:
     install:
     - npm install
     - tar -czf exokit-macos.tar.gz --exclude=".*" *
-    - curl "https://nodejs.org/dist/v9.8.0/node-v9.8.0-darwin-x64.tar.gz" >node.tar.gz
+    - curl "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
     - mv "node-v9.8.0-darwin-x64" node
