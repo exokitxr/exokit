@@ -29,7 +29,7 @@ after_test:
       .\node\npm install
       7z a exokit-windows-full.zip * -xr'!.git'
       rm -r -fo node
-      7z a exokit-windows.zip * -xr'!.git'
+      7z a exokit-windows.zip * -xr'!.git' -xr'!exokit-windows-full.zip'
 
 artifacts:
   - path: "exokit-windows.zip"
