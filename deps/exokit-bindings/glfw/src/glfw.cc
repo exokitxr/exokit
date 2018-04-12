@@ -1033,32 +1033,35 @@ NAN_METHOD(Create) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
 
-    glfwInit();
-    atexit([]() {
-      glfwTerminate();
-    });
+    if (glfwInit() == GLFW_TRUE) {
+      atexit([]() {
+        glfwTerminate();
+      });
 
-    glfwDefaultWindowHints();
+      glfwDefaultWindowHints();
 
-    // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_RESIZABLE, 1);
-    glfwWindowHint(GLFW_VISIBLE, 1);
-    glfwWindowHint(GLFW_DECORATED, 1);
-    glfwWindowHint(GLFW_RED_BITS, 8);
-    glfwWindowHint(GLFW_GREEN_BITS, 8);
-    glfwWindowHint(GLFW_BLUE_BITS, 8);
-    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    glfwWindowHint(GLFW_REFRESH_RATE, 0);
+      // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+      glfwWindowHint(GLFW_RESIZABLE, 1);
+      glfwWindowHint(GLFW_VISIBLE, 1);
+      glfwWindowHint(GLFW_DECORATED, 1);
+      glfwWindowHint(GLFW_RED_BITS, 8);
+      glfwWindowHint(GLFW_GREEN_BITS, 8);
+      glfwWindowHint(GLFW_BLUE_BITS, 8);
+      glfwWindowHint(GLFW_DEPTH_BITS, 24);
+      glfwWindowHint(GLFW_REFRESH_RATE, 0);
 
-    glfwSetErrorCallback([](int err, const char *errString) {
-      fprintf(stderr, "%s", errString);
-    });
+      glfwSetErrorCallback([](int err, const char *errString) {
+        fprintf(stderr, "%s", errString);
+      });
 
-    glfwInitialized = true;
+      glfwInitialized = true;
+    } else {
+      return Nan::ThrowError("failed to initialize GLFW");
+    }
   }
 
   Nan::HandleScope scope;
