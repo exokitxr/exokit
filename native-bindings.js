@@ -8,43 +8,44 @@ bindings.nativeWorker = WindowWorker;
 
 bindings.nativeGl = (nativeGl => {
   function WebGLRenderingContext(canvas) {
+    const gl = new nativeGl();
+    gl.createShader = (createShader => function(type) {
+      const result = createShader.call(this, type);
+      result.type = type;
+      return result;
+    })(gl.createShader);
+    gl.shaderSource = (shaderSource => function(shader, source) {
+      if (shader.type === gl.VERTEX_SHADER) {
+        source = webGlToOpenGl.vertex(source);
+      } else if (shader.type === gl.FRAGMENT_SHADER) {
+        source = webGlToOpenGl.fragment(source);
+      }
+      return shaderSource.call(this, shader, source);
+    })(gl.shaderSource);
+    gl.getActiveAttrib = (getActiveAttrib => function(program, index) {
+      const result = getActiveAttrib.call(this, program, index);
+      if (result) {
+        result.name = webGlToOpenGl.unmapName(result.name);
+      }
+      return result;
+    })(gl.getActiveAttrib);
+    gl.getActiveUniform = (getActiveUniform => function(program, index) {
+      const result = getActiveUniform.call(this, program, index);
+      if (result) {
+        result.name = webGlToOpenGl.unmapName(result.name);
+      }
+      return result;
+    })(gl.getActiveUniform);
+    gl.getAttribLocation = (getAttribLocation => function(program, path) {
+      path = webGlToOpenGl.mapName(path);
+      return getAttribLocation.call(this, program, path);
+    })(gl.getAttribLocation);
+    gl.getUniformLocation = (getUniformLocation => function(program, path) {
+      path = webGlToOpenGl.mapName(path);
+      return getUniformLocation.call(this, program, path);
+    })(gl.getUniformLocation);
+
     if (!WebGLRenderingContext.onconstruct || WebGLRenderingContext.onconstruct(gl, canvas)) {
-      const gl = new nativeGl();
-      gl.createShader = (createShader => function(type) {
-        const result = createShader.call(this, type);
-        result.type = type;
-        return result;
-      })(gl.createShader);
-      gl.shaderSource = (shaderSource => function(shader, source) {
-        if (shader.type === gl.VERTEX_SHADER) {
-          source = webGlToOpenGl.vertex(source);
-        } else if (shader.type === gl.FRAGMENT_SHADER) {
-          source = webGlToOpenGl.fragment(source);
-        }
-        return shaderSource.call(this, shader, source);
-      })(gl.shaderSource);
-      gl.getActiveAttrib = (getActiveAttrib => function(program, index) {
-        const result = getActiveAttrib.call(this, program, index);
-        if (result) {
-          result.name = webGlToOpenGl.unmapName(result.name);
-        }
-        return result;
-      })(gl.getActiveAttrib);
-      gl.getActiveUniform = (getActiveUniform => function(program, index) {
-        const result = getActiveUniform.call(this, program, index);
-        if (result) {
-          result.name = webGlToOpenGl.unmapName(result.name);
-        }
-        return result;
-      })(gl.getActiveUniform);
-      gl.getAttribLocation = (getAttribLocation => function(program, path) {
-        path = webGlToOpenGl.mapName(path);
-        return getAttribLocation.call(this, program, path);
-      })(gl.getAttribLocation);
-      gl.getUniformLocation = (getUniformLocation => function(program, path) {
-        path = webGlToOpenGl.mapName(path);
-        return getUniformLocation.call(this, program, path);
-      })(gl.getUniformLocation);
       return gl;
     } else {
       return null;
