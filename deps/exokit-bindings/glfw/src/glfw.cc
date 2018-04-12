@@ -1122,11 +1122,9 @@ NAN_METHOD(Create) {
       info.GetReturnValue().Set(pointerToArray(windowHandle));
     } else {
       /* Problem: glewInit failed, something is seriously wrong. */
-      std::string msg="Can't init GLEW (glew error ";
-      msg+=(const char*) glewGetErrorString(err);
-      msg+=")";
-
-      fprintf(stderr, "%s", msg.c_str());
+      std::string msg = "Can't init GLEW (glew error ";
+      msg += (const char *)glewGetErrorString(err);
+      msg += ")";
       Nan::ThrowError(msg.c_str());
     }
   } else {
