@@ -29,9 +29,9 @@ matrix:
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - ./node/bin/npm install
-    - tar -czf exokit-linux-full.tar.gz --exclude=".*" --exclude="./*.tar.gz" *
+    - tar -czf exokit-linux-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
-    - tar -czf exokit-linux.tar.gz --exclude=".*" --exclude="./*.tar.gz" *
+    - tar -czf exokit-linux.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     deploy:
     - provider: releases
       api_key:
@@ -63,9 +63,9 @@ matrix:
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - ./node/bin/npm install
-    - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="./*.tar.gz" *
+    - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
-    - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="./*.tar.gz" *
+    - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     deploy:
     - provider: releases
       api_key:
