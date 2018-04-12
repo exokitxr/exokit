@@ -35,33 +35,45 @@ const _isAttached = el => {
   }
 };
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
-  gl[canvasSymbol] = canvas;
-
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
-  const windowHandle = nativeWindow.create(canvasWidth, canvasHeight, _isAttached(canvas));
-  gl.setWindowHandle(windowHandle);
-
-  const window = canvas.ownerDocument.defaultView;
-  const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
-  window.devicePixelRatio = framebufferWidth / canvasWidth;
-
-  const ondomchange = () => {
-    if (_isAttached(canvas)) {
-      nativeWindow.show(windowHandle);
-    } else {
-      nativeWindow.hide(windowHandle);
+  const windowHandle = (() => {
+    try {
+      nativeWindow.create(canvasWidth, canvasHeight, _isAttached(canvas));
+    } catch (err) {
+      console.warn(err.message);
     }
-  };
-  canvas.ownerDocument.on('domchange', ondomchange);
+  })();
+  if (windowHandle) {
+    gl.setWindowHandle(windowHandle);
 
-  gl.destroy = (destroy => function() {
-    nativeWindow.destroy(windowHandle);
-    canvas._context = null;
-    canvas.ownerDocument.removeListener('domchange', ondomchange);
-  })(gl.destroy);
+    gl[canvasSymbol] = canvas;
 
-  contexts.push(gl);
+    const window = canvas.ownerDocument.defaultView;
+    const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
+    window.devicePixelRatio = framebufferWidth / canvasWidth;
+
+    const ondomchange = () => {
+      if (_isAttached(canvas)) {
+        nativeWindow.show(windowHandle);
+      } else {
+        nativeWindow.hide(windowHandle);
+      }
+    };
+    canvas.ownerDocument.on('domchange', ondomchange);
+
+    gl.destroy = (destroy => function() {
+      nativeWindow.destroy(windowHandle);
+      canvas._context = null;
+      canvas.ownerDocument.removeListener('domchange', ondomchange);
+    })(gl.destroy);
+
+    contexts.push(gl);
+
+    return true;
+  } else {
+    return false;
+  }
 };
 
 const zeroMatrix = new THREE.Matrix4();
