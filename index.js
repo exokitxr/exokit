@@ -39,7 +39,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasHeight = canvas.height || innerHeight;
   const windowHandle = (() => {
     try {
-      nativeWindow.create(canvasWidth, canvasHeight, _isAttached(canvas));
+      return nativeWindow.create(canvasWidth, canvasHeight, _isAttached(canvas));
     } catch (err) {
       console.warn(err.message);
     }
