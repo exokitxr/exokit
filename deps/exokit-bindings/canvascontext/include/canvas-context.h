@@ -154,7 +154,6 @@ private:
   SkPaint strokePaint;
   SkPaint fillPaint;
   SkPaint clearPaint;
-  SkPaint::FontMetrics fontMetrics;
   float lineHeight;
   std::string textAlign;
   TextBaseline textBaseline;

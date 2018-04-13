@@ -186,7 +186,10 @@ void CanvasRenderingContext2D::ClearRect(float x, float y, float w, float h) {
   surface->getCanvas()->drawPath(path, clearPaint);
 }
 
-float getFontBaseline(const SkPaint::FontMetrics &fontMetrics, const TextBaseline &textBaseline, float lineHeight) {
+float getFontBaseline(const SkPaint &paint, const TextBaseline &textBaseline, float lineHeight) {
+  SkPaint::FontMetrics fontMetrics;
+  paint.getFontMetrics(&fontMetrics);
+  
   // If the font is so tiny that the lroundf operations result in two
   // different types of text baselines to return the same baseline, use
   // floating point metrics (crbug.com/338908).
@@ -216,11 +219,13 @@ float getFontBaseline(const SkPaint::FontMetrics &fontMetrics, const TextBaselin
 }
 
 void CanvasRenderingContext2D::FillText(const std::string &text, float x, float y) {
-  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fontMetrics, textBaseline, lineHeight), fillPaint);
+  // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fillPaint, textBaseline, lineHeight), fillPaint);
+  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, fillPaint);
 }
 
 void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, float y) {
-  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fontMetrics, textBaseline, lineHeight), strokePaint);
+  // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(strokePaint, textBaseline, lineHeight), strokePaint);
+  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
 }
 
 void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
@@ -452,7 +457,6 @@ NAN_SETTER(CanvasRenderingContext2D::FontFamilySetter) {
     SkFontStyle fontStyle = typeface ? typeface->fontStyle() : SkFontStyle();
     context->strokePaint.setTypeface(SkTypeface::MakeFromName(fontFamily.c_str(), fontStyle));
     context->fillPaint.setTypeface(SkTypeface::MakeFromName(fontFamily.c_str(), fontStyle));
-    context->strokePaint.getFontMetrics(&context->fontMetrics);
   } else {
     Nan::ThrowError("fontFamily: invalid arguments");
   }
@@ -472,7 +476,6 @@ NAN_SETTER(CanvasRenderingContext2D::FontSizeSetter) {
 
     context->strokePaint.setTextSize(fontSize);
     context->fillPaint.setTextSize(fontSize);
-    context->strokePaint.getFontMetrics(&context->fontMetrics);
   } else {
     Nan::ThrowError("fontSize: invalid arguments");
   }
@@ -514,7 +517,6 @@ NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
     }
     context->strokePaint.setTypeface(SkTypeface::MakeFromName(familyNameString, fontStyle));
     context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyNameString, fontStyle));
-    context->strokePaint.getFontMetrics(&context->fontMetrics);
   } else {
     Nan::ThrowError("fontWeight: invalid arguments");
   }
@@ -575,7 +577,6 @@ NAN_SETTER(CanvasRenderingContext2D::FontStyleSetter) {
     }
     context->strokePaint.setTypeface(SkTypeface::MakeFromName(familyNameString, fontStyle));
     context->fillPaint.setTypeface(SkTypeface::MakeFromName(familyNameString, fontStyle));
-    context->strokePaint.getFontMetrics(&context->fontMetrics);
   } else {
     Nan::ThrowError("fontStyle: invalid arguments");
   }
@@ -1209,8 +1210,6 @@ CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned 
   clearPaint.setBlendMode(SkBlendMode::kSrc);
 
   lineHeight = 1;
-
-  strokePaint.getFontMetrics(&fontMetrics);
 }
 
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}
