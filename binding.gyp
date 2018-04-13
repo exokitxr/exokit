@@ -234,6 +234,7 @@
             '-lswscale',
             '-lswresample',
             '-lopenvr_api',
+            '-luuid',
           ],
           'ldflags': [
             '-Wl,-Bsymbolic',
