@@ -12,24 +12,9 @@
 <body>
   <canvas id=canvas></canvas>
   <script src="js/three.js"></script>
+  <script src="js/keycode.js"></script>
   <script>
-    const titlebarWidth = 4096;
-    const titlebarHeight = 256;
-    const _makeTitlebarCanvas = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = titlebarWidth;
-      canvas.height = titlebarHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#333';
-      ctx.fillRect(0, 0, titlebarWidth, titlebarHeight);
-      ctx.fillStyle = '#FFF';
-      ctx.fillRect(10, 10, titlebarWidth - 20, titlebarHeight - 20);
-      ctx.fillStyle = '#333';
-      // ctx.font = '100px';
-      ctx.font = `${titlebarHeight - 20}px Arial`;
-      ctx.fillText('http://', 10, titlebarHeight - 10);
-      return canvas;
-    };
+    let urlText = 'http://';
 
     const canvas = document.getElementById('canvas');
     canvas.width = window.innerWidth;
@@ -60,7 +45,14 @@
     scene.add(sphere);
 
     const urlBar = (() => {
-      const canvas = _makeTitlebarCanvas();
+      const titlebarWidth = 4096;
+      const titlebarHeight = 256;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = titlebarWidth;
+      canvas.height = titlebarHeight;
+      const ctx = canvas.getContext('2d');
+
       const urlBarWorldWidth = 3;
       const geometry = new THREE.PlaneBufferGeometry(urlBarWorldWidth, urlBarWorldWidth * titlebarHeight / titlebarWidth);
       const texture = new THREE.Texture(
@@ -80,7 +72,25 @@
         map: texture,
         side: THREE.DoubleSide,
       });
+
+      const _updateText = () => {
+        ctx.clearRect(0, 0, titlebarWidth, titlebarHeight);
+
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, titlebarWidth, titlebarHeight);
+        ctx.fillStyle = '#FFF';
+        ctx.fillRect(10, 10, titlebarWidth - 20, titlebarHeight - 20);
+        ctx.fillStyle = '#333';
+        // ctx.font = '100px';
+        ctx.font = `${titlebarHeight - 20}px Arial`;
+        ctx.fillText(urlText, 10, titlebarHeight - 10);
+
+        texture.needsUpdate = true;
+      };
+      _updateText();
+
       const mesh = new THREE.Mesh(geometry, material);
+      mesh.updateText = _updateText;
       return mesh;
     })();
     // urlBar.position.set(2, 1, 1);
@@ -136,6 +146,29 @@
        window.requestAnimationFrame(animate);
     }
     window.requestAnimationFrame(animate);
+
+    window.addEventListener('keydown', e => {
+      console.log('got char', JSON.stringify(keyCode(e.keyCode)), e.shiftKey);
+
+      if (e.keyCode === 8) { // backspace
+        urlText = urlText.slice(0, -1);
+        urlBar.updateText();
+      } else if (e.keyCode === 13) { // enter
+        console.log('enter url'); // XXX implement this
+      } else if (
+        e.keyCode === 9 || // tab
+        e.keyCode === 16 // shift
+      ) {
+        // nothing
+      } else {
+        let c = keyCode(e.keyCode);
+        if (e.shiftKey) {
+          c = c.toUpperCase();
+        }
+        urlText += c;
+        urlBar.updateText();
+      }
+    });
 
     let displays = [];
     const _updateDisplays = () => {
