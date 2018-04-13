@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+<head>
+  <style>
+    body {
+      display: flex;
+      margin: 0;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <canvas id=canvas></canvas>
+  <script src="js/three.js"></script>
+  <script>
+    const titlebarWidth = 4096;
+    const titlebarHeight = 256;
+    const _makeTitlebarCanvas = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = titlebarWidth;
+      canvas.height = titlebarHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#333';
+      ctx.fillRect(0, 0, titlebarWidth, titlebarHeight);
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(10, 10, titlebarWidth - 20, titlebarHeight - 20);
+      ctx.fillStyle = '#333';
+      // ctx.font = '100px';
+      ctx.font = `${titlebarHeight - 20}px Arial`;
+      ctx.fillText('http://', 10, titlebarHeight - 10);
+      return canvas;
+    };
+
+    const canvas = document.getElementById('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+    });
+
+    const scene = new THREE.Scene();
+    // scene.background = new THREE.Color(0xFFFFFF);
+
+    const ambientLight = new THREE.AmbientLight(0x808080);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    const sphere = new THREE.Mesh(
+      new THREE.SphereBufferGeometry(0.3, 7, 5),
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0x4CAF50),
+        flatShading: true,
+      })
+    );
+    const startY = 1.2;
+    sphere.position.y = startY;
+    scene.add(sphere);
+
+    const urlBar = (() => {
+      const canvas = _makeTitlebarCanvas();
+      const urlBarWorldWidth = 3;
+      const geometry = new THREE.PlaneBufferGeometry(urlBarWorldWidth, urlBarWorldWidth * titlebarHeight / titlebarWidth);
+      const texture = new THREE.Texture(
+        canvas,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        // THREE.LinearMipMapLinearFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      texture.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      return mesh;
+    })();
+    // urlBar.position.set(2, 1, 1);
+    urlBar.position.set(0, 1, -1);
+    scene.add(urlBar);
+
+    /* const plane = new THREE.Mesh(
+      new THREE.PlaneBufferGeometry(5, 5, 10, 10),
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0x808080),
+        flatShading: true,
+      })
+    );
+    plane.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 1, 0)
+    );
+    const positions = plane.geometry.attributes.position.array;
+    for (let i = 0; i < positions.length / 3; i++) {
+      positions[i * 3 + 0] += (-0.5 + Math.random()) * 0.3;
+      positions[i * 3 + 1] += (-0.5 + Math.random()) * 0.3;
+      positions[i * 3 + 2] += (-0.5 + Math.random()) * 0.3;
+    }
+    plane.geometry.computeVertexNormals();
+    scene.add(plane); */
+
+    const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 10000);
+    camera.position.set(0, 1, 1);
+
+    const position = new THREE.Vector3(0, 0, 0);
+    const velocity = new THREE.Vector3(0, 0, 0);
+    let lastTime = Date.now();
+    function animate() {
+      renderer.state.reset();
+
+      const currentTime = Date.now();
+      const timePassed = Math.max(currentTime - lastTime, 1);
+      lastTime = currentTime;
+
+      // calculate new position
+      const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
+      const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
+      velocity.add(rayBack).multiplyScalar(0.98);
+      position.copy(newPosition);
+
+      // update sphere
+      sphere.position.copy(newPosition);
+      sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+      sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
+      
+       renderer.render(scene, camera);
+
+       window.requestAnimationFrame(animate);
+    }
+    window.requestAnimationFrame(animate);
+
+    let displays = [];
+    const _updateDisplays = () => {
+      console.log('update displays');
+
+      if (window.navigator.getVRDisplays) {
+        window.navigator.getVRDisplays()
+          .then(ds => {
+            console.log('got displays', displays.length);
+
+            displays = ds;
+          })
+          .catch(err => {
+            console.warn(err);
+          });
+      }
+    };
+    _updateDisplays();
+    window.addEventListener('vrdisplayconnect', _updateDisplays);
+    window.addEventListener('vrdisplaydisconnect', _updateDisplays);
+
+    window.addEventListener('click', e => {
+      if (displays.length > 0) {
+        const display = displays[0];
+        return display.requestPresent([{source: canvas}])
+          .then(() => {
+            renderer.vr.enabled = true;
+            renderer.vr.setDevice(display);
+          });
+      } else {
+        console.warn('no vr displays!');
+      }
+    });
+  </script>
+</body>
+</html>
