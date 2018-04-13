@@ -54,10 +54,10 @@ canvas::FontDeclaration canvas::parse_short_font(const string &val)
 
 						if(szlh.size() == 1)
 						{
-              declaration.fontSize = szlh[0];
+              declaration.fontSize = std::to_string(std::stof(szlh[0]));
 						} else	if(szlh.size() >= 2)
 						{
-              declaration.fontSize = szlh[0];
+              declaration.fontSize = std::to_string(std::stof(szlh[0]));
               declaration.lineHeight = szlh[1];
 						}
 					} else
