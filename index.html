@@ -48,7 +48,28 @@
     const controllerMeshes = Array(2);
     for (let i = 0; i < 2; i++) {
       const controllerMesh = new THREE.Object3D();
-      controllerMesh.position.set(0, 1, -0.1);
+      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
+      controllerMesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, 1, 0)
+      );
+
+      const rayMesh = (() => {
+        const RAY_COLOR = 0x44c2ff;
+        const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
+
+        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+        const material = new THREE.MeshBasicMaterial({
+          color: RAY_COLOR,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      controllerMesh.add(rayMesh);
+
       scene.add(controllerMesh);
       controllerMeshes[i] = controllerMesh;
     }
