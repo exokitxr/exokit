@@ -189,7 +189,7 @@ void CanvasRenderingContext2D::ClearRect(float x, float y, float w, float h) {
 float getFontBaseline(const SkPaint &paint, const TextBaseline &textBaseline, float lineHeight) {
   SkPaint::FontMetrics fontMetrics;
   paint.getFontMetrics(&fontMetrics);
-  
+
   // If the font is so tiny that the lroundf operations result in two
   // different types of text baselines to return the same baseline, use
   // floating point metrics (crbug.com/338908).
@@ -785,6 +785,7 @@ NAN_METHOD(CanvasRenderingContext2D::Clip) {
   Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
   context->Clip();
 }
 
@@ -799,6 +800,8 @@ NAN_METHOD(CanvasRenderingContext2D::Stroke) {
   } else {
     context->Stroke();
   }
+
+  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Fill) {
@@ -812,6 +815,8 @@ NAN_METHOD(CanvasRenderingContext2D::Fill) {
   } else {
     context->Fill();
   }
+
+  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::MoveTo) {
@@ -832,6 +837,8 @@ NAN_METHOD(CanvasRenderingContext2D::LineTo) {
   double y = info[1]->NumberValue();
 
   context->LineTo(x, y);
+
+  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Arc) {
@@ -846,6 +853,8 @@ NAN_METHOD(CanvasRenderingContext2D::Arc) {
   double anticlockwise = info[5]->NumberValue();
 
   context->Arc(x, y, radius, startAngle, endAngle, anticlockwise);
+
+  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
@@ -859,6 +868,8 @@ NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
   double radius = info[4]->NumberValue();
 
   context->ArcTo(x1, y1, x2, y2, radius);
+
+  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Rect) {
@@ -871,6 +882,8 @@ NAN_METHOD(CanvasRenderingContext2D::Rect) {
   double h = info[3]->NumberValue();
 
   context->Rect(x, y, w, h);
+
+  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
@@ -886,6 +899,8 @@ NAN_METHOD(CanvasRenderingContext2D::FillRect) {
 
   context->FillRect(x, y, w, h);
 
+  context->dataArray.Reset();
+
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -899,6 +914,8 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeRect) {
   double h = info[3]->NumberValue();
 
   context->StrokeRect(x, y, w, h);
+
+  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
@@ -914,6 +931,8 @@ NAN_METHOD(CanvasRenderingContext2D::ClearRect) {
 
   context->ClearRect(x, y, w, h);
 
+  context->dataArray.Reset();
+
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -928,6 +947,8 @@ NAN_METHOD(CanvasRenderingContext2D::FillText) {
 
   context->FillText(string, x, y);
 
+  context->dataArray.Reset();
+
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -941,6 +962,8 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeText) {
   double y = info[2]->NumberValue();
 
   context->StrokeText(string, x, y);
+
+  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
