@@ -62,6 +62,10 @@ notifications:
     auth_token:
       secure: 45CGZx1wukHisNzZTeLLraViNfOZxzzjx5lCfcrBq57T+fCPvD0UkJ0v3Slc/ykJ6TL5feuLnp0CGrAwtlfNztcTdPNlpCkGuWskq1A+Ehw=
     channel: '#builds'
+    settings:
+      on_build_success: false
+      on_build_failure: true
+      on_build_status_changed: true
 
 # Don't actually build.
 build: off
