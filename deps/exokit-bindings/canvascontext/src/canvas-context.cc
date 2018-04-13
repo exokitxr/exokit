@@ -273,7 +273,7 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
     Nan::SetAccessor(canvasObj, JS_STR("font"), FontGetter, FontSetter);
     Nan::SetAccessor(canvasObj, JS_STR("fontFamily"), FontFamilyGetter, FontFamilySetter);
     Nan::SetAccessor(canvasObj, JS_STR("fontSize"), FontSizeGetter, FontSizeSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("fontSize"), FontVariantGetter, FontVariantSetter);
+    Nan::SetAccessor(canvasObj, JS_STR("fontVariant"), FontVariantGetter, FontVariantSetter);
     Nan::SetAccessor(canvasObj, JS_STR("fontWeight"), FontWeightGetter, FontWeightSetter);
     Nan::SetAccessor(canvasObj, JS_STR("lineHeight"), LineHeightGetter, LineHeightSetter);
     Nan::SetAccessor(canvasObj, JS_STR("fontStyle"), FontStyleGetter, FontStyleSetter);
