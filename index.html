@@ -12,6 +12,7 @@
 <body>
   <canvas id=canvas></canvas>
   <script src="js/three.js"></script>
+  <script src="js/OBJLoader.js"></script>
   <script src="js/keycode.js"></script>
   <script>
     let urlText = 'http://';
@@ -43,6 +44,28 @@
     const startY = 1.2;
     sphere.position.y = startY;
     scene.add(sphere);
+
+    const controllerMeshes = Array(2);
+    for (let i = 0; i < 2; i++) {
+      const controllerMesh = new THREE.Object3D();
+      controllerMesh.position.set(0, 1, -0.1);
+      scene.add(controllerMesh);
+      controllerMeshes[i] = controllerMesh;
+    }
+
+    const controllerMeshLoader = new THREE.OBJLoader();
+    controllerMeshLoader.setPath('models/obj/vive-controller/');
+    controllerMeshLoader.load('vr_controller_vive_1_5.obj', object => {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.setPath('models/obj/vive-controller/');
+
+      const controllerMesh = object.children[0];
+      controllerMesh.material.map = textureLoader.load('onepointfive_texture.png');
+      controllerMesh.material.specularMap = textureLoader.load('onepointfive_spec.png');
+
+      controllerMeshes[0].add(object.clone());
+      controllerMeshes[1].add(object.clone());
+    });
 
     const urlBar = (() => {
       const titlebarWidth = 4096;
