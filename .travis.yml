@@ -86,4 +86,8 @@ matrix:
         tags: true
       skip_cleanup: true
 notifications:
-  slack: exokit:ZezcBTTBFxiGDGOhRSrtWKOJ
+  slack:
+    rooms:
+      - exokit:ZezcBTTBFxiGDGOhRSrtWKOJ#builds
+    on_success: change
+    on_failure: always
