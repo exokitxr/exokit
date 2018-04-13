@@ -97,6 +97,45 @@
     urlBar.position.set(0, 1, -1);
     scene.add(urlBar);
 
+    const keyboardMesh = (() => {
+      const img = new Image();
+      img.src = 'img/keyboard.png';
+      img.onload = () => {
+        texture.needsUpdate = true;
+      };
+      img.onerror = err => {
+        console.warn(err.stack);
+      };
+
+      const geometry = new THREE.PlaneBufferGeometry(1, 1 * 716 / 2048);
+      const texture = new THREE.Texture(
+        img,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        // THREE.LinearMipMapLinearFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      return mesh;
+    })();
+    keyboardMesh.position.set(0, 0.5, 0);
+    keyboardMesh.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 1, 1).normalize()
+    );
+    scene.add(keyboardMesh);
+
     /* const plane = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(5, 5, 10, 10),
       new THREE.MeshPhongMaterial({
@@ -154,7 +193,7 @@
         urlText = urlText.slice(0, -1);
         urlBar.updateText();
       } else if (e.keyCode === 13) { // enter
-        console.log('enter url'); // XXX implement this
+        console.log('enter'); // XXX implement this
       } else if (
         e.keyCode === 9 || // tab
         e.keyCode === 16 // shift
