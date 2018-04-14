@@ -1,7 +1,7 @@
-#include AddBackslash(CompilerPath) + "version.iss"
+#include CompilerPath + "..\version.iss"
 #define MyAppName "Exokit Browser"
 #define MyAppShortName "Exokit"
-#define MyAppLCShortName "Exokit"
+#define MyAppLCShortName "exokit"
 #define MyAppPublisher "WebMR"
 #define MyAppURL "https://github.com/webmixedreality/exokit"
 #define MyAppExeName "exokit.cmd"
@@ -21,13 +21,13 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={userappdata}\{#MyAppShortName}
+DefaultDirName={pf}\{#MyAppShortName}
 DisableDirPage=no
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 LicenseFile={#ProjectRoot}\LICENSE
 OutputDir={#ProjectRoot}\dist\{#MyAppVersion}
-OutputBaseFilename={#MyAppLCShortName}-setup
+OutputBaseFilename={#MyAppLCShortName}-v{#MyAppVersion}-win-x64
 SetupIconFile={#ProjectRoot}\{#MyIcon}
 ; Compression=lzma
 Compression=none
@@ -48,7 +48,7 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "{#ProjectRoot}\dist"
 
 [Icons]
-Name: "{group}\{#MyAppShortName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{#MyIcon}"
+Name: "{group}\{#MyAppShortName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyIcon}"
 Name: "{group}\Uninstall {#MyAppShortName}"; Filename: "{uninstallexe}"
 
 [Code]
