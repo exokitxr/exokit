@@ -53,6 +53,9 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
     window.devicePixelRatio = framebufferWidth / canvasWidth;
 
+    const title = `Exokit v${require('./package.json').version}`
+    nativeWindow.setWindowTitle(windowHandle, title);
+
     const ondomchange = () => {
       if (_isAttached(canvas)) {
         nativeWindow.show(windowHandle);
