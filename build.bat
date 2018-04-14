@@ -30,23 +30,6 @@ REM Clean the dist directory
 rmdir /S /Q "%DIST%"
 mkdir "%DIST%"
 
-echo "Installing node 10..."
-if not exist node\node.exe (
-  if not exist node.zip (
-    echo "Downloading node 10, please wait (17 MB)..."
-    CALL buildtools\curl.cmd -fsSL "https://github.com/webmixedreality/exokit/releases/download/v0.0.128/node-v10.0.0-win-x64.zip" -o node.zip
-  )
-  CALL rmdir /S /Q node
-  CALL buildtools\unzip node.zip
-  CALL del node.zip
-)
-
-echo "Building Exokit...."
-set PATH=%CD%\node;%PATH%
-CALL npm cache clean --force
-CALL rmdir /S /Q node_modules
-CALL npm i
-
 REM echo Building "noinstall" zip...
 REM for /d %%a in (%GOBIN%) do (buildtools\zip -j -9 -r "%DIST%\nvm-noinstall.zip" "%CD%\LICENSE" "%%a\*" -x "%GOBIN%\nodejs.ico")
 
