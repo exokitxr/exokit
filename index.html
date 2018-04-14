@@ -15,7 +15,10 @@
   <script src="js/OBJLoader.js"></script>
   <script src="js/keycode.js"></script>
   <script>
+    const RAY_COLOR = 0x44c2ff;
+    const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
     let urlText = 'http://';
+    const localVector = new THREE.Vector3();
 
     const canvas = document.getElementById('canvas');
     canvas.width = window.innerWidth;
@@ -51,13 +54,10 @@
       controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
       controllerMesh.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 0, -1),
-        new THREE.Vector3(0, 1, 0)
+        new THREE.Vector3(0, -1, -1)
       );
 
       const rayMesh = (() => {
-        const RAY_COLOR = 0x44c2ff;
-        const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
-
         const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
           .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
           .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
@@ -69,6 +69,28 @@
         return mesh;
       })();
       controllerMesh.add(rayMesh);
+      controllerMesh.rayMesh = rayMesh;
+
+      const rayDot = (() => {
+        const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
+        const material = new THREE.MeshBasicMaterial({
+          color: 0xe91e63,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.z = -1;
+        return mesh;
+      })();
+      controllerMesh.add(rayDot);
+      controllerMesh.rayDot = rayDot;
+
+      controllerMesh.ray = new THREE.Ray();
+      controllerMesh.update = () => {
+        controllerMesh.ray.origin.copy(controllerMesh.position);
+        controllerMesh.ray.direction
+          .set(0, 0, -1)
+          .applyQuaternion(controllerMesh.quaternion);
+      };
 
       scene.add(controllerMesh);
       controllerMeshes[i] = controllerMesh;
@@ -171,8 +193,15 @@
       });
 
       const mesh = new THREE.Mesh(geometry, material);
+      mesh.plane = new THREE.Plane();
+      mesh.update = () => {
+        mesh.plane.setFromNormalAndCoplanarPoint(
+          localVector.set(0, 0, 1).applyQuaternion(mesh.quaternion),
+          keyboardMesh.position
+        );
+      };
       return mesh;
-    })();
+    })();//
     keyboardMesh.position.set(0, 0.5, 0);
     keyboardMesh.quaternion.setFromUnitVectors(
       new THREE.Vector3(0, 0, 1),
@@ -207,26 +236,51 @@
     const velocity = new THREE.Vector3(0, 0, 0);
     let lastTime = Date.now();
     function animate() {
-      renderer.state.reset();
+      const _prepare = () => {
+        renderer.state.reset();
+      };
+      const _updateCollision = () => {
+        keyboardMesh.update();
 
-      const currentTime = Date.now();
-      const timePassed = Math.max(currentTime - lastTime, 1);
-      lastTime = currentTime;
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.update();
 
-      // calculate new position
-      const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
-      const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
-      velocity.add(rayBack).multiplyScalar(0.98);
-      position.copy(newPosition);
+          const intersectionPoint = controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector);
+          if (intersectionPoint) {
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-      // update sphere
-      sphere.position.copy(newPosition);
-      sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
-      sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
-      
-       renderer.render(scene, camera);
+            controllerMesh.rayMesh.scale.z = distance;
+            controllerMesh.updateMatrixWorld();
 
-       window.requestAnimationFrame(animate);
+            controllerMesh.rayDot.position.z = -distance;
+            controllerMesh.updateMatrixWorld();
+          }
+        }
+      };
+      const _animateSphere = () => {
+        const currentTime = Date.now();
+        const timePassed = Math.max(currentTime - lastTime, 1);
+        lastTime = currentTime;
+
+        // calculate new position
+        const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
+        const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
+        velocity.add(rayBack).multiplyScalar(0.98);
+        position.copy(newPosition);
+
+        // update sphere
+        sphere.position.copy(newPosition);
+        sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+        sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
+      };
+      _prepare();
+      _updateCollision();
+      _animateSphere();
+
+      renderer.render(scene, camera);
+
+      window.requestAnimationFrame(animate);
     }
     window.requestAnimationFrame(animate);
 
@@ -255,8 +309,6 @@
 
     let displays = [];
     const _updateDisplays = () => {
-      console.log('update displays');
-
       if (window.navigator.getVRDisplays) {
         window.navigator.getVRDisplays()
           .then(ds => {
