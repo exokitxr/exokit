@@ -19,6 +19,10 @@
     const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
     let urlText = 'http://';
     const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler();
+    localEuler.order = 'YXZ';
 
     const canvas = document.getElementById('canvas');
     canvas.width = window.innerWidth;
@@ -236,10 +240,40 @@
     const velocity = new THREE.Vector3(0, 0, 0);
     let lastTime = Date.now();
     function animate() {
-      const _prepare = () => {
-        renderer.state.reset();
+      const currentTime = Date.now();
+      const timePassed = Math.max(currentTime - lastTime, 1);
+      lastTime = currentTime;
+
+      renderer.state.reset(); // XXX remove this
+
+      const _animateSphere = () => {
+        // calculate new position
+        const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
+        const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
+        velocity.add(rayBack).multiplyScalar(0.98);
+        position.copy(newPosition);
+
+        // update sphere
+        sphere.position.copy(newPosition);
+        sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+        sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
       };
-      const _updateCollision = () => {
+      const _animateControllers = () => {
+        const loopTime = 1500;
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          const controllerMesh = controllerMeshes[i];
+          localEuler.y = (i === 0 ? -1 : 1) * Math.sin((currentTime % loopTime) / loopTime * Math.PI * 2);
+          controllerMesh.quaternion.setFromUnitVectors(
+            localVector.set(0, 0, -1),
+            localVector2.set(0, -1, -1)
+              .normalize()
+              .applyEuler(
+                localEuler
+              )
+          );
+        }
+      };
+      const _updateCollisions = () => {
         keyboardMesh.update();
 
         for (let i = 0; i < controllerMeshes.length; i++) {
@@ -258,25 +292,9 @@
           }
         }
       };
-      const _animateSphere = () => {
-        const currentTime = Date.now();
-        const timePassed = Math.max(currentTime - lastTime, 1);
-        lastTime = currentTime;
-
-        // calculate new position
-        const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
-        const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
-        velocity.add(rayBack).multiplyScalar(0.98);
-        position.copy(newPosition);
-
-        // update sphere
-        sphere.position.copy(newPosition);
-        sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
-        sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
-      };
-      _prepare();
-      _updateCollision();
       _animateSphere();
+      _animateControllers()
+      _updateCollisions();
 
       renderer.render(scene, camera);
 
