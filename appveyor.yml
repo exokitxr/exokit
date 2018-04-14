@@ -31,12 +31,20 @@ after_test:
       7z a exokit-windows-full.zip * -xr'!.git'
       rm -r -fo node
       7z a exokit-windows.zip * -xr'!.git' -xr'!exokit-windows-full.zip'
+      set version "0.0.1"
+      set INNOSETUP "$pwd\exokit.iss";
+      set DIST "$pwd\dist\$version";
+      echo "#define MyAppVersion `"$version`"" >version.iss
+      mkdir "$dist"
+      .\buildtools\iscc %INNOSETUP% /o%DIST%
 
 artifacts:
   - path: "exokit-windows.zip"
     name: exokit-windows
   - path: "exokit-windows-full.zip"
     name: exokit-windows-full
+  - path: "dist\exokit-v0.0.1-win-x64.exe"
+    name: exokit-windows-installer
 
 deploy:
   - provider: GitHub
