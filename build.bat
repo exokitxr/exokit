@@ -1,10 +1,7 @@
 @echo on
-SET INNOSETUP=%CD%\nvm.iss
+SET INNOSETUP=%CD%\exokit.iss
 SET ORIG=%CD%
-REM SET GOPATH=%CD%\src
-SET GOBIN=%CD%\bin
-SET GOARCH=386
-SET version=1.1.6
+SET version=0.0.128
 
 REM Get the version number from the setup file
 REM for /f "tokens=*" %%i in ('findstr /n . %INNOSETUP% ^| findstr ^4:#define') do set L=%%i
@@ -19,17 +16,8 @@ REM IF NOT %version%==%goversion% GOTO VERSIONMISMATCH
 SET DIST=%CD%\dist\%version%
 
 REM Build the executable
-echo Building NVM for Windows
-REM rm %GOBIN%\nvm.exe
-REM cd %GOPATH%
+echo Building Exokit Browser for Windows
 echo "=========================================>"
-REM echo %GOBIN%
-REM goxc -arch="386" -os="windows" -n="nvm" -d="%GOBIN%" -o="%GOBIN%\nvm{{.Ext}}" -tasks-=package
-
-REM cd %ORIG%
-REM rm %GOBIN%\src.exe
-REM rm %GOPATH%\src.exe
-REM rm %GOPATH%\nvm.exe
 
 REM Clean the dist directory
 rmdir /S /Q "%DIST%"
@@ -37,27 +25,23 @@ mkdir "%DIST%"
 
 echo Creating distribution in %DIST%
 
-if exist src\nvm.exe (
-  del src\nvm.exe
-)
+echo "Building Exokit...."
+set PATH=%CD%\node;%PATH%
+CALL npm cache clean --force
+CALL rmdir /S /Q node_modules
+CALL npm i
 
-echo "Building nvm.exe...."
-cd src
-go build nvm.go
-cd ..
-move src\nvm.exe %GOBIN%
-
-echo Building "noinstall" zip...
-for /d %%a in (%GOBIN%) do (buildtools\zip -j -9 -r "%DIST%\nvm-noinstall.zip" "%CD%\LICENSE" "%%a\*" -x "%GOBIN%\nodejs.ico")
-
-echo "Building the primary installer..."
-buildtools\iscc %INNOSETUP% /o%DIST%
-buildtools\zip -j -9 -r "%DIST%\nvm-setup.zip" "%DIST%\nvm-setup.exe"
-echo "Generating Checksums for release files..."
-
-for /r %i in (*.zip *.exe) do checksum -file %i >> %i.sha256.txt
-echo "Distribution created. Now cleaning up...."
-del %GOBIN%/nvm.exe
-
+REM echo Building "noinstall" zip...
+REM for /d %%a in (%GOBIN%) do (buildtools\zip -j -9 -r "%DIST%\nvm-noinstall.zip" "%CD%\LICENSE" "%%a\*" -x "%GOBIN%\nodejs.ico")
+REM 
+REM echo "Building the primary installer..."
+REM buildtools\iscc %INNOSETUP% /o%DIST%
+REM buildtools\zip -j -9 -r "%DIST%\nvm-setup.zip" "%DIST%\nvm-setup.exe"
+REM echo "Generating Checksums for release files..."
+REM 
+REM for /r %i in (*.zip *.exe) do checksum -file %i >> %i.sha256.txt
+REM echo "Distribution created. Now cleaning up...."
+REM del %GOBIN%/nvm.exe
+REM 
 echo "Done."
 @echo on

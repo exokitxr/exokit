@@ -1,10 +1,10 @@
 #define MyAppName "Exokit Browser"
-#define MyAppShortName "exokit"
-#define MyAppLCShortName "exokit"
+#define MyAppShortName "Exokit"
+#define MyAppLCShortName "Exokit"
 #define MyAppVersion "0.0.128"
 #define MyAppPublisher "WebMR"
 #define MyAppURL "https://github.com/webmixedreality/exokit"
-#define MyAppExeName "exokit.exe"
+#define MyAppExeName "exokit.cmd"
 #define MyIcon "exokit.ico"
 #define ProjectRoot "."
 
@@ -29,7 +29,8 @@ LicenseFile={#ProjectRoot}\LICENSE
 OutputDir={#ProjectRoot}\dist\{#MyAppVersion}
 OutputBaseFilename={#MyAppLCShortName}-setup
 SetupIconFile={#ProjectRoot}\{#MyIcon}
-Compression=lzma
+; Compression=lzma
+Compression=none
 SolidCompression=yes
 ChangesEnvironment=yes
 DisableProgramGroupPage=yes
@@ -44,7 +45,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
-Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs // ; Excludes: "{#ProjectRoot}\bin\install.cmd"
+Source: "{#ProjectRoot}\*"; DestDir: "{app}\dist"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "{#ProjectRoot}\dist" "{#ProjectRoot}\.localStorage"
 
 [Icons]
 Name: "{group}\{#MyAppShortName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{#MyIcon}"
