@@ -77,7 +77,8 @@
     })();
     scene.add(topDot);
 
-    const controllerMeshes = Array(2);
+    const controllerMeshes = [null, null];
+    const lastPressseds = [false, false];
     for (let i = 0; i < 2; i++) {
       const controllerMesh = new THREE.Object3D();
       controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
@@ -406,10 +407,13 @@
       const _updateCollisions = () => {
         keyboardMesh.update();
 
+        const gamepads = navigator.getGamepads();
+
         for (let i = 0; i < controllerMeshes.length; i++) {
           const controllerMesh = controllerMeshes[i];
           controllerMesh.update();
 
+          let intersectionKey = null;
           const intersectionPoint = controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector);
           if (intersectionPoint) {
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
@@ -466,8 +470,26 @@
                   controllerMesh.keyMesh.updateMatrixWorld();
                 }
 
+                intersectionKey = key;
+
                 break;
               }
+            }
+          }
+
+          const gamepad = gamepads[i];
+          if (gamepad) {
+            controllerMesh.position.fromArray(gamepad.pose.position);
+            controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+            controllerMesh.updateMatrixWorld();
+
+            const pressed = gamepad.buttons[1].pressed;
+            const lastPressed = lastPressseds[i];
+            lastPressseds[i] = pressed;
+            if (pressed && !lastPressed && intersectionKey) {
+              const code = keyCode(intersectionKey);
+              console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
+              _handleKey(code, false);
             }
           }
         }
@@ -482,38 +504,41 @@
     }
     window.requestAnimationFrame(animate);
 
-    window.addEventListener('keydown', e => {
-      if (e.keyCode === 8) { // backspace
+    const _handleKey = (code, shiftKey) => {
+      if (code === 8) { // backspace
         urlText = urlText.slice(0, -1);
         urlBar.updateText();
-      } else if (e.keyCode === 13) { // enter
+      } else if (code === 13) { // enter
         console.log('enter'); // XXX implement this
       } else if (
-        e.keyCode === 9 || // tab
-        e.keyCode === 16 || // shift
-        e.keyCode === 17 || // ctrl
-        e.keyCode === 18 || // alt
-        e.keyCode === 20 || // capslock
-        e.keyCode === 91 // win
+        code === 9 || // tab
+        code === 16 || // shift
+        code === 17 || // ctrl
+        code === 18 || // alt
+        code === 20 || // capslock
+        code === 91 // win
       ) {
         // nothing
-      } else if (e.keyCode === 37) { // left
+      } else if (code === 37) { // left
         // XXX implement this
-      } else if (e.keyCode === 39) { // right
+      } else if (code === 39) { // right
         // XXX implement this
       } else if (
-        e.keyCode === 38 || // up
-        e.keyCode === 40 // down
+        code === 38 || // up
+        code === 40 // down
       ) { // up
         // nothing
       } else {
-        let c = keyCode(e.keyCode);
-        if (e.shiftKey) {
+        let c = keyCode(code);
+        if (shiftKey) {
           c = c.toUpperCase();
         }
         urlText += c;
         urlBar.updateText();
       }
+    };
+    window.addEventListener('keydown', e => {
+      _handleKey(e.keyCode, e.shiftKey);
     });
 
     let displays = [];
