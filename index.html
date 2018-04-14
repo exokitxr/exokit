@@ -442,16 +442,18 @@
           };
 
           let intersectionKey = null;
-          const intersectionPoint = controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector);
+          const intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
           if (intersectionPoint) {
-            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, false, localVector2);
+            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, false, localVector3);
+            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
-            const x = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1) * keyboardWidth;
-            const y = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth) * keyboardHeight;
+            const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
+            const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
 
-            if (x >= 0 && x < keyboardWidth && y >= 0 && y < keyboardHeight) {
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99) {
+              const x = xFactor * keyboardWidth;
+              const y = yFactor * keyboardHeight;
               const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
               controllerMesh.rayMesh.scale.z = distance;
