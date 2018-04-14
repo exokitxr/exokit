@@ -38,6 +38,7 @@ if not exist node\node.exe (
   )
   CALL rmdir /S /Q node
   CALL buildtools\unzip node.zip
+  CALL del node.zip
 )
 
 echo "Building Exokit...."
