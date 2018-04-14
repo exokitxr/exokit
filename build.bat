@@ -1,4 +1,5 @@
 @echo on
+setlocal
 SET INNOSETUP=%CD%\exokit.iss
 SET ORIG=%CD%
 SET version=0.0.128
@@ -33,15 +34,18 @@ CALL npm i
 
 REM echo Building "noinstall" zip...
 REM for /d %%a in (%GOBIN%) do (buildtools\zip -j -9 -r "%DIST%\nvm-noinstall.zip" "%CD%\LICENSE" "%%a\*" -x "%GOBIN%\nodejs.ico")
-REM 
-REM echo "Building the primary installer..."
-REM buildtools\iscc %INNOSETUP% /o%DIST%
-REM buildtools\zip -j -9 -r "%DIST%\nvm-setup.zip" "%DIST%\nvm-setup.exe"
+
+echo "Building the primary installer..."
+node -p -e "require('./package.json').version" > version.txt
+set /p version=<version.txt
+buildtools\iscc %INNOSETUP% /o%DIST%
+buildtools\zip -j -9 -r "%DIST%\exokit-setup.zip" "%DIST%\exokit-setup.exe"
+
 REM echo "Generating Checksums for release files..."
 REM 
 REM for /r %i in (*.zip *.exe) do checksum -file %i >> %i.sha256.txt
 REM echo "Distribution created. Now cleaning up...."
 REM del %GOBIN%/nvm.exe
-REM 
+
 echo "Done."
 @echo on

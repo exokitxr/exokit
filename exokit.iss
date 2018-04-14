@@ -1,7 +1,7 @@
+#include AddBackslash(CompilerPath) + "version.iss"
 #define MyAppName "Exokit Browser"
 #define MyAppShortName "Exokit"
 #define MyAppLCShortName "Exokit"
-#define MyAppVersion "0.0.128"
 #define MyAppPublisher "WebMR"
 #define MyAppURL "https://github.com/webmixedreality/exokit"
 #define MyAppExeName "exokit.cmd"
@@ -45,7 +45,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
-Source: "{#ProjectRoot}\*"; DestDir: "{app}\dist"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "{#ProjectRoot}\dist" "{#ProjectRoot}\.localStorage"
+Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "{#ProjectRoot}\dist"
 
 [Icons]
 Name: "{group}\{#MyAppShortName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{#MyIcon}"
