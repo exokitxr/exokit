@@ -384,8 +384,8 @@
             controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
             controllerMesh.updateMatrixWorld();
 
-            // const pressed = gamepad.buttons[1].pressed;
-            // controllerMeshes[i].children[0].children[0].material.color.setHex(pressed ? 0x00FF00 : 0xFFFFFF);
+            const pressed = gamepad.buttons[1].pressed;
+            controllerMesh.rayMesh.material.color.setHex(pressed ? RAY_HIGHLIGHT_COLOR : RAY_COLOR);
           }
         }
 
