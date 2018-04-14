@@ -175,66 +175,75 @@
     scene.add(urlBar);
 
     const keyboardMesh = (() => {
-      const img = new Image();
-      img.src = 'img/keyboard.png';
-      img.onload = () => {
-        texture.needsUpdate = true;
-      };
-      img.onerror = err => {
-        console.warn(err.stack);
-      };
+      const object = new THREE.Object3D();
 
-      const geometry = new THREE.PlaneBufferGeometry(1, 1 * keyboardHeight / keyboardWidth);
-      const texture = new THREE.Texture(
-        img,
-        THREE.UVMapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.NearestFilter,
-        THREE.NearestFilter,
-        // THREE.LinearMipMapLinearFilter,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        1
-      );
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-        transparent: true,
-      });
+      const planeMesh = (() => {
+        const img = new Image();
+        img.src = 'img/keyboard.png';
+        img.onload = () => {
+          texture.needsUpdate = true;
+        };
+        img.onerror = err => {
+          console.warn(err.stack);
+        };
 
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.plane = new THREE.Plane();
-      mesh.leftLine = new THREE.Line3();
-      mesh.topLine = new THREE.Line3();
-      mesh.update = () => {
-        mesh.plane.setFromNormalAndCoplanarPoint(
-          localVector.set(0, 0, 1).applyQuaternion(mesh.quaternion),
-          keyboardMesh.position
+        const geometry = new THREE.PlaneBufferGeometry(1, 1 * keyboardHeight / keyboardWidth);
+        const texture = new THREE.Texture(
+          img,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          // THREE.LinearMipMapLinearFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
         );
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+        });
 
-        mesh.leftLine.start
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(0, 1, 1).normalize()
+        );
+        return mesh;
+      })();
+      object.add(planeMesh);
+      object.planeMesh = planeMesh;
+
+      object.plane = new THREE.Plane();
+      object.leftLine = new THREE.Line3();
+      object.topLine = new THREE.Line3();
+      object.update = () => {
+        object.leftLine.start
           .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
-          .applyMatrix4(keyboardMesh.matrixWorld);
-        mesh.leftLine.end
+          .applyMatrix4(planeMesh.matrixWorld);
+        object.leftLine.end
           .set(-1/2, -keyboardHeight / keyboardWidth / 2, 0)
-          .applyMatrix4(keyboardMesh.matrixWorld);
+          .applyMatrix4(planeMesh.matrixWorld);
 
-        mesh.topLine.start
+        object.topLine.start
           .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
-          .applyMatrix4(keyboardMesh.matrixWorld);
-        mesh.topLine.end
+          .applyMatrix4(planeMesh.matrixWorld);
+        object.topLine.end
           .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
-          .applyMatrix4(keyboardMesh.matrixWorld);
+          .applyMatrix4(planeMesh.matrixWorld);
+
+        object.plane.setFromCoplanarPoints(
+          object.leftLine.start,
+          object.leftLine.end,
+          object.topLine.end
+        );
       };
 
-      return mesh;
+      return object;
     })();
     keyboardMesh.position.set(0, 0.5, 0);
-    keyboardMesh.quaternion.setFromUnitVectors(
-      new THREE.Vector3(0, 0, 1),
-      new THREE.Vector3(0, 1, 1).normalize()
-    );
     scene.add(keyboardMesh);
 
     let keyboardMeshAnimation = null;
@@ -263,7 +272,7 @@
         const mesh = new THREE.Mesh(geometry, material);
         return mesh;
       })();
-      keyboardMesh.add(keyMesh);
+      keyboardMesh.planeMesh.add(keyMesh);
 
       controllerMesh.keyMesh = keyMesh;
     }
@@ -360,13 +369,14 @@
       const _animateKeyboard = () => {
         if (keyboardMeshAnimation) {
           const now = Date.now();
-          const factor = (now - keyboardMeshAnimation.startTime) / (keyboardMeshAnimation.endTime - keyboardMeshAnimation.startTime);
+          const factor = Math.pow((now - keyboardMeshAnimation.startTime) / (keyboardMeshAnimation.endTime - keyboardMeshAnimation.startTime), 0.15);
+
           if (factor < 1) {
-            keyboardMesh.scale.y = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
+            keyboardMesh.planeMesh.scale.y = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
             keyboardMesh.updateMatrixWorld();
             keyboardMesh.visible = true;
           } else {
-            keyboardMesh.visible = keyboardMesh.scale.y > 0.5;
+            keyboardMesh.visible = keyboardMesh.planeMesh.scale.y > 0.5;
             keyboardMeshAnimation = null;
           }
         }
@@ -434,14 +444,14 @@
           let intersectionKey = null;
           const intersectionPoint = controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector);
           if (intersectionPoint) {
-            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, false, localVector2);
 
-            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, false, localVector3);
 
             const x = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1) * keyboardWidth;
             const y = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth) * keyboardHeight;
 
-            if (x > 0 && x < keyboardWidth && y > 0 && y < keyboardHeight) {
+            if (x >= 0 && x < keyboardWidth && y >= 0 && y < keyboardHeight) {
               const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
               controllerMesh.rayMesh.scale.z = distance;
@@ -503,14 +513,42 @@
           const lastMenuPressed = lastMenuPresseds[i];
           lastMenuPresseds[i] = menuPressed;
           if (menuPressed && !lastMenuPressed) {
-            const endValue = keyboardMesh.scale.y > 0.5 ? 0 : 1;
+            const opening = keyboardMesh.planeMesh.scale.y < 0.5;
+            if (opening) {
+              localEuler.setFromQuaternion(camera.quaternion, localEuler.order);
+              localEuler.x = 0;
+              localEuler.z = 0;
 
+              keyboardMesh.position
+                .copy(camera.position)
+                .add(
+                  localVector
+                    .set(0, -0.5, -1)
+                    .applyEuler(localEuler)
+                );
+            }
+
+            localEuler.setFromQuaternion(
+              localQuaternion
+                .setFromUnitVectors(
+                  new THREE.Vector3(0, 0, -1),
+                  keyboardMesh.position.clone()
+                    .sub(camera.position)
+                    .normalize()
+                ),
+              localEuler.order
+            );
+            localEuler.x = 0;
+            localEuler.z = 0;
+            keyboardMesh.rotation.copy(localEuler);
+
+            const endValue = opening ? 1 : 0;
             const now = Date.now();
             keyboardMeshAnimation = {
-              startValue: keyboardMesh.scale.y,
+              startValue: keyboardMesh.planeMesh.scale.y,
               endValue,
               startTime: now,
-              endTime: now + 1000,
+              endTime: now + 300,
             };
           }
 
