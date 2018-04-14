@@ -21,19 +21,12 @@ SET DIST=%CD%\dist\%version%
 
 REM Build the executable
 echo Building Exokit Browser for Windows
+echo Creating distribution in %DIST%
 echo "=========================================>"
 
 REM Clean the dist directory
 rmdir /S /Q "%DIST%"
 mkdir "%DIST%"
-
-echo Creating distribution in %DIST%
-
-echo "Building Exokit...."
-set PATH=%CD%\node;%PATH%
-CALL npm cache clean --force
-CALL rmdir /S /Q node_modules
-CALL npm i
 
 echo "Installing node 10..."
 if not exist node\node.exe (
@@ -45,6 +38,12 @@ if not exist node\node.exe (
   CALL rmdir /S /Q node
   CALL buildtools\unzip node.zip
 )
+
+echo "Building Exokit...."
+set PATH=%CD%\node;%PATH%
+CALL npm cache clean --force
+CALL rmdir /S /Q node_modules
+CALL npm i
 
 REM echo Building "noinstall" zip...
 REM for /d %%a in (%GOBIN%) do (buildtools\zip -j -9 -r "%DIST%\nvm-noinstall.zip" "%CD%\LICENSE" "%%a\*" -x "%GOBIN%\nodejs.ico")
