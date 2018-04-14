@@ -28,28 +28,27 @@ after_test:
       $env:Path = "$pwd\node;$env:Path";
       .\node\npm install
       rm -R -fo node/node_modules
-      7z a exokit-windows-full.zip * -xr'!.git'
+      set version "$env:APPVEYOR_REPO_TAG_NAME"
+      if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_REPO_COMMIT".Substring(0, 8) }
+      mkdir dist
+      .\buildtools\iscc "$pwd\exokit.iss" "/dMyAppVersion=$version" /odist /qp
+      mv dist\*.exe exokit-win-x64.exe
+      rm -R -fo dist
+      7z a exokit-windows-full.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe'
       rm -r -fo node
-      7z a exokit-windows.zip * -xr'!.git' -xr'!exokit-windows-full.zip'
-      set version "$APPVEYOR_REPO_TAG_NAME"
-      if ([string]::IsNullOrEmpty("$version")) { set version "$APPVEYOR_REPO_COMMIT" }
-      set INNOSETUP "$pwd\exokit.iss";
-      set DIST "$pwd\dist\$version";
-      echo "#define MyAppVersion `"$version`"" >version.iss
-      mkdir "$dist"
-      .\buildtools\iscc "$INNOSETUP" "/o$DIST"
+      7z a exokit-windows.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe' -xr'!exokit-windows-full.zip'
 
 artifacts:
   - path: "exokit-windows.zip"
     name: exokit-windows
   - path: "exokit-windows-full.zip"
     name: exokit-windows-full
-  - path: "dist\exokit-v0.0.1-win-x64.exe"
+  - path: "exokit-win-x64.exe"
     name: exokit-windows-installer
 
 deploy:
   - provider: GitHub
-    description: 'Exokit git release'
+    description: 'Exokit git'
     auth_token:
       secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN
     artifact: "exokit-windows.zip"
@@ -58,10 +57,19 @@ deploy:
     on:
       appveyor_repo_tag: true
   - provider: GitHub
-    description: 'Exokit git release'
+    description: 'Exokit git'
     auth_token:
       secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN
     artifact: "exokit-windows-full.zip"
+    draft: false
+    prerelease: false
+    on:
+      appveyor_repo_tag: true
+  - provider: GitHub
+    description: 'Exokit installer'
+    auth_token:
+      secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN
+    artifact: "exokit-win-x64.exe"
     draft: false
     prerelease: false
     on:

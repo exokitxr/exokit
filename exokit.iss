@@ -1,4 +1,3 @@
-#include CompilerPath + "..\version.iss"
 #define MyAppName "Exokit Browser"
 #define MyAppShortName "Exokit"
 #define MyAppLCShortName "exokit"
