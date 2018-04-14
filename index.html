@@ -508,6 +508,9 @@
       if (code === 8) { // backspace
         urlText = urlText.slice(0, -1);
         urlBar.updateText();
+      } else if (code === 32) { // space
+        urlText += ' ';
+        urlBar.updateText();
       } else if (code === 13) { // enter
         console.log('enter'); // XXX implement this
       } else if (
@@ -527,6 +530,8 @@
         code === 38 || // up
         code === 40 // down
       ) { // up
+        // nothing
+      } else if (code === -1) {
         // nothing
       } else {
         let c = keyCode(code);
