@@ -31,7 +31,8 @@ after_test:
       7z a exokit-windows-full.zip * -xr'!.git'
       rm -r -fo node
       7z a exokit-windows.zip * -xr'!.git' -xr'!exokit-windows-full.zip'
-      set version "0.0.1"
+      set version "$APPVEYOR_REPO_TAG_NAME"
+      if ([string]::IsNullOrEmpty("$version")) { set version "$APPVEYOR_REPO_COMMIT" }
       set INNOSETUP "$pwd\exokit.iss";
       set DIST "$pwd\dist\$version";
       echo "#define MyAppVersion `"$version`"" >version.iss
