@@ -408,6 +408,8 @@
             controllerMesh.rayMesh.updateMatrixWorld();
 
             controllerMesh.rayDot.visible = false;
+
+            controllerMesh.keyMesh.visible = false;
           };
 
           let intersectionKey = null;
@@ -464,6 +466,7 @@
                       1
                     );
                     controllerMesh.keyMesh.updateMatrixWorld();
+                    controllerMesh.keyMesh.visible = true;
                   }
 
                   intersectionKey = key;
