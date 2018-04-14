@@ -58,7 +58,8 @@
     scene.add(sphere);
 
     const controllerMeshes = [null, null];
-    const lastPressseds = [false, false];
+    const lastPresseds = [false, false];
+    const lastMenuPresseds = [false, false];
     for (let i = 0; i < 2; i++) {
       const controllerMesh = new THREE.Object3D();
       controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
@@ -236,6 +237,8 @@
     );
     scene.add(keyboardMesh);
 
+    let keyboardMeshAnimation = null;
+
     for (let i = 0; i < controllerMeshes.length; i++) {
       const controllerMesh = controllerMeshes[i];
 
@@ -354,6 +357,20 @@
         sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
         sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
       };
+      const _animateKeyboard = () => {
+        if (keyboardMeshAnimation) {
+          const now = Date.now();
+          const factor = (now - keyboardMeshAnimation.startTime) / (keyboardMeshAnimation.endTime - keyboardMeshAnimation.startTime);
+          if (factor < 1) {
+            keyboardMesh.scale.y = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
+            keyboardMesh.updateMatrixWorld();
+            keyboardMesh.visible = true;
+          } else {
+            keyboardMesh.visible = keyboardMesh.scale.y > 0.5;
+            keyboardMeshAnimation = null;
+          }
+        }
+      };
       const _animateControllers = () => {
         const gamepads = navigator.getGamepads();
 
@@ -395,12 +412,14 @@
 
           const gamepad = gamepads[i];
           let pressed = false;
+          let menuPressed = false;
           if (gamepad) {
             controllerMesh.position.fromArray(gamepad.pose.position);
             controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
             controllerMesh.updateMatrixWorld();
 
             pressed = gamepad.buttons[1].pressed;
+            menuPressed = gamepad.buttons[3].pressed;
           }
 
           const _setControllerDefault = () => {
@@ -481,8 +500,22 @@
             _setControllerDefault();
           }
 
-          const lastPressed = lastPressseds[i];
-          lastPressseds[i] = pressed;
+          const lastMenuPressed = lastMenuPresseds[i];
+          lastMenuPresseds[i] = menuPressed;
+          if (menuPressed && !lastMenuPressed) {
+            const endValue = keyboardMesh.scale.y > 0.5 ? 0 : 1;
+
+            const now = Date.now();
+            keyboardMeshAnimation = {
+              startValue: keyboardMesh.scale.y,
+              endValue,
+              startTime: now,
+              endTime: now + 1000,
+            };
+          }
+
+          const lastPressed = lastPresseds[i];
+          lastPresseds[i] = pressed;
           if (pressed && !lastPressed && intersectionKey) {
             const code = keyCode(intersectionKey);
             console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
@@ -491,6 +524,7 @@
         }
       };
       _animateSphere();
+      _animateKeyboard()
       _animateControllers()
       _updateCollisions();
 
