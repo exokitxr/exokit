@@ -2,7 +2,10 @@
 setlocal
 SET INNOSETUP=%CD%\exokit.iss
 SET ORIG=%CD%
-SET version=0.0.128
+
+node -p -e "require('./package.json').version" > version.txt
+set /p version=<version.txt
+echo #define MyAppVersion "%version%" > version.iss
 
 REM Get the version number from the setup file
 REM for /f "tokens=*" %%i in ('findstr /n . %INNOSETUP% ^| findstr ^4:#define') do set L=%%i
@@ -36,9 +39,6 @@ REM echo Building "noinstall" zip...
 REM for /d %%a in (%GOBIN%) do (buildtools\zip -j -9 -r "%DIST%\nvm-noinstall.zip" "%CD%\LICENSE" "%%a\*" -x "%GOBIN%\nodejs.ico")
 
 echo "Building the primary installer..."
-node -p -e "require('./package.json').version" > version.txt
-set /p VERSION=<version.txt
-echo #define MyAppVersion "%VERSION%" > version.iss
 buildtools\iscc %INNOSETUP% /o%DIST%
 buildtools\zip -j -9 -r "%DIST%\exokit-setup.zip" "%DIST%\exokit-setup.exe"
 
