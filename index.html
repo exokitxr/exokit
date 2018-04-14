@@ -303,7 +303,7 @@
     window.requestAnimationFrame(animate);
 
     window.addEventListener('keydown', e => {
-      console.log('got char', JSON.stringify(keyCode(e.keyCode)), e.shiftKey);
+      console.log('got char', e.keyCode, JSON.stringify(keyCode(e.keyCode)), e.shiftKey);
 
       if (e.keyCode === 8) { // backspace
         urlText = urlText.slice(0, -1);
@@ -312,8 +312,21 @@
         console.log('enter'); // XXX implement this
       } else if (
         e.keyCode === 9 || // tab
-        e.keyCode === 16 // shift
+        e.keyCode === 16 || // shift
+        e.keyCode === 17 || // ctrl
+        e.keyCode === 18 || // alt
+        e.keyCode === 20 || // capslock
+        e.keyCode === 91 // win
       ) {
+        // nothing
+      } else if (e.keyCode === 37) { // left
+        // XXX implement this
+      } else if (e.keyCode === 39) { // right
+        // XXX implement this
+      } else if (
+        e.keyCode === 38 || // up
+        e.keyCode === 40 // down
+      ) { // up
         // nothing
       } else {
         let c = keyCode(e.keyCode);
