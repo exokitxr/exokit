@@ -450,11 +450,11 @@
 
             const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
             const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99) {
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
               const x = xFactor * keyboardWidth;
               const y = yFactor * keyboardHeight;
-              const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
               controllerMesh.rayMesh.scale.z = distance;
               controllerMesh.updateMatrixWorld();
