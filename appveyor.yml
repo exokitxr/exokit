@@ -36,7 +36,7 @@ after_test:
       set DIST "$pwd\dist\$version";
       echo "#define MyAppVersion `"$version`"" >version.iss
       mkdir "$dist"
-      .\buildtools\iscc %INNOSETUP% /o%DIST%
+      .\buildtools\iscc "$INNOSETUP" "/o$DIST"
 
 artifacts:
   - path: "exokit-windows.zip"
