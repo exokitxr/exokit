@@ -413,6 +413,16 @@
           const controllerMesh = controllerMeshes[i];
           controllerMesh.update();
 
+          const gamepad = gamepads[i];
+          let pressed = false;
+          if (gamepad) {
+            controllerMesh.position.fromArray(gamepad.pose.position);
+            controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+            controllerMesh.updateMatrixWorld();
+
+            pressed = gamepad.buttons[1].pressed;
+          }
+
           let intersectionKey = null;
           const intersectionPoint = controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector);
           if (intersectionPoint) {
@@ -459,9 +469,8 @@
                     .set(
                       -1/2 + ((width/2 + kx1) / keyboardWidth),
                       (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
-                       0.01
-                    )
-                    .add(localVector.set(0, 0, 0.01));
+                       0.01 * (pressed ? 0.5 : 1)
+                    );
                   controllerMesh.keyMesh.scale.set(
                     width / keyboardWidth,
                     height / keyboardHeight * (keyboardHeight / keyboardWidth),
@@ -477,20 +486,12 @@
             }
           }
 
-          const gamepad = gamepads[i];
-          if (gamepad) {
-            controllerMesh.position.fromArray(gamepad.pose.position);
-            controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
-            controllerMesh.updateMatrixWorld();
-
-            const pressed = gamepad.buttons[1].pressed;
-            const lastPressed = lastPressseds[i];
-            lastPressseds[i] = pressed;
-            if (pressed && !lastPressed && intersectionKey) {
-              const code = keyCode(intersectionKey);
-              console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
-              _handleKey(code, false);
-            }
+          const lastPressed = lastPressseds[i];
+          lastPressseds[i] = pressed;
+          if (pressed && !lastPressed && intersectionKey) {
+            const code = keyCode(intersectionKey);
+            console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
+            _handleKey(code, false);
           }
         }
       };
