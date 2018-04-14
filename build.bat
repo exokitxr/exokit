@@ -1,5 +1,7 @@
 @echo on
+
 setlocal
+
 SET INNOSETUP=%CD%\exokit.iss
 SET ORIG=%CD%
 
@@ -31,9 +33,8 @@ mkdir "%DIST%"
 echo "Installing node 10..."
 if not exist node\node.exe (
   if not exist node.zip (
-    set NODE_URL=https://github.com/webmixedreality/exokit/releases/download/v0.0.128/node-v10.0.0-win-x64.zip
     echo "Downloading node 10, please wait (17 MB)..."
-    CALL buildtools\curl -fsSL %NODE_URL% -o node.zip
+    CALL buildtools\curl.cmd -fsSL "https://github.com/webmixedreality/exokit/releases/download/v0.0.128/node-v10.0.0-win-x64.zip" -o node.zip
   )
   CALL rmdir /S /Q node
   CALL buildtools\unzip node.zip
