@@ -35,6 +35,17 @@ CALL npm cache clean --force
 CALL rmdir /S /Q node_modules
 CALL npm i
 
+echo "Installing node 10..."
+if not exist node\node.exe (
+  if not exist node.zip (
+    set NODE_URL=https://github.com/webmixedreality/exokit/releases/download/v0.0.128/node-v10.0.0-win-x64.zip
+    echo "Downloading node 10, please wait (17 MB)..."
+    CALL buildtools\curl -fsSL %NODE_URL% -o node.zip
+  )
+  CALL rmdir /S /Q node
+  CALL buildtools\unzip node.zip
+)
+
 REM echo Building "noinstall" zip...
 REM for /d %%a in (%GOBIN%) do (buildtools\zip -j -9 -r "%DIST%\nvm-noinstall.zip" "%CD%\LICENSE" "%%a\*" -x "%GOBIN%\nodejs.ico")
 
