@@ -29,8 +29,9 @@ LicenseFile={#ProjectRoot}\LICENSE
 OutputDir={#ProjectRoot}\dist\{#MyAppVersion}
 OutputBaseFilename={#MyAppLCShortName}-v{#MyAppVersion}-win-x64
 SetupIconFile={#ProjectRoot}\{#MyIcon}
-; Compression=lzma
-Compression=none
+Compression=lzma
+; Much faster
+; Compression=none
 SolidCompression=yes
 ChangesEnvironment=yes
 DisableProgramGroupPage=yes
@@ -45,10 +46,11 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
-Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "{#ProjectRoot}\dist"
+Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "dist\*"
 
 [Icons]
-Name: "{group}\{#MyAppShortName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyIcon}"
+Name: "{group}\{#MyAppShortName} Command Prompt"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyIcon}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "zeovr.io"; IconFilename: "{app}\{#MyIcon}"
 Name: "{group}\Uninstall {#MyAppShortName}"; Filename: "{uninstallexe}"
 
 [Code]
