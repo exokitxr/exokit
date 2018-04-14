@@ -17,9 +17,12 @@
   <script>
     const RAY_COLOR = 0x44c2ff;
     const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
+    const keyboardWidth = 2048;
+    const keyboardHeight = 716;
     let urlText = 'http://';
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     localEuler.order = 'YXZ';
@@ -51,6 +54,26 @@
     const startY = 1.2;
     sphere.position.y = startY;
     scene.add(sphere);
+
+    const leftDot = (() => {
+      const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xe91e63,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      return mesh;
+    })();
+    scene.add(leftDot);
+
+    const topDot = (() => {
+      const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xe91e63,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      return mesh;
+    })();
+    scene.add(topDot);
 
     const controllerMeshes = Array(2);
     for (let i = 0; i < 2; i++) {
@@ -177,7 +200,7 @@
         console.warn(err.stack);
       };
 
-      const geometry = new THREE.PlaneBufferGeometry(1, 1 * 716 / 2048);
+      const geometry = new THREE.PlaneBufferGeometry(1, 1 * keyboardHeight / keyboardWidth);
       const texture = new THREE.Texture(
         img,
         THREE.UVMapping,
@@ -198,14 +221,30 @@
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.plane = new THREE.Plane();
+      mesh.leftLine = new THREE.Line3();
+      mesh.topLine = new THREE.Line3();
       mesh.update = () => {
         mesh.plane.setFromNormalAndCoplanarPoint(
           localVector.set(0, 0, 1).applyQuaternion(mesh.quaternion),
           keyboardMesh.position
         );
+
+        mesh.leftLine.start
+          .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(keyboardMesh.matrixWorld);
+        mesh.leftLine.end
+          .set(-1/2, -keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(keyboardMesh.matrixWorld);
+
+        mesh.topLine.start
+          .set(-1/2, keyboardHeight / keyboardWidth, 0)
+          .applyMatrix4(keyboardMesh.matrixWorld);
+        mesh.topLine.end
+          .set(1/2, keyboardHeight / keyboardWidth, 0)
+          .applyMatrix4(keyboardMesh.matrixWorld);
       };
       return mesh;
-    })();//
+    })();
     keyboardMesh.position.set(0, 0.5, 0);
     keyboardMesh.quaternion.setFromUnitVectors(
       new THREE.Vector3(0, 0, 1),
@@ -289,6 +328,14 @@
 
             controllerMesh.rayDot.position.z = -distance;
             controllerMesh.updateMatrixWorld();
+
+            if (i === 0) {
+              const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+              leftDot.position.copy(leftIntersectionPoint);
+
+              const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+              topDot.position.copy(topIntersectionPoint);
+            }
           }
         }
       };
