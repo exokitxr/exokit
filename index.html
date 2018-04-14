@@ -369,7 +369,22 @@
         sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
       };
       const _animateControllers = () => {
-        const loopTime = 1500;
+        const gamepads = navigator.getGamepads();
+
+        for (let i = 0; i < gamepads.length; i++) {
+          const gamepad = gamepads[i];
+          if (gamepad) {
+            const controllerMesh = controllerMeshes[i];
+            controllerMesh.position.fromArray(gamepad.pose.position);
+            controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+            controllerMesh.updateMatrixWorld();
+
+            // const pressed = gamepad.buttons[1].pressed;
+            // controllerMeshes[i].children[0].children[0].material.color.setHex(pressed ? 0x00FF00 : 0xFFFFFF);
+          }
+        }
+
+        /* const loopTime = 1500;
         for (let i = 0; i < controllerMeshes.length; i++) {
           const controllerMesh = controllerMeshes[i];
           localEuler.y = (i === 0 ? -1 : 1) * Math.sin((currentTime % loopTime) / loopTime * Math.PI * 2);
@@ -381,7 +396,7 @@
                 localEuler
               )
           );
-        }
+        } */
       };
       const _updateCollisions = () => {
         keyboardMesh.update();
