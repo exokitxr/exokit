@@ -51,7 +51,9 @@ REM for /d %%a in (%GOBIN%) do (buildtools\zip -j -9 -r "%DIST%\nvm-noinstall.zi
 
 echo "Building the primary installer..."
 buildtools\iscc %INNOSETUP% /o%DIST%
-buildtools\zip -j -9 -r "%DIST%\exokit-setup.zip" "%DIST%\exokit-setup.exe"
+
+REM echo "Zipping installer..."
+REM buildtools\zip -j -9 -r "%DIST%\exokit-v%version%-win-x64.zip" "%DIST%\*.exe"
 
 REM echo "Generating Checksums for release files..."
 REM 
