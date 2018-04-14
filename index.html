@@ -14,11 +14,13 @@
   <script src="js/three.js"></script>
   <script src="js/OBJLoader.js"></script>
   <script src="js/keycode.js"></script>
+  <script src="js/svg-boundings.js"></script>
   <script>
     const RAY_COLOR = 0x44c2ff;
     const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
     const keyboardWidth = 2048;
     const keyboardHeight = 716;
+    const keyboardMatrix = [2048 / 963.266, 716 / 337.215];
     let urlText = 'http://';
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -237,10 +239,10 @@
           .applyMatrix4(keyboardMesh.matrixWorld);
 
         mesh.topLine.start
-          .set(-1/2, keyboardHeight / keyboardWidth, 0)
+          .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
           .applyMatrix4(keyboardMesh.matrixWorld);
         mesh.topLine.end
-          .set(1/2, keyboardHeight / keyboardWidth, 0)
+          .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
           .applyMatrix4(keyboardMesh.matrixWorld);
       };
       return mesh;
@@ -251,6 +253,36 @@
       new THREE.Vector3(0, 1, 1).normalize()
     );
     scene.add(keyboardMesh);
+
+    const keyMap = {};
+    fetch('img/keyboard.svg')
+      .then(res => res.text())
+      .then(keyboardText => {
+        const div = document.createElement('div');
+        div.innerHTML = keyboardText;
+        const keyEls = div.querySelectorAll('svg > g[key]');
+        for (let i = 0; i < keyEls.length; i++) {
+          const keyEl = keyEls[i];
+          const key = keyEl.getAttribute('key');
+          const shapeEl = keyEl.children[0];
+          const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
+          const {
+            left,
+            right,
+            top,
+            bottom,
+          } = boundings;
+          const x1 = left * keyboardMatrix[0];
+          const x2 = right * keyboardMatrix[0];
+          const y1 = top * keyboardMatrix[1];
+          const y2 = bottom * keyboardMatrix[1];
+          keyMap[key] = [x1, y1, x2, y2];
+        }
+        // console.log('got key map', keyMap);
+      })
+      .catch(err => {
+        console.warn(err.stack);
+      });
 
     /* const plane = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(5, 5, 10, 10),
@@ -335,6 +367,17 @@
 
               const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
               topDot.position.copy(topIntersectionPoint);
+
+              const x = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1) * keyboardWidth;
+              const y = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth) * keyboardHeight;
+
+              for (const k in keyMap) {
+                const [kx1, ky1, kx2, ky2] = keyMap[k];
+                if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
+                  console.log('hit', JSON.stringify(k));
+                  break;
+                }
+              }
             }
           }
         }
