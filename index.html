@@ -20,7 +20,7 @@
     const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
     const keyboardWidth = 2048;
     const keyboardHeight = 716;
-    const keyboardMatrix = [2048 / 963.266, 716 / 337.215];
+    const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
     let urlText = 'http://';
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -245,6 +245,31 @@
           .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
           .applyMatrix4(keyboardMesh.matrixWorld);
       };
+
+      const keyMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(1, 1);
+        const texture = new THREE.Texture(
+          null,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      mesh.add(keyMesh);
+      mesh.keyMesh = keyMesh;
+
       return mesh;
     })();
     keyboardMesh.position.set(0, 0.5, 0);
@@ -254,7 +279,22 @@
     );
     scene.add(keyboardMesh);
 
-    const keyMap = {};
+    let keyboardHighlightCanvasCtx = null;
+    const img = new Image();
+    img.src = 'img/keyboard-hightlight.svg';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      keyboardHighlightCanvasCtx = ctx;
+    };
+    img.onerror = err => {
+      console.log(err.stack);
+    };
+
+    const keyMap = [];
     fetch('img/keyboard.svg')
       .then(res => res.text())
       .then(keyboardText => {
@@ -276,9 +316,8 @@
           const x2 = right * keyboardMatrix[0];
           const y1 = top * keyboardMatrix[1];
           const y2 = bottom * keyboardMatrix[1];
-          keyMap[key] = [x1, y1, x2, y2];
+          keyMap.push([key, x1, y1, x2, y2]);
         }
-        // console.log('got key map', keyMap);
       })
       .catch(err => {
         console.warn(err.stack);
@@ -371,10 +410,43 @@
               const x = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1) * keyboardWidth;
               const y = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth) * keyboardHeight;
 
-              for (const k in keyMap) {
-                const [kx1, ky1, kx2, ky2] = keyMap[k];
+              for (let i = 0; i < keyMap.length; i++) {
+                const [key, kx1, ky1, kx2, ky2] = keyMap[i];
                 if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
-                  console.log('hit', JSON.stringify(k));
+                  if (keyboardHighlightCanvasCtx) {
+                    const width = kx2 - kx1;
+                    const height = ky2 - ky1;
+                    let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
+                    /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                      const canvas = document.createElement('canvas');
+                      canvas.width = imageData.width;
+                      canvas.height = imageData.height;
+
+                      const ctx = canvas.getContext('2d');
+                      ctx.putImageData(imageData, 0, 0);
+                      ctx.clearRect(0, 0, 80, 140);
+
+                      imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+                    } */
+
+                    keyboardMesh.keyMesh.material.map.image = imageData;
+                    keyboardMesh.keyMesh.material.map.needsUpdate = true;
+
+                    keyboardMesh.keyMesh.position
+                      .set(
+                        -1/2 + ((width/2 + kx1) / keyboardWidth),
+                        (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
+                         0.01
+                      )
+                      .add(localVector.set(0, 0, 0.01));
+                    keyboardMesh.keyMesh.scale.set(
+                      width / keyboardWidth,
+                      height / keyboardHeight * (keyboardHeight / keyboardWidth),
+                      1
+                    );
+                    keyboardMesh.keyMesh.updateMatrixWorld();
+                  }
+
                   break;
                 }
               }
@@ -393,8 +465,6 @@
     window.requestAnimationFrame(animate);
 
     window.addEventListener('keydown', e => {
-      console.log('got char', e.keyCode, JSON.stringify(keyCode(e.keyCode)), e.shiftKey);
-
       if (e.keyCode === 8) { // backspace
         urlText = urlText.slice(0, -1);
         urlBar.updateText();
