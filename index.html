@@ -381,6 +381,7 @@
 
     const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 10000);
     camera.position.set(0, 1, 1);
+    camera.rotation.order = 'YXZ';
 
     const position = new THREE.Vector3(0, 0, 0);
     const velocity = new THREE.Vector3(0, 0, 0);
@@ -448,6 +449,33 @@
               )
           );
         } */
+      };
+      const _updateControls = () => {
+        // update controls
+        if (window.document.pointerLockElement) {
+          const directionVector = new THREE.Vector3();
+          if (keys.up) {
+            directionVector.z--;
+          }
+          if (keys.down) {
+            directionVector.z++;
+          }
+          if (keys.left) {
+            directionVector.x--;
+          }
+          if (keys.right) {
+            directionVector.x++;
+          }
+          directionVector
+            .normalize()
+            .multiplyScalar(0.1);
+          const euler = camera.rotation.clone();
+          euler.x = 0;
+          camera.position.add(
+            directionVector
+              .applyEuler(euler)
+          );
+        }
       };
       const _updateIntersections = () => {
         keyboardMesh.update();
@@ -563,6 +591,8 @@
               if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
                 const x = xFactor * keyboardWidth;
                 const y = yFactor * keyboardHeight;
+
+                console.log('intersected', x, y);
               } else {
                  intersectionPoint = null;
               }
@@ -625,8 +655,9 @@
         }
       };
       _animateSphere();
-      _animateKeyboard()
-      _animateControllers()
+      _animateKeyboard();
+      _animateControllers();
+      _updateControls();
       _updateIntersections();
 
       renderer.render(scene, camera);
@@ -686,9 +717,6 @@
         urlBarMesh.updateText();
       }
     };
-    window.addEventListener('keydown', e => {
-      _handleKey(e.keyCode, e.shiftKey);
-    });
 
     let displays = [];
     const _updateDisplays = () => {
@@ -708,16 +736,136 @@
     window.addEventListener('vrdisplayconnect', _updateDisplays);
     window.addEventListener('vrdisplaydisconnect', _updateDisplays);
 
-    window.addEventListener('click', e => {
-      if (displays.length > 0) {
-        const display = displays[0];
-        return display.requestPresent([{source: canvas}])
-          .then(() => {
-            renderer.vr.enabled = true;
-            renderer.vr.setDevice(display);
-          });
+    const keys = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+    };
+    window.addEventListener('keydown', e => {
+      if (!window.document.pointerLockElement) {
+        switch (e.keyCode) {
+          case 112: { // F1
+            navigator.getVRDisplays()
+              .then(displays => {
+                const display = displays.find(display =>
+                  display.constructor.name === 'VRDisplay'
+                );
+                if (display) {
+                  renderer.vr.setDevice(display);
+                  display.requestPresent([{
+                    source: renderer.domElement,
+                  }]);
+                }
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+            break;
+          }
+          case 113: { // F2
+            navigator.getVRDisplays()
+              .then(displays => {
+                const display = displays.find(display =>
+                  display.constructor.name === 'MLDisplay'
+                );
+                if (display) {
+                  renderer.vr.setDevice(display);
+                  display.requestPresent([{
+                    source: renderer.domElement,
+                  }]);
+
+                  terrainMesh.visible = false;
+                }
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+            break;
+          }
+          default: {
+            _handleKey(e.keyCode, e.shiftKey);
+            break;
+          }
+        }
       } else {
-        console.warn('no vr displays!');
+        switch (e.keyCode) {
+          case 87: { // W
+            keys.up = true;
+            if (!window.document.pointerLockElement) {
+              renderer.domElement.requestPointerLock();
+            }
+            break;
+          }
+          case 83: { // S
+            keys.down = true;
+            if (!window.document.pointerLockElement) {
+              renderer.domElement.requestPointerLock();
+            }
+            break;
+          }
+          case 65: { // A
+            keys.left = true;
+            if (!window.document.pointerLockElement) {
+              renderer.domElement.requestPointerLock();
+            }
+            break;
+          }
+          case 68: { // D
+            keys.right = true;
+            if (!window.document.pointerLockElement) {
+              renderer.domElement.requestPointerLock();
+            }
+            break;
+          }
+        }
+      }
+    });
+    window.addEventListener('keyup', e => {
+      switch (e.keyCode) {
+        case 87: { // W
+          keys.up = false;
+          break;
+        }
+        case 83: { // S
+          keys.down = false;
+          break;
+        }
+        case 65: { // A
+          keys.left = false;
+          break;
+        }
+        case 68: { // D
+          keys.right = false;
+          break;
+        }
+        case 86: { // V
+          if (displays.length > 0) {
+            const display = displays[0];
+            return display.requestPresent([{source: canvas}])
+              .then(() => {
+                renderer.vr.enabled = true;
+                renderer.vr.setDevice(display);
+              });
+          } else {
+            console.warn('no vr displays!');
+          }
+          break;
+        }
+      }
+    });
+    window.addEventListener('mousedown', () => {
+      if (!window.document.pointerLockElement) {
+        renderer.domElement.requestPointerLock();
+      } else {
+        console.log('click');
+      }
+    });
+    window.addEventListener('mousemove', e => {
+      if (window.document.pointerLockElement) {
+        const {movementX, movementY} = e;
+        camera.rotation.y -= movementX * 0.01;
+        camera.rotation.x -= movementY * 0.01;
       }
     });
   </script>
