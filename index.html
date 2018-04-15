@@ -508,7 +508,7 @@
             menuPressed = gamepad.buttons[3].pressed;
           }
 
-          const _setControllerDefault = () => {
+          const _setIntersectionDefault = () => {
             controllerMesh.rayMesh.scale.z = 1;
             controllerMesh.rayMesh.updateMatrixWorld();
 
@@ -609,7 +609,7 @@
           }
 
           if (!intersectionPoint) {
-            _setControllerDefault();
+            _setIntersectionDefault();
           }
 
           const lastMenuPressed = lastMenuPresseds[i];
