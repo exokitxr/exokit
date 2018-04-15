@@ -22,6 +22,8 @@
     const keyboardHeight = 716;
     const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
     let urlText = 'http://';
+    let urlCursor = urlText.length;
+    const urlMeasures = [];
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
@@ -156,11 +158,22 @@
         ctx.fillStyle = '#333';
         ctx.fillRect(0, 0, titlebarWidth, titlebarHeight);
         ctx.fillStyle = '#FFF';
-        ctx.fillRect(10, 10, titlebarWidth - 20, titlebarHeight - 20);
+        ctx.fillRect(10, 10, titlebarWidth - 10*2, titlebarHeight - 10*2);
         ctx.fillStyle = '#333';
-        // ctx.font = '100px';
         ctx.font = `${titlebarHeight - 20}px Arial`;
         ctx.fillText(urlText, 10, titlebarHeight - 10);
+
+        urlMeasures.length = 0;
+        urlMeasures.push(0);
+        const {width: barWidth} = ctx.measureText('[');
+        for (let i = 1; i <= urlText.length; i++) {
+          const {width} = ctx.measureText('[' + urlText.slice(0, i) + ']');
+          urlMeasures.push(width - barWidth*2);
+        }
+
+        ctx.fillStyle = '#03a9f4';
+        const cursorWidth = 20;
+        ctx.fillRect(10 + urlMeasures[urlCursor], 20, cursorWidth, titlebarHeight - 20*2);
 
         texture.needsUpdate = true;
       };
@@ -576,10 +589,19 @@
 
     const _handleKey = (code, shiftKey) => {
       if (code === 8) { // backspace
-        urlText = urlText.slice(0, -1);
-        urlBar.updateText();
+        if (urlCursor > 0) {
+          urlText = urlText.slice(0, urlCursor - 1) + urlText.slice(urlCursor);
+          urlCursor--;
+          urlBar.updateText();
+        }
+      } else if (code === 46) { // delete
+        if (urlCursor < urlText.length) {
+          urlText = urlText.slice(0, urlCursor) + urlText.slice(urlCursor + 1);
+          urlBar.updateText();
+        }
       } else if (code === 32) { // space
-        urlText += ' ';
+        urlText = urlText.slice(0, urlCursor) + ' ' + urlText.slice(urlCursor);
+        urlCursor++;
         urlBar.updateText();
       } else if (code === 13) { // enter
         console.log('enter'); // XXX implement this
@@ -593,14 +615,17 @@
       ) {
         // nothing
       } else if (code === 37) { // left
-        // XXX implement this
+        urlCursor = Math.max(urlCursor - 1, 0);
+        urlBar.updateText();
       } else if (code === 39) { // right
-        // XXX implement this
-      } else if (
-        code === 38 || // up
-        code === 40 // down
-      ) { // up
-        // nothing
+        urlCursor = Math.min(urlCursor + 1, urlText.length);
+        urlBar.updateText();
+      } else if (code === 38) { // up
+        urlCursor = 0;
+        urlBar.updateText();
+      } else if (code === 40) { // down
+        urlCursor = urlText.length;
+        urlBar.updateText();
       } else if (code === -1) {
         // nothing
       } else {
@@ -608,7 +633,8 @@
         if (shiftKey) {
           c = c.toUpperCase();
         }
-        urlText += c;
+        urlText = urlText.slice(0, urlCursor) + c + urlText.slice(urlCursor);
+        urlCursor++;
         urlBar.updateText();
       }
     };
