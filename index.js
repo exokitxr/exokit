@@ -69,9 +69,15 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       nativeWindow.destroy(windowHandle);
       canvas._context = null;
       canvas.ownerDocument.removeListener('domchange', ondomchange);
+      
+      contexts.splice(contexts.indexOf(gl), 1);
     })(gl.destroy);
 
     contexts.push(gl);
+    
+    canvas.ownerDocument.defaultView.on('unload', () => {
+      gl.destroy();
+    });
 
     return true;
   } else {
