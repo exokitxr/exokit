@@ -746,40 +746,24 @@
       if (!window.document.pointerLockElement) {
         switch (e.keyCode) {
           case 112: { // F1
-            navigator.getVRDisplays()
-              .then(displays => {
-                const display = displays.find(display =>
-                  display.constructor.name === 'VRDisplay'
-                );
-                if (display) {
-                  renderer.vr.setDevice(display);
-                  display.requestPresent([{
-                    source: renderer.domElement,
-                  }]);
-                }
-              })
-              .catch(err => {
-                console.warn(err);
+            const display = displays.find(display =>
+              display.constructor.name === 'VRDisplay'
+            );
+            display.requestPresent([{source: canvas}])
+              .then(() => {
+                renderer.vr.enabled = true;
+                renderer.vr.setDevice(display);
               });
             break;
           }
           case 113: { // F2
-            navigator.getVRDisplays()
-              .then(displays => {
-                const display = displays.find(display =>
-                  display.constructor.name === 'MLDisplay'
-                );
-                if (display) {
-                  renderer.vr.setDevice(display);
-                  display.requestPresent([{
-                    source: renderer.domElement,
-                  }]);
-
-                  terrainMesh.visible = false;
-                }
-              })
-              .catch(err => {
-                console.warn(err);
+            const display = displays.find(display =>
+              display.constructor.name === 'MLDisplay'
+            );
+            display.requestPresent([{source: canvas}])
+              .then(() => {
+                renderer.vr.enabled = true;
+                renderer.vr.setDevice(display);
               });
             break;
           }
@@ -837,19 +821,6 @@
         }
         case 68: { // D
           keys.right = false;
-          break;
-        }
-        case 86: { // V
-          if (displays.length > 0) {
-            const display = displays[0];
-            return display.requestPresent([{source: canvas}])
-              .then(() => {
-                renderer.vr.enabled = true;
-                renderer.vr.setDevice(display);
-              });
-          } else {
-            console.warn('no vr displays!');
-          }
           break;
         }
       }
