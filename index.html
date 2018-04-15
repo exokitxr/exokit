@@ -25,6 +25,7 @@
     let urlCursor = urlText.length;
     const urlMeasures = [];
     let currentPresseds = null;
+    let currentMenuPresseds = null;
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
@@ -412,11 +413,21 @@
           const factor = Math.pow((now - keyboardMeshAnimation.startTime) / (keyboardMeshAnimation.endTime - keyboardMeshAnimation.startTime), 0.15);
 
           if (factor < 1) {
-            keyboardMesh.planeMesh.scale.y = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
+            const scaleY = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
+
+            keyboardMesh.planeMesh.scale.y = scaleY;
             keyboardMesh.updateMatrixWorld();
             keyboardMesh.visible = true;
+
+            urlBarMesh.scale.y = scaleY;
+            urlBarMesh.updateMatrixWorld();
+            urlBarMesh.visible = true;
           } else {
-            keyboardMesh.visible = keyboardMesh.planeMesh.scale.y > 0.5;
+            const visible = keyboardMesh.planeMesh.scale.y > 0.5;
+
+            keyboardMesh.visible = visible;
+            urlBarMesh.visible = visible;
+
             keyboardMeshAnimation = null;
           }
         }
@@ -499,7 +510,7 @@
 
           const gamepad = gamepads[i];
           let pressed = currentPresseds ? currentPresseds[i] : false;
-          let menuPressed = false;
+          let menuPressed = currentMenuPresseds ? currentMenuPresseds[i] : false;
           if (gamepad) {
             controllerMesh.position.fromArray(gamepad.pose.position);
             controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
@@ -637,6 +648,14 @@
                     .set(0, -0.5, -1)
                     .applyEuler(localEuler)
                 );
+
+              urlBarMesh.position
+                .copy(camera.position)
+                .add(
+                  localVector
+                    .set(0, 0.5, -2)
+                    .applyEuler(localEuler)
+                );
             }
  
             localEuler.setFromQuaternion(
@@ -652,6 +671,7 @@
             localEuler.x = 0;
             localEuler.z = 0;
             keyboardMesh.rotation.copy(localEuler);
+            urlBarMesh.rotation.copy(localEuler);
 
             const endValue = opening ? 1 : 0;
             const now = Date.now();
@@ -840,6 +860,10 @@
             }
             break;
           }
+          case 69: { // E
+            currentMenuPresseds[1] = true;
+            break;
+          }
         }
       }
     });
@@ -859,6 +883,10 @@
         }
         case 68: { // D
           keys.right = false;
+          break;
+        }
+        case 69: { // E
+          currentMenuPresseds[1] = false;
           break;
         }
       }
@@ -886,8 +914,10 @@
     window.document.addEventListener('pointerlockchange', () => {
       if (window.document.pointerLockElement) {
         currentPresseds = [false, false];
+        currentMenuPresseds = [false, false];
       } else {
         currentPresseds = null;
+        currentMenuPresseds = null;
       }
     });
   </script>
