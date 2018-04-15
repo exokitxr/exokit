@@ -24,6 +24,7 @@
     let urlText = 'http://';
     let urlCursor = urlText.length;
     const urlMeasures = [];
+    let currentPresseds = null;
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
@@ -431,7 +432,7 @@
             controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
             controllerMesh.updateMatrixWorld();
 
-            const pressed = gamepad.buttons[1].pressed;
+            const pressed = currentPresseds ? currentPresseds[i] : gamepad.buttons[1].pressed;
             controllerMesh.rayMesh.material.color.setHex(pressed ? RAY_HIGHLIGHT_COLOR : RAY_COLOR);
           }
         }
@@ -497,7 +498,7 @@
           controllerMesh.update();
 
           const gamepad = gamepads[i];
-          let pressed = false;
+          let pressed = currentPresseds ? currentPresseds[i] : false;
           let menuPressed = false;
           if (gamepad) {
             controllerMesh.position.fromArray(gamepad.pose.position);
@@ -586,6 +587,7 @@
             }
           }
 
+          let urlCoords = null;
           if (!intersectionPoint) {
             intersectionPoint = urlBarMesh.visible ? controllerMesh.ray.intersectPlane(urlBarMesh.plane, localVector) : null;
             if (intersectionPoint) {
@@ -598,8 +600,10 @@
               const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
               if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
-                const x = xFactor * keyboardWidth;
-                const y = yFactor * keyboardHeight;
+                const x = xFactor * urlBarWidth;
+                const y = yFactor * urlBarHeight;
+
+                urlCoords = [x, y];
 
                 controllerMesh.rayMesh.scale.z = distance;
                 controllerMesh.updateMatrixWorld();
@@ -661,10 +665,26 @@
 
           const lastPressed = lastPresseds[i];
           lastPresseds[i] = pressed;
-          if (pressed && !lastPressed && intersectionKey) {
-            const code = keyCode(intersectionKey);
-            console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
-            _handleKey(code, false);
+          if (pressed && !lastPressed) {
+            if (intersectionKey) {
+              const code = keyCode(intersectionKey);
+              console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
+              _handleKey(code, false);
+            } else if (urlCoords) {
+              const [x, y] = urlCoords;
+              let closestIndex = -1;
+              let closestDistance = Infinity;
+              for (let i = 0; i < urlMeasures.length; i++) {
+                const urlMeasure = urlMeasures[i];
+                if (urlMeasure < closestDistance) {
+                  closestIndex = i;
+                  closestDistance = urlMeasure;
+                }
+              }
+              console.log('got index', closestIndex);
+              if (closestIndex !== -1) {
+              }
+            }
           }
         }
       };
@@ -843,7 +863,12 @@
       if (!window.document.pointerLockElement) {
         renderer.domElement.requestPointerLock();
       } else {
-        console.log('click');
+        currentPresseds[1] = true;
+      }
+    });
+    window.addEventListener('mouseup', () => {
+      if (window.document.pointerLockElement) {
+        currentPresseds[1] = false;
       }
     });
     window.addEventListener('mousemove', e => {
@@ -852,6 +877,13 @@
         camera.rotation.y -= movementX * 0.01;
         camera.rotation.x -= movementY * 0.01;
         camera.rotation.x = Math.min(Math.max(camera.rotation.x, -Math.PI/2), Math.PI/2);
+      }
+    });
+    window.document.addEventListener('pointerlockchange', () => {
+      if (window.document.pointerLockElement) {
+        currentPresseds = [false, false];
+      } else {
+        currentPresseds = null;
       }
     });
   </script>
