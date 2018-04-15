@@ -326,9 +326,9 @@ nativeWindow.setEventHandler((type, data) => {
       case 'keydown': {
         if (data.keyCode === 27 && window.top.document.pointerLockElement) {
           window.top.document.exitPointerLock();
+        } else {
+          _dispatchCanvasEvent(canvas, new window.KeyboardEvent(type, data));
         }
-
-        _dispatchCanvasEvent(canvas, new window.KeyboardEvent(type, data));
         break;
       }
       case 'keyup':
