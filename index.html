@@ -589,9 +589,9 @@
           if (!intersectionPoint) {
             intersectionPoint = urlBarMesh.visible ? controllerMesh.ray.intersectPlane(urlBarMesh.plane, localVector) : null;
             if (intersectionPoint) {
-              const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+              const leftIntersectionPoint = urlBarMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-              const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+              const topIntersectionPoint = urlBarMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
               const xFactor = topIntersectionPoint.distanceTo(urlBarMesh.topLine.start) / urlBarWorldWidth;
               const yFactor = leftIntersectionPoint.distanceTo(urlBarMesh.leftLine.start) / urlBarWorldHeight;
@@ -601,9 +601,14 @@
                 const x = xFactor * keyboardWidth;
                 const y = yFactor * keyboardHeight;
 
-                console.log('intersected', x, y);
+                controllerMesh.rayMesh.scale.z = distance;
+                controllerMesh.updateMatrixWorld();
+
+                controllerMesh.rayDot.position.z = -distance;
+                controllerMesh.updateMatrixWorld();
+                controllerMesh.rayDot.visible = true;
               } else {
-                 intersectionPoint = null;
+                intersectionPoint = null;
               }
             }
           }
@@ -629,7 +634,7 @@
                     .applyEuler(localEuler)
                 );
             }
-
+ 
             localEuler.setFromQuaternion(
               localQuaternion
                 .setFromUnitVectors(
