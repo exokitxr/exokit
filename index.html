@@ -741,7 +741,7 @@
         urlCursor++;
         urlBarMesh.updateText();
       } else if (code === 13) { // enter
-        console.log('enter'); // XXX implement this
+        _goUrl();
       } else if (
         code === 9 || // tab
         code === 16 || // shift
@@ -774,6 +774,9 @@
         urlCursor++;
         urlBarMesh.updateText();
       }
+    };
+    const _goUrl = () => {
+      window.location.href = urlText;
     };
 
     let displays = [];
