@@ -175,7 +175,7 @@
 
         ctx.fillStyle = '#03a9f4';
         const cursorWidth = 20;
-        ctx.fillRect(10 + urlMeasures[urlCursor], 20, cursorWidth, urlBarHeight - 20*2);
+        ctx.fillRect(10 + urlMeasures[urlCursor] - cursorWidth/2, 20, cursorWidth, urlBarHeight - 20*2);
 
         texture.needsUpdate = true;
       };
