@@ -837,6 +837,7 @@
         const {movementX, movementY} = e;
         camera.rotation.y -= movementX * 0.01;
         camera.rotation.x -= movementY * 0.01;
+        camera.rotation.x = Math.min(Math.max(camera.rotation.x, -Math.PI/2), Math.PI/2);
       }
     });
   </script>
