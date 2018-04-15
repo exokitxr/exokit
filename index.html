@@ -672,17 +672,21 @@
               _handleKey(code, false);
             } else if (urlCoords) {
               const [x, y] = urlCoords;
+              const textX = x - 10;
+
               let closestIndex = -1;
               let closestDistance = Infinity;
               for (let i = 0; i < urlMeasures.length; i++) {
                 const urlMeasure = urlMeasures[i];
-                if (urlMeasure < closestDistance) {
+                const distance = Math.abs(urlMeasure - textX);
+                if (distance < closestDistance) {
                   closestIndex = i;
-                  closestDistance = urlMeasure;
+                  closestDistance = distance;
                 }
               }
-              console.log('got index', closestIndex);
               if (closestIndex !== -1) {
+                urlCursor = closestIndex;
+                urlBarMesh.updateText();
               }
             }
           }
