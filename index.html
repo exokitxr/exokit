@@ -475,6 +475,15 @@
             directionVector
               .applyEuler(euler)
           );
+
+          const rightControllerMesh = controllerMeshes[1];
+          rightControllerMesh.position
+            .copy(camera.position)
+            .add(
+              localVector.set(0, -0.1, -0.5)
+                .applyQuaternion(camera.quaternion)
+            );
+          rightControllerMesh.quaternion.copy(camera.quaternion);
         }
       };
       const _updateIntersections = () => {
