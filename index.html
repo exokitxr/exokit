@@ -871,26 +871,28 @@
       }
     });
     window.addEventListener('keyup', e => {
-      switch (e.keyCode) {
-        case 87: { // W
-          keys.up = false;
-          break;
-        }
-        case 83: { // S
-          keys.down = false;
-          break;
-        }
-        case 65: { // A
-          keys.left = false;
-          break;
-        }
-        case 68: { // D
-          keys.right = false;
-          break;
-        }
-        case 69: { // E
-          currentMenuPresseds[1] = false;
-          break;
+      if (window.document.pointerLockElement) {
+        switch (e.keyCode) {
+          case 87: { // W
+            keys.up = false;
+            break;
+          }
+          case 83: { // S
+            keys.down = false;
+            break;
+          }
+          case 65: { // A
+            keys.left = false;
+            break;
+          }
+          case 68: { // D
+            keys.right = false;
+            break;
+          }
+          case 69: { // E
+            currentMenuPresseds[1] = false;
+            break;
+          }
         }
       }
     });
