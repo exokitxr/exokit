@@ -230,6 +230,7 @@
             '-lLabSound',
             '-lavformat',
             '-lavcodec',
+            '-lavdevice',
             '-lavutil',
             '-lswscale',
             '-lswresample',
@@ -238,6 +239,7 @@
           ],
           'ldflags': [
             '-Wl,-Bsymbolic',
+            '-fno-lto',
             '-Wl,-rpath,./node_modules/native-graphics-deps/lib/linux/glew',
             '-Wl,-rpath,./node_modules/native-graphics-deps/lib/linux/glfw',
             '-Wl,-rpath,./node_modules/native-canvas-deps/lib/linux',
