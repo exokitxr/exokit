@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# resolve symlinks
 dir="$(pwd)"
 bin="$0"
 while [ -L "${bin}" ]
@@ -11,5 +12,12 @@ done
 cd "$(dirname "${bin}")"
 home="$(pwd)"
 cd "${dir}"
-# insert magic here
-exec node index.js "$@"
+
+# find node path
+NODE_BIN="node"
+if [ -e "node/node" ]; then
+  NODE_BIN="node/node"
+fi
+
+# execute
+exec "$NODE_BIN" index.js "$@"
