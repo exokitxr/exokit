@@ -13,7 +13,6 @@ const exokit = require('exokit-core');
 const minimist = require('minimist');
 const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
-exokit.setNativeBindingsModule(nativeBindingsModulePath);
 const {THREE} = exokit;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeMl, nativeWindow} = nativeBindings;
@@ -34,6 +33,46 @@ const _isAttached = el => {
     }
   }
 };
+
+const args = (() => {
+  if (require.main === module) {
+    const minimistArgs = minimist(process.argv.slice(2), {
+      boolean: [
+        'p',
+        'perf',
+        'performance',
+        'f',
+        'frame',
+        'm',
+        'minimalFrame',
+      ],
+      string: [
+        's',
+        'size',
+      ],
+      alias: {
+        p: 'performance',
+        perf: 'performance',
+        s: 'size',
+        f: 'frame',
+        m: 'minimalFrame',
+      },
+    });
+    return {
+      url: minimistArgs._[0] || '',
+      performance: !!minimistArgs.performance,
+      size: minimistArgs.size,
+      frame: minimistArgs.frame,
+      minimalFrame: minimistArgs.minimalFrame,
+    };
+  } else {
+    return args;
+  }
+})();
+exokit.setArgs(args);
+console.log('args', args);
+exokit.setNativeBindingsModule(nativeBindingsModulePath);
+
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
@@ -400,29 +439,6 @@ const FPS = 90;
 const FRAME_TIME_MAX = ~~(1000 / FPS);
 const FRAME_TIME_MIN = 0;
 if (require.main === module) {
-  const args = (() => {
-    const minimistArgs = minimist(process.argv.slice(2), {
-      boolean: [
-        'p',
-        'perf',
-        'performance',
-      ],
-      string: [
-        's',
-        'size',
-      ],
-      alias: {
-        p: 'performance',
-        perf: 'performance',
-        s: 'size',
-      },
-    });
-    return {
-      url: minimistArgs._[0] || '',
-      performance: !!minimistArgs.performance,
-      size: minimistArgs.size,
-    };
-  })();
   if (args.size) {
     const match = args.size.match(/^([0-9]+)x([0-9]+)$/);
     if (match) {
@@ -804,7 +820,13 @@ if (require.main === module) {
         }
 
         // trigger requestAnimationFrame
+        if (args.frame || args.minimalFrame) {
+          console.log('-'.repeat(80) + 'start frame');
+        }
         window.tickAnimationFrame();
+        if (args.frame) {
+          console.log('-'.repeat(80) + 'end frame');
+        }
         if (args.performance) {
           const now = Date.now();
           const diff = now - timestamps.last;
