@@ -66,7 +66,7 @@ const args = (() => {
       minimalFrame: minimistArgs.minimalFrame,
     };
   } else {
-    return args;
+    return {};
   }
 })();
 exokit.setArgs(args);
