@@ -549,6 +549,7 @@ if (require.main === module) {
       const frameData = new window.VRFrameData();
       const stageParameters = new window.VRStageParameters();
       let timeout = null;
+      let frameCount = 0;
       const _recurse = () => {
         if (args.performance) {
           if (timestamps.frames >= TIMESTAMP_FRAMES) {
@@ -822,10 +823,19 @@ if (require.main === module) {
         if (args.frame || args.minimalFrame) {
           console.log('-'.repeat(80) + 'start frame');
         }
+        if ((frameCount % FPS) === 0) {
+          const displays = window.navigator.getVRDisplaysSync();
+          for (let i = 0; i < displays.length; i++) {
+            const e = new window.Event('vrdisplayactivate');
+            e.display = displays[i];
+            window.dispatchEvent(e);
+          }
+        }
         window.tickAnimationFrame();
         if (args.frame) {
           console.log('-'.repeat(80) + 'end frame');
         }
+        frameCount++;
         if (args.performance) {
           const now = Date.now();
           const diff = now - timestamps.last;
