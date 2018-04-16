@@ -30,9 +30,6 @@
     "url": "https://github.com/webmixedreality/exokit-windows/issues"
   },
   "homepage": "https://github.com/webmixedreality/exokit-windows#readme",
-  "engines": {
-    "node": "10"
-  },
   "dependencies": {
     "exokit-core": "0.0.201",
     "isolator": "0.0.9",
