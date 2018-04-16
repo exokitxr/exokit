@@ -70,7 +70,6 @@ const args = (() => {
   }
 })();
 exokit.setArgs(args);
-console.log('args', args);
 exokit.setNativeBindingsModule(nativeBindingsModulePath);
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
