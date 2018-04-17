@@ -40,7 +40,7 @@
     "native-canvas-deps": "0.0.13",
     "native-graphics-deps": "0.0.14",
     "native-openvr-deps": "0.0.13",
-    "native-video-deps": "0.0.16",
+    "native-video-deps": "0.0.17",
     "repl.history": "^0.1.4",
     "rimraf": "^2.6.2",
     "webgl-to-opengl": "0.0.3",
