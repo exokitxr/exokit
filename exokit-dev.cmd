@@ -1,4 +1,7 @@
+@echo off
+
 setlocal
+
 set home=%~dp0
 set isolator=%home%node_modules\isolator\lib\windows\isolator.exe
 set node=%home%node\node.exe

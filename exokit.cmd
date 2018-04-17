@@ -1,6 +1,6 @@
-setlocal
-
 @echo off
+
+setlocal
 
 set home=%~dp0
 set node=%home%node\node.exe
