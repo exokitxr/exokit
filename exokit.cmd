@@ -1,5 +1,7 @@
 setlocal
 
+@echo off
+
 set home=%~dp0
 set node=%home%node\node.exe
 set code=%home%index.js
