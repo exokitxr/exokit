@@ -1,4 +1,4 @@
-#!/usr/bin/env /usr/local/lib/node_modules/exokit/node/bin/node
+#!/usr/bin/env node
 
 process.chdir(__dirname); // needed for global bin to find libraries
 
