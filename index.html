@@ -130,85 +130,93 @@
     const urlBarWorldWidth = 3;
     const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
     const urlBarMesh = (() => {
-      const canvas = document.createElement('canvas');
-      canvas.width = urlBarWidth;
-      canvas.height = urlBarHeight;
-      const ctx = canvas.getContext('2d');
+      const object = new THREE.Object3D();
 
-      const geometry = new THREE.PlaneBufferGeometry(urlBarWorldWidth, urlBarWorldHeight);
-      const texture = new THREE.Texture(
-        canvas,
-        THREE.UVMapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.NearestFilter,
-        THREE.NearestFilter,
-        // THREE.LinearMipMapLinearFilter,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        1
-      );
-      texture.needsUpdate = true;
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
+      const planeMesh = (() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = urlBarWidth;
+        canvas.height = urlBarHeight;
+        const ctx = canvas.getContext('2d');
 
-      const _updateText = () => {
-        ctx.clearRect(0, 0, urlBarWidth, urlBarHeight);
-
-        ctx.fillStyle = '#333';
-        ctx.fillRect(0, 0, urlBarWidth, urlBarHeight);
-        ctx.fillStyle = '#FFF';
-        ctx.fillRect(10, 10, urlBarWidth - 10*2, urlBarHeight - 10*2);
-        ctx.fillStyle = '#333';
-        ctx.font = `${urlBarHeight - 20}px Arial`;
-        ctx.fillText(urlText, 10, urlBarHeight - 10);
-
-        urlMeasures.length = 0;
-        urlMeasures.push(0);
-        const {width: barWidth} = ctx.measureText('[');
-        for (let i = 1; i <= urlText.length; i++) {
-          const {width} = ctx.measureText('[' + urlText.slice(0, i) + ']');
-          urlMeasures.push(width - barWidth*2);
-        }
-
-        ctx.fillStyle = '#03a9f4';
-        const cursorWidth = 20;
-        ctx.fillRect(10 + urlMeasures[urlCursor] - cursorWidth/2, 20, cursorWidth, urlBarHeight - 20*2);
-
+        const geometry = new THREE.PlaneBufferGeometry(urlBarWorldWidth, urlBarWorldHeight);
+        const texture = new THREE.Texture(
+          canvas,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          // THREE.LinearMipMapLinearFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
         texture.needsUpdate = true;
-      };
-      _updateText();
-      mesh.updateText = _updateText;
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
 
-      mesh.plane = new THREE.Plane();
-      mesh.leftLine = new THREE.Line3();
-      mesh.topLine = new THREE.Line3();
-      mesh.update = () => {
-        mesh.leftLine.start
+        const _updateText = () => {
+          ctx.clearRect(0, 0, urlBarWidth, urlBarHeight);
+
+          ctx.fillStyle = '#333';
+          ctx.fillRect(0, 0, urlBarWidth, urlBarHeight);
+          ctx.fillStyle = '#FFF';
+          ctx.fillRect(10, 10, urlBarWidth - 10*2, urlBarHeight - 10*2);
+          ctx.fillStyle = '#333';
+          ctx.font = `${urlBarHeight - 20}px Arial`;
+          ctx.fillText(urlText, 10, urlBarHeight - 10);
+
+          urlMeasures.length = 0;
+          urlMeasures.push(0);
+          const {width: barWidth} = ctx.measureText('[');
+          for (let i = 1; i <= urlText.length; i++) {
+            const {width} = ctx.measureText('[' + urlText.slice(0, i) + ']');
+            urlMeasures.push(width - barWidth*2);
+          }
+
+          ctx.fillStyle = '#03a9f4';
+          const cursorWidth = 20;
+          ctx.fillRect(10 + urlMeasures[urlCursor] - cursorWidth/2, 20, cursorWidth, urlBarHeight - 20*2);
+
+          texture.needsUpdate = true;
+        };
+        _updateText();
+        mesh.updateText = _updateText;
+
+        return mesh;
+      })();
+      object.add(planeMesh);
+      object.planeMesh = planeMesh;
+
+      object.plane = new THREE.Plane();
+      object.leftLine = new THREE.Line3();
+      object.topLine = new THREE.Line3();
+      object.update = () => {
+        object.leftLine.start
           .set(-urlBarWorldWidth/2, urlBarWorldHeight/2, 0)
-          .applyMatrix4(mesh.matrixWorld);
-        mesh.leftLine.end
+          .applyMatrix4(object.matrixWorld);
+        object.leftLine.end
           .set(-urlBarWorldWidth/2, -urlBarWorldHeight/2, 0)
-          .applyMatrix4(mesh.matrixWorld);
+          .applyMatrix4(object.matrixWorld);
 
-        mesh.topLine.start
+        object.topLine.start
           .set(-urlBarWorldWidth/2, urlBarWorldHeight/2, 0)
-          .applyMatrix4(mesh.matrixWorld);
-        mesh.topLine.end
+          .applyMatrix4(object.matrixWorld);
+        object.topLine.end
           .set(urlBarWorldWidth/2, urlBarWorldHeight / 2, 0)
-          .applyMatrix4(mesh.matrixWorld);
+          .applyMatrix4(object.matrixWorld);
 
-        mesh.plane.setFromCoplanarPoints(
-          mesh.leftLine.start,
-          mesh.leftLine.end,
-          mesh.topLine.end
+        object.plane.setFromCoplanarPoints(
+          object.leftLine.start,
+          object.leftLine.end,
+          object.topLine.end
         );
       };
 
-      return mesh;
+      return object;
     })();
     // urlBarMesh.position.set(2, 1, 1);
     urlBarMesh.position.set(0, 1, -1);
@@ -706,7 +714,7 @@
               }
               if (closestIndex !== -1) {
                 urlCursor = closestIndex;
-                urlBarMesh.updateText();
+                urlBarMesh.planeMesh.updateText();
               }
             }
           }
@@ -729,17 +737,17 @@
         if (urlCursor > 0) {
           urlText = urlText.slice(0, urlCursor - 1) + urlText.slice(urlCursor);
           urlCursor--;
-          urlBarMesh.updateText();
+          urlBarMesh.planeMesh.updateText();
         }
       } else if (code === 46) { // delete
         if (urlCursor < urlText.length) {
           urlText = urlText.slice(0, urlCursor) + urlText.slice(urlCursor + 1);
-          urlBarMesh.updateText();
+          urlBarMesh.planeMesh.updateText();
         }
       } else if (code === 32) { // space
         urlText = urlText.slice(0, urlCursor) + ' ' + urlText.slice(urlCursor);
         urlCursor++;
-        urlBarMesh.updateText();
+        urlBarMesh.planeMesh.updateText();
       } else if (code === 13) { // enter
         _goUrl();
       } else if (
@@ -753,16 +761,16 @@
         // nothing
       } else if (code === 37) { // left
         urlCursor = Math.max(urlCursor - 1, 0);
-        urlBarMesh.updateText();
+        urlBarMesh.planeMesh.updateText();
       } else if (code === 39) { // right
         urlCursor = Math.min(urlCursor + 1, urlText.length);
-        urlBarMesh.updateText();
+        urlBarMesh.planeMesh.updateText();
       } else if (code === 38) { // up
         urlCursor = 0;
-        urlBarMesh.updateText();
+        urlBarMesh.planeMesh.updateText();
       } else if (code === 40) { // down
         urlCursor = urlText.length;
-        urlBarMesh.updateText();
+        urlBarMesh.planeMesh.updateText();
       } else if (code === -1) {
         // nothing
       } else {
@@ -772,7 +780,7 @@
         }
         urlText = urlText.slice(0, urlCursor) + c + urlText.slice(urlCursor);
         urlCursor++;
-        urlBarMesh.updateText();
+        urlBarMesh.planeMesh.updateText();
       }
     };
     const _goUrl = () => {
