@@ -1,23 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
-# resolve symlinks
-dir="$(pwd)"
-bin="$0"
-while [ -L "${bin}" ]
-do
-    x="$(readlink "${bin}")"
-    cd "$(dirname "${bin}")"
-    bin="${x}"
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
-cd "$(dirname "${bin}")"
-home="$(pwd)"
-cd "${dir}"
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-# find node path
 NODE_BIN="node"
-if [ -e "node/node" ]; then
-  NODE_BIN="node/node"
+if [ -x "$DIR/node/bin/node" ]; then
+  NODE_BIN="$DIR/node/bin/node"
 fi
 
-# execute
-exec "$NODE_BIN" index.js "$@"
+exec "$NODE_BIN" "$DIR/index.js" "$@"
