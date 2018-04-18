@@ -16,8 +16,17 @@
   <script src="js/keycode.js"></script>
   <script src="js/svg-boundings.js"></script>
   <script>
+    const registryUrl = 'http://zeovr.io:9000';
     const RAY_COLOR = 0x44c2ff;
     const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
+    const urlBarWidth = 4096;
+    const urlBarHeight = 256;
+    const urlBarWorldWidth = 3;
+    const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
+    const gridWidth = urlBarWidth;
+    const gridHeight = gridWidth;
+    const gridWorldWidth = urlBarWorldWidth;
+    const gridWorldHeight = gridWorldWidth;
     const keyboardWidth = 2048;
     const keyboardHeight = 716;
     const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
@@ -25,10 +34,7 @@
     let urlText = 'http://';
     let urlCursor = urlText.length;
     const urlMeasures = [];
-    let links = [
-      'http://google.com',
-      'http://reddit.com',
-    ];
+    let links = [];
 
     let currentPresseds = null;
     let currentMenuPresseds = null;
@@ -130,15 +136,6 @@
       controllerMeshes[0].add(object.clone());
       controllerMeshes[1].add(object.clone());
     });
-
-    const urlBarWidth = 4096;
-    const urlBarHeight = 256;
-    const urlBarWorldWidth = 3;
-    const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
-    const gridWidth = urlBarWidth;
-    const gridHeight = gridWidth;
-    const gridWorldWidth = urlBarWorldWidth;
-    const gridWorldHeight = gridWorldWidth;
 
     const menuMesh = (() => {
       const object = new THREE.Object3D();
@@ -292,6 +289,23 @@
     // menuMesh.position.set(2, 1, 1);
     menuMesh.position.set(0, 1, -1);
     scene.add(menuMesh);
+
+    fetch(registryUrl)
+      .then(res => {
+        if (res.status >= 200 && res.status < 300) {
+          return res.json();
+        } else {
+          return Promise.reject(new Error('invald status code: ' + res.status));
+        }
+      })
+      .then(newLinks => {
+        links = newLinks;
+
+        menuMesh.gridMesh.updateGrid();
+      })
+      .catch(err => {
+        console.warn(err.stack);
+      });
 
     const keyboardMesh = (() => {
       const object = new THREE.Object3D();
