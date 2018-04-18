@@ -48,7 +48,7 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "dist\*"
 
 [Icons]
-Name: "{group}\{#MyAppName}"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "zeovr.io"; IconFilename: "{app}\{#MyIcon}"
+Name: "{group}\{#MyAppName}"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-h"; IconFilename: "{app}\{#MyIcon}"
 Name: "{group}\{#MyAppShortName} Command Prompt"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyIcon}"
 Name: "{group}\Uninstall {#MyAppShortName}"; Filename: "{uninstallexe}"
 
