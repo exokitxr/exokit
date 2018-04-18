@@ -25,7 +25,10 @@
     let urlText = 'http://';
     let urlCursor = urlText.length;
     const urlMeasures = [];
-    let links = [{}, {}];
+    let links = [
+      'http://google.com',
+      'http://reddit.com',
+    ];
 
     let currentPresseds = null;
     let currentMenuPresseds = null;
@@ -238,11 +241,16 @@
             const x = i % 3;
             const y = -Math.floor(i / 3);
 
-            const xOffset = x * (spacing + size);
-            const yOffset = y * (spacing + size);
-
+            const xOffsetRect = x * (spacing + size);
+            const yOffsetRect = y * (spacing + size);
             ctx.fillStyle = '#333';
-            ctx.fillRect(xOffset, yOffset, size, size);
+            ctx.fillRect(xOffsetRect, yOffsetRect, size, size);
+
+            const xOffsetText = x * (spacing + size);
+            const yOffsetText = (y * (spacing + size)) + size;
+            ctx.font = '100px Arial';
+            ctx.fillStyle = '#FFF';
+            ctx.fillText(link, xOffsetText + 50, yOffsetText - 50);
           }
           texture.needsUpdate = true;
         };
