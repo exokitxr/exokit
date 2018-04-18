@@ -27,6 +27,10 @@
     const gridHeight = gridWidth;
     const gridWorldWidth = urlBarWorldWidth;
     const gridWorldHeight = gridWorldWidth;
+    const gridN = 3;
+    const gridSpacing = 100;
+    const gridSize = (gridWidth - ((gridSpacing - 1) * gridN)) / gridN;
+    const gridWorldSize = gridSize * gridWorldWidth / gridWidth;
     const keyboardWidth = 2048;
     const keyboardHeight = 716;
     const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
@@ -251,28 +255,71 @@
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.y = -(urlBarWorldHeight + gridWorldHeight/2);
 
+        mesh.planes = [];
         const _updateGrid = () => {
           ctx.clearRect(0, 0, gridWidth, gridHeight);
 
-          const n = 3;
-          const spacing = 100;
-          const size = (gridWidth - ((spacing - 1) * n)) / n;
+          mesh.planes.length = 0;
 
           for (let i = 0; i < links.length; i++) {
             const link = links[i];
-            const x = i % 3;
-            const y = -Math.floor(i / 3);
+            const x = i % gridN;
+            const y = -Math.floor(i / gridN);
 
-            const xOffsetRect = x * (spacing + size);
-            const yOffsetRect = y * (spacing + size);
+            const xOffsetRect = x * (gridSpacing + gridSize);
+            const yOffsetRect = y * (gridSpacing + gridSize);
             ctx.fillStyle = '#333';
-            ctx.fillRect(xOffsetRect, yOffsetRect, size, size);
+            ctx.fillRect(xOffsetRect, yOffsetRect, gridSize, gridSize);
 
-            const xOffsetText = x * (spacing + size);
-            const yOffsetText = (y * (spacing + size)) + size;
+            const xOffsetText = x * (gridSpacing + gridSize);
+            const yOffsetText = (y * (gridSpacing + gridSize)) + gridSize;
             ctx.font = '100px Arial';
             ctx.fillStyle = '#FFF';
             ctx.fillText(link, xOffsetText + 50, yOffsetText - 50);
+
+            const leftLine = new THREE.Line3();
+            leftLine.start
+              .set(
+                 -gridWorldWidth/2 + (xOffsetRect * gridWorldWidth / gridWidth),
+                 gridWorldHeight/2 + (yOffsetRect * gridWorldHeight / gridHeight),
+                 0
+              )
+              .applyMatrix4(mesh.matrixWorld);
+            leftLine.end
+              .set(
+                 -gridWorldWidth/2 + (xOffsetRect * gridWorldWidth / gridWidth),
+                 -gridWorldHeight/2 + (yOffsetRect * gridWorldHeight / gridHeight),
+                 0
+              )
+              .applyMatrix4(mesh.matrixWorld);
+
+            const topLine = new THREE.Line3();
+            topLine.start
+              .set(
+                -gridWorldWidth/2 + (xOffsetRect * gridWorldWidth / gridWidth),
+                gridWorldHeight/2 + (yOffsetRect * gridWorldHeight / gridHeight),
+                0
+              )
+              .applyMatrix4(mesh.matrixWorld);
+            topLine.end
+              .set(
+                gridWorldWidth/2 + (xOffsetRect * gridWorldWidth / gridWidth),
+                gridWorldHeight/2 + (yOffsetRect * gridWorldHeight / gridHeight),
+                0
+              )
+              .applyMatrix4(mesh.matrixWorld);
+
+            const plane = new THREE.Plane().setFromCoplanarPoints(
+              leftLine.start,
+              leftLine.end,
+              topLine.end
+            );
+
+            mesh.planes.push({
+              plane,
+              leftLine,
+              topLine,
+            });
           }
           texture.needsUpdate = true;
         };
@@ -622,6 +669,7 @@
             controllerMesh.keyMesh.visible = false;
           };
 
+          // keyboard
           let intersectionKey = null;
           let intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
           if (intersectionPoint) {
@@ -691,6 +739,7 @@
             }
           }
 
+          // url bar
           let urlCoords = null;
           if (!intersectionPoint) {
             intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.urlMesh.plane, localVector) : null;
@@ -717,6 +766,45 @@
                 controllerMesh.rayDot.visible = true;
               } else {
                 intersectionPoint = null;
+              }
+            }
+          }
+
+          // grid
+          if (!intersectionPoint) {
+            if (menuMesh.visible) {
+              for (let i = 0; i < menuMesh.gridMesh.planes.length; i++) {
+                const planeSpec = menuMesh.gridMesh.planes[i];
+                const {plane, leftLine, topLine} = planeSpec;
+                intersectionPoint = controllerMesh.ray.intersectPlane(plane, localVector);
+
+                if (intersectionPoint) {
+                  const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+                  const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+                  const xFactor = topIntersectionPoint.distanceTo(topLine.start) / gridWorldSize;
+                  const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / gridWorldSize;
+                  const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+                  if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
+                    const x = xFactor * urlBarWidth;
+                    const y = yFactor * urlBarHeight;
+
+                    urlCoords = [x, y];
+
+                    controllerMesh.rayMesh.scale.z = distance;
+                    controllerMesh.updateMatrixWorld();
+
+                    controllerMesh.rayDot.position.z = -distance;
+                    controllerMesh.updateMatrixWorld();
+                    controllerMesh.rayDot.visible = true;
+
+                    break;
+                  } else {
+                    intersectionPoint = null;
+                  }
+                }
               }
             }
           }
