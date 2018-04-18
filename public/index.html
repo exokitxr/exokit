@@ -255,14 +255,10 @@
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.y = -(urlBarWorldHeight + gridWorldHeight/2);
 
-        mesh.planes = [];
         const _updateGrid = () => {
           ctx.clearRect(0, 0, gridWidth, gridHeight);
 
-          mesh.planes.length = 0;
-
           for (let i = 0; i < links.length; i++) {
-            const link = links[i];
             const x = i % gridN;
             const y = -Math.floor(i / gridN);
 
@@ -275,7 +271,23 @@
             const yOffsetText = (y * (gridSpacing + gridSize)) + gridSize;
             ctx.font = '100px Arial';
             ctx.fillStyle = '#FFF';
-            ctx.fillText(link, xOffsetText + 50, yOffsetText - 50);
+            ctx.fillText(links[i], xOffsetText + 50, yOffsetText - 50);
+          }
+          texture.needsUpdate = true;
+        };
+        _updateGrid();
+        mesh.updateGrid = _updateGrid;
+
+        mesh.planes = [];
+        const _updatePlanes = () => {
+          mesh.planes.length = 0;
+
+          for (let i = 0; i < links.length; i++) {
+            const x = i % gridN;
+            const y = -Math.floor(i / gridN);
+
+            const xOffsetRect = x * (gridSpacing + gridSize);
+            const yOffsetRect = y * (gridSpacing + gridSize);
 
             const leftLine = new THREE.Line3();
             leftLine.start
@@ -321,10 +333,9 @@
               topLine,
             });
           }
-          texture.needsUpdate = true;
         };
-        _updateGrid();
-        mesh.updateGrid = _updateGrid;
+        _updatePlanes();
+        mesh.updatePlanes = _updatePlanes;
 
         return mesh;
       })();
@@ -349,6 +360,7 @@
         links = newLinks;
 
         menuMesh.gridMesh.updateGrid();
+        menuMesh.gridMesh.updatePlanes();
       })
       .catch(err => {
         console.warn(err.stack);
@@ -641,6 +653,7 @@
       const _updateIntersections = () => {
         keyboardMesh.update();
         menuMesh.urlMesh.update();
+        menuMesh.gridMesh.updatePlanes();
 
         const gamepads = navigator.getGamepads();
 
