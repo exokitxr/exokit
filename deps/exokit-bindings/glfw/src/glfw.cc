@@ -293,7 +293,7 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
   Nan::HandleScope scope;
 
   Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"), JS_STR( &actionNames[action << 3] ));
+  evt->Set(JS_STR("type"), JS_STR(&actionNames[action << 3]));
   evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
   evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
   evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
@@ -394,6 +394,10 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
     evt,
   };
   CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+  
+  if (action == GLFW_PRESS) {
+    keyCB(window, which, scancode, GLFW_REPEAT, mods);
+  }
 }
 
 void APIENTRY cursorPosCB(GLFWwindow* window, double x, double y) {
