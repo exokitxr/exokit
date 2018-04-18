@@ -1,0 +1,938 @@
+<!doctype html>
+<html>
+<head>
+  <style>
+    body {
+      display: flex;
+      margin: 0;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <canvas id=canvas></canvas>
+  <script src="js/three.js"></script>
+  <script src="js/OBJLoader.js"></script>
+  <script src="js/keycode.js"></script>
+  <script src="js/svg-boundings.js"></script>
+  <script>
+    const RAY_COLOR = 0x44c2ff;
+    const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
+    const keyboardWidth = 2048;
+    const keyboardHeight = 716;
+    const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
+    let urlText = 'http://';
+    let urlCursor = urlText.length;
+    const urlMeasures = [];
+    let currentPresseds = null;
+    let currentMenuPresseds = null;
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler();
+    localEuler.order = 'YXZ';
+
+    const canvas = document.getElementById('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+    });
+
+    const scene = new THREE.Scene();
+    // scene.background = new THREE.Color(0xFFFFFF);
+
+    const ambientLight = new THREE.AmbientLight(0x808080);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    const sphere = new THREE.Mesh(
+      new THREE.SphereBufferGeometry(0.3, 7, 5),
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0x4CAF50),
+        flatShading: true,
+      })
+    );
+    const startY = 1.2;
+    sphere.position.y = startY;
+    scene.add(sphere);
+
+    const controllerMeshes = [null, null];
+    const lastPresseds = [false, false];
+    const lastMenuPresseds = [false, false];
+    for (let i = 0; i < 2; i++) {
+      const controllerMesh = new THREE.Object3D();
+      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
+      controllerMesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, -1, -1)
+      );
+
+      const rayMesh = (() => {
+        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+        const material = new THREE.MeshBasicMaterial({
+          color: RAY_COLOR,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      controllerMesh.add(rayMesh);
+      controllerMesh.rayMesh = rayMesh;
+
+      const rayDot = (() => {
+        const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
+        const material = new THREE.MeshBasicMaterial({
+          color: 0xe91e63,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.z = -1;
+        return mesh;
+      })();
+      controllerMesh.add(rayDot);
+      controllerMesh.rayDot = rayDot;
+
+      controllerMesh.ray = new THREE.Ray();
+      controllerMesh.update = () => {
+        controllerMesh.ray.origin.copy(controllerMesh.position);
+        controllerMesh.ray.direction
+          .set(0, 0, -1)
+          .applyQuaternion(controllerMesh.quaternion);
+      };
+
+      scene.add(controllerMesh);
+      controllerMeshes[i] = controllerMesh;
+    }
+
+    const controllerMeshLoader = new THREE.OBJLoader();
+    controllerMeshLoader.setPath('models/obj/vive-controller/');
+    controllerMeshLoader.load('vr_controller_vive_1_5.obj', object => {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.setPath('models/obj/vive-controller/');
+
+      const controllerMesh = object.children[0];
+      controllerMesh.material.map = textureLoader.load('onepointfive_texture.png');
+      controllerMesh.material.specularMap = textureLoader.load('onepointfive_spec.png');
+
+      controllerMeshes[0].add(object.clone());
+      controllerMeshes[1].add(object.clone());
+    });
+
+    const urlBarWidth = 4096;
+    const urlBarHeight = 256;
+    const urlBarWorldWidth = 3;
+    const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
+    const urlBarMesh = (() => {
+      const object = new THREE.Object3D();
+
+      const planeMesh = (() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = urlBarWidth;
+        canvas.height = urlBarHeight;
+        const ctx = canvas.getContext('2d');
+
+        const geometry = new THREE.PlaneBufferGeometry(urlBarWorldWidth, urlBarWorldHeight);
+        const texture = new THREE.Texture(
+          canvas,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          // THREE.LinearMipMapLinearFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        texture.needsUpdate = true;
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        const _updateText = () => {
+          ctx.clearRect(0, 0, urlBarWidth, urlBarHeight);
+
+          ctx.fillStyle = '#333';
+          ctx.fillRect(0, 0, urlBarWidth, urlBarHeight);
+          ctx.fillStyle = '#FFF';
+          ctx.fillRect(10, 10, urlBarWidth - 10*2, urlBarHeight - 10*2);
+          ctx.fillStyle = '#333';
+          ctx.font = `${urlBarHeight - 20}px Arial`;
+          ctx.fillText(urlText, 10, urlBarHeight - 10);
+
+          urlMeasures.length = 0;
+          urlMeasures.push(0);
+          const {width: barWidth} = ctx.measureText('[');
+          for (let i = 1; i <= urlText.length; i++) {
+            const {width} = ctx.measureText('[' + urlText.slice(0, i) + ']');
+            urlMeasures.push(width - barWidth*2);
+          }
+
+          ctx.fillStyle = '#03a9f4';
+          const cursorWidth = 20;
+          ctx.fillRect(10 + urlMeasures[urlCursor] - cursorWidth/2, 20, cursorWidth, urlBarHeight - 20*2);
+
+          texture.needsUpdate = true;
+        };
+        _updateText();
+        mesh.updateText = _updateText;
+
+        return mesh;
+      })();
+      object.add(planeMesh);
+      object.planeMesh = planeMesh;
+
+      object.plane = new THREE.Plane();
+      object.leftLine = new THREE.Line3();
+      object.topLine = new THREE.Line3();
+      object.update = () => {
+        object.leftLine.start
+          .set(-urlBarWorldWidth/2, urlBarWorldHeight/2, 0)
+          .applyMatrix4(object.matrixWorld);
+        object.leftLine.end
+          .set(-urlBarWorldWidth/2, -urlBarWorldHeight/2, 0)
+          .applyMatrix4(object.matrixWorld);
+
+        object.topLine.start
+          .set(-urlBarWorldWidth/2, urlBarWorldHeight/2, 0)
+          .applyMatrix4(object.matrixWorld);
+        object.topLine.end
+          .set(urlBarWorldWidth/2, urlBarWorldHeight / 2, 0)
+          .applyMatrix4(object.matrixWorld);
+
+        object.plane.setFromCoplanarPoints(
+          object.leftLine.start,
+          object.leftLine.end,
+          object.topLine.end
+        );
+      };
+
+      return object;
+    })();
+    // urlBarMesh.position.set(2, 1, 1);
+    urlBarMesh.position.set(0, 1, -1);
+    scene.add(urlBarMesh);
+
+    const keyboardMesh = (() => {
+      const object = new THREE.Object3D();
+
+      const planeMesh = (() => {
+        const img = new Image();
+        img.src = 'img/keyboard.png';
+        img.onload = () => {
+          texture.needsUpdate = true;
+        };
+        img.onerror = err => {
+          console.warn(err.stack);
+        };
+
+        const geometry = new THREE.PlaneBufferGeometry(1, 1 * keyboardHeight / keyboardWidth);
+        const texture = new THREE.Texture(
+          img,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          // THREE.LinearMipMapLinearFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(0, 1, 1).normalize()
+        );
+        return mesh;
+      })();
+      object.add(planeMesh);
+      object.planeMesh = planeMesh;
+
+      object.plane = new THREE.Plane();
+      object.leftLine = new THREE.Line3();
+      object.topLine = new THREE.Line3();
+      object.update = () => {
+        object.leftLine.start
+          .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(planeMesh.matrixWorld);
+        object.leftLine.end
+          .set(-1/2, -keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(planeMesh.matrixWorld);
+
+        object.topLine.start
+          .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(planeMesh.matrixWorld);
+        object.topLine.end
+          .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(planeMesh.matrixWorld);
+
+        object.plane.setFromCoplanarPoints(
+          object.leftLine.start,
+          object.leftLine.end,
+          object.topLine.end
+        );
+      };
+
+      return object;
+    })();
+    keyboardMesh.position.set(0, 0.5, 0);
+    scene.add(keyboardMesh);
+
+    let keyboardMeshAnimation = null;
+
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      const controllerMesh = controllerMeshes[i];
+
+      const keyMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(1, 1);
+        const texture = new THREE.Texture(
+          null,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      keyboardMesh.planeMesh.add(keyMesh);
+
+      controllerMesh.keyMesh = keyMesh;
+    }
+
+    let keyboardHighlightCanvasCtx = null;
+    const img = new Image();
+    img.src = 'img/keyboard-hightlight.svg';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      keyboardHighlightCanvasCtx = ctx;
+    };
+    img.onerror = err => {
+      console.log(err.stack);
+    };
+
+    const keyMap = [];
+    fetch('img/keyboard.svg')
+      .then(res => res.text())
+      .then(keyboardText => {
+        const div = document.createElement('div');
+        div.innerHTML = keyboardText;
+        const keyEls = div.querySelectorAll('svg > g[key]');
+        for (let i = 0; i < keyEls.length; i++) {
+          const keyEl = keyEls[i];
+          const key = keyEl.getAttribute('key');
+          const shapeEl = keyEl.children[0];
+          const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
+          const {
+            left,
+            right,
+            top,
+            bottom,
+          } = boundings;
+          const x1 = left * keyboardMatrix[0];
+          const x2 = right * keyboardMatrix[0];
+          const y1 = top * keyboardMatrix[1];
+          const y2 = bottom * keyboardMatrix[1];
+          keyMap.push([key, x1, y1, x2, y2]);
+        }
+      })
+      .catch(err => {
+        console.warn(err.stack);
+      });
+
+    /* const plane = new THREE.Mesh(
+      new THREE.PlaneBufferGeometry(5, 5, 10, 10),
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0x808080),
+        flatShading: true,
+      })
+    );
+    plane.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 1, 0)
+    );
+    const positions = plane.geometry.attributes.position.array;
+    for (let i = 0; i < positions.length / 3; i++) {
+      positions[i * 3 + 0] += (-0.5 + Math.random()) * 0.3;
+      positions[i * 3 + 1] += (-0.5 + Math.random()) * 0.3;
+      positions[i * 3 + 2] += (-0.5 + Math.random()) * 0.3;
+    }
+    plane.geometry.computeVertexNormals();
+    scene.add(plane); */
+
+    const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 10000);
+    camera.position.set(0, 1, 1);
+    camera.rotation.order = 'YXZ';
+
+    const position = new THREE.Vector3(0, 0, 0);
+    const velocity = new THREE.Vector3(0, 0, 0);
+    let lastTime = Date.now();
+    function animate() {
+      const currentTime = Date.now();
+      const timePassed = Math.max(currentTime - lastTime, 1);
+      lastTime = currentTime;
+
+      renderer.state.reset(); // XXX remove this
+
+      const _animateSphere = () => {
+        // calculate new position
+        const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
+        const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
+        velocity.add(rayBack).multiplyScalar(0.98);
+        position.copy(newPosition);
+
+        // update sphere
+        sphere.position.copy(newPosition);
+        sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+        sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
+      };
+      const _animateKeyboard = () => {
+        if (keyboardMeshAnimation) {
+          const now = Date.now();
+          const factor = Math.pow((now - keyboardMeshAnimation.startTime) / (keyboardMeshAnimation.endTime - keyboardMeshAnimation.startTime), 0.15);
+
+          if (factor < 1) {
+            const scaleY = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
+
+            keyboardMesh.planeMesh.scale.y = scaleY;
+            keyboardMesh.updateMatrixWorld();
+            keyboardMesh.visible = true;
+
+            urlBarMesh.scale.y = scaleY;
+            urlBarMesh.updateMatrixWorld();
+            urlBarMesh.visible = true;
+          } else {
+            const visible = keyboardMesh.planeMesh.scale.y > 0.5;
+
+            keyboardMesh.visible = visible;
+            urlBarMesh.visible = visible;
+
+            keyboardMeshAnimation = null;
+          }
+        }
+      };
+      const _animateControllers = () => {
+        const gamepads = navigator.getGamepads();
+
+        for (let i = 0; i < gamepads.length; i++) {
+          const gamepad = gamepads[i];
+          if (gamepad) {
+            const controllerMesh = controllerMeshes[i];
+            controllerMesh.position.fromArray(gamepad.pose.position);
+            controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+            controllerMesh.updateMatrixWorld();
+
+            const pressed = currentPresseds ? currentPresseds[i] : gamepad.buttons[1].pressed;
+            controllerMesh.rayMesh.material.color.setHex(pressed ? RAY_HIGHLIGHT_COLOR : RAY_COLOR);
+          }
+        }
+
+        /* const loopTime = 1500;
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          const controllerMesh = controllerMeshes[i];
+          localEuler.y = (i === 0 ? -1 : 1) * Math.sin((currentTime % loopTime) / loopTime * Math.PI * 2);
+          controllerMesh.quaternion.setFromUnitVectors(
+            localVector.set(0, 0, -1),
+            localVector2.set(0, -1, -1)
+              .normalize()
+              .applyEuler(
+                localEuler
+              )
+          );
+        } */
+      };
+      const _updateControls = () => {
+        // update controls
+        if (window.document.pointerLockElement) {
+          const directionVector = new THREE.Vector3();
+          if (keys.up) {
+            directionVector.z--;
+          }
+          if (keys.down) {
+            directionVector.z++;
+          }
+          if (keys.left) {
+            directionVector.x--;
+          }
+          if (keys.right) {
+            directionVector.x++;
+          }
+          directionVector
+            .normalize()
+            .multiplyScalar(0.1);
+          const euler = camera.rotation.clone();
+          euler.x = 0;
+          camera.position.add(
+            directionVector
+              .applyEuler(euler)
+          );
+
+          const rightControllerMesh = controllerMeshes[1];
+          rightControllerMesh.position
+            .copy(camera.position)
+            .add(
+              localVector.set(0, -0.1, -0.5)
+                .applyQuaternion(camera.quaternion)
+            );
+          rightControllerMesh.quaternion.copy(camera.quaternion);
+        }
+      };
+      const _updateIntersections = () => {
+        keyboardMesh.update();
+        urlBarMesh.update();
+
+        const gamepads = navigator.getGamepads();
+
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.update();
+
+          const gamepad = gamepads[i];
+          let pressed = currentPresseds ? currentPresseds[i] : false;
+          let menuPressed = currentMenuPresseds ? currentMenuPresseds[i] : false;
+          if (gamepad) {
+            controllerMesh.position.fromArray(gamepad.pose.position);
+            controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+            controllerMesh.updateMatrixWorld();
+
+            pressed = gamepad.buttons[1].pressed;
+            menuPressed = gamepad.buttons[3].pressed;
+          }
+
+          const _setIntersectionDefault = () => {
+            controllerMesh.rayMesh.scale.z = 1;
+            controllerMesh.rayMesh.updateMatrixWorld();
+
+            controllerMesh.rayDot.visible = false;
+
+            controllerMesh.keyMesh.visible = false;
+          };
+
+          let intersectionKey = null;
+          let intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
+          if (intersectionPoint) {
+            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+            const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
+            const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
+              const x = xFactor * keyboardWidth;
+              const y = yFactor * keyboardHeight;
+
+              controllerMesh.rayMesh.scale.z = distance;
+              controllerMesh.updateMatrixWorld();
+
+              controllerMesh.rayDot.position.z = -distance;
+              controllerMesh.updateMatrixWorld();
+              controllerMesh.rayDot.visible = true;
+
+              for (let i = 0; i < keyMap.length; i++) {
+                const [key, kx1, ky1, kx2, ky2] = keyMap[i];
+                if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
+                  if (keyboardHighlightCanvasCtx) {
+                    const width = kx2 - kx1;
+                    const height = ky2 - ky1;
+                    let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
+                    /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                      const canvas = document.createElement('canvas');
+                      canvas.width = imageData.width;
+                      canvas.height = imageData.height;
+
+                      const ctx = canvas.getContext('2d');
+                      ctx.putImageData(imageData, 0, 0);
+                      ctx.clearRect(0, 0, 80, 140);
+
+                      imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+                    } */
+
+                    controllerMesh.keyMesh.material.map.image = imageData;
+                    controllerMesh.keyMesh.material.map.needsUpdate = true;
+
+                    controllerMesh.keyMesh.position
+                      .set(
+                        -1/2 + ((width/2 + kx1) / keyboardWidth),
+                        (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
+                         0.01 * (pressed ? 0.5 : 1)
+                      );
+                    controllerMesh.keyMesh.scale.set(
+                      width / keyboardWidth,
+                      height / keyboardHeight * (keyboardHeight / keyboardWidth),
+                      1
+                    );
+                    controllerMesh.keyMesh.updateMatrixWorld();
+                    controllerMesh.keyMesh.visible = true;
+                  }
+
+                  intersectionKey = key;
+
+                  break;
+                }
+              }
+            } else {
+              intersectionPoint = null;
+            }
+          }
+
+          let urlCoords = null;
+          if (!intersectionPoint) {
+            intersectionPoint = urlBarMesh.visible ? controllerMesh.ray.intersectPlane(urlBarMesh.plane, localVector) : null;
+            if (intersectionPoint) {
+              const leftIntersectionPoint = urlBarMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+              const topIntersectionPoint = urlBarMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+              const xFactor = topIntersectionPoint.distanceTo(urlBarMesh.topLine.start) / urlBarWorldWidth;
+              const yFactor = leftIntersectionPoint.distanceTo(urlBarMesh.leftLine.start) / urlBarWorldHeight;
+              const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+              if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
+                const x = xFactor * urlBarWidth;
+                const y = yFactor * urlBarHeight;
+
+                urlCoords = [x, y];
+
+                controllerMesh.rayMesh.scale.z = distance;
+                controllerMesh.updateMatrixWorld();
+
+                controllerMesh.rayDot.position.z = -distance;
+                controllerMesh.updateMatrixWorld();
+                controllerMesh.rayDot.visible = true;
+              } else {
+                intersectionPoint = null;
+              }
+            }
+          }
+
+          if (!intersectionPoint) {
+            _setIntersectionDefault();
+          }
+
+          const lastMenuPressed = lastMenuPresseds[i];
+          lastMenuPresseds[i] = menuPressed;
+          if (menuPressed && !lastMenuPressed) {
+            const opening = keyboardMesh.planeMesh.scale.y < 0.5;
+            if (opening) {
+              localEuler.setFromQuaternion(camera.quaternion, localEuler.order);
+              localEuler.x = 0;
+              localEuler.z = 0;
+
+              keyboardMesh.position
+                .copy(camera.position)
+                .add(
+                  localVector
+                    .set(0, -0.5, -1)
+                    .applyEuler(localEuler)
+                );
+
+              urlBarMesh.position
+                .copy(camera.position)
+                .add(
+                  localVector
+                    .set(0, 0.5, -2)
+                    .applyEuler(localEuler)
+                );
+            }
+ 
+            localEuler.setFromQuaternion(
+              localQuaternion
+                .setFromUnitVectors(
+                  new THREE.Vector3(0, 0, -1),
+                  keyboardMesh.position.clone()
+                    .sub(camera.position)
+                    .normalize()
+                ),
+              localEuler.order
+            );
+            localEuler.x = 0;
+            localEuler.z = 0;
+            keyboardMesh.rotation.copy(localEuler);
+            urlBarMesh.rotation.copy(localEuler);
+
+            const endValue = opening ? 1 : 0;
+            const now = Date.now();
+            keyboardMeshAnimation = {
+              startValue: keyboardMesh.planeMesh.scale.y,
+              endValue,
+              startTime: now,
+              endTime: now + 300,
+            };
+          }
+
+          const lastPressed = lastPresseds[i];
+          lastPresseds[i] = pressed;
+          if (pressed && !lastPressed) {
+            if (intersectionKey) {
+              const code = keyCode(intersectionKey);
+              console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
+              _handleKey(code, false);
+            } else if (urlCoords) {
+              const [x, y] = urlCoords;
+              const textX = x - 10;
+
+              let closestIndex = -1;
+              let closestDistance = Infinity;
+              for (let i = 0; i < urlMeasures.length; i++) {
+                const urlMeasure = urlMeasures[i];
+                const distance = Math.abs(urlMeasure - textX);
+                if (distance < closestDistance) {
+                  closestIndex = i;
+                  closestDistance = distance;
+                }
+              }
+              if (closestIndex !== -1) {
+                urlCursor = closestIndex;
+                urlBarMesh.planeMesh.updateText();
+              }
+            }
+          }
+        }
+      };
+      _animateSphere();
+      _animateKeyboard();
+      _animateControllers();
+      _updateControls();
+      _updateIntersections();
+
+      renderer.render(scene, camera);
+
+      window.requestAnimationFrame(animate);
+    }
+    window.requestAnimationFrame(animate);
+
+    const _handleKey = (code, shiftKey) => {
+      if (code === 8) { // backspace
+        if (urlCursor > 0) {
+          urlText = urlText.slice(0, urlCursor - 1) + urlText.slice(urlCursor);
+          urlCursor--;
+          urlBarMesh.planeMesh.updateText();
+        }
+      } else if (code === 46) { // delete
+        if (urlCursor < urlText.length) {
+          urlText = urlText.slice(0, urlCursor) + urlText.slice(urlCursor + 1);
+          urlBarMesh.planeMesh.updateText();
+        }
+      } else if (code === 32) { // space
+        urlText = urlText.slice(0, urlCursor) + ' ' + urlText.slice(urlCursor);
+        urlCursor++;
+        urlBarMesh.planeMesh.updateText();
+      } else if (code === 13) { // enter
+        _goUrl();
+      } else if (
+        code === 9 || // tab
+        code === 16 || // shift
+        code === 17 || // ctrl
+        code === 18 || // alt
+        code === 20 || // capslock
+        code === 91 // win
+      ) {
+        // nothing
+      } else if (code === 37) { // left
+        urlCursor = Math.max(urlCursor - 1, 0);
+        urlBarMesh.planeMesh.updateText();
+      } else if (code === 39) { // right
+        urlCursor = Math.min(urlCursor + 1, urlText.length);
+        urlBarMesh.planeMesh.updateText();
+      } else if (code === 38) { // up
+        urlCursor = 0;
+        urlBarMesh.planeMesh.updateText();
+      } else if (code === 40) { // down
+        urlCursor = urlText.length;
+        urlBarMesh.planeMesh.updateText();
+      } else if (code === -1) {
+        // nothing
+      } else {
+        let c = keyCode(code);
+        if (shiftKey) {
+          c = c.toUpperCase();
+        }
+        urlText = urlText.slice(0, urlCursor) + c + urlText.slice(urlCursor);
+        urlCursor++;
+        urlBarMesh.planeMesh.updateText();
+      }
+    };
+    const _goUrl = () => {
+      window.location.href = urlText;
+    };
+
+    let displays = [];
+    const _updateDisplays = () => {
+      if (window.navigator.getVRDisplays) {
+        window.navigator.getVRDisplays()
+          .then(ds => {
+            console.log('got displays', displays.length);
+
+            displays = ds;
+          })
+          .catch(err => {
+            console.warn(err);
+          });
+      }
+    };
+    _updateDisplays();
+    window.addEventListener('vrdisplayconnect', _updateDisplays);
+    window.addEventListener('vrdisplaydisconnect', _updateDisplays);
+
+    const keys = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+    };
+    window.addEventListener('keydown', e => {
+      if (!window.document.pointerLockElement) {
+        switch (e.keyCode) {
+          case 112: { // F1
+            const display = displays.find(display =>
+              display.constructor.name === 'VRDisplay'
+            );
+            display.requestPresent([{source: canvas}])
+              .then(() => {
+                renderer.vr.enabled = true;
+                renderer.vr.setDevice(display);
+              });
+            break;
+          }
+          case 113: { // F2
+            const display = displays.find(display =>
+              display.constructor.name === 'MLDisplay'
+            );
+            display.requestPresent([{source: canvas}])
+              .then(() => {
+                renderer.vr.enabled = true;
+                renderer.vr.setDevice(display);
+              });
+            break;
+          }
+          default: {
+            _handleKey(e.keyCode, e.shiftKey);
+            break;
+          }
+        }
+      } else {
+        switch (e.keyCode) {
+          case 87: { // W
+            keys.up = true;
+            if (!window.document.pointerLockElement) {
+              renderer.domElement.requestPointerLock();
+            }
+            break;
+          }
+          case 83: { // S
+            keys.down = true;
+            if (!window.document.pointerLockElement) {
+              renderer.domElement.requestPointerLock();
+            }
+            break;
+          }
+          case 65: { // A
+            keys.left = true;
+            if (!window.document.pointerLockElement) {
+              renderer.domElement.requestPointerLock();
+            }
+            break;
+          }
+          case 68: { // D
+            keys.right = true;
+            if (!window.document.pointerLockElement) {
+              renderer.domElement.requestPointerLock();
+            }
+            break;
+          }
+          case 69: { // E
+            currentMenuPresseds[1] = true;
+            break;
+          }
+        }
+      }
+    });
+    window.addEventListener('keyup', e => {
+      if (window.document.pointerLockElement) {
+        switch (e.keyCode) {
+          case 87: { // W
+            keys.up = false;
+            break;
+          }
+          case 83: { // S
+            keys.down = false;
+            break;
+          }
+          case 65: { // A
+            keys.left = false;
+            break;
+          }
+          case 68: { // D
+            keys.right = false;
+            break;
+          }
+          case 69: { // E
+            currentMenuPresseds[1] = false;
+            break;
+          }
+        }
+      }
+    });
+    window.addEventListener('mousedown', () => {
+      if (!window.document.pointerLockElement) {
+        renderer.domElement.requestPointerLock();
+      } else {
+        currentPresseds[1] = true;
+      }
+    });
+    window.addEventListener('mouseup', () => {
+      if (window.document.pointerLockElement) {
+        currentPresseds[1] = false;
+      }
+    });
+    window.addEventListener('mousemove', e => {
+      if (window.document.pointerLockElement) {
+        const {movementX, movementY} = e;
+        camera.rotation.y -= movementX * 0.01;
+        camera.rotation.x -= movementY * 0.01;
+        camera.rotation.x = Math.min(Math.max(camera.rotation.x, -Math.PI/2), Math.PI/2);
+      }
+    });
+    window.document.addEventListener('pointerlockchange', () => {
+      if (window.document.pointerLockElement) {
+        currentPresseds = [false, false];
+        currentMenuPresseds = [false, false];
+      } else {
+        currentPresseds = null;
+        currentMenuPresseds = null;
+      }
+    });
+  </script>
+</body>
+</html>
