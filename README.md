@@ -1,4 +1,4 @@
-# Exokit: Javascript web browser for the post-screen world
+# Exokit Browser: Javascript web browser for AR, VR, and Magic Leap
 
 [![Slack](https://exoslack.now.sh/badge.svg)](https://exoslack.now.sh)
 [![Github releases](https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg)](https://github.com/webmixedreality/exokit/releases )
@@ -8,12 +8,12 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/webmixedreality.svg?style=social)](https://twitter.com/webmixedreality)
 
 ```sh
-exokit https://example.com # run site in WebGL/VR/AR
+exokit zeovr.io # run WebGL/VR/AR site
 ```
 
-**Exokit** is a full HTML5 web browser, written as a node.js module. It lets you run a web site as a program.
+[Exokit Browser](https://exokitbrowser.com) is a brand new, fast, post-screen era web browser written in JavaScript. If a WebGL site runs in Chrome, it will probably run twice as fast in Exokit.
 
-Exokit can do everything a browser can do -- _except render HTML_.
+Exokit is a full HTML5 web browser, written as a node.js module. For VR, AR, And WebGL sites, Exokit can do everything a browser can do.
 
 It's plain OpenGL and standard libraries under the hood, so it plays nice with Windows, Linux, macOS, and even Magic Leap!
 
