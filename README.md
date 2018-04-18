@@ -13,11 +13,11 @@ exokit zeovr.io # run WebGL/VR/AR site
 
 [Exokit Browser](https://exokitbrowser.com) is a brand new, fast, post-screen era web browser written in JavaScript. If a WebGL site runs in Chrome, it will probably run twice as fast in Exokit.
 
-Exokit is a full HTML5 web browser, written as a node.js module. For VR, AR, And WebGL sites, Exokit can do everything a browser can do.
+Exokit is a full HTML5 web browser, written as a node.js module. For VR, AR, and WebGL sites, Exokit can do everything a browser can do.
 
 It's plain OpenGL and standard libraries under the hood, so it plays nice with Windows, Linux, macOS, and even Magic Leap!
 
-## What? Isn't that useless?
+## About
 
 Exokit can't render HTML, but it _can_ draw Canvas and WebGL -- natively, and fast -- as well as take keyboard/mouse/mixed reality input with the regular APIs. It's a browser for the post-(2D) world.
 
