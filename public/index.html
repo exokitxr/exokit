@@ -21,9 +21,12 @@
     const keyboardWidth = 2048;
     const keyboardHeight = 716;
     const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
+
     let urlText = 'http://';
     let urlCursor = urlText.length;
     const urlMeasures = [];
+    let links = [{}, {}];
+
     let currentPresseds = null;
     let currentMenuPresseds = null;
     const localVector = new THREE.Vector3();
@@ -129,6 +132,11 @@
     const urlBarHeight = 256;
     const urlBarWorldWidth = 3;
     const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
+    const gridWidth = urlBarWidth;
+    const gridHeight = gridWidth;
+    const gridWorldWidth = urlBarWorldWidth;
+    const gridWorldHeight = gridWorldWidth;
+
     const menuMesh = (() => {
       const object = new THREE.Object3D();
 
@@ -190,6 +198,61 @@
       })();
       object.add(urlMesh);
       object.urlMesh = urlMesh;
+
+      const gridMesh = (() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = gridWidth;
+        canvas.height = gridHeight;
+        const ctx = canvas.getContext('2d');
+
+        const geometry = new THREE.PlaneBufferGeometry(gridWorldWidth, gridWorldHeight);
+        const texture = new THREE.Texture(
+          canvas,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          // THREE.LinearMipMapLinearFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        texture.needsUpdate = true;
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = -(urlBarWorldHeight + gridWorldHeight/2);
+
+        const _updateGrid = () => {
+          ctx.clearRect(0, 0, gridWidth, gridHeight);
+
+          const n = 3;
+          const spacing = 100;
+          const size = (gridWidth - ((spacing - 1) * n)) / n;
+
+          for (let i = 0; i < links.length; i++) {
+            const link = links[i];
+            const x = i % 3;
+            const y = -Math.floor(i / 3);
+
+            const xOffset = x * (spacing + size);
+            const yOffset = y * (spacing + size);
+
+            ctx.fillStyle = '#333';
+            ctx.fillRect(xOffset, yOffset, size, size);
+          }
+          texture.needsUpdate = true;
+        };
+        _updateGrid();
+        mesh.updateGrid = _updateGrid;
+
+        return mesh;
+      })();
+      object.add(gridMesh);
+      object.gridMesh = gridMesh;
 
       object.plane = new THREE.Plane();
       object.leftLine = new THREE.Line3();
