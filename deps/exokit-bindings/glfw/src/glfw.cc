@@ -1117,6 +1117,22 @@ NAN_METHOD(SetCursorPosition) {
   glfwSetCursorPos(window, x, y);
 }
 
+NAN_METHOD(GetClipboard) {
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  const char *clipboardContents = glfwGetClipboardString(window);
+  if (clipboardContents != nullptr) {
+    info.GetReturnValue().Set(JS_STR(clipboardContents));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
+}
+
+NAN_METHOD(SetClipboard) {
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  String::Utf8Value str(info[0]->ToString());
+  glfwSetClipboardString(window, *str);
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1502,6 +1518,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
+  Nan::SetMethod(target, "getClipboard", glfw::GetClipboard);
+  Nan::SetMethod(target, "setClipboard", glfw::SetClipboard);
   Nan::SetMethod(target, "createRenderTarget", glfw::CreateRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", glfw::DestroyRenderTarget);
   // Nan::SetMethod(target, "createFramebuffer", glfw::CreateFramebuffer);
