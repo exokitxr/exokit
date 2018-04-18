@@ -23,7 +23,7 @@ Exokit can't render HTML, but it _can_ draw Canvas and WebGL -- natively, and fa
 
 Think JSDOM, except it _actually runs_ the DOM in a `window`. Or think Electron, except 300k and no compile step. Or, think an emulator for running web sites.
 
-The multipmedia parts (e.g. WebGL) are pluggable native modules. Everything else is Javascript. It's pretty easy to experiment and add new Web APIs.
+The multimedia parts (e.g. WebGL) are pluggable native modules. Everything else is Javascript. It's pretty easy to experiment and add new Web APIs.
 
 Exokit runs on Android/iOS, as well as Windows, Linux, and macOS.
 
