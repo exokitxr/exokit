@@ -771,9 +771,10 @@
           }
 
           // grid
+          let intersectionLink = null;
           if (!intersectionPoint) {
             if (menuMesh.visible) {
-              for (let i = 0; i < menuMesh.gridMesh.planes.length; i++) {
+              for (let i = 0; i < links.length; i++) {
                 const planeSpec = menuMesh.gridMesh.planes[i];
                 const {plane, leftLine, topLine} = planeSpec;
                 intersectionPoint = controllerMesh.ray.intersectPlane(plane, localVector);
@@ -788,17 +789,14 @@
                   const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
                   if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
-                    const x = xFactor * urlBarWidth;
-                    const y = yFactor * urlBarHeight;
-
-                    urlCoords = [x, y];
-
                     controllerMesh.rayMesh.scale.z = distance;
                     controllerMesh.updateMatrixWorld();
 
                     controllerMesh.rayDot.position.z = -distance;
                     controllerMesh.updateMatrixWorld();
                     controllerMesh.rayDot.visible = true;
+
+                    intersectionLink = links[i];
 
                     break;
                   } else {
@@ -889,6 +887,8 @@
                 urlCursor = closestIndex;
                 menuMesh.urlMesh.updateText();
               }
+            } else if (intersectionLink) {
+              _goUrl(intersectionLink);
             }
           }
         }
@@ -922,7 +922,7 @@
         urlCursor++;
         menuMesh.urlMesh.updateText();
       } else if (code === 13) { // enter
-        _goUrl();
+        _goUrl(urlText);
       } else if (
         code === 9 || // tab
         code === 16 || // shift
@@ -956,8 +956,8 @@
         menuMesh.urlMesh.updateText();
       }
     };
-    const _goUrl = () => {
-      window.location.href = urlText;
+    const _goUrl = u => {
+      window.location.href = u;
     };
 
     let displays = [];
