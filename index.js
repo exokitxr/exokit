@@ -900,6 +900,16 @@ if (require.main === module) {
         clearTimeout(timeout);
       });
       window.on('navigate', newWindowCb);
+      window.document.on('paste', e => {
+        e.clipboardData = new window.DataTransfer();
+        if (contexts.length > 0) {
+          const context = contexts[0];
+          const windowHandle = context.getWindowHandle();
+          const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);
+          const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
+          e.clipboardData.items.push(dataTransferItem);
+        }
+      });
     };
 
     let {url} = args;
