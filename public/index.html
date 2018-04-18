@@ -129,10 +129,10 @@
     const urlBarHeight = 256;
     const urlBarWorldWidth = 3;
     const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
-    const urlBarMesh = (() => {
+    const menuMesh = (() => {
       const object = new THREE.Object3D();
 
-      const planeMesh = (() => {
+      const urlMesh = (() => {
         const canvas = document.createElement('canvas');
         canvas.width = urlBarWidth;
         canvas.height = urlBarHeight;
@@ -188,8 +188,8 @@
 
         return mesh;
       })();
-      object.add(planeMesh);
-      object.planeMesh = planeMesh;
+      object.add(urlMesh);
+      object.urlMesh = urlMesh;
 
       object.plane = new THREE.Plane();
       object.leftLine = new THREE.Line3();
@@ -218,9 +218,9 @@
 
       return object;
     })();
-    // urlBarMesh.position.set(2, 1, 1);
-    urlBarMesh.position.set(0, 1, -1);
-    scene.add(urlBarMesh);
+    // menuMesh.position.set(2, 1, 1);
+    menuMesh.position.set(0, 1, -1);
+    scene.add(menuMesh);
 
     const keyboardMesh = (() => {
       const object = new THREE.Object3D();
@@ -427,14 +427,14 @@
             keyboardMesh.updateMatrixWorld();
             keyboardMesh.visible = true;
 
-            urlBarMesh.scale.y = scaleY;
-            urlBarMesh.updateMatrixWorld();
-            urlBarMesh.visible = true;
+            menuMesh.scale.y = scaleY;
+            menuMesh.updateMatrixWorld();
+            menuMesh.visible = true;
           } else {
             const visible = keyboardMesh.planeMesh.scale.y > 0.5;
 
             keyboardMesh.visible = visible;
-            urlBarMesh.visible = visible;
+            menuMesh.visible = visible;
 
             keyboardMeshAnimation = null;
           }
@@ -508,7 +508,7 @@
       };
       const _updateIntersections = () => {
         keyboardMesh.update();
-        urlBarMesh.update();
+        menuMesh.update();
 
         const gamepads = navigator.getGamepads();
 
@@ -608,14 +608,14 @@
 
           let urlCoords = null;
           if (!intersectionPoint) {
-            intersectionPoint = urlBarMesh.visible ? controllerMesh.ray.intersectPlane(urlBarMesh.plane, localVector) : null;
+            intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.plane, localVector) : null;
             if (intersectionPoint) {
-              const leftIntersectionPoint = urlBarMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+              const leftIntersectionPoint = menuMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-              const topIntersectionPoint = urlBarMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+              const topIntersectionPoint = menuMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
-              const xFactor = topIntersectionPoint.distanceTo(urlBarMesh.topLine.start) / urlBarWorldWidth;
-              const yFactor = leftIntersectionPoint.distanceTo(urlBarMesh.leftLine.start) / urlBarWorldHeight;
+              const xFactor = topIntersectionPoint.distanceTo(menuMesh.topLine.start) / urlBarWorldWidth;
+              const yFactor = leftIntersectionPoint.distanceTo(menuMesh.leftLine.start) / urlBarWorldHeight;
               const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
               if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
@@ -657,7 +657,7 @@
                     .applyEuler(localEuler)
                 );
 
-              urlBarMesh.position
+              menuMesh.position
                 .copy(camera.position)
                 .add(
                   localVector
@@ -679,7 +679,7 @@
             localEuler.x = 0;
             localEuler.z = 0;
             keyboardMesh.rotation.copy(localEuler);
-            urlBarMesh.rotation.copy(localEuler);
+            menuMesh.rotation.copy(localEuler);
 
             const endValue = opening ? 1 : 0;
             const now = Date.now();
@@ -714,7 +714,7 @@
               }
               if (closestIndex !== -1) {
                 urlCursor = closestIndex;
-                urlBarMesh.planeMesh.updateText();
+                menuMesh.urlMesh.updateText();
               }
             }
           }
@@ -737,17 +737,17 @@
         if (urlCursor > 0) {
           urlText = urlText.slice(0, urlCursor - 1) + urlText.slice(urlCursor);
           urlCursor--;
-          urlBarMesh.planeMesh.updateText();
+          menuMesh.urlMesh.updateText();
         }
       } else if (code === 46) { // delete
         if (urlCursor < urlText.length) {
           urlText = urlText.slice(0, urlCursor) + urlText.slice(urlCursor + 1);
-          urlBarMesh.planeMesh.updateText();
+          menuMesh.urlMesh.updateText();
         }
       } else if (code === 32) { // space
         urlText = urlText.slice(0, urlCursor) + ' ' + urlText.slice(urlCursor);
         urlCursor++;
-        urlBarMesh.planeMesh.updateText();
+        menuMesh.urlMesh.updateText();
       } else if (code === 13) { // enter
         _goUrl();
       } else if (
@@ -761,16 +761,16 @@
         // nothing
       } else if (code === 37) { // left
         urlCursor = Math.max(urlCursor - 1, 0);
-        urlBarMesh.planeMesh.updateText();
+        menuMesh.urlMesh.updateText();
       } else if (code === 39) { // right
         urlCursor = Math.min(urlCursor + 1, urlText.length);
-        urlBarMesh.planeMesh.updateText();
+        menuMesh.urlMesh.updateText();
       } else if (code === 38) { // up
         urlCursor = 0;
-        urlBarMesh.planeMesh.updateText();
+        menuMesh.urlMesh.updateText();
       } else if (code === 40) { // down
         urlCursor = urlText.length;
-        urlBarMesh.planeMesh.updateText();
+        menuMesh.urlMesh.updateText();
       } else if (code === -1) {
         // nothing
       } else {
@@ -780,7 +780,7 @@
         }
         urlText = urlText.slice(0, urlCursor) + c + urlText.slice(urlCursor);
         urlCursor++;
-        urlBarMesh.planeMesh.updateText();
+        menuMesh.urlMesh.updateText();
       }
     };
     const _goUrl = () => {
