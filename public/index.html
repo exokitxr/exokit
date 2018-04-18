@@ -1000,6 +1000,18 @@
     window.addEventListener('keydown', e => {
       if (!window.document.pointerLockElement) {
         switch (e.keyCode) {
+          case 67: { // C
+            if (e.ctrlKey) {
+              document.execCommand('copy');
+            }
+            break;
+          }
+          case 86: { // V
+            if (e.ctrlKey) {
+              document.execCommand('paste');
+            }
+            break;
+          }
           case 112: { // F1
             const display = displays.find(display =>
               display.constructor.name === 'VRDisplay'
