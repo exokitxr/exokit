@@ -11,6 +11,7 @@ const mkdirp = require('mkdirp');
 const replHistory = require('repl.history');
 const exokit = require('exokit-core');
 const minimist = require('minimist');
+const UPNG = require('upng-js');
 const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = exokit;
@@ -51,6 +52,7 @@ const args = (() => {
       string: [
         's',
         'size',
+        'image',
       ],
       alias: {
         h: 'home',
@@ -59,6 +61,7 @@ const args = (() => {
         s: 'size',
         f: 'frame',
         m: 'minimalFrame',
+        i: 'image',
       },
     });
     return {
@@ -68,6 +71,7 @@ const args = (() => {
       size: minimistArgs.size,
       frame: minimistArgs.frame,
       minimalFrame: minimistArgs.minimalFrame,
+      image: minimistArgs.image,
     };
   } else {
     return {};
@@ -111,12 +115,12 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       nativeWindow.destroy(windowHandle);
       canvas._context = null;
       canvas.ownerDocument.removeListener('domchange', ondomchange);
-      
+
       contexts.splice(contexts.indexOf(gl), 1);
     })(gl.destroy);
 
     contexts.push(gl);
-    
+
     canvas.ownerDocument.defaultView.on('unload', () => {
       gl.destroy();
     });
@@ -746,15 +750,15 @@ if (require.main === module) {
           leftGamepad.buttons[1].touched = leftTriggerPushed;
           leftGamepad.buttons[1].pressed = leftTriggerPushed;
           controllersArrayIndex++;
-          
+
           let gesturesArrayIndex = 0;
           leftGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
           gesturesArrayIndex += 3;
           leftGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
           gesturesArrayIndex++;
-          
+
           gamepads[0] = leftGamepad;
-          
+
           rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
           controllersArrayIndex += 3;
           rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
@@ -765,12 +769,12 @@ if (require.main === module) {
           rightGamepad.buttons[1].touched = rightTriggerPushed;
           rightGamepad.buttons[1].pressed = rightTriggerPushed;
           controllersArrayIndex++;
-          
+
           rightGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
           gesturesArrayIndex += 3;
           rightGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
           gesturesArrayIndex++;
-          
+
           gamepads[1] = rightGamepad;
 
           window.top.updateMlFrame({
@@ -917,6 +921,36 @@ if (require.main === module) {
             _bindWindow(newWindow, _bindHeadlessWindow);
           };
           _bindHeadlessWindow(window);
+
+          if (args.image) {
+            setTimeout(() => {
+              if (contexts.length > 0) {
+                const gl = contexts[0];
+                const {[canvasSymbol]: canvas} = gl;
+                const {width, height} = canvas;
+                const arrayBuffer = new ArrayBuffer(width * height * 4);
+                const uint8Array = new Uint8Array(arrayBuffer);
+                gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
+                const arrayBuffer2 = new ArrayBuffer(arrayBuffer.byteLength);
+                const uint8Array2 = new Uint8Array(arrayBuffer2);
+                for (let y = 0; y < height; y++) {
+                  const yBottom = height - y - 1;
+                  uint8Array2.set(uint8Array.slice(yBottom * width * 4, (yBottom + 1) * width * 4), y * width * 4);
+                }
+                const result = new Buffer(UPNG.encode([
+                  arrayBuffer2,
+                ], width, height, 0));
+                fs.writeFile(args.image, result, err => {
+                  if (!err) {
+                    process.exit(0);
+                  } else {
+                    console.warn(err.stack);
+                    process.exit(1);
+                  }
+                });
+              }
+            }, 3000);
+          }
         });
     } else {
       let window = null;
