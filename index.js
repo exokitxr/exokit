@@ -38,6 +38,8 @@ const args = (() => {
   if (require.main === module) {
     const minimistArgs = minimist(process.argv.slice(2), {
       boolean: [
+        'h',
+        'home',
         'p',
         'perf',
         'performance',
@@ -51,6 +53,7 @@ const args = (() => {
         'size',
       ],
       alias: {
+        h: 'home',
         p: 'performance',
         perf: 'performance',
         s: 'size',
@@ -60,6 +63,7 @@ const args = (() => {
     });
     return {
       url: minimistArgs._[0] || '',
+      home: minimistArgs.home,
       performance: !!minimistArgs.performance,
       size: minimistArgs.size,
       frame: minimistArgs.frame,
@@ -895,6 +899,9 @@ if (require.main === module) {
     };
 
     let {url} = args;
+    if (!url && args.home) {
+      url = 'file://' + path.join(__dirname, 'public', 'index.html');
+    }
     if (url) {
       if (url === '.') {
         console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
