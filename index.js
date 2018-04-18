@@ -906,7 +906,7 @@ if (require.main === module) {
       if (url === '.') {
         console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
       }
-      if (url.indexOf('://') < 0) {
+      if (url.indexOf('://') === -1) {
         url = 'http://' + url;
       }
       return exokit.load(url, {
