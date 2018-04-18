@@ -997,7 +997,7 @@
       left: false,
       right: false,
     };
-    window.addEventListener('keydown', e => {
+    window.addEventListener('keypress', e => {
       if (!window.document.pointerLockElement) {
         switch (e.keyCode) {
           case 67: { // C
@@ -1039,7 +1039,10 @@
             break;
           }
         }
-      } else {
+      }
+    });
+    window.addEventListener('keydown', e => {
+      if (window.document.pointerLockElement) {
         switch (e.keyCode) {
           case 87: { // W
             keys.up = true;
