@@ -17,7 +17,7 @@ Exokit is a full HTML5 web browser, written as a node.js module. For VR, AR, and
 
 It's plain OpenGL and standard libraries under the hood, so it plays nice with Windows, Linux, macOS, and even Magic Leap!
 
-## About
+## About Exokit Browser
 
 Exokit can't render HTML, but it _can_ draw Canvas and WebGL -- natively, and fast -- as well as take keyboard/mouse/mixed reality input with the regular APIs. It's a browser for the post-(2D) world.
 
