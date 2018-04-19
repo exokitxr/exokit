@@ -247,7 +247,7 @@
             '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavutil',
             '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libswscale',
             '-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libswresample',
-            '-Wl,-R./node_modules/native-openvr-deps/bin/linux64',
+            '-Wl,-rpath,./node_modules/native-openvr-deps/bin/linux64',
           ],
           'defines': [
             'NOMINMAX',
