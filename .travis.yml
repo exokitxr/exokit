@@ -63,9 +63,14 @@ matrix:
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - ./node/bin/npm install
+    - mkdir -p /tmp/exokit/Contents
+    - cp -R * /tmp/exokit/Contents
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
+    - ./node/bin/npm install -g create-dmg
+    - create-dmg /tmp/exokit
+    - mv /tmp/exokit-undefined.dmg ./exokit-macos-x64.dmg
     deploy:
     - provider: releases
       api_key:
@@ -81,6 +86,15 @@ matrix:
         secure: OlejFsEjiEBzw44wFRlmQb3stF+PURu52AMogc1t4qu54x6YRxxk0NMlv3nzGlObo9JnOPMhAfISgDr8515jqvGEfFXcDzFOPIx42nyqVZe0I8UCA4cRbsV3EvvXtYfbwaXa9n65kk+RuEJEdtqEAWy9xYjiJGDhtkKv2khVDIVhrS6fbleHGanNcFlYsOzyf7ZWouFq4wIEX+ovNhe2hRZKRjzgKnFcPaKIzlG8qQF3WrdL0L4D2FE6xA4+lc56R2dKrpmvR9r32kRLS620apS0iFKOWwttgNiIf580RElmUGa+mTEi9Bob9pods0pcmLpWhhqRddPyi5G2PVgZG1FCaXdymwmS7FsNNo1sqvAmISuhcQrHNUMqmdYbpl7vvBHHmzXPIQjfxPU9zaPFEctW+wqmZUf+WuWJeZmQInCbUxe/bRS9OFQtRMiyzcdFvYfOtZg/Sv8/YeaihGff+n0k36Im3TPygsDLEaMBpTM4EXUd6TRk+631nUVQy/Z8WSzWwKWM2cCjRtMbKqDVy7M2vYBYQ1F9WlZidGUD5nYu1uNKsV7rfqpNsvagt7dQL8aJRQN0JgAKgRe8sKXUzl299JXTo+TdTUgqmkr4DoAoH6972JcdcT1mRK8B1oMjLFkB8oef9SbfOoBRKT17V65dZHTJEMhgKLQHrCpcbHE=
       file: exokit-macos-full.tar.gz
       body: Exokit git release
+      on:
+        repo: webmixedreality/exokit
+        tags: true
+      skip_cleanup: true
+    - provider: releases
+      api_key:
+        secure: OlejFsEjiEBzw44wFRlmQb3stF+PURu52AMogc1t4qu54x6YRxxk0NMlv3nzGlObo9JnOPMhAfISgDr8515jqvGEfFXcDzFOPIx42nyqVZe0I8UCA4cRbsV3EvvXtYfbwaXa9n65kk+RuEJEdtqEAWy9xYjiJGDhtkKv2khVDIVhrS6fbleHGanNcFlYsOzyf7ZWouFq4wIEX+ovNhe2hRZKRjzgKnFcPaKIzlG8qQF3WrdL0L4D2FE6xA4+lc56R2dKrpmvR9r32kRLS620apS0iFKOWwttgNiIf580RElmUGa+mTEi9Bob9pods0pcmLpWhhqRddPyi5G2PVgZG1FCaXdymwmS7FsNNo1sqvAmISuhcQrHNUMqmdYbpl7vvBHHmzXPIQjfxPU9zaPFEctW+wqmZUf+WuWJeZmQInCbUxe/bRS9OFQtRMiyzcdFvYfOtZg/Sv8/YeaihGff+n0k36Im3TPygsDLEaMBpTM4EXUd6TRk+631nUVQy/Z8WSzWwKWM2cCjRtMbKqDVy7M2vYBYQ1F9WlZidGUD5nYu1uNKsV7rfqpNsvagt7dQL8aJRQN0JgAKgRe8sKXUzl299JXTo+TdTUgqmkr4DoAoH6972JcdcT1mRK8B1oMjLFkB8oef9SbfOoBRKT17V65dZHTJEMhgKLQHrCpcbHE=
+      file: exokit-undefined.dmg
+      body: Exokit macOS release
       on:
         repo: webmixedreality/exokit
         tags: true
