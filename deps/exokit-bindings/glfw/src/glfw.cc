@@ -576,7 +576,7 @@ NAN_METHOD(testScene) {
   glColor3f(0.f, 0.f, 1.f);
   glVertex3f(0.f+z, 0.6f, 0.f);
   glEnd();
-} */
+}
 
 NAN_METHOD(WindowHint) {
   int target       = info[0]->Uint32Value();
@@ -592,7 +592,7 @@ NAN_METHOD(JoystickPresent) {
   int joy = info[0]->Uint32Value();
   bool isPresent = glfwJoystickPresent(joy);
   info.GetReturnValue().Set(JS_BOOL(isPresent));
-}
+} */
 
 std::string intToString(int number) {
   std::ostringstream buff;
