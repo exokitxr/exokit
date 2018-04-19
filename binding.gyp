@@ -237,7 +237,8 @@
             '-luuid',
           ],
           'ldflags': [
-            '-Wl,-Bsymbolic',
+            '-Wl,-Bsymbolic', # required for ffmpeg asm linkage
+            '-Wl,--no-as-needed', # required to prevent elision of shared object linkage
             '-Wl,-rpath,./node_modules/native-graphics-deps/lib/linux/glew',
             '-Wl,-rpath,./node_modules/native-graphics-deps/lib/linux/glfw',
             '-Wl,-rpath,./node_modules/native-canvas-deps/lib/linux',
