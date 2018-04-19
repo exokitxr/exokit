@@ -65,10 +65,10 @@ matrix:
     - ./node/bin/npm install
     - mkdir -p /tmp/exokit/Contents
     - cp -R * /tmp/exokit/Contents
+    - ./node/bin/npm install -g create-dmg
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
-    - ./node/bin/npm install -g create-dmg
     - create-dmg /tmp/exokit
     - mv /tmp/exokit-undefined.dmg ./exokit-macos-x64.dmg
     deploy:
