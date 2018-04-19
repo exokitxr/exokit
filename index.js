@@ -85,7 +85,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasHeight = canvas.height || innerHeight;
   const windowHandle = (() => {
     try {
-      return nativeWindow.create(canvasWidth, canvasHeight, _isAttached(canvas));
+      const visible = !args.image && _isAttached(canvas);
+      return nativeWindow.create(canvasWidth, canvasHeight, visible);
     } catch (err) {
       console.warn(err.message);
     }
