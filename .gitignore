@@ -1,12 +1,7 @@
 node_modules
-node
-node.zip
-dist
 build
 CMakeFiles
 CMakeCache.txt
 .DS_Store
 .exokit_history
 .localStorage
-version.txt
-version.iss
