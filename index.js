@@ -366,13 +366,13 @@ nativeWindow.setEventHandler((type, data) => {
         if (data.keyCode === 27 && window.top.document.pointerLockElement) {
           window.top.document.exitPointerLock();
         } else {
-          canvas.dispatchEvent(canvas, new window.KeyboardEvent(type, data));
+          canvas.dispatchEvent(new window.KeyboardEvent(type, data));
         }
         break;
       }
       case 'keyup':
       case 'keypress': {
-        canvas.dispatchEvent(canvas, new window.KeyboardEvent(type, data));
+        canvas.dispatchEvent(new window.KeyboardEvent(type, data));
         break;
       }
       case 'mousedown':
@@ -392,11 +392,11 @@ nativeWindow.setEventHandler((type, data) => {
           dispatchEl.dispatchEvent(e);
         }
 
-        canvas.dispatchEvent(canvas, e);
+        canvas.dispatchEvent(e);
         break;
       }
       case 'wheel': {
-        canvas.dispatchEvent(canvas, new window.WheelEvent(type, data));
+        canvas.dispatchEvent(new window.WheelEvent(type, data));
         break;
       }
       case 'mousemove': {
@@ -407,7 +407,7 @@ nativeWindow.setEventHandler((type, data) => {
           nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
         }
 
-        canvas.dispatchEvent(canvas, new window.MouseEvent(type, data));
+        canvas.dispatchEvent(new window.MouseEvent(type, data));
         break;
       }
       case 'quit': {
