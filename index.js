@@ -24,17 +24,6 @@ const dataPath = __dirname;
 const canvasSymbol = Symbol();
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
-const _isAttached = el => {
-  for (;;) {
-    if (el === el.ownerDocument.documentElement) {
-      return true;
-    } else if (el.parentNode) {
-      el = el.parentNode;
-    } else {
-      return false;
-    }
-  }
-};
 
 const args = (() => {
   if (require.main === module) {
@@ -86,7 +75,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasHeight = canvas.height || innerHeight;
   const windowHandle = (() => {
     try {
-      const visible = !args.image && _isAttached(canvas);
+      const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
       return nativeWindow.create(canvasWidth, canvasHeight, visible);
     } catch (err) {
       console.warn(err.message);
@@ -106,7 +95,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
-        if (_isAttached(canvas)) {
+        if (canvas.ownerDocument.documentElement.contains(canvas)) {
           nativeWindow.show(windowHandle);
         } else {
           nativeWindow.hide(windowHandle);
