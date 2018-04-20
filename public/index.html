@@ -1004,12 +1004,16 @@
           case 67: { // C
             if (e.ctrlKey) {
               document.execCommand('copy');
+            } else {
+              _handleKey(e.keyCode, e.shiftKey);
             }
             break;
           }
           case 86: { // V
             if (e.ctrlKey) {
               document.execCommand('paste');
+            } else {
+              _handleKey(e.keyCode, e.shiftKey);
             }
             break;
           }
