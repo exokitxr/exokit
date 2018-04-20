@@ -56,6 +56,7 @@ matrix:
     before_install:
     - brew install glfw glew
     install:
+    - npm install -g appdmg
     - curl "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
@@ -63,15 +64,14 @@ matrix:
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - ./node/bin/npm install
-    - mkdir -p /tmp/exokit/Contents
-    - cp -R * /tmp/exokit/Contents
+    - mkdir -p /tmp/Exokit.app/Contents/MacOS
+    - cp -R * /tmp/Exokit.app/Contents/MacOS
+    - cp Info.plist /tmp/Exokit.app/Contents
+    - cp appdmg.json /tmp
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
-    - npm install -g create-dmg
-    - create-dmg
-    - create-dmg /tmp/exokit
-    - mv /tmp/exokit-undefined.dmg ./exokit-macos-x64.dmg
+    - appdmg /tmp/appdmg.json exokit-macos-x64.dmg
     deploy:
     - provider: releases
       api_key:
