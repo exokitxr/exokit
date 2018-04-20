@@ -104,11 +104,13 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     nativeWindow.setWindowTitle(windowHandle, title);
 
     const ondomchange = () => {
-      if (_isAttached(canvas)) {
-        nativeWindow.show(windowHandle);
-      } else {
-        nativeWindow.hide(windowHandle);
-      }
+      process.nextTick(() => { // show/hide synchronously emits events
+        if (_isAttached(canvas)) {
+          nativeWindow.show(windowHandle);
+        } else {
+          nativeWindow.hide(windowHandle);
+        }
+      });
     };
     canvas.ownerDocument.on('domchange', ondomchange);
 
