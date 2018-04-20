@@ -826,10 +826,12 @@ if (require.main === module) {
         }
         if ((frameCount % FPS) === 0) {
           const displays = window.navigator.getVRDisplaysSync();
-          for (let i = 0; i < displays.length; i++) {
-            const e = new window.Event('vrdisplayactivate');
-            e.display = displays[i];
-            window.dispatchEvent(e);
+          if (!displays.some(display => display.isPresenting)) {
+            for (let i = 0; i < displays.length; i++) {
+              const e = new window.Event('vrdisplayactivate');
+              e.display = displays[i];
+              window.dispatchEvent(e);
+            }
           }
         }
         window.tickAnimationFrame();
