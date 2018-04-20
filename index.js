@@ -12,6 +12,7 @@ const replHistory = require('repl.history');
 const exokit = require('exokit-core');
 const minimist = require('minimist');
 const UPNG = require('upng-js');
+const {version} = require('./package.json');
 const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = exokit;
@@ -100,7 +101,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
     window.devicePixelRatio = framebufferWidth / canvasWidth;
 
-    const title = `Exokit v${require('./package.json').version}`
+    const title = `Exokit ${version}`
     nativeWindow.setWindowTitle(windowHandle, title);
 
     const ondomchange = () => {
