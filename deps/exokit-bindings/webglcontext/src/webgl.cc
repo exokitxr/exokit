@@ -1892,11 +1892,11 @@ NAN_METHOD(WebGLRenderingContext::CreateFramebuffer) {
 NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
-  int target = info[0]->Int32Value();
-  int framebuffer = info[1]->IsNull() ?
+  GLenum target = info[0]->Uint32Value();
+  GLuint framebuffer = info[1]->IsNull() ?
     gl->defaultFramebuffer
   :
-    info[1]->Int32Value();
+    info[1]->Uint32Value();
 
   glBindFramebuffer(target, framebuffer);
 
@@ -1997,7 +1997,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttribPointer) {
 
 
 NAN_METHOD(WebGLRenderingContext::ActiveTexture) {
-  int arg = info[0]->Int32Value();
+  GLenum arg = info[0]->Uint32Value();
   glActiveTexture(arg);
 
   // info.GetReturnValue().Set(Nan::Undefined());
