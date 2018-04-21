@@ -66,15 +66,7 @@ using namespace node;
 class WebGLRenderingContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
-  
-  GLuint GetTextureBinding(GLenum target) {
-    return textureBindings[target];
-  }
-  bool HasTextureBinding(GLenum target) {
-    return textureBindings.find(target) != textureBindings.end();
-  }
 
-protected:
   WebGLRenderingContext();
   ~WebGLRenderingContext();
 
@@ -233,8 +225,14 @@ protected:
 
   static NAN_METHOD(SetDefaultFramebuffer);
   
-  void SaveTextureBinding(GLenum target, GLuint texture) {
+  void SetTextureBinding(GLenum target, GLuint texture) {
     textureBindings[target] = texture;
+  }
+  GLuint GetTextureBinding(GLenum target) {
+    return textureBindings[target];
+  }
+  bool HasTextureBinding(GLenum target) {
+    return textureBindings.find(target) != textureBindings.end();
   }
 
   bool live;
@@ -246,23 +244,6 @@ protected:
   GLint packAlignment;
   GLint unpackAlignment;
   std::map<GLenum, GLuint> textureBindings;
-
-  template<NAN_METHOD(F)>
-  static NAN_METHOD(glCallWrap) {
-    Nan::HandleScope scope;
-
-    Local<Object> glObj = info.This();
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
-    if (gl->live) {
-      if (gl->windowHandle) {
-        glfw::SetCurrentWindowContext(gl->windowHandle);
-      }
-
-      gl->dirty = true;
-
-      F(info);
-    }
-  }
 };
 
 #endif

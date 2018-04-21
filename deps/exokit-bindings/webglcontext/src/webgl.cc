@@ -36,6 +36,23 @@ void unregisterGLObj(GLuint obj); */
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
+template<NAN_METHOD(F)>
+NAN_METHOD(glCallWrap) {
+  Nan::HandleScope scope;
+
+  Local<Object> glObj = info.This();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  if (gl->live) {
+    if (gl->windowHandle) {
+      glfw::SetCurrentWindowContext(gl->windowHandle);
+    }
+
+    gl->dirty = true;
+
+    F(info);
+  }
+}
+
 Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
@@ -1446,7 +1463,7 @@ NAN_METHOD(WebGLRenderingContext::BindTexture) {
 
   glBindTexture(target, texture);
   
-  gl->SaveTextureBinding(target, texture);
+  gl->SetTextureBinding(target, texture);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
