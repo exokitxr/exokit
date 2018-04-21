@@ -1879,13 +1879,13 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
 
 
 NAN_METHOD(WebGLRenderingContext::CreateFramebuffer) {
-  GLuint buffer;
-  glGenFramebuffers(1, &buffer);
+  GLuint framebuffer;
+  glGenFramebuffers(1, &framebuffer);
   /* #ifdef LOGGING
   cout<<"createFrameBuffer "<<buffer<<endl;
   #endif */
   // registerGLObj(GLOBJECT_TYPE_FRAMEBUFFER, buffer);
-  info.GetReturnValue().Set(Nan::New<Number>(buffer));
+  info.GetReturnValue().Set(Nan::New<Number>(framebuffer));
 }
 
 
