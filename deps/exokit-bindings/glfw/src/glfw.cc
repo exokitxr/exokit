@@ -2,9 +2,6 @@
 
 namespace glfw {
 
-bool glfwInitialized = false;
-std::map<GLFWwindow *, WindowState> windowStates;
-
 NAN_METHOD(GetVersion) {
   int major, minor, rev;
   glfwGetVersion(&major,&minor,&rev);
@@ -713,13 +710,10 @@ NAN_METHOD(GetJoystickName) {
 } */
 
 NAN_METHOD(CreateRenderTarget) {
-  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  Local<Object> glObj = Local<Object>::Cast(info[0]);
   int width = info[1]->Uint32Value();
   int height = info[2]->Uint32Value();
   int samples = info[3]->Uint32Value();
-
-  WindowState &windowState = windowStates[window];
-  glBindVertexArray(windowState.systemVao);
 
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
@@ -764,9 +758,6 @@ NAN_METHOD(CreateRenderTarget) {
   } else {
     result = Null(Isolate::GetCurrent());
   }
-
-  glBindVertexArray(windowState.userVao);
-
   info.GetReturnValue().Set(result);
 }
 
@@ -805,19 +796,15 @@ NAN_METHOD(BindFrameBuffer) {
 }
 
 NAN_METHOD(BlitFrameBuffer) {
-  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  GLuint fbo1 = info[1]->Uint32Value();
-  GLuint fbo2 = info[2]->Uint32Value();
-  int sw = info[3]->Uint32Value();
-  int sh = info[4]->Uint32Value();
-  int dw = info[5]->Uint32Value();
-  int dh = info[6]->Uint32Value();
-  bool color = info[7]->BooleanValue();
-  bool depth = info[8]->BooleanValue();
-  bool stencil = info[9]->BooleanValue();
-  
-  WindowState &windowState = windowStates[window];
-  glBindVertexArray(windowState.systemVao);
+  GLuint fbo1 = info[0]->Uint32Value();
+  GLuint fbo2 = info[1]->Uint32Value();
+  int sw = info[2]->Uint32Value();
+  int sh = info[3]->Uint32Value();
+  int dw = info[4]->Uint32Value();
+  int dh = info[5]->Uint32Value();
+  bool color = info[6]->BooleanValue();
+  bool depth = info[7]->BooleanValue();
+  bool stencil = info[8]->BooleanValue();
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
@@ -832,8 +819,6 @@ NAN_METHOD(BlitFrameBuffer) {
     GL_LINEAR);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0); // XXX
-  
-  glBindVertexArray(windowState.userVao);
 }
 
 void SetCurrentWindowContext(GLFWwindow *window) {
@@ -999,6 +984,7 @@ NAN_METHOD(ExtensionSupported) {
   info.GetReturnValue().Set(JS_BOOL(glfwExtensionSupported(*str)==1));
 }
 
+bool glfwInitialized = false;
 NAN_METHOD(Create) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
@@ -1083,14 +1069,9 @@ NAN_METHOD(Create) {
       glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
       glfwSetScrollCallback(windowHandle, scrollCB);
 
-      GLuint vaos[2];
-      glGenVertexArrays(sizeof(vaos)/sizeof(vaos[0]), vaos);
-      GLuint userVao = vaos[0];
-      GLuint systemVao = vaos[1];
-
-      windowStates[windowHandle] = WindowState(userVao, systemVao);
-
-      glBindVertexArray(userVao);
+      GLuint vao;
+      glGenVertexArrays(1, &vao);
+      glBindVertexArray(vao);
 
       info.GetReturnValue().Set(pointerToArray(windowHandle));
     } else {

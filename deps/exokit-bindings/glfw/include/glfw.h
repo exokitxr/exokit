@@ -19,18 +19,6 @@ using namespace v8;
 
 namespace glfw {
   void SetCurrentWindowContext(GLFWwindow *window);
-
-  class WindowState {
-    public:
-      WindowState() {}
-      WindowState(GLuint userVao, GLuint systemVao) : userVao(userVao), systemVao(systemVao) {}
-      WindowState(const WindowState &windowState) : userVao(windowState.userVao), systemVao(windowState.systemVao) {}
-      WindowState(WindowState &windowState) : userVao(windowState.userVao), systemVao(windowState.systemVao) {}
-      ~WindowState() {}
-
-      GLuint userVao;
-      GLuint systemVao;
-  };
 }
 
 // Local<Object> makeGlfw();
