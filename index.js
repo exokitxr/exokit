@@ -829,7 +829,7 @@ if (require.main === module) {
           }
         }
         window.tickAnimationFrame();
-        if (args.frame) {
+        if (args.frame || args.minimalFrame) {
           console.log('-'.repeat(80) + 'end frame');
         }
         frameCount++;
