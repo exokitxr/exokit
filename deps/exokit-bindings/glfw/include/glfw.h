@@ -24,6 +24,7 @@ namespace glfw {
     public:
       WindowState() {}
       WindowState(GLuint userVao, GLuint systemVao) : userVao(userVao), systemVao(systemVao) {}
+      WindowState(const WindowState &windowState) : userVao(windowState.userVao), systemVao(windowState.systemVao) {}
       WindowState(WindowState &windowState) : userVao(windowState.userVao), systemVao(windowState.systemVao) {}
       ~WindowState() {}
 
