@@ -223,12 +223,11 @@ nativeVr.requestPresent = function(layers) {
                 renderHeight,
               });
 
-              const windowHandle = context.getWindowHandle();
-              nativeWindow.setCurrentWindowContext(windowHandle);
+              nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
               const width = halfWidth * 2;
-              const [msFbo, msTex] = nativeWindow.createRenderTarget(windowHandle, width, height, 4);
-              const [fbo, tex] = nativeWindow.createRenderTarget(windowHandle, width, height, 1);
+              const [msFbo, msTex] = nativeWindow.createRenderTarget(context, width, height, 4);
+              const [fbo, tex] = nativeWindow.createRenderTarget(context, width, height, 1);
 
               context.setDefaultFramebuffer(msFbo);
               nativeWindow.bindFrameBuffer(msFbo);
@@ -296,7 +295,7 @@ if (nativeMl) {
         if (initResult) {
           isMlPresenting = true;
 
-          const [fbo, tex] = nativeWindow.createRenderTarget(windowHandle, window.innerWidth, window.innerHeight, 1);
+          const [fbo, tex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 1);
           mlFbo = fbo;
           mlTex = tex;
 
