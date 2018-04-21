@@ -3097,13 +3097,19 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   if (
     strcmp(sname, "OES_texture_float") == 0 ||
     strcmp(sname, "OES_texture_float_linear") == 0 ||
-    strcmp(sname, "OES_texture_half_float") == 0 ||
     strcmp(sname, "OES_texture_half_float_linear") == 0 ||
     strcmp(sname, "OES_element_index_uint") == 0 ||
-    strcmp(sname, "OES_standard_derivatives") == 0 ||
     strcmp(sname, "EXT_shader_texture_lod") == 0
   ) {
     info.GetReturnValue().Set(Object::New(Isolate::GetCurrent()));
+  } else if (strcmp(sname, "OES_texture_half_float") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(String::NewFromUtf8(Isolate::GetCurrent(), "HALF_FLOAT_OES"), Number::New(Isolate::GetCurrent(), GL_HALF_FLOAT_OES));
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OES_standard_derivatives") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(String::NewFromUtf8(Isolate::GetCurrent(), "FRAGMENT_SHADER_DERIVATIVE_HINT_OES"), Number::New(Isolate::GetCurrent(), GL_FRAGMENT_SHADER_DERIVATIVE_HINT_OES));
+    info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "WEBGL_depth_texture") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
     result->Set(String::NewFromUtf8(Isolate::GetCurrent(), "UNSIGNED_INT_24_8_WEBGL"), Number::New(Isolate::GetCurrent(), GL_UNSIGNED_INT_24_8_OES));
