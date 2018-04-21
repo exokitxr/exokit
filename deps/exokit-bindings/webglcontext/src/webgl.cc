@@ -1438,10 +1438,15 @@ NAN_METHOD(WebGLRenderingContext::CreateTexture) {
 
 
 NAN_METHOD(WebGLRenderingContext::BindTexture) {
-  int target = info[0]->Int32Value();
-  int texture = info[1]->IsNull() ? 0 : info[1]->Int32Value();
+  Local<Object> glObj = info.This();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  
+  GLenum target = info[0]->Int32Value();
+  GLuint texture = info[1]->IsNull() ? 0 : info[1]->Uint32Value();
 
   glBindTexture(target, texture);
+  
+  gl->SaveTextureBinding(target, texture);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }

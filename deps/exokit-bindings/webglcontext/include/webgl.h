@@ -66,6 +66,13 @@ using namespace node;
 class WebGLRenderingContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
+  
+  GLuint GetTextureBinding(GLenum target) {
+    return textureBindings[target];
+  }
+  bool HasTextureBinding(GLenum target) {
+    return textureBindings.find(target) != textureBindings.end();
+  }
 
 protected:
   WebGLRenderingContext();
@@ -225,6 +232,10 @@ protected:
   static NAN_METHOD(FrontFace);
 
   static NAN_METHOD(SetDefaultFramebuffer);
+  
+  void SaveTextureBinding(GLenum target, GLuint texture) {
+    textureBindings[target] = texture;
+  }
 
   bool live;
   GLFWwindow *windowHandle;
@@ -234,6 +245,7 @@ protected:
   bool premultiplyAlpha;
   GLint packAlignment;
   GLint unpackAlignment;
+  std::map<GLenum, GLuint> textureBindings;
 
   template<NAN_METHOD(F)>
   static NAN_METHOD(glCallWrap) {
