@@ -140,17 +140,20 @@ NAN_METHOD(IVRCompositor::Submit)
 {
   IVRCompositor* obj = ObjectWrap::Unwrap<IVRCompositor>(info.Holder());
 
-  if (info.Length() != 1)
+  if (info.Length() != 2)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
   }
 
-  if (!info[0]->IsNumber())
+  if (!(info[0]->IsObject() && info[1]->IsNumber()))
   {
-    Nan::ThrowError("Expected arguments (number).");
+    Nan::ThrowError("Expected arguments (object, number).");
     return;
   }
+  
+  Local<Object> glObj = Local<Object>::Cast(info[0]);
+  GLuint texture = info[1]->Uint32Value();
 
   vr::EColorSpace colorSpace = vr::ColorSpace_Gamma;
 
@@ -176,7 +179,7 @@ NAN_METHOD(IVRCompositor::Submit)
     return;
   }
 
-  vr::Texture_t rightEyeTexture = {(void*)(size_t)info[0]->Int32Value(), vr::TextureType_OpenGL, colorSpace};
+  vr::Texture_t rightEyeTexture = {(void *)(size_t)texture, vr::TextureType_OpenGL, colorSpace};
   vr::VRTextureBounds_t rightEyeTextureBounds = {
     0.5, 0,
     1, 1,
@@ -199,6 +202,14 @@ NAN_METHOD(IVRCompositor::Submit)
   }
 
   obj->self_->PostPresentHandoff();
+  
+  WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
+  }
+  if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
+  }
 }
 
 NAN_METHOD(NewCompositor) {

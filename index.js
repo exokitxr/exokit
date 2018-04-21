@@ -850,6 +850,7 @@ if (require.main === module) {
 
               nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
               vrPresentState.compositor.Submit(vrPresentState.tex);
+              vrPresentState.compositor.Submit(context, vrPresentState.tex);
 
               nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth, renderHeight, window.innerWidth, window.innerHeight, true, false, false);
 
