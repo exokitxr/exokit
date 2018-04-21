@@ -225,6 +225,16 @@ public:
 
   static NAN_METHOD(SetDefaultFramebuffer);
   
+  void SetFramebufferBinding(GLenum target, GLuint framebuffer) {
+    framebufferBindings[target] = framebuffer;
+  }
+  GLuint GetFramebufferBinding(GLenum target) {
+    return framebufferBindings[target];
+  }
+  bool HasFramebufferBinding(GLenum target) {
+    return framebufferBindings.find(target) != framebufferBindings.end();
+  }
+  
   void SetTextureBinding(GLenum target, GLuint texture) {
     textureBindings[target] = texture;
   }
@@ -243,6 +253,7 @@ public:
   bool premultiplyAlpha;
   GLint packAlignment;
   GLint unpackAlignment;
+  std::map<GLenum, GLuint> framebufferBindings;
   std::map<GLenum, GLuint> textureBindings;
 };
 
