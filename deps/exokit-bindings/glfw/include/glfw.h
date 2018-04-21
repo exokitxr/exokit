@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <map>
 
 #include <v8.h>
 #include <nan/nan.h>
@@ -18,6 +19,17 @@ using namespace v8;
 
 namespace glfw {
   void SetCurrentWindowContext(GLFWwindow *window);
+  
+  class WindowState {
+    public:
+      WindowState() {}
+      WindowState(GLuint userVao, GLuint systemVao) : userVao(userVao), systemVao(systemVao) {}
+      WindowState(WindowState &windowState) : userVao(windowState.userVao), systemVao(windowState.systemVao) {}
+      ~WindowState() {}
+      
+      GLuint userVao;
+      GLuint systemVao;
+  };
 }
 
 // Local<Object> makeGlfw();

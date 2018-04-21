@@ -982,6 +982,7 @@ NAN_METHOD(ExtensionSupported) {
 }
 
 bool glfwInitialized = false;
+std::map<GLFWwindow *, WindowState> windowStates;
 NAN_METHOD(Create) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
@@ -1066,9 +1067,14 @@ NAN_METHOD(Create) {
       glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
       glfwSetScrollCallback(windowHandle, scrollCB);
 
-      GLuint vao;
-      glGenVertexArrays(1, &vao);
-      glBindVertexArray(vao);
+      GLuint vaos[2];
+      glGenVertexArrays(sizeof(vaos)/sizeof(vaos[0]), vaos);
+      GLuint userVao = vaos[0];
+      GLuint systemVao = vaos[1];
+      
+      windowStates[windowHandle] = WindowState(userVao, systemVao);
+      
+      glBindVertexArray(userVao);
 
       info.GetReturnValue().Set(pointerToArray(windowHandle));
     } else {
