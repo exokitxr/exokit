@@ -1457,12 +1457,12 @@ NAN_METHOD(WebGLRenderingContext::CreateTexture) {
 NAN_METHOD(WebGLRenderingContext::BindTexture) {
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
-  
+
   GLenum target = info[0]->Int32Value();
   GLuint texture = info[1]->IsNull() ? 0 : info[1]->Uint32Value();
 
   glBindTexture(target, texture);
-  
+
   gl->SetTextureBinding(target, texture);
 
   // info.GetReturnValue().Set(Nan::Undefined());
@@ -1891,7 +1891,7 @@ NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
     info[1]->Int32Value();
 
   glBindFramebuffer(target, framebuffer);
-  
+
   gl->SetFramebufferBinding(target, framebuffer);
 }
 
@@ -2274,7 +2274,7 @@ NAN_METHOD(WebGLRenderingContext::CopyTexSubImage2D) {
 
 NAN_METHOD(WebGLRenderingContext::CullFace) {
   GLenum mode = info[0]->Int32Value();
-  
+
   glCullFace(mode);
 
   // info.GetReturnValue().Set(Nan::Undefined());
@@ -2282,7 +2282,7 @@ NAN_METHOD(WebGLRenderingContext::CullFace) {
 
 NAN_METHOD(WebGLRenderingContext::DepthMask) {
   GLboolean flag = info[0]->BooleanValue();
-  
+
   glDepthMask(flag);
 
   // info.GetReturnValue().Set(Nan::Undefined());
