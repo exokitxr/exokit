@@ -157,7 +157,7 @@ NAN_METHOD(IVRCompositor::Submit)
 
   vr::EColorSpace colorSpace = vr::ColorSpace_Gamma;
 
-  vr::Texture_t leftEyeTexture = {(void*)(size_t)info[0]->Int32Value(), vr::TextureType_OpenGL, colorSpace};
+  vr::Texture_t leftEyeTexture = {(void *)(size_t)texture, vr::TextureType_OpenGL, colorSpace};
   vr::VRTextureBounds_t leftEyeTextureBounds = {
     0, 0,
     0.5, 1,
