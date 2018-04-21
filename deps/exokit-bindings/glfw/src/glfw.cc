@@ -798,11 +798,6 @@ NAN_METHOD(FramebufferTextureLayer) {
   glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTex, 0, layer);
 } */
 
-NAN_METHOD(BindFrameBuffer) {
-  GLuint fbo = info[0]->Uint32Value();
-  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-}
-
 NAN_METHOD(BlitFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
   GLuint fbo1 = info[1]->Uint32Value();
@@ -1543,7 +1538,6 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "destroyRenderTarget", glfw::DestroyRenderTarget);
   // Nan::SetMethod(target, "createFramebuffer", glfw::CreateFramebuffer);
   // Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
-  Nan::SetMethod(target, "bindFrameBuffer", glfw::BindFrameBuffer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 
