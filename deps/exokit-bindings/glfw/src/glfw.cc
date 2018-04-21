@@ -718,7 +718,7 @@ NAN_METHOD(CreateRenderTarget) {
   int height = info[2]->Uint32Value();
   int samples = info[3]->Uint32Value();
 
-  const WindowState &windowState = windowStates[window];
+  WindowState &windowState = windowStates[window];
   glBindVertexArray(windowState.systemVao);
 
   GLuint fbo;
@@ -816,7 +816,7 @@ NAN_METHOD(BlitFrameBuffer) {
   bool depth = info[8]->BooleanValue();
   bool stencil = info[9]->BooleanValue();
   
-  const WindowState &windowState = windowStates[window];
+  WindowState &windowState = windowStates[window];
   glBindVertexArray(windowState.systemVao);
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
