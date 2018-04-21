@@ -804,15 +804,16 @@ NAN_METHOD(BindFrameBuffer) {
 }
 
 NAN_METHOD(BlitFrameBuffer) {
-  GLuint fbo1 = info[0]->Uint32Value();
-  GLuint fbo2 = info[1]->Uint32Value();
-  int sw = info[2]->Uint32Value();
-  int sh = info[3]->Uint32Value();
-  int dw = info[4]->Uint32Value();
-  int dh = info[5]->Uint32Value();
-  bool color = info[6]->BooleanValue();
-  bool depth = info[7]->BooleanValue();
-  bool stencil = info[8]->BooleanValue();
+  Local<Object> glObj = Local<Object>::Cast(info[0]);
+  GLuint fbo1 = info[1]->Uint32Value();
+  GLuint fbo2 = info[2]->Uint32Value();
+  int sw = info[3]->Uint32Value();
+  int sh = info[4]->Uint32Value();
+  int dw = info[5]->Uint32Value();
+  int dh = info[6]->Uint32Value();
+  bool color = info[7]->BooleanValue();
+  bool depth = info[8]->BooleanValue();
+  bool stencil = info[9]->BooleanValue();
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
@@ -826,7 +827,10 @@ NAN_METHOD(BlitFrameBuffer) {
     (stencil ? GL_STENCIL_BUFFER_BIT : 0),
     GL_LINEAR);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0); // XXX
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  }
 }
 
 void SetCurrentWindowContext(GLFWwindow *window) {

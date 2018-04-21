@@ -848,11 +848,10 @@ if (require.main === module) {
             if (vrPresentState.glContext === context) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-              nativeWindow.blitFrameBuffer(vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
-              vrPresentState.compositor.Submit(vrPresentState.tex);
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
               vrPresentState.compositor.Submit(context, vrPresentState.tex);
 
-              nativeWindow.blitFrameBuffer(vrPresentState.fbo, 0, renderWidth, renderHeight, window.innerWidth, window.innerHeight, true, false, false);
+              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth, renderHeight, window.innerWidth, window.innerHeight, true, false, false);
 
               context.setDefaultFramebuffer(0);
               nativeWindow.bindFrameBuffer(0);
@@ -861,7 +860,7 @@ if (require.main === module) {
 
               mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
-              nativeWindow.blitFrameBuffer(mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
+              nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
 
               context.setDefaultFramebuffer(mlFbo);
               nativeWindow.bindFrameBuffer(mlFbo);
