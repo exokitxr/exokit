@@ -2,6 +2,9 @@
 
 namespace glfw {
 
+bool glfwInitialized = false;
+std::map<GLFWwindow *, WindowState> windowStates;
+
 NAN_METHOD(GetVersion) {
   int major, minor, rev;
   glfwGetVersion(&major,&minor,&rev);
@@ -394,7 +397,7 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
     evt,
   };
   CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
-  
+
   if (action == GLFW_PRESS) {
     keyCB(window, which, scancode, GLFW_REPEAT, mods);
   }
@@ -714,7 +717,7 @@ NAN_METHOD(CreateRenderTarget) {
   int width = info[1]->Uint32Value();
   int height = info[2]->Uint32Value();
   int samples = info[3]->Uint32Value();
-  
+
   const WindowState &windowState = windowStates[window];
   glBindVertexArray(windowState.systemVao);
 
@@ -761,9 +764,9 @@ NAN_METHOD(CreateRenderTarget) {
   } else {
     result = Null(Isolate::GetCurrent());
   }
-  
+
   glBindVertexArray(windowState.userVao);
-  
+
   info.GetReturnValue().Set(result);
 }
 
@@ -990,8 +993,6 @@ NAN_METHOD(ExtensionSupported) {
   info.GetReturnValue().Set(JS_BOOL(glfwExtensionSupported(*str)==1));
 }
 
-bool glfwInitialized = false;
-std::map<GLFWwindow *, WindowState> windowStates;
 NAN_METHOD(Create) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
@@ -1080,9 +1081,9 @@ NAN_METHOD(Create) {
       glGenVertexArrays(sizeof(vaos)/sizeof(vaos[0]), vaos);
       GLuint userVao = vaos[0];
       GLuint systemVao = vaos[1];
-      
+
       windowStates[windowHandle] = WindowState(userVao, systemVao);
-      
+
       glBindVertexArray(userVao);
 
       info.GetReturnValue().Set(pointerToArray(windowHandle));
