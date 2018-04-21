@@ -759,6 +759,14 @@ NAN_METHOD(CreateRenderTarget) {
     result = Null(Isolate::GetCurrent());
   }
   info.GetReturnValue().Set(result);
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
+  }
+  if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
+  }
 }
 
 NAN_METHOD(DestroyRenderTarget) {

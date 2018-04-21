@@ -15,6 +15,8 @@
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
 
+#include <webgl.h>
+
 using namespace v8;
 
 namespace glfw {
