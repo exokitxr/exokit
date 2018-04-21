@@ -1301,8 +1301,16 @@ NAN_METHOD(WebGLRenderingContext::FrontFace) {
 
 NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-
   GLuint framebuffer = info[0]->Uint32Value();
+
+  GLuint oldFramebuffer = gl->HasFramebufferBinding(GL_FRAMEBUFFER) ? gl->GetFramebufferBinding(GL_FRAMEBUFFER) : 0;
+  GLuint oldDefaultFramebuffer = gl->defaultFramebuffer;
+  if (oldFramebuffer == oldDefaultFramebuffer) {
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    gl->SetFramebufferBinding(GL_FRAMEBUFFER, framebuffer);
+  }
+
   gl->defaultFramebuffer = framebuffer;
 }
 

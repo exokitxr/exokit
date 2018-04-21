@@ -702,8 +702,6 @@ if (require.main === module) {
             gamepads,
           });
 
-          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.msFbo);
-
           if (args.performance) {
             const now = Date.now();
             const diff = now - timestamps.last;
@@ -768,8 +766,6 @@ if (require.main === module) {
             gamepads,
             meshArray,
           });
-
-          mlGlContext.setDefaultFramebuffer(mlFbo);
 
           if (args.performance) {
             const now = Date.now();
@@ -846,16 +842,12 @@ if (require.main === module) {
               vrPresentState.compositor.Submit(context, vrPresentState.tex);
 
               nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth, renderHeight, window.innerWidth, window.innerHeight, true, false, false);
-
-              context.setDefaultFramebuffer(0);
             } else if (mlGlContext === context) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
               mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
               nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
-
-              context.setDefaultFramebuffer(mlFbo);
             }
             nativeWindow.swapBuffers(context.getWindowHandle());
 
