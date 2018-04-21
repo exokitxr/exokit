@@ -710,9 +710,13 @@ NAN_METHOD(GetJoystickName) {
 } */
 
 NAN_METHOD(CreateRenderTarget) {
-  int width = info[0]->Uint32Value();
-  int height = info[1]->Uint32Value();
-  int samples = info[2]->Uint32Value();
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  int width = info[1]->Uint32Value();
+  int height = info[2]->Uint32Value();
+  int samples = info[3]->Uint32Value();
+  
+  const WindowState &windowState = windowStates[window];
+  glBindVertexArray(windowState.systemVao);
 
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
@@ -747,15 +751,20 @@ NAN_METHOD(CreateRenderTarget) {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+  Local<Value> result;
   GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (framebufferStatus == GL_FRAMEBUFFER_COMPLETE) {
-    Local<Array> result = Array::New(Isolate::GetCurrent(), 2);
-    result->Set(0, JS_NUM(fbo));
-    result->Set(1, JS_NUM(tex));
-    info.GetReturnValue().Set(result);
+    Local<Array> array = Array::New(Isolate::GetCurrent(), 2);
+    array->Set(0, JS_NUM(fbo));
+    array->Set(1, JS_NUM(tex));
+    result = array;
   } else {
-    info.GetReturnValue().Set(Null(Isolate::GetCurrent()));
+    result = Null(Isolate::GetCurrent());
   }
+  
+  glBindVertexArray(windowState.userVao);
+  
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(DestroyRenderTarget) {
