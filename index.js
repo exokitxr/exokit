@@ -227,7 +227,7 @@ nativeVr.requestPresent = function(layers) {
               nativeWindow.setCurrentWindowContext(windowHandle);
 
               const width = halfWidth * 2;
-              const [msFbo, msTex] = nativeWindow.createRenderTarget(width, height, 4);
+              const [msFbo, msTex] = nativeWindow.createRenderTarget(windowHandle, width, height, 4);
               const [fbo, tex] = nativeWindow.createRenderTarget(windowHandle, width, height, 1);
 
               context.setDefaultFramebuffer(msFbo);
