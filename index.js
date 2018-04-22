@@ -501,8 +501,19 @@ if (require.main === module) {
   };
   const _start = () => {
     const _bindWindow = (window, newWindowCb) => {
-      window.addEventListener('error', err => {
-        console.warn('got error', err.error.stack);
+      window.on('unload', () => {
+        clearTimeout(timeout);
+      });
+      window.on('navigate', newWindowCb);
+      window.document.on('paste', e => {
+        e.clipboardData = new window.DataTransfer();
+        if (contexts.length > 0) {
+          const context = contexts[0];
+          const windowHandle = context.getWindowHandle();
+          const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);
+          const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
+          e.clipboardData.items.push(dataTransferItem);
+        }
       });
 
       window.document.addEventListener('pointerlockchange', () => {
@@ -516,6 +527,10 @@ if (require.main === module) {
             nativeWindow.setCursorMode(contexts[i].getWindowHandle(), true);
           }
         }
+      });
+
+      window.addEventListener('error', err => {
+        console.warn('got error', err.error.stack);
       });
 
       let lastFrameTime = Date.now();
@@ -866,21 +881,6 @@ if (require.main === module) {
         lastFrameTime = now;
       };
       _recurse();
-
-      window.on('unload', () => {
-        clearTimeout(timeout);
-      });
-      window.on('navigate', newWindowCb);
-      window.document.on('paste', e => {
-        e.clipboardData = new window.DataTransfer();
-        if (contexts.length > 0) {
-          const context = contexts[0];
-          const windowHandle = context.getWindowHandle();
-          const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);
-          const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
-          e.clipboardData.items.push(dataTransferItem);
-        }
-      });
     };
 
     let {url} = args;
