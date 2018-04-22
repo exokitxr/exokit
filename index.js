@@ -29,20 +29,16 @@ const args = (() => {
   if (require.main === module) {
     const minimistArgs = minimist(process.argv.slice(2), {
       boolean: [
-        'h',
         'home',
-        'p',
         'perf',
         'performance',
-        'f',
         'frame',
-        'm',
         'minimalFrame',
       ],
       string: [
-        's',
         'size',
         'image',
+        'depth-image',
       ],
       alias: {
         h: 'home',
@@ -52,6 +48,7 @@ const args = (() => {
         f: 'frame',
         m: 'minimalFrame',
         i: 'image',
+        d: 'depth-image',
       },
     });
     return {
@@ -62,6 +59,7 @@ const args = (() => {
       frame: minimistArgs.frame,
       minimalFrame: minimistArgs.minimalFrame,
       image: minimistArgs.image,
+      depthImage: minimistArgs['depth-image'],
     };
   } else {
     return {};
@@ -990,6 +988,18 @@ if (require.main === module) {
           };
           _bindHeadlessWindow(window);
 
+          const _flipImage = (width, height, stride, arrayBuffer) => {
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            const arrayBuffer2 = new ArrayBuffer(arrayBuffer.byteLength);
+            const uint8Array2 = new Uint8Array(arrayBuffer2);
+            for (let y = 0; y < height; y++) {
+              const yBottom = height - y - 1;
+              uint8Array2.set(uint8Array.slice(yBottom * width * stride, (yBottom + 1) * width * stride), y * width * stride);
+            }
+            return arrayBuffer2;
+          };
+
           if (args.image) {
             window.setDirtyFrameTimeout({
               dirtyFrames: 100,
@@ -998,26 +1008,43 @@ if (require.main === module) {
               if (!err) {
                 const {[canvasSymbol]: canvas} = gl;
                 const {width, height} = canvas;
+
                 const arrayBuffer = new ArrayBuffer(width * height * 4);
                 const uint8Array = new Uint8Array(arrayBuffer);
                 gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
-                const arrayBuffer2 = new ArrayBuffer(arrayBuffer.byteLength);
-                const uint8Array2 = new Uint8Array(arrayBuffer2);
-                for (let y = 0; y < height; y++) {
-                  const yBottom = height - y - 1;
-                  uint8Array2.set(uint8Array.slice(yBottom * width * 4, (yBottom + 1) * width * 4), y * width * 4);
-                }
                 const result = new Buffer(UPNG.encode([
-                  arrayBuffer2,
+                  _flipImage(width, height, 4, arrayBuffer),
                 ], width, height, 0));
-                fs.writeFile(args.image, result, err => {
-                  if (!err) {
-                    process.exit(0);
-                  } else {
-                    console.warn(err.stack);
-                    process.exit(1);
-                  }
-                });
+                fs.writeFileSync(args.image, result);
+
+                process.exit(0);
+              } else {
+                throw err;
+              }
+            });
+          } else if (args.depthImage) {
+            window.setDirtyFrameTimeout({
+              dirtyFrames: 100,
+              timeout: 5000,
+            }, (err, gl) => {
+              if (!err) {
+                const {[canvasSymbol]: canvas} = gl;
+                const {width, height} = canvas;
+
+                const arrayBuffer = new ArrayBuffer(width * height * 4);
+                const uint8Array = new Uint8Array(arrayBuffer);
+                gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
+                const diffuseImage = new Buffer(UPNG.encode([
+                  _flipImage(width, height, 4, arrayBuffer),
+                ], width, height, 0));
+                fs.writeFileSync(args.depthImage + '.png', diffuseImage);
+
+                const float32Array = new Float32Array(arrayBuffer);
+                gl.readPixels(0, 0, width, height, gl.DEPTH_COMPONENT, gl.FLOAT, float32Array);
+                const depthImage = new Buffer(_flipImage(width, height, 4, arrayBuffer));
+                fs.writeFileSync(args.depthImage + '.depth', depthImage);
+
+                process.exit(0);
               } else {
                 throw err;
               }
