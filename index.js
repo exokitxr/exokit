@@ -499,6 +499,8 @@ if (require.main === module) {
   };
   const _start = () => {
     const _bindWindow = (window, newWindowCb) => {
+      window.innerWidth = innerWidth;
+      window.innerHeight = innerHeight;
       window.on('unload', () => {
         clearTimeout(timeout);
       });
