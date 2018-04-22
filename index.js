@@ -501,8 +501,6 @@ if (require.main === module) {
   };
   const _start = () => {
     const _bindWindow = (window, newWindowCb) => {
-      window.innerWidth = innerWidth;
-      window.innerHeight = innerHeight;
       window.addEventListener('error', err => {
         console.warn('got error', err.error.stack);
       });
