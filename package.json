@@ -33,7 +33,7 @@
   "dependencies": {
     "exokit-core": "0.0.234",
     "isolator": "0.0.9",
-    "magicleap": "0.0.13",
+    "magicleap": "0.0.15",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.19",
