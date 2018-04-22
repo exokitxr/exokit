@@ -1021,7 +1021,7 @@ if (require.main === module) {
               } else {
                 throw err;
               }
-            }, 3000);
+            });
           }
         });
     } else {
