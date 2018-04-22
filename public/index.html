@@ -977,8 +977,6 @@
       if (window.navigator.getVRDisplays) {
         window.navigator.getVRDisplays()
           .then(ds => {
-            console.log('got displays', displays.length);
-
             displays = ds;
           })
           .catch(err => {
