@@ -545,8 +545,6 @@
       const timePassed = Math.max(currentTime - lastTime, 1);
       lastTime = currentTime;
 
-      renderer.state.reset(); // XXX remove this
-
       const _animateSphere = () => {
         // calculate new position
         const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
