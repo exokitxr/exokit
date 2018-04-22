@@ -1627,7 +1627,7 @@ int normalizeInternalFormat(int internalformat, int format, int type) {
 
 int getImageFormat(Local<Value> arg) {
   if (arg->IsArrayBufferView()) {
-    return GL_RGBA;
+    return -1;
   } else {
     Local<Value> constructorName = arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
     if (
@@ -1749,11 +1749,11 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     size_t formatSize = getFormatSize(formatV);
     size_t typeSize = getTypeSize(typeV);
     size_t pixelSize = formatSize * typeSize;
-    size_t srcFormatV = getImageFormat(pixels);
+    int srcFormatV = getImageFormat(pixels);
     size_t srcFormatSize = getFormatSize(srcFormatV);
     char *pixelsV2;
     unique_ptr<char[]> pixelsV2Buffer;
-    bool needsReformat = formatSize != srcFormatSize;
+    bool needsReformat = srcFormatV != -1 && formatSize != srcFormatSize;
     if (needsReformat) {
       pixelsV2Buffer.reset(new char[widthV * heightV * pixelSize]);
       pixelsV2 = pixelsV2Buffer.get();
