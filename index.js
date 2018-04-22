@@ -553,7 +553,91 @@ if (require.main === module) {
       const frameData = new window.VRFrameData();
       const stageParameters = new window.VRStageParameters();
       let timeout = null;
-      let frameCount = 0;
+      let numFrames = 0;
+      let numDirtyFrames = 0;
+      const dirtyFrameContexts = [];
+      const _checkDirtyFrameTimeout = () => {
+        if (dirtyFrameContexts.length > 0) {
+          const removedDirtyFrameContexts = [];
+
+          for (let i = 0; i < dirtyFrameContexts.length; i++) {
+            const dirtyFrameContext = dirtyFrameContexts[i];
+            const {dirtyFrames} = dirtyFrameContext;
+            if (numDirtyFrames > dirtyFrames && contexts.length > 0) {
+              const {fn} = dirtyFrameContext;
+              fn(null, contexts[0]);
+
+              removedDirtyFrameContexts.push(dirtyFrameContext);
+            }
+          }
+
+          for (let i = 0; i < removedDirtyFrameContexts.length; i++) {
+            const removedDirtyFrameContext = removedDirtyFrameContexts[i];
+            dirtyFrameContexts.splice(dirtyFrameContexts.indexOf(removedDirtyFrameContext), 1);
+          }
+        }
+      };
+      const setDirtyFrameTimeout = ({
+        dirtyFrames = 1,
+        timeout = 1000,
+      } = {}, fn) => {
+        if (numDirtyFrames > dirtyFrames && contexts.length > 0) {
+          process.nextTick(() => {
+            fn(null, contexts[0]);
+          });
+        } else {
+          const localTimeout = setTimeout(() => {
+            const err = new Error('timed out');
+            err.code = 'ETIMEOUT';
+            fn(err);
+
+            dirtyFrameContexts.splice(dirtyFrameContexts.indexOf(dirtyFrameContext), 1);
+          }, timeout);
+          const dirtyFrameContext = {
+            dirtyFrames,
+            fn: (err, context) => {
+              fn(err, context);
+
+              clearTimeout(localTimeout);
+            },
+          };
+          dirtyFrameContexts.push(dirtyFrameContext);
+        }
+      };
+      window.setDirtyFrameTimeout = setDirtyFrameTimeout;
+
+      window.document.addEventListener('pointerlockchange', () => {
+        const {pointerLockElement} = window.document;
+        if (pointerLockElement) {
+          for (let i = 0; i < contexts.length; i++) {
+            nativeWindow.setCursorMode(contexts[i].getWindowHandle(), false);
+          }
+        } else {
+          for (let i = 0; i < contexts.length; i++) {
+            nativeWindow.setCursorMode(contexts[i].getWindowHandle(), true);
+          }
+        }
+      });
+
+      window.on('unload', () => {
+        clearTimeout(timeout);
+      });
+      window.on('navigate', newWindowCb);
+      window.document.on('paste', e => {
+        e.clipboardData = new window.DataTransfer();
+        if (contexts.length > 0) {
+          const context = contexts[0];
+          const windowHandle = context.getWindowHandle();
+          const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);
+          const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
+          e.clipboardData.items.push(dataTransferItem);
+        }
+      });
+
+      window.addEventListener('error', err => {
+        console.warn('got error', err.error.stack);
+      });
+
       const _recurse = () => {
         if (args.performance) {
           if (timestamps.frames >= TIMESTAMP_FRAMES) {
@@ -821,7 +905,7 @@ if (require.main === module) {
         if (args.frame || args.minimalFrame) {
           console.log('-'.repeat(80) + 'start frame');
         }
-        if ((frameCount % FPS) === 0) {
+        if ((numFrames % FPS) === 0) {
           const displays = window.navigator.getVRDisplaysSync();
           if (!displays.some(display => display.isPresenting)) {
             for (let i = 0; i < displays.length; i++) {
@@ -835,7 +919,7 @@ if (require.main === module) {
         if (args.frame || args.minimalFrame) {
           console.log('-'.repeat(80) + 'end frame');
         }
-        frameCount++;
+        numFrames++;
         if (args.performance) {
           const now = Date.now();
           const diff = now - timestamps.last;
@@ -863,6 +947,9 @@ if (require.main === module) {
               nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
             }
             nativeWindow.swapBuffers(context.getWindowHandle());
+
+            numDirtyFrames++;
+            _checkDirtyFrameTimeout();
 
             context.clearDirty();
           }
@@ -904,9 +991,11 @@ if (require.main === module) {
           _bindHeadlessWindow(window);
 
           if (args.image) {
-            setTimeout(() => {
-              if (contexts.length > 0) {
-                const gl = contexts[0];
+            window.setDirtyFrameTimeout({
+              dirtyFrames: 100,
+              timeout: 5000,
+            }, (err, gl) => {
+              if (!err) {
                 const {[canvasSymbol]: canvas} = gl;
                 const {width, height} = canvas;
                 const arrayBuffer = new ArrayBuffer(width * height * 4);
@@ -929,6 +1018,8 @@ if (require.main === module) {
                     process.exit(1);
                   }
                 });
+              } else {
+                throw err;
               }
             }, 3000);
           }
