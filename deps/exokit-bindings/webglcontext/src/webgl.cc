@@ -822,6 +822,18 @@ inline void flipImageData(char *dstData, char *srcData, size_t width, size_t hei
   }
 }
 
+template <typename T>
+void expandLuminance(char *dstData, char *srcData, size_t width, size_t height) {
+  size_t size = width * height;
+  for (size_t i = 0; i < size; i++) {
+    T value = ((T *)srcData)[i];
+    ((T *)dstData)[i * 4 + 0] = value;
+    ((T *)dstData)[i * 4 + 1] = value;
+    ((T *)dstData)[i * 4 + 2] = value;
+    ((T *)dstData)[i * 4 + 3] = value;
+  }
+}
+
 NAN_METHOD(WebGLRenderingContext::Uniform1f) {
   int location = info[0]->Int32Value();
   float x = (float)info[1]->NumberValue();
@@ -1773,6 +1785,26 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
 
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV3Buffer.get());
+    } else if (formatV == GL_LUMINANCE || formatV == GL_ALPHA) {
+      unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * typeSize * 4]);
+
+      if (typeV == GL_UNSIGNED_BYTE) {
+        expandLuminance<unsigned char>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
+      } else if (typeV == GL_UNSIGNED_INT) {
+        expandLuminance<unsigned int>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
+      } else if (typeV == GL_INT) {
+        expandLuminance<int>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
+      } else if (typeV == GL_UNSIGNED_SHORT) {
+        expandLuminance<unsigned short>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
+      } else if (typeV == GL_SHORT) {
+        expandLuminance<short>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
+      } else if (typeV == GL_FLOAT) {
+        expandLuminance<float>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
+      } else {
+        expandLuminance<unsigned char>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
+      }
+
+      glTexImage2D(targetV, levelV, GL_RGBA8, widthV, heightV, borderV, GL_RGBA, typeV, pixelsV3Buffer.get());
     } else {
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2);
     }
