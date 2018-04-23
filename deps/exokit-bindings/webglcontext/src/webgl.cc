@@ -2607,6 +2607,7 @@ NAN_METHOD(WebGLRenderingContext::ValidateProgram) {
 }
 
 NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLenum targetV = info[0]->Int32Value();
   GLint levelV = info[1]->Int32Value();
   GLint xoffsetV = info[2]->Int32Value();
@@ -2619,8 +2620,6 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
 
   // int num;
   char *pixelsV;
-
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
   if (pixels->IsNull()) {
     glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, nullptr);
