@@ -155,6 +155,10 @@ NAN_METHOD(IVRCompositor::Submit)
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   GLuint texture = info[1]->Uint32Value();
 
+  if (gl->activeTexture != WebGLRenderingContext::SystemTextureUnit) {
+    glActiveTexture(WebGLRenderingContext::SystemTextureUnit);
+  }
+
   vr::EColorSpace colorSpace = vr::ColorSpace_Gamma;
 
   vr::Texture_t leftEyeTexture = {(void *)(size_t)texture, vr::TextureType_OpenGL, colorSpace};
@@ -202,12 +206,19 @@ NAN_METHOD(IVRCompositor::Submit)
   }
 
   obj->self_->PostPresentHandoff();
-  if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
-    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
-  }
-  if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
 
+  if (gl->activeTexture == WebGLRenderingContext::SystemTextureUnit) {
+    if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
+    }
+    if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
+    }
+    if (gl->HasTextureBinding(GL_TEXTURE_CUBE_MAP)) {
+      glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(GL_TEXTURE_CUBE_MAP));
+    }
+  } else {
+    glActiveTexture(gl->activeTexture);
   }
 }
 

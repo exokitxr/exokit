@@ -244,6 +244,8 @@ public:
   bool HasTextureBinding(GLenum target) {
     return textureBindings.find(target) != textureBindings.end();
   }
+  
+  static GLuint SystemTextureUnit;
 
   bool live;
   GLFWwindow *windowHandle;

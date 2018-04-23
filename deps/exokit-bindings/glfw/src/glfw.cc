@@ -714,6 +714,10 @@ NAN_METHOD(CreateRenderTarget) {
   int width = info[1]->Uint32Value();
   int height = info[2]->Uint32Value();
   int samples = info[3]->Uint32Value();
+  
+  if (gl->activeTexture != WebGLRenderingContext::SystemTextureUnit) {
+    glActiveTexture(WebGLRenderingContext::SystemTextureUnit);
+  }
 
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
@@ -758,13 +762,21 @@ NAN_METHOD(CreateRenderTarget) {
   }
   info.GetReturnValue().Set(result);
 
-  if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
-    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
   if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
     glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
   }
-  if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
+  if (gl->activeTexture == WebGLRenderingContext::SystemTextureUnit) {
+    if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
+    }
+    if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
+    }
+    if (gl->HasTextureBinding(GL_TEXTURE_CUBE_MAP)) {
+      glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(GL_TEXTURE_CUBE_MAP));
+    }
+  } else {
+    glActiveTexture(gl->activeTexture);
   }
 }
 

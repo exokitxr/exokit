@@ -36,6 +36,8 @@ void unregisterGLObj(GLuint obj); */
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
+GLuint WebGLRenderingContext::SystemTextureUnit = GL_TEXTURE31;
+
 template<NAN_METHOD(F)>
 NAN_METHOD(glCallWrap) {
   Nan::HandleScope scope;
