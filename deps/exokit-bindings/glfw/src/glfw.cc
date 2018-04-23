@@ -710,7 +710,7 @@ NAN_METHOD(GetJoystickName) {
 } */
 
 NAN_METHOD(CreateRenderTarget) {
-  Local<Object> glObj = Local<Object>::Cast(info[0]);
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   int width = info[1]->Uint32Value();
   int height = info[2]->Uint32Value();
   int samples = info[3]->Uint32Value();
@@ -760,7 +760,6 @@ NAN_METHOD(CreateRenderTarget) {
   }
   info.GetReturnValue().Set(result);
 
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
   }
