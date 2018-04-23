@@ -250,6 +250,8 @@
         const material = new THREE.MeshBasicMaterial({
           map: texture,
           side: THREE.DoubleSide,
+          transparent: true,
+          alphaTest: 0.5,
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.y = -(urlBarWorldHeight + gridWorldHeight/2);
