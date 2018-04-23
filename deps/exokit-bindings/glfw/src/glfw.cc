@@ -13,8 +13,8 @@ NAN_METHOD(GetVersion) {
 }
 
 NAN_METHOD(GetVersionString) {
-  const char* ver=glfwGetVersionString();
-  info.GetReturnValue().Set(JS_STR(ver));
+  const char *version = glfwGetVersionString();
+  info.GetReturnValue().Set(JS_STR(version));
 }
 
 /* @Module: Time input */
