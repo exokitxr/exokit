@@ -746,8 +746,6 @@ NAN_METHOD(CreateRenderTarget) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
   }
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
   Local<Value> result;
   GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (framebufferStatus == GL_FRAMEBUFFER_COMPLETE) {
@@ -762,6 +760,8 @@ NAN_METHOD(CreateRenderTarget) {
 
   if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
+  if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
   }
   if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
