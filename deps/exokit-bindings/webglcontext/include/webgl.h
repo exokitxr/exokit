@@ -253,6 +253,7 @@ public:
   bool premultiplyAlpha;
   GLint packAlignment;
   GLint unpackAlignment;
+  GLuint activeTexture;
   std::map<GLenum, GLuint> framebufferBindings;
   std::map<GLenum, GLuint> textureBindings;
 };

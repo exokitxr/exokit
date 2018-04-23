@@ -691,7 +691,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), defaultFramebuffer(0), flipY(true), premultiplyAlpha(true), packAlignment(4), unpackAlignment(4) {}
+WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), defaultFramebuffer(0), flipY(true), premultiplyAlpha(true), packAlignment(4), unpackAlignment(4), activeTexture(GL_TEXTURE0) {}
 
 WebGLRenderingContext::~WebGLRenderingContext() {}
 
@@ -1997,8 +1997,12 @@ NAN_METHOD(WebGLRenderingContext::VertexAttribPointer) {
 
 
 NAN_METHOD(WebGLRenderingContext::ActiveTexture) {
-  GLenum arg = info[0]->Uint32Value();
-  glActiveTexture(arg);
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  GLenum activeTexture = info[0]->Uint32Value();
+
+  glActiveTexture(activeTexture);
+
+  gl->activeTexture = activeTexture;
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
