@@ -151,8 +151,8 @@ NAN_METHOD(IVRCompositor::Submit)
     Nan::ThrowError("Expected arguments (object, number).");
     return;
   }
-  
-  Local<Object> glObj = Local<Object>::Cast(info[0]);
+
+  WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   GLuint texture = info[1]->Uint32Value();
 
   vr::EColorSpace colorSpace = vr::ColorSpace_Gamma;
@@ -202,13 +202,12 @@ NAN_METHOD(IVRCompositor::Submit)
   }
 
   obj->self_->PostPresentHandoff();
-  
-  WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
   }
   if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
+
   }
 }
 
