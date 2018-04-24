@@ -14,6 +14,5 @@ RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
   npm install --unsafe-perm . && \
   tar -czf exokit-linux-full.tar.gz --exclude=".*" --exclude="*.tar.gz" * && \
-  rm -R node && \
   tar -czf exokit-linux.tar.gz --exclude=".*" --exclude="*.tar.gz" *
 
