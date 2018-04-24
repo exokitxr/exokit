@@ -22,10 +22,10 @@ matrix:
     - sudo apt-get install -y libglfw-dev libglew-dev
     install:
     - export PATH=/usr/lib/binutils-2.26/bin:${PATH}
-    - wget "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-linux-x64.tar.gz" -O node.tar.gz
+    - wget "https://nodejs.org/dist/v10.0.0/node-v10.0.0-linux-x64.tar.gz" -O node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
-    - mv "node-v10.0.0-nightly2018040808a36a0666-linux-x64" node
+    - mv node-v10.0.0-linux-x64 node
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - ./node/bin/npm install
@@ -57,10 +57,10 @@ matrix:
     - brew install glfw glew
     install:
     - npm install -g appdmg
-    - curl "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-darwin-x64.tar.gz" >node.tar.gz
+    - curl "https://nodejs.org/dist/v10.0.0/node-v10.0.0-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
-    - mv "node-v10.0.0-nightly2018040808a36a0666-darwin-x64" node
+    - mv node-v10.0.0-darwin-x64 node
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - ./node/bin/npm install
