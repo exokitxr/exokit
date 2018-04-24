@@ -226,6 +226,7 @@
             '-lglfw3',
             '-lfontconfig',
             '-lfreetype',
+            '-lpng16',
             '-lskia',
             '-lLabSound',
             '-lavformat',
