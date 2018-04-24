@@ -17,7 +17,10 @@ matrix:
         - binutils-2.26
     env:
     - CC=gcc-7 CXX=g++-7
+    services:
+    - docker
     before_install:
+    - docker pull debian:latest
     - sudo apt-get update
     - sudo apt-get install -y libglfw-dev libglew-dev
     install:
