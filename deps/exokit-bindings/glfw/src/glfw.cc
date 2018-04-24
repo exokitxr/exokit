@@ -727,11 +727,11 @@ NAN_METHOD(CreateRenderTarget) {
 	glGenRenderbuffers(1, &renderBuffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
   if (samples > 1) {
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_STENCIL, width, height);
   } else {
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, width, height);
   }
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,	renderBuffer);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,	renderBuffer);
 
   GLuint tex;
   glGenTextures(1, &tex);
