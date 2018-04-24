@@ -23,10 +23,10 @@ test_script:
 
 after_test:
   - ps: |
-      wget "https://nodejs.org/download/nightly/v10.0.0-nightly2018040808a36a0666/node-v10.0.0-nightly2018040808a36a0666-win-x64.zip" -OutFile node.zip
+      wget "https://nodejs.org/dist/v10.0.0/node-v10.0.0-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
-      mv "node-v10.0.0-nightly2018040808a36a0666-win-x64" node
+      mv node-v10.0.0-win-x64 node
       $env:Path = "$pwd\node;$env:Path";
       .\node\npm install
       rm -R -fo node/node_modules
