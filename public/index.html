@@ -64,7 +64,7 @@
     renderer.sortObjects = false;
 
     const scene = new THREE.Scene();
-    // scene.background = new THREE.Color(0xFFFFFF);
+    scene.background = new THREE.Color(0xFFFFFF);
 
     const portalScenes = Array(6);
     const portalMeshes = [];
@@ -1322,6 +1322,8 @@
               .then(() => {
                 renderer.vr.enabled = true;
                 renderer.vr.setDevice(display);
+
+                scene.background = null;
               });
             break;
           }
