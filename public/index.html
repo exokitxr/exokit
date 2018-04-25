@@ -61,6 +61,7 @@
     const renderer = new THREE.WebGLRenderer({
       canvas,
     });
+    renderer.sortObjects = false;
 
     const scene = new THREE.Scene();
     // scene.background = new THREE.Color(0xFFFFFF);
