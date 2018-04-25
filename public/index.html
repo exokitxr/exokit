@@ -19,6 +19,7 @@
     const registryUrl = 'http://zeovr.io:9000';
     const RAY_COLOR = 0x44c2ff;
     const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
+    const rayDistance = 10;
     const urlBarWidth = 4096;
     const urlBarHeight = 256;
     const urlBarWorldWidth = 3;
@@ -913,7 +914,7 @@
           }
 
           const _setIntersectionDefault = () => {
-            controllerMesh.rayMesh.scale.z = 1;
+            controllerMesh.rayMesh.scale.z = rayDistance;
             controllerMesh.rayMesh.updateMatrixWorld();
 
             controllerMesh.rayDot.visible = false;
@@ -933,7 +934,7 @@
             const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
               const x = xFactor * keyboardWidth;
               const y = yFactor * keyboardHeight;
 
@@ -1004,7 +1005,7 @@
               const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / urlBarWorldHeight;
               const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-              if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
+              if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
                 const x = xFactor * urlBarWidth;
                 const y = yFactor * urlBarHeight;
 
@@ -1040,7 +1041,7 @@
                   const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / gridWorldSize;
                   const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-                  if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 1) {
+                  if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
                     controllerMesh.rayMesh.scale.z = distance;
                     controllerMesh.updateMatrixWorld();
 
