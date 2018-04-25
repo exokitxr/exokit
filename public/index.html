@@ -37,8 +37,8 @@
     const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
     const cameraSize = 2048;
     const portalWorldWidth = 1;
-    const portalWorldHeight = portalWorldWidth * 2;
-    const portalBorderWorldWidth = portalWorldWidth * 0.1;
+    const portalWorldHeight = 1;
+    const portalBorderWorldWidth = portalWorldWidth * 0.05;
 
     let urlText = 'http://';
     let urlCursor = urlText.length;
@@ -381,7 +381,7 @@
             const xOffsetRect = x * (gridSpacing + gridSize);
             const yOffsetRect = y * (gridSpacing + gridSize);
             ctx.fillStyle = '#333';
-            ctx.fillRect(xOffsetRect, yOffsetRect, gridSize, gridSize);
+            ctx.fillRect(xOffsetRect, yOffsetRect + gridSize - 200, gridSize, 200);
 
             const xOffsetText = x * (gridSpacing + gridSize);
             const yOffsetText = (y * (gridSpacing + gridSize)) + gridSize;
@@ -496,6 +496,7 @@
 
       const portalMesh = (() => {
         const mesh = new THREE.Object3D();
+        mesh.position.set(0, -0.5 + gridMesh.position.y + gridWorldHeight/2, 0);
 
         const outerMesh = (() => {
           const geometry = (() => {
