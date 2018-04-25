@@ -458,38 +458,6 @@
       object.add(gridMesh);
       object.gridMesh = gridMesh;
 
-      const facePlanesMesh = new THREE.Object3D();
-      facePlanesMesh.faceMaterials = Array(6);
-      for (let j = 0; j < facePlanesMesh.faceMaterials.length; j++) {
-        const img = new Image();
-        img.src = `img/skybox/cube-${j}.png`;
-        img.onload = () => {
-          texture.needsUpdate = true;
-        };
-        img.error = err => {
-          console.warn(err.stack);
-        };
-
-        const texture = new THREE.Texture(
-          img,
-          THREE.UVMapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.NearestFilter,
-          THREE.NearestFilter,
-          THREE.RGBAFormat,
-          THREE.UnsignedByteType,
-          1
-        );
-
-        const material = new THREE.MeshBasicMaterial({
-          map: texture,
-          side: THREE.BackSide,
-        });
-
-        facePlanesMesh.faceMaterials[j] = material;
-      }
-
       const outerMeshGeometry = (() => {
         const width = portalWorldWidth;
         const height = portalWorldHeight;
@@ -565,7 +533,40 @@
 
         const skyboxMesh = (() => {
           const geometry = new THREE.BoxBufferGeometry(100, 100, 100);
-          const materials = facePlanesMesh.faceMaterials;
+          const materials = (() => {
+            const materials = [];
+
+            for (let j = 0; j < 6; j++) {
+              const img = new Image();
+              img.src = `img/skybox/cube-${j}.png`;
+              img.onload = () => {
+                texture.needsUpdate = true;
+              };
+              img.error = err => {
+                console.warn(err.stack);
+              };
+
+              const texture = new THREE.Texture(
+                img,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.NearestFilter,
+                THREE.NearestFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                1
+              );
+
+              const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.BackSide,
+              });
+              materials.push(material);
+            }
+
+            return materials;
+          })();
           const mesh = new THREE.Mesh(geometry, materials);
           mesh.onBeforeRender = () => {
             const gl = renderer.getContext();
