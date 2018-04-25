@@ -35,6 +35,10 @@
     const keyboardWidth = 2048;
     const keyboardHeight = 716;
     const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
+    const cameraSize = 2048;
+    const portalWorldWidth = 1;
+    const portalWorldHeight = portalWorldWidth * 2;
+    const portalBorderWorldWidth = portalWorldWidth * 0.1;
 
     let urlText = 'http://';
     let urlCursor = urlText.length;
@@ -77,6 +81,116 @@
     const startY = 1.2;
     sphere.position.y = startY;
     scene.add(sphere);
+
+    function concatBufferGeometry(geometries) {
+      geometries = geometries.map(geometry => unindexBufferGeometry(geometry));
+
+      const positions = (() => {
+        const geometryPositions = geometries.map(geometry => geometry.getAttribute('position').array);
+        const numPositions = sum(geometryPositions.map(geometryPosition => geometryPosition.length));
+
+        const result = new Float32Array(numPositions);
+        let i = 0;
+        geometryPositions.forEach(geometryPosition => {
+          result.set(geometryPosition, i);
+          i += geometryPosition.length;
+        });
+        return result;
+      })();
+      const normals = (() => {
+        const geometryNormals = geometries.map(geometry => geometry.getAttribute('normal').array);
+        const numNormals = sum(geometryNormals.map(geometryNormal => geometryNormal.length));
+
+        const result = new Float32Array(numNormals);
+        let i = 0;
+        geometryNormals.forEach(geometryNormal => {
+          result.set(geometryNormal, i);
+          i += geometryNormal.length;
+        });
+        return result;
+      })();
+      const uvs = (() => {
+        const geometryUvs = geometries.map(geometry => geometry.getAttribute('uv').array);
+        const numUvs = sum(geometryUvs.map(geometryUv => geometryUv.length));
+
+        const result = new Float32Array(numUvs);
+        let i = 0;
+        geometryUvs.forEach(geometryUv => {
+          result.set(geometryUv, i);
+          i += geometryUv.length;
+        });
+        return result;
+      })();
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      return geometry;
+    }
+    function unindexBufferGeometry(geometry) {
+      if (geometry.index) {
+        const indexes = geometry.index.array;
+        const numIndexes = indexes.length;
+        const positionAttribute = geometry.getAttribute('position');
+        const oldPositions = positionAttribute ? positionAttribute.array : null;
+        const positions = positionAttribute ? new Float32Array(numIndexes * 3) : null;
+        const normalAttribute = geometry.getAttribute('normal');
+        const oldNormals = normalAttribute ? normalAttribute.array : null;
+        const normals = normalAttribute ? new Float32Array(numIndexes * 3) : null;
+        const colorAttribute = geometry.getAttribute('color');
+        const oldColors = colorAttribute ? colorAttribute.array : null;
+        const colors = colorAttribute ? new Float32Array(numIndexes * 3) : null;
+        const uvAttribute = geometry.getAttribute('uv');
+        const oldUvs = uvAttribute ? uvAttribute.array : null;
+        const uvs = uvAttribute ? new Float32Array(numIndexes * 2) : null;
+        for (let i = 0; i < numIndexes; i++) {
+          const index = indexes[i];
+
+          if (positions !== null) {
+            positions[(i * 3) + 0] = oldPositions[(index * 3) + 0];
+            positions[(i * 3) + 1] = oldPositions[(index * 3) + 1];
+            positions[(i * 3) + 2] = oldPositions[(index * 3) + 2];
+          }
+          if (normals !== null) {
+            normals[(i * 3) + 0] = oldNormals[(index * 3) + 0];
+            normals[(i * 3) + 1] = oldNormals[(index * 3) + 1];
+            normals[(i * 3) + 2] = oldNormals[(index * 3) + 2];
+          }
+          if (colors !== null) {
+            colors[(i * 3) + 0] = oldColors[(index * 3) + 0];
+            colors[(i * 3) + 1] = oldColors[(index * 3) + 1];
+            colors[(i * 3) + 2] = oldColors[(index * 3) + 2];
+          }
+          if (uvs !== null) {
+            uvs[(i * 2) + 0] = oldUvs[(index * 2) + 0];
+            uvs[(i * 2) + 1] = oldUvs[(index * 2) + 1];
+          }
+        }
+        if (positions !== null) {
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        }
+        if (normals !== null) {
+          geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        }
+        if (colors !== null) {
+          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        }
+        if (uvs !== null) {
+          geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        }
+        geometry.index = null;
+      }
+
+      return geometry;
+    }
+    function sum(a) {
+      let result = 0;
+      for (let i = 0; i < a.length; i++) {
+        result += a[i];
+      }
+      return result;
+    }
 
     const controllerMeshes = [null, null];
     const lastPresseds = [false, false];
@@ -343,6 +457,128 @@
       })();
       object.add(gridMesh);
       object.gridMesh = gridMesh;
+
+      const facePlanesMesh = new THREE.Object3D();
+      facePlanesMesh.faceMaterials = Array(6);
+      for (let j = 0; j < facePlanesMesh.faceMaterials.length; j++) {
+        fetch(`cube-${j}.png`)
+          .then(res => {
+            return res.arrayBuffer();
+          })
+          .then(arrayBuffer => {
+            texture.image.data = new Uint8Array(arrayBuffer);
+            texture.needsUpdate = true;
+          })
+          .catch(err => {
+            console.warn(err.stack);
+          });
+
+        const texture = new THREE.DataTexture(
+          null,
+          cameraSize,
+          cameraSize,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.LinearFilter,
+          THREE.LinearFilter
+        );
+
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.BackSide,
+        });
+
+        facePlanesMesh.faceMaterials[j] = material;
+      }
+
+      const portalMesh = (() => {
+        const mesh = new THREE.Object3D();
+
+        const outerMesh = (() => {
+          const geometry = (() => {
+            const width = portalWorldWidth;
+            const height = portalWorldHeight;
+            const border = portalBorderWorldWidth;
+
+            const leftGeometry = new THREE.BoxBufferGeometry(border, height, border);
+            leftGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(-(width / 2) - (border / 2), 0, -(border / 2)));
+
+            const rightGeometry = new THREE.BoxBufferGeometry(border, height, border);
+            rightGeometry.applyMatrix(new THREE.Matrix4().makeTranslation((width / 2) + (border / 2), 0, -(border / 2)));
+
+            const topGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
+            topGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (height / 2) + (border / 2), -(border / 2)));
+
+            const bottomGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
+              bottomGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(height / 2) - (border / 2), -(border / 2)));
+
+            const backGeometry = new THREE.PlaneBufferGeometry(width, height);
+            backGeometry.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
+
+            const bufferGeometry = concatBufferGeometry([
+              leftGeometry,
+              rightGeometry,
+              topGeometry,
+              bottomGeometry,
+              backGeometry,
+            ]);
+            return bufferGeometry;
+          })();
+
+          const material = new THREE.MeshLambertMaterial({
+            color: 0xffa726,
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          return mesh;
+        })();
+        mesh.add(outerMesh);
+
+        const innerMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
+          const material = new THREE.MeshBasicMaterial({
+            color: 0xFF0000,
+            colorWrite: false,
+            depthWrite: false,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.onBeforeRender = () => {
+            const gl = renderer.getContext();
+            renderer.state.buffers.stencil.setTest(true);
+            renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
+            renderer.state.buffers.stencil.setOp(gl.INCR, gl.INCR, gl.INCR);
+          };
+          mesh.onAfterRender = () => {
+            // const gl = renderer.getContext();
+          };
+          return mesh;
+        })();
+        mesh.add(innerMesh);
+
+        const skyboxMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(100, 100, 100);
+          const materials = facePlanesMesh.faceMaterials;
+          const mesh = new THREE.Mesh(geometry, materials);
+          mesh.onBeforeRender = () => {
+            const gl = renderer.getContext();
+            renderer.state.buffers.stencil.setTest(true);
+            renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
+            renderer.state.buffers.stencil.setOp(gl.KEEP, gl.KEEP, gl.KEEP);
+          };
+          mesh.onAfterRender = () => {
+            const gl = renderer.getContext();
+            renderer.state.buffers.stencil.setTest(false);
+          };
+          return mesh;
+        })();
+        mesh.add(skyboxMesh);
+
+        return mesh;
+      })();
+      object.add(portalMesh);
 
       return object;
     })();
