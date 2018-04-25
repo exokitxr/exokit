@@ -40,6 +40,43 @@
     const portalWorldWidth = 1;
     const portalWorldHeight = 1;
     const portalBorderWorldWidth = portalWorldWidth * 0.05;
+    const SKYBOX_SHADER = {
+      uniforms: {
+        map: {
+          type: 't',
+          value: null,
+        },
+      },
+      vertexShader: `\
+        uniform sampler2D map;
+        varying vec2 vUv;
+
+        void main() {
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vec4 position2 = projectionMatrix * mvPosition;
+
+          gl_Position = position2;
+          vUv = uv;
+        }
+      `,
+      fragmentShader: `\
+        uniform sampler2D map;
+        varying vec2 vUv;
+        float blackLimit = 0.01;
+
+        void main() {
+          vec4 color = texture2D(map, vUv);
+          float avg = (color.r + color.g + color.b) / 3;
+          if (avg < blackLimit) {
+            float addFactor = blackLimit - avg;
+            color.r += addFactor;
+            color.g += addFactor;
+            color.b += addFactor;
+          }
+          gl_FragColor = color;
+        }
+      `,
+    };
 
     let urlText = 'http://';
     let urlCursor = urlText.length;
@@ -566,10 +603,17 @@
                 1
               );
 
-              const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                side: THREE.BackSide,
-              });
+              const material = (() => {
+                const uniforms = THREE.UniformsUtils.clone(SKYBOX_SHADER.uniforms);
+                uniforms.map.value = texture;
+                const material = new THREE.ShaderMaterial({
+                  uniforms,
+                  vertexShader: SKYBOX_SHADER.vertexShader,
+                  fragmentShader: SKYBOX_SHADER.fragmentShader,
+                  side: THREE.BackSide,
+                });
+                return material;
+              })();
               materials.push(material);
             }
 
