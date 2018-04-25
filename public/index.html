@@ -1350,14 +1350,17 @@
       }
     });
     window.addEventListener('mousedown', () => {
-      if (!window.document.pointerLockElement) {
+      if (!currentPresseds) {
         renderer.domElement.requestPointerLock();
+
+        currentPresseds = [false, false];
+        currentMenuPresseds = [false, false];
       } else {
         currentPresseds[1] = true;
       }
     });
     window.addEventListener('mouseup', () => {
-      if (window.document.pointerLockElement) {
+      if (currentPresseds) {
         currentPresseds[1] = false;
       }
     });
@@ -1370,10 +1373,7 @@
       }
     });
     window.document.addEventListener('pointerlockchange', () => {
-      if (window.document.pointerLockElement) {
-        currentPresseds = [false, false];
-        currentMenuPresseds = [false, false];
-      } else {
+      if (!window.document.pointerLockElement) {
         currentPresseds = null;
         currentMenuPresseds = null;
       }
