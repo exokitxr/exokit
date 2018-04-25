@@ -5,7 +5,6 @@ process.chdir(__dirname); // needed for global bin to find libraries
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const vm = require('vm');
 const repl = require('repl');
 const mkdirp = require('mkdirp');
 const replHistory = require('repl.history');
@@ -1057,9 +1056,6 @@ if (require.main === module) {
       let window = null;
       const _bindReplWindow = newWindow => {
         _bindWindow(newWindow, _bindReplWindow);
-        if (!vm.isContext(newWindow)) {
-          vm.createContext(newWindow);
-        }
         window = newWindow;
       };
       _bindReplWindow(exokit('', {
@@ -1100,7 +1096,7 @@ if (require.main === module) {
           window[match[1]] = result;
         } else {
           try {
-            result = vm.runInContext(cmd, window, {filename});
+            result = window.vm.run(cmd, filename);
           } catch(e) {
             err = e;
           }
