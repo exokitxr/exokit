@@ -461,29 +461,25 @@
       const facePlanesMesh = new THREE.Object3D();
       facePlanesMesh.faceMaterials = Array(6);
       for (let j = 0; j < facePlanesMesh.faceMaterials.length; j++) {
-        fetch(`cube-${j}.png`)
-          .then(res => {
-            return res.arrayBuffer();
-          })
-          .then(arrayBuffer => {
-            texture.image.data = new Uint8Array(arrayBuffer);
-            texture.needsUpdate = true;
-          })
-          .catch(err => {
-            console.warn(err.stack);
-          });
+        const img = new Image();
+        img.src = `img/skybox/cube-${j}.png`;
+        img.onload = () => {
+          texture.needsUpdate = true;
+        };
+        img.error = err => {
+          console.warn(err.stack);
+        };
 
-        const texture = new THREE.DataTexture(
-          null,
-          cameraSize,
-          cameraSize,
-          THREE.RGBAFormat,
-          THREE.UnsignedByteType,
+        const texture = new THREE.Texture(
+          img,
           THREE.UVMapping,
           THREE.ClampToEdgeWrapping,
           THREE.ClampToEdgeWrapping,
-          THREE.LinearFilter,
-          THREE.LinearFilter
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
         );
 
         const material = new THREE.MeshBasicMaterial({
@@ -494,41 +490,46 @@
         facePlanesMesh.faceMaterials[j] = material;
       }
 
-      const portalMesh = (() => {
-        const mesh = new THREE.Object3D();
-        mesh.position.set(0, -0.5 + gridMesh.position.y + gridWorldHeight/2, 0);
+      const outerMeshGeometry = (() => {
+        const width = portalWorldWidth;
+        const height = portalWorldHeight;
+        const border = portalBorderWorldWidth;
 
+        const leftGeometry = new THREE.BoxBufferGeometry(border, height, border);
+        leftGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(-(width / 2) - (border / 2), 0, -(border / 2)));
+
+        const rightGeometry = new THREE.BoxBufferGeometry(border, height, border);
+        rightGeometry.applyMatrix(new THREE.Matrix4().makeTranslation((width / 2) + (border / 2), 0, -(border / 2)));
+
+        const topGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
+        topGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (height / 2) + (border / 2), -(border / 2)));
+
+        const bottomGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
+          bottomGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(height / 2) - (border / 2), -(border / 2)));
+
+        const backGeometry = new THREE.PlaneBufferGeometry(width, height);
+        backGeometry.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
+
+        return concatBufferGeometry([
+          leftGeometry,
+          rightGeometry,
+          topGeometry,
+          bottomGeometry,
+          backGeometry,
+        ]);
+      })();
+
+      for (let i = 0; i < 6; i++) {
+        const x = i % gridCols;
+        const y = Math.floor(i / gridCols);
+
+        const p = new THREE.Vector3(
+          -1 + x,
+          -0.5 + gridMesh.position.y + gridWorldHeight/2 - y,
+          0
+        );
         const outerMesh = (() => {
-          const geometry = (() => {
-            const width = portalWorldWidth;
-            const height = portalWorldHeight;
-            const border = portalBorderWorldWidth;
-
-            const leftGeometry = new THREE.BoxBufferGeometry(border, height, border);
-            leftGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(-(width / 2) - (border / 2), 0, -(border / 2)));
-
-            const rightGeometry = new THREE.BoxBufferGeometry(border, height, border);
-            rightGeometry.applyMatrix(new THREE.Matrix4().makeTranslation((width / 2) + (border / 2), 0, -(border / 2)));
-
-            const topGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
-            topGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (height / 2) + (border / 2), -(border / 2)));
-
-            const bottomGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
-              bottomGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(height / 2) - (border / 2), -(border / 2)));
-
-            const backGeometry = new THREE.PlaneBufferGeometry(width, height);
-            backGeometry.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
-
-            const bufferGeometry = concatBufferGeometry([
-              leftGeometry,
-              rightGeometry,
-              topGeometry,
-              bottomGeometry,
-              backGeometry,
-            ]);
-            return bufferGeometry;
-          })();
-
+          const geometry = outerMeshGeometry;
           const material = new THREE.MeshLambertMaterial({
             color: 0x333333,
           });
@@ -536,7 +537,8 @@
           const mesh = new THREE.Mesh(geometry, material);
           return mesh;
         })();
-        mesh.add(outerMesh);
+        outerMesh.position.copy(p);
+        object.add(outerMesh);
 
         const innerMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
@@ -548,6 +550,7 @@
           const mesh = new THREE.Mesh(geometry, material);
           mesh.onBeforeRender = () => {
             const gl = renderer.getContext();
+            // renderer.clearStencil();
             renderer.state.buffers.stencil.setTest(true);
             renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
             renderer.state.buffers.stencil.setOp(gl.INCR, gl.INCR, gl.INCR);
@@ -557,7 +560,8 @@
           };
           return mesh;
         })();
-        mesh.add(innerMesh);
+        innerMesh.position.copy(p);
+        object.add(innerMesh);
 
         const skyboxMesh = (() => {
           const geometry = new THREE.BoxBufferGeometry(100, 100, 100);
@@ -575,11 +579,9 @@
           };
           return mesh;
         })();
-        mesh.add(skyboxMesh);
-
-        return mesh;
-      })();
-      object.add(portalMesh);
+        skyboxMesh.position.copy(p);
+        object.add(skyboxMesh);
+      }
 
       return object;
     })();
