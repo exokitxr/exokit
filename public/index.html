@@ -66,6 +66,9 @@
     const scene = new THREE.Scene();
     // scene.background = new THREE.Color(0xFFFFFF);
 
+    const portalScenes = Array(6);
+    const portalMeshes = [];
+
     const ambientLight = new THREE.AmbientLight(0x808080);
     scene.add(ambientLight);
 
@@ -460,7 +463,7 @@
       object.add(gridMesh);
       object.gridMesh = gridMesh;
 
-      const outerMeshGeometry = (() => {
+      /* const outerMeshGeometry = (() => {
         const width = portalWorldWidth;
         const height = portalWorldHeight;
         const border = portalBorderWorldWidth;
@@ -487,28 +490,27 @@
           bottomGeometry,
           backGeometry,
         ]);
-      })();
+      })(); */
+      for (let i = 0; i < portalScenes.length; i++) {
+        const portalScene = new THREE.Scene();
+        portalScene.matrixAutoUpdate = false;
 
-      for (let i = 0; i < 6; i++) {
         const x = i % gridCols;
         const y = Math.floor(i / gridCols);
+        const coords = {x, y};
 
-        const p = new THREE.Vector3(
-          -1 + x,
-          -0.5 + gridMesh.position.y + gridWorldHeight/2 - y,
-          0
-        );
-        const outerMesh = (() => {
+        /* const outerMesh = (() => {
           const geometry = outerMeshGeometry;
           const material = new THREE.MeshLambertMaterial({
             color: 0x333333,
           });
 
           const mesh = new THREE.Mesh(geometry, material);
+          mesh.coords = coords;
           return mesh;
         })();
-        outerMesh.position.copy(p);
-        object.add(outerMesh);
+        portalScene.add(outerMesh);
+        portalMeshes.push(outerMesh); */
 
         const innerMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
@@ -518,20 +520,24 @@
             depthWrite: false,
           });
           const mesh = new THREE.Mesh(geometry, material);
+          mesh.frustumCulled = false;
           mesh.onBeforeRender = () => {
+            // console.log('a1');
             const gl = renderer.getContext();
-            // renderer.clearStencil();
+            renderer.clearStencil();
             renderer.state.buffers.stencil.setTest(true);
             renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
             renderer.state.buffers.stencil.setOp(gl.INCR, gl.INCR, gl.INCR);
           };
           mesh.onAfterRender = () => {
+            // console.log('a2');
             // const gl = renderer.getContext();
           };
+          mesh.coords = coords;
           return mesh;
         })();
-        innerMesh.position.copy(p);
-        object.add(innerMesh);
+        portalScene.add(innerMesh);
+        portalMeshes.push(innerMesh);
 
         const skyboxMesh = (() => {
           const geometry = new THREE.BoxBufferGeometry(100, 100, 100);
@@ -539,52 +545,86 @@
             const materials = [];
 
             for (let j = 0; j < 6; j++) {
-              const img = new Image();
-              img.src = `img/skybox/cube-${j}.png`;
-              img.onload = () => {
-                texture.needsUpdate = true;
-              };
-              img.error = err => {
-                console.warn(err.stack);
-              };
+              (() => {
+                const img = new Image();
+                img.src = `img/skybox/cube-${j}.png`;
+                img.onload = () => {
+                  texture.needsUpdate = true;
+                };
+                img.error = err => {
+                  console.warn(err.stack);
+                };
 
-              const texture = new THREE.Texture(
-                img,
-                THREE.UVMapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.NearestFilter,
-                THREE.NearestFilter,
-                THREE.RGBAFormat,
-                THREE.UnsignedByteType,
-                1
-              );
+                const texture = new THREE.Texture(
+                  img,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.NearestFilter,
+                  THREE.NearestFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  1
+                );
 
-              const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                side: THREE.BackSide,
-              });
-              materials.push(material);
+                const material = new THREE.MeshBasicMaterial({
+                  map: texture,
+                  side: THREE.BackSide,
+                });
+                materials.push(material);
+              })();
             }
 
             return materials;
           })();
           const mesh = new THREE.Mesh(geometry, materials);
+          mesh.frustumCulled = false;
           mesh.onBeforeRender = () => {
+            // console.log('b1');
             const gl = renderer.getContext();
             renderer.state.buffers.stencil.setTest(true);
             renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
             renderer.state.buffers.stencil.setOp(gl.KEEP, gl.KEEP, gl.KEEP);
           };
           mesh.onAfterRender = () => {
+            // console.log('b2');
             const gl = renderer.getContext();
             renderer.state.buffers.stencil.setTest(false);
           };
+          mesh.coords = coords;
           return mesh;
         })();
-        skyboxMesh.position.copy(p);
-        object.add(skyboxMesh);
+        portalScene.add(skyboxMesh);
+        portalMeshes.push(skyboxMesh);
+
+        portalScenes[i] = portalScene;
       }
+
+      object.updatePortalMeshes = () => {
+        menuMesh.updateMatrixWorld();
+
+        const position = new THREE.Vector3();
+        const quaternion = new THREE.Quaternion();
+        const scale = new THREE.Vector3();
+        menuMesh.matrixWorld.decompose(position, quaternion, scale);
+        const delta = new THREE.Vector3();
+
+        for (let i = 0; i < portalMeshes.length; i++) {
+          const portalMesh = portalMeshes[i];
+          const {x, y} = portalMesh.coords;
+
+          portalMesh.position.copy(position);
+          portalMesh.quaternion.copy(quaternion);
+          portalMesh.scale.copy(scale);
+
+          delta.set(-1 + x*1.1, -0.5 + gridMesh.position.y + gridWorldHeight/2 - y*1.1, 0);
+          delta.applyQuaternion(quaternion);
+          portalMesh.position.add(delta);
+
+          portalMesh.matrix.compose(portalMesh.position, portalMesh.quaternion, portalMesh.scale);
+          portalMesh.matrixWorld.copy(portalMesh.matrix);
+        }
+      };
 
       return object;
     })();
@@ -1154,6 +1194,13 @@
       _updateIntersections();
 
       renderer.render(scene, camera);
+
+      menuMesh.updatePortalMeshes();
+      renderer.autoClear = false;
+      for (let i = 0; i < portalScenes.length; i++) {
+        renderer.render(portalScenes[i], camera);
+      }
+      renderer.autoClear = true;
 
       window.requestAnimationFrame(animate);
     }
