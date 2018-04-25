@@ -23,13 +23,14 @@
     const urlBarHeight = 256;
     const urlBarWorldWidth = 3;
     const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
+    const gridCols = 3;
+    const gridRows = 2;
     const gridWidth = urlBarWidth;
-    const gridHeight = gridWidth;
+    const gridHeight = gridWidth * 2;
     const gridWorldWidth = urlBarWorldWidth;
-    const gridWorldHeight = gridWorldWidth;
-    const gridN = 3;
+    const gridWorldHeight = gridWorldWidth * 2;
     const gridSpacing = 100;
-    const gridSize = (gridWidth - ((gridSpacing - 1) * gridN)) / gridN;
+    const gridSize = (gridWidth - ((gridSpacing - 1) * gridCols)) / gridCols;
     const gridWorldSize = gridSize * gridWorldWidth / gridWidth;
     const keyboardWidth = 2048;
     const keyboardHeight = 716;
@@ -260,8 +261,8 @@
           ctx.clearRect(0, 0, gridWidth, gridHeight);
 
           for (let i = 0; i < links.length; i++) {
-            const x = i % gridN;
-            const y = -Math.floor(i / gridN);
+            const x = i % gridCols;
+            const y = Math.floor(i / gridCols);
 
             const xOffsetRect = x * (gridSpacing + gridSize);
             const yOffsetRect = y * (gridSpacing + gridSize);
@@ -284,8 +285,8 @@
           mesh.planes.length = 0;
 
           for (let i = 0; i < links.length; i++) {
-            const x = i % gridN;
-            const y = -Math.floor(i / gridN);
+            const x = i % gridCols;
+            const y = -Math.floor(i / gridCols);
 
             const xOffsetRect = x * (gridSpacing + gridSize);
             const yOffsetRect = y * (gridSpacing + gridSize);
@@ -358,7 +359,7 @@
         }
       })
       .then(newLinks => {
-        links = newLinks;
+        links = newLinks.slice(0, gridCols * gridRows);
 
         menuMesh.gridMesh.updateGrid();
         menuMesh.gridMesh.updatePlanes();
@@ -848,7 +849,7 @@
                     .applyEuler(localEuler)
                 );
             }
- 
+
             localEuler.setFromQuaternion(
               localQuaternion
                 .setFromUnitVectors(
