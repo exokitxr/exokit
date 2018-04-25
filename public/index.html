@@ -545,34 +545,32 @@
             const materials = [];
 
             for (let j = 0; j < 6; j++) {
-              (() => {
-                const img = new Image();
-                img.src = `img/skybox/cube-${j}.png`;
-                img.onload = () => {
-                  texture.needsUpdate = true;
-                };
-                img.error = err => {
-                  console.warn(err.stack);
-                };
+              const img = new Image();
+              img.src = `img/skybox/cube-${j}.png`;
+              img.onload = () => {
+                texture.needsUpdate = true;
+              };
+              img.error = err => {
+                console.warn(err.stack);
+              };
 
-                const texture = new THREE.Texture(
-                  img,
-                  THREE.UVMapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.ClampToEdgeWrapping,
-                  THREE.NearestFilter,
-                  THREE.NearestFilter,
-                  THREE.RGBAFormat,
-                  THREE.UnsignedByteType,
-                  1
-                );
+              const texture = new THREE.Texture(
+                img,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.LinearFilter,
+                THREE.LinearFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                1
+              );
 
-                const material = new THREE.MeshBasicMaterial({
-                  map: texture,
-                  side: THREE.BackSide,
-                });
-                materials.push(material);
-              })();
+              const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.BackSide,
+              });
+              materials.push(material);
             }
 
             return materials;
