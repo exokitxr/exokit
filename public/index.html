@@ -103,7 +103,6 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xFFFFFF);
 
-    const portalScenes = Array(6);
     const portalMeshes = [];
 
     const ambientLight = new THREE.AmbientLight(0x808080);
@@ -512,7 +511,6 @@
             colorWrite: false,
             depthWrite: false,
           });
-          material.lol = `inner-${i}`;
           const mesh = new THREE.Mesh(geometry, material);
           mesh.frustumCulled = false;
           mesh.onBeforeRender = () => {
@@ -529,7 +527,7 @@
           mesh.coords = coords;
           return mesh;
         })();
-        portalScene.add(innerMesh);
+        scene.add(innerMesh);
         portalMeshes.push(innerMesh);
 
         const skyboxMesh = (() => {
@@ -582,7 +580,7 @@
             const gl = renderer.getContext();
             renderer.state.buffers.stencil.setTest(true);
             renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
-            renderer.state.buffers.stencil.setOp(gl.KEEP, gl.KEEP, gl.KEEP);
+            renderer.state.buffers.stencil.setOp(gl.ZERO, gl.ZERO, gl.ZERO);
           };
           mesh.onAfterRender = () => {
             // console.log('b2');
@@ -592,10 +590,8 @@
           mesh.coords = coords;
           return mesh;
         })();
-        portalScene.add(skyboxMesh);
+        scene.add(skyboxMesh);
         portalMeshes.push(skyboxMesh);
-
-        portalScenes[i] = portalScene;
       }
 
       object.updatePortalMeshes = () => {
@@ -1195,11 +1191,6 @@
       renderer.render(scene, camera);
 
       menuMesh.updatePortalMeshes();
-      renderer.autoClear = false;
-      for (let i = 0; i < portalScenes.length; i++) {
-        renderer.render(portalScenes[i], camera);
-      }
-      renderer.autoClear = true;
 
       window.requestAnimationFrame(animate);
     }
