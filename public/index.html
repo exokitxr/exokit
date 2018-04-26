@@ -500,68 +500,24 @@
       object.add(gridMesh);
       object.gridMesh = gridMesh;
 
-      /* const outerMeshGeometry = (() => {
-        const width = portalWorldWidth;
-        const height = portalWorldHeight;
-        const border = portalBorderWorldWidth;
-
-        const leftGeometry = new THREE.BoxBufferGeometry(border, height, border);
-        leftGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(-(width / 2) - (border / 2), 0, -(border / 2)));
-
-        const rightGeometry = new THREE.BoxBufferGeometry(border, height, border);
-        rightGeometry.applyMatrix(new THREE.Matrix4().makeTranslation((width / 2) + (border / 2), 0, -(border / 2)));
-
-        const topGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
-        topGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, (height / 2) + (border / 2), -(border / 2)));
-
-        const bottomGeometry = new THREE.BoxBufferGeometry(width + (border * 2), border, border);
-          bottomGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -(height / 2) - (border / 2), -(border / 2)));
-
-        const backGeometry = new THREE.PlaneBufferGeometry(width, height);
-        backGeometry.applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
-
-        return concatBufferGeometry([
-          leftGeometry,
-          rightGeometry,
-          topGeometry,
-          bottomGeometry,
-          backGeometry,
-        ]);
-      })(); */
-      for (let i = 0; i < portalScenes.length; i++) {
-        const portalScene = new THREE.Scene();
-        portalScene.matrixAutoUpdate = false;
-
+      for (let i = 0; i < 6; i++) {
         const x = i % gridCols;
         const y = Math.floor(i / gridCols);
         const coords = {x, y};
 
-        /* const outerMesh = (() => {
-          const geometry = outerMeshGeometry;
-          const material = new THREE.MeshLambertMaterial({
-            color: 0x333333,
-          });
-
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.coords = coords;
-          return mesh;
-        })();
-        portalScene.add(outerMesh);
-        portalMeshes.push(outerMesh); */
-
         const innerMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
           const material = new THREE.MeshBasicMaterial({
-            color: 0xFF0000,
+            color: 0xFFFFFF,
             colorWrite: false,
             depthWrite: false,
           });
+          material.lol = `inner-${i}`;
           const mesh = new THREE.Mesh(geometry, material);
           mesh.frustumCulled = false;
           mesh.onBeforeRender = () => {
             // console.log('a1');
             const gl = renderer.getContext();
-            renderer.clearStencil();
             renderer.state.buffers.stencil.setTest(true);
             renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
             renderer.state.buffers.stencil.setOp(gl.INCR, gl.INCR, gl.INCR);
