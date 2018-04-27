@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/webmixedreality/exokit-windows#readme",
   "dependencies": {
-    "exokit-core": "0.0.239",
+    "exokit-core": "0.0.240",
     "isolator": "0.0.9",
     "magicleap": "0.0.15",
     "minimist": "^1.2.0",
