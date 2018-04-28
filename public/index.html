@@ -230,6 +230,7 @@
     );
     const startY = 1.2;
     sphere.position.y = startY;
+    sphere.position.z = 2;
     scene.add(sphere);
 
     function concatBufferGeometry(geometries) {
@@ -839,15 +840,15 @@
       lastTime = currentTime;
 
       const _animateSphere = () => {
-        // calculate new position
+        /* // calculate new position
         const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
         const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
         velocity.add(rayBack).multiplyScalar(0.98);
-        position.copy(newPosition);
+        position.copy(newPosition); */
 
         // update sphere
-        sphere.position.copy(newPosition);
-        sphere.position.y += startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
+        // sphere.position.copy(newPosition);
+        sphere.position.y = startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
         sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
       };
       const _animateKeyboard = () => {
