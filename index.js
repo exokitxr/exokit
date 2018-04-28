@@ -1142,7 +1142,7 @@ if (require.main === module) {
           this.displayPrompt();
         }
       });
-      replHistory(r, path.join(process.env.HOME || process.cwd(), '.exokit_history'));
+      replHistory(r, path.join(dataPath, '.repl_history'));
       r.on('exit', () => {
         process.exit();
       });
