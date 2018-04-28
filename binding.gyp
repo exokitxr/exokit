@@ -70,14 +70,14 @@
             {
               'destination': '<(module_root_dir)/build/Release/',
               'files': [
-                '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glew/glew32.dll',
-                '<(module_root_dir)/node_modules/native-graphics-deps/lib/windows/glfw/glfw3.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avformat-58.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avcodec-58.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/avutil-56.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/swscale-5.dll',
-                '<(module_root_dir)/node_modules/native-video-deps/lib/win/swresample-3.dll',
-                '<(module_root_dir)/node_modules/native-openvr-deps/bin/win64/openvr_api.dll',
+                "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib/windows/glew/glew32.dll')\")",
+                "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib/windows/glfw/glfw3.dll')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/win/avformat-58.dll')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/win/avcodec-58.dll')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/win/avutil-56.dll')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/win/swscale-5.dll')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/win/swresample-3.dll')\")",
+                "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/bin/win64/openvr_api.dll')\")",
               ]
             }
           ],
