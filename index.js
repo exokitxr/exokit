@@ -65,6 +65,7 @@ const args = (() => {
   }
 })();
 exokit.setArgs(args);
+exokit.setVersion(version);
 exokit.setNativeBindingsModule(nativeBindingsModulePath);
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
