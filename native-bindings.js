@@ -2,10 +2,11 @@ const path = require('path');
 const bindings = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
 const {nativeAudio, nativeVr} = bindings;
 const WindowWorker = require('window-worker');
+const vmOne = require('vm-one');
 const webGlToOpenGl = require('webgl-to-opengl');
 
 bindings.nativeWorker = WindowWorker;
-
+bindings.nativeVm = vmOne;
 bindings.nativeGl = (nativeGl => {
   function WebGLRenderingContext(canvas) {
     const gl = new nativeGl();

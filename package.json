@@ -48,6 +48,7 @@
     "repl.history": "^0.1.4",
     "rimraf": "^2.6.2",
     "upng-js": "^2.1.0",
+    "vm-one": "0.0.8",
     "webgl-to-opengl": "0.0.3",
     "window-worker": "0.0.60"
   }
