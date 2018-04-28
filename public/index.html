@@ -115,6 +115,71 @@
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
+    const controllerMeshes = [null, null];
+    const lastPresseds = [false, false];
+    const lastMenuPresseds = [false, false];
+    for (let i = 0; i < 2; i++) {
+      const controllerMesh = new THREE.Object3D();
+      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
+      controllerMesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, -1, -1)
+      );
+
+      const rayMesh = (() => {
+        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+        const material = new THREE.MeshBasicMaterial({
+          color: RAY_COLOR,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      controllerMesh.add(rayMesh);
+      controllerMesh.rayMesh = rayMesh;
+
+      const rayDot = (() => {
+        const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
+        const material = new THREE.MeshBasicMaterial({
+          color: 0xe91e63,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.z = -1;
+        return mesh;
+      })();
+      controllerMesh.add(rayDot);
+      controllerMesh.rayDot = rayDot;
+
+      controllerMesh.ray = new THREE.Ray();
+      controllerMesh.update = () => {
+        controllerMesh.ray.origin.copy(controllerMesh.position);
+        controllerMesh.ray.direction
+          .set(0, 0, -1)
+          .applyQuaternion(controllerMesh.quaternion);
+      };
+
+      scene.add(controllerMesh);
+      controllerMeshes[i] = controllerMesh;
+    }
+
+    const controllerMeshLoader = new THREE.OBJLoader();
+    controllerMeshLoader.setPath('models/obj/vive-controller/');
+    controllerMeshLoader.load('vr_controller_vive_1_5.obj', object => {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.setPath('models/obj/vive-controller/');
+
+      const controllerMesh = object.children[0];
+      controllerMesh.material.map = textureLoader.load('onepointfive_texture.png');
+      controllerMesh.material.specularMap = textureLoader.load('onepointfive_spec.png');
+
+      controllerMeshes[0].add(object.clone());
+      controllerMeshes[1].add(object.clone());
+    });
+
+    const skyboxGeometry = new THREE.BoxBufferGeometry(100, 100, 100);
     for (let i = 0; i < 6; i++) {
       const x = i % gridCols;
       const y = Math.floor(i / gridCols);
@@ -130,16 +195,14 @@
         const mesh = new THREE.Mesh(geometry, material);
         mesh.frustumCulled = false;
         mesh.onBeforeRender = () => {
-          // console.log('a1');
           const gl = renderer.getContext();
           renderer.state.buffers.stencil.setTest(true);
           renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
           renderer.state.buffers.stencil.setOp(gl.INCR, gl.INCR, gl.INCR);
         };
         mesh.onAfterRender = () => {
-          // console.log('a2');
           // const gl = renderer.getContext();
-          renderer.state.buffers.stencil.setTest(false);
+          // renderer.state.buffers.stencil.setTest(false);
         };
         mesh.coords = coords;
         return mesh;
@@ -149,7 +212,7 @@
       innerMeshes.push(innerMesh);
 
       const skyboxMesh = (() => {
-        const geometry = new THREE.BoxBufferGeometry(100, 100, 100);
+        const geometry = skyboxGeometry;
         const materials = (() => {
           const materials = [];
 
@@ -199,18 +262,25 @@
         mesh.frustumCulled = false;
         mesh.onBeforeRender = () => {
           if (currentPortal === -1) {
-            // console.log('b1');
             const gl = renderer.getContext();
             renderer.state.buffers.stencil.setTest(true);
             renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
             renderer.state.buffers.stencil.setOp(gl.ZERO, gl.ZERO, gl.ZERO);
+          } else {
+            const gl = renderer.getContext();
+            renderer.state.buffers.stencil.setTest(true);
+            renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
+            renderer.state.buffers.stencil.setOp(gl.KEEP, gl.KEEP, gl.KEEP);
           }
         };
         mesh.onAfterRender = () => {
           if (currentPortal === -1) {
-            // console.log('b2');
             // const gl = renderer.getContext();
             renderer.state.buffers.stencil.setTest(false);
+          } else {
+            // const gl = renderer.getContext();
+            // renderer.state.buffers.stencil.setFunc(gl.NEVER, 0, 0xFF);
+            // renderer.state.buffers.stencil.setOp(gl.ZERO, gl.ZERO, gl.ZERO);
           }
         };
         mesh.coords = coords;
@@ -221,6 +291,32 @@
       skyboxMeshes.push(skyboxMesh);
     }
 
+    const interMesh = new THREE.Mesh();
+    interMesh.frustumCulled = false;
+    /* interMesh.onBeforeRender = () => {
+      if (currentPortal !== -1) {
+        // console.log('set locked');
+        renderer.state.buffers.stencil.setLocked(true);
+      }
+    }; */
+    scene.add(interMesh);
+
+    const stencilPreambles = {
+      onBeforeRender() {
+        if (currentPortal !== -1) {
+          const gl = renderer.getContext();
+          renderer.state.buffers.stencil.setTest(true);
+          renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
+        }
+      },
+      onAfterRender() {
+        if (currentPortal !== -1) {
+          // const gl = renderer.getContext();
+          renderer.state.buffers.stencil.setTest(false);
+        }
+      },
+    };
+
     const sphere = new THREE.Mesh(
       new THREE.SphereBufferGeometry(0.3, 7, 5),
       new THREE.MeshPhongMaterial({
@@ -228,6 +324,8 @@
         flatShading: true,
       })
     );
+    sphere.onBeforeRender = stencilPreambles.onBeforeRender;
+    sphere.onAfterRender = stencilPreambles.onAfterRender;
     const startY = 1.2;
     sphere.position.y = startY;
     sphere.position.z = 2;
@@ -343,70 +441,6 @@
       return result;
     }
 
-    const controllerMeshes = [null, null];
-    const lastPresseds = [false, false];
-    const lastMenuPresseds = [false, false];
-    for (let i = 0; i < 2; i++) {
-      const controllerMesh = new THREE.Object3D();
-      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
-      controllerMesh.quaternion.setFromUnitVectors(
-        new THREE.Vector3(0, 0, -1),
-        new THREE.Vector3(0, -1, -1)
-      );
-
-      const rayMesh = (() => {
-        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
-          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
-        const material = new THREE.MeshBasicMaterial({
-          color: RAY_COLOR,
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        return mesh;
-      })();
-      controllerMesh.add(rayMesh);
-      controllerMesh.rayMesh = rayMesh;
-
-      const rayDot = (() => {
-        const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
-        const material = new THREE.MeshBasicMaterial({
-          color: 0xe91e63,
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.z = -1;
-        return mesh;
-      })();
-      controllerMesh.add(rayDot);
-      controllerMesh.rayDot = rayDot;
-
-      controllerMesh.ray = new THREE.Ray();
-      controllerMesh.update = () => {
-        controllerMesh.ray.origin.copy(controllerMesh.position);
-        controllerMesh.ray.direction
-          .set(0, 0, -1)
-          .applyQuaternion(controllerMesh.quaternion);
-      };
-
-      scene.add(controllerMesh);
-      controllerMeshes[i] = controllerMesh;
-    }
-
-    const controllerMeshLoader = new THREE.OBJLoader();
-    controllerMeshLoader.setPath('models/obj/vive-controller/');
-    controllerMeshLoader.load('vr_controller_vive_1_5.obj', object => {
-      const textureLoader = new THREE.TextureLoader();
-      textureLoader.setPath('models/obj/vive-controller/');
-
-      const controllerMesh = object.children[0];
-      controllerMesh.material.map = textureLoader.load('onepointfive_texture.png');
-      controllerMesh.material.specularMap = textureLoader.load('onepointfive_spec.png');
-
-      controllerMeshes[0].add(object.clone());
-      controllerMeshes[1].add(object.clone());
-    });
-
     const menuMesh = (() => {
       const object = new THREE.Object3D();
 
@@ -435,6 +469,8 @@
           side: THREE.DoubleSide,
         });
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.onBeforeRender = stencilPreambles.onBeforeRender;
+        mesh.onAfterRender = stencilPreambles.onAfterRender;
 
         const _updateText = () => {
           ctx.clearRect(0, 0, urlBarWidth, urlBarHeight);
@@ -521,6 +557,8 @@
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.y = -(urlBarWorldHeight + gridWorldHeight/2);
+        mesh.onBeforeRender = stencilPreambles.onBeforeRender;
+        mesh.onAfterRender = stencilPreambles.onAfterRender;
 
         const _updateGrid = () => {
           ctx.clearRect(0, 0, gridWidth, gridHeight);
@@ -618,8 +656,9 @@
         menuMesh.matrixWorld.decompose(position, quaternion, scale);
         const delta = new THREE.Vector3();
 
-        for (let i = 0; i < portalMeshes.length; i++) {
-          const portalMesh = portalMeshes[i];
+        const allPortalMeshes = portalMeshes.concat([blankSkyboxMesh]);
+        for (let i = 0; i < allPortalMeshes.length; i++) {
+          const portalMesh = allPortalMeshes[i];
           const {x, y} = portalMesh.coords;
 
           portalMesh.position.copy(position);
@@ -629,6 +668,10 @@
           delta.set(-1 + x*1.1, -0.5 + gridMesh.position.y + gridWorldHeight/2 - y*1.1, 0);
           delta.applyQuaternion(quaternion);
           portalMesh.position.add(delta);
+
+          if (currentPortal !== -1 && innerMeshes.indexOf(portalMesh) !== -1) {
+            portalMesh.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)));
+          }
 
           portalMesh.matrix.compose(portalMesh.position, portalMesh.quaternion, portalMesh.scale);
           portalMesh.matrixWorld.copy(portalMesh.matrix);
@@ -696,6 +739,8 @@
           new THREE.Vector3(0, 0, 1),
           new THREE.Vector3(0, 1, 1).normalize()
         );
+        mesh.onBeforeRender = stencilPreambles.onBeforeRender;
+        mesh.onAfterRender = stencilPreambles.onAfterRender;
         return mesh;
       })();
       object.add(planeMesh);
@@ -755,6 +800,8 @@
           transparent: true,
         });
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.onBeforeRender = stencilPreambles.onBeforeRender;
+        mesh.onAfterRender = stencilPreambles.onAfterRender;
         return mesh;
       })();
       keyboardMesh.planeMesh.add(keyMesh);
@@ -826,6 +873,27 @@
     plane.geometry.computeVertexNormals();
     scene.add(plane); */
 
+    const blankSkyboxMesh = new THREE.Mesh(new THREE.BoxBufferGeometry(90, 90, 90), new THREE.MeshBasicMaterial({
+      color: 0xFFFFFF,
+      side: THREE.BackSide,
+    }));
+    blankSkyboxMesh.visible = false;
+    blankSkyboxMesh.onBeforeRender = stencilPreambles.onBeforeRender;
+    blankSkyboxMesh.onAfterRender = stencilPreambles.onAfterRender;
+    blankSkyboxMesh.coords = {
+      x: 0,
+      y: 0,
+    };
+    scene.add(blankSkyboxMesh);
+
+    const finishMesh = new THREE.Mesh();
+    finishMesh.frustumCulled = false;
+    finishMesh.onAfterRender = () => {
+      // renderer.state.buffers.stencil.setLocked(false);
+      renderer.state.buffers.stencil.setTest(false);
+    };
+    scene.add(finishMesh);
+
     const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 10000);
     camera.position.set(0, 1, 1);
     camera.rotation.order = 'YXZ';
@@ -868,10 +936,8 @@
             menuMesh.visible = true;
           } else {
             const visible = keyboardMesh.planeMesh.scale.y > 0.5;
-
             keyboardMesh.visible = visible;
             menuMesh.visible = visible;
-
             keyboardMeshAnimation = null;
           }
         }
@@ -907,48 +973,54 @@
         } */
       };
       const _updateHmd = () => {
-        const currentHmdPosition = camera.position.clone()
-          .add(
-            localVector.set(0, 0, -camera.near)
-              .applyQuaternion(camera.quaternion)
-          );
-        const line = new THREE.Line3(currentHmdPosition, lastHmdPosition);
+        if (menuMesh.visible) {
+          const currentHmdPosition = camera.position.clone()
+            .add(
+              localVector.set(0, 0, -camera.near)
+                .applyQuaternion(camera.quaternion)
+            );
+          const line = new THREE.Line3(currentHmdPosition, lastHmdPosition);
 
-        for (let i = 0; i < links.length; i++) {
-          const planeSpec = menuMesh.gridMesh.planes[i];
-          const {plane, leftLine, topLine} = planeSpec;
-          const intersectionPoint = plane.intersectLine(line, localVector);
+          for (let i = 0; i < links.length; i++) {
+            const planeSpec = menuMesh.gridMesh.planes[i];
+            const {plane, leftLine, topLine} = planeSpec;
+            const intersectionPoint = plane.intersectLine(line, localVector);
 
-          if (intersectionPoint) {
-            const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+            if (intersectionPoint) {
+              const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-            const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+              const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
-            const xFactor = topIntersectionPoint.distanceTo(topLine.start) / gridWorldSize;
-            const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / gridWorldSize;
-            const distance = line.start.distanceTo(intersectionPoint);
+              const xFactor = topIntersectionPoint.distanceTo(topLine.start) / gridWorldSize;
+              const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / gridWorldSize;
+              const distance = line.start.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
-              if (currentPortal === -1) {
-                currentPortal = i;
-                for (let j = 0; j < innerMeshes.length; j++) {
-                  innerMeshes[j].visible = false;
-                  skyboxMeshes[j].visible = i === j;
+              if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+                if (currentPortal === -1) {
+                  currentPortal = i;
+
+                  for (let j = 0; j < innerMeshes.length; j++) {
+                    const visible = i === j;
+                    innerMeshes[j].visible = visible;
+                    skyboxMeshes[j].visible = visible;
+                  }
+                  blankSkyboxMesh.visible = true;
+                  break;
+                } else if (i === currentPortal) {
+                  currentPortal = -1;
+                  for (let j = 0; j < innerMeshes.length; j++) {
+                    innerMeshes[j].visible = true;
+                    skyboxMeshes[j].visible = true;
+                  }
+                  blankSkyboxMesh.visible = false;
+                  break;
                 }
-                break;
-              } else if (i === currentPortal) {
-                currentPortal = -1;
-                for (let j = 0; j < innerMeshes.length; j++) {
-                  innerMeshes[j].visible = true;
-                  skyboxMeshes[j].visible = true;
-                }
-                break;
               }
             }
           }
-        }
 
-        lastHmdPosition.copy(currentHmdPosition);
+          lastHmdPosition.copy(currentHmdPosition);
+        }
       };
       const _updateControllers = () => {
         // update controls
@@ -1216,7 +1288,7 @@
           if (pressed && !lastPressed) {
             if (intersectionKey) {
               const code = keyCode(intersectionKey);
-              console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
+              // console.log('click', JSON.stringify(intersectionKey), JSON.stringify(code)); // XXX
               _handleKey(code, false);
             } else if (urlCoords) {
               const [x, y] = urlCoords;
