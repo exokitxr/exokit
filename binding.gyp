@@ -315,7 +315,7 @@
             '-lavutil',
             '-lswscale',
             '-lswresample',
-            "-F <!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/bin/osx64')\")
+            "-F <!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/bin/osx64')\")",
             '-framework OpenVR',
           ],
           'link_settings': {
