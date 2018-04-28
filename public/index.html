@@ -815,9 +815,10 @@
     camera.position.set(0, 1, 1);
     camera.rotation.order = 'YXZ';
 
-    const position = new THREE.Vector3(0, 0, 0);
-    const velocity = new THREE.Vector3(0, 0, 0);
+    const position = new THREE.Vector3();
+    const velocity = new THREE.Vector3();
     let lastTime = Date.now();
+    const lastHmdPosition = camera.position.clone();
     function animate() {
       const currentTime = Date.now();
       const timePassed = Math.max(currentTime - lastTime, 1);
@@ -890,7 +891,33 @@
           );
         } */
       };
-      const _updateControls = () => {
+      const _updateHmd = () => {
+        const line = new THREE.Line3(camera.position, lastHmdPosition);
+
+        for (let i = 0; i < links.length; i++) {
+          const planeSpec = menuMesh.gridMesh.planes[i];
+          const {plane, leftLine, topLine} = planeSpec;
+          const intersectionPoint = plane.intersectLine(line, localVector);
+
+          if (intersectionPoint) {
+            const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+            const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+            const xFactor = topIntersectionPoint.distanceTo(topLine.start) / gridWorldSize;
+            const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / gridWorldSize;
+            const distance = line.start.distanceTo(intersectionPoint);
+
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+              console.log('intersected grid'); // XXX
+              break;
+            }
+          }
+        }
+
+        lastHmdPosition.copy(camera.position);
+      };
+      const _updateControllers = () => {
         // update controls
         if (window.document.pointerLockElement) {
           const directionVector = new THREE.Vector3();
@@ -1185,7 +1212,8 @@
       _animateSphere();
       _animateKeyboard();
       _animateControllers();
-      _updateControls();
+      _updateHmd();
+      _updateControllers();
       _updateIntersections();
 
       renderer.render(scene, camera);
