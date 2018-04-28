@@ -106,6 +106,7 @@
 
     const portalMeshes = [];
     const innerMeshes = [];
+    const backMeshes = [];
     const skyboxMeshes = [];
 
     const ambientLight = new THREE.AmbientLight(0x808080);
@@ -179,6 +180,9 @@
       controllerMeshes[1].add(object.clone());
     });
 
+    const portalGeometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
+    const portalBackGeometry = portalGeometry.clone()
+      .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
     const skyboxGeometry = new THREE.BoxBufferGeometry(100, 100, 100);
     for (let i = 0; i < 6; i++) {
       const x = i % gridCols;
@@ -186,7 +190,7 @@
       const coords = {x, y};
 
       const innerMesh = (() => {
-        const geometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
+        const geometry = portalGeometry;
         const material = new THREE.MeshBasicMaterial({
           color: 0xFFFFFF,
           colorWrite: false,
@@ -210,6 +214,20 @@
       scene.add(innerMesh);
       portalMeshes.push(innerMesh);
       innerMeshes.push(innerMesh);
+
+      const backMesh = (() => {
+        const geometry = portalBackGeometry;
+        const material = new THREE.MeshBasicMaterial({
+          color: 0x111111,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        mesh.coords = coords;
+        return mesh;
+      })();
+      scene.add(backMesh);
+      portalMeshes.push(backMesh);
+      backMeshes.push(backMesh);
 
       const skyboxMesh = (() => {
         const geometry = skyboxGeometry;
@@ -541,7 +559,7 @@
         texture.needsUpdate = true;
         const material = new THREE.MeshBasicMaterial({
           map: texture,
-          side: THREE.DoubleSide,
+          // side: THREE.DoubleSide,
           transparent: true,
           alphaTest: 0.9,
         });
@@ -659,7 +677,7 @@
           delta.applyQuaternion(quaternion);
           portalMesh.position.add(delta);
 
-          if (currentPortal !== -1 && innerMeshes.indexOf(portalMesh) !== -1) {
+          if (currentPortal !== -1 && (innerMeshes.indexOf(portalMesh) !== -1 || backMeshes.indexOf(portalMesh) !== -1)) {
             portalMesh.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)));
           }
 
@@ -965,7 +983,7 @@
       const _updateHmd = () => {
         if (menuMesh.visible) {
           const currentHmdPosition = camera.position.clone()
-            .add(localVector.set(0, 0, -0.3).applyQuaternion(camera.quaternion));
+            // .add(localVector.set(0, 0, -0.3).applyQuaternion(camera.quaternion));
           const line = new THREE.Line3(lastHmdPosition, currentHmdPosition);
           const plane = new THREE.Plane();
 
@@ -991,9 +1009,12 @@
                   for (let j = 0; j < innerMeshes.length; j++) {
                     const visible = i === j;
                     innerMeshes[j].visible = visible;
+                    backMeshes[j].visible = visible;
                     skyboxMeshes[j].visible = visible;
                   }
                   requestAnimationFrame(() => {
+                    menuMesh.urlMesh.visible = false;
+                    menuMesh.gridMesh.visible = false;
                     blankSkyboxMesh.visible = true;
                   });
                   break;
@@ -1001,9 +1022,12 @@
                   currentPortal = -1;
                   for (let j = 0; j < innerMeshes.length; j++) {
                     innerMeshes[j].visible = true;
+                    backMeshes[j].visible = true;
                     skyboxMeshes[j].visible = true;
                   }
                   requestAnimationFrame(() => {
+                    menuMesh.urlMesh.visible = true;
+                    menuMesh.gridMesh.visible = true;
                     blankSkyboxMesh.visible = false;
                   });
                   break;
