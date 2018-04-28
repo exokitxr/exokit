@@ -91,7 +91,7 @@
               ],
               'include_dirs': [
                 '<(module_root_dir)/deps/exokit-bindings/magicleap/include',
-                '<(module_root_dir)/node_modules/magicleap/include',
+                "<!(node -e \"console.log(require.resolve('magicleap').slice(0, -9) + '/include')\")",
               ],
               'libraries': [
                 'ml_app_analytics.lib',
