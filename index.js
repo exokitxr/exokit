@@ -6,15 +6,15 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const repl = require('repl');
+const core = require('./core.js');
 const mkdirp = require('mkdirp');
 const replHistory = require('repl.history');
-const exokit = require('exokit-core');
 const minimist = require('minimist');
 const UPNG = require('upng-js');
 const {version} = require('./package.json');
 const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
-const {THREE} = exokit;
+const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeMl, nativeWindow} = nativeBindings;
 
@@ -64,9 +64,9 @@ const args = (() => {
     return {};
   }
 })();
-exokit.setArgs(args);
-exokit.setVersion(version);
-exokit.setNativeBindingsModule(nativeBindingsModulePath);
+core.setArgs(args);
+core.setVersion(version);
+core.setNativeBindingsModule(nativeBindingsModulePath);
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
@@ -417,7 +417,7 @@ nativeWindow.setEventHandler((type, data) => {
 
 // EXPORTS
 
-module.exports = exokit;
+module.exports = core;
 
 // MAIN
 
@@ -994,7 +994,7 @@ if (require.main === module) {
       if (url.indexOf('://') === -1) {
         url = 'http://' + url;
       }
-      return exokit.load(url, {
+      return core.load(url, {
         dataPath,
       })
         .then(window => {
@@ -1072,7 +1072,7 @@ if (require.main === module) {
         _bindWindow(newWindow, _bindReplWindow);
         window = newWindow;
       };
-      _bindReplWindow(exokit('', {
+      _bindReplWindow(core('', {
         dataPath,
       }));
 
