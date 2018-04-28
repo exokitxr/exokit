@@ -7,11 +7,7 @@ const dependencies = Object.keys(packageJson.dependencies);
 const nativeDependencies = dependencies.filter(dependency => /^native-/.test(dependency));
 
 for (let i = 0; i < nativeDependencies.length; i++) {
-  childProcess.execFileSync('npm', [
-    'run',
-    'postinstall',
-    '.',
-  ], {
-    cwd: path.join(path.dirname(require.resolve(nativeDependencies[i]))),
+  childProcess.execSync('npm run postinstall .', {
+    cwd: path.dirname(require.resolve(nativeDependencies[i])),
   });
 }
