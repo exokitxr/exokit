@@ -458,41 +458,52 @@ if (require.main === module) {
     if (rootPath !== null) {
       const openvrPathsPath = path.join(rootPath, 'openvrpaths.vrpath');
 
-      return new Promise((accept, reject) => {
-        fs.lstat(openvrPathsPath, (err, stats) => {
-          if (err) {
-            if (err.code === 'ENOENT') {
-              mkdirp(rootPath, err => {
-                if (!err) {
-                  const jsonString = JSON.stringify({
-                    "config" : [ rootPath ],
-                    "external_drivers" : null,
-                    "jsonid" : "vrpathreg",
-                    "log" : [ rootPath ],
-                    "runtime" : [
-                       runtimePath,
-                     ],
-                    "version" : 1
-                  }, null, 2);
-                  fs.writeFile(openvrPathsPath, jsonString, err => {
-                    if (!err) {
-                      accept();
-                    } else {
-                      reject(err);
-                    }
-                  });
-                } else {
-                  reject(err);
-                }
-              });
+      return Promise.all([
+        new Promise((accept, reject) => {
+          fs.lstat(openvrPathsPath, (err, stats) => {
+            if (err) {
+              if (err.code === 'ENOENT') {
+                mkdirp(rootPath, err => {
+                  if (!err) {
+                    const jsonString = JSON.stringify({
+                      "config" : [ rootPath ],
+                      "external_drivers" : null,
+                      "jsonid" : "vrpathreg",
+                      "log" : [ rootPath ],
+                      "runtime" : [
+                         runtimePath,
+                       ],
+                      "version" : 1
+                    }, null, 2);
+                    fs.writeFile(openvrPathsPath, jsonString, err => {
+                      if (!err) {
+                        accept();
+                      } else {
+                        reject(err);
+                      }
+                    });
+                  } else {
+                    reject(err);
+                  }
+                });
+              } else {
+                reject(err);
+              }
+            } else {
+              accept();
+            }
+          });
+        }),
+        new Promise((accept, reject) => {
+          mkdirp(dataPath, err => {
+            if (!err) {
+              accept();
             } else {
               reject(err);
             }
-          } else {
-            accept();
-          }
-        });
-      });
+          });
+        }),
+      ]);
     } else {
       return Promise.resolve();
     }
