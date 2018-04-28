@@ -7,8 +7,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "preinstall": "node ./preinstall.js",
-    "install": "node-gyp rebuild",
+    "install": "node ./preinstall.js && node-gyp rebuild",
     "build": "node-gyp rebuild",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 0"
