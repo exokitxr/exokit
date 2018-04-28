@@ -964,12 +964,15 @@
       };
       const _updateHmd = () => {
         if (menuMesh.visible) {
-          const currentHmdPosition = camera.position.clone();
+          const currentHmdPosition = camera.position.clone()
+            .add(localVector.set(0, 0, -0.3).applyQuaternion(camera.quaternion));
           const line = new THREE.Line3(lastHmdPosition, currentHmdPosition);
+          const plane = new THREE.Plane();
 
           for (let i = 0; i < links.length; i++) {
             const planeSpec = menuMesh.gridMesh.planes[i];
-            const {plane, leftLine, topLine} = planeSpec;
+            plane.copy(planeSpec.plane);
+            const {leftLine, topLine} = planeSpec;
             const intersectionPoint = plane.intersectLine(line, localVector);
 
             if (intersectionPoint) {
@@ -990,7 +993,9 @@
                     innerMeshes[j].visible = visible;
                     skyboxMeshes[j].visible = visible;
                   }
-                  blankSkyboxMesh.visible = true;
+                  requestAnimationFrame(() => {
+                    blankSkyboxMesh.visible = true;
+                  });
                   break;
                 } else if (i === currentPortal) {
                   currentPortal = -1;
@@ -998,7 +1003,9 @@
                     innerMeshes[j].visible = true;
                     skyboxMeshes[j].visible = true;
                   }
-                  blankSkyboxMesh.visible = false;
+                  requestAnimationFrame(() => {
+                    blankSkyboxMesh.visible = false;
+                  });
                   break;
                 }
               }
@@ -1220,7 +1227,7 @@
 
           const lastMenuPressed = lastMenuPresseds[i];
           lastMenuPresseds[i] = menuPressed;
-          if (menuPressed && !lastMenuPressed) {
+          if (menuPressed && !lastMenuPressed && currentPortal === -1) {
             const opening = keyboardMesh.planeMesh.scale.y < 0.5;
             if (opening) {
               localEuler.setFromQuaternion(camera.quaternion, localEuler.order);
@@ -1300,12 +1307,12 @@
           }
         }
       };
-      _animateSphere();
-      _animateKeyboard();
-      _animateControllers();
       _updateHmd();
       _updateControllers();
       _updateIntersections();
+      _animateSphere();
+      _animateKeyboard();
+      _animateControllers();
 
       renderer.render(scene, camera);
 
