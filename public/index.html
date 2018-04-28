@@ -24,6 +24,7 @@
     const urlBarHeight = 256;
     const urlBarWorldWidth = 3;
     const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
+    let currentPortal = -1;
     const gridCols = 3;
     const gridRows = 2;
     const gridWidth = urlBarWidth;
@@ -909,13 +910,20 @@
             const distance = line.start.distanceTo(intersectionPoint);
 
             if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
-              console.log('intersected grid'); // XXX
-              break;
+              if (currentPortal === -1) {
+                currentPortal = i;
+                break;
+              } else if (i === currentPortal) {
+                currentPortal = -1;
+                break;
+              }
             }
           }
         }
 
         lastHmdPosition.copy(camera.position);
+
+        console.log('current portal', currentPortal); // XXX
       };
       const _updateControllers = () => {
         // update controls
