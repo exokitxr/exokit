@@ -18,7 +18,7 @@ const {THREE} = exokit;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeMl, nativeWindow} = nativeBindings;
 
-const dataPath = path.join(os.homedir() || __dirname, 'exokit');
+const dataPath = path.join(os.homedir() || __dirname, '.exokit');
 
 const canvasSymbol = Symbol();
 const contexts = [];
