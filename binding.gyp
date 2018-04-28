@@ -321,9 +321,9 @@
           ],
           'link_settings': {
             'libraries': [
-              '-Wl,-rpath,./node_modules/native-audio-deps/lib/macos',
-              '-Wl,-rpath,./node_modules/native-video-deps/lib/macos',
-              '-Wl,-rpath,./node_modules/native-openvr-deps/bin/osx64',
+              "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib/macos')\")",
+              "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/macos')\")",
+              "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/bin/osx64')\")",
               '-framework OpenVR',
             ],
           },
