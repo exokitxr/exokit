@@ -291,16 +291,6 @@
       skyboxMeshes.push(skyboxMesh);
     }
 
-    const interMesh = new THREE.Mesh();
-    interMesh.frustumCulled = false;
-    /* interMesh.onBeforeRender = () => {
-      if (currentPortal !== -1) {
-        // console.log('set locked');
-        renderer.state.buffers.stencil.setLocked(true);
-      }
-    }; */
-    scene.add(interMesh);
-
     const stencilPreambles = {
       onBeforeRender() {
         if (currentPortal !== -1) {
