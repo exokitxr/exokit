@@ -1,5 +1,5 @@
 #!/bin/bash
-# wget https://get.webmr.io | sudo sh
+# wget -qO- https://get.webmr.io | sudo sh
 # This script will download and install Exokit in /usr/lib
 
 echo "Exokit $VERSION install script"
