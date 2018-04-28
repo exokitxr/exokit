@@ -115,6 +115,112 @@
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
+    for (let i = 0; i < 6; i++) {
+      const x = i % gridCols;
+      const y = Math.floor(i / gridCols);
+      const coords = {x, y};
+
+      const innerMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
+        const material = new THREE.MeshBasicMaterial({
+          color: 0xFFFFFF,
+          colorWrite: false,
+          depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        mesh.onBeforeRender = () => {
+          // console.log('a1');
+          const gl = renderer.getContext();
+          renderer.state.buffers.stencil.setTest(true);
+          renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
+          renderer.state.buffers.stencil.setOp(gl.INCR, gl.INCR, gl.INCR);
+        };
+        mesh.onAfterRender = () => {
+          // console.log('a2');
+          // const gl = renderer.getContext();
+          renderer.state.buffers.stencil.setTest(false);
+        };
+        mesh.coords = coords;
+        return mesh;
+      })();
+      scene.add(innerMesh);
+      portalMeshes.push(innerMesh);
+      innerMeshes.push(innerMesh);
+
+      const skyboxMesh = (() => {
+        const geometry = new THREE.BoxBufferGeometry(100, 100, 100);
+        const materials = (() => {
+          const materials = [];
+
+          for (let j = 0; j < 6; j++) {
+            const img = new Image();
+            img.src = `img/skybox/cube-${j}.png`;
+            img.onload = () => {
+              texture.needsUpdate = true;
+            };
+            img.error = err => {
+              console.warn(err.stack);
+            };
+
+            const texture = new THREE.Texture(
+              img,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.LinearFilter,
+              THREE.LinearFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              1
+            );
+
+            const material = (() => {
+              return new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.BackSide,
+              });
+              const uniforms = THREE.UniformsUtils.clone(SKYBOX_SHADER.uniforms);
+              uniforms.map.value = texture;
+              const material = new THREE.ShaderMaterial({
+                uniforms,
+                vertexShader: SKYBOX_SHADER.vertexShader,
+                fragmentShader: SKYBOX_SHADER.fragmentShader,
+                side: THREE.BackSide,
+              });
+              return material;
+            })();
+            materials.push(material);
+          }
+
+          return materials;
+        })();
+        const mesh = new THREE.Mesh(geometry, materials);
+        mesh.frustumCulled = false;
+        mesh.onBeforeRender = () => {
+          if (currentPortal === -1) {
+            // console.log('b1');
+            const gl = renderer.getContext();
+            renderer.state.buffers.stencil.setTest(true);
+            renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
+            renderer.state.buffers.stencil.setOp(gl.ZERO, gl.ZERO, gl.ZERO);
+          }
+        };
+        mesh.onAfterRender = () => {
+          if (currentPortal === -1) {
+            // console.log('b2');
+            // const gl = renderer.getContext();
+            renderer.state.buffers.stencil.setTest(false);
+          }
+        };
+        mesh.coords = coords;
+        return mesh;
+      })();
+      scene.add(skyboxMesh);
+      portalMeshes.push(skyboxMesh);
+      skyboxMeshes.push(skyboxMesh);
+    }
+
     const sphere = new THREE.Mesh(
       new THREE.SphereBufferGeometry(0.3, 7, 5),
       new THREE.MeshPhongMaterial({
@@ -501,112 +607,6 @@
       })();
       object.add(gridMesh);
       object.gridMesh = gridMesh;
-
-      for (let i = 0; i < 6; i++) {
-        const x = i % gridCols;
-        const y = Math.floor(i / gridCols);
-        const coords = {x, y};
-
-        const innerMesh = (() => {
-          const geometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
-          const material = new THREE.MeshBasicMaterial({
-            color: 0xFFFFFF,
-            colorWrite: false,
-            depthWrite: false,
-          });
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.frustumCulled = false;
-          mesh.onBeforeRender = () => {
-            // console.log('a1');
-            const gl = renderer.getContext();
-            renderer.state.buffers.stencil.setTest(true);
-            renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
-            renderer.state.buffers.stencil.setOp(gl.INCR, gl.INCR, gl.INCR);
-          };
-          mesh.onAfterRender = () => {
-            // console.log('a2');
-            // const gl = renderer.getContext();
-            renderer.state.buffers.stencil.setTest(false);
-          };
-          mesh.coords = coords;
-          return mesh;
-        })();
-        scene.add(innerMesh);
-        portalMeshes.push(innerMesh);
-        innerMeshes.push(innerMesh);
-
-        const skyboxMesh = (() => {
-          const geometry = new THREE.BoxBufferGeometry(100, 100, 100);
-          const materials = (() => {
-            const materials = [];
-
-            for (let j = 0; j < 6; j++) {
-              const img = new Image();
-              img.src = `img/skybox/cube-${j}.png`;
-              img.onload = () => {
-                texture.needsUpdate = true;
-              };
-              img.error = err => {
-                console.warn(err.stack);
-              };
-
-              const texture = new THREE.Texture(
-                img,
-                THREE.UVMapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.ClampToEdgeWrapping,
-                THREE.LinearFilter,
-                THREE.LinearFilter,
-                THREE.RGBAFormat,
-                THREE.UnsignedByteType,
-                1
-              );
-
-              const material = (() => {
-                return new THREE.MeshBasicMaterial({
-                  map: texture,
-                  side: THREE.BackSide,
-                });
-                const uniforms = THREE.UniformsUtils.clone(SKYBOX_SHADER.uniforms);
-                uniforms.map.value = texture;
-                const material = new THREE.ShaderMaterial({
-                  uniforms,
-                  vertexShader: SKYBOX_SHADER.vertexShader,
-                  fragmentShader: SKYBOX_SHADER.fragmentShader,
-                  side: THREE.BackSide,
-                });
-                return material;
-              })();
-              materials.push(material);
-            }
-
-            return materials;
-          })();
-          const mesh = new THREE.Mesh(geometry, materials);
-          mesh.frustumCulled = false;
-          mesh.onBeforeRender = () => {
-            if (currentPortal === -1) {
-              // console.log('b1');
-              const gl = renderer.getContext();
-              renderer.state.buffers.stencil.setTest(true);
-              renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
-              renderer.state.buffers.stencil.setOp(gl.ZERO, gl.ZERO, gl.ZERO);
-            }
-          };
-          mesh.onAfterRender = () => {
-            if (currentPortal === -1) {
-              // console.log('b2');
-              // const gl = renderer.getContext();
-              renderer.state.buffers.stencil.setTest(false);
-            }
-          };
-          mesh.coords = coords;
-          return mesh;
-        })();
-        scene.add(skyboxMesh);
-        portalMeshes.push(skyboxMesh);
-        skyboxMeshes.push(skyboxMesh);
-      }
 
       object.updatePortalMeshes = () => {
         menuMesh.updateMatrixWorld();
