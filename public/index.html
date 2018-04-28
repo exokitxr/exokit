@@ -906,7 +906,12 @@
         } */
       };
       const _updateHmd = () => {
-        const line = new THREE.Line3(camera.position, lastHmdPosition);
+        const currentHmdPosition = camera.position.clone()
+          .add(
+            localVector.set(0, 0, -camera.near)
+              .applyQuaternion(camera.quaternion)
+          );
+        const line = new THREE.Line3(currentHmdPosition, lastHmdPosition);
 
         for (let i = 0; i < links.length; i++) {
           const planeSpec = menuMesh.gridMesh.planes[i];
@@ -942,7 +947,7 @@
           }
         }
 
-        lastHmdPosition.copy(camera.position);
+        lastHmdPosition.copy(currentHmdPosition);
       };
       const _updateControllers = () => {
         // update controls
