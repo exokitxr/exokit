@@ -7,4 +7,4 @@ echo "Exokit $VERSION install script"
 [ "$(whoami)" != 'root' ] && echo "This script must be run as root" && exit 1
 cd /tmp
 rm -Rf /usr/local/bin/exokit /usr/local/lib/exokit
-wget -O- https://github.com/webmixedreality/exokit/releases/download/$VERSION/exokit-linux-bin.tar.gz | tar -zxf - --directory /usr/local
+wget -O- https://get.webmr.io/linux-bin | tar -zxf - --directory /usr/local
