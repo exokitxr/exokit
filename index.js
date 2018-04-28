@@ -444,69 +444,71 @@ if (require.main === module) {
       process.env['DISPLAY'] = ':0.0';
     }
 
-    let rootPath = null;
-    let runtimePath = null;
-    const platform = os.platform();
-    if (platform === 'linux') {
-      rootPath = path.join(os.userInfo().homedir, '.config/openvr');
-      runtimePath = path.join(__dirname, 'node_modules', 'native-openvr-deps/bin/linux64');
-    } else if (platform === 'darwin') {
-      rootPath = path.join('/Users/', os.userInfo().username, '/Library/Application Support/OpenVR/.openvr');
-      runtimePath = path.join(__dirname, '/node_modules/native-openvr-deps/bin/osx64');
-    }
+    return Promise.all([
+      (() => {
+        let rootPath = null;
+        let runtimePath = null;
+        const platform = os.platform();
+        if (platform === 'linux') {
+          rootPath = path.join(os.userInfo().homedir, '.config/openvr');
+          runtimePath = path.join(__dirname, 'node_modules', 'native-openvr-deps/bin/linux64');
+        } else if (platform === 'darwin') {
+          rootPath = path.join('/Users/', os.userInfo().username, '/Library/Application Support/OpenVR/.openvr');
+          runtimePath = path.join(__dirname, '/node_modules/native-openvr-deps/bin/osx64');
+        }
 
-    if (rootPath !== null) {
-      const openvrPathsPath = path.join(rootPath, 'openvrpaths.vrpath');
+        if (rootPath !== null) {
+          const openvrPathsPath = path.join(rootPath, 'openvrpaths.vrpath');
 
-      return Promise.all([
-        new Promise((accept, reject) => {
-          fs.lstat(openvrPathsPath, (err, stats) => {
-            if (err) {
-              if (err.code === 'ENOENT') {
-                mkdirp(rootPath, err => {
-                  if (!err) {
-                    const jsonString = JSON.stringify({
-                      "config" : [ rootPath ],
-                      "external_drivers" : null,
-                      "jsonid" : "vrpathreg",
-                      "log" : [ rootPath ],
-                      "runtime" : [
-                         runtimePath,
-                       ],
-                      "version" : 1
-                    }, null, 2);
-                    fs.writeFile(openvrPathsPath, jsonString, err => {
-                      if (!err) {
-                        accept();
-                      } else {
-                        reject(err);
-                      }
-                    });
-                  } else {
-                    reject(err);
-                  }
-                });
+          return new Promise((accept, reject) => {
+            fs.lstat(openvrPathsPath, (err, stats) => {
+              if (err) {
+                if (err.code === 'ENOENT') {
+                  mkdirp(rootPath, err => {
+                    if (!err) {
+                      const jsonString = JSON.stringify({
+                        "config" : [ rootPath ],
+                        "external_drivers" : null,
+                        "jsonid" : "vrpathreg",
+                        "log" : [ rootPath ],
+                        "runtime" : [
+                           runtimePath,
+                         ],
+                        "version" : 1
+                      }, null, 2);
+                      fs.writeFile(openvrPathsPath, jsonString, err => {
+                        if (!err) {
+                          accept();
+                        } else {
+                          reject(err);
+                        }
+                      });
+                    } else {
+                      reject(err);
+                    }
+                  });
+                } else {
+                  reject(err);
+                }
               } else {
-                reject(err);
+                accept();
               }
-            } else {
-              accept();
-            }
+            });
           });
-        }),
-        new Promise((accept, reject) => {
-          mkdirp(dataPath, err => {
-            if (!err) {
-              accept();
-            } else {
-              reject(err);
-            }
-          });
-        }),
-      ]);
-    } else {
-      return Promise.resolve();
-    }
+        } else {
+          return Promise.resolve();
+        }
+      })(),
+      new Promise((accept, reject) => {
+        mkdirp(dataPath, err => {
+          if (!err) {
+            accept();
+          } else {
+            reject(err);
+          }
+        });
+      }),
+    ]);
   };
   const _start = () => {
     const _bindWindow = (window, newWindowCb) => {
