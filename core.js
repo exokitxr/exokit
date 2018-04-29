@@ -2719,6 +2719,7 @@ class HTMLIframeElement extends HTMLSrcableElement {
               dataPath: parentWindow[optionsSymbol].dataPath,
             }, parentWindow, parentWindow.top);
             const contentDocument = _parseDocument(htmlString, contentWindow[optionsSymbol], contentWindow);
+            contentDocument.hidden = this.hidden;
 
             contentWindow.document = contentDocument;
 
@@ -2732,8 +2733,19 @@ class HTMLIframeElement extends HTMLSrcableElement {
           .catch(err => {
             this._emit('error', err);
           });
+      } else if (name === 'hidden') {
+        if (this.contentDocument) {
+          this.contentDocument.hidden = value;
+        }
       }
     });
+  }
+  
+  get hidden() {
+    return this.getAttribute('hidden');
+  }
+  set hidden(hidden) {
+    this.setAttribute('hidden', hidden);
   }
 }
 const defaultCanvasSize = [1280, 1024];
