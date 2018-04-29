@@ -229,8 +229,8 @@ nativeVr.requestPresent = function(layers) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
               const width = halfWidth * 2;
-              const [msFbo, msTex, depthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 4, false);
-              const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 1, false);
+              const [msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 4, 0, 0);
+              const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 1, 0, 0);
 
               context.setDefaultFramebuffer(msFbo);
 
@@ -296,7 +296,7 @@ if (nativeMl) {
         if (initResult) {
           isMlPresenting = true;
 
-          const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 1, false);
+          const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 1, 0, 0);
           mlFbo = fbo;
           mlTex = tex;
 

@@ -714,8 +714,9 @@ NAN_METHOD(CreateRenderTarget) {
   int width = info[1]->Uint32Value();
   int height = info[2]->Uint32Value();
   int samples = info[3]->Uint32Value();
-  bool textured = info[4]->BooleanValue();
-  
+  GLuint sharedColorTex = info[4]->Uint32Value();
+  GLuint sharedDepthStencilTex = info[5]->Uint32Value();
+
   if (gl->activeTexture != WebGLRenderingContext::SystemTextureUnit) {
     glActiveTexture(WebGLRenderingContext::SystemTextureUnit);
   }
@@ -725,7 +726,7 @@ NAN_METHOD(CreateRenderTarget) {
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
   GLuint depthStencilTex = 0;
-  if (!textured) {
+  if (!sharedDepthStencilTex) {
     GLuint renderBuffer;
     glGenRenderbuffers(1, &renderBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
@@ -736,36 +737,39 @@ NAN_METHOD(CreateRenderTarget) {
     }
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,	renderBuffer);
   } else {
-    if (samples > 1) {
-      glGenTextures(1, &depthStencilTex);
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, depthStencilTex);
-      glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH_STENCIL, width, height, true);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depthStencilTex, 0);
-    } else {
-      glGenTextures(1, &depthStencilTex);
-      glBindTexture(GL_TEXTURE_2D, depthStencilTex);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
-    }
+    depthStencilTex = sharedDepthStencilTex;
+
+    glBindTexture(GL_TEXTURE_2D, depthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
   }
 
-  GLuint tex = 0;
-  glGenTextures(1, &tex);
-  if (samples > 1) {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex);
-    // glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
-    // glFramebufferTexture2DMultisampleEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0, samples);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex, 0);
+  GLuint colorTex = 0;
+  if (!sharedColorTex) {
+    glGenTextures(1, &colorTex);
+    if (samples > 1) {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, colorTex);
+      // glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
+      // glFramebufferTexture2DMultisampleEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0, samples);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, colorTex, 0);
+    } else {
+      glBindTexture(GL_TEXTURE_2D, colorTex);
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+    }
   } else {
-    glBindTexture(GL_TEXTURE_2D, tex);
+    colorTex = sharedColorTex;
+
+    glBindTexture(GL_TEXTURE_2D, colorTex);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
   }
 
   Local<Value> result;
@@ -773,7 +777,7 @@ NAN_METHOD(CreateRenderTarget) {
   if (framebufferStatus == GL_FRAMEBUFFER_COMPLETE) {
     Local<Array> array = Array::New(Isolate::GetCurrent(), 3);
     array->Set(0, JS_NUM(fbo));
-    array->Set(1, JS_NUM(tex));
+    array->Set(1, JS_NUM(colorTex));
     array->Set(2, JS_NUM(depthStencilTex));
     result = array;
   } else {
