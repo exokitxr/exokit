@@ -714,6 +714,7 @@ NAN_METHOD(CreateRenderTarget) {
   int width = info[1]->Uint32Value();
   int height = info[2]->Uint32Value();
   int samples = info[3]->Uint32Value();
+  bool textured = info[4]->BooleanValue();
   
   if (gl->activeTexture != WebGLRenderingContext::SystemTextureUnit) {
     glActiveTexture(WebGLRenderingContext::SystemTextureUnit);
@@ -723,17 +724,34 @@ NAN_METHOD(CreateRenderTarget) {
   glGenFramebuffers(1, &fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-  GLuint renderBuffer;
-	glGenRenderbuffers(1, &renderBuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
-  if (samples > 1) {
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_STENCIL, width, height);
+  GLuint depthStencilTex = 0;
+  if (!textured) {
+    GLuint renderBuffer;
+    glGenRenderbuffers(1, &renderBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
+    if (samples > 1) {
+      glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_STENCIL, width, height);
+    } else {
+      glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, width, height);
+    }
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,	renderBuffer);
   } else {
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, width, height);
+    if (samples > 1) {
+      glGenTextures(1, &depthStencilTex);
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, depthStencilTex);
+      glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH_STENCIL, width, height, true);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depthStencilTex, 0);
+    } else {
+      glGenTextures(1, &depthStencilTex);
+      glBindTexture(GL_TEXTURE_2D, depthStencilTex);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+    }
   }
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,	renderBuffer);
 
-  GLuint tex;
+  GLuint tex = 0;
   glGenTextures(1, &tex);
   if (samples > 1) {
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex);
@@ -753,9 +771,10 @@ NAN_METHOD(CreateRenderTarget) {
   Local<Value> result;
   GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (framebufferStatus == GL_FRAMEBUFFER_COMPLETE) {
-    Local<Array> array = Array::New(Isolate::GetCurrent(), 2);
+    Local<Array> array = Array::New(Isolate::GetCurrent(), 3);
     array->Set(0, JS_NUM(fbo));
     array->Set(1, JS_NUM(tex));
+    array->Set(2, JS_NUM(depthStencilTex));
     result = array;
   } else {
     result = Null(Isolate::GetCurrent());
