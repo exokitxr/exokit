@@ -89,12 +89,24 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     gl[canvasSymbol] = canvas;
 
-    const window = canvas.ownerDocument.defaultView;
+    const document = canvas.ownerDocument;
+    const window = document.defaultView;
     const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
     window.devicePixelRatio = framebufferWidth / canvasWidth;
 
     const title = `Exokit ${version}`
     nativeWindow.setWindowTitle(windowHandle, title);
+
+    if (document.hidden) {
+      const [framebuffer, colorTexture, depthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, 1, sharedColorTexture, sharedDepthStencilTexture);
+      gl.setDefaultFramebuffer(framebuffer);
+
+      document._emit('framebuffer', {
+        framebuffer: sharedFramebuffer,
+        colorTexture,
+        depthStencilTexture,
+      });
+    }
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
