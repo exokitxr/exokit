@@ -974,8 +974,7 @@
       };
       const _updateHmd = () => {
         if (menuMesh.visible) {
-          const currentHmdPosition = camera.position.clone()
-            // .add(localVector.set(0, 0, -0.3).applyQuaternion(camera.quaternion));
+          const currentHmdPosition = camera.position.clone();
           const line = new THREE.Line3(lastHmdPosition, currentHmdPosition);
           const plane = new THREE.Plane();
 
