@@ -329,7 +329,7 @@
       },
     };
 
-    const sphere = new THREE.Mesh(
+    /* const sphere = new THREE.Mesh(
       new THREE.SphereBufferGeometry(0.3, 7, 5),
       new THREE.MeshPhongMaterial({
         color: new THREE.Color(0x4CAF50),
@@ -341,7 +341,7 @@
     const startY = 1.2;
     sphere.position.y = startY;
     sphere.position.z = 2;
-    scene.add(sphere);
+    scene.add(sphere); */
 
     function concatBufferGeometry(geometries) {
       geometries = geometries.map(geometry => unindexBufferGeometry(geometry));
@@ -915,18 +915,10 @@
       const timePassed = Math.max(currentTime - lastTime, 1);
       lastTime = currentTime;
 
-      const _animateSphere = () => {
-        /* // calculate new position
-        const newPosition = position.clone().add(velocity.clone().divideScalar(timePassed));
-        const rayBack = newPosition.clone().multiplyScalar((-1 / timePassed) * 0.25);
-        velocity.add(rayBack).multiplyScalar(0.98);
-        position.copy(newPosition); */
-
-        // update sphere
-        // sphere.position.copy(newPosition);
+      /* const _animateSphere = () => {
         sphere.position.y = startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
         sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
-      };
+      }; */
       const _animateKeyboard = () => {
         if (keyboardMeshAnimation) {
           const now = Date.now();
@@ -1334,7 +1326,7 @@
       _updateHmd();
       _updateControllers();
       _updateIntersections();
-      _animateSphere();
+      // _animateSphere();
       _animateKeyboard();
       _animateControllers();
 
