@@ -455,6 +455,7 @@
 
     const menuMesh = (() => {
       const object = new THREE.Object3D();
+      object.position.copy(camera.position).add(new THREE.Vector3(0, 0.5, -2));
 
       const urlMesh = (() => {
         const canvas = document.createElement('canvas');
@@ -692,7 +693,6 @@
 
       return object;
     })();
-    menuMesh.position.set(0, 1, -1);
     scene.add(menuMesh);
 
     fetch(registryUrl)
