@@ -74,7 +74,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const windowHandle = (() => {
     try {
       const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
-      return nativeWindow.create(canvasWidth, canvasHeight, visible);
+      const {hidden} = canvas.ownerDocument;
+      return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden);
     } catch (err) {
       console.warn(err.message);
     }
@@ -93,10 +94,14 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
-        if (canvas.ownerDocument.documentElement.contains(canvas)) {
-          nativeWindow.show(windowHandle);
-        } else {
-          nativeWindow.hide(windowHandle);
+        const {hidden} = canvas.ownerDocument;
+        if (!hidden) {
+          const visible = canvas.ownerDocument.documentElement.contains(canvas);
+          if (visible && !hidden) {
+            nativeWindow.show(windowHandle);
+          } else {
+            nativeWindow.hide(windowHandle);
+          }
         }
       });
     };
