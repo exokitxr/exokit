@@ -1003,6 +1003,7 @@ NAN_METHOD(ExtensionSupported) {
 }
 
 bool glfwInitialized = false;
+GLFWwindow *firstWindow = nullptr;
 NAN_METHOD(Create) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
@@ -1044,10 +1045,14 @@ NAN_METHOD(Create) {
 
   glfwWindowHint(GLFW_VISIBLE, visible);
 
-  GLFWwindow *windowHandle = glfwCreateWindow(width, height, "Exokit", nullptr, nullptr);
+  GLFWwindow *windowHandle = glfwCreateWindow(width, height, "Exokit", nullptr, firstWindow);
 
   if (windowHandle) {
     SetCurrentWindowContext(windowHandle);
+    
+    if (!firstWindow) {
+      firstWindow = windowHandle;
+    }
 
     GLenum err = glewInit();
     if (!err) {
