@@ -104,7 +104,7 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xFFFFFF);
 
-    const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 10000);
+    const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 10 * 1024);
     camera.position.set(0, 1, 1);
     camera.rotation.order = 'YXZ';
 
