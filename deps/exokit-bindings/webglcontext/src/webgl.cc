@@ -54,6 +54,20 @@ NAN_METHOD(glCallWrap) {
     F(info);
   }
 }
+template<NAN_METHOD(F)>
+NAN_METHOD(glSwitchCallWrap) {
+  Nan::HandleScope scope;
+
+  Local<Object> glObj = info.This();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  if (gl->live) {
+    if (gl->windowHandle) {
+      glfw::SetCurrentWindowContext(gl->windowHandle);
+    }
+
+    F(info);
+  }
+}
 
 Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
@@ -218,7 +232,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
 
   Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
 
-  Nan::SetMethod(proto, "setDefaultFramebuffer", SetDefaultFramebuffer);
+  Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>);
 
   // OpenGL ES 2.1 constants
 
