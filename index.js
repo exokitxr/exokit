@@ -346,6 +346,12 @@ nativeWindow.setEventHandler((type, data) => {
 
   if (context) {
     switch (type) {
+      case 'focus': {
+        const {focused} = data;
+        if (!focused && window.top.document.pointerLockElement) {
+          window.top.document.exitPointerLock();
+        }
+      }
       case 'framebufferResize': {
         const {width, height} = data;
         innerWidth = width;
