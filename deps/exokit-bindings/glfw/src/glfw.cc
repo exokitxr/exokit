@@ -1044,7 +1044,7 @@ NAN_METHOD(Create) {
 
   glfwWindowHint(GLFW_VISIBLE, visible);
 
-  GLFWwindow *windowHandle = glfwCreateWindow(width, height, "ExoKit", nullptr, nullptr);
+  GLFWwindow *windowHandle = glfwCreateWindow(width, height, "Exokit", nullptr, nullptr);
 
   if (windowHandle) {
     SetCurrentWindowContext(windowHandle);
