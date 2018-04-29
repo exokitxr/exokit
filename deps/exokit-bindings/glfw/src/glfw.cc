@@ -208,7 +208,7 @@ void APIENTRY windowFocusCB(GLFWwindow *window, int focused) {
   evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
-    JS_STR("focused"), // event name
+    JS_STR("focus"), // event name
     evt,
   };
   CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
