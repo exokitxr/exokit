@@ -2729,6 +2729,9 @@ class HTMLIframeElement extends HTMLSrcableElement {
             contentDocument.once('readystatechange', () => {
               this.dispatchEvent(new Event('load', {target: this}));
             });
+            contentDocument.on('framebuffer', framebuffer => {
+              this._emit('framebuffer', framebuffer);
+            });
           })
           .catch(err => {
             this._emit('error', err);
