@@ -343,6 +343,21 @@
     sphere.position.z = 2;
     scene.add(sphere); */
 
+    const framebufferMesh = (() => {
+      const texture = new THREE.Texture();
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(1, 1),
+        new THREE.MeshBasicMaterial({
+          map: texture,
+        })
+      );
+      mesh.onBeforeRender = stencilPreambles.onBeforeRender;
+      mesh.onAfterRender = stencilPreambles.onAfterRender;
+      mesh.position.y = 1;
+      return mesh;
+    })();
+    scene.add(framebufferMesh);
+
     function concatBufferGeometry(geometries) {
       geometries = geometries.map(geometry => unindexBufferGeometry(geometry));
 
@@ -1393,6 +1408,14 @@
       // window.location.href = u;
       const iframe = document.createElement('iframe');
       iframe.src = u;
+      iframe.hidden = true;
+      iframe.addEventListener('framebuffer', framebuffer => {
+        const texture = framebufferMesh.material.map;
+
+        const properties = renderer.properties.get(texture);
+        properties.__webglTexture = framebuffer.colorTexture;
+        properties.__webglInit = true;
+      });
       document.body.appendChild(iframe);
     };
 
