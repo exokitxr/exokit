@@ -1390,7 +1390,10 @@
       }
     };
     const _goUrl = u => {
-      window.location.href = u;
+      // window.location.href = u;
+      const iframe = document.createElement('iframe');
+      iframe.src = u;
+      document.body.appendChild(iframe);
     };
 
     let displays = [];
