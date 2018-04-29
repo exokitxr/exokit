@@ -9,26 +9,32 @@ window.ScreenQuad = (() => {
 		"varying vec2 vUv;",
 		"void main(){",
 			"vUv = uv;",
-			"vec2 transformed = position.xy * uSize.xy;",
-			// "transformed += vec2( -1. , 1. ) - vec2( - uSize.x , uSize.y );",
-			"transformed += uSide - uSide * vec2( uSize.x , uSize.y );",
-			"transformed += uSide * vec2( - uSize.w , - uSize.z ) * 2.;",
-			"gl_Position = vec4( transformed , 1. , 1. );",
+			"gl_Position = vec4( position.xy , 1. , 1. );",
 		"}",
 
 	].join("\n");
 
 	var defaultFragmentShader = [
 		
-		"varying vec2 vUv;",
-		"uniform sampler2D uTexture;",
-		"void main(){",
-			"#ifndef debug",
-			"gl_FragColor = texture2D( uTexture , vUv );",
-			"#else",
-			"gl_FragColor = vec4( vUv , 0. , 1. );",
-			'#endif',
-		"}"
+		`varying vec2 vUv;
+    uniform float numTextures;
+		uniform sampler2D uTexture1;
+		uniform sampler2D uTexture2;
+    uniform sampler2D uDepth1;
+		uniform sampler2D uDepth2;
+		void main() {
+      if (numTextures <= 1.0) {
+        gl_FragColor = texture2D(uTexture1, vUv);
+      } else {
+        float depth1 = texture2D(uDepth1, vUv).r;
+        float depth2 = texture2D(uDepth2, vUv).r;
+        if (depth2 < depth1) {
+          gl_FragColor = texture2D(uTexture2, vUv);
+        } else {
+          gl_FragColor = texture2D(uTexture1, vUv);
+        }
+      }
+		}`
 
 	].join("\n");
 
@@ -37,20 +43,34 @@ window.ScreenQuad = (() => {
 
 		params = params || {};
 
-		var debug = undefined !== params.debug ? params.debug : false;
-
 		THREE.Mesh.apply( this, [ defaultQuad , new THREE.ShaderMaterial({
 
 			uniforms:{
-				uTexture:{
+        numTextures: {
+          type: 'f',
+					value: undefined !== params.numTextures ? params.numTextures : 1
+        },
+				uTexture1: {
 					type:'t',
-					value: undefined !== params.texture ? params.texture : null
+					value: undefined !== params.texture1 ? params.texture1 : null
 				},
-				uSize:{
+        uTexture2: {
+					type:'t',
+					value: undefined !== params.texture2 ? params.texture2 : null
+				},
+        uDepth1: {
+					type:'t',
+					value: undefined !== params.depth1 ? params.depth1 : null
+				},
+        uDepth2: {
+					type:'t',
+					value: undefined !== params.depth2 ? params.depth2 : null
+				},
+				uSize: {
 					type:'v4',
 					value:new THREE.Vector4(1,1,0,0)
 				},
-				uSide:{
+				uSide: {
 					type:'v2',
 					value: new THREE.Vector2(1,1)
 				}
@@ -62,8 +82,6 @@ window.ScreenQuad = (() => {
 
 			depthWrite: false,
 
-			defines: { debug: debug }
-
 		})]);
 
 		this.frustumCulled = false;
@@ -71,8 +89,6 @@ window.ScreenQuad = (() => {
 		this.renderOrder = -1;
 
 		//end mesh setup
-
-		this._debug = debug;
 
 		this._pixels = [false,false,false,false,false,false]; //w h t l b r
 

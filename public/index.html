@@ -13,6 +13,7 @@
   <canvas id=canvas></canvas>
   <script src="js/three.js"></script>
   <script src="js/OBJLoader.js"></script>
+  <script src="js/ScreenQuad.js"></script>
   <script src="js/keycode.js"></script>
   <script src="js/svg-boundings.js"></script>
   <script>
@@ -100,6 +101,9 @@
       canvas,
     });
     renderer.sortObjects = false;
+
+    const renderTarget = new THREE.WebGLRenderTarget(canvas.width, canvas.height);
+    renderTarget.depthTexture = new THREE.DepthTexture(canvas.width, canvas.height, THREE.UnsignedInt248Type, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter, 1, THREE.DepthStencilFormat);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xFFFFFF);
@@ -342,21 +346,6 @@
     sphere.position.y = startY;
     sphere.position.z = 2;
     scene.add(sphere); */
-
-    const framebufferMesh = (() => {
-      const texture = new THREE.Texture();
-      const mesh = new THREE.Mesh(
-        new THREE.PlaneBufferGeometry(1, 1),
-        new THREE.MeshBasicMaterial({
-          map: texture,
-        })
-      );
-      mesh.onBeforeRender = stencilPreambles.onBeforeRender;
-      mesh.onAfterRender = stencilPreambles.onAfterRender;
-      mesh.position.y = 1;
-      return mesh;
-    })();
-    scene.add(framebufferMesh);
 
     function concatBufferGeometry(geometries) {
       geometries = geometries.map(geometry => unindexBufferGeometry(geometry));
@@ -921,6 +910,21 @@
     };
     scene.add(finishMesh);
 
+    const compositeScene = new THREE.Scene();
+
+    const screenQuad = new ScreenQuad({
+      width: 1,
+      height: 1,
+      top: 0,
+      left: 0,
+      bottom: 0,
+      right: 0,
+      texture1: renderTarget.texture,
+      depth1: renderTarget.depthTexture,
+    });
+    screenQuad.setScreenSize(renderer.getSize().width, renderer.getSize().height);
+    compositeScene.add(screenQuad);
+
     const position = new THREE.Vector3();
     const velocity = new THREE.Vector3();
     let lastTime = Date.now();
@@ -1344,7 +1348,8 @@
       _animateKeyboard();
       _animateControllers();
 
-      renderer.render(scene, camera);
+      renderer.render(scene, camera, renderTarget);
+      renderer.render(compositeScene, camera);
 
       menuMesh.updatePortalMeshes();
 
@@ -1410,11 +1415,19 @@
       iframe.src = u;
       iframe.hidden = true;
       iframe.addEventListener('framebuffer', framebuffer => {
-        const texture = framebufferMesh.material.map;
+        screenQuad.material.uniforms.numTextures.value = 2;
 
-        const properties = renderer.properties.get(texture);
-        properties.__webglTexture = framebuffer.colorTexture;
-        properties.__webglInit = true;
+        const colorTexture = new THREE.Texture();
+        const colorProperties = renderer.properties.get(colorTexture);
+        colorProperties.__webglTexture = framebuffer.colorTexture;
+        colorProperties.__webglInit = true;
+        screenQuad.material.uniforms.uTexture2.value = colorTexture;
+
+        const depthTexture = new THREE.Texture();
+        const depthProperties = renderer.properties.get(depthTexture);
+        depthProperties.__webglTexture = framebuffer.depthStencilTexture;
+        depthProperties.__webglInit = true;
+        screenQuad.material.uniforms.uDepth2.value = depthTexture;
       });
       document.body.appendChild(iframe);
     };
