@@ -2711,7 +2711,11 @@ class HTMLIframeElement extends HTMLSrcableElement {
           .then(htmlString => {
             const parentWindow = this.ownerDocument.defaultView;
 
-            const contentWindow = _makeWindow(parentWindow[optionsSymbol], parentWindow, parentWindow.top);
+            const contentWindow = _makeWindow({
+              url,
+              baseUrl: url,
+              dataPath: parentWindow[optionsSymbol].dataPath,
+            }, parentWindow, parentWindow.top);
             const contentDocument = _parseDocument(htmlString, contentWindow[optionsSymbol], contentWindow);
 
             contentWindow.document = contentDocument;
