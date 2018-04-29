@@ -2249,6 +2249,8 @@ class HTMLLoadableElement extends HTMLElement {
 class Document extends HTMLLoadableElement {
   constructor() {
     super('DOCUMENT');
+    
+    this.hidden = false;
   }
 
   get nodeType() {
@@ -3824,7 +3826,6 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
       document.dispatchEvent(new Event('paste'));
     }
   };
-  document.hidden = false;
   document[pointerLockElementSymbol] = null;
 
   if (window.top === window) {
