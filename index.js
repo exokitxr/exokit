@@ -71,16 +71,20 @@ core.setNativeBindingsModule(nativeBindingsModulePath);
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
-  const windowHandle = (() => {
+  const windowSpec = (() => {
     try {
       const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
       const {hidden} = canvas.ownerDocument;
-      return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden);
+      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+      const firstGl = contexts.length > 0 ? contexts[0] : null;
+      return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden, hidden, firstWindowHandle, firstGl);
     } catch (err) {
       console.warn(err.message);
     }
   })();
-  if (windowHandle) {
+  if (windowSpec) {
+    const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture] = windowSpec;
+
     gl.setWindowHandle(windowHandle);
 
     gl[canvasSymbol] = canvas;

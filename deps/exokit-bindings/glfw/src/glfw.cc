@@ -1026,7 +1026,6 @@ NAN_METHOD(ExtensionSupported) {
 }
 
 bool glfwInitialized = false;
-GLFWwindow *firstWindow = nullptr;
 NAN_METHOD(Create) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
@@ -1064,18 +1063,27 @@ NAN_METHOD(Create) {
 
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
-  bool visible = info[2]->BooleanValue();
+  bool initialVisible = info[2]->BooleanValue();
+  bool hidden = info[3]->BooleanValue();
+  GLFWwindow *sharedWindow = info[4]->IsArray() ? (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
+  WebGLRenderingContext *gl = info[5]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5])) : nullptr;
 
-  glfwWindowHint(GLFW_VISIBLE, visible);
+  glfwWindowHint(GLFW_VISIBLE, initialVisible);
 
-  GLFWwindow *windowHandle = glfwCreateWindow(width, height, "Exokit", nullptr, firstWindow);
+  GLuint framebuffer = 0;
+  GLuint framebufferTextures[] = {0, 0};
+  bool shared = hidden && sharedWindow != nullptr && gl != nullptr;
+  if (shared) {
+    SetCurrentWindowContext(sharedWindow);
+
+    glGenFramebuffers(1, &framebuffer);
+    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+  }
+
+  GLFWwindow *windowHandle = glfwCreateWindow(width, height, "Exokit", nullptr, shared ? sharedWindow : nullptr);
 
   if (windowHandle) {
     SetCurrentWindowContext(windowHandle);
-    
-    if (!firstWindow) {
-      firstWindow = windowHandle;
-    }
 
     GLenum err = glewInit();
     if (!err) {
@@ -1119,7 +1127,12 @@ NAN_METHOD(Create) {
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
 
-      info.GetReturnValue().Set(pointerToArray(windowHandle));
+      Local<Array> result = Nan::New<Array>(3);
+      result->Set(0, pointerToArray(windowHandle));
+      result->Set(1, JS_NUM(framebuffer));
+      result->Set(2, JS_NUM(framebufferTextures[0]));
+      result->Set(3, JS_NUM(framebufferTextures[1]));
+      info.GetReturnValue().Set(result);
     } else {
       /* Problem: glewInit failed, something is seriously wrong. */
       std::string msg = "Can't init GLEW (glew error ";
