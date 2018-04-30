@@ -106,8 +106,24 @@
     renderer.sortObjects = false;
     renderer.vr.enabled = true;
 
-    const renderTarget = new THREE.WebGLRenderTarget(canvas.width, canvas.height);
-    renderTarget.depthTexture = new THREE.DepthTexture(canvas.width, canvas.height, THREE.UnsignedInt248Type, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter, 1, THREE.DepthStencilFormat);
+    const _makeRenderTarget = (width, height) => {
+      const renderTarget = new THREE.WebGLRenderTarget(width, height);
+      renderTarget.depthTexture = new THREE.DepthTexture(
+        width,
+        height,
+        THREE.UnsignedInt248Type,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        1,
+        THREE.DepthStencilFormat
+      );
+      return renderTarget;
+    };
+
+    let renderTarget = _makeRenderTarget(canvas.width, canvas.height);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xFFFFFF);
@@ -1349,6 +1365,16 @@
             display.requestPresent([{source: canvas}])
               .then(() => {
                 renderer.vr.setDevice(display);
+
+                const eyeParameters = display.getEyeParameters('left');
+                const width = eyeParameters.renderWidth * 2;
+                const height = eyeParameters.renderHeight;
+
+                // renderTarget.dispose(); // XXX
+                renderTarget = _makeRenderTarget(width, height);
+
+                screenQuad.material.uniforms.uTexture1.value = renderTarget.texture;
+                screenQuad.material.uniforms.uDepth1.value = renderTarget.depthTexture;
               });
             break;
           }
