@@ -115,7 +115,6 @@
     const portalMeshes = [];
     const innerMeshes = [];
     const backMeshes = [];
-    const skyboxMeshes = [];
 
     const ambientLight = new THREE.AmbientLight(0x808080);
     scene.add(ambientLight);
@@ -188,6 +187,29 @@
       controllerMeshes[1].add(object.clone());
     });
 
+    const portalTexture = (() => {
+      const img = new Image();
+      img.src = `img/skybox/cube-5.png`;
+      img.onload = () => {
+        texture.needsUpdate = true;
+      };
+      img.error = err => {
+        console.warn(err.stack);
+      };
+      const texture = new THREE.Texture(
+        img,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.LinearFilter,
+        THREE.LinearFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      return texture;
+    })();
+
     const portalGeometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
     const portalBackGeometry = portalGeometry.clone()
       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
@@ -199,23 +221,12 @@
 
       const innerMesh = (() => {
         const geometry = portalGeometry;
+        const texture = new THREE.Texture()
         const material = new THREE.MeshBasicMaterial({
-          color: 0xFFFFFF,
-          colorWrite: false,
-          depthWrite: false,
+          map: portalTexture,
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.frustumCulled = false;
-        mesh.onBeforeRender = () => {
-          const gl = renderer.getContext();
-          renderer.state.buffers.stencil.setTest(true);
-          renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
-          renderer.state.buffers.stencil.setOp(gl.INCR, gl.INCR, gl.INCR);
-        };
-        mesh.onAfterRender = () => {
-          // const gl = renderer.getContext();
-          // renderer.state.buffers.stencil.setTest(false);
-        };
         mesh.coords = coords;
         return mesh;
       })();
@@ -236,116 +247,7 @@
       scene.add(backMesh);
       portalMeshes.push(backMesh);
       backMeshes.push(backMesh);
-
-      const skyboxMesh = (() => {
-        const geometry = skyboxGeometry;
-        const materials = (() => {
-          const materials = [];
-
-          for (let j = 0; j < 6; j++) {
-            const img = new Image();
-            img.src = `img/skybox/cube-${j}.png`;
-            img.onload = () => {
-              texture.needsUpdate = true;
-            };
-            img.error = err => {
-              console.warn(err.stack);
-            };
-
-            const texture = new THREE.Texture(
-              img,
-              THREE.UVMapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.LinearFilter,
-              THREE.LinearFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              1
-            );
-
-            const material = (() => {
-              return new THREE.MeshBasicMaterial({
-                map: texture,
-                side: THREE.BackSide,
-              });
-              const uniforms = THREE.UniformsUtils.clone(SKYBOX_SHADER.uniforms);
-              uniforms.map.value = texture;
-              const material = new THREE.ShaderMaterial({
-                uniforms,
-                vertexShader: SKYBOX_SHADER.vertexShader,
-                fragmentShader: SKYBOX_SHADER.fragmentShader,
-                side: THREE.BackSide,
-              });
-              return material;
-            })();
-            materials.push(material);
-          }
-
-          return materials;
-        })();
-        const mesh = new THREE.Mesh(geometry, materials);
-        mesh.frustumCulled = false;
-        mesh.onBeforeRender = () => {
-          if (currentPortal === -1) {
-            const gl = renderer.getContext();
-            renderer.state.buffers.stencil.setTest(true);
-            renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
-            renderer.state.buffers.stencil.setOp(gl.ZERO, gl.ZERO, gl.ZERO);
-          } else {
-            const gl = renderer.getContext();
-            renderer.state.buffers.stencil.setTest(true);
-            renderer.state.buffers.stencil.setFunc(gl.ALWAYS, 0, 0xFF);
-            renderer.state.buffers.stencil.setOp(gl.KEEP, gl.KEEP, gl.KEEP);
-          }
-        };
-        mesh.onAfterRender = () => {
-          if (currentPortal === -1) {
-            // const gl = renderer.getContext();
-            renderer.state.buffers.stencil.setTest(false);
-          } else {
-            // const gl = renderer.getContext();
-            // renderer.state.buffers.stencil.setFunc(gl.NEVER, 0, 0xFF);
-            // renderer.state.buffers.stencil.setOp(gl.ZERO, gl.ZERO, gl.ZERO);
-          }
-        };
-        mesh.coords = coords;
-        return mesh;
-      })();
-      scene.add(skyboxMesh);
-      portalMeshes.push(skyboxMesh);
-      skyboxMeshes.push(skyboxMesh);
     }
-
-    const stencilPreambles = {
-      onBeforeRender() {
-        if (currentPortal !== -1) {
-          const gl = renderer.getContext();
-          renderer.state.buffers.stencil.setTest(true);
-          renderer.state.buffers.stencil.setFunc(gl.NOTEQUAL, 0, 0xFF);
-        }
-      },
-      onAfterRender() {
-        if (currentPortal !== -1) {
-          // const gl = renderer.getContext();
-          renderer.state.buffers.stencil.setTest(false);
-        }
-      },
-    };
-
-    /* const sphere = new THREE.Mesh(
-      new THREE.SphereBufferGeometry(0.3, 7, 5),
-      new THREE.MeshPhongMaterial({
-        color: new THREE.Color(0x4CAF50),
-        flatShading: true,
-      })
-    );
-    sphere.onBeforeRender = stencilPreambles.onBeforeRender;
-    sphere.onAfterRender = stencilPreambles.onAfterRender;
-    const startY = 1.2;
-    sphere.position.y = startY;
-    sphere.position.z = 2;
-    scene.add(sphere); */
 
     function concatBufferGeometry(geometries) {
       geometries = geometries.map(geometry => unindexBufferGeometry(geometry));
@@ -486,8 +388,6 @@
           side: THREE.DoubleSide,
         });
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.onBeforeRender = stencilPreambles.onBeforeRender;
-        mesh.onAfterRender = stencilPreambles.onAfterRender;
 
         const _updateText = () => {
           ctx.clearRect(0, 0, urlBarWidth, urlBarHeight);
@@ -574,8 +474,6 @@
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.y = -(urlBarWorldHeight + gridWorldHeight/2);
-        mesh.onBeforeRender = stencilPreambles.onBeforeRender;
-        mesh.onAfterRender = stencilPreambles.onAfterRender;
 
         const _updateGrid = () => {
           ctx.clearRect(0, 0, gridWidth, gridHeight);
@@ -755,8 +653,6 @@
           new THREE.Vector3(0, 0, 1),
           new THREE.Vector3(0, 1, 1).normalize()
         );
-        mesh.onBeforeRender = stencilPreambles.onBeforeRender;
-        mesh.onAfterRender = stencilPreambles.onAfterRender;
         return mesh;
       })();
       object.add(planeMesh);
@@ -816,8 +712,6 @@
           transparent: true,
         });
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.onBeforeRender = stencilPreambles.onBeforeRender;
-        mesh.onAfterRender = stencilPreambles.onAfterRender;
         return mesh;
       })();
       keyboardMesh.planeMesh.add(keyMesh);
@@ -894,8 +788,6 @@
       side: THREE.BackSide,
     }));
     blankSkyboxMesh.visible = false;
-    blankSkyboxMesh.onBeforeRender = stencilPreambles.onBeforeRender;
-    blankSkyboxMesh.onAfterRender = stencilPreambles.onAfterRender;
     blankSkyboxMesh.coords = {
       x: 0,
       y: 0,
@@ -928,16 +820,11 @@
     const position = new THREE.Vector3();
     const velocity = new THREE.Vector3();
     let lastTime = Date.now();
-    const lastHmdPosition = camera.position.clone();
     function animate() {
       const currentTime = Date.now();
       const timePassed = Math.max(currentTime - lastTime, 1);
       lastTime = currentTime;
 
-      /* const _animateSphere = () => {
-        sphere.position.y = startY + Math.sin((currentTime * 0.00125) % (Math.PI * 2)) * 0.3;
-        sphere.rotation.y = (currentTime * 0.002) % (Math.PI * 2);
-      }; */
       const _animateKeyboard = () => {
         if (keyboardMeshAnimation) {
           const now = Date.now();
@@ -990,64 +877,6 @@
               )
           );
         } */
-      };
-      const _updateHmd = () => {
-        if (menuMesh.visible) {
-          const currentHmdPosition = camera.position.clone();
-          const line = new THREE.Line3(lastHmdPosition, currentHmdPosition);
-          const plane = new THREE.Plane();
-
-          for (let i = 0; i < links.length; i++) {
-            const planeSpec = menuMesh.gridMesh.planes[i];
-            plane.copy(planeSpec.plane);
-            const {leftLine, topLine} = planeSpec;
-            const intersectionPoint = plane.intersectLine(line, localVector);
-
-            if (intersectionPoint) {
-              const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
-
-              const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
-
-              const xFactor = topIntersectionPoint.distanceTo(topLine.start) / gridWorldSize;
-              const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / gridWorldSize;
-              const distance = line.start.distanceTo(intersectionPoint);
-
-              if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
-                if (currentPortal === -1) {
-                  currentPortal = i;
-
-                  for (let j = 0; j < innerMeshes.length; j++) {
-                    const visible = i === j;
-                    innerMeshes[j].visible = visible;
-                    backMeshes[j].visible = visible;
-                    skyboxMeshes[j].visible = visible;
-                  }
-                  requestAnimationFrame(() => {
-                    menuMesh.urlMesh.visible = false;
-                    menuMesh.gridMesh.visible = false;
-                    blankSkyboxMesh.visible = true;
-                  });
-                  break;
-                } else if (i === currentPortal) {
-                  currentPortal = -1;
-                  for (let j = 0; j < innerMeshes.length; j++) {
-                    innerMeshes[j].visible = true;
-                    backMeshes[j].visible = true;
-                    skyboxMeshes[j].visible = true;
-                  }
-                  requestAnimationFrame(() => {
-                    menuMesh.urlMesh.visible = true;
-                    menuMesh.gridMesh.visible = true;
-                    blankSkyboxMesh.visible = false;
-                  });
-                  break;
-                }
-              }
-            }
-          }
-
-          lastHmdPosition.copy(currentHmdPosition);
-        }
       };
       const _updateControllers = () => {
         // update controls
@@ -1341,10 +1170,8 @@
           }
         }
       };
-      _updateHmd();
       _updateControllers();
       _updateIntersections();
-      // _animateSphere();
       _animateKeyboard();
       _animateControllers();
 
