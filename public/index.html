@@ -11,6 +11,7 @@
 </head>
 <body>
   <canvas id=canvas></canvas>
+  <div id=container></div>
   <script src="js/three.js"></script>
   <script src="js/OBJLoader.js"></script>
   <script src="js/ScreenQuad.js"></script>
@@ -94,6 +95,8 @@
     const localEuler = new THREE.Euler();
     localEuler.order = 'YXZ';
 
+    const container = document.getElementById('container');
+
     const canvas = document.getElementById('canvas');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -101,6 +104,7 @@
       canvas,
     });
     renderer.sortObjects = false;
+    renderer.vr.enabled = true;
 
     const renderTarget = new THREE.WebGLRenderTarget(canvas.width, canvas.height);
     renderTarget.depthTexture = new THREE.DepthTexture(canvas.width, canvas.height, THREE.UnsignedInt248Type, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter, 1, THREE.DepthStencilFormat);
@@ -1170,15 +1174,30 @@
                 menuMesh.urlMesh.updateText();
               }
             } else if (intersectionLinkIndex !== -1) {
-              _goUrl(links[intersectionLinkIndex], framebuffer => {
-                const texture = frontMeshes[intersectionLinkIndex].material.map;
+              const oldIframe = (() => {
+                for (let i = 0; i < container.childNodes.length; i++) {
+                  const iframe = container.childNodes[i];
+                  if (iframe.index === intersectionLinkIndex) {
+                    return iframe;
+                  }
+                }
+                return null;
+              })();
 
-                const properties = renderer.properties.get(texture);
-                properties.__webglTexture = framebuffer.colorTexture;
-                properties.__webglInit = true;
+              if (!oldIframe) {
+                _openUrl(links[intersectionLinkIndex], intersectionLinkIndex, framebuffer => {
+                  const texture = frontMeshes[intersectionLinkIndex].material.map;
 
-                intersectionLinkIndex;
-              });
+                  const properties = renderer.properties.get(texture);
+                  properties.__webglTexture = framebuffer.colorTexture;
+                  properties.__webglInit = true;
+
+                  intersectionLinkIndex;
+                });
+              } else {
+                oldIframe.destroy();
+                oldIframe.parentNode.removeChild(oldIframe);
+              }
             }
           }
         }
@@ -1214,7 +1233,7 @@
         urlCursor++;
         menuMesh.urlMesh.updateText();
       } else if (code === 13) { // enter
-        _goUrl(urlText);
+        _openUrl(urlText);
       } else if (
         code === 9 || // tab
         code === 16 || // shift
@@ -1249,11 +1268,11 @@
         menuMesh.urlMesh.updateText();
       }
     };
-    const _goUrl = (u, cb = null) => {
-      // window.location.href = u;
+    const _openUrl = (u, index = -1, cb = null) => {
       const iframe = document.createElement('iframe');
       iframe.src = u;
       iframe.hidden = true;
+      iframe.index = index;
       iframe.addEventListener('framebuffer', framebuffer => {
         screenQuad.material.uniforms.numTextures.value = 2;
 
@@ -1273,7 +1292,19 @@
           cb(framebuffer);
         }
       });
-      document.body.appendChild(iframe);
+      iframe.addEventListener('destroy', () => {
+        screenQuad.material.uniforms.numTextures.value = 1;
+
+        const frontMesh = frontMeshes[index];
+        const texture = frontMesh.material.map;
+
+        const properties = renderer.properties.get(texture);
+        properties.__webglTexture = null;
+        properties.__webglInit = false;
+
+        frontMesh.updateTab();
+      });
+      container.appendChild(iframe);
     };
 
     let displays = [];
@@ -1323,7 +1354,6 @@
             );
             display.requestPresent([{source: canvas}])
               .then(() => {
-                renderer.vr.enabled = true;
                 renderer.vr.setDevice(display);
               });
             break;
