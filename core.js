@@ -568,10 +568,12 @@ const maxNumPlanes = 32 * 3;
 const planeEntrySize = 3 + 4 + 2 + 1;
 class VRFrameData {
   constructor() {
-    this.leftProjectionMatrix = new Float32Array(16);
-    this.leftViewMatrix = new Float32Array(16);
-    this.rightProjectionMatrix = new Float32Array(16);
-    this.rightViewMatrix = new Float32Array(16);
+    // new THREE.PerspectiveCamera().projectionMatrix.toArray()
+    this.leftProjectionMatrix = Float32Array.from([2.1445069205095586, 0, 0, 0, 0, 2.1445069205095586, 0, 0, 0, 0, -1.00010000500025, -1, 0, 0, -0.200010000500025, 0]);
+    // new THREE.Matrix4().toArray()
+    this.leftViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.rightProjectionMatrix = this.leftProjectionMatrix.slice();
+    this.rightViewMatrix = this.leftViewMatrix.slice();
     this.pose = new VRPose();
 
     // non-standard
