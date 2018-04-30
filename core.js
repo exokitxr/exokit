@@ -3220,10 +3220,8 @@ let rafCbs = [];
 const tickAnimationFrame = () => {
   if (rafCbs.length > 0) {
     const localRafCbs = rafCbs.slice();
-
-    const now = performance.now();
-    for (let i = 0; i < localRafCbs.length; i++) {
-      const localRafCb = localRafCbs[i];
+    
+    const _handleRaf = localRafCb => {
       if (rafCbs.includes(localRafCb)) {
         localRafCb(now);
 
@@ -3231,6 +3229,28 @@ const tickAnimationFrame = () => {
         if (index !== -1) {
           rafCbs.splice(index, 1);
         }
+      }
+    };
+
+    const now = performance.now();
+    // hidden rafs
+    for (let i = 0; i < localRafCbs.length; i++) {
+      const localRafCb = localRafCbs[i];
+      const window = localRafCb[windowSymbol];
+      const {document} = window;
+      const {hidden} = document;
+      if (hidden) {
+        _handleRaf(localRafCb);
+      }
+    }
+    // visible rafs
+    for (let i = 0; i < localRafCbs.length; i++) {
+      const localRafCb = localRafCbs[i];
+      const window = localRafCb[windowSymbol];
+      const {document} = window;
+      const {hidden} = document;
+      if (!hidden) {
+        _handleRaf(localRafCb);
       }
     }
   }
