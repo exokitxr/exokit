@@ -3544,6 +3544,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Gamepad = Gamepad;
   window.VRStageParameters = VRStageParameters;
   window.VRDisplay = VRDisplay;
+  window.MLDisplay = MLDisplay;
+  window.FakeDisplay = FakeDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
   window.btoa = btoa;
