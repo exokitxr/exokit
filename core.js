@@ -904,7 +904,9 @@ class FakeDisplay extends MRDisplay {
       this.position,
       this.quaternion,
       localVector.set(1, 1, 1)
-    ).toArray(this._frameData.leftViewMatrix);
+    )
+     .getInverse(localMatrix)
+     .toArray(this._frameData.leftViewMatrix);
     this._frameData.rightViewMatrix.set(this._frameData.leftViewMatrix);
     this._frameData.pose.set(this.position, this.quaternion);
 
