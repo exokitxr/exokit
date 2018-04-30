@@ -113,7 +113,7 @@
     camera.rotation.order = 'YXZ';
 
     const portalMeshes = [];
-    const innerMeshes = [];
+    const frontMeshes = [];
     const backMeshes = [];
 
     const ambientLight = new THREE.AmbientLight(0x808080);
@@ -187,29 +187,6 @@
       controllerMeshes[1].add(object.clone());
     });
 
-    const portalTexture = (() => {
-      const img = new Image();
-      img.src = `img/skybox/cube-5.png`;
-      img.onload = () => {
-        texture.needsUpdate = true;
-      };
-      img.error = err => {
-        console.warn(err.stack);
-      };
-      const texture = new THREE.Texture(
-        img,
-        THREE.UVMapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.LinearFilter,
-        THREE.LinearFilter,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        1
-      );
-      return texture;
-    })();
-
     const portalGeometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
     const portalBackGeometry = portalGeometry.clone()
       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
@@ -219,20 +196,61 @@
       const y = Math.floor(i / gridCols);
       const coords = {x, y};
 
-      const innerMesh = (() => {
+      const frontMesh = (() => {
         const geometry = portalGeometry;
-        const texture = new THREE.Texture()
+        const canvas = document.createElement('canvas');
+        canvas.width = 2048;
+        canvas.height = 2048;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.src = `img/skybox/cube-5.png`;
+        img.onload = () => {
+          _updateTab();
+        };
+        img.error = err => {
+          console.warn(err.stack);
+        };
+        const texture = new THREE.Texture(
+          canvas,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.LinearFilter,
+          THREE.LinearFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
         const material = new THREE.MeshBasicMaterial({
-          map: portalTexture,
+          map: texture,
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.frustumCulled = false;
         mesh.coords = coords;
+
+        const _updateTab = () => {
+          ctx.drawImage(img, 0, 0);
+
+          const xOffsetRect = 0;
+          const yOffsetRect = 0;
+          ctx.fillStyle = '#333';
+          ctx.fillRect(xOffsetRect, yOffsetRect + 2048 - 200, 2048, 200);
+
+          const xOffsetText = 0;
+          const yOffsetText = 2048;
+          ctx.font = '100px Arial';
+          ctx.fillStyle = '#FFF';
+          ctx.fillText(links[i], xOffsetText + 50, yOffsetText - 50);
+
+          texture.needsUpdate = true;
+        };
+        mesh.updateTab = _updateTab;
+
         return mesh;
       })();
-      scene.add(innerMesh);
-      portalMeshes.push(innerMesh);
-      innerMeshes.push(innerMesh);
+      scene.add(frontMesh);
+      portalMeshes.push(frontMesh);
+      frontMeshes.push(frontMesh);
 
       const backMesh = (() => {
         const geometry = portalBackGeometry;
@@ -478,7 +496,7 @@
         const _updateGrid = () => {
           ctx.clearRect(0, 0, gridWidth, gridHeight);
 
-          for (let i = 0; i < links.length; i++) {
+          /* for (let i = 0; i < links.length; i++) {
             const x = i % gridCols;
             const y = Math.floor(i / gridCols);
 
@@ -492,7 +510,7 @@
             ctx.font = '100px Arial';
             ctx.fillStyle = '#FFF';
             ctx.fillText(links[i], xOffsetText + 50, yOffsetText - 50);
-          }
+          } */
           texture.needsUpdate = true;
         };
         _updateGrid();
@@ -584,7 +602,7 @@
           delta.applyQuaternion(quaternion);
           portalMesh.position.add(delta);
 
-          if (currentPortal !== -1 && (innerMeshes.indexOf(portalMesh) !== -1 || backMeshes.indexOf(portalMesh) !== -1)) {
+          if (currentPortal !== -1 && (frontMeshes.indexOf(portalMesh) !== -1 || backMeshes.indexOf(portalMesh) !== -1)) {
             portalMesh.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)));
           }
 
@@ -608,6 +626,9 @@
       .then(newLinks => {
         links = newLinks.slice(0, gridCols * gridRows);
 
+        for (let i = 0; i < frontMeshes.length; i++) {
+          frontMeshes[i].updateTab();
+        }
         menuMesh.gridMesh.updateGrid();
         menuMesh.gridMesh.updatePlanes();
       })
