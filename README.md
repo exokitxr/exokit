@@ -7,15 +7,17 @@
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true)](https://ci.appveyor.com/project/modulesio/exokit-windows)
 [![Twitter Follow](https://img.shields.io/twitter/follow/webmixedreality.svg?style=social)](https://twitter.com/webmixedreality)
 
-```sh
-exokit zeovr.io # run WebGL/VR/AR site
-```
+# Quickstart
 
-[Exokit Browser](https://exokit.webmr.io) is a brand new, fast, post-screen era web browser written in JavaScript. If a WebGL site runs in Chrome, it will probably run twice as fast in Exokit.
+get.webmr.io
 
-Exokit is a full HTML5 web browser, written as a node.js module. For VR, AR, and WebGL sites, Exokit can do everything a browser can do.
+# Introduction
 
-It's plain OpenGL and standard libraries under the hood, so it plays nice with Windows, Linux, macOS, and even Magic Leap!
+[Exokit Browser](https://exokit.webmr.io) is a brand new post-screen web browser written in JavaScript as a Node module. It supports WebGL, WebVR, Magic Leap and other mixed reality hardware, and also supports vintage keyboard and mouse. And it's faster and lower latency than Chrome and Firefox in many cases, since it does less (Exokit doesn't render HTML).
+
+The core is Javascript, so changing the browser is just like changing a site. The rest is native OpenGL and the usual libraries.
+
+Exokit runs on Windows, macOS, and Linux.
 
 ## About Exokit Browser
 
