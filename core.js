@@ -3170,7 +3170,7 @@ const tickAnimationFrame = () => {
   }
 };
 
-// let vrDisplays = [];
+const fakeVrDisplays = [];
 const localGamepads = [null, null];
 const leftGamepad = new Gamepad('left', 0);
 const rightGamepad = new Gamepad('right', 1);
@@ -3291,6 +3291,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
     getVRDisplays() {
       return Promise.resolve(this.getVRDisplaysSync());
+    },
+    createVRDisplay() {
+      const display = new FakeDisplay(window, 2);
+      fakeVrDisplays.push(display);
+      return display;
     },
     getGamepads: () => localGamepads,
     /* getVRMode: () => vrMode,
