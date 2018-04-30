@@ -878,11 +878,6 @@
           fakeDisplay.update();
         }
       };
-      const _updateCamera = () => {
-        camera.position.copy(fakeDisplay.position);
-        camera.quaternion.copy(fakeDisplay.quaternion);
-        camera.updateMatrixWorld();
-      };
       const _updateControllers = () => {
         const gamepads = navigator.getGamepads();
 
@@ -1222,7 +1217,6 @@
         } */
       };
       _updateControls();
-      _updateCamera();
       _updateControllers();
       _updateIntersections();
       _animateKeyboard();
@@ -1242,6 +1236,11 @@
     const fakeDisplay = window.navigator.createVRDisplay();
     fakeDisplay.position.copy(camera.position);
     fakeDisplay.quaternion.copy(camera.quaternion);
+    fakeDisplay.update();
+    fakeDisplay.requestPresent([{source: canvas}])
+      .then(() => {
+        renderer.vr.setDevice(fakeDisplay);
+      });
 
     const _handleKey = (code, shiftKey) => {
       if (code === 8) { // backspace
