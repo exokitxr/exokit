@@ -931,6 +931,16 @@ class FakeDisplay extends MRDisplay {
   getFrameData(frameData) {
     frameData.copy(this._frameData);
   }
+  
+  getLayers() {
+    return [
+      {
+        leftBounds: [0, 0, 1, 1],
+        rightBounds: [1, 0, 1, 1],
+        source: null,
+      }
+    ];
+  }
 }
 /* class ARDisplay extends MRDisplay {
   constructor(window, displayId) {
