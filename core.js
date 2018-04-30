@@ -2775,6 +2775,7 @@ class HTMLIframeElement extends HTMLSrcableElement {
   }
 }
 const defaultCanvasSize = [1280, 1024];
+const defaultEyeSeparation = 0.625;
 class HTMLCanvasElement extends HTMLElement {
   constructor(attrs = [], value = '', location = null) {
     super('CANVAS', attrs, value, location);
