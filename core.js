@@ -885,6 +885,7 @@ class FakeDisplay extends MRDisplay {
     this.quaternion = new THREE.Quaternion();
     this.gamepads = [leftGamepad, rightGamepad];
 
+    this.isPresenting = false;
     this.depthNear = 0.1;
     this.depthFar = 10 * 1024;
     this._width = defaultCanvasSize[0];
@@ -909,6 +910,13 @@ class FakeDisplay extends MRDisplay {
 
     localGamepads[0] = leftGamepad;
     localGamepads[1] = rightGamepad;
+  }
+
+  requestPresent(layers) {
+    return Promise.resolve()
+      .then(() => {
+        this.isPresenting = true;
+      });
   }
   
   exitPresent() {
