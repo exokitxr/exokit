@@ -569,7 +569,15 @@ if (require.main === module) {
           }
         }
       });
-
+      window.addEventListener('destroy', e => {
+        const {window} = e;
+        for (let i = 0; i < contexts.length; i++) {
+          const context = contexts[i];
+          if (context[canvasSymbol].ownerDocument.defaultView === window) {
+            context.destroy();
+          }
+        }
+      });
       window.addEventListener('error', err => {
         console.warn('got error', err.error.stack);
       });
