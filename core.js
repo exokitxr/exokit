@@ -877,6 +877,105 @@ class VRDisplay extends MRDisplay {
     frameData.copy(this._frameData);
   }
 }
+class FakeDisplay extends MRDisplay {
+  constructor(window, displayId) {
+    super('FAKE', window, displayId);
+
+    this.position = new THREE.Vector3();
+    this.quaternion = new THREE.Quaternion();
+    this.gamepads = [leftGamepad, rightGamepad];
+
+    this.depthNear = 0.1;
+    this.depthFar = 10 * 1024;
+    this._width = defaultCanvasSize[0];
+    this._height = defaultCanvasSize[1];
+    this._leftOffset = 0;
+    this._leftFov = 90;
+    this._rightOffset = 0;
+    this._rightFov = 90;
+    this.stageParameters = new VRStageParameters();
+    
+    this._frameData = new VRFrameData();
+  }
+  
+  update() {
+    localMatrix.compose(
+      this.position,
+      this.quaternion,
+      localVector.set(1, 1, 1)
+    ).toArray(this._frameData.leftViewMatrix);
+    this._frameData.rightViewMatrix.set(this._frameData.leftViewMatrix);
+    this._frameData.pose.set(this.position, this.quaternion);
+    
+    localGamepads[0] = leftGamepad;
+    localGamepads[1] = rightGamepad;
+  }
+  
+  updateFrame(update) {
+    const {
+      depthNear,
+      depthFar,
+      renderWidth,
+      renderHeight,
+      leftOffset,
+      leftFov,
+      rightOffset,
+      rightFov,
+      frameData,
+      stageParameters,
+      gamepads,
+    } = update;
+
+    if (depthNear !== undefined) {
+      this.depthNear = depthNear;
+    }
+    if (depthFar !== undefined) {
+      this.depthFar = depthFar;
+    }
+    if (renderWidth !== undefined) {
+      this._width = renderWidth;
+    }
+    if (renderHeight !== undefined) {
+      this._height = renderHeight;
+    }
+    if (leftOffset !== undefined) {
+      this._leftOffset = leftOffset;
+    }
+    if (leftFov !== undefined) {
+      this._leftFov = leftOffset;
+    }
+    if (rightOffset !== undefined) {
+      this._rightOffset = rightOffset;
+    }
+    if (rightFov !== undefined) {
+      this._rightFov = rightFov;
+    }
+    if (frameData !== undefined) {
+      this._frameData.copy(frameData);
+    }
+    if (stageParameters !== undefined) {
+      this.stageParameters.copy(stageParameters);
+    }
+    if (gamepads !== undefined) {
+      if (gamepads[0]) {
+        localGamepads[0] = leftGamepad;
+        localGamepads[0].copy(gamepads[0]);
+      } else {
+        localGamepads[0] = null;
+      }
+      if (gamepads[1]) {
+        localGamepads[1] = rightGamepad;
+        localGamepads[1].copy(gamepads[1]);
+      } else {
+        localGamepads[1] = null;
+      }
+    }
+  }
+
+  getFrameData(frameData) {
+    frameData.copy(this._frameData);
+  }
+}
 /* class ARDisplay extends MRDisplay {
   constructor(window, displayId) {
     super('AR', window, displayId);
