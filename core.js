@@ -894,10 +894,10 @@ class FakeDisplay extends MRDisplay {
     this._rightOffset = 0;
     this._rightFov = 90;
     this.stageParameters = new VRStageParameters();
-    
+
     this._frameData = new VRFrameData();
   }
-  
+
   update() {
     localMatrix.compose(
       this.position,
@@ -906,7 +906,7 @@ class FakeDisplay extends MRDisplay {
     ).toArray(this._frameData.leftViewMatrix);
     this._frameData.rightViewMatrix.set(this._frameData.leftViewMatrix);
     this._frameData.pose.set(this.position, this.quaternion);
-    
+
     localGamepads[0] = leftGamepad;
     localGamepads[1] = rightGamepad;
   }
@@ -2296,7 +2296,7 @@ class HTMLLoadableElement extends HTMLElement {
 class Document extends HTMLLoadableElement {
   constructor() {
     super('DOCUMENT');
-    
+
     this.hidden = false;
   }
 
@@ -2774,7 +2774,7 @@ class HTMLIframeElement extends HTMLSrcableElement {
 
               this.contentWindow = contentWindow;
               this.contentDocument = contentDocument;
-              
+
               contentWindow.on('destroy', e => {
                 parentWindow.emit('destroy', e);
               });
@@ -2804,14 +2804,14 @@ class HTMLIframeElement extends HTMLSrcableElement {
       this.contentDocument = null;
     });
   }
-  
+
   get hidden() {
     return this.getAttribute('hidden');
   }
   set hidden(hidden) {
     this.setAttribute('hidden', hidden);
   }
-  
+
   destroy() {
     if (this.live) {
       this._emit('destroy');
@@ -3206,7 +3206,7 @@ const tickAnimationFrame = () => {
       const localRafCb = localRafCbs[i];
       if (rafCbs.includes(localRafCb)) {
         localRafCb(now);
-        
+
         const index = rafCbs.indexOf(localRafCb);
         if (index !== -1) {
           rafCbs.splice(index, 1);
