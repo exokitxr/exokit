@@ -3721,7 +3721,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
     window[mrDisplaysSymbol] = {
       vrDisplay: new VRDisplay(window, 0),
-      mlDisplay: new MLDisplay(window, 2),
+      mlDisplay: new MLDisplay(window, 1),
     };
 
     window.updateVrFrame = update => {
