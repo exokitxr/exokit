@@ -3343,6 +3343,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       if (nativeVr.VR_IsHmdPresent()) {
         result.push(_getVrDisplay(window));
       }
+      result.push.apply(result, fakeVrDisplays);
       return result;
     },
     getVRDisplays() {
