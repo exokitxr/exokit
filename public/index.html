@@ -209,7 +209,7 @@
     const portalBackGeometry = portalGeometry.clone()
       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
     const skyboxGeometry = new THREE.BoxBufferGeometry(100, 100, 100);
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       const y = i;
       const coords = {y};
 
@@ -627,7 +627,7 @@
         }
       })
       .then(newLinks => {
-        links = newLinks.slice(0, gridCols * gridRows);
+        links = newLinks.slice(0, 4);
 
         for (let i = 0; i < frontMeshes.length; i++) {
           frontMeshes[i].updateTab();
