@@ -911,65 +911,11 @@ class FakeDisplay extends MRDisplay {
     localGamepads[1] = rightGamepad;
   }
   
-  updateFrame(update) {
-    const {
-      depthNear,
-      depthFar,
-      renderWidth,
-      renderHeight,
-      leftOffset,
-      leftFov,
-      rightOffset,
-      rightFov,
-      frameData,
-      stageParameters,
-      gamepads,
-    } = update;
-
-    if (depthNear !== undefined) {
-      this.depthNear = depthNear;
-    }
-    if (depthFar !== undefined) {
-      this.depthFar = depthFar;
-    }
-    if (renderWidth !== undefined) {
-      this._width = renderWidth;
-    }
-    if (renderHeight !== undefined) {
-      this._height = renderHeight;
-    }
-    if (leftOffset !== undefined) {
-      this._leftOffset = leftOffset;
-    }
-    if (leftFov !== undefined) {
-      this._leftFov = leftOffset;
-    }
-    if (rightOffset !== undefined) {
-      this._rightOffset = rightOffset;
-    }
-    if (rightFov !== undefined) {
-      this._rightFov = rightFov;
-    }
-    if (frameData !== undefined) {
-      this._frameData.copy(frameData);
-    }
-    if (stageParameters !== undefined) {
-      this.stageParameters.copy(stageParameters);
-    }
-    if (gamepads !== undefined) {
-      if (gamepads[0]) {
-        localGamepads[0] = leftGamepad;
-        localGamepads[0].copy(gamepads[0]);
-      } else {
-        localGamepads[0] = null;
-      }
-      if (gamepads[1]) {
-        localGamepads[1] = rightGamepad;
-        localGamepads[1].copy(gamepads[1]);
-      } else {
-        localGamepads[1] = null;
-      }
-    }
+  exitPresent() {
+    return Promise.resolve()
+      .then(() => {
+        this.isPresenting = false;
+      });
   }
 
   getFrameData(frameData) {
