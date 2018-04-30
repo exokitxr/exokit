@@ -623,7 +623,7 @@
         if (res.status >= 200 && res.status < 300) {
           return res.json();
         } else {
-          return Promise.reject(new Error('invald status code: ' + res.status));
+          return Promise.reject(new Error('invalid status code: ' + res.status));
         }
       })
       .then(newLinks => {
