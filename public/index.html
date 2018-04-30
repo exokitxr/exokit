@@ -1400,7 +1400,6 @@
             );
             display.requestPresent([{source: canvas}])
               .then(() => {
-                renderer.vr.enabled = true;
                 renderer.vr.setDevice(display);
 
                 scene.background = null;
