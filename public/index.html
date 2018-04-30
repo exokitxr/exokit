@@ -86,8 +86,6 @@
     const urlMeasures = [];
     let links = [];
 
-    let currentPresseds = null;
-    let currentMenuPresseds = null;
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
@@ -844,30 +842,48 @@
       const timePassed = Math.max(currentTime - lastTime, 1);
       lastTime = currentTime;
 
-      const _animateKeyboard = () => {
-        if (keyboardMeshAnimation) {
-          const now = Date.now();
-          const factor = Math.pow((now - keyboardMeshAnimation.startTime) / (keyboardMeshAnimation.endTime - keyboardMeshAnimation.startTime), 0.15);
-
-          if (factor < 1) {
-            const scaleY = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
-
-            keyboardMesh.planeMesh.scale.y = scaleY;
-            keyboardMesh.updateMatrixWorld();
-            keyboardMesh.visible = true;
-
-            menuMesh.scale.y = scaleY;
-            menuMesh.updateMatrixWorld();
-            menuMesh.visible = true;
-          } else {
-            const visible = keyboardMesh.planeMesh.scale.y > 0.5;
-            keyboardMesh.visible = visible;
-            menuMesh.visible = visible;
-            keyboardMeshAnimation = null;
+      const _updateControls = () => {
+        // update controls
+        if (window.document.pointerLockElement) {
+          localVector.set(0, 0, 0);
+          if (keys.up) {
+            localVector.z--;
           }
+          if (keys.down) {
+            localVector.z++;
+          }
+          if (keys.left) {
+            localVector.x--;
+          }
+          if (keys.right) {
+            localVector.x++;
+          }
+          localVector
+            .normalize()
+            .multiplyScalar(0.1);
+          localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+          localEuler.x = 0;
+          fakeDisplay.position.add(
+            localVector
+              .applyEuler(localEuler)
+          );
+
+          localVector.copy(fakeDisplay.position)
+            .add(
+              localVector2.set(0, -0.1, -0.5)
+                .applyQuaternion(fakeDisplay.quaternion)
+            ).toArray(fakeDisplay.gamepads[1].pose.position);
+          fakeDisplay.quaternion.toArray(fakeDisplay.gamepads[1].pose.orientation);
+
+          fakeDisplay.update();
         }
       };
-      const _animateControllers = () => {
+      const _updateCamera = () => {
+        camera.position.copy(fakeDisplay.position);
+        camera.quaternion.copy(fakeDisplay.quaternion);
+        camera.updateMatrixWorld();
+      };
+      const _updateControllers = () => {
         const gamepads = navigator.getGamepads();
 
         for (let i = 0; i < gamepads.length; i++) {
@@ -877,60 +893,7 @@
             controllerMesh.position.fromArray(gamepad.pose.position);
             controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
             controllerMesh.updateMatrixWorld();
-
-            const pressed = currentPresseds ? currentPresseds[i] : gamepad.buttons[1].pressed;
-            controllerMesh.rayMesh.material.color.setHex(pressed ? RAY_HIGHLIGHT_COLOR : RAY_COLOR);
           }
-        }
-
-        /* const loopTime = 1500;
-        for (let i = 0; i < controllerMeshes.length; i++) {
-          const controllerMesh = controllerMeshes[i];
-          localEuler.y = (i === 0 ? -1 : 1) * Math.sin((currentTime % loopTime) / loopTime * Math.PI * 2);
-          controllerMesh.quaternion.setFromUnitVectors(
-            localVector.set(0, 0, -1),
-            localVector2.set(0, -1, -1)
-              .normalize()
-              .applyEuler(
-                localEuler
-              )
-          );
-        } */
-      };
-      const _updateControllers = () => {
-        // update controls
-        if (window.document.pointerLockElement) {
-          const directionVector = new THREE.Vector3();
-          if (keys.up) {
-            directionVector.z--;
-          }
-          if (keys.down) {
-            directionVector.z++;
-          }
-          if (keys.left) {
-            directionVector.x--;
-          }
-          if (keys.right) {
-            directionVector.x++;
-          }
-          directionVector
-            .normalize()
-            .multiplyScalar(0.1);
-          const euler = camera.rotation.clone();
-          euler.x = 0;
-          camera.position.add(
-            directionVector
-              .applyEuler(euler)
-          );
-
-          const rightControllerMesh = controllerMeshes[1];
-          rightControllerMesh.position
-            .copy(camera.position)
-            .add(
-              localVector.set(0, -0.1, -0.5)
-                .applyQuaternion(camera.quaternion)
-            );
-          rightControllerMesh.quaternion.copy(camera.quaternion);
         }
       };
       const _updateIntersections = () => {
@@ -945,13 +908,9 @@
           controllerMesh.update();
 
           const gamepad = gamepads[i];
-          let pressed = currentPresseds ? currentPresseds[i] : false;
-          let menuPressed = currentMenuPresseds ? currentMenuPresseds[i] : false;
+          let pressed = false;
+          let menuPressed = false;
           if (gamepad) {
-            controllerMesh.position.fromArray(gamepad.pose.position);
-            controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
-            controllerMesh.updateMatrixWorld();
-
             pressed = gamepad.buttons[1].pressed;
             menuPressed = gamepad.buttons[3].pressed;
           }
@@ -1212,6 +1171,58 @@
           }
         }
       };
+      const _animateKeyboard = () => {
+        if (keyboardMeshAnimation) {
+          const now = Date.now();
+          const factor = Math.pow((now - keyboardMeshAnimation.startTime) / (keyboardMeshAnimation.endTime - keyboardMeshAnimation.startTime), 0.15);
+
+          if (factor < 1) {
+            const scaleY = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
+
+            keyboardMesh.planeMesh.scale.y = scaleY;
+            keyboardMesh.updateMatrixWorld();
+            keyboardMesh.visible = true;
+
+            menuMesh.scale.y = scaleY;
+            menuMesh.updateMatrixWorld();
+            menuMesh.visible = true;
+          } else {
+            const visible = keyboardMesh.planeMesh.scale.y > 0.5;
+            keyboardMesh.visible = visible;
+            menuMesh.visible = visible;
+            keyboardMeshAnimation = null;
+          }
+        }
+      };
+      const _animateControllers = () => {
+        const gamepads = navigator.getGamepads();
+
+        for (let i = 0; i < gamepads.length; i++) {
+          const gamepad = gamepads[i];
+          if (gamepad) {
+            const controllerMesh = controllerMeshes[i];
+
+            const {pressed} = gamepad.buttons[1];
+            controllerMesh.rayMesh.material.color.setHex(pressed ? RAY_HIGHLIGHT_COLOR : RAY_COLOR);
+          }
+        }
+
+        /* const loopTime = 1500;
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          const controllerMesh = controllerMeshes[i];
+          localEuler.y = (i === 0 ? -1 : 1) * Math.sin((currentTime % loopTime) / loopTime * Math.PI * 2);
+          controllerMesh.quaternion.setFromUnitVectors(
+            localVector.set(0, 0, -1),
+            localVector2.set(0, -1, -1)
+              .normalize()
+              .applyEuler(
+                localEuler
+              )
+          );
+        } */
+      };
+      _updateControls();
+      _updateCamera();
       _updateControllers();
       _updateIntersections();
       _animateKeyboard();
@@ -1225,6 +1236,10 @@
       window.requestAnimationFrame(animate);
     }
     window.requestAnimationFrame(animate);
+
+    const fakeDisplay = window.navigator.createVRDisplay();
+    fakeDisplay.position.copy(camera.position);
+    fakeDisplay.quaternion.copy(camera.quaternion);
 
     const _handleKey = (code, shiftKey) => {
       if (code === 8) { // backspace
@@ -1430,7 +1445,7 @@
             break;
           }
           case 69: { // E
-            currentMenuPresseds[1] = true;
+            fakeDisplay.gamepads[1].buttons[3].pressed = true;
             break;
           }
         }
@@ -1456,39 +1471,32 @@
             break;
           }
           case 69: { // E
-            currentMenuPresseds[1] = false;
+            fakeDisplay.gamepads[1].buttons[3].pressed = false;
             break;
           }
         }
       }
     });
     window.addEventListener('mousedown', () => {
-      if (!currentPresseds) {
+      if (!window.document.pointerLockElement) {
         renderer.domElement.requestPointerLock();
-
-        currentPresseds = [false, false];
-        currentMenuPresseds = [false, false];
       } else {
-        currentPresseds[1] = true;
+        fakeDisplay.gamepads[1].buttons[1].pressed = true;
       }
     });
     window.addEventListener('mouseup', () => {
-      if (currentPresseds) {
-        currentPresseds[1] = false;
-      }
+      fakeDisplay.gamepads[1].buttons[1].pressed = false;
     });
     window.addEventListener('mousemove', e => {
       if (window.document.pointerLockElement) {
         const {movementX, movementY} = e;
-        camera.rotation.y -= movementX * 0.01;
-        camera.rotation.x -= movementY * 0.01;
-        camera.rotation.x = Math.min(Math.max(camera.rotation.x, -Math.PI/2), Math.PI/2);
-      }
-    });
-    window.document.addEventListener('pointerlockchange', () => {
-      if (!window.document.pointerLockElement) {
-        currentPresseds = null;
-        currentMenuPresseds = null;
+        localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+        localEuler.y -= movementX * 0.01;
+        localEuler.x -= movementY * 0.01;
+        localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
+        fakeDisplay.quaternion.setFromEuler(localEuler);
+
+        fakeDisplay.update();
       }
     });
     window.document.addEventListener('paste', e => {
