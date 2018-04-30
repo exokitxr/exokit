@@ -2694,6 +2694,7 @@ class HTMLIframeElement extends HTMLSrcableElement {
 
     this.contentWindow = null;
     this.contentDocument = null;
+    this.live = true;
 
     this.on('attribute', (name, value) => {
       if (name === 'src') {
@@ -2711,27 +2712,33 @@ class HTMLIframeElement extends HTMLSrcableElement {
             }
           })
           .then(htmlString => {
-            const parentWindow = this.ownerDocument.defaultView;
+            if (this.live) {
+              const parentWindow = this.ownerDocument.defaultView;
 
-            const contentWindow = _makeWindow({
-              url,
-              baseUrl: url,
-              dataPath: parentWindow[optionsSymbol].dataPath,
-            }, parentWindow, parentWindow.top);
-            const contentDocument = _parseDocument(htmlString, contentWindow[optionsSymbol], contentWindow);
-            contentDocument.hidden = this.hidden;
+              const contentWindow = _makeWindow({
+                url,
+                baseUrl: url,
+                dataPath: parentWindow[optionsSymbol].dataPath,
+              }, parentWindow, parentWindow.top);
+              const contentDocument = _parseDocument(htmlString, contentWindow[optionsSymbol], contentWindow);
+              contentDocument.hidden = this.hidden;
 
-            contentWindow.document = contentDocument;
+              contentWindow.document = contentDocument;
 
-            this.contentWindow = contentWindow;
-            this.contentDocument = contentDocument;
+              this.contentWindow = contentWindow;
+              this.contentDocument = contentDocument;
+              
+              contentWindow.on('destroy', e => {
+                parentWindow.emit('destroy', e);
+              });
 
-            contentDocument.once('readystatechange', () => {
-              this.dispatchEvent(new Event('load', {target: this}));
-            });
-            contentDocument.on('framebuffer', framebuffer => {
-              this._emit('framebuffer', framebuffer);
-            });
+              contentDocument.once('readystatechange', () => {
+                this.dispatchEvent(new Event('load', {target: this}));
+              });
+              contentDocument.on('framebuffer', framebuffer => {
+                this._emit('framebuffer', framebuffer);
+              });
+            }
           })
           .catch(err => {
             this._emit('error', err);
@@ -2742,6 +2749,13 @@ class HTMLIframeElement extends HTMLSrcableElement {
         }
       }
     });
+    this.on('destroy', () => {
+      if (this.contentWindow) {
+        this.contentWindow.destroy();
+        this.contentWindow = null;
+      }
+      this.contentDocument = null;
+    });
   }
   
   get hidden() {
@@ -2749,6 +2763,13 @@ class HTMLIframeElement extends HTMLSrcableElement {
   }
   set hidden(hidden) {
     this.setAttribute('hidden', hidden);
+  }
+  
+  destroy() {
+    if (this.live) {
+      this._emit('destroy');
+      this.live = false;
+    }
   }
 }
 const defaultCanvasSize = [1280, 1024];
@@ -3287,6 +3308,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       vrTextures = newVrTextures;
     }, */
   };
+  window.destroy = function() {
+    this._emit('destroy', {window: this});
+  };
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.URL = URL;
   window.console = console;
@@ -3651,6 +3675,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
   });
 
+  window.on('destroy', e => {
+    const {window: destroyedWindow} = e;
+    rafCbs = rafCbs.filter(fn => fn[windowSymbol] !== destroyedWindow);
+  });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
 
