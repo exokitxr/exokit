@@ -27,22 +27,15 @@
     const urlBarWorldWidth = 3;
     const urlBarWorldHeight = urlBarWorldWidth * urlBarHeight / urlBarWidth;
     let currentPortal = -1;
-    const gridCols = 3;
-    const gridRows = 2;
+    const gridSize = urlBarHeight;
     const gridWidth = urlBarWidth;
-    const gridHeight = gridWidth * gridRows;
+    const gridHeight = gridSize * 8;
     const gridWorldWidth = urlBarWorldWidth;
-    const gridWorldHeight = gridWorldWidth * gridRows;
-    const gridSpacing = 100;
-    const gridSize = (gridWidth - ((gridSpacing - 1) * gridCols)) / gridCols;
+    const gridWorldHeight = gridWorldWidth * gridHeight / gridWidth;
     const gridWorldSize = gridSize * gridWorldWidth / gridWidth;
     const keyboardWidth = 2048;
     const keyboardHeight = 716;
     const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
-    const cameraSize = 2048;
-    const portalWorldWidth = 1;
-    const portalWorldHeight = 1;
-    const portalBorderWorldWidth = portalWorldWidth * 0.05;
     const SKYBOX_SHADER = {
       uniforms: {
         map: {
@@ -205,11 +198,11 @@
       controllerMeshes[1].add(object.clone());
     });
 
-    const portalGeometry = new THREE.PlaneBufferGeometry(portalWorldWidth, portalWorldHeight);
+    const portalGeometry = new THREE.PlaneBufferGeometry(gridWorldSize, gridWorldSize);
     const portalBackGeometry = portalGeometry.clone()
       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
     const skyboxGeometry = new THREE.BoxBufferGeometry(100, 100, 100);
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 8; i++) {
       const y = i;
       const coords = {y};
 
@@ -499,20 +492,20 @@
         const _updateGrid = () => {
           ctx.clearRect(0, 0, gridWidth, gridHeight);
 
+          console.log('update grid', links.length);
           for (let i = 0; i < links.length; i++) {
-            const x = 0;
             const y = i;
 
-            const xOffsetRect = 1400;
-            const yOffsetRect = y * (gridSpacing + gridSize);
+            const xOffsetRect = gridSize;
+            const yOffsetRect = y * gridSize;
             ctx.fillStyle = '#333';
-            ctx.fillRect(xOffsetRect, yOffsetRect + gridSize - 200, gridWidth - xOffsetRect, 200);
+            ctx.fillRect(xOffsetRect, yOffsetRect, gridWidth - xOffsetRect, gridSize);
 
-            const xOffsetText = 1400;
-            const yOffsetText = (y * (gridSpacing + gridSize)) + gridSize;
+            const xOffsetText = gridSize;
+            const yOffsetText = y * gridSize;
             ctx.font = '100px Arial';
             ctx.fillStyle = '#FFF';
-            ctx.fillText(links[i], xOffsetText + 50, yOffsetText - 50);
+            ctx.fillText(links[i], xOffsetText + 80, yOffsetText + gridSize - 80);
           }
           texture.needsUpdate = true;
         };
@@ -527,8 +520,8 @@
             const x = 0;
             const y = i;
 
-            const yOffsetRectTop = y * (gridSpacing + gridSize);
-            const yOffsetRectBottom = (y+1) * (gridSpacing + gridSize);
+            const yOffsetRectTop = y * gridSize;
+            const yOffsetRectBottom = (y+1) * gridSize;
 
             const leftLine = new THREE.Line3();
             leftLine.start
@@ -601,7 +594,7 @@
           portalMesh.quaternion.copy(quaternion);
           portalMesh.scale.copy(scale);
 
-          delta.set(-1, -0.5 + gridMesh.position.y + gridWorldHeight/2 - y*1.1, 0);
+          delta.set(-urlBarWorldWidth/2 + gridWorldSize/2, -urlBarWorldHeight - gridWorldSize/2 - y*gridWorldSize, 0);
           delta.applyQuaternion(quaternion);
           portalMesh.position.add(delta);
 
@@ -627,7 +620,7 @@
         }
       })
       .then(newLinks => {
-        links = newLinks.slice(0, 4);
+        links = newLinks.slice(0, 8);
 
         for (let i = 0; i < frontMeshes.length; i++) {
           frontMeshes[i].updateTab();
@@ -1035,7 +1028,7 @@
                   const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
                   const xFactor = topIntersectionPoint.distanceTo(topLine.start) / gridWorldWidth;
-                  const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / gridWorldSize;
+                  const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / gridWorldHeight;
                   const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
                   if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
