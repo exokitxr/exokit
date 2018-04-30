@@ -3152,11 +3152,18 @@ let rafCbs = [];
 const tickAnimationFrame = () => {
   if (rafCbs.length > 0) {
     const localRafCbs = rafCbs.slice();
-    rafCbs.length = 0;
 
     const now = performance.now();
     for (let i = 0; i < localRafCbs.length; i++) {
-      localRafCbs[i](now);
+      const localRafCb = localRafCbs[i];
+      if (rafCbs.includes(localRafCb)) {
+        localRafCb(now);
+        
+        const index = rafCbs.indexOf(localRafCb);
+        if (index !== -1) {
+          rafCbs.splice(index, 1);
+        }
+      }
     }
   }
 };
