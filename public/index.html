@@ -1222,7 +1222,17 @@
       _animateKeyboard();
       _animateControllers();
 
-      renderer.render(scene, camera, renderTarget);
+      const device = renderer.vr.getDevice();
+      if (device && device instanceof FakeDisplay) {
+        camera.position.copy(device.position);
+        camera.quaternion.copy(device.quaternion);
+
+        renderer.vr.enabled = false;
+        renderer.render(scene, camera, renderTarget);
+        renderer.vr.enabled = true;
+      } else {
+        renderer.render(scene, camera, renderTarget);
+      }
       renderer.vr.enabled = false;
       renderer.render(compositeScene, camera);
       renderer.vr.enabled = true;
