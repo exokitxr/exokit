@@ -1229,7 +1229,9 @@
       _animateControllers();
 
       renderer.render(scene, camera, renderTarget);
+      renderer.vr.enabled = false;
       renderer.render(compositeScene, camera);
+      renderer.vr.enabled = true;
 
       menuMesh.updatePortalMeshes();
 
