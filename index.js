@@ -34,6 +34,7 @@ const args = (() => {
         'frame',
         'minimalFrame',
         'blit',
+	'version',
       ],
       string: [
         'size',
@@ -50,6 +51,7 @@ const args = (() => {
         b: 'blit',
         i: 'image',
         d: 'depth-image',
+        v: 'version',
       },
     });
     return {
@@ -62,14 +64,21 @@ const args = (() => {
       blit: minimistArgs.blit,
       image: minimistArgs.image,
       depthImage: minimistArgs['depth-image'],
+      version: minimistArgs.version,
     };
   } else {
     return {};
   }
 })();
+
 core.setArgs(args);
-core.setVersion(version);
+const agent = core.setVersion(version);
 core.setNativeBindingsModule(nativeBindingsModulePath);
+
+if (args.version) {
+  console.log(agent);
+  process.exit(0);
+}
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
@@ -97,7 +106,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
     window.devicePixelRatio = framebufferWidth / canvasWidth;
 
-    const title = `Exokit ${version}`
+    const title = `${agent.name} ${agent.version}`
     nativeWindow.setWindowTitle(windowHandle, title);
 
     if (document.hidden) {
