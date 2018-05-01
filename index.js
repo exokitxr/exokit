@@ -33,6 +33,7 @@ const args = (() => {
         'performance',
         'frame',
         'minimalFrame',
+        'blit',
       ],
       string: [
         'size',
@@ -46,6 +47,7 @@ const args = (() => {
         s: 'size',
         f: 'frame',
         m: 'minimalFrame',
+        b: 'blit',
         i: 'image',
         d: 'depth-image',
       },
@@ -57,6 +59,7 @@ const args = (() => {
       size: minimistArgs.size,
       frame: minimistArgs.frame,
       minimalFrame: minimistArgs.minimalFrame,
+      blit: minimistArgs.blit,
       image: minimistArgs.image,
       depthImage: minimistArgs['depth-image'],
     };
@@ -990,7 +993,7 @@ if (require.main === module) {
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
               vrPresentState.compositor.Submit(context, vrPresentState.tex);
 
-              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * 2, renderHeight, window.innerWidth, window.innerHeight, true, false, false);
+              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
             } else if (mlGlContext === context) {
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
