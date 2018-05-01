@@ -1338,6 +1338,20 @@
       container.appendChild(iframe);
     };
 
+    window.addEventListener('resize', e => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+
+      const device = renderer.vr.getDevice();
+      if (device === fakeDisplay) {
+        renderer.vr.setDevice(null);
+      }
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (device === fakeDisplay) {
+        renderer.vr.setDevice(fakeDisplay);
+      }
+    });
+
     let displays = [];
     const _updateDisplays = () => {
       if (window.navigator.getVRDisplays) {
