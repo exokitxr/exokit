@@ -6,7 +6,7 @@ environment:
   MAGICLEAP:
     secure: 4mAodSQiCUr1X1maLOYyj4nYCb87r4J54Wb1jw1EE9tT4tpcbic6hpDynrSu7Ep3
   PFX_KEY:
-    secure: sRaZzbddeLEuktZcsaxeq2akTkIBdQR2Snagzc+OIVGPCzlbW4t5S8rR70+sY3k4
+    secure: gY+fh2KqzTYX7oq5dYj9PA==
 
 # Install scripts. (runs after repo cloning)
 install:
