@@ -5,6 +5,9 @@
   "engines": {
     "node": ">=10.0.0"
   },
+  "bin": {
+    "exokit": "index.js"
+  },
   "main": "index.js",
   "scripts": {
     "install": "node ./preinstall.js && node-gyp rebuild",
