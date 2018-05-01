@@ -39,7 +39,7 @@ const pointerLockElementSymbol = Symbol();
 const mrDisplaysSymbol = Symbol();
 let nativeBindings = false;
 let args = {};
-let version = '';
+let agent = {browser: 'MixedReality', name: 'Exokit', version: '0.0.0'}
 
 const btoa = s => new Buffer(s, 'binary').toString('base64');
 const atob = s => new Buffer(s, 'base64').toString('binary');
@@ -3351,7 +3351,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   });
   window.history = new History(location.href);
   window.navigator = {
-    userAgent: `MixedReality (Exokit ${version})`,
+    userAgent: `${agent.browser} (${agent.name} ${agent.version})`,
     platform: os.platform(),
     appCodeName: 'Mozilla',
     appName: 'Netscape',
@@ -4053,7 +4053,8 @@ exokit.setArgs = newArgs => {
   args = newArgs;
 };
 exokit.setVersion = newVersion => {
-  version = newVersion;
+  agent.version = newVersion;
+  return agent;
 };
 exokit.setNativeBindingsModule = nativeBindingsModule => {
   nativeBindings = true;
