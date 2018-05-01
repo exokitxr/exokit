@@ -477,12 +477,15 @@ if (require.main === module) {
         let rootPath = null;
         let runtimePath = null;
         const platform = os.platform();
-        if (platform === 'linux') {
-          rootPath = path.join(os.userInfo().homedir, '.config/openvr');
-          runtimePath = path.join(__dirname, 'node_modules', 'native-openvr-deps/bin/linux64');
+        if (platform === 'win32') {
+          rootPath = path.join(os.homedir(), 'AppData', 'openvr', 'openvrpaths.vrpath');
+          runtimePath = 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\SteamVR';
         } else if (platform === 'darwin') {
           rootPath = path.join('/Users/', os.userInfo().username, '/Library/Application Support/OpenVR/.openvr');
           runtimePath = path.join(__dirname, '/node_modules/native-openvr-deps/bin/osx64');
+        } else if (platform === 'linux') {
+          rootPath = path.join(os.userInfo().homedir, '.config/openvr');
+          runtimePath = path.join(__dirname, 'node_modules', 'native-openvr-deps/bin/linux64');
         }
 
         if (rootPath !== null) {
