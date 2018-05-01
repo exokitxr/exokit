@@ -57,6 +57,7 @@ matrix:
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - ./node/bin/npm install
+    - install_name_tool -change '@rpath/OpenVR.framework/Versions/A/OpenVR' '@loader_path/../../node_modules/native-openvr-deps/bin/osx64/OpenVR.framework/Versions/A/OpenVR' build/Release/exokit.node
     - mkdir -p /tmp/Exokit.app/Contents/MacOS
     - cp -R * /tmp/Exokit.app/Contents/MacOS
     - cp Info.plist /tmp/Exokit.app/Contents
