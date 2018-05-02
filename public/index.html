@@ -78,6 +78,7 @@
     let urlCursor = urlText.length;
     const urlMeasures = [];
     let links = [];
+    const _getCurrentLinks = () => links.slice(0, 8);
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -202,66 +203,70 @@
     const portalBackGeometry = portalGeometry.clone()
       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
     const skyboxGeometry = new THREE.BoxBufferGeometry(100, 100, 100);
-    for (let i = 0; i < 8; i++) {
-      const y = i;
-      const coords = {y};
 
-      const frontMesh = (() => {
-        const geometry = portalGeometry;
-        const texture = new THREE.Texture(
-          null,
-          THREE.UVMapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.LinearFilter,
-          THREE.LinearFilter,
-          THREE.RGBAFormat,
-          THREE.UnsignedByteType,
-          1
-        );
-        const material = new THREE.MeshBasicMaterial({
-          map: texture,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.frustumCulled = false;
-        mesh.coords = coords;
+    (() => {
+      const currentLinks = _getCurrentLinks();
+      for (let i = 0; i < currentLinks.length; i++) {
+        const y = i;
+        const coords = {y};
 
-        const _updateTab = () => {
-          const img = new Image();
-          img.src = `img/skybox/cube-5.png`;
-          img.onload = () => {
-            if (texture.image === null || texture.image.tagName === 'IMG') {
-              texture.image = img;
-              texture.needsUpdate = true;
-            }
+        const frontMesh = (() => {
+          const geometry = portalGeometry;
+          const texture = new THREE.Texture(
+            null,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.LinearFilter,
+            THREE.LinearFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            1
+          );
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.frustumCulled = false;
+          mesh.coords = coords;
+
+          const _updateTab = () => {
+            const img = new Image();
+            img.src = `img/skybox/cube-5.png`;
+            img.onload = () => {
+              if (texture.image === null || texture.image.tagName === 'IMG') {
+                texture.image = img;
+                texture.needsUpdate = true;
+              }
+            };
+            img.error = err => {
+              console.warn(err.stack);
+            };
           };
-          img.error = err => {
-            console.warn(err.stack);
-          };
-        };
-        _updateTab();
-        mesh.updateTab = _updateTab;
+          _updateTab();
+          mesh.updateTab = _updateTab;
 
-        return mesh;
-      })();
-      scene.add(frontMesh);
-      portalMeshes.push(frontMesh);
-      frontMeshes.push(frontMesh);
+          return mesh;
+        })();
+        scene.add(frontMesh);
+        portalMeshes.push(frontMesh);
+        frontMeshes.push(frontMesh);
 
-      const backMesh = (() => {
-        const geometry = portalBackGeometry;
-        const material = new THREE.MeshBasicMaterial({
-          color: 0x111111,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.frustumCulled = false;
-        mesh.coords = coords;
-        return mesh;
-      })();
-      scene.add(backMesh);
-      portalMeshes.push(backMesh);
-      backMeshes.push(backMesh);
-    }
+        const backMesh = (() => {
+          const geometry = portalBackGeometry;
+          const material = new THREE.MeshBasicMaterial({
+            color: 0x111111,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.frustumCulled = false;
+          mesh.coords = coords;
+          return mesh;
+        })();
+        scene.add(backMesh);
+        portalMeshes.push(backMesh);
+        backMeshes.push(backMesh);
+      }
+    })();
 
     function concatBufferGeometry(geometries) {
       geometries = geometries.map(geometry => unindexBufferGeometry(geometry));
@@ -492,7 +497,8 @@
         const _updateGrid = () => {
           ctx.clearRect(0, 0, gridWidth, gridHeight);
 
-          for (let i = 0; i < links.length; i++) {
+          const currentLinks = _getCurrentLinks();
+          for (let i = 0; i < currentLinks.length; i++) {
             const y = i;
 
             const xOffsetRect = gridSize;
@@ -504,7 +510,7 @@
             const yOffsetText = y * gridSize;
             ctx.font = '100px Arial';
             ctx.fillStyle = '#FFF';
-            ctx.fillText(links[i], xOffsetText + 80, yOffsetText + gridSize - 80);
+            ctx.fillText(currentLinks[i], xOffsetText + 80, yOffsetText + gridSize - 80);
           }
           texture.needsUpdate = true;
         };
@@ -515,7 +521,8 @@
         const _updatePlanes = () => {
           mesh.planes.length = 0;
 
-          for (let i = 0; i < links.length; i++) {
+          const currentLinks = _getCurrentLinks();
+          for (let i = 0; i < currentLinks.length; i++) {
             const x = 0;
             const y = i;
 
@@ -619,7 +626,7 @@
         }
       })
       .then(newLinks => {
-        links = newLinks.slice(0, 8);
+        links = newLinks;
 
         for (let i = 0; i < frontMeshes.length; i++) {
           frontMeshes[i].updateTab();
@@ -1016,7 +1023,9 @@
           let intersectionLinkIndex = -1;
           if (!intersectionPoint) {
             if (menuMesh.visible) {
-              for (let i = 0; i < links.length; i++) {
+              const currentLinks = _getCurrentLinks();
+
+              for (let i = 0; i < currentLinks.length; i++) {
                 const planeSpec = menuMesh.gridMesh.planes[i];
                 const {plane, leftLine, topLine} = planeSpec;
                 intersectionPoint = controllerMesh.ray.intersectPlane(plane, localVector);
@@ -1141,7 +1150,8 @@
               })();
 
               if (!oldIframe) {
-                _openUrl(links[intersectionLinkIndex], intersectionLinkIndex, framebuffer => {
+                const currentLinks = _getCurrentLinks();
+                _openUrl(currentLinks[intersectionLinkIndex], intersectionLinkIndex, framebuffer => {
                   const texture = frontMeshes[intersectionLinkIndex].material.map;
 
                   const properties = renderer.properties.get(texture);
