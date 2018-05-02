@@ -25,7 +25,7 @@ const he = require('he');
 he.encode.options.useNamedReferences = true;
 const selector = require('window-selector');
 const css = require('css');
-const {TextEncoder, TextDecoder} = require('text-encoding');
+const {TextEncoder, TextDecoder} = require('window-text-encoding');
 const parseXml = require('@rgrove/parse-xml');
 const THREE = require('./lib/three-min.js');
 
