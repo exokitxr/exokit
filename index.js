@@ -585,7 +585,7 @@ if (require.main === module) {
         }
       });
       window.addEventListener('error', err => {
-        console.warn('got error', err.error.stack);
+        console.warn('got error', err);
       });
 
       let lastFrameTime = Date.now();
@@ -690,7 +690,7 @@ if (require.main === module) {
       });
 
       window.addEventListener('error', err => {
-        console.warn('got error', err.error.stack);
+        console.warn('got error', err);
       });
 
       const _recurse = () => {
