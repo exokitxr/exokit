@@ -481,7 +481,7 @@ if (require.main === module) {
         let runtimePath = null;
         const platform = os.platform();
         if (platform === 'win32') {
-          rootPath = path.join(os.homedir(), 'AppData', 'openvr', 'openvrpaths.vrpath');
+          rootPath = path.join(os.homedir(), 'AppData', 'Local', 'openvr', 'openvrpaths.vrpath');
           runtimePath = 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\SteamVR';
         } else if (platform === 'darwin') {
           rootPath = path.join('/Users/', os.userInfo().username, '/Library/Application Support/OpenVR/.openvr');
