@@ -43,7 +43,7 @@
     "he": "^1.1.1",
     "history": "^4.7.2",
     "isolator": "0.0.9",
-    "magicleap": "0.0.16",
+    "magicleap": "0.0.17",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.20",
