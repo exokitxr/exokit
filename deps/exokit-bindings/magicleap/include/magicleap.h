@@ -23,6 +23,7 @@
 #include <ml_meshing.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
+#include <ml_occlusion.h>
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
 
@@ -107,6 +108,9 @@ protected:
   std::vector<uint8_t> positions;
   std::vector<uint8_t> normals;
   std::vector<uint8_t> triangles;
+
+  // occlusion
+  // MLHandle occlusionTracker;
 };
 
 }

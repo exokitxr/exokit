@@ -332,6 +332,12 @@ NAN_METHOD(MLContext::Init) {
     }
   });
 
+  /* MLStatus occlusionStatus;
+  MLOcclusionCreateClient(&mlContext->occlusionTracker, &occlusionStatus);
+  if (!MLHandleIsValid(mlContext->occlusionTracker)) {
+    ML_LOG(Error, "%s: Failed to create occlusion tracker.", application_name);
+  } */
+
   info.GetReturnValue().Set(JS_BOOL(true));
 }
 
@@ -398,7 +404,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       }
 
       // viewport
-      const MLRectf& viewport = mlContext->virtual_camera_array.viewport;
+      const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
       viewportArray->Set(0, JS_INT((int)viewport.x));
       viewportArray->Set(1, JS_INT((int)viewport.y));
       viewportArray->Set(2, JS_INT((unsigned int)viewport.w));
@@ -535,6 +541,19 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           mlContext->haveMeshStaticData = false;
         }
       }
+      
+      /* // occlusion
+      MLOcclusionDepthBufferInfo occlusionBuffer;
+      for (size_t i = 0; i < 2; i++) {
+        occlusionBuffer.buffers[i].projection = mlContext->virtual_camera_array.virtual_cameras[i].projection;
+        occlusionBuffer.buffers[i].transform = mlContext->virtual_camera_array.virtual_cameras[i].transform;
+      }
+      occlusionBuffer.projection_type = MLGraphicsProjectionType_Default;
+      occlusionBuffer.num_buffers = 2;
+      occlusionBuffer.viewport = viewport;
+      if (!MLOcclusionPopulateDepth(mlContext->occlusionTracker, &occlusionBuffer, &out_status)) {
+        ML_LOG(Error, "MLOcclusionPopulateDepth outer failed: %d", out_status);
+      } */
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
     }
