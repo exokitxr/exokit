@@ -592,32 +592,25 @@
         const delta = new THREE.Vector3();
 
         const allPortalMeshes = portalMeshes.concat([blankSkyboxMesh]);
-        if (scale.y > 0.01) {
-          for (let i = 0; i < allPortalMeshes.length; i++) {
-            const portalMesh = allPortalMeshes[i];
-            const {y} = portalMesh.coords;
+        for (let i = 0; i < allPortalMeshes.length; i++) {
+          const portalMesh = allPortalMeshes[i];
+          const {y} = portalMesh.coords;
 
-            portalMesh.position.copy(position);
-            portalMesh.quaternion.copy(quaternion);
-            portalMesh.scale.copy(scale);
+          portalMesh.position.copy(position);
+          portalMesh.quaternion.copy(quaternion);
+          portalMesh.scale.copy(scale);
 
-            delta.set(-urlBarWorldWidth/2 + gridWorldSize/2, -urlBarWorldHeight - gridWorldSize/2 - y*gridWorldSize, 0);
-            delta.applyQuaternion(quaternion);
-            portalMesh.position.add(delta);
+          delta.set(-urlBarWorldWidth/2 + gridWorldSize/2, -urlBarWorldHeight - gridWorldSize/2 - y*gridWorldSize, 0);
+          delta.applyQuaternion(quaternion);
+          portalMesh.position.add(delta);
 
-            if (currentPortal !== -1 && (frontMeshes.indexOf(portalMesh) !== -1 || backMeshes.indexOf(portalMesh) !== -1)) {
-              portalMesh.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)));
-            }
-
-            portalMesh.matrix.compose(portalMesh.position, portalMesh.quaternion, portalMesh.scale);
-            portalMesh.matrixWorld.copy(portalMesh.matrix);
-            portalMesh.visible = true;
+          if (currentPortal !== -1 && (frontMeshes.indexOf(portalMesh) !== -1 || backMeshes.indexOf(portalMesh) !== -1)) {
+            portalMesh.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)));
           }
-        } else {
-          for (let i = 0; i < allPortalMeshes.length; i++) {
-            const portalMesh = allPortalMeshes[i];
-            portalMesh.visible = false;
-          }
+
+          portalMesh.matrix.compose(portalMesh.position, portalMesh.quaternion, portalMesh.scale);
+          portalMesh.matrixWorld.copy(portalMesh.matrix);
+          portalMesh.visible = true;
         }
       };
 
@@ -1191,10 +1184,23 @@
             menuMesh.scale.y = scaleY;
             menuMesh.updateMatrixWorld();
             menuMesh.visible = true;
+            for (let i = 0; i < controllerMeshes.length; i++) {
+              controllerMeshes[i].rayMesh.visible = true;
+            }
+            for (let i = 0; i < portalMeshes.length; i++) {
+              portalMeshes[i].visible = true;
+            }
           } else {
             const visible = keyboardMesh.planeMesh.scale.y > 0.5;
             keyboardMesh.visible = visible;
             menuMesh.visible = visible;
+            for (let i = 0; i < controllerMeshes.length; i++) {
+              controllerMeshes[i].rayMesh.visible = visible;
+            }
+            for (let i = 0; i < portalMeshes.length; i++) {
+              portalMeshes[i].visible = visible;
+            }
+
             keyboardMeshAnimation = null;
           }
         }
