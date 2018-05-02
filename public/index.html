@@ -591,7 +591,8 @@
         menuMesh.matrixWorld.decompose(position, quaternion, scale);
         const delta = new THREE.Vector3();
 
-        const allPortalMeshes = portalMeshes.concat([blankSkyboxMesh]);
+        // const allPortalMeshes = portalMeshes.concat([blankSkyboxMesh]);
+        const allPortalMeshes = portalMeshes;
         for (let i = 0; i < allPortalMeshes.length; i++) {
           const portalMesh = allPortalMeshes[i];
           const {y} = portalMesh.coords;
@@ -807,7 +808,7 @@
     plane.geometry.computeVertexNormals();
     scene.add(plane); */
 
-    const blankSkyboxMesh = new THREE.Mesh(new THREE.BoxBufferGeometry(90, 90, 90), new THREE.MeshBasicMaterial({
+    /* const blankSkyboxMesh = new THREE.Mesh(new THREE.BoxBufferGeometry(90, 90, 90), new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
       side: THREE.BackSide,
     }));
@@ -816,7 +817,7 @@
       x: 0,
       y: 0,
     };
-    scene.add(blankSkyboxMesh);
+    scene.add(blankSkyboxMesh); */
 
     const finishMesh = new THREE.Mesh();
     finishMesh.frustumCulled = false;
@@ -1087,6 +1088,14 @@
                     .set(0, 0.5, -2)
                     .applyEuler(localEuler)
                 );
+
+              for (let i = 0; i < controllerMeshes.length; i++) {
+                controllerMeshes[i].rayMesh.visible = true;
+              }
+            } else {
+              for (let i = 0; i < controllerMeshes.length; i++) {
+                controllerMeshes[i].rayMesh.visible = false;
+              }
             }
 
             localEuler.setFromQuaternion(
@@ -1184,9 +1193,6 @@
             menuMesh.scale.y = scaleY;
             menuMesh.updateMatrixWorld();
             menuMesh.visible = true;
-            for (let i = 0; i < controllerMeshes.length; i++) {
-              controllerMeshes[i].rayMesh.visible = true;
-            }
             for (let i = 0; i < portalMeshes.length; i++) {
               portalMeshes[i].visible = true;
             }
@@ -1194,9 +1200,6 @@
             const visible = keyboardMesh.planeMesh.scale.y > 0.5;
             keyboardMesh.visible = visible;
             menuMesh.visible = visible;
-            for (let i = 0; i < controllerMeshes.length; i++) {
-              controllerMeshes[i].rayMesh.visible = visible;
-            }
             for (let i = 0; i < portalMeshes.length; i++) {
               portalMeshes[i].visible = visible;
             }
