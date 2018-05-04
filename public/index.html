@@ -83,6 +83,7 @@
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
+    const localVector4 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     localEuler.order = 'YXZ';
@@ -209,6 +210,78 @@
       const geometry = handGeometry;
       const material = handMaterial;
       const handMesh = new THREE.Mesh(geometry, material);
+
+      const fingerMeshes = Array(5);
+      for (let j = 0; j < fingerMeshes.length; j++) {
+        const boneMeshes = Array(4);
+        for (let k = 0; k < boneMeshes.length; k++) {
+          const boneMesh = new THREE.Mesh(geometry, material);
+          scene.add(boneMesh);
+          boneMeshes[k] = boneMesh;
+        }
+        fingerMeshes[j] = boneMeshes;
+      }
+
+      handMesh.update = handArray => {
+        const upVector = localVector.set(0, 1, 0);
+        const palmNormal = localVector2.set(handArray[3], handArray[4], handArray[5]);
+
+        if (palmNormal.x !== 0 || palmNormal.y !== 0 || palmNormal.z !== 0) {
+          const palmPosition = localVector3.set(handArray[0], handArray[1], handArray[2])
+
+          handMesh.position
+            .copy(camera.position)
+            .add(
+              palmPosition.applyQuaternion(camera.quaternion)
+            );
+          handMesh.quaternion.setFromUnitVectors(
+            localVector,
+            palmNormal
+          ).premultiply(camera.quaternion);
+
+          for (let j = 0; j < fingerMeshes.length; j++) {
+            const boneMeshes = fingerMeshes[j];
+
+            for (let k = 0; k < boneMeshes.length; k++) {
+              const boneMesh = boneMeshes[k];
+
+              const baseIndex = (1 + (j * 4) + k) * (3 + 3);
+              const boneStartPosition = localVector3.set(handArray[baseIndex + 0], handArray[baseIndex + 1], handArray[baseIndex + 2]);
+              const boneEndPosition = localVector4.set(handArray[baseIndex + 3], handArray[baseIndex + 4], handArray[baseIndex + 5]);
+              const boneNormal = boneEndPosition
+                .sub(boneStartPosition);
+              const boneLength = boneNormal.length();
+              boneNormal.divideScalar(boneLength);
+
+              boneMesh.position
+                .copy(camera.position)
+                .add(
+                  boneStartPosition.applyQuaternion(camera.quaternion)
+                );
+              boneMesh.quaternion.setFromUnitVectors(
+                upVector,
+                boneNormal
+              ).premultiply(camera.quaternion);
+              // boneMesh.scale.y = boneLength;
+              boneMesh.updateMatrixWorld();
+              boneMesh.visible = true;
+            }
+          }
+          handMesh.updateMatrixWorld();
+          handMesh.visible = true;
+        } else {
+          handMesh.visible = false;
+
+          for (let j = 0; j < fingerMeshes.length; j++) {
+            const boneMeshes = fingerMeshes[j];
+            for (let k = 0; k < boneMeshes.length; k++) {
+              const boneMesh = boneMeshes[k];
+              boneMesh.visible = false;
+            }
+          }
+        }
+      };
+
       scene.add(handMesh);
       handMeshes[i] = handMesh;
     }
@@ -908,29 +981,8 @@
       };
       const _updateHands = () => {
         if (renderer.vr.frameData && renderer.vr.frameData.hands) {
-          const upVector = localVector.set(0, 1, 0);
           for (let i = 0; i < renderer.vr.frameData.hands.length; i++) {
-            const handData = renderer.vr.frameData.hands[i];
-            const palmNormal = localVector2.set(handData[3], handData[4], handData[5]);
-
-            const handMesh = handMeshes[i];
-
-            if (palmNormal.x !== 0 || palmNormal.y !== 0 || palmNormal.z !== 0) {
-              handMesh.position
-                .copy(camera.position)
-                .add(
-                  localVector3.set(handData[0], handData[1], handData[2])
-                    .applyQuaternion(camera.quaternion)
-                );
-              handMesh.quaternion.setFromUnitVectors(
-                upVector,
-                palmNormal
-              ).premultiply(camera.quaternion);
-            } else {
-              handMesh.position.set(0, 0, 0);
-              handMesh.quaternion.set(0, 0, 0, 1);
-            }
-            handMesh.updateMatrixWorld();
+            handMeshes[i].update(renderer.vr.frameData.hands[i]);
           }
         }
       };
