@@ -179,7 +179,11 @@ void InitExports(Handle<Object> exports) {
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
 
-#ifdef MAGICLEAP
+#if _WIN32
+  Local<Value> lm = makeLm();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeLm"), lm);
+#endif
+
   Local<Value> ml = makeMl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 #endif

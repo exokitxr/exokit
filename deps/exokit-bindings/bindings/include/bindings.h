@@ -14,6 +14,7 @@
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
+#include <leapmotion.h>
 #ifdef MAGICLEAP
 #include <magicleap.h>
 #endif
