@@ -229,7 +229,7 @@
         const palmNormal = localVector2.set(handArray[3], handArray[4], handArray[5]);
 
         if (palmNormal.x !== 0 || palmNormal.y !== 0 || palmNormal.z !== 0) {
-          const palmPosition = localVector3.set(handArray[0], handArray[1], handArray[2])
+          /* const palmPosition = localVector3.set(handArray[0], handArray[1], handArray[2])
 
           handMesh.position
             .copy(camera.position)
@@ -239,7 +239,7 @@
           handMesh.quaternion.setFromUnitVectors(
             localVector,
             palmNormal
-          ).premultiply(camera.quaternion);
+          ).premultiply(camera.quaternion); */
 
           for (let j = 0; j < fingerMeshes.length; j++) {
             const boneMeshes = fingerMeshes[j];
@@ -269,10 +269,10 @@
               boneMesh.visible = true;
             }
           }
-          handMesh.updateMatrixWorld();
-          handMesh.visible = true;
+          // handMesh.updateMatrixWorld();
+          // handMesh.visible = true;
         } else {
-          handMesh.visible = false;
+          // handMesh.visible = false;
 
           for (let j = 0; j < fingerMeshes.length; j++) {
             const boneMeshes = fingerMeshes[j];
