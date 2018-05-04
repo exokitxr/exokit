@@ -84,6 +84,7 @@
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
     const localVector4 = new THREE.Vector3();
+    const localVector5 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     localEuler.order = 'YXZ';
@@ -202,7 +203,7 @@
     });
 
     const handMeshes = [null, null];
-    const handGeometry = new THREE.CylinderBufferGeometry(0, 0.01, 0.1);
+    const handGeometry = new THREE.CylinderBufferGeometry(0.002, 0.005, 1, 3);
     const handMaterial = new THREE.MeshPhongMaterial({
       color: 0x00FF00,
     });
@@ -250,21 +251,22 @@
               const baseIndex = (1 + (j * 4) + k) * (3 + 3);
               const boneStartPosition = localVector3.set(handArray[baseIndex + 0], handArray[baseIndex + 1], handArray[baseIndex + 2]);
               const boneEndPosition = localVector4.set(handArray[baseIndex + 3], handArray[baseIndex + 4], handArray[baseIndex + 5]);
-              const boneNormal = boneEndPosition
+              const boneCenter = localVector5.copy(boneStartPosition).add(boneEndPosition).divideScalar(2);
+              const boneDirection = boneEndPosition
                 .sub(boneStartPosition);
-              const boneLength = boneNormal.length();
-              boneNormal.divideScalar(boneLength);
+              const boneLength = boneDirection.length();
+              boneDirection.divideScalar(boneLength);
 
               boneMesh.position
                 .copy(camera.position)
                 .add(
-                  boneStartPosition.applyQuaternion(camera.quaternion)
+                  boneCenter.applyQuaternion(camera.quaternion)
                 );
               boneMesh.quaternion.setFromUnitVectors(
                 upVector,
-                boneNormal
+                boneDirection
               ).premultiply(camera.quaternion);
-              // boneMesh.scale.y = boneLength;
+              boneMesh.scale.y = boneLength;
               boneMesh.updateMatrixWorld();
               boneMesh.visible = true;
             }
