@@ -184,6 +184,7 @@ void InitExports(Handle<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeLm"), lm);
 #endif
 
+#if MAGICLEAP
   Local<Value> ml = makeMl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 #endif
