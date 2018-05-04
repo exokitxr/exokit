@@ -200,6 +200,19 @@
       controllerMeshes[1].add(object.clone());
     });
 
+    const handMeshes = [null, null];
+    const handGeometry = new THREE.CylinderBufferGeometry(0, 0.01, 0.1);
+    const handMaterial = new THREE.MeshPhongMaterial({
+      color: 0x00FF00,
+    });
+    for (let i = 0; i < handMeshes.length; i++) {
+      const geometry = handGeometry;
+      const material = handMaterial;
+      const handMesh = new THREE.Mesh(geometry, material);
+      scene.add(handMesh);
+      handMeshes[i] = handMesh;
+    }
+
     const portalGeometry = new THREE.PlaneBufferGeometry(gridWorldSize, gridWorldSize);
     const portalBackGeometry = portalGeometry.clone()
       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1))));
@@ -893,6 +906,34 @@
           }
         }
       };
+      const _updateHands = () => {
+        if (renderer.vr.frameData && renderer.vr.frameData.hands) {
+          const upVector = localVector.set(0, 1, 0);
+          for (let i = 0; i < renderer.vr.frameData.hands.length; i++) {
+            const handData = renderer.vr.frameData.hands[i];
+            const palmNormal = localVector2.set(handData[3], handData[4], handData[5]);
+
+            const handMesh = handMeshes[i];
+
+            if (palmNormal.x !== 0 || palmNormal.y !== 0 || palmNormal.z !== 0) {
+              handMesh.position
+                .copy(camera.position)
+                .add(
+                  localVector3.set(handData[0], handData[1], handData[2])
+                    .applyQuaternion(camera.quaternion)
+                );
+              handMesh.quaternion.setFromUnitVectors(
+                upVector,
+                palmNormal
+              ).premultiply(camera.quaternion);
+            } else {
+              handMesh.position.set(0, 0, 0);
+              handMesh.quaternion.set(0, 0, 0, 1);
+            }
+            handMesh.updateMatrixWorld();
+          }
+        }
+      };
       const _updateIntersections = () => {
         keyboardMesh.update();
         menuMesh.urlMesh.update();
@@ -1238,6 +1279,7 @@
       };
       _updateControls();
       _updateControllers();
+      _updateHands();
       _updateIntersections();
       _animateKeyboard();
       _animateControllers();
