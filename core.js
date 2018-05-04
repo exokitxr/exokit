@@ -978,7 +978,7 @@ class FakeDisplay extends MRDisplay {
     frameData.rightProjectionMatrix.set(this._projectionMatrix);
   }
 } */
-class MLMesh {
+/* class MLMesh {
   constructor() {
     this.positions = new Float32Array(9);
     this.normals = Float32Array.from([
@@ -988,7 +988,7 @@ class MLMesh {
     ]);
     this.indices = Uint32Array.from([0, 1, 2]);
   }
-}
+} */
 class MLDisplay extends MRDisplay {
   constructor(window, displayId) {
     super('ML', window, displayId);
