@@ -864,6 +864,7 @@ if (require.main === module) {
             frameData,
             stageParameters,
             gamepads,
+            handsArray,
           });
 
           if (args.performance) {

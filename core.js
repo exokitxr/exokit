@@ -564,6 +564,7 @@ class Screen {
 }
 let nativeVr = null;
 let nativeMl = null;
+const handEntrySize = 3 + 3;
 const maxNumPlanes = 32 * 3;
 const planeEntrySize = 3 + 4 + 2 + 1;
 class VRFrameData {
@@ -577,6 +578,10 @@ class VRFrameData {
     this.pose = new VRPose();
 
     // non-standard
+    this.hands = [
+      new Float32Array(handEntrySize),
+      new Float32Array(handEntrySize),
+    ];
     this.planes = new Float32Array(maxNumPlanes * planeEntrySize);
     this.numPlanes = 0;
   }
@@ -589,6 +594,9 @@ class VRFrameData {
     this.pose.copy(frameData.pose);
 
     // non-standard
+    for (let i = 0; i < this.hands.length; i++) {
+      this.hands[i].set(frameData.hands[i]);
+    }
     this.planes.set(frameData.planes);
     this.numPlanes = frameData.numPlanes;
   }
@@ -833,6 +841,7 @@ class VRDisplay extends MRDisplay {
         rightFov,
         frameData,
         stageParameters,
+        handsArray,
       } = update;
 
       if (depthNear !== undefined) {
@@ -864,6 +873,10 @@ class VRDisplay extends MRDisplay {
       }
       if (stageParameters !== undefined) {
         this.stageParameters.copy(stageParameters);
+      }
+      if (handsArray !== undefined) {
+        this._frameData.hands[0].set(handsArray[0]);
+        this._frameData.hands[1].set(handsArray[1]);
       }
     };
     window.top.on('updatevrframe', _updatevrframe);
