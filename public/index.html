@@ -210,12 +210,14 @@
       const geometry = handGeometry;
       const material = handMaterial;
       const handMesh = new THREE.Mesh(geometry, material);
+      handMesh.visible = false;
 
       const fingerMeshes = Array(5);
       for (let j = 0; j < fingerMeshes.length; j++) {
         const boneMeshes = Array(4);
         for (let k = 0; k < boneMeshes.length; k++) {
           const boneMesh = new THREE.Mesh(geometry, material);
+          boneMesh.visible = false;
           scene.add(boneMesh);
           boneMeshes[k] = boneMesh;
         }
