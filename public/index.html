@@ -203,21 +203,24 @@
     });
 
     const handMeshes = [null, null];
-    const handGeometry = new THREE.CylinderBufferGeometry(0.002, 0.005, 1, 3);
-    const handMaterial = new THREE.MeshPhongMaterial({
+    const fingerTipGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0));
+    const boneGeometry = new THREE.CylinderBufferGeometry(0.002, 0.005, 1, 3);
+    const fingerTipMaterial = new THREE.MeshBasicMaterial({
+      color: RAY_COLOR,
+    });
+    const boneMaterial = new THREE.MeshPhongMaterial({
       color: 0x00FF00,
     });
     for (let i = 0; i < handMeshes.length; i++) {
-      const geometry = handGeometry;
-      const material = handMaterial;
-      const handMesh = new THREE.Mesh(geometry, material);
+      const handMesh = new THREE.Mesh(fingerTipGeometry, fingerTipMaterial);
       handMesh.visible = false;
 
       const fingerMeshes = Array(5);
       for (let j = 0; j < fingerMeshes.length; j++) {
         const boneMeshes = Array(4);
         for (let k = 0; k < boneMeshes.length; k++) {
-          const boneMesh = new THREE.Mesh(geometry, material);
+          const boneMesh = new THREE.Mesh(boneGeometry, boneMaterial);
           boneMesh.visible = false;
           scene.add(boneMesh);
           boneMeshes[k] = boneMesh;
