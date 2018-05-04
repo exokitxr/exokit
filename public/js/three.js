@@ -20917,7 +20917,7 @@
 		var scope = this;
 
 		var device = null;
-		var frameData = null;
+		this.frameData = null;
 
 		var poseTarget = null;
 
@@ -20926,7 +20926,7 @@
 
 		if ( typeof window !== 'undefined' && 'VRFrameData' in window ) {
 
-			frameData = new window.VRFrameData();
+			this.frameData = new window.VRFrameData();
 
 		}
 
@@ -21007,7 +21007,7 @@
 			device.depthNear = camera.near;
 			device.depthFar = camera.far;
 
-			device.getFrameData( frameData );
+			device.getFrameData( this.frameData );
 
 			//
 
@@ -21024,7 +21024,7 @@
 			}
 
 
-			var pose = frameData.pose;
+			var pose = this.frameData.pose;
 			var poseObject = poseTarget !== null ? poseTarget : camera;
 
 			// We want to manipulate poseObject by its position and quaternion components since users may rely on them.
@@ -21062,8 +21062,8 @@
 			cameraVR.matrixWorld.copy( camera.matrixWorld );
 			cameraVR.matrixWorldInverse.copy( camera.matrixWorldInverse );
 
-			cameraL.matrixWorldInverse.fromArray( frameData.leftViewMatrix );
-			cameraR.matrixWorldInverse.fromArray( frameData.rightViewMatrix );
+			cameraL.matrixWorldInverse.fromArray( this.frameData.leftViewMatrix );
+			cameraR.matrixWorldInverse.fromArray( this.frameData.rightViewMatrix );
 
 			// TODO (mrdoob) Double check this code
 
@@ -21088,8 +21088,8 @@
 			cameraL.matrixWorld.getInverse( cameraL.matrixWorldInverse );
 			cameraR.matrixWorld.getInverse( cameraR.matrixWorldInverse );
 
-			cameraL.projectionMatrix.fromArray( frameData.leftProjectionMatrix );
-			cameraR.projectionMatrix.fromArray( frameData.rightProjectionMatrix );
+			cameraL.projectionMatrix.fromArray( this.frameData.leftProjectionMatrix );
+			cameraR.projectionMatrix.fromArray( this.frameData.rightProjectionMatrix );
 
 			// HACK (mrdoob)
 			// https://github.com/w3c/webvr/issues/203
