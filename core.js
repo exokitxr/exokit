@@ -920,7 +920,7 @@ class FakeDisplay extends MRDisplay {
         this.isPresenting = true;
       });
   }
-  
+
   exitPresent() {
     return Promise.resolve()
       .then(() => {
@@ -931,7 +931,7 @@ class FakeDisplay extends MRDisplay {
   getFrameData(frameData) {
     frameData.copy(this._frameData);
   }
-  
+
   getLayers() {
     return [
       {
@@ -3220,7 +3220,7 @@ let rafCbs = [];
 const tickAnimationFrame = () => {
   if (rafCbs.length > 0) {
     const localRafCbs = rafCbs.slice();
-    
+
     const _handleRaf = localRafCb => {
       if (rafCbs.includes(localRafCb)) {
         localRafCb(now);
