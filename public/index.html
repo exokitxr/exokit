@@ -95,6 +95,7 @@
     const renderer = new THREE.WebGLRenderer({
       canvas,
     });
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.sortObjects = false;
     renderer.vr.enabled = true;
 
@@ -1373,6 +1374,7 @@
         renderer.vr.setDevice(null);
       }
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
       if (device === fakeDisplay) {
         renderer.vr.setDevice(fakeDisplay);
       }
