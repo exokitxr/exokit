@@ -194,11 +194,10 @@ NAN_METHOD(LMContext::WaitGetPoses) {
     size_t numHands = hands.count();
     for (size_t i = 0; i < numHands && i < 2; i++) {
       const Leap::Hand hand = hands[i];
-      size_t index = hand.isLeft() ? 0 : 1;
       const Leap::Vector position = hand.palmPosition();
       const Leap::Vector normal = hand.palmNormal();
 
-      Local<Float32Array> handFloat32Array = Local<Float32Array>::Cast(array->Get(index));
+      Local<Float32Array> handFloat32Array = Local<Float32Array>::Cast(array->Get(i));
       handFloat32Array->Set(0, JS_NUM(-position.x / 1000.0));
       handFloat32Array->Set(1, JS_NUM(-position.z / 1000.0));
       handFloat32Array->Set(2, JS_NUM(-position.y / 1000.0));
