@@ -205,8 +205,33 @@ NAN_METHOD(LMContext::WaitGetPoses) {
       handFloat32Array->Set(3, JS_NUM(-normal.x));
       handFloat32Array->Set(4, JS_NUM(-normal.z));
       handFloat32Array->Set(5, JS_NUM(-normal.y));
+      
+      const Leap::FingerList fingers = hand.fingers();
+      size_t numFingers = fingers.count();
+      for (size_t i = 0 ; i < numFingers; i++) {
+        const Leap::Finger finger = fingers[i];
 
-      // std::cout << "set normal " << position.x << " " << position.y << " " << position.z << "\n";
+        for (int b = 0; b < 4; b++) {
+          Leap::Bone::Type boneType = static_cast<Leap::Bone::Type>(b);
+          Leap::Bone bone = finger.bone(boneType);
+          Leap::Vector center = bone.center();
+          Leap::Vector centerV(-center.x / 1000.0, -center.z / 1000.0, -center.y / 1000.0);
+          Leap::Vector direction = bone.direction();
+          Leap::Vector directionV(-direction.x, -direction.z, -direction.y);
+          float length = bone.length() / 1000.0;
+          
+          Leap::Vector start = centerV + (directionV * length/2);
+          Leap::Vector end = centerV - (directionV * length/2);
+          
+          size_t baseIndex = (1 + (i * 4) + b) * (3 + 3);
+          handFloat32Array->Set(baseIndex + 0, JS_NUM(start.x));
+          handFloat32Array->Set(baseIndex + 1, JS_NUM(start.y));
+          handFloat32Array->Set(baseIndex + 2, JS_NUM(start.z));
+          handFloat32Array->Set(baseIndex + 3, JS_NUM(end.x));
+          handFloat32Array->Set(baseIndex + 4, JS_NUM(end.y));
+          handFloat32Array->Set(baseIndex + 5, JS_NUM(end.z));
+        }
+      }
     }
   } else {
     Nan::ThrowError("LMContext::WaitGetPoses: invalid arguments");
