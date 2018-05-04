@@ -16,7 +16,7 @@ const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
-const {nativeVideo, nativeVr, nativeMl, nativeWindow} = nativeBindings;
+const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow} = nativeBindings;
 
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');
 
@@ -155,12 +155,17 @@ const localFovArray = new Float32Array(4);
 const localFovArray2 = new Float32Array(4);
 const localGamepadArray = new Float32Array(16);
 
+const handEntrySize = 3 + 3;
 const maxNumPlanes = 32 * 3;
 const planeEntrySize = 3 + 4 + 2 + 1;
 const framebufferArray = new Uint32Array(2);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
 const viewportArray = new Uint32Array(4);
+const handsArray = [
+  new Float32Array(handEntrySize),
+  new Float32Array(handEntrySize),
+];
 const planesArray = new Float32Array(planeEntrySize * maxNumPlanes);
 const numPlanesArray = new Uint32Array(1);
 const controllersArray = new Float32Array((3 + 4 + 1) * 2);
@@ -188,6 +193,7 @@ const vrPresentState = {
   msTex: null,
   fbo: null,
   tex: null,
+  lmContext: null,
 };
 let renderWidth = 0;
 let renderHeight = 0;
@@ -261,6 +267,8 @@ nativeVr.requestPresent = function(layers) {
               vrPresentState.msTex = msTex;
               vrPresentState.fbo = fbo;
               vrPresentState.tex = tex;
+
+              vrPresentState.lmContext = nativeLm && new nativeLm();
             })
         );
     } else {
@@ -837,6 +845,10 @@ if (require.main === module) {
             gamepads[1] = rightGamepad;
           } else {
             gamepads[1] = null;
+          }
+
+          if (vrPresentState.lmContext) {
+            vrPresentState.lmContext.WaitGetPoses(handsArray);
           }
 
           // update vr frame
