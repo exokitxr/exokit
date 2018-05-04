@@ -207,28 +207,41 @@ NAN_METHOD(LMContext::WaitGetPoses) {
       
       const Leap::FingerList fingers = hand.fingers();
       size_t numFingers = fingers.count();
-      for (size_t i = 0 ; i < numFingers; i++) {
-        const Leap::Finger finger = fingers[i];
+      for (size_t j = 0; j < numFingers; j++) {
+        const Leap::Finger finger = fingers[j];
 
-        for (int b = 0; b < 4; b++) {
-          Leap::Bone::Type boneType = static_cast<Leap::Bone::Type>(b);
+        Leap::Vector fingerTip = finger.tipPosition();
+        Leap::Vector fingerTipV(-fingerTip.x / 1000.0, -fingerTip.z / 1000.0, -fingerTip.y / 1000.0);
+        Leap::Vector fingerDirection = finger.direction();
+        Leap::Vector fingerDirectionV(-fingerDirection.x, -fingerDirection.z, -fingerDirection.y);
+        
+        size_t fingerBaseIndex = (1 + (j * 5)) * (3 + 3);
+        handFloat32Array->Set(fingerBaseIndex + 0, JS_NUM(fingerTipV.x));
+        handFloat32Array->Set(fingerBaseIndex + 1, JS_NUM(fingerTipV.y));
+        handFloat32Array->Set(fingerBaseIndex + 2, JS_NUM(fingerTipV.z));
+        handFloat32Array->Set(fingerBaseIndex + 3, JS_NUM(fingerDirectionV.x));
+        handFloat32Array->Set(fingerBaseIndex + 4, JS_NUM(fingerDirectionV.y));
+        handFloat32Array->Set(fingerBaseIndex + 5, JS_NUM(fingerDirectionV.z));
+
+        for (int k = 0; k < 4; k++) {
+          Leap::Bone::Type boneType = static_cast<Leap::Bone::Type>(k);
           Leap::Bone bone = finger.bone(boneType);
-          Leap::Vector center = bone.center();
-          Leap::Vector centerV(-center.x / 1000.0, -center.z / 1000.0, -center.y / 1000.0);
-          Leap::Vector direction = bone.direction();
-          Leap::Vector directionV(-direction.x, -direction.z, -direction.y);
+          Leap::Vector boneCenter = bone.center();
+          Leap::Vector boneCenterV(-boneCenter.x / 1000.0, -boneCenter.z / 1000.0, -boneCenter.y / 1000.0);
+          Leap::Vector boneDirection = bone.direction();
+          Leap::Vector boneDirectionV(-boneDirection.x, -boneDirection.z, -boneDirection.y);
           float length = bone.length() / 1000.0;
           
-          Leap::Vector start = centerV + (directionV * length/2);
-          Leap::Vector end = centerV - (directionV * length/2);
+          Leap::Vector boneStart = boneCenterV + (boneDirectionV * length/2);
+          Leap::Vector boneEnd = boneCenterV - (boneDirectionV * length/2);
           
-          size_t baseIndex = (1 + (i * 4) + b) * (3 + 3);
-          handFloat32Array->Set(baseIndex + 0, JS_NUM(start.x));
-          handFloat32Array->Set(baseIndex + 1, JS_NUM(start.y));
-          handFloat32Array->Set(baseIndex + 2, JS_NUM(start.z));
-          handFloat32Array->Set(baseIndex + 3, JS_NUM(end.x));
-          handFloat32Array->Set(baseIndex + 4, JS_NUM(end.y));
-          handFloat32Array->Set(baseIndex + 5, JS_NUM(end.z));
+          size_t boneBaseIndex = (1 + (j * 5) + (k + 1)) * (3 + 3);
+          handFloat32Array->Set(boneBaseIndex + 0, JS_NUM(boneStart.x));
+          handFloat32Array->Set(boneBaseIndex + 1, JS_NUM(boneStart.y));
+          handFloat32Array->Set(boneBaseIndex + 2, JS_NUM(boneStart.z));
+          handFloat32Array->Set(boneBaseIndex + 3, JS_NUM(boneEnd.x));
+          handFloat32Array->Set(boneBaseIndex + 4, JS_NUM(boneEnd.y));
+          handFloat32Array->Set(boneBaseIndex + 5, JS_NUM(boneEnd.z));
         }
       }
     }

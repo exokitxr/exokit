@@ -564,7 +564,7 @@ class Screen {
 }
 let nativeVr = null;
 let nativeMl = null;
-const handEntrySize = (3 + 3) + ((3 + 3) * 5 * 4);
+const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
 const planeEntrySize = 3 + 4 + 2 + 1;
 class VRFrameData {
