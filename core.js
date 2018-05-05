@@ -28,6 +28,18 @@ const css = require('css');
 const {TextEncoder, TextDecoder} = require('window-text-encoding');
 const parseXml = require('@rgrove/parse-xml');
 const THREE = require('./lib/three-min.js');
+const {
+  MRDisplay,
+  VRDisplay,
+  FakeVRDisplay,
+  VRFrameData,
+  VRPose,
+  VRStageParameters,
+  Gamepad,
+  GamepadButton,
+  getGamepads,
+  getAllGamepads,
+} = require('vr-display')(THREE);
 
 const windowSymbol = Symbol();
 const htmlTagsSymbol = Symbol();
@@ -564,95 +576,27 @@ class Screen {
 }
 let nativeVr = null;
 let nativeMl = null;
+
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
 const planeEntrySize = 3 + 4 + 2 + 1;
-class VRFrameData {
-  constructor() {
-    // c = new THREE.PerspectiveCamera(); c.fov = 90; c.updateProjectionMatrix(); c.projectionMatrix.elements
-    this.leftProjectionMatrix = Float32Array.from([1.0000000000000002, 0, 0, 0, 0, 1.0000000000000002, 0, 0, 0, 0, -1.00010000500025, -1, 0, 0, -0.200010000500025, 0]);
-    // new THREE.Matrix4().toArray()
-    this.leftViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this.rightProjectionMatrix = this.leftProjectionMatrix.slice();
-    this.rightViewMatrix = this.leftViewMatrix.slice();
-    this.pose = new VRPose();
-
-    // non-standard
+VRFrameData.nonstandard = {
+  init() {
     this.hands = [
       new Float32Array(handEntrySize),
       new Float32Array(handEntrySize),
     ];
     this.planes = new Float32Array(maxNumPlanes * planeEntrySize);
     this.numPlanes = 0;
-  }
-
+  },
   copy(frameData) {
-    this.leftProjectionMatrix.set(frameData.leftProjectionMatrix);
-    this.leftViewMatrix.set(frameData.leftViewMatrix);
-    this.rightProjectionMatrix.set(frameData.rightProjectionMatrix);
-    this.rightViewMatrix.set(frameData.rightViewMatrix);
-    this.pose.copy(frameData.pose);
-
-    // non-standard
     for (let i = 0; i < this.hands.length; i++) {
       this.hands[i].set(frameData.hands[i]);
     }
     this.planes.set(frameData.planes);
     this.numPlanes = frameData.numPlanes;
-  }
-}
-class VRPose {
-  constructor(position = new Float32Array(3), orientation = Float32Array.from([0, 0, 0, 1])) {
-    this.position = position;
-    this.orientation = orientation;
-  }
-
-  set(position, orientation) {
-    position.toArray(this.position);
-    orientation.toArray(this.orientation);
-  }
-
-  copy(vrPose) {
-    this.position.set(vrPose.position);
-    this.orientation.set(vrPose.orientation);
-  }
-}
-class GamepadButton {
-  constructor() {
-     this.value = 0;
-     this.pressed = false;
-     this.touched = false;
-  }
-
-  copy(button) {
-    this.value = button.value;
-    this.pressed = button.pressed;
-    this.touched = button.touched;
-  }
-}
-class GamepadPose {
-  constructor() {
-    this.hasPosition = true;
-    this.hasOrientation = true;
-    this.position = new Float32Array(3);
-    this.linearVelocity = new Float32Array(3);
-    this.linearAcceleration = new Float32Array(3);
-    this.orientation = Float32Array.from([0, 0, 0, 1]);
-    this.angularVelocity = new Float32Array(3);
-    this.angularAcceleration = new Float32Array(3);
-  }
-
-  copy(pose) {
-    this.hasPosition = pose.hasPosition;
-    this.hasOrientation = pose.hasOrientation;
-    this.position.set(pose.position);
-    this.linearVelocity.set(pose.linearVelocity);
-    this.linearAcceleration.set(pose.linearAcceleration);
-    this.orientation.set(pose.orientation);
-    this.angularVelocity.set(pose.angularVelocity);
-    this.angularAcceleration.set(pose.angularAcceleration);
-  }
-}
+  },
+};
 class GamepadGesture {
   constructor() {
     this.position = new Float32Array(3);
@@ -664,300 +608,22 @@ class GamepadGesture {
     this.gesture = gesture.gesture;
   }
 }
-class Gamepad {
-  constructor(hand, index) {
-    this.hand = hand;
-    this.index = index;
-
-    this.connected = true;
-    this.buttons = [
-      new GamepadButton(),
-      new GamepadButton(),
-      new GamepadButton(),
-      new GamepadButton(),
-    ];
-    this.pose = new GamepadPose();
-    this.axes = new Float32Array(2);
-
-    // non-standard
+Gamepad.nonstandard = {
+  init() {
     this.gesture = new GamepadGesture();
-  }
-
+  },
   copy(gamepad) {
-    this.connected = gamepad.connected;
-    for (let i = 0; i < this.buttons.length; i++) {
-      this.buttons[i].copy(gamepad.buttons[i]);
-    }
-    this.pose.copy(gamepad.pose);
-    this.axes.set(gamepad.axes);
-
-    // non-standard
     this.gesture.copy(gamepad.gesture);
-  }
-}
-class VRStageParameters {
-  constructor() {
-    // new THREE.Matrix4().compose(new THREE.Vector3(0, 0, 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1)).toArray(new Float32Array(16))
-    this.sittingToStandingTransform = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-  }
+  },
+};
 
-  copy(vrStageParameters) {
-    this.sittingToStandingTransform.set(vrStageParameters.sittingToStandingTransform);
-  }
-}
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
-const localMatrix2 = new THREE.Matrix4();
-class MRDisplay {
-  constructor(name, window, displayId) {
-    this.name = name;
-    this[windowSymbol] = window;
-    this.displayId = displayId;
-
-    this.isPresenting = false;
-    this.capabilities = {
-      canPresent: true,
-      hasExternalDisplay: true,
-      hasPosition: true,
-      maxLayers: 1,
-    };
-    this.depthNear = 0.1;
-    this.depthFar = 10000.0;
-    this.stageParameters = new VRStageParameters();
-
-    this._width = window.innerWidth / 2;
-    this._height = window.innerHeight;
-    this._leftOffset = 0;
-    this._leftFov = Float32Array.from([45, 45, 45, 45]);
-    this._rightOffset = 0;
-    this._rightFov = Float32Array.from([45, 45, 45, 45]);
-    this._cleanups = [];
-    this._rafs = [];
-  }
-
-  getLayers() {
-    return [
-      {
-        leftBounds: [0, 0, 0.5, 1],
-        rightBounds: [0.5, 0, 0.5, 1],
-        source: null,
-      }
-    ];
-  }
-
-  getEyeParameters(eye) {
-    const leftEye = eye === 'left';
-    const _fovArrayToVRFieldOfView = fovArray => ({
-      leftDegrees: fovArray[0],
-      rightDegrees: fovArray[1],
-      upDegrees: fovArray[2],
-      downDegrees: fovArray[3],
-    });
-    return {
-      renderWidth: this._width,
-      renderHeight: this._height,
-      offset: leftEye ? this._leftOffset : this._rightOffset,
-      fieldOfView: _fovArrayToVRFieldOfView(leftEye ? this._leftFov : this._rightFov),
-    };
-  }
-
-  requestPresent(layers) {
-    return (nativeVr !== null ? nativeVr.requestPresent(layers) : Promise.resolve())
-      .then(() => {
-        this.isPresenting = true;
-
-        process.nextTick(() => {
-          const e = new Event('vrdisplaypresentchange');
-          e.display = this;
-          this[windowSymbol].dispatchEvent(e);
-        });
-      });
-  }
-
-  exitPresent() {
-    return (nativeVr !== null ? nativeVr.exitPresent() : Promise.resolve())
-      .then(() => {
-        this.isPresenting = false;
-
-        for (let i = 0; i < this._rafs.length; i++) {
-          this.cancelAnimationFrame(this._rafs[i]);
-        }
-        this._rafs.length = 0;
-
-        process.nextTick(() => {
-          const e = new Event('vrdisplaypresentchange');
-          e.display = this;
-          this[windowSymbol].dispatchEvent(e);
-        });
-      });
-  }
-
-  requestAnimationFrame(fn) {
-    const animationFrame = this[windowSymbol].requestAnimationFrame(timestamp => {
-      this._rafs.splice(animationFrame, 1);
-      fn(timestamp);
-    });
-    this._rafs.push(animationFrame);
-    return animationFrame;
-  }
-
-  cancelAnimationFrame(animationFrame) {
-    const result = this[windowSymbol].cancelAnimationFrame(animationFrame);
-    const index = this._rafs.indexOf(animationFrame);
-    if (index !== -1) {
-      this._rafs.splice(index, 1);
-    }
-    return result;
-  }
-
-  submitFrame() {}
-
-  destroy() {
-    for (let i = 0; i < this._rafs.length; i++) {
-      this.cancelAnimationFrame(this._rafs[i]);
-    }
-    for (let i = 0; i < this._cleanups.length; i++) {
-      this._cleanups[i]();
-    }
-  }
-}
-class VRDisplay extends MRDisplay {
-  constructor(window, displayId) {
-    super('VR', window, displayId);
-
-    this._frameData = new VRFrameData();
-
-    const _updatevrframe = update => {
-      const {
-        depthNear,
-        depthFar,
-        renderWidth,
-        renderHeight,
-        leftOffset,
-        leftFov,
-        rightOffset,
-        rightFov,
-        frameData,
-        stageParameters,
-        handsArray,
-      } = update;
-
-      if (depthNear !== undefined) {
-        this.depthNear = depthNear;
-      }
-      if (depthFar !== undefined) {
-        this.depthFar = depthFar;
-      }
-      if (renderWidth !== undefined) {
-        this._width = renderWidth;
-      }
-      if (renderHeight !== undefined) {
-        this._height = renderHeight;
-      }
-      if (leftOffset !== undefined) {
-        this._leftOffset = leftOffset;
-      }
-      if (leftFov !== undefined) {
-        this._leftFov = leftOffset;
-      }
-      if (rightOffset !== undefined) {
-        this._rightOffset = rightOffset;
-      }
-      if (rightFov !== undefined) {
-        this._rightFov = rightFov;
-      }
-      if (frameData !== undefined) {
-        this._frameData.copy(frameData);
-      }
-      if (stageParameters !== undefined) {
-        this.stageParameters.copy(stageParameters);
-      }
-      if (handsArray !== undefined) {
-        this._frameData.hands[0].set(handsArray[0]);
-        this._frameData.hands[1].set(handsArray[1]);
-      }
-    };
-    window.top.on('updatevrframe', _updatevrframe);
-
-    this._cleanups.push(() => {
-      window.top.removeListener('updatevrframe', _updatevrframe);
-    });
-  }
-
-  getFrameData(frameData) {
-    frameData.copy(this._frameData);
-  }
-}
-  constructor(window, displayId) {
-    super('FAKE', window, displayId);
-class FakeVRDisplay extends MRDisplay {
-
-    this.position = new THREE.Vector3();
-    this.quaternion = new THREE.Quaternion();
-    this.gamepads = [leftGamepad, rightGamepad];
-
-    this.isPresenting = false;
-    this.depthNear = 0.1;
-    this.depthFar = 10 * 1024;
-    this._width = defaultCanvasSize[0];
-    this._height = defaultCanvasSize[1];
-    this._leftOffset = 0;
-    this._leftFov = 90;
-    this._rightOffset = 0;
-    this._rightFov = 90;
-    this.stageParameters = new VRStageParameters();
-
-    this._frameData = new VRFrameData();
-  }
-
-  update() {
-    localMatrix.compose(
-      this.position,
-      this.quaternion,
-      localVector.set(1, 1, 1)
-    )
-     .getInverse(localMatrix)
-     .toArray(this._frameData.leftViewMatrix);
-    this._frameData.rightViewMatrix.set(this._frameData.leftViewMatrix);
-    this._frameData.pose.set(this.position, this.quaternion);
-
-    localGamepads[0] = leftGamepad;
-    localGamepads[1] = rightGamepad;
-  }
-
-  requestPresent(layers) {
-    return Promise.resolve()
-      .then(() => {
-        this.isPresenting = true;
-      });
-  }
-
-  exitPresent() {
-    return Promise.resolve()
-      .then(() => {
-        this.isPresenting = false;
-      });
-  }
-
-  getFrameData(frameData) {
-    frameData.copy(this._frameData);
-  }
-
-  getLayers() {
-    return [
-      {
-        leftBounds: [0, 0, 1, 1],
-        rightBounds: [1, 0, 1, 1],
-        source: null,
-      }
-    ];
-  }
-}
 /* class ARDisplay extends MRDisplay {
-  constructor(window, displayId) {
-    super('AR', window, displayId);
+  constructor(window) {
+    super('AR', window);
 
     this._viewMatrix = new Float32Array(16);
     this._projectionMatrix = new Float32Array(16);
@@ -992,8 +658,8 @@ class FakeVRDisplay extends MRDisplay {
   }
 } */
 class MLDisplay extends MRDisplay {
-  constructor(window, displayId) {
-    super('ML', window, displayId);
+  constructor() {
+    super('ML');
 
     new THREE.Matrix4().compose(
       new THREE.Vector3(0, 0, 0),
@@ -1021,48 +687,21 @@ class MLDisplay extends MRDisplay {
     this._planesArray = new Float32Array(maxNumPlanes * planeEntrySize);
     this._numPlanes = 0;
     this.mesh = [null, null, null];
-
-    /* const _resize = () => {
-      this._width = window.innerWidth / 2;
-      this._height = window.innerHeight;
-    };
-    window.on('resize', _resize); */
-    const _updatemlframe = update => {
-      this._transformArray.set(update.transformArray);
-      this._projectionArray.set(update.projectionArray);
-      // this._viewportArray.set(update.viewportArray);
-      this._planesArray.set(update.planesArray);
-      this._numPlanes = update.numPlanes;
-      for (let i = 0; i < 3; i++) {
-        this.mesh[i] = update.meshArray[i];
-      }
-
-      this._width = update.viewportArray[2] / 2;
-      this._height = update.viewportArray[3];
-    };
-    window.top.on('updatemlframe', _updatemlframe);
-
-    this._cleanups.push(() => {
-      // window.removeListener('resize', _resize);
-      window.top.removeListener('updatemlframe', _updatemlframe);
-    });
   }
 
   requestPresent(layers) {
-    return (nativeMl ? nativeMl.requestPresent(layers) : Promise.resolve())
+    return (this.onrequestpresent ? this.onrequestpresent(layers) : Promise.resolve())
       .then(() => {
         this.isPresenting = true;
 
-        process.nextTick(() => {
-          const e = new Event('vrdisplaypresentchange');
-          e.display = this;
-          this[windowSymbol].dispatchEvent(e);
-        });
+        if (this.onvrdisplaypresentchange) {
+          this.onvrdisplaypresentchange();
+        }
       });
   }
 
   exitPresent() {
-    return (nativeMl ? nativeMl.exitPresent() : Promise.resolve())
+    return (this.onexitpresent ? this.onexitpresent() : Promise.resolve())
       .then(() => {
         this.isPresenting = false;
 
@@ -1071,11 +710,9 @@ class MLDisplay extends MRDisplay {
         }
         this._rafs.length = 0;
 
-        process.nextTick(() => {
-          const e = new Event('vrdisplaypresentchange');
-          e.display = this;
-          this[windowSymbol].dispatchEvent(e);
-        });
+        if (this.onvrdisplaypresentchange) {
+          this.onvrdisplaypresentchange();
+        }
       });
   }
 
@@ -1101,6 +738,20 @@ class MLDisplay extends MRDisplay {
       frameData.planes.set(this._planesArray);
       frameData.numPlanes = this._numPlanes;
     }
+  }
+
+  update(update) {
+    this._transformArray.set(update.transformArray);
+    this._projectionArray.set(update.projectionArray);
+    // this._viewportArray.set(update.viewportArray);
+    this._planesArray.set(update.planesArray);
+    this._numPlanes = update.numPlanes;
+    for (let i = 0; i < 3; i++) {
+      this.mesh[i] = update.meshArray[i];
+    }
+
+    this._width = update.viewportArray[2] / 2;
+    this._height = update.viewportArray[3];
   }
 }
 class AudioNode {
@@ -3259,7 +2910,6 @@ const tickAnimationFrame = () => {
 };
 
 const fakeVrDisplays = [];
-const localGamepads = [null, null];
 const leftGamepad = new Gamepad('left', 0);
 const rightGamepad = new Gamepad('right', 1);
 /* let vrMode = null;
@@ -3382,11 +3032,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return Promise.resolve(this.getVRDisplaysSync());
     },
     createVRDisplay() {
-      const display = new FakeVRDisplay(window, 2);
+      const display = new FakeVRDisplay();
       fakeVrDisplays.push(display);
       return display;
     },
-    getGamepads: () => localGamepads,
+    getGamepads,
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
@@ -3815,58 +3465,60 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   if (!parent) {
     window.tickAnimationFrame = tickAnimationFrame;
 
+    const _bindMRDisplay = display => {
+      display.onrequestanimationframe = window.requestAnimationFrame;
+      display.oncancelanimationframe = window.cancelAnimationFrame;
+      display.onvrdisplaypresentchange = () => {
+        process.nextTick(() => {
+          const e = new Event('vrdisplaypresentchange');
+          e.display = this;
+          window.dispatchEvent(e);
+        });
+      };
+    };
+    const vrDisplay = new VRDisplay();
+    _bindMRDisplay(vrDisplay);
+    vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
+    vrDisplay.onexitpresent = () => nativeVr.exitPresent();
+    const mlDisplay = new MLDisplay();
+    _bindMRDisplay(mlDisplay);
+    mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    mlDisplay.onexitpresent = () => nativeMl.exitPresent();
     window[mrDisplaysSymbol] = {
-      vrDisplay: new VRDisplay(window, 0),
-      mlDisplay: new MLDisplay(window, 1),
+      vrDisplay,
+      mlDisplay,
     };
 
+    const _updateGamepads = gamepads => {
+      if (gamepads !== undefined) {
+        const globalGamepads = getGamepads();
+        const allGamepads = getAllGamepads();
+
+        if (gamepads[0]) {
+          globalGamepads[0] = allGamepads[0];
+          globalGamepads[0].copy(gamepads[0]);
+        } else {
+          globalGamepads[0] = null;
+        }
+        if (gamepads[1]) {
+          globalGamepads[1] = allGamepads[1];
+          globalGamepads[1].copy(gamepads[1]);
+        } else {
+          globalGamepads[1] = null;
+        }
+      }
+    };
     window.updateVrFrame = update => {
-      window._emit('updatevrframe', update);
+      vrDisplay.update(update);
+      _updateGamepads(update.gamepads);
     };
     /* window.updateArFrame = (viewMatrix, projectionMatrix) => {
-      window._emit('updatearframe', viewMatrix, projectionMatrix);
+      arDisplay.update(viewMatrix, projectionMatrix);
     }; */
     window.updateMlFrame = update => {
-      window._emit('updatemlframe', update);
+      mlDisplay.update(update);
+      _updateGamepads(update.gamepads);
     };
-
-    window.on('updatevrframe', update => {
-      const {gamepads} = update;
-
-      if (gamepads !== undefined) {
-        if (gamepads[0]) {
-          localGamepads[0] = leftGamepad;
-          localGamepads[0].copy(gamepads[0]);
-        } else {
-          localGamepads[0] = null;
-        }
-        if (gamepads[1]) {
-          localGamepads[1] = rightGamepad;
-          localGamepads[1].copy(gamepads[1]);
-        } else {
-          localGamepads[1] = null;
-        }
-      }
-    });
-
-    window.on('updatemlframe', update => {
-      const {gamepads} = update;
-
-      if (gamepads !== undefined) {
-        if (gamepads[0]) {
-          localGamepads[0] = leftGamepad;
-          localGamepads[0].copy(gamepads[0]);
-        } else {
-          localGamepads[0] = null;
-        }
-        if (gamepads[1]) {
-          localGamepads[1] = rightGamepad;
-          localGamepads[1].copy(gamepads[1]);
-        } else {
-          localGamepads[1] = null;
-        }
-      }
-    });
 
     if (nativeMl) {
       let lastPresent = nativeMl.IsPresent();
