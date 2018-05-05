@@ -39,7 +39,7 @@
   "homepage": "https://github.com/webmixedreality/exokit-windows#readme",
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
-    "css": "^2.2.1",
+    "css": "^2.2.3",
     "he": "^1.1.1",
     "history": "^4.7.2",
     "isolator": "0.0.9",
