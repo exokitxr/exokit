@@ -890,9 +890,9 @@ class VRDisplay extends MRDisplay {
     frameData.copy(this._frameData);
   }
 }
-class FakeDisplay extends MRDisplay {
   constructor(window, displayId) {
     super('FAKE', window, displayId);
+class FakeVRDisplay extends MRDisplay {
 
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
@@ -3382,7 +3382,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return Promise.resolve(this.getVRDisplaysSync());
     },
     createVRDisplay() {
-      const display = new FakeDisplay(window, 2);
+      const display = new FakeVRDisplay(window, 2);
       fakeVrDisplays.push(display);
       return display;
     },
@@ -3578,7 +3578,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.VRStageParameters = VRStageParameters;
   window.VRDisplay = VRDisplay;
   window.MLDisplay = MLDisplay;
-  window.FakeDisplay = FakeDisplay;
+  window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
   window.btoa = btoa;
