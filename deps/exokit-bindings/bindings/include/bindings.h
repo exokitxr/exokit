@@ -17,7 +17,7 @@
 #if _WIN32
 #include <leapmotion.h>
 #endif
-#if MAGICLEAP
+#ifdef MAGICLEAP
 #include <magicleap.h>
 #endif
 
