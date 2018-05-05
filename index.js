@@ -1040,7 +1040,7 @@ if (require.main === module) {
 
     let {url} = args;
     if (!url && args.home) {
-      url = 'file://' + path.join(__dirname, 'public', 'index.html');
+      url = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html');
     }
     if (url) {
       if (url === '.') {
