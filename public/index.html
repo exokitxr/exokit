@@ -1350,7 +1350,7 @@
       _animateControllers();
 
       const device = renderer.vr.getDevice();
-      if (device && device instanceof FakeDisplay) {
+      if (device && device instanceof FakeVRDisplay) {
         camera.position.copy(device.position);
         camera.quaternion.copy(device.quaternion);
 
