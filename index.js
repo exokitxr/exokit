@@ -457,7 +457,7 @@ nativeWindow.setEventHandler((type, data) => {
             const dataTransfer = new window.DataTransfer({
               files,
             });
-            const e = new window.Event('drop');
+            const e = new window.DragEvent('drop');
             e.dataTransfer = dataTransfer;
             canvas.dispatchEvent(e);
           })
