@@ -198,7 +198,7 @@ class KeyboardEvent extends Event {
   constructor(type, init = {}) {
     super(type, init);
 
-    this.init(init);
+    KeyboardEvent.prototype.init.call(this, init);
   }
 
   init(init) {
@@ -238,7 +238,7 @@ class MouseEvent extends Event {
   constructor(type, init = {}) {
     super(type);
 
-    this.init(init);
+    MouseEvent.prototype.init.call(this, init);
   }
 
   init(init = {}) {
