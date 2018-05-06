@@ -2918,14 +2918,15 @@ let vrTextures = []; */
 const _getVrDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].vrDisplay : window.top[mrDisplaysSymbol].vrDisplay;
 const _getMlDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].mlDisplay : window.top[mrDisplaysSymbol].mlDisplay;
 
+const _makeNormalizeUrl = baseUrl => src => {
+  if (!/^[a-z]+:\/\//i.test(src)) {
+    src = new URL(src, baseUrl).href
+      .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
+  }
+  return src;
+};
 const _makeWindow = (options = {}, parent = null, top = null) => {
-  const _normalizeUrl = src => {
-    if (!/^[a-z]+:\/\//i.test(src)) {
-      src = new URL(src, options.baseUrl).href
-        .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
-    }
-    return src;
-  };
+  const _normalizeUrl = _makeNormalizeUrl(options.baseUrl);
 
   const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
     constructor() {
