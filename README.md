@@ -9,7 +9,7 @@
 
 # Quickstart
 
-[Download for current OS](get.webmr.io)
+[Download for current OS](https://get.webmr.io)
 
 # Introduction
 
