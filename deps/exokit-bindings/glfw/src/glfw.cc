@@ -144,11 +144,14 @@ void APIENTRY windowFramebufferSizeCB(GLFWwindow *window, int w, int h) {
 void APIENTRY windowDropCB(GLFWwindow *window, int count, const char **paths) {
   Nan::HandleScope scope;
 
-  Local<Array> evt = Nan::New<Array>(count);
+  Local<Array> pathsArray = Nan::New<Array>(count);
   for (int i = 0; i < count; i++) {
-    evt->Set(i, JS_STR(paths[i]));
+    pathsArray->Set(i, JS_STR(paths[i]));
   }
+  
+  Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  evt->Set(JS_STR("paths"), pathsArray);
 
   Local<Value> argv[] = {
     JS_STR("drop"), // event name
