@@ -289,6 +289,17 @@ class WheelEvent extends MouseEvent {
 WheelEvent.DOM_DELTA_PIXEL = 0x00;
 WheelEvent.DOM_DELTA_LINE = 0x01;
 WheelEvent.DOM_DELTA_PAGE = 0x02;
+class DragEvent extends MouseEvent {
+  constructor(type, init = {}) {
+    super(type, init);
+    
+    DragEvent.prototype.init.call(this, init);
+  }
+  
+  init(init = {}) {
+    this.dataTransfer = init.dataTransfer !== undefined ? init.dataTransfer : null;
+  }
+}
 class MessageEvent extends Event {
   constructor(data) {
     super('message');
@@ -3207,6 +3218,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.KeyboardEvent = KeyboardEvent;
   window.MouseEvent = MouseEvent;
   window.WheelEvent = WheelEvent;
+  window.DragEvent = DragEvent;
   window.MessageEvent = MessageEvent;
   window.CustomEvent = CustomEvent;
   window.addEventListener = Element.prototype.addEventListener.bind(window);
