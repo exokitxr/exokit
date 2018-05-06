@@ -443,6 +443,29 @@ nativeWindow.setEventHandler((type, data) => {
         canvas.dispatchEvent(new window.MouseEvent(type, data));
         break;
       }
+      case 'drop': {
+        Promise.all(data.paths.map(p => new Promise((accept, reject) => {
+          fs.readFile(p, (err, data) => {
+            if (!err) {
+              accept(new window.Blob([data]));
+            } else {
+              reject(err);
+            }
+          });
+        })))
+          .then(files => {
+            const dataTransfer = new window.DataTransfer({
+              files,
+            });
+            const e = new window.Event('drop');
+            e.dataTransfer = dataTransfer;
+            canvas.dispatchEvent(e);
+          })
+          .catch(err => {
+            console.warn(err.stack);
+          });
+        break;
+      }
       case 'quit': {
         context.destroy();
         contexts.splice(contexts.indexOf(context), 1);
