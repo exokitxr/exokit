@@ -2700,9 +2700,9 @@ class DOMImplementation {
 }
 
 class DataTransfer {
-  constructor() {
-    this.items = [];
-    this.files = [];
+  constructor({items = [], files = []} = {}) {
+    this.items = items;
+    this.files = files;
   }
 }
 class DataTransferItem {
