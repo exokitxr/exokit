@@ -2974,6 +2974,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.vm = vmo;
 
   const _makeWindowStartScript = baseUrl => `(() => {
+    const fs = require('fs');
     const fetch = require('window-fetch');
     const {Request, Response, Blob} = fetch;
     const WebSocket = require('ws/lib/websocket');
