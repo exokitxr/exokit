@@ -69,8 +69,6 @@ URL.revokeObjectURL = blob => {
   urls.delete(url);
 };
 
-const redirectUrls = {};
-
 XHRUtils.createClient = (createClient => function() {
   const properties = arguments[0];
   if (properties._responseFn) {
@@ -3257,17 +3255,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         return Promise.resolve(new Response(blob));
       } else {
         url = _normalizeUrl(url);
-        if (redirectUrls[url]) {
-          url = redirectUrls[url];
-        }
         return fetch(url, options);
       }
     } else {
       return fetch(url, options);
     }
-  };
-  window.redirect = (url1, url2) => { // XXX non-standard
-    redirectUrls[url1] = url2;
   };
   window.XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
     open() {
@@ -3286,9 +3278,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         };
       } else {
         arguments[1] = _normalizeUrl(arguments[1]);
-        if (redirectUrls[arguments[1]]) {
-          arguments[1] = redirectUrls[arguments[1]];
-        }
         const match = arguments[1].match(/^file:\/\/(.*)$/);
         if (match) {
           const p = match[1];
