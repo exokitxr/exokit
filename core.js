@@ -14,10 +14,8 @@ const parseIntStrict = require('parse-int');
 const parse5 = require('parse5');
 
 const fetch = require('window-fetch');
-const {XMLHttpRequest} = require('window-xhr');
-const XHRUtils = require('window-xhr/lib/utils');
-const {Request, Response, Blob} = fetch;
-const WebSocket = require('ws/lib/websocket');
+const {Blob} = fetch;
+
 const {LocalStorage} = require('node-localstorage');
 const createMemoryHistory = require('history/createMemoryHistory').default;
 const ClassList = require('window-classlist');
@@ -68,22 +66,6 @@ URL.createObjectURL = blob => {
 URL.revokeObjectURL = blob => {
   urls.delete(url);
 };
-
-XHRUtils.createClient = (createClient => function() {
-  const properties = arguments[0];
-  if (properties._responseFn) {
-    const cb = arguments[2];
-    properties._responseFn(cb);
-    return {
-      on() {},
-      setHeader() {},
-      write() {},
-      end() {},
-    };
-  } else {
-    return createClient.apply(this, arguments);
-  }
-})(XHRUtils.createClient);
 
 class Location extends EventEmitter {
   constructor(u) {
@@ -2929,13 +2911,15 @@ let vrTextures = []; */
 const _getVrDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].vrDisplay : window.top[mrDisplaysSymbol].vrDisplay;
 const _getMlDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].mlDisplay : window.top[mrDisplaysSymbol].mlDisplay;
 
-const _makeNormalizeUrl = baseUrl => src => {
-  if (!/^[a-z]+:\/\//i.test(src)) {
-    src = new URL(src, baseUrl).href
-      .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
-  }
-  return src;
-};
+function _makeNormalizeUrl(baseUrl) {
+  return src => {
+    if (!/^[a-z]+:\/\//i.test(src)) {
+      src = new URL(src, baseUrl).href
+        .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
+    }
+    return src;
+  };
+}
 const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = _makeNormalizeUrl(options.baseUrl);
 
@@ -2988,6 +2972,103 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const vmo = nativeVm.make();
   const window = vmo.getGlobal();
   window.vm = vmo;
+
+  const _makeWindowStartScript = baseUrl => `(() => {
+    const fetch = require('window-fetch');
+    const {Request, Response, Blob} = fetch;
+    const WebSocket = require('ws/lib/websocket');
+    const {XMLHttpRequest} = require('window-xhr');
+
+    const XHRUtils = require('window-xhr/lib/utils');
+    XHRUtils.createClient = (createClient => function() {
+      const properties = arguments[0];
+      if (properties._responseFn) {
+        const cb = arguments[2];
+        properties._responseFn(cb);
+        return {
+          on() {},
+          setHeader() {},
+          write() {},
+          end() {},
+        };
+      } else {
+        return createClient.apply(this, arguments);
+      }
+    })(XHRUtils.createClient);
+
+    ${_makeNormalizeUrl.toString()}
+    const _normalizeUrl = _makeNormalizeUrl(${JSON.stringify(baseUrl)});
+
+    global.fetch = (url, options) => {
+      if (typeof url === 'string') {
+        const blob = urls.get(url);
+        if (blob) {
+          return Promise.resolve(new Response(blob));
+        } else {
+          const oldUrl = url;
+          url = _normalizeUrl(url);
+          return fetch(url, options);
+        }
+      } else {
+        return fetch(url, options);
+      }
+    };
+    global.Request = Request;
+    global.Response = Response;
+    global.Blob = Blob;
+    global.WebSocket = WebSocket;
+    global.XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
+      open(method, url, async, username, password) {
+        const blob = urls.get(url);
+        if (blob) {
+          this._properties._responseFn = cb => {
+            process.nextTick(() => {
+              const {buffer} = blob;
+              const response = new stream.PassThrough();
+              response.statusCode = 200;
+              response.headers = {
+                'content-length': buffer.length + '',
+              };
+              cb(response);
+            });
+          };
+        } else {
+          arguments[1] = _normalizeUrl(arguments[1]);
+          const match = arguments[1].match(/^file:\\/\\/(.*)$/);
+          if (match) {
+            const p = match[1];
+            this._properties._responseFn = cb => {
+              fs.lstat(p, (err, stats) => {
+                if (!err) {
+                  const response = fs.createReadStream(p);
+                  response.statusCode = 200;
+                  response.headers = {
+                    'content-length': stats.size + '',
+                  };
+                  cb(response);
+                } else if (err.code === 'ENOENT') {
+                  const response = new stream.PassThrough();
+                  response.statusCode = 404;
+                  response.headers = {};
+                  response.end('file not found: ' + p);
+                  cb(response);
+                } else {
+                  const response = new stream.PassThrough();
+                  response.statusCode = 500;
+                  response.headers = {};
+                  response.end(err.stack);
+                  cb(response);
+                }
+              });
+            };
+            arguments[1] = 'http://127.0.0.1/'; // needed to pass protocol check, will not be fetched
+          }
+        }
+
+        return Old.prototype.open.apply(this, arguments);
+      }
+    })(XMLHttpRequest);
+  })();`;
 
   for (const k in EventEmitter.prototype) {
     window[k] = EventEmitter.prototype[k];
@@ -3086,6 +3167,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.performance = performance;
   window.screen = new Screen(window);
   window.dgram = dgram; // XXX non-standard
+  window.urls = urls; // XXX non-standard
   window.scrollTo = function(x = 0, y = 0) {
     this.scrollX = x;
     this.scrollY = y;
@@ -3248,75 +3330,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.atob = atob;
   window.TextEncoder = TextEncoder;
   window.TextDecoder = TextDecoder;
-  window.fetch = (url, options) => {
-    if (typeof url === 'string') {
-      const blob = urls.get(url);
-      if (blob) {
-        return Promise.resolve(new Response(blob));
-      } else {
-        url = _normalizeUrl(url);
-        return fetch(url, options);
-      }
-    } else {
-      return fetch(url, options);
-    }
-  };
-  window.XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
-    open() {
-      const blob = urls.get(url);
-      if (blob) {
-        this._properties._responseFn = cb => {
-          process.nextTick(() => {
-            const {buffer} = blob;
-            const response = new stream.PassThrough();
-            response.statusCode = 200;
-            response.headers = {
-              'content-length': buffer.length + '',
-            };
-            cb(response);
-          });
-        };
-      } else {
-        arguments[1] = _normalizeUrl(arguments[1]);
-        const match = arguments[1].match(/^file:\/\/(.*)$/);
-        if (match) {
-          const p = match[1];
-          this._properties._responseFn = cb => {
-            fs.lstat(p, (err, stats) => {
-              if (!err) {
-                const response = fs.createReadStream(p);
-                response.statusCode = 200;
-                response.headers = {
-                  'content-length': stats.size + '',
-                };
-                cb(response);
-              } else if (err.code === 'ENOENT') {
-                const response = new stream.PassThrough();
-                response.statusCode = 404;
-                response.headers = {};
-                response.end('file not found: ' + p);
-                cb(response);
-              } else {
-                const response = new stream.PassThrough();
-                response.statusCode = 500;
-                response.headers = {};
-                response.end(err.stack);
-                cb(response);
-              }
-            });
-          };
-          arguments[1] = 'http://127.0.0.1/'; // needed to pass protocol check, will not be fetched
-        }
-      }
-
-      return Old.prototype.open.apply(this, arguments);
-    }
-  })(XMLHttpRequest),
-  window.Promise = Promise;
-  window.WebSocket = WebSocket;
-  window.Request = Request;
-  window.Response = Response;
-  window.Blob = Blob;
   window.AudioContext = AudioContext;
   window.AudioNode = AudioNode;
   window.AudioDestinationNode = AudioDestinationNode;
@@ -3332,12 +3345,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       workerOptions.baseUrl = options.baseUrl;
       if (nativeBindings) {
         workerOptions.startScript = `
+          ${_makeWindowStartScript(options.baseUrl)}
+
           const bindings = requireNative("nativeBindings");
+          const smiggles = require("smiggles");
+
+          smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
+
           global.Image = bindings.nativeImage;
           global.ImageBitmap = bindings.nativeImageBitmap;
           global.createImageBitmap = ${createImageBitmap.toString()};
-          const smiggles = require("smiggles");
-          smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
         `;
       }
 
@@ -3433,6 +3450,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       _elementSetter(window, 'popstate', onpopstate);
     },
   });
+
+  vmo.run(_makeWindowStartScript(options.baseUrl), 'window-start-script.js');
 
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
