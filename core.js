@@ -292,10 +292,10 @@ WheelEvent.DOM_DELTA_PAGE = 0x02;
 class DragEvent extends MouseEvent {
   constructor(type, init = {}) {
     super(type, init);
-    
+
     DragEvent.prototype.init.call(this, init);
   }
-  
+
   init(init = {}) {
     this.dataTransfer = init.dataTransfer !== undefined ? init.dataTransfer : null;
   }
