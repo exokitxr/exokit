@@ -101,6 +101,6 @@ matrix:
 notifications:
   slack:
     rooms:
-      - exokit:ZezcBTTBFxiGDGOhRSrtWKOJ#builds
+    - exokit:ZezcBTTBFxiGDGOhRSrtWKOJ#builds
     on_success: change
     on_failure: always
