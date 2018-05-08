@@ -78,11 +78,11 @@ Local<Object> makeAudio() {
   Local<Value> audioParamCons = webaudio::AudioParam::Initialize(isolate);
   exports->Set(JS_STR("AudioParam"), audioParamCons);
   Local<Value> fakeAudioParamCons = webaudio::FakeAudioParam::Initialize(isolate);
-  // exports->Set(JS_STR("FakeAudioParam"), fakeAudioParamCons);
+  exports->Set(JS_STR("FakeAudioParam"), fakeAudioParamCons);
   Local<Value> audioListenerCons = webaudio::AudioListener::Initialize(isolate, fakeAudioParamCons);
   exports->Set(JS_STR("AudioListener"), audioListenerCons);
   Local<Value> audioSourceNodeCons = webaudio::AudioSourceNode::Initialize(isolate);
-  // exports->Set(JS_STR("AudioSourceNode"), audioSourceNodeCons);
+  exports->Set(JS_STR("AudioSourceNode"), audioSourceNodeCons);
   Local<Value> audioDestinationNodeCons = webaudio::AudioDestinationNode::Initialize(isolate);
   exports->Set(JS_STR("AudioDestinationNode"), audioDestinationNodeCons);
   Local<Value> gainNodeCons = webaudio::GainNode::Initialize(isolate, audioParamCons);
@@ -93,9 +93,17 @@ Local<Object> makeAudio() {
   exports->Set(JS_STR("PannerNode"), pannerNodeCons);
   Local<Value> stereoPannerNodeCons = webaudio::StereoPannerNode::Initialize(isolate, audioParamCons);
   exports->Set(JS_STR("StereoPannerNode"), stereoPannerNodeCons);
+  Local<Value> audioBufferCons = webaudio::AudioBuffer::Initialize(isolate);
+  exports->Set(JS_STR("AudioBuffer"), audioBufferCons);
+  Local<Value> audioBufferSourceNodeCons = webaudio::AudioBufferSourceNode::Initialize(isolate);
+  exports->Set(JS_STR("AudioBufferSourceNode"), audioBufferSourceNodeCons);
+  Local<Value> audioProcessingEventCons = webaudio::AudioProcessingEvent::Initialize(isolate);
+  exports->Set(JS_STR("AudioProcessingEvent"), audioProcessingEventCons);
+  Local<Value> scriptProcessorNodeCons = webaudio::ScriptProcessorNode::Initialize(isolate, audioBufferCons, audioProcessingEventCons);
+  exports->Set(JS_STR("ScriptProcessorNode"), scriptProcessorNodeCons);
   Local<Value> microphoneMediaStreamCons = webaudio::MicrophoneMediaStream::Initialize(isolate);
   exports->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
-  exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, pannerNodeCons, stereoPannerNodeCons));
+  exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, pannerNodeCons, audioBufferCons, audioBufferSourceNodeCons, audioProcessingEventCons, stereoPannerNodeCons, scriptProcessorNodeCons, microphoneMediaStreamCons));
 
   return scope.Escape(exports);
 }
