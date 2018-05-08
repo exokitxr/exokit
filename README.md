@@ -27,7 +27,7 @@ Think JSDOM, except it _actually runs_ the DOM in a `window`. Or think Electron,
 
 The multimedia parts (e.g. WebGL) are pluggable native modules. Everything else is Javascript. It's pretty easy to experiment and add new Web APIs.
 
-Exokit runs on Android/iOS, as well as Windows, Linux, and macOS.
+Exokit runs on Windows, Linux, and macOS.
 
 ## Examples
 
