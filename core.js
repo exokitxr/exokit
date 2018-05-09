@@ -2709,8 +2709,11 @@ class DataTransferItem {
     });
   }
 
-  getAsString() {
-    return this.data;
+  getAsString(callback) {
+    const {data} = this;
+    setImmediate(() => {
+      callback(data);
+    });
   }
 }
 
