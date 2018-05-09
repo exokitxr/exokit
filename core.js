@@ -2170,10 +2170,6 @@ class HTMLScriptElement extends HTMLLoadableElement {
     this._emit('innerHTML', innerHTML);
   }
 
-  set textContent(textContent) {
-    this.innerHTML = textContent;
-  }
-
   isRunnable() {
     const {type} = this;
     return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
