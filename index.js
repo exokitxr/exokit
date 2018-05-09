@@ -977,6 +977,8 @@ core.load = (load => function() {
   return load.apply(this, arguments)
     .then(window => {
       _bindDirectWindow(window);
+      
+      return Promise.resolve(window);
     });
 })(core.load);
 
