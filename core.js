@@ -3281,23 +3281,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return _parseDocumentAst(htmlAst, window[optionsSymbol], window, false);
     }
   };
-  window.Boolean = Boolean;
-  window.Number = Number;
-  window.String = String;
-  window.Object = Object;
-  window.Array = Array;
-  window.Symbol = Symbol;
   window.Buffer = Buffer; // XXX non-standard
-  window.ArrayBuffer = ArrayBuffer;
-  window.Int8Array = Int8Array;
-  window.Uint8Array = Uint8Array;
-  window.Uint8ClampedArray = Uint8ClampedArray;
-  window.Int16Array = Int16Array;
-  window.Uint16Array = Uint16Array;
-  window.Int32Array = Int32Array;
-  window.Uint32Array = Uint32Array;
-  window.Float32Array = Float32Array;
-  window.Float64Array = Float64Array;
   window.Event = Event;
   window.KeyboardEvent = KeyboardEvent;
   window.MouseEvent = MouseEvent;
