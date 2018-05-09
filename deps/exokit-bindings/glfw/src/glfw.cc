@@ -387,6 +387,13 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
     case GLFW_KEY_RIGHT_BRACKET: key = 221; break; // ]
     case GLFW_KEY_APOSTROPHE:   key = 222; break; // '
   }
+  if (
+    action == 2 && // keypress
+    key >= 65 && // A
+    key <= 90 // Z
+  ) {
+    key += 32;
+  }
   evt->Set(JS_STR("which"),JS_INT(which));
   evt->Set(JS_STR("keyCode"),JS_INT(key));
   evt->Set(JS_STR("charCode"),JS_INT(charCode));
