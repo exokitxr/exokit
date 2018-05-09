@@ -3679,40 +3679,45 @@ const exokit = (s = '', options = {}) => {
   options.dataPath = options.dataPath || __dirname;
   return _makeWindowWithDocument(s, options);
 };
-exokit.load = (src, options = {}) => fetch(src)
-  .then(res => {
-    if (res.status >= 200 && res.status < 300) {
-      return res.text();
-    } else {
-      return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + src));
-    }
-  })
-  .then(htmlString => {
-    const baseUrl = (() => {
-      if (options.baseUrl) {
-        return options.baseUrl;
+exokit.load = (src, options = {}) => {
+  if (src.indexOf('://') === -1) {
+    src = 'http://' + src;
+  }
+  return fetch(src)
+    .then(res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.text();
       } else {
-        if (/^file:\/\/(.*)$/.test(src)) {
-          return src;
-        } else {
-          const parsedUrl = url.parse(src, {
-            locationInfo: true,
-          });
-          return url.format({
-            protocol: parsedUrl.protocol || 'http:',
-            host: parsedUrl.host || '127.0.0.1',
-            pathname: parsedUrl.pathname,
-            search: parsedUrl.search,
-          });
-        }
+        return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + src));
       }
-    })();
-    return exokit(htmlString, {
-      url: options.url || src,
-      baseUrl,
-      dataPath: options.dataPath,
+    })
+    .then(htmlString => {
+      const baseUrl = (() => {
+        if (options.baseUrl) {
+          return options.baseUrl;
+        } else {
+          if (/^file:\/\/(.*)$/.test(src)) {
+            return src;
+          } else {
+            const parsedUrl = url.parse(src, {
+              locationInfo: true,
+            });
+            return url.format({
+              protocol: parsedUrl.protocol || 'http:',
+              host: parsedUrl.host || '127.0.0.1',
+              pathname: parsedUrl.pathname,
+              search: parsedUrl.search,
+            });
+          }
+        }
+      })();
+      return exokit(htmlString, {
+        url: options.url || src,
+        baseUrl,
+        dataPath: options.dataPath,
+      });
     });
-  });
+};
 exokit.THREE = THREE;
 exokit.setArgs = newArgs => {
   args = newArgs;
