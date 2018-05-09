@@ -34,6 +34,7 @@ const args = (() => {
         'frame',
         'minimalFrame',
         'blit',
+        'version',
       ],
       string: [
         'size',
@@ -50,6 +51,7 @@ const args = (() => {
         b: 'blit',
         i: 'image',
         d: 'depth-image',
+        v: 'version',
       },
     });
     return {
@@ -62,11 +64,18 @@ const args = (() => {
       blit: minimistArgs.blit,
       image: minimistArgs.image,
       depthImage: minimistArgs['depth-image'],
+      version: minimistArgs.version,
     };
   } else {
     return {};
   }
 })();
+
+if (args.version) {
+  console.log(version);
+  process.exit(0);
+}
+
 core.setArgs(args);
 core.setVersion(version);
 core.setNativeBindingsModule(nativeBindingsModulePath);
