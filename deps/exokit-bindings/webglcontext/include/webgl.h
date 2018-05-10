@@ -223,6 +223,9 @@ public:
   static NAN_METHOD(CheckFramebufferStatus);
 
   static NAN_METHOD(FrontFace);
+  
+  static NAN_GETTER(DrawingBufferWidthGetter);
+  static NAN_GETTER(DrawingBufferHeightGetter);
 
   static NAN_METHOD(SetDefaultFramebuffer);
   

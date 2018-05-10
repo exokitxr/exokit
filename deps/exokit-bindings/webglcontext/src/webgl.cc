@@ -705,6 +705,9 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
 
   Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
+  
+  Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), DrawingBufferWidthGetter);
+  Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), DrawingBufferHeightGetter);
 
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>);
 
@@ -1335,6 +1338,30 @@ NAN_METHOD(WebGLRenderingContext::FrontFace) {
   glFrontFace(arg);
 
   // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
+  Nan::HandleScope scope;
+
+  Local<Object> glObj = info.This();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  
+  int width, height;
+  glfwGetWindowSize(gl->windowHandle, &width, &height);
+  
+  info.GetReturnValue().Set(JS_INT(width));
+}
+
+NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
+  Nan::HandleScope scope;
+
+  Local<Object> glObj = info.This();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  
+  int width, height;
+  glfwGetWindowSize(gl->windowHandle, &width, &height);
+  
+  info.GetReturnValue().Set(JS_INT(height));
 }
 
 NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
