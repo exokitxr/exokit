@@ -192,6 +192,7 @@ public:
   static NAN_METHOD(DetachShader);
   static NAN_METHOD(FramebufferRenderbuffer);
   static NAN_METHOD(GetVertexAttribOffset);
+  static NAN_METHOD(GetShaderPrecisionFormat);
 
   static NAN_METHOD(IsBuffer);
   static NAN_METHOD(IsFramebuffer);

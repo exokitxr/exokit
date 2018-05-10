@@ -202,6 +202,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "detachShader", DetachShader);
   Nan::SetMethod(proto, "framebufferRenderbuffer", FramebufferRenderbuffer);
   Nan::SetMethod(proto, "getVertexAttribOffset", GetVertexAttribOffset);
+  Nan::SetMethod(proto, "getShaderPrecisionFormat", GetShaderPrecisionFormat);
 
   Nan::SetMethod(proto, "isBuffer", glCallWrap<IsBuffer>);
   Nan::SetMethod(proto, "isFramebuffer", glCallWrap<IsFramebuffer>);
@@ -226,6 +227,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "getProgramInfoLog", glCallWrap<GetProgramInfoLog>);
   Nan::SetMethod(proto, "getRenderbufferParameter", glCallWrap<GetRenderbufferParameter>);
   Nan::SetMethod(proto, "getVertexAttrib", glCallWrap<GetVertexAttrib>);
+  Nan::SetMethod(proto, "getShaderPrecisionFormat", glCallWrap<GetShaderPrecisionFormat>);
   Nan::SetMethod(proto, "getSupportedExtensions", glCallWrap<GetSupportedExtensions>);
   Nan::SetMethod(proto, "getExtension", glCallWrap<GetExtension>);
   Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
@@ -2571,6 +2573,21 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttribOffset) {
   glGetVertexAttribPointerv(index, pname, &ret);
 
   info.GetReturnValue().Set(JS_INT(ToGLuint(ret)));
+}
+
+NAN_METHOD(WebGLRenderingContext::GetShaderPrecisionFormat) {
+  GLenum shaderType = info[0]->Uint32Value();
+  GLenum precisionType = info[1]->Uint32Value();
+  GLint range[2];
+  GLint precision;
+
+  glGetShaderPrecisionFormat(shaderType, precisionType, range, &precision);
+
+  Local<Object> result = Object::New(Isolate::GetCurrent());
+  result->Set(JS_STR("rangeMin"), JS_INT(range[0]));
+  result->Set(JS_STR("rangeMax"), JS_INT(range[1]));
+  result->Set(JS_STR("precision"), JS_INT(precision));
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(WebGLRenderingContext::IsBuffer) {
