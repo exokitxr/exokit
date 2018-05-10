@@ -2565,7 +2565,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferRenderbuffer) {
 
 NAN_METHOD(WebGLRenderingContext::GetVertexAttribOffset) {
   GLuint index = info[0]->Uint32Value();
-  GLenum pname = info[1]->Int32Value();
+  GLenum pname = info[1]->Uint32Value();
   void *ret = nullptr;
 
   glGetVertexAttribPointerv(index, pname, &ret);
