@@ -20,7 +20,6 @@ const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow} = nativeBindings
 
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');
 
-const canvasSymbol = Symbol();
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
@@ -90,7 +89,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     gl.setWindowHandle(windowHandle);
 
-    gl[canvasSymbol] = canvas;
+    gl.canvas = canvas;
 
     const document = canvas.ownerDocument;
     const window = document.defaultView;
@@ -373,7 +372,7 @@ nativeWindow.setEventHandler((type, data) => {
 
   const {windowHandle} = data;
   const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), windowHandle));
-  const canvas = context[canvasSymbol];
+  const {canvas} = context;
   const window = canvas.ownerDocument.defaultView;
 
   if (context) {
@@ -520,7 +519,7 @@ const _bindWindow = (window, newWindowCb) => {
     const {window} = e;
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-      if (context[canvasSymbol].ownerDocument.defaultView === window) {
+      if (context.canvas.ownerDocument.defaultView === window) {
         context.destroy();
       }
     }
@@ -1086,7 +1085,7 @@ const _start = () => {
             timeout: 5000,
           }, (err, gl) => {
             if (!err) {
-              const {[canvasSymbol]: canvas} = gl;
+              const {canvas} = gl;
               const {width, height} = canvas;
 
               const arrayBuffer = new ArrayBuffer(width * height * 4);
@@ -1108,7 +1107,7 @@ const _start = () => {
             timeout: 5000,
           }, (err, gl) => {
             if (!err) {
-              const {[canvasSymbol]: canvas} = gl;
+              const {canvas} = gl;
               const {width, height} = canvas;
 
               const arrayBuffer = new ArrayBuffer(width * height * 4);
