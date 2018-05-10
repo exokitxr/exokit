@@ -477,7 +477,6 @@ nativeWindow.setEventHandler((type, data) => {
 });
 
 core.setVersion(version);
-core.setNativeBindingsModule(nativeBindingsModulePath);
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
@@ -1232,6 +1231,7 @@ if (require.main === module) {
   }
 
   core.setArgs(args);
+  core.setNativeBindingsModule(nativeBindingsModulePath);
 
   _prepare()
     .then(() => _start());
@@ -1242,6 +1242,8 @@ if (require.main === module) {
   process.on('unhandledRejection', err => {
     console.warn(err.stack);
   });
+} else {
+  core.setNativeBindingsModule(nativeBindingsModulePath);
 }
 
 module.exports = core;
