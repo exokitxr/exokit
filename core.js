@@ -3755,8 +3755,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
               return old.apply(this, arguments);
             })(result[k]);
           }
-          return result;
         }
+        return result;
       }
       for (const k in OldWebGLRenderingContext) {
         WebGLRenderingContext[k] = OldWebGLRenderingContext[k];
