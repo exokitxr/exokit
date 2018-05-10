@@ -6,6 +6,6 @@
     { "x": 192, "y": 344, "type": "file", "path": "Exokit.app" }
   ],
   "code-sign": {
-    "signing-identity": "3CB745217EA4D8BDC8D9E1756372E5EE6410142E"
+    "signing-identity": "7C22D41BA5AB743D3E47D543F6B27FE2FC720412"
   }
 }
