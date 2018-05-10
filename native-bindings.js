@@ -52,6 +52,9 @@ bindings.nativeGl = (nativeGl => {
       return null;
     }
   }
+  for (const k in nativeGl) {
+    WebGLRenderingContext[k] = nativeGl[k];
+  }
   WebGLRenderingContext.onconstruct = null;
   return WebGLRenderingContext;
 })(bindings.nativeGl);

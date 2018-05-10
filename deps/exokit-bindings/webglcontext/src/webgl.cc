@@ -69,173 +69,8 @@ NAN_METHOD(glSwitchCallWrap) {
   }
 }
 
-Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
-  Nan::EscapableHandleScope scope;
-
-  // constructor
-  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
-  ctor->InstanceTemplate()->SetInternalFieldCount(1);
-  ctor->SetClassName(JS_STR("WebGLRenderingContext"));
-
-  // prototype
-  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-
-  Nan::SetMethod(proto, "destroy", Destroy);
-  Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
-  Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
-  Nan::SetMethod(proto, "isDirty", IsDirty);
-  Nan::SetMethod(proto, "clearDirty", ClearDirty);
-
-  Nan::SetMethod(proto, "uniform1f", glCallWrap<Uniform1f>);
-  Nan::SetMethod(proto, "uniform2f", glCallWrap<Uniform2f>);
-  Nan::SetMethod(proto, "uniform3f", glCallWrap<Uniform3f>);
-  Nan::SetMethod(proto, "uniform4f", glCallWrap<Uniform4f>);
-  Nan::SetMethod(proto, "uniform1i", glCallWrap<Uniform1i>);
-  Nan::SetMethod(proto, "uniform2i", glCallWrap<Uniform2i>);
-  Nan::SetMethod(proto, "uniform3i", glCallWrap<Uniform3i>);
-  Nan::SetMethod(proto, "uniform4i", glCallWrap<Uniform4i>);
-  Nan::SetMethod(proto, "uniform1fv", glCallWrap<Uniform1fv>);
-  Nan::SetMethod(proto, "uniform2fv", glCallWrap<Uniform2fv>);
-  Nan::SetMethod(proto, "uniform3fv", glCallWrap<Uniform3fv>);
-  Nan::SetMethod(proto, "uniform4fv", glCallWrap<Uniform4fv>);
-  Nan::SetMethod(proto, "uniform1iv", glCallWrap<Uniform1iv>);
-  Nan::SetMethod(proto, "uniform2iv", glCallWrap<Uniform2iv>);
-  Nan::SetMethod(proto, "uniform3iv", glCallWrap<Uniform3iv>);
-  Nan::SetMethod(proto, "uniform4iv", glCallWrap<Uniform4iv>);
-  Nan::SetMethod(proto, "pixelStorei", glCallWrap<PixelStorei>);
-  Nan::SetMethod(proto, "bindAttribLocation", glCallWrap<BindAttribLocation>);
-  Nan::SetMethod(proto, "getError", glCallWrap<GetError>);
-  Nan::SetMethod(proto, "drawArrays", glCallWrap<DrawArrays>);
-  Nan::SetMethod(proto, "drawArraysInstancedANGLE", glCallWrap<DrawArraysInstancedANGLE>);
-  Nan::SetMethod(proto, "uniformMatrix2fv", glCallWrap<UniformMatrix2fv>);
-  Nan::SetMethod(proto, "uniformMatrix3fv", glCallWrap<UniformMatrix3fv>);
-  Nan::SetMethod(proto, "uniformMatrix4fv", glCallWrap<UniformMatrix4fv>);
-
-  Nan::SetMethod(proto, "generateMipmap", glCallWrap<GenerateMipmap>);
-
-  Nan::SetMethod(proto, "getAttribLocation", glCallWrap<GetAttribLocation>);
-  Nan::SetMethod(proto, "depthFunc", glCallWrap<DepthFunc>);
-  Nan::SetMethod(proto, "viewport", glCallWrap<Viewport>);
-  Nan::SetMethod(proto, "createShader", glCallWrap<CreateShader>);
-  Nan::SetMethod(proto, "shaderSource", glCallWrap<ShaderSource>);
-  Nan::SetMethod(proto, "compileShader", glCallWrap<CompileShader>);
-  Nan::SetMethod(proto, "getShaderParameter", glCallWrap<GetShaderParameter>);
-  Nan::SetMethod(proto, "getShaderInfoLog", glCallWrap<GetShaderInfoLog>);
-  Nan::SetMethod(proto, "createProgram", glCallWrap<CreateProgram>);
-  Nan::SetMethod(proto, "attachShader", glCallWrap<AttachShader>);
-  Nan::SetMethod(proto, "linkProgram", glCallWrap<LinkProgram>);
-  Nan::SetMethod(proto, "getProgramParameter", glCallWrap<GetProgramParameter>);
-  Nan::SetMethod(proto, "getUniformLocation", glCallWrap<GetUniformLocation>);
-  Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
-  Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
-
-  Nan::SetMethod(proto, "disable", glCallWrap<Disable>);
-  Nan::SetMethod(proto, "createTexture", glCallWrap<CreateTexture>);
-  Nan::SetMethod(proto, "bindTexture", glCallWrap<BindTexture>);
-  // Nan::SetMethod(proto, "flipTextureData", glCallWrap<FlipTextureData>);
-  Nan::SetMethod(proto, "texImage2D", glCallWrap<TexImage2D>);
-  Nan::SetMethod(proto, "compressedTexImage2D", glCallWrap<CompressedTexImage2D>);
-  Nan::SetMethod(proto, "texParameteri", glCallWrap<TexParameteri>);
-  Nan::SetMethod(proto, "texParameterf", glCallWrap<TexParameterf>);
-  Nan::SetMethod(proto, "clear", glCallWrap<Clear>);
-  Nan::SetMethod(proto, "useProgram", glCallWrap<UseProgram>);
-  Nan::SetMethod(proto, "createFramebuffer", glCallWrap<CreateFramebuffer>);
-  Nan::SetMethod(proto, "bindFramebuffer", glCallWrap<BindFramebuffer>);
-  Nan::SetMethod(proto, "framebufferTexture2D", glCallWrap<FramebufferTexture2D>);
-  Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
-  Nan::SetMethod(proto, "bindBuffer", glCallWrap<BindBuffer>);
-  Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
-  Nan::SetMethod(proto, "bufferSubData", glCallWrap<BufferSubData>);
-  Nan::SetMethod(proto, "enable", glCallWrap<Enable>);
-  Nan::SetMethod(proto, "blendEquation", glCallWrap<BlendEquation>);
-  Nan::SetMethod(proto, "blendFunc", glCallWrap<BlendFunc>);
-  Nan::SetMethod(proto, "enableVertexAttribArray", glCallWrap<EnableVertexAttribArray>);
-  Nan::SetMethod(proto, "vertexAttribPointer", glCallWrap<VertexAttribPointer>);
-  Nan::SetMethod(proto, "activeTexture", glCallWrap<ActiveTexture>);
-  Nan::SetMethod(proto, "drawElements", glCallWrap<DrawElements>);
-  Nan::SetMethod(proto, "drawElementsInstancedANGLE", glCallWrap<DrawElementsInstancedANGLE>);
-  Nan::SetMethod(proto, "flush", glCallWrap<Flush>);
-  Nan::SetMethod(proto, "finish", glCallWrap<Finish>);
-
-  Nan::SetMethod(proto, "vertexAttrib1f", glCallWrap<VertexAttrib1f>);
-  Nan::SetMethod(proto, "vertexAttrib2f", glCallWrap<VertexAttrib2f>);
-  Nan::SetMethod(proto, "vertexAttrib3f", glCallWrap<VertexAttrib3f>);
-  Nan::SetMethod(proto, "vertexAttrib4f", glCallWrap<VertexAttrib4f>);
-  Nan::SetMethod(proto, "vertexAttrib1fv", glCallWrap<VertexAttrib1fv>);
-  Nan::SetMethod(proto, "vertexAttrib2fv", glCallWrap<VertexAttrib2fv>);
-  Nan::SetMethod(proto, "vertexAttrib3fv", glCallWrap<VertexAttrib3fv>);
-  Nan::SetMethod(proto, "vertexAttrib4fv", glCallWrap<VertexAttrib4fv>);
-  Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glCallWrap<VertexAttribDivisorANGLE>);
-
-  Nan::SetMethod(proto, "blendColor", BlendColor);
-  Nan::SetMethod(proto, "blendEquationSeparate", BlendEquationSeparate);
-  Nan::SetMethod(proto, "blendFuncSeparate", BlendFuncSeparate);
-  Nan::SetMethod(proto, "clearStencil", ClearStencil);
-  Nan::SetMethod(proto, "colorMask", ColorMask);
-  Nan::SetMethod(proto, "copyTexImage2D", CopyTexImage2D);
-  Nan::SetMethod(proto, "copyTexSubImage2D", CopyTexSubImage2D);
-  Nan::SetMethod(proto, "cullFace", CullFace);
-  Nan::SetMethod(proto, "depthMask", DepthMask);
-  Nan::SetMethod(proto, "depthRange", DepthRange);
-  Nan::SetMethod(proto, "disableVertexAttribArray", DisableVertexAttribArray);
-  Nan::SetMethod(proto, "hint", Hint);
-  Nan::SetMethod(proto, "isEnabled", IsEnabled);
-  Nan::SetMethod(proto, "lineWidth", LineWidth);
-  Nan::SetMethod(proto, "polygonOffset", PolygonOffset);
-
-  Nan::SetMethod(proto, "scissor", Scissor);
-  Nan::SetMethod(proto, "stencilFunc", StencilFunc);
-  Nan::SetMethod(proto, "stencilFuncSeparate", StencilFuncSeparate);
-  Nan::SetMethod(proto, "stencilMask", StencilMask);
-  Nan::SetMethod(proto, "stencilMaskSeparate", StencilMaskSeparate);
-  Nan::SetMethod(proto, "stencilOp", StencilOp);
-  Nan::SetMethod(proto, "stencilOpSeparate", StencilOpSeparate);
-  Nan::SetMethod(proto, "bindRenderbuffer", BindRenderbuffer);
-  Nan::SetMethod(proto, "createRenderbuffer", CreateRenderbuffer);
-
-  Nan::SetMethod(proto, "deleteBuffer", DeleteBuffer);
-  Nan::SetMethod(proto, "deleteFramebuffer", DeleteFramebuffer);
-  Nan::SetMethod(proto, "deleteProgram", DeleteProgram);
-  Nan::SetMethod(proto, "deleteRenderbuffer", DeleteRenderbuffer);
-  Nan::SetMethod(proto, "deleteShader", DeleteShader);
-  Nan::SetMethod(proto, "deleteTexture", DeleteTexture);
-  Nan::SetMethod(proto, "detachShader", DetachShader);
-  Nan::SetMethod(proto, "framebufferRenderbuffer", FramebufferRenderbuffer);
-  Nan::SetMethod(proto, "getVertexAttribOffset", GetVertexAttribOffset);
-  Nan::SetMethod(proto, "getShaderPrecisionFormat", GetShaderPrecisionFormat);
-
-  Nan::SetMethod(proto, "isBuffer", glCallWrap<IsBuffer>);
-  Nan::SetMethod(proto, "isFramebuffer", glCallWrap<IsFramebuffer>);
-  Nan::SetMethod(proto, "isProgram", glCallWrap<IsProgram>);
-  Nan::SetMethod(proto, "isRenderbuffer", glCallWrap<IsRenderbuffer>);
-  Nan::SetMethod(proto, "isShader", glCallWrap<IsShader>);
-  Nan::SetMethod(proto, "isTexture", glCallWrap<IsTexture>);
-
-  Nan::SetMethod(proto, "renderbufferStorage", glCallWrap<RenderbufferStorage>);
-  Nan::SetMethod(proto, "getShaderSource", glCallWrap<GetShaderSource>);
-  Nan::SetMethod(proto, "validateProgram", glCallWrap<ValidateProgram>);
-
-  Nan::SetMethod(proto, "texSubImage2D", glCallWrap<TexSubImage2D>);
-  Nan::SetMethod(proto, "readPixels", glCallWrap<ReadPixels>);
-  Nan::SetMethod(proto, "getTexParameter", glCallWrap<GetTexParameter>);
-  Nan::SetMethod(proto, "getActiveAttrib", glCallWrap<GetActiveAttrib>);
-  Nan::SetMethod(proto, "getActiveUniform", glCallWrap<GetActiveUniform>);
-  Nan::SetMethod(proto, "getAttachedShaders", glCallWrap<GetAttachedShaders>);
-  Nan::SetMethod(proto, "getParameter", glCallWrap<GetParameter>);
-  Nan::SetMethod(proto, "getBufferParameter", glCallWrap<GetBufferParameter>);
-  Nan::SetMethod(proto, "getFramebufferAttachmentParameter", glCallWrap<GetFramebufferAttachmentParameter>);
-  Nan::SetMethod(proto, "getProgramInfoLog", glCallWrap<GetProgramInfoLog>);
-  Nan::SetMethod(proto, "getRenderbufferParameter", glCallWrap<GetRenderbufferParameter>);
-  Nan::SetMethod(proto, "getVertexAttrib", glCallWrap<GetVertexAttrib>);
-  Nan::SetMethod(proto, "getShaderPrecisionFormat", glCallWrap<GetShaderPrecisionFormat>);
-  Nan::SetMethod(proto, "getSupportedExtensions", glCallWrap<GetSupportedExtensions>);
-  Nan::SetMethod(proto, "getExtension", glCallWrap<GetExtension>);
-  Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
-
-  Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
-
-  Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>);
-
+template <typename T>
+void setGlConstants(T &proto) {
   // OpenGL ES 2.1 constants
 
   /* ClearBufferMask */
@@ -704,8 +539,181 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
 
   // external
   JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
+}
 
+Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("WebGLRenderingContext"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+
+  Nan::SetMethod(proto, "destroy", Destroy);
+  Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
+  Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
+  Nan::SetMethod(proto, "isDirty", IsDirty);
+  Nan::SetMethod(proto, "clearDirty", ClearDirty);
+
+  Nan::SetMethod(proto, "uniform1f", glCallWrap<Uniform1f>);
+  Nan::SetMethod(proto, "uniform2f", glCallWrap<Uniform2f>);
+  Nan::SetMethod(proto, "uniform3f", glCallWrap<Uniform3f>);
+  Nan::SetMethod(proto, "uniform4f", glCallWrap<Uniform4f>);
+  Nan::SetMethod(proto, "uniform1i", glCallWrap<Uniform1i>);
+  Nan::SetMethod(proto, "uniform2i", glCallWrap<Uniform2i>);
+  Nan::SetMethod(proto, "uniform3i", glCallWrap<Uniform3i>);
+  Nan::SetMethod(proto, "uniform4i", glCallWrap<Uniform4i>);
+  Nan::SetMethod(proto, "uniform1fv", glCallWrap<Uniform1fv>);
+  Nan::SetMethod(proto, "uniform2fv", glCallWrap<Uniform2fv>);
+  Nan::SetMethod(proto, "uniform3fv", glCallWrap<Uniform3fv>);
+  Nan::SetMethod(proto, "uniform4fv", glCallWrap<Uniform4fv>);
+  Nan::SetMethod(proto, "uniform1iv", glCallWrap<Uniform1iv>);
+  Nan::SetMethod(proto, "uniform2iv", glCallWrap<Uniform2iv>);
+  Nan::SetMethod(proto, "uniform3iv", glCallWrap<Uniform3iv>);
+  Nan::SetMethod(proto, "uniform4iv", glCallWrap<Uniform4iv>);
+  Nan::SetMethod(proto, "pixelStorei", glCallWrap<PixelStorei>);
+  Nan::SetMethod(proto, "bindAttribLocation", glCallWrap<BindAttribLocation>);
+  Nan::SetMethod(proto, "getError", glCallWrap<GetError>);
+  Nan::SetMethod(proto, "drawArrays", glCallWrap<DrawArrays>);
+  Nan::SetMethod(proto, "drawArraysInstancedANGLE", glCallWrap<DrawArraysInstancedANGLE>);
+  Nan::SetMethod(proto, "uniformMatrix2fv", glCallWrap<UniformMatrix2fv>);
+  Nan::SetMethod(proto, "uniformMatrix3fv", glCallWrap<UniformMatrix3fv>);
+  Nan::SetMethod(proto, "uniformMatrix4fv", glCallWrap<UniformMatrix4fv>);
+
+  Nan::SetMethod(proto, "generateMipmap", glCallWrap<GenerateMipmap>);
+
+  Nan::SetMethod(proto, "getAttribLocation", glCallWrap<GetAttribLocation>);
+  Nan::SetMethod(proto, "depthFunc", glCallWrap<DepthFunc>);
+  Nan::SetMethod(proto, "viewport", glCallWrap<Viewport>);
+  Nan::SetMethod(proto, "createShader", glCallWrap<CreateShader>);
+  Nan::SetMethod(proto, "shaderSource", glCallWrap<ShaderSource>);
+  Nan::SetMethod(proto, "compileShader", glCallWrap<CompileShader>);
+  Nan::SetMethod(proto, "getShaderParameter", glCallWrap<GetShaderParameter>);
+  Nan::SetMethod(proto, "getShaderInfoLog", glCallWrap<GetShaderInfoLog>);
+  Nan::SetMethod(proto, "createProgram", glCallWrap<CreateProgram>);
+  Nan::SetMethod(proto, "attachShader", glCallWrap<AttachShader>);
+  Nan::SetMethod(proto, "linkProgram", glCallWrap<LinkProgram>);
+  Nan::SetMethod(proto, "getProgramParameter", glCallWrap<GetProgramParameter>);
+  Nan::SetMethod(proto, "getUniformLocation", glCallWrap<GetUniformLocation>);
+  Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
+  Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
+
+  Nan::SetMethod(proto, "disable", glCallWrap<Disable>);
+  Nan::SetMethod(proto, "createTexture", glCallWrap<CreateTexture>);
+  Nan::SetMethod(proto, "bindTexture", glCallWrap<BindTexture>);
+  // Nan::SetMethod(proto, "flipTextureData", glCallWrap<FlipTextureData>);
+  Nan::SetMethod(proto, "texImage2D", glCallWrap<TexImage2D>);
+  Nan::SetMethod(proto, "compressedTexImage2D", glCallWrap<CompressedTexImage2D>);
+  Nan::SetMethod(proto, "texParameteri", glCallWrap<TexParameteri>);
+  Nan::SetMethod(proto, "texParameterf", glCallWrap<TexParameterf>);
+  Nan::SetMethod(proto, "clear", glCallWrap<Clear>);
+  Nan::SetMethod(proto, "useProgram", glCallWrap<UseProgram>);
+  Nan::SetMethod(proto, "createFramebuffer", glCallWrap<CreateFramebuffer>);
+  Nan::SetMethod(proto, "bindFramebuffer", glCallWrap<BindFramebuffer>);
+  Nan::SetMethod(proto, "framebufferTexture2D", glCallWrap<FramebufferTexture2D>);
+  Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
+  Nan::SetMethod(proto, "bindBuffer", glCallWrap<BindBuffer>);
+  Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
+  Nan::SetMethod(proto, "bufferSubData", glCallWrap<BufferSubData>);
+  Nan::SetMethod(proto, "enable", glCallWrap<Enable>);
+  Nan::SetMethod(proto, "blendEquation", glCallWrap<BlendEquation>);
+  Nan::SetMethod(proto, "blendFunc", glCallWrap<BlendFunc>);
+  Nan::SetMethod(proto, "enableVertexAttribArray", glCallWrap<EnableVertexAttribArray>);
+  Nan::SetMethod(proto, "vertexAttribPointer", glCallWrap<VertexAttribPointer>);
+  Nan::SetMethod(proto, "activeTexture", glCallWrap<ActiveTexture>);
+  Nan::SetMethod(proto, "drawElements", glCallWrap<DrawElements>);
+  Nan::SetMethod(proto, "drawElementsInstancedANGLE", glCallWrap<DrawElementsInstancedANGLE>);
+  Nan::SetMethod(proto, "flush", glCallWrap<Flush>);
+  Nan::SetMethod(proto, "finish", glCallWrap<Finish>);
+
+  Nan::SetMethod(proto, "vertexAttrib1f", glCallWrap<VertexAttrib1f>);
+  Nan::SetMethod(proto, "vertexAttrib2f", glCallWrap<VertexAttrib2f>);
+  Nan::SetMethod(proto, "vertexAttrib3f", glCallWrap<VertexAttrib3f>);
+  Nan::SetMethod(proto, "vertexAttrib4f", glCallWrap<VertexAttrib4f>);
+  Nan::SetMethod(proto, "vertexAttrib1fv", glCallWrap<VertexAttrib1fv>);
+  Nan::SetMethod(proto, "vertexAttrib2fv", glCallWrap<VertexAttrib2fv>);
+  Nan::SetMethod(proto, "vertexAttrib3fv", glCallWrap<VertexAttrib3fv>);
+  Nan::SetMethod(proto, "vertexAttrib4fv", glCallWrap<VertexAttrib4fv>);
+  Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glCallWrap<VertexAttribDivisorANGLE>);
+
+  Nan::SetMethod(proto, "blendColor", BlendColor);
+  Nan::SetMethod(proto, "blendEquationSeparate", BlendEquationSeparate);
+  Nan::SetMethod(proto, "blendFuncSeparate", BlendFuncSeparate);
+  Nan::SetMethod(proto, "clearStencil", ClearStencil);
+  Nan::SetMethod(proto, "colorMask", ColorMask);
+  Nan::SetMethod(proto, "copyTexImage2D", CopyTexImage2D);
+  Nan::SetMethod(proto, "copyTexSubImage2D", CopyTexSubImage2D);
+  Nan::SetMethod(proto, "cullFace", CullFace);
+  Nan::SetMethod(proto, "depthMask", DepthMask);
+  Nan::SetMethod(proto, "depthRange", DepthRange);
+  Nan::SetMethod(proto, "disableVertexAttribArray", DisableVertexAttribArray);
+  Nan::SetMethod(proto, "hint", Hint);
+  Nan::SetMethod(proto, "isEnabled", IsEnabled);
+  Nan::SetMethod(proto, "lineWidth", LineWidth);
+  Nan::SetMethod(proto, "polygonOffset", PolygonOffset);
+
+  Nan::SetMethod(proto, "scissor", Scissor);
+  Nan::SetMethod(proto, "stencilFunc", StencilFunc);
+  Nan::SetMethod(proto, "stencilFuncSeparate", StencilFuncSeparate);
+  Nan::SetMethod(proto, "stencilMask", StencilMask);
+  Nan::SetMethod(proto, "stencilMaskSeparate", StencilMaskSeparate);
+  Nan::SetMethod(proto, "stencilOp", StencilOp);
+  Nan::SetMethod(proto, "stencilOpSeparate", StencilOpSeparate);
+  Nan::SetMethod(proto, "bindRenderbuffer", BindRenderbuffer);
+  Nan::SetMethod(proto, "createRenderbuffer", CreateRenderbuffer);
+
+  Nan::SetMethod(proto, "deleteBuffer", DeleteBuffer);
+  Nan::SetMethod(proto, "deleteFramebuffer", DeleteFramebuffer);
+  Nan::SetMethod(proto, "deleteProgram", DeleteProgram);
+  Nan::SetMethod(proto, "deleteRenderbuffer", DeleteRenderbuffer);
+  Nan::SetMethod(proto, "deleteShader", DeleteShader);
+  Nan::SetMethod(proto, "deleteTexture", DeleteTexture);
+  Nan::SetMethod(proto, "detachShader", DetachShader);
+  Nan::SetMethod(proto, "framebufferRenderbuffer", FramebufferRenderbuffer);
+  Nan::SetMethod(proto, "getVertexAttribOffset", GetVertexAttribOffset);
+  Nan::SetMethod(proto, "getShaderPrecisionFormat", GetShaderPrecisionFormat);
+
+  Nan::SetMethod(proto, "isBuffer", glCallWrap<IsBuffer>);
+  Nan::SetMethod(proto, "isFramebuffer", glCallWrap<IsFramebuffer>);
+  Nan::SetMethod(proto, "isProgram", glCallWrap<IsProgram>);
+  Nan::SetMethod(proto, "isRenderbuffer", glCallWrap<IsRenderbuffer>);
+  Nan::SetMethod(proto, "isShader", glCallWrap<IsShader>);
+  Nan::SetMethod(proto, "isTexture", glCallWrap<IsTexture>);
+
+  Nan::SetMethod(proto, "renderbufferStorage", glCallWrap<RenderbufferStorage>);
+  Nan::SetMethod(proto, "getShaderSource", glCallWrap<GetShaderSource>);
+  Nan::SetMethod(proto, "validateProgram", glCallWrap<ValidateProgram>);
+
+  Nan::SetMethod(proto, "texSubImage2D", glCallWrap<TexSubImage2D>);
+  Nan::SetMethod(proto, "readPixels", glCallWrap<ReadPixels>);
+  Nan::SetMethod(proto, "getTexParameter", glCallWrap<GetTexParameter>);
+  Nan::SetMethod(proto, "getActiveAttrib", glCallWrap<GetActiveAttrib>);
+  Nan::SetMethod(proto, "getActiveUniform", glCallWrap<GetActiveUniform>);
+  Nan::SetMethod(proto, "getAttachedShaders", glCallWrap<GetAttachedShaders>);
+  Nan::SetMethod(proto, "getParameter", glCallWrap<GetParameter>);
+  Nan::SetMethod(proto, "getBufferParameter", glCallWrap<GetBufferParameter>);
+  Nan::SetMethod(proto, "getFramebufferAttachmentParameter", glCallWrap<GetFramebufferAttachmentParameter>);
+  Nan::SetMethod(proto, "getProgramInfoLog", glCallWrap<GetProgramInfoLog>);
+  Nan::SetMethod(proto, "getRenderbufferParameter", glCallWrap<GetRenderbufferParameter>);
+  Nan::SetMethod(proto, "getVertexAttrib", glCallWrap<GetVertexAttrib>);
+  Nan::SetMethod(proto, "getShaderPrecisionFormat", glCallWrap<GetShaderPrecisionFormat>);
+  Nan::SetMethod(proto, "getSupportedExtensions", glCallWrap<GetSupportedExtensions>);
+  Nan::SetMethod(proto, "getExtension", glCallWrap<GetExtension>);
+  Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
+
+  Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
+
+  Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>);
+
+  setGlConstants(proto);
+  
+  // ctor
   Local<Function> ctorFn = ctor->GetFunction();
+  setGlConstants(ctorFn);
+
   return scope.Escape(ctorFn);
 }
 
