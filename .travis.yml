@@ -73,6 +73,7 @@ matrix:
     - security set-keychain-settings -t 3600 -u build.keychain
     - security import codesign-macos.pfx -k build.keychain -P "$PFX_KEY" -A
     - "security set-key-partition-list -S apple-tool:,apple: -s -k nopassword build.keychain"
+    - sh codesign-macos.sh
     - appdmg /tmp/appdmg.json exokit-macos-x64.dmg
     deploy:
     - provider: releases
