@@ -66,7 +66,7 @@ matrix:
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
-    - sh codesign-macos.sh
+    - ./codesign-macos.sh
     deploy:
     - provider: releases
       api_key:
