@@ -36,7 +36,7 @@ after_test:
       .\buildtools\iscc "$pwd\exokit.iss" "/dMyAppVersion=$version" /odist /qp
       mv dist\*.exe exokit-win-x64.exe
       rm -R -fo dist
-      & "C:/Program Files (x86)/Microsoft SDKs/Windows/v7.1A/Bin/SignTool.exe" sign /f .\codesign.pfx /t http://timestamp.comodoca.com/authenticode /p "$env:PFX_KEY" exokit-win-x64.exe
+      & "C:/Program Files (x86)/Microsoft SDKs/Windows/v7.1A/Bin/SignTool.exe" sign /f .\codesign-windows.pfx /t http://timestamp.comodoca.com/authenticode /p "$env:PFX_KEY" exokit-win-x64.exe
       7z a exokit-windows-full.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe'
       rm -r -fo node
       7z a exokit-windows.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe' -xr'!exokit-windows-full.zip'
