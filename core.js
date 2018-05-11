@@ -714,7 +714,38 @@ class XRSession extends EventEmitter {
     }
   }
   end() {
-    return Promise.resolve(); // XXX
+    this.emit('end');
+    return Promise.resolve();
+  }
+  update(update) {
+    const {
+      depthNear,
+      depthFar,
+      renderWidth,
+      renderHeight,
+      frameData,
+      stageParameters,
+    } = update;
+
+    if (depthNear !== undefined) {
+      this.depthNear = depthNear;
+    }
+    if (depthFar !== undefined) {
+      this.depthFar = depthFar;
+    }
+    if (renderWidth !== undefined && renderHeight !== undefined) {
+      this._frame.views[0]._viewport.set(0, 0, renderWidth, renderHeight);
+      this._frame.views[1]._viewport.set(renderWidth, 0, renderWidth, renderHeight);
+    }
+    if (frameData !== undefined) {
+      this._frame.views[0].projectionMatrix.set(frameData.leftProjectionMatrix);
+      this._frame.views[0]._viewMatrix.set(frameData.leftViewMatrix);
+      this._frame.views[1].projectionMatrix.set(frameData.rightProjectionMatrix);
+      this._frame.views[1]._viewMatrix.set(frameData.rightViewMatrix);
+    }
+    /* if (stageParameters !== undefined) {
+      this._frameOfReference.emulatedHeight = stageParameters.position.y; // XXX
+    } */
   }
   get onblur() {
     return _elementGetter(this, 'blur');
