@@ -656,6 +656,7 @@ class XRSession extends EventEmitter {
     this.depthFar = 10000.0;
     this.baseLayer = null;
 
+    this._frame = new XRPresentationFrame(this);
     this._rafs = [];
   }
   addEventListener(event, listener) {
@@ -776,6 +777,23 @@ class XRWebGLLayer {
   }
   requestViewportScaling(viewportScaleFactor) {
     throw new Error('not implemented'); // XXX
+  }
+}
+class XRPresentationFrame {
+  constructor(session) {
+    this.session = session;
+    this.views = [
+      new XRView('left'),
+      new XRView('right'),
+    ];
+
+    this._pose = new XRDevicePose();
+  }
+  getDevicePose() {
+    return this._pose;
+  }
+  getInputPose() {
+    // XXX
   }
 }
 class XRFrameOfReference {
@@ -3510,6 +3528,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.XRDevice = XRDevice;
   window.XRSession = XRSession;
   window.XRWebGLLayer = XRWebGLLayer;
+  window.XRPresentationFrame = XRPresentationFrame;
   window.XRFrameOfReference = XRFrameOfReference;
   window.XRStageBounds = XRStageBounds;
   window.XRStageBoundsPoint = XRStageBoundsPoint;
