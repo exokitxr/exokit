@@ -34,6 +34,7 @@ const args = (() => {
         'minimalFrame',
         'blit',
         'version',
+        'interactive',
       ],
       string: [
         'size',
@@ -51,6 +52,7 @@ const args = (() => {
         i: 'image',
         d: 'depth-image',
         v: 'version',
+        i: 'interactive',
       },
     });
     return {
@@ -64,6 +66,7 @@ const args = (() => {
       image: minimistArgs.image,
       depthImage: minimistArgs['depth-image'],
       version: minimistArgs.version,
+      interactive: minimistArgs.interactive,
     };
   } else {
     return {};
@@ -1054,6 +1057,7 @@ const _prepare = () => Promise.all([
   }),
 ]);
 const _start = () => {
+  let window = null;
   let {url} = args;
   if (!url && args.home) {
     url = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html');
@@ -1062,10 +1066,11 @@ const _start = () => {
     if (url === '.') {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
     }
-    return core.load(url, {
+    core.load(url, {
       dataPath,
     })
-      .then(window => {
+      .then(newWindow => {
+        window = newWindow;
         const _flipImage = (width, height, stride, arrayBuffer) => {
           const uint8Array = new Uint8Array(arrayBuffer);
 
@@ -1129,8 +1134,8 @@ const _start = () => {
           });
         }
       });
-  } else {
-    let window = null;
+  }
+  if (!url || args.interactive) {
     const _bindReplWindow = newWindow => {
       _bindWindow(newWindow, _bindReplWindow);
       window = newWindow;
