@@ -609,13 +609,17 @@ Gamepad.nonstandard = {
 };
 
 class XR extends EventEmitter {
-  constructor() {
+  constructor(window) {
     super();
 
-    // XXX
+    this._window = window;
   }
   requestDevice() {
-    return Promise.resolve(new XRDevice());
+    if (nativeVr.VR_IsHmdPresent()) {
+      return Promise.resolve(_getXrDisplay(this._window));
+    } else {
+      return Promise.resolve(null);
+    }
   }
   get onvrdevicechange() {
     return _elementGetter(this, 'vrdevicechange');
@@ -3098,6 +3102,7 @@ const rightGamepad = new Gamepad('right', 1);
 let vrTexture = null;
 let vrTextures = []; */
 const _getVrDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].vrDisplay : window.top[mrDisplaysSymbol].vrDisplay;
+const _getXrDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].xrDisplay : window.top[mrDisplaysSymbol].xrDisplay;
 const _getMlDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].mlDisplay : window.top[mrDisplaysSymbol].mlDisplay;
 
 function _makeNormalizeUrl(baseUrl) {
@@ -3320,7 +3325,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return display;
     },
     getGamepads,
-    xr: new XR(),
+    xr: new XR(window),
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
