@@ -821,13 +821,11 @@ class XRWebGLLayer {
         .then(({
           width,
           height,
-          fbo,
+          framebuffer,
         }) => {
-          const framebuffer = {
-            id: fbo,
+          this.framebuffer = {
+            id: framebuffer,
           };
-
-          this.framebuffer = framebuffer;
           this.framebufferWidth = width;
           this.framebufferHeight = height;
         });

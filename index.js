@@ -272,7 +272,7 @@ nativeVr.requestPresent = function(layers) {
               return Promise.resolve({
                 width,
                 height,
-                fbo,
+                framebuffer: msFbo,
               });
             })
         );
