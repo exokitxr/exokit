@@ -1967,7 +1967,7 @@ NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
   GLuint framebuffer = info[1]->IsNull() ?
     gl->defaultFramebuffer
   :
-    info[1]->ToObject()->Get(JS_STR("id"))->Int32Value();
+    info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
 
   glBindFramebuffer(target, framebuffer);
 
