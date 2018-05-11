@@ -642,6 +642,10 @@ class XRDevice {
       outputContext,
     });
     return Promise.resolve(session);
+  update(update) {
+    if (this.session) {
+      this.session.update(update);
+    }
   }
 }
 class XRSession extends EventEmitter {
