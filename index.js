@@ -417,7 +417,7 @@ nativeWindow.setEventHandler((type, data) => {
         // The correct way to handle this is to compute actual layout with something like reworkcss + Yoga.
         let dispatchEl = null;
         if (!window.document.pointerLockElement && !vrPresentState.isPresenting && (dispatchEl = window.document.documentElement.traverse(el => {
-          if (el.nodeType === window.Node.ELEMENT_NODE && window.getComputedStyle(el).cursor === 'pointer') {
+          if (el.nodeType === 1 && (el.tagName === 'BUTTON' || window.getComputedStyle(el).cursor === 'pointer')) {
             return el;
           }
         }))) {
