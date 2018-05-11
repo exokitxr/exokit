@@ -694,18 +694,18 @@ class XRSession extends EventEmitter {
     // XXX
   }
   requestAnimationFrame(fn) {
-    if (this.onrequestanimationframe) {
-      const animationFrame = this.onrequestanimationframe(timestamp => {
+    if (this.device.onrequestanimationframe) {
+      const animationFrame = this.device.onrequestanimationframe(timestamp => {
         this._rafs.splice(animationFrame, 1);
-        fn(timestamp);
+        fn(timestamp, this._frame);
       });
       this._rafs.push(animationFrame);
       return animationFrame;
     }
   }
   cancelAnimationFrame(animationFrame) {
-    if (this.oncancelanimationframe) {
-      const result = this.oncancelanimationframe(animationFrame);
+    if (this.device.oncancelanimationframe) {
+      const result = this.device.oncancelanimationframe(animationFrame);
       const index = this._rafs.indexOf(animationFrame);
       if (index !== -1) {
         this._rafs.splice(index, 1);
