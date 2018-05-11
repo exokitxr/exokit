@@ -834,12 +834,7 @@ class XRWebGLLayer {
     })();
   }
   getViewport(view) {
-    return {
-      x: 0,
-      y: 0,
-      width: 1,
-      height: 1,
-    };
+    return view._viewport;
   }
   requestViewportScaling(viewportScaleFactor) {
     throw new Error('not implemented'); // XXX
@@ -860,6 +855,49 @@ class XRPresentationFrame {
   }
   getInputPose() {
     // XXX
+  }
+}
+class XRView {
+  constructor(
+    eye = 'left',
+    projectionMatrix = Float32Array.from([
+      2.1445069205095586, 0, 0, 0,
+      0, 2.1445069205095586, 0, 0,
+      0, 0, -1.00010000500025, -1,
+      0, 0, -0.200010000500025, 0,
+      2.1445069205095586, 0, 0, 0,
+      0, 2.1445069205095586, 0, 0,
+      0, 0, -1.00010000500025, -1,
+      0, 0, -0.200010000500025, 0,
+    ]),
+  ) {
+    this.eye = eye;
+    this.projectionMatrix = projectionMatrix;
+
+    this._viewport = new XRViewport();
+    this._viewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  }
+}
+class XRViewport {
+  constructor(x = 0, y = 0, width = defaultCanvasSize[0], height = defaultCanvasSize[1]) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+  }
+  set(x, y, width, height) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+  }
+}
+class XRDevicePose {
+  constructor() {
+    this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  }
+  getViewMatrix(view) {
+    return view._viewMatrix;
   }
 }
 class XRFrameOfReference {
@@ -3600,6 +3638,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.XRSession = XRSession;
   window.XRWebGLLayer = XRWebGLLayer;
   window.XRPresentationFrame = XRPresentationFrame;
+  window.XRView = XRView;
+  window.XRViewport = XRViewport;
+  window.XRDevicePose = XRDevicePose;
   window.XRFrameOfReference = XRFrameOfReference;
   window.XRStageBounds = XRStageBounds;
   window.XRStageBoundsPoint = XRStageBoundsPoint;
