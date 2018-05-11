@@ -630,18 +630,29 @@ class XR extends EventEmitter {
 };
 class XRDevice {
   constructor() {
-    // XXX
+    this.session = null; // non-standard
   }
   supportsSession({exclusive = false, outputContext} = {}) {
     return Promise.resolve(null);
   }
-  requestSession({exclusive = false, outputContext = null} = {}) {
-    const session = new XRSession({
-      device: this,
-      exclusive,
-      outputContext,
-    });
-    return Promise.resolve(session);
+  requestSession({exclusive = false, outputContext} = {}) {
+    if (outputContext) {
+      if (!this.session) {
+        const session = new XRSession({
+          device: this,
+          exclusive,
+          outputContext,
+        });
+        session.once('end', () => {
+          this.session = null;
+        });
+        this.session = session;
+      }
+      return Promise.resolve(this.session);
+    } else {
+      return Promise.reject(new Error('outputContext is required'));
+    }
+  }
   update(update) {
     if (this.session) {
       this.session.update(update);
