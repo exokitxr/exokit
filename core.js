@@ -608,6 +608,196 @@ Gamepad.nonstandard = {
   },
 };
 
+class XR extends EventEmitter {
+  constructor() {
+    super();
+
+    // XXX
+  }
+  requestDevice() {
+    return Promise.resolve(new XRDevice());
+  }
+  get onvrdevicechange() {
+    return _elementGetter(this, 'vrdevicechange');
+  }
+  set onvrdevicechange(onvrdevicechange) {
+    _elementSetter(this, 'vrdevicechange', onvrdevicechange);
+  }
+};
+class XRDevice {
+  constructor() {
+    // XXX
+  }
+  supportsSession({exclusive = false, outputContext = null} = {}) {
+    return Promise.resolve(null);
+  }
+  requestSession({exclusive = false, outputContext = null} = {}) {
+    const session = new XRSession({
+      device: this,
+      exclusive,
+      outputContext,
+    });
+    return Promise.resolve(session);
+  }
+}
+class XRSession extends EventEmitter {
+  constructor({device = null, exclusive = false, outputContext = null} = {}) {
+    super();
+
+    this.device = device;
+    this.exclusive = exclusive;
+    this.outputContext = outputContext;
+
+    this.depthNear = 0.1;
+    this.depthFar = 10000.0;
+    this.baseLayer = null;
+
+    this._rafs = [];
+  }
+  addEventListener(event, listener) {
+    if (typeof listener === 'function') {
+      this.on(event, listener);
+    }
+  }
+  removeEventListener(event, listener) {
+    if (typeof listener === 'function') {
+      this.removeListener(event, listener);
+    }
+  }
+  requestFrameOfReference(type, options = {}) {
+    const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
+
+    const frame = new XRFrameOfReference();
+    return Promise.resolve(frame);
+  }
+  getInputSources() {
+    // XXX
+  }
+  requestAnimationFrame(fn) {
+    if (this.onrequestanimationframe) {
+      const animationFrame = this.onrequestanimationframe(timestamp => {
+        this._rafs.splice(animationFrame, 1);
+        fn(timestamp);
+      });
+      this._rafs.push(animationFrame);
+      return animationFrame;
+    }
+  }
+  cancelAnimationFrame(animationFrame) {
+    if (this.oncancelanimationframe) {
+      const result = this.oncancelanimationframe(animationFrame);
+      const index = this._rafs.indexOf(animationFrame);
+      if (index !== -1) {
+        this._rafs.splice(index, 1);
+      }
+      return result;
+    }
+  }
+  end() {
+    return Promise.resolve(); // XXX
+  }
+  get onblur() {
+    return _elementGetter(this, 'blur');
+  }
+  set onblur(onblur) {
+    _elementSetter(this, 'blur', onblur);
+  }
+  get onfocus() {
+    return _elementGetter(this, 'focus');
+  }
+  set onfocus(onfocus) {
+    _elementSetter(this, 'focus', onfocus);
+  }
+  get onresetpose() {
+    return _elementGetter(this, 'resetpose');
+  }
+  set onresetpose(onresetpose) {
+    _elementSetter(this, 'resetpose', onresetpose);
+  }
+  get onend() {
+    return _elementGetter(this, 'end');
+  }
+  set onend(onend) {
+    _elementSetter(this, 'end', onend);
+  }
+  get onselect() {
+    return _elementGetter(this, 'select');
+  }
+  set onselect(onselect) {
+    _elementSetter(this, 'select', onselect);
+  }
+  get onselectstart() {
+    return _elementGetter(this, 'selectstart');
+  }
+  set onselectstart(onselectstart) {
+    _elementSetter(this, 'selectstart', onselectstart);
+  }
+  get onselectend() {
+    return _elementGetter(this, 'selectend');
+  }
+  set onselectend(onselectend) {
+    _elementSetter(this, 'selectend', onselectend);
+  }
+}
+class XRWebGLLayer {
+  constructor(session, context, options = {}) {
+    const {
+      antialias = true,
+      depth = false,
+      stencil = false,
+      alpha = true,
+      multiview = false,
+      framebufferScaleFactor = 1,
+    } = options;
+
+    this.context = context;
+
+    this.antialias = antialias;
+    this.depth = depth;
+    this.stencil = stencil;
+    this.alpha = alpha;
+    this.multiview = multiview;
+
+    this.framebuffer = {}; // XXX
+    this.framebufferWidth = 1;
+    this.framebufferHeight = 1;
+  }
+  getViewport(view) {
+    return {
+      x: 0,
+      y: 0,
+      width: 1,
+      height: 1,
+    };
+  }
+  requestViewportScaling(viewportScaleFactor) {
+    throw new Error('not implemented'); // XXX
+  }
+}
+class XRFrameOfReference {
+  constructor() {
+    this.bounds = new XRStageBounds();
+    this.emulatedHeight = 1.5;
+  }
+  get onboundschange() {
+    return _elementGetter(this, 'boundschange');
+  }
+  set onboundschange(onboundschange) {
+    _elementSetter(this, 'boundschange', onboundschange);
+  }
+}
+class XRStageBounds {
+  constructor() {
+    this.geometry = [];
+  }
+}
+class XRStageBoundsPoint {
+  constructor(x, z) {
+    this.x = x;
+    this.z = z;
+  }
+}
+
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
@@ -3130,6 +3320,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return display;
     },
     getGamepads,
+    xr: new XR(),
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
@@ -3310,6 +3501,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
+  window.XR = XR;
+  window.XRDevice = XRDevice;
+  window.XRSession = XRSession;
+  window.XRWebGLLayer = XRWebGLLayer;
+  window.XRFrameOfReference = XRFrameOfReference;
+  window.XRStageBounds = XRStageBounds;
+  window.XRStageBoundsPoint = XRStageBoundsPoint;
   window.btoa = btoa;
   window.atob = atob;
   window.TextEncoder = TextEncoder;
