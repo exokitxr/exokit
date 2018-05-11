@@ -632,7 +632,7 @@ class XRDevice {
   constructor() {
     // XXX
   }
-  supportsSession({exclusive = false, outputContext = null} = {}) {
+  supportsSession({exclusive = false, outputContext} = {}) {
     return Promise.resolve(null);
   }
   requestSession({exclusive = false, outputContext = null} = {}) {
