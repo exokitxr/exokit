@@ -1,4 +1,4 @@
-# Exokit Browser: Javascript web browser for AR, VR, and Magic Leap
+# Exokit Browser: AR/VR javascript web browser 🦖
 
 [![Slack](https://exoslack.now.sh/badge.svg)](https://exoslack.now.sh)
 [![Github releases](https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg)](https://github.com/webmixedreality/exokit/releases )
