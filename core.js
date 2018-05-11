@@ -877,7 +877,12 @@ class XRFrameOfReference {
 }
 class XRStageBounds {
   constructor() {
-    this.geometry = [];
+    this.geometry = [
+      new XRStageBoundsPoint(-3, -3),
+      new XRStageBoundsPoint(3, -3),
+      new XRStageBoundsPoint(3, 3),
+      new XRStageBoundsPoint(-3, 3),
+    ];
   }
 }
 class XRStageBoundsPoint {
