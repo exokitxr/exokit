@@ -2539,7 +2539,7 @@ class HTMLCanvasElement extends HTMLElement {
     if (this._context === null) {
       if (contextType === '2d') {
         this._context = new CanvasRenderingContext2D(this.width, this.height);
-      } else if (contextType === 'webgl') {
+      } else if (contextType === 'webgl' || contextType === 'xrpresent') {
         this._context = new WebGLRenderingContext(this);
       }
     }
