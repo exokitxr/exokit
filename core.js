@@ -866,7 +866,7 @@ class XRPresentationFrame {
 class XRFrameOfReference {
   constructor() {
     this.bounds = new XRStageBounds();
-    this.emulatedHeight = 1.5;
+    this.emulatedHeight = 0;
   }
   get onboundschange() {
     return _elementGetter(this, 'boundschange');
