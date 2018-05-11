@@ -1,4 +1,5 @@
-# Exokit Browser: AR/VR javascript web browser 🦖
+# Exokit Browser
+#### Javascript AR/VR web browser 🦖
 
 [![Slack](https://exoslack.now.sh/badge.svg)](https://exoslack.now.sh)
 [![Github releases](https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg)](https://github.com/webmixedreality/exokit/releases )
