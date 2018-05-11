@@ -3696,6 +3696,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
     window[mrDisplaysSymbol] = {
       vrDisplay,
+      xrDisplay,
       mlDisplay,
     };
 
