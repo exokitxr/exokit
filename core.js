@@ -645,7 +645,7 @@ class XRDevice {
   }
 }
 class XRSession extends EventEmitter {
-  constructor({device = null, exclusive = false, outputContext = null} = {}) {
+  constructor({device = null, exclusive = false, outputContext} = {}) {
     super();
 
     this.device = device;
