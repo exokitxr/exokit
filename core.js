@@ -809,9 +809,30 @@ class XRWebGLLayer {
     this.alpha = alpha;
     this.multiview = multiview;
 
-    this.framebuffer = {}; // XXX
-    this.framebufferWidth = 1;
-    this.framebufferHeight = 1;
+    this.framebuffer = null;
+    this.framebufferWidth = 0;
+    this.framebufferHeight = 0;
+
+    (() => {
+      const {canvas} = context;
+      const layers = [{
+        source: canvas,
+      }];
+      (session.device.onrequestpresent ? session.device.onrequestpresent(layers) : Promise.resolve())
+        .then(({
+          width,
+          height,
+          fbo,
+        }) => {
+          const framebuffer = {
+            id: fbo,
+          };
+
+          this.framebuffer = framebuffer;
+          this.framebufferWidth = width;
+          this.framebufferHeight = height;
+        });
+    })();
   }
   getViewport(view) {
     return {
