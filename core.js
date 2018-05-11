@@ -3690,6 +3690,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
+    const xrDisplay = new XRDevice();
+    xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
+    xrDisplay.onexitpresent = () => nativeVr.exitPresent();
+    xrDisplay.onrequestanimationframe = window.requestAnimationFrame;
+    xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
