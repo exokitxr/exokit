@@ -672,6 +672,7 @@ class XRSession extends EventEmitter {
     this.baseLayer = null;
 
     this._frame = new XRPresentationFrame(this);
+    this._frameOfReference = new XRFrameOfReference();
     this._rafs = [];
   }
   addEventListener(event, listener) {
@@ -685,10 +686,8 @@ class XRSession extends EventEmitter {
     }
   }
   requestFrameOfReference(type, options = {}) {
-    const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
-
-    const frame = new XRFrameOfReference();
-    return Promise.resolve(frame);
+    // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
+    return Promise.resolve(this._frameOfReference);
   }
   getInputSources() {
     // XXX
