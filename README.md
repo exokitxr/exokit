@@ -102,10 +102,7 @@ The core is Javascript and is platform-agnostic. Porting work is restricted to t
 
 - [Slack](https://communityinviter.com/apps/exokit/exokit)
 
-## Team
+## Contributors
 
 - [Avaer](//github.com/modulesio)
 - [Noah](//github.com/NoahSchiffman)
-
-## Contributors
-- [Shawn Presser](//github.com/shawwn)
