@@ -12,7 +12,6 @@ const replHistory = require('repl.history');
 const minimist = require('minimist');
 const UPNG = require('upng-js');
 const {version} = require('./package.json');
-const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
@@ -1139,10 +1138,7 @@ const _start = () => {
       dataPath,
     }));
 
-    const _getPrompt = os.platform() !== 'win32' ?
-      () => `[${emojis[Math.floor(Math.random() * emojis.length)]}] `
-    :
-      () => '[x] ';
+    const _getPrompt = () => '> ';
 
     let lastUnderscore = window._;
     const replEval = (cmd, context, filename, callback) => {
