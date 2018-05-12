@@ -673,6 +673,10 @@ class XRSession extends EventEmitter {
 
     this._frame = new XRPresentationFrame(this);
     this._frameOfReference = new XRFrameOfReference();
+    this._inputSources = [
+      new XRInputSource('left', 'hand'),
+      new XRInputSource('right', 'hand'),
+    ];
     this._rafs = [];
   }
   addEventListener(event, listener) {
@@ -690,7 +694,7 @@ class XRSession extends EventEmitter {
     return Promise.resolve(this._frameOfReference);
   }
   getInputSources() {
-    // XXX
+    return this._inputSources;
   }
   requestAnimationFrame(fn) {
     if (this.device.onrequestanimationframe) {
