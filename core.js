@@ -677,6 +677,7 @@ class XRSession extends EventEmitter {
       new XRInputSource('left', 'hand'),
       new XRInputSource('right', 'hand'),
     ];
+    this._lastPresseds = [false, false];
     this._rafs = [];
   }
   addEventListener(event, listener) {
@@ -764,6 +765,25 @@ class XRSession extends EventEmitter {
           );
           inputMatrix.toArray(inputSource._pose.pointerMatrix);
           inputMatrix.toArray(inputSource._pose.gripMatrix);
+          
+          const pressed = gamepad.buttons[1].pressed;
+          const lastPressed = this._lastPresseds[i];
+          if (pressed && !lastPressed) {
+            this.emit('selectstart', new XRInputSourceEvent('selectstart', {
+              frame: this._frame,
+              inputSource,
+            }));
+            this.emit('select', new XRInputSourceEvent('select', {
+              frame: this._frame,
+              inputSource,
+            }));
+          } else if (lastPressed && !pressed) {
+            this.emit('selectend', new XRInputSourceEvent('selectend', {
+              frame: this._frame,
+              inputSource,
+            }));
+          }
+          this._lastPresseds[i] = pressed;
         }
       }
     }
