@@ -3830,22 +3830,22 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       mlDisplay,
     };
 
-    const _updateGamepads = gamepads => {
-      if (gamepads !== undefined) {
-        const globalGamepads = getGamepads();
+    const _updateGamepads = newGamepads => {
+      if (newGamepads !== undefined) {
+        const gamepads = getGamepads();
         const allGamepads = getAllGamepads();
 
-        if (gamepads[0]) {
-          globalGamepads[0] = allGamepads[0];
-          globalGamepads[0].copy(gamepads[0]);
+        if (newGamepads[0]) {
+          gamepads[0] = allGamepads[0];
+          gamepads[0].copy(newGamepads[0]);
         } else {
-          globalGamepads[0] = null;
+          gamepads[0] = null;
         }
-        if (gamepads[1]) {
-          globalGamepads[1] = allGamepads[1];
-          globalGamepads[1].copy(gamepads[1]);
+        if (newGamepads[1]) {
+          gamepads[1] = allGamepads[1];
+          gamepads[1].copy(newGamepads[1]);
         } else {
-          globalGamepads[1] = null;
+          gamepads[1] = null;
         }
       }
     };
