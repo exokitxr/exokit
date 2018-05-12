@@ -894,8 +894,16 @@ class XRDevicePose {
     return view._viewMatrix;
   }
 }
-class XRFrameOfReference {
   constructor() {
+class XRCoordinateSystem {
+  getTransformTo(other) {
+    return Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); // XXX
+  }
+}
+class XRFrameOfReference extends XRCoordinateSystem {
+  constructor() {
+    super();
+
     this.bounds = new XRStageBounds();
     this.emulatedHeight = 0;
   }
@@ -3633,6 +3641,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.XRView = XRView;
   window.XRViewport = XRViewport;
   window.XRDevicePose = XRDevicePose;
+  window.XRCoordinateSystem = XRCoordinateSystem;
   window.XRFrameOfReference = XRFrameOfReference;
   window.XRStageBounds = XRStageBounds;
   window.XRStageBoundsPoint = XRStageBoundsPoint;
