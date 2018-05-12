@@ -894,7 +894,21 @@ class XRDevicePose {
     return view._viewMatrix;
   }
 }
+class XRInputSource {
+  constructor(handedness = 'left', pointerOrigin = 'hand') {
+    this.handedness = handedness;
+    this.pointerOrigin = pointerOrigin;
+
+    this._pose = new XRInputPose();
+  }
+}
+class XRInputPose {
   constructor() {
+    this.emulatedPosition = false;
+    this.pointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  }
+}
 class XRCoordinateSystem {
   getTransformTo(other) {
     return Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); // XXX
@@ -3641,6 +3655,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.XRView = XRView;
   window.XRViewport = XRViewport;
   window.XRDevicePose = XRDevicePose;
+  window.XRInputSource = XRInputSource;
+  window.XRInputPose = XRInputPose;
   window.XRCoordinateSystem = XRCoordinateSystem;
   window.XRFrameOfReference = XRFrameOfReference;
   window.XRStageBounds = XRStageBounds;
