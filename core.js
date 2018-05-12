@@ -728,6 +728,7 @@ class XRSession extends EventEmitter {
       renderHeight,
       frameData,
       stageParameters,
+      gamepads,
     } = update;
 
     if (depthNear !== undefined) {
@@ -749,6 +750,23 @@ class XRSession extends EventEmitter {
     /* if (stageParameters !== undefined) {
       this._frameOfReference.emulatedHeight = stageParameters.position.y; // XXX
     } */
+    if (gamepads !== undefined) {
+      const scale = localVector2.set(1, 1, 1);
+
+      for (let i = 0; i < 2; i++) {
+        const gamepad = gamepads[i];
+        if (gamepad) {
+          const inputSource = this._inputSources[i];
+          const inputMatrix = localMatrix.compose(
+            localVector.fromArray(gamepad.pose.position),
+            localQuaternion.fromArray(gamepad.pose.orientation),
+            scale
+          );
+          inputMatrix.toArray(inputSource._pose.pointerMatrix);
+          inputMatrix.toArray(inputSource._pose.gripMatrix);
+        }
+      }
+    }
   }
   get onblur() {
     return _elementGetter(this, 'blur');
