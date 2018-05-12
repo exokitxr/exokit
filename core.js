@@ -931,6 +931,14 @@ class XRInputPose {
     this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 }
+class XRInputSourceEvent extends Event {
+  constructor(type, init = {}) {
+    super(type);
+
+    this.frame = init.frame !== undefined ? init.frame : null;
+    this.inputSource = init.inputSource !== undefined ? init.inputSource : null;
+  }
+}
 class XRCoordinateSystem {
   getTransformTo(other) {
     return Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); // XXX
@@ -3679,6 +3687,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.XRDevicePose = XRDevicePose;
   window.XRInputSource = XRInputSource;
   window.XRInputPose = XRInputPose;
+  window.XRInputSourceEvent = XRInputSourceEvent;
   window.XRCoordinateSystem = XRCoordinateSystem;
   window.XRFrameOfReference = XRFrameOfReference;
   window.XRStageBounds = XRStageBounds;
