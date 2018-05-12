@@ -855,8 +855,8 @@ class XRPresentationFrame {
   getDevicePose(coordinateSystem) {
     return this._pose;
   }
-  getInputPose() {
-    // XXX
+  getInputPose(inputSource, coordinateSystem) {
+    return inputSource._pose;
   }
 }
 class XRView {
