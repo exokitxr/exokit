@@ -268,6 +268,12 @@ nativeVr.requestPresent = function(layers) {
               vrPresentState.tex = tex;
 
               vrPresentState.lmContext = nativeLm && new nativeLm();
+
+              return Promise.resolve({
+                width,
+                height,
+                framebuffer: msFbo,
+              });
             })
         );
     } else {
@@ -975,7 +981,7 @@ core.load = (load => function() {
   return load.apply(this, arguments)
     .then(window => {
       _bindDirectWindow(window);
-      
+
       return Promise.resolve(window);
     });
 })(core.load);
