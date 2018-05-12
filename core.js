@@ -3217,8 +3217,6 @@ const tickAnimationFrame = () => {
 };
 
 const fakeVrDisplays = [];
-const leftGamepad = new Gamepad('left', 0);
-const rightGamepad = new Gamepad('right', 1);
 /* let vrMode = null;
 let vrTexture = null;
 let vrTextures = []; */
