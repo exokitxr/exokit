@@ -245,11 +245,6 @@ nativeVr.requestPresent = function(layers) {
               renderWidth = halfWidth;
               renderHeight = height;
 
-              window.top.updateVrFrame({
-                renderWidth,
-                renderHeight,
-              });
-
               nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
               const width = halfWidth * 2;
@@ -268,6 +263,13 @@ nativeVr.requestPresent = function(layers) {
               vrPresentState.tex = tex;
 
               vrPresentState.lmContext = nativeLm && new nativeLm();
+
+              process.nextTick(() => { // we need the display to be presenting before update events will go through
+                window.top.updateVrFrame({
+                  renderWidth,
+                  renderHeight,
+                });
+              });
 
               return Promise.resolve({
                 width,
