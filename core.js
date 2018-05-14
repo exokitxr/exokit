@@ -3924,14 +3924,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     };
     window.updateVrFrame = update => {
-      if (vrDisplay.isPresenting) {
+      let updatedHmd = false;
+      if (vrDisplay.isPresenting || update.force) {
         vrDisplay.update(update);
+        updatedHmd = true;
       }
-      if (xrDisplay.session) {
+      if (xrDisplay.session || update.force) {
         xrDisplay.update(update);
+        updatedHmd = true;
       }
-
-      _updateGamepads(update.gamepads);
+      if (updatedHmd) {
+        _updateGamepads(update.gamepads);
+      }
     };
     /* window.updateArFrame = (viewMatrix, projectionMatrix) => {
       arDisplay.update(viewMatrix, projectionMatrix);
