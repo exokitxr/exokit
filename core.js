@@ -4132,6 +4132,7 @@ exokit.load = (src, options = {}) => {
       });
     });
 };
+exokit.getAllGamepads = getAllGamepads;
 exokit.THREE = THREE;
 exokit.setArgs = newArgs => {
   args = newArgs;
