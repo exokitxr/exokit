@@ -40,7 +40,7 @@
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
     "css": "^2.2.3",
-    "exokit-home": "0.0.18",
+    "exokit-home": "0.0.19",
     "he": "^1.1.1",
     "history": "^4.7.2",
     "isolator": "0.0.9",
