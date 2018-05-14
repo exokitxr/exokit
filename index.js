@@ -263,7 +263,7 @@ nativeVr.requestPresent = function(layers) {
               vrPresentState.tex = tex;
 
               vrPresentState.lmContext = nativeLm && new nativeLm();
-              
+
               window.top.updateVrFrame({
                 renderWidth,
                 renderHeight,
