@@ -263,12 +263,11 @@ nativeVr.requestPresent = function(layers) {
               vrPresentState.tex = tex;
 
               vrPresentState.lmContext = nativeLm && new nativeLm();
-
-              process.nextTick(() => { // we need the display to be presenting before update events will go through
-                window.top.updateVrFrame({
-                  renderWidth,
-                  renderHeight,
-                });
+              
+              window.top.updateVrFrame({
+                renderWidth,
+                renderHeight,
+                force: true,
               });
 
               return Promise.resolve({
