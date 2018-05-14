@@ -4259,7 +4259,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     set data(data) {}
   };
 
-  /* const {nativeAudio} = bindings;
+  const {nativeAudio} = bindings;
   AudioContext = nativeAudio.AudioContext;
   AudioNode = nativeAudio.AudioNode;
   AudioDestinationNode = nativeAudio.AudioDestinationNode;
@@ -4352,7 +4352,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
       _elementSetter(this, 'error', onerror);
     }
   };
-  MicrophoneMediaStream = nativeAudio.MicrophoneMediaStream; */
+  MicrophoneMediaStream = nativeAudio.MicrophoneMediaStream;
 
   /* const {nativeVideo} = bindings;
   HTMLVideoElement = class extends HTMLMediaElement {
