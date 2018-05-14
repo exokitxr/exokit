@@ -42,6 +42,8 @@ NAN_MODULE_INIT(IVRSystem::Init)
   Nan::SetPrototypeMethod(tpl, "ApplyTransform", ApplyTransform);
 
   /// virtual vr::TrackedDeviceIndex_t GetTrackedDeviceIndexForControllerRole( vr::ETrackedControllerRole unDeviceType ) = 0;
+  Nan::SetPrototypeMethod(tpl, "GetTrackedDeviceIndexForControllerRole", GetTrackedDeviceIndexForControllerRole);
+  
   /// virtual vr::ETrackedControllerRole GetControllerRoleForTrackedDeviceIndex( vr::TrackedDeviceIndex_t unDeviceIndex ) = 0;
 
   Nan::SetPrototypeMethod(tpl, "GetTrackedDeviceClass", GetTrackedDeviceClass);
@@ -702,6 +704,27 @@ NAN_METHOD(IVRSystem::ApplyTransform)
   vr::TrackedDevicePose_t outputPose;
   obj->self_->ApplyTransform(&outputPose, &trackedDevicePose, &transform);
   info.GetReturnValue().Set(encode(outputPose));
+}
+
+NAN_METHOD(IVRSystem::GetTrackedDeviceIndexForControllerRole)
+{
+  IVRSystem* obj = ObjectWrap::Unwrap<IVRSystem>(info.Holder());
+
+  if (info.Length() != 1)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
+  if (!info[0]->IsNumber())
+  {
+    Nan::ThrowTypeError("Argument[0] must be a number.");
+    return;
+  }
+
+  vr::ETrackedControllerRole role = static_cast<vr::ETrackedControllerRole>(info[0]->Uint32Value());
+  vr::TrackedDeviceIndex_t deviceClass = obj->self_->GetTrackedDeviceIndexForControllerRole(role);
+  info.GetReturnValue().Set(Nan::New<Number>(
+    static_cast<uint32_t>(deviceClass)));
 }
 
 //=============================================================================
