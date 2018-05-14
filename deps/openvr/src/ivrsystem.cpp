@@ -61,7 +61,8 @@ NAN_MODULE_INIT(IVRSystem::Init)
   /// virtual HiddenAreaMesh_t GetHiddenAreaMesh( EVREye eEye ) = 0;
   /// virtual bool GetControllerState( vr::TrackedDeviceIndex_t unControllerDeviceIndex, vr::VRControllerState_t *pControllerState ) = 0;
   /// virtual bool GetControllerStateWithPose( ETrackingUniverseOrigin eOrigin, vr::TrackedDeviceIndex_t unControllerDeviceIndex, vr::VRControllerState_t *pControllerState, TrackedDevicePose_t *pTrackedDevicePose ) = 0;
-  /// virtual void TriggerHapticPulse( vr::TrackedDeviceIndex_t unControllerDeviceIndex, uint32_t unAxisId, unsigned short usDurationMicroSec ) = 0;
+  // virtual void TriggerHapticPulse( vr::TrackedDeviceIndex_t unControllerDeviceIndex, uint32_t unAxisId, unsigned short usDurationMicroSec ) = 0;
+  Nan::SetPrototypeMethod(tpl, "TriggerHapticPulse", TriggerHapticPulse);
   /// virtual const char *GetButtonIdNameFromEnum( EVRButtonId eButtonId ) = 0;
   /// virtual const char *GetControllerAxisTypeNameFromEnum( EVRControllerAxisType eAxisType ) = 0;
 
@@ -783,6 +784,38 @@ NAN_METHOD(IVRSystem::GetControllerState)
       }
     }
   }
+}
+
+NAN_METHOD(IVRSystem::TriggerHapticPulse)
+{
+  IVRSystem* obj = ObjectWrap::Unwrap<IVRSystem>(info.Holder());
+
+  if (info.Length() != 3)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
+  if (!info[0]->IsNumber())
+  {
+    Nan::ThrowTypeError("Argument[0] must be a number.");
+    return;
+  }
+  if (!info[1]->IsNumber())
+  {
+    Nan::ThrowTypeError("Argument[1] must be a number.");
+    return;
+  }
+  if (!info[2]->IsNumber())
+  {
+    Nan::ThrowTypeError("Argument[2] must be a number.");
+    return;
+  }
+  
+  vr::TrackedDeviceIndex_t unControllerDeviceIndex = info[0]->Uint32Value();
+  uint32_t unAxisId = info[1]->Uint32Value();
+  unsigned short usDurationMicroSec  = info[2]->Uint32Value();
+
+  obj->self_->TriggerHapticPulse(unControllerDeviceIndex, unAxisId, usDurationMicroSec);
 }
 
 //=============================================================================
