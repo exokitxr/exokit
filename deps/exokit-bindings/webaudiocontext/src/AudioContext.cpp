@@ -4,9 +4,9 @@ namespace webaudio {
 
 unique_ptr<lab::AudioContext> _defaultAudioContext = nullptr;
 
-lab::AudioContext *getDefaultAudioContext() {
+lab::AudioContext *getDefaultAudioContext(float sampleRate) {
   if (!_defaultAudioContext) {
-    _defaultAudioContext = lab::MakeRealtimeAudioContext();
+    _defaultAudioContext = lab::MakeRealtimeAudioContext(sampleRate);
 
     atexit([]() {
       _defaultAudioContext.reset();
@@ -15,8 +15,8 @@ lab::AudioContext *getDefaultAudioContext() {
   return _defaultAudioContext.get();
 }
 
-AudioContext::AudioContext() {
-  audioContext = getDefaultAudioContext();
+AudioContext::AudioContext(float sampleRate) {
+  audioContext = getDefaultAudioContext(sampleRate);
 }
 
 AudioContext::~AudioContext() {}
@@ -189,10 +189,12 @@ NAN_METHOD(AudioContext::New) {
     threadInitialized = true;
   }
 
-  Nan::HandleScope scope;
+  Local<Object> options = info[0]->IsObject() ? Local<Object>::Cast(info[0]) : Nan::New<Object>();
+  Local<Value> sampleRateValue = options->Get(JS_STR("sampleRate"));
+  float sampleRate = sampleRateValue->IsNumber() ? sampleRateValue->NumberValue() : lab::DefaultSampleRate;
 
   Local<Object> audioContextObj = info.This();
-  AudioContext *audioContext = new AudioContext();
+  AudioContext *audioContext = new AudioContext(sampleRate);
   audioContext->Wrap(audioContextObj);
 
   Local<Function> audioDestinationNodeConstructor = Local<Function>::Cast(audioContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioDestinationNode")));

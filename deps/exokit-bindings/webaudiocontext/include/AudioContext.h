@@ -24,7 +24,7 @@ using namespace node;
 
 namespace webaudio {
   
-lab::AudioContext *getDefaultAudioContext();
+lab::AudioContext *getDefaultAudioContext(float sampleRate = lab::DefaultSampleRate);
 
 class AudioContext : public ObjectWrap {
 public:
@@ -63,7 +63,7 @@ protected:
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_GETTER(SampleRateGetter);
 
-  AudioContext();
+  AudioContext(float sampleRate);
   ~AudioContext();
 
 protected:
