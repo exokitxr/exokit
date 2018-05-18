@@ -27,13 +27,14 @@ const args = (() => {
   if (require.main === module) {
     const minimistArgs = minimist(process.argv.slice(2), {
       boolean: [
+        'version',
         'home',
         'perf',
         'performance',
         'frame',
         'minimalFrame',
         'blit',
-        'version',
+        'require',
       ],
       string: [
         'size',
@@ -41,6 +42,7 @@ const args = (() => {
         'depth-image',
       ],
       alias: {
+        v: 'version',
         h: 'home',
         p: 'performance',
         perf: 'performance',
@@ -50,10 +52,11 @@ const args = (() => {
         b: 'blit',
         i: 'image',
         d: 'depth-image',
-        v: 'version',
+        r: 'require',
       },
     });
     return {
+      version: minimistArgs.version,
       url: minimistArgs._[0] || '',
       home: minimistArgs.home,
       performance: !!minimistArgs.performance,
@@ -63,7 +66,7 @@ const args = (() => {
       blit: minimistArgs.blit,
       image: minimistArgs.image,
       depthImage: minimistArgs['depth-image'],
-      version: minimistArgs.version,
+      require: minimistArgs.require,
     };
   } else {
     return {};

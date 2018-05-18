@@ -3364,7 +3364,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     const WebSocket = require('ws/lib/websocket');
     const {XMLHttpRequest} = require('window-xhr');
     const XHRUtils = require('window-xhr/lib/utils');
-    window.require = undefined;
+    ${!args.require ? 'window.require = undefined;' : ''}
 
     XHRUtils.createClient = (createClient => function() {
       const properties = arguments[0];
