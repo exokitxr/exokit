@@ -68,6 +68,7 @@
     "window-text-encoding": "0.0.2",
     "window-worker": "0.0.60",
     "window-xhr": "0.0.13",
-    "ws": "^5.1.1"
+    "ws": "^5.1.1",
+    "xmlserializer": "^0.6.1"
   }
 }

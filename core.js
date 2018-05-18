@@ -1633,6 +1633,12 @@ const _defineId = (window, id, el) => {
     configurable: true,
   });
 };
+const _XMLSerializer = require("xmlserializer");
+class XMLSerializer {
+  serializeToString(dom) {
+    return _XMLSerializer.serializeToString(parse5.parse(dom.innerHTML));
+  }
+}
 class Element extends Node {
   constructor(tagName = 'DIV', attrs = [], value = '', location = null) {
     super();
@@ -3577,6 +3583,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window[optionsSymbol] = options;
   window.DocumentFragment = DocumentFragment;
+  window.XMLSerializer = XMLSerializer;
   window.Element = Element;
   window.HTMLElement = HTMLElement;
   window.HTMLAnchorElement = HTMLAnchorElement;
