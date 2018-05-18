@@ -4,7 +4,6 @@ const stream = require('stream');
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
-const dgram = require('dgram');
 const os = require('os');
 const util = require('util');
 const {URL} = url;
@@ -3553,7 +3552,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.clearInterval = clearInterval;
   window.performance = performance;
   window.screen = new Screen(window);
-  window.dgram = dgram; // XXX non-standard
   window.urls = urls; // XXX non-standard
   window.scrollTo = function(x = 0, y = 0) {
     this.scrollX = x;
