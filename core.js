@@ -1535,7 +1535,7 @@ const _makeStyleProxy = el => {
       }
     }
   };
-  let proxy = new Proxy({}, {
+  return new Proxy({}, {
     get(target, key) {
       if (key === 'reset') {
         return _reset;
@@ -1569,8 +1569,6 @@ const _makeStyleProxy = el => {
       return true;
     },
   });
-  proxy.reset();
-  return proxy;
 };
 const _dashToCamelCase = s => {
   let match = s.match(/^data-(.+)$/);
