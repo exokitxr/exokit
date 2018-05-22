@@ -1513,7 +1513,7 @@ const _cssText = style => {
 };
 const _makeStyleProxy = el => {
   let style = {};
-  return new Proxy({}, {
+  let proxy = new Proxy({}, {
     get(target, key) {
       if (key === 'reset') {
         return () => {
@@ -1563,6 +1563,8 @@ const _makeStyleProxy = el => {
       return true;
     },
   });
+  proxy.reset();
+  return proxy;
 };
 const _dashToCamelCase = s => {
   let match = s.match(/^data-(.+)$/);
