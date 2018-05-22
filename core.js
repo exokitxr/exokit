@@ -1513,29 +1513,32 @@ const _cssText = style => {
 };
 const _makeStyleProxy = el => {
   let style = {};
+  let needsReset = true;
+  const _reset = () => {
+    needsReset = false;
+    let stylesheet, err;
+    try {
+      stylesheet = css.parse(`x{${el.getAttribute('style')}}`).stylesheet;
+    } catch(e) {
+      err = e;
+    }
+    if (!err) {
+      style = {};
+      const {rules} = stylesheet;
+      for (let j = 0; j < rules.length; j++) {
+        const rule = rules[j];
+        const {declarations} = rule;
+        for (let k = 0; k < declarations.length; k++) {
+          const {property, value} = declarations[k];
+          style[property] = value;
+        }
+      }
+    }
+  };
   return new Proxy({}, {
     get(target, key) {
       if (key === 'reset') {
-        return () => {
-          let stylesheet, err;
-          try {
-            stylesheet = css.parse(`x{${el.getAttribute('style')}}`).stylesheet;
-          } catch(e) {
-            err = e;
-          }
-          if (!err) {
-            style = {};
-            const {rules} = stylesheet;
-            for (let j = 0; j < rules.length; j++) {
-              const rule = rules[j];
-              const {declarations} = rule;
-              for (let k = 0; k < declarations.length; k++) {
-                const {property, value} = declarations[k];
-                style[property] = value;
-              }
-            }
-          }
-        };
+        return _reset;
       } else if (key === 'clone') {
         return () => {
           const result = {};
@@ -1550,6 +1553,9 @@ const _makeStyleProxy = el => {
       } else if (key === 'cssText') {
         return el.getAttribute('style') || '';
       } else {
+        if (needsReset) {
+          _reset();
+        }
         return style[key];
       }
     },
