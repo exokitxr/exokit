@@ -44,6 +44,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"lineTo", LineTo);
   Nan::SetMethod(proto,"arc", Arc);
   Nan::SetMethod(proto,"arcTo", ArcTo);
+  Nan::SetMethod(proto,"bezierCurveTo", BezierCurveTo);
   Nan::SetMethod(proto,"rect", Rect);
   Nan::SetMethod(proto,"fillRect", FillRect);
   Nan::SetMethod(proto,"strokeRect", StrokeRect);
@@ -162,6 +163,10 @@ void CanvasRenderingContext2D::Arc(float x, float y, float radius, float startAn
 
 void CanvasRenderingContext2D::ArcTo(float x1, float y1, float x2, float y2, float radius) {
   path.arcTo(x1, y1, x2 - x1, y2 - y1, radius);
+}
+
+void CanvasRenderingContext2D::BezierCurveTo(float cp1x, float cp1y, float cp2x, float cp2y, float x, float y) {
+  path.cubicTo(cp1x, cp1y, cp2x, cp2y, x, y);
 }
 
 void CanvasRenderingContext2D::Rect(float x, float y, float w, float h) {
@@ -868,6 +873,22 @@ NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
   double radius = info[4]->NumberValue();
 
   context->ArcTo(x1, y1, x2, y2, radius);
+
+  context->dataArray.Reset();
+}
+
+NAN_METHOD(CanvasRenderingContext2D::BezierCurveTo) {
+  Nan::HandleScope scope;
+
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  double x1 = info[0]->NumberValue();
+  double y1 = info[1]->NumberValue();
+  double x2 = info[2]->NumberValue();
+  double y2 = info[3]->NumberValue();
+  double x = info[4]->NumberValue();
+  double y = info[5]->NumberValue();
+
+  context->BezierCurveTo(x1, y1, x2, y2, x, y);
 
   context->dataArray.Reset();
 }

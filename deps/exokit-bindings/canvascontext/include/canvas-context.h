@@ -66,6 +66,7 @@ public:
   void LineTo(float x, float y);
   void Arc(float x, float y, float radius, float startAngle, float endAngle, float anticlockwise);
   void ArcTo(float x1, float y1, float x2, float y2, float radius);
+  void BezierCurveTo(float cp1x, float cp1y, float cp2x, float cp2y, float x, float y);
   void Rect(float x, float y, float w, float h);
   void FillRect(float x, float y, float w, float h);
   void StrokeRect(float x, float y, float w, float h);
@@ -124,6 +125,7 @@ protected:
   static NAN_METHOD(LineTo);
   static NAN_METHOD(Arc);
   static NAN_METHOD(ArcTo);
+  static NAN_METHOD(BezierCurveTo);
   static NAN_METHOD(Rect);
   static NAN_METHOD(FillRect);
   static NAN_METHOD(StrokeRect);
