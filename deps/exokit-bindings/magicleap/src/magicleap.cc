@@ -11,14 +11,14 @@ namespace ml {
 const char application_name[] = "com.magicleap.simpleglapp";
 application_context_t application_context;
 MLLifecycleCallbacks lifecycle_callbacks = {};
-MLLifecycleErrorCode lifecycle_status;
+MLResult lifecycle_status;
 std::thread *initThread;
 uv_async_t async;
 bool initialized = false;
 Nan::Persistent<Function> initCb;
 
 bool isPresent() {
-  return initialized && lifecycle_status == MLLifecycleErrorCode_Success;
+  return initialized && lifecycle_status == MLResult_Ok;
 }
 
 void asyncCb(uv_async_t *handle) {
@@ -32,8 +32,7 @@ void asyncCb(uv_async_t *handle) {
 }
 
 void makePlanesQueryer(MLHandle &planesHandle) {
-  planesHandle = MLPlanesCreate();
-  if (!MLHandleIsValid(planesHandle)) {
+  if (MLPlanesCreate(&planesHandle) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
   }
 }
@@ -57,25 +56,24 @@ void beginPlanesQuery(const MLVec3f &position, const MLQuaternionf &rotation, ML
     query.min_plane_area = 0.25;
     query.max_results = MAX_NUM_PLANES;
 
-    planesQueryHandle = MLPlanesQueryBegin(planesHandle, &query);
-    if (!MLHandleIsValid(planesQueryHandle)) {
+    if (MLPlanesQueryBegin(planesHandle, &query, &planesQueryHandle) != MLResult_Ok) {
       ML_LOG(Error, "%s: Failed to query planes.", application_name);
     }
   }
 }
 void endPlanesQuery(MLHandle &planesHandle, MLHandle &planesQueryHandle, MLPlane *planes, uint32_t *numPlanes) {
   if (MLHandleIsValid(planesQueryHandle)) {
-    MLPlanesQueryResult planesQueryResult = MLPlanesQueryGetResults(planesHandle, planesQueryHandle, planes, numPlanes);
-    if (planesQueryResult == MLPlanesQueryResult_Success) {
+    MLResult result = MLPlanesQueryGetResults(planesHandle, planesQueryHandle, planes, numPlanes);
+    if (result == MLResult_Ok) {
       planesQueryHandle = ML_INVALID_HANDLE;
-    } else if (planesQueryResult == MLPlanesQueryResult_Failure) {
+    } else if (result == MLResult_UnspecifiedFailure) {
       planesQueryHandle = ML_INVALID_HANDLE;
 
-      ML_LOG(Error, "MLPlanesQueryGetResults failed: %d %d %d %d %d", planesQueryResult, MLPlanesQueryResult_Success, MLPlanesQueryResult_Failure, MLPlanesQueryResult_Pending, MLPlanesQueryResult_Ensure32Bits);
-    } else if (planesQueryResult == MLPlanesQueryResult_Pending) {
+      ML_LOG(Error, "MLPlanesQueryGetResults failed: %d", result);
+    } else if (result == MLResult_Pending) {
       // nothing, we wait
     } else {
-      ML_LOG(Error, "MLPlanesQueryGetResults complained: %d %d %d %d %d", planesQueryResult, MLPlanesQueryResult_Success, MLPlanesQueryResult_Failure, MLPlanesQueryResult_Pending, MLPlanesQueryResult_Ensure32Bits);
+      ML_LOG(Error, "MLPlanesQueryGetResults complained: %d", result);
     }
   }
 }
@@ -200,7 +198,7 @@ NAN_METHOD(MLContext::Init) {
 
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
-  if (lifecycle_status != MLLifecycleErrorCode_Success) {
+  if (lifecycle_status != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to initialize lifecycle.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
@@ -226,19 +224,19 @@ NAN_METHOD(MLContext::Init) {
   MLGraphicsOptions graphics_options = { MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float };
   MLHandle opengl_context = reinterpret_cast<MLHandle>(window);
   mlContext->graphics_client = ML_INVALID_HANDLE;
-  MLStatus graphics_create_status = MLStatus_OK;
-  MLGraphicsCreateClientGL(&graphics_options, opengl_context, &mlContext->graphics_client, &graphics_create_status);
+  MLResult graphics_create_status = MLGraphicsCreateClientGL(&graphics_options, opengl_context, &mlContext->graphics_client);
 
   // Now that graphics is connected, the app is ready to go
-  if (!MLLifecycleSetReadyIndication(&lifecycle_status)) {
+  if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
   }
 
-  mlContext->head_tracker = MLHeadTrackingCreate();
-  if (MLHandleIsValid(mlContext->head_tracker)) {
-    MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data);
+  if (MLHeadTrackingCreate(&mlContext->head_tracker) == MLResult_Ok) {
+    if (MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Failed to get head tracker static data.", application_name);
+    }
   } else {
     ML_LOG(Error, "%s: Failed to create head tracker.", application_name);
   }
@@ -255,13 +253,11 @@ NAN_METHOD(MLContext::Init) {
   for (int i = 0; i < MLInput_MaxControllers; i++) {
     inputConfiguration.dof[i] = MLInputControllerDof_6;
   }
-  mlContext->inputTracker = MLInputCreate(&inputConfiguration);
-  if (!MLHandleIsValid(mlContext->inputTracker)) {
+  if (MLInputCreate(&inputConfiguration, &mlContext->inputTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create input tracker.", application_name);
   }
 
-  mlContext->gestureTracker = MLGestureTrackingCreate();
-  if (!MLHandleIsValid(mlContext->gestureTracker)) {
+  if (MLGestureTrackingCreate(&mlContext->gestureTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
   }
 
@@ -297,8 +293,7 @@ NAN_METHOD(MLContext::Init) {
     meshingSettings.target_number_triangles = 0;
     // meshingSettings.target_number_triangles = 10000;
     meshingSettings.target_number_triangles_per_block = 0;
-    mlContext->meshTracker = MLMeshingCreate(&meshingSettings);
-    if (!MLHandleIsValid(mlContext->meshTracker)) {
+    if (MLMeshingCreate(&meshingSettings, &mlContext->meshTracker) != MLResult_Ok) {
       ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
     }
 
@@ -332,9 +327,7 @@ NAN_METHOD(MLContext::Init) {
     }
   });
 
-  /* MLStatus occlusionStatus;
-  MLOcclusionCreateClient(&mlContext->occlusionTracker, &occlusionStatus);
-  if (!MLHandleIsValid(mlContext->occlusionTracker)) {
+  /* if (MLOcclusionCreateClient(&mlContext->occlusionTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create occlusion tracker.", application_name);
   } */
 
@@ -356,19 +349,19 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Local<Float32Array> gesturesArray = Local<Float32Array>::Cast(info[7]);
       Local<Array> meshArray = Local<Array>::Cast(info[8]);
 
-      MLStatus out_status;
       MLGraphicsFrameParams frame_params;
-      if (!MLGraphicsInitFrameParams(&frame_params, &out_status)) {
-        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
+      MLResult result = MLGraphicsInitFrameParams(&frame_params);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
       }
       frame_params.surface_scale = 1.0f;
       frame_params.projection_type = MLGraphicsProjectionType_Default;
       frame_params.near_clip = 1.0f;
       frame_params.focus_distance = 1.0f;
 
-      MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array, &out_status);
-      if (out_status != MLStatus_OK) {
-        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", out_status);
+      result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
       }
 
       // framebuffer
@@ -471,16 +464,16 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           // MLCoordinateFrameUID coordinateFrame = mlContext->meshStaticData.frame;
           MLDataArrayHandle &meshesHandle = mlContext->meshStaticData.meshes;
 
-          MLDataArrayLockResult lockResult = MLDataArrayTryLock(meshesHandle, &mlContext->meshData, &mlContext->meshesDataDiff);
-          if (lockResult == MLDataArrayLockResult_New) {
+          MLResult lockResult = MLDataArrayTryLock(meshesHandle, &mlContext->meshData, &mlContext->meshesDataDiff);
+          if (lockResult == MLResult_Ok) {
             if (mlContext->meshData.stream_count > 0) {
               MLDataArrayStream &handleStream = mlContext->meshData.streams[0];
 
               if (handleStream.type == MLDataArrayType_Handle) {
                 MLDataArrayHandle &meshesHandle2 = *handleStream.handle_array;
 
-                MLDataArrayLockResult lockResult2 = MLDataArrayTryLock(meshesHandle2, &mlContext->meshData2, &mlContext->meshesDataDiff2);
-                if (lockResult2 == MLDataArrayLockResult_New) {
+                MLResult lockResult2 = MLDataArrayTryLock(meshesHandle2, &mlContext->meshData2, &mlContext->meshesDataDiff2);
+                if (lockResult2 == MLResult_Ok) {
                   uint32_t positionIndex = mlContext->meshStaticData.position_stream_index;
                   MLDataArrayStream &positionStream = mlContext->meshData2.streams[positionIndex];
                   uint32_t numPositionPoints = positionStream.count;
@@ -515,9 +508,9 @@ NAN_METHOD(MLContext::WaitGetPoses) {
                   meshArray->Set(2, trianglesUint32Array);
 
                   MLDataArrayUnlock(meshesHandle2);
-                } else if (lockResult2 == MLDataArrayLockResult_Unchanged) {
+                } else if (lockResult2 == MLResult_Pending) {
                   // nothing
-                } else if (lockResult2 == MLDataArrayLockResult_Locked) {
+                } else if (lockResult2 == MLResult_Locked) {
                   ML_LOG(Error, "MLDataArrayTryLock inner already locked: %d", lockResult2);
                 } else {
                   ML_LOG(Error, "MLDataArrayTryLock inner failed: %d", lockResult2);
@@ -530,9 +523,9 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             }
 
             MLDataArrayUnlock(meshesHandle);
-          } else if (lockResult == MLDataArrayLockResult_Unchanged) {
+          } else if (lockResult == MLResult_Pending) {
             // nothing
-          } else if (lockResult == MLDataArrayLockResult_Locked) {
+          } else if (lockResult == MLResult_Locked) {
             ML_LOG(Error, "MLDataArrayTryLock outer already locked: %d", lockResult);
           } else {
             ML_LOG(Error, "MLDataArrayTryLock outer failed: %d", lockResult);
@@ -551,8 +544,9 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       occlusionBuffer.projection_type = MLGraphicsProjectionType_Default;
       occlusionBuffer.num_buffers = 2;
       occlusionBuffer.viewport = viewport;
-      if (!MLOcclusionPopulateDepth(mlContext->occlusionTracker, &occlusionBuffer, &out_status)) {
-        ML_LOG(Error, "MLOcclusionPopulateDepth outer failed: %d", out_status);
+      MLResult result = MLOcclusionPopulateDepth(mlContext->occlusionTracker, &occlusionBuffer);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "MLOcclusionPopulateDepth outer failed: %d", result);
       } */
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
@@ -572,7 +566,6 @@ NAN_METHOD(MLContext::SubmitFrame) {
 
   const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
 
-  MLStatus out_status;
   for (int i = 0; i < 2; i++) {
     MLGraphicsVirtualCameraInfo
  &camera = mlContext->virtual_camera_array.virtual_cameras[i];
@@ -593,15 +586,15 @@ NAN_METHOD(MLContext::SubmitFrame) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object, &out_status);
-    if (out_status != MLStatus_OK) {
-      ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", out_status);
+    MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
     }
   }
 
-  MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle, &out_status);
-  if (out_status != MLStatus_OK) {
-    ML_LOG(Error, "MLGraphicsEndFrame complained: %d", out_status);
+  MLResult result = MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle);
+  if (result != MLResult_Ok) {
+    ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
   }
 
   // planes
