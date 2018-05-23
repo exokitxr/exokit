@@ -3,6 +3,10 @@
 #include <magicleap.h>
 #include <uv.h>
 
+#include <sstream>
+#include <fstream>
+#include <iostream>
+
 using namespace v8;
 using namespace std;
 
@@ -622,6 +626,10 @@ NAN_METHOD(MLContext::OnPresentChange) {
     Nan::ThrowError("not implemented");
   }
 }
+#if 0
+
+#include <stdio.h>  
+#include <stdlib.h>  
 
 void MLContext::LifecycleInit() {
   application_context.dummy_value = 2;
@@ -630,7 +638,153 @@ void MLContext::LifecycleInit() {
   lifecycle_callbacks.on_pause = onPause;
   lifecycle_callbacks.on_resume = onResume;
 
-  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+  do {
+    FILE* stream;
+    errno_t err = freopen_s( &stream, "mlsdk_err.txt", "w", stderr );  
+    if( err != 0 )  
+      fprintf( stdout, "error on freopen\n" );  
+    else {
+      fprintf( stderr, "stderr redirected\n" );
+      //fflush( stderr );
+    }
+
+    lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+    if ( err == 0)
+      fclose( stream );
+
+    if (lifecycle_status != MLResult_Ok) {
+      printf("trying again\n");
+    }
+    printf("lifecycle code %d\n", (int)lifecycle_status);
+    fflush(stdout);
+
+  } while (lifecycle_status != MLResult_Ok);
+
+  initialized = true;
+
+  uv_async_send(&async);
+}
+#endif
+
+template <typename T>
+std::streambuf * redirect_output(char * filenm, std::ofstream& filestr, T& stream)
+{
+  std::streambuf *newsb, *oldsb;
+  filestr.open(filenm);
+  oldsb = stream.rdbuf();     // back up cout's streambuf
+  newsb = filestr.rdbuf();       // get file's streambuf
+  stream.rdbuf(newsb);        // assign streambuf to cout
+  return oldsb;
+}
+
+template <typename T>
+void restore_output(std::streambuf * oldsb, std::ofstream& filestr, T& stream)
+{
+  stream.rdbuf(oldsb);        // restore cout's original streambuf
+  filestr.close();
+}
+
+#include <stdarg.h>
+#include <fcntl.h>
+#include <stdio.h>
+#if _MSC_VER
+#include <io.h>
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+#else
+#include <unistd.h>
+#endif
+
+static int err_report(const char *fmt, ...);
+
+static int redirect_to_file(char *file, int fileno)
+{
+    /* Connect standard output to given file */
+    fflush(stdout);
+    int fd1 = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd1 < 0)
+        return err_report("Failed to open %s for writing\n", file);
+    int fd2 = dup(fileno);
+    if (fd2 < 0)
+        return err_report("Failed to duplicate standard output\n");
+    if (dup2(fd1, fileno) < 0)
+        return err_report("Failed to duplicate %s to standard output\n", file);
+    close(fd1);
+    return fd2;
+}
+
+static int restore_stdout(int fd2, int fileno)
+{
+    /* Reconnect original standard output */
+    fflush(stdout);
+    if (dup2(fd2, fileno) < 0)
+        return err_report("Failed to reinstate fd %d\n", fileno);
+    close(fd2);
+    return 0;
+}
+
+static int err_report(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    return -1;
+}
+
+void MLContext::LifecycleInit() {
+  application_context.dummy_value = 2;
+
+  lifecycle_callbacks.on_stop = onStop;
+  lifecycle_callbacks.on_pause = onPause;
+  lifecycle_callbacks.on_resume = onResume;
+
+#if 1
+  {
+    std::ofstream filestr;
+    std::ofstream errstr;
+    //std::cout << "Redirecting stdout\n";
+    std::streambuf* oldsb = redirect_output("mlsdk_log1.txt", filestr, std::cout);
+    std::cout << "Redirected stdout\n";
+    std::cout.flush();
+    std::streambuf* errsb = redirect_output("mlsdk_err1.txt", errstr, std::cerr);
+    std::cerr << "Redirected stderr\n";
+    std::cerr.flush();
+
+    //printf("redirecting to mlsdk.log\n");
+    int fd1 = redirect_to_file("mlsdk_log.txt", STDOUT_FILENO);
+    printf("redirected stdout\n");
+    fflush(stdout);
+    int fd2 = redirect_to_file("mlsdk_err.txt", STDERR_FILENO);
+    fprintf( stderr, "redirected stderr\n");
+    fflush(stderr);
+#endif
+
+    lifecycle_status = MLResult_UnspecifiedFailure;
+    while (lifecycle_status != MLResult_Ok) {
+      lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+      //printf("trying again\n");
+      //fflush(stdout);
+    }
+
+#if 1
+    restore_stdout(fd2, STDERR_FILENO);
+    //fprintf(stderr, "restored stderr\n");
+    //fflush(stderr);
+    restore_stdout(fd1, STDOUT_FILENO);
+    //printf("restored stdout\n");
+    //fflush(stdout);
+
+    restore_output(errsb, errstr, std::cerr);
+    //std::cerr << "Un-redirecting stderr\n";
+    //std::cerr.flush();
+    restore_output(oldsb, filestr, std::cout);
+    //std::cout << "Un-redirecting stdout\n";
+    //std::cout.flush();
+    //printf("status %d\n", (int)lifecycle_status);
+    //fflush(stdout);
+  }
+#endif
 
   initialized = true;
 
