@@ -2893,7 +2893,7 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get width() {
-     return parseInt(this.getAttribute('width') || defaultCanvasSize[0].toString());
+     return parseInt(this.getAttribute('width') || defaultCanvasSize[0].toString(), 10);
   }
   set width(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2901,7 +2901,7 @@ class HTMLCanvasElement extends HTMLElement {
     }
   }
   get height() {
-    return parseInt(this.getAttribute('height') || defaultCanvasSize[1].toString());
+    return parseInt(this.getAttribute('height') || defaultCanvasSize[1].toString(), 10);
   }
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {
