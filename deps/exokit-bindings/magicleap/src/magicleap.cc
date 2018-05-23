@@ -134,6 +134,72 @@ static void onResume(void* application_context) {
   ML_LOG(Info, "%s: On resume called.", application_name);
 }
 
+MLStageGeometry::MLStageGeometry(MLContext *mlContext) : mlContext(mlContext) {}
+
+MLStageGeometry::~MLStageGeometry() {}
+
+Handle<Object> MLStageGeometry::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLStageGeometry"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "getGeometry", GetGeometry);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_METHOD(MLStageGeometry::New) {
+  if (info[0]->IsObject()) {
+    Local<Object> mlContextObj = Local<Object>::Cast(info[0]);
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(mlContextObj);
+
+    Local<Object> mlStageGeometryObj = info.This();
+    MLStageGeometry *mlStageGeometry = new MLStageGeometry(mlContext);
+    mlStageGeometry->Wrap(mlStageGeometryObj);
+
+    info.GetReturnValue().Set(mlStageGeometryObj);
+  } else {
+    Nan::ThrowError("MLStageGeometry::New: invalid arguments");
+  }
+}
+
+NAN_METHOD(MLStageGeometry::GetGeometry) {
+  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsUint32Array() && info[3]->IsArray()) {
+    MLStageGeometry *mlStageGeometry = ObjectWrap::Unwrap<MLStageGeometry>(info.This());
+    MLContext *mlContext = mlStageGeometry->mlContext;
+
+    Local<Float32Array> positionsArray = Local<Float32Array>::Cast(info[0]);
+    Local<Float32Array> normalsArray = Local<Float32Array>::Cast(info[1]);
+    Local<Uint32Array> trianglesArray = Local<Uint32Array>::Cast(info[2]);
+
+    if (
+      positionsArray->ByteLength() >= mlContext->positions.size() &&
+      normalsArray->ByteLength() >= mlContext->normals.size() &&
+      trianglesArray->ByteLength() >= mlContext->triangles.size()
+    ) {
+      memcpy((uint8_t *)positionsArray->Buffer()->GetContents().Data() + positionsArray->ByteOffset(), mlContext->positions.data(), mlContext->positions.size());
+      memcpy((uint8_t *)normalsArray->Buffer()->GetContents().Data() + normalsArray->ByteOffset(), mlContext->normals.data(), mlContext->normals.size());
+      memcpy((uint8_t *)trianglesArray->Buffer()->GetContents().Data() + trianglesArray->ByteOffset(), mlContext->triangles.data(), mlContext->triangles.size());
+      
+      Local<Array> metrics = Local<Array>::Cast(info[3]);
+      metrics->Set(0, JS_INT((unsigned int)(mlContext->positions.size() / sizeof(float))));
+      metrics->Set(1, JS_INT((unsigned int)(mlContext->normals.size() / sizeof(float))));
+      metrics->Set(2, JS_INT((unsigned int)(mlContext->triangles.size() / sizeof(uint32_t))));
+    } else {
+      Nan::ThrowError("MLStageGeometry::GetGeometry: insufficient buffer sizes");
+    }
+  } else {
+    Nan::ThrowError("MLStageGeometry::GetGeometry: invalid arguments");
+  }
+}
+
 MLContext::MLContext() :
   position{0, 0, 0},
   rotation{0, 0, 0, 1},
@@ -166,15 +232,23 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
 
   Local<Function> ctorFn = ctor->GetFunction();
 
+  Local<Object> stageGeometryCons = MLStageGeometry::Initialize(isolate);
+  ctorFn->Set(JS_STR("MLStageGeometry"), stageGeometryCons);
+
   return scope.Escape(ctorFn);
 }
 
 NAN_METHOD(MLContext::New) {
-  Nan::HandleScope scope;
-
   Local<Object> mlContextObj = info.This();
   MLContext *mlContext = new MLContext();
   mlContext->Wrap(mlContextObj);
+
+  Local<Function> stageGeometryCons = Local<Function>::Cast(mlContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("MLStageGeometry")));
+  Local<Value> argv[] = {
+    mlContextObj,
+  };
+  Local<Object> stageGeometryObj = stageGeometryCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+  mlContextObj->Set(JS_STR("stageGeometry"), stageGeometryObj);
 
   if (!initThread) {
     uv_async_init(uv_default_loop(), &async, asyncCb);
@@ -305,11 +379,12 @@ NAN_METHOD(MLContext::Init) {
       std::unique_lock<std::mutex> uniqueLock(mesherCvMutex);
       mlContext->mesherCv.wait(uniqueLock);
 
-      /* {
+      {
         std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
+
         meshingSettings.bounds_center = mlContext->position;
         meshingSettings.bounds_rotation = mlContext->rotation;
-      } */
+      }
 
       MLResult meshingUpdateResult = MLMeshingUpdate(mlContext->meshTracker, &meshingSettings);
       if (meshingUpdateResult != MLResult_Ok) {
@@ -339,7 +414,7 @@ NAN_METHOD(MLContext::Init) {
 NAN_METHOD(MLContext::WaitGetPoses) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array() && info[6]->IsFloat32Array() && info[7]->IsFloat32Array() && info[8]->IsArray()) {
+  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array() && info[6]->IsFloat32Array() && info[7]->IsFloat32Array()) {
     if (application_context.dummy_value) {
       Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
@@ -349,7 +424,6 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Local<Uint32Array> numPlanesArray = Local<Uint32Array>::Cast(info[5]);
       Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[6]);
       Local<Float32Array> gesturesArray = Local<Float32Array>::Cast(info[7]);
-      Local<Array> meshArray = Local<Array>::Cast(info[8]);
 
       MLGraphicsFrameParams frame_params;
       MLResult result = MLGraphicsInitFrameParams(&frame_params);
@@ -485,10 +559,6 @@ NAN_METHOD(MLContext::WaitGetPoses) {
                   mlContext->positions.resize(positionsSize);
                   memcpy(mlContext->positions.data(), positionStream.custom_array, positionsSize);
 
-                  Local<ArrayBuffer> positionsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->positions.data(), positionsSize);
-                  Local<Float32Array> positionsFloat32Array = Float32Array::New(positionsArrayBuffer, 0, numPositionPoints * 3);
-                  meshArray->Set(0, positionsFloat32Array);
-
                   uint32_t normalIndex = mlContext->meshStaticData.normal_stream_index;
                   MLDataArrayStream &normalStream = mlContext->meshData2.streams[normalIndex];
                   uint32_t numNormalPoints = normalStream.count;
@@ -496,20 +566,12 @@ NAN_METHOD(MLContext::WaitGetPoses) {
                   mlContext->normals.resize(normalsSize);
                   memcpy(mlContext->normals.data(), normalStream.custom_array, normalsSize);
 
-                  Local<ArrayBuffer> normalsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->normals.data(), normalsSize);
-                  Local<Float32Array> normalsFloat32Array = Float32Array::New(normalsArrayBuffer, 0, numNormalPoints * 3);
-                  meshArray->Set(1, normalsFloat32Array);
-
                   uint32_t triangleIndex = mlContext->meshStaticData.triangle_index_stream_index;
                   MLDataArrayStream &triangleStream = mlContext->meshData2.streams[triangleIndex];
                   uint32_t numTriangles = triangleStream.count;
                   uint32_t trianglesSize = numTriangles * triangleStream.data_size;
                   mlContext->triangles.resize(trianglesSize);
                   memcpy(mlContext->triangles.data(), triangleStream.custom_array, trianglesSize);
-
-                  Local<ArrayBuffer> trianglesArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), mlContext->triangles.data(), trianglesSize);
-                  Local<Uint32Array> trianglesUint32Array = Uint32Array::New(trianglesArrayBuffer, 0, numTriangles);
-                  meshArray->Set(2, trianglesUint32Array);
 
                   MLDataArrayUnlock(meshesHandle2);
                 } else if (lockResult2 == MLResult_Pending) {
@@ -538,7 +600,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           mlContext->haveMeshStaticData = false;
         }
       }
-      
+
       /* // occlusion
       MLOcclusionDepthBufferInfo occlusionBuffer;
       for (size_t i = 0; i < 2; i++) {

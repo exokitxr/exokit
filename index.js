@@ -172,7 +172,6 @@ const planesArray = new Float32Array(planeEntrySize * maxNumPlanes);
 const numPlanesArray = new Uint32Array(1);
 const controllersArray = new Float32Array((3 + 4 + 1) * 2);
 const gesturesArray = new Float32Array(4 * 2);
-const meshArray = [null, null, null];
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -330,13 +329,15 @@ if (nativeMl) {
 
         const initResult = mlContext.Init(windowHandle);
         if (initResult) {
+          console.log('ml context stage geo', mlContext.stageGeometry.getGeometry);
+          
           isMlPresenting = true;
 
           const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 1, 0, 0);
           mlFbo = fbo;
           mlTex = tex;
 
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray, meshArray);
+          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
 
           /* for (let i = 0; i < 2; i++) {
             nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
@@ -349,7 +350,7 @@ if (nativeMl) {
             planesArray,
             numPlanes: numPlanesArray[0],
             gamepads: [null, null],
-            meshArray,
+            context: mlContext,
           });
           mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
 
@@ -843,7 +844,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
     } else if (isMlPresenting) {
-      mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray, meshArray);
+      mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -897,7 +898,7 @@ const _bindWindow = (window, newWindowCb) => {
         planesArray,
         numPlanes: numPlanesArray[0],
         gamepads,
-        meshArray,
+        context: mlContext,
       });
 
       if (args.performance) {

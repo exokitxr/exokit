@@ -40,6 +40,22 @@ struct application_context_t {
   int dummy_value;
 };
 
+class MLContext;
+
+class MLStageGeometry : public ObjectWrap {
+public:
+  static Handle<Object> Initialize(Isolate *isolate);
+
+protected:
+  MLStageGeometry(MLContext *mlContext);
+  ~MLStageGeometry();
+  
+  static NAN_METHOD(New);
+  static NAN_METHOD(GetGeometry);
+  
+  MLContext *mlContext;
+};
+
 class MLContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
@@ -111,6 +127,8 @@ protected:
 
   // occlusion
   // MLHandle occlusionTracker;
+
+  friend class MLStageGeometry;
 };
 
 }

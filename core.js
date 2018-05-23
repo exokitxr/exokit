@@ -1063,7 +1063,8 @@ class MLDisplay extends MRDisplay {
     // this._viewportArray = new Float32Array(4);
     this._planesArray = new Float32Array(maxNumPlanes * planeEntrySize);
     this._numPlanes = 0;
-    this.mesh = [null, null, null];
+    
+    this._context = null;
   }
 
   requestPresent(layers) {
@@ -1116,6 +1117,14 @@ class MLDisplay extends MRDisplay {
       frameData.numPlanes = this._numPlanes;
     }
   }
+  
+  getGeometry(positions, normals, indices, metrics) {
+    if (this._context) {
+      return this._context.stageGeometry.getGeometry(positions, normals, indices, metrics);
+    } else {
+      return 0;
+    }
+  }
 
   update(update) {
     this._transformArray.set(update.transformArray);
@@ -1123,12 +1132,11 @@ class MLDisplay extends MRDisplay {
     // this._viewportArray.set(update.viewportArray);
     this._planesArray.set(update.planesArray);
     this._numPlanes = update.numPlanes;
-    for (let i = 0; i < 3; i++) {
-      this.mesh[i] = update.meshArray[i];
-    }
 
     this._width = update.viewportArray[2] / 2;
     this._height = update.viewportArray[3];
+    
+    this._context = update.context;
   }
 }
 class AudioNode {
