@@ -207,15 +207,15 @@ NAN_METHOD(MLContext::Init) {
   // initialize perception system
   MLPerceptionSettings perception_settings;
 
-  bool perception_init_status = MLPerceptionInitSettings(&perception_settings);
-  if (perception_init_status != true) {
+  MLResult perception_init_status = MLPerceptionInitSettings(&perception_settings);
+  if (perception_init_status != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to initialize perception.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
   }
 
-  bool perception_startup_status = MLPerceptionStartup(&perception_settings);
-  if (perception_startup_status != true) {
+  MLResult perception_startup_status = MLPerceptionStartup(&perception_settings);
+  if (perception_startup_status != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to startup perception.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
@@ -311,14 +311,16 @@ NAN_METHOD(MLContext::Init) {
         meshingSettings.bounds_rotation = mlContext->rotation;
       } */
 
-      if (!MLMeshingUpdate(mlContext->meshTracker, &meshingSettings)) {
+      MLResult meshingUpdateResult = MLMeshingUpdate(mlContext->meshTracker, &meshingSettings);
+      if (meshingUpdateResult != MLResult_Ok) {
         ML_LOG(Error, "MLMeshingUpdate failed: %s", application_name);
       }
       /* if (!MLMeshingRefresh(mlContext->meshTracker)) {
         ML_LOG(Error, "MLMeshingRefresh failed: %s", application_name);
       }  */
 
-      if (MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData)) {
+      MLResult meshingStaticDataResult = MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData);
+      if (meshingStaticDataResult == MLResult_Ok) {
         std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
         mlContext->haveMeshStaticData = true;
       } else {
@@ -416,7 +418,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 
       // controllers
       MLInputControllerState controllerStates[MLInput_MaxControllers];
-      if (MLInputGetControllerState(mlContext->inputTracker, controllerStates)) {
+      result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
+      if (result == MLResult_Ok) {
         for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
           MLInputControllerState &controllerState = controllerStates[i];
           MLVec3f &position = controllerState.position;
@@ -438,7 +441,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 
       // gestures
       MLGestureData gestureData;
-      if (MLGestureGetData(mlContext->gestureTracker, &gestureData)) {
+      result = MLGestureGetData(mlContext->gestureTracker, &gestureData);
+      if (result == MLResult_Ok) {
         MLGestureOneHandedState &leftHand = gestureData.left_hand_state;
         MLVec3f &leftCenter = leftHand.hand_center_normalized;
         gesturesArray->Set(0*4 + 0, JS_NUM(leftCenter.x));
