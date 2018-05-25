@@ -955,6 +955,12 @@ NAN_METHOD(Hide) {
   glfwHideWindow(window);
 }
 
+NAN_METHOD(IsVisible) {
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  bool visible = glfwGetWindowAttrib(window, GLFW_VISIBLE);
+  info.GetReturnValue().Set(JS_BOOL(visible));
+}
+
 NAN_METHOD(WindowShouldClose) {
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   info.GetReturnValue().Set(JS_INT(glfwWindowShouldClose(window)));
@@ -1581,6 +1587,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "destroy", glfw::Destroy);
   Nan::SetMethod(target, "show", glfw::Show);
   Nan::SetMethod(target, "hide", glfw::Hide);
+  Nan::SetMethod(target, "isVisible", glfw::IsVisible);
   Nan::SetMethod(target, "setWindowTitle", glfw::SetWindowTitle);
   Nan::SetMethod(target, "getWindowSize", glfw::GetWindowSize);
   Nan::SetMethod(target, "setWindowSize", glfw::SetWindowSize);
