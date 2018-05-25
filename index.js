@@ -330,7 +330,7 @@ if (nativeMl) {
         const initResult = mlContext.Init(windowHandle);
         if (initResult) {
           console.log('ml context stage geo', mlContext.stageGeometry.getGeometry);
-          
+
           isMlPresenting = true;
 
           const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 1, 0, 0);
@@ -646,7 +646,7 @@ const _bindWindow = (window, newWindowCb) => {
           if (vrPresentState.isPresenting) {
             value = Math.min(Math.max(value, 0), 1);
             const deviceIndex = vrPresentState.system.GetTrackedDeviceIndexForControllerRole(i + 1);
-            
+
             const startTime = Date.now();
             const _recurse = () => {
               if ((Date.now() - startTime) < duration) {
