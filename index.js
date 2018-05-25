@@ -968,27 +968,32 @@ const _bindWindow = (window, newWindowCb) => {
     // submit frame
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
+
       if (context.isDirty()) {
-        if (vrPresentState.glContext === context) {
-          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+        const windowHandle = context.getWindowHandle();
 
-          nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
-          vrPresentState.compositor.Submit(context, vrPresentState.tex);
+        if (nativeWindow.isVisible(windowHandle)) {
+          if (vrPresentState.glContext === context) {
+            nativeWindow.setCurrentWindowContext(windowHandle);
 
-          nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
-        } else if (mlGlContext === context) {
-          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
+            vrPresentState.compositor.Submit(context, vrPresentState.tex);
 
-          mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
+          } else if (mlGlContext === context) {
+            nativeWindow.setCurrentWindowContext(windowHandle);
 
-          nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
+            mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
+
+            nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
+          }
+          nativeWindow.swapBuffers(windowHandle);
+
+          numDirtyFrames++;
+          _checkDirtyFrameTimeout();
+
+          context.clearDirty();
         }
-        nativeWindow.swapBuffers(context.getWindowHandle());
-
-        numDirtyFrames++;
-        _checkDirtyFrameTimeout();
-
-        context.clearDirty();
       }
     }
     if (args.performance) {
