@@ -1236,17 +1236,19 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
       }
     } else if (otherContextObj->IsObject() && otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext"))) {
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(otherContextObj));
-      GLFWwindow *windowHandle = gl->windowHandle;
 
       int w, h;
-      glfwGetWindowSize(windowHandle, &w, &h);
+      glfwGetWindowSize(gl->windowHandle, &w, &h);
 
       SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
       SkBitmap bitmap;
       bool ok = bitmap.tryAllocPixels(info);
       if (ok) {
-        void *pixels = bitmap.getPixels();
-        glReadPixels(0, 0, w, h, GL_RGBA8, GL_UNSIGNED_BYTE, pixels);
+        unique_ptr<char[]> pixels(new char[w * h * 4]);
+        glfw::SetCurrentWindowContext(gl->windowHandle);
+        glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
+
+        flipImageData((char *)bitmap.getPixels(), pixels.get(), w, h, 4);
 
         bitmap.setImmutable();
         return SkImage::MakeFromBitmap(bitmap);
