@@ -63,6 +63,8 @@
 using namespace v8;
 using namespace node;
 
+void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
+
 class WebGLRenderingContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);

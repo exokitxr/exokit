@@ -841,7 +841,7 @@ inline void reformatImageData(char *dstData, char *srcData, size_t dstPixelSize,
   }
 }
 
-inline void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize) {
+void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize) {
   size_t stride = width * pixelSize;
   size_t size = width * height * pixelSize;
   for (size_t i = 0; i < height; i++) {
