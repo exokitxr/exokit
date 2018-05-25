@@ -61,6 +61,8 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"createPattern", CreatePattern);
   Nan::SetMethod(proto,"resize", Resize);
   Nan::SetMethod(proto,"drawImage", DrawImage);
+  Nan::SetMethod(proto,"save", Save);
+  Nan::SetMethod(proto,"restore", Restore);
   Nan::SetMethod(proto,"createImageData", CreateImageData);
   Nan::SetMethod(proto,"getImageData", GetImageData);
   Nan::SetMethod(proto,"putImageData", PutImageData);
