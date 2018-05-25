@@ -19,6 +19,7 @@
 #include <SkCanvas.h>
 #include <SkPath.h>
 #include <SkPaint.h>
+#include <webglcontext/include/webgl.h>
 
 using namespace v8;
 using namespace node;
