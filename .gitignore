@@ -3,5 +3,6 @@ build
 CMakeFiles
 CMakeCache.txt
 .DS_Store
+.idea
 .exokit_history
 .localStorage
