@@ -148,7 +148,7 @@ void APIENTRY windowDropCB(GLFWwindow *window, int count, const char **paths) {
   for (int i = 0; i < count; i++) {
     pathsArray->Set(i, JS_STR(paths[i]));
   }
-  
+
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("windowHandle"), pointerToArray(window));
   evt->Set(JS_STR("paths"), pathsArray);
@@ -295,15 +295,84 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
 
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"), JS_STR(&actionNames[action << 3]));
-  evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
-  evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
-  evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
-  evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+  bool isPrintable = true;
+  switch (key) {
+    case GLFW_KEY_ESCAPE:
+    case GLFW_KEY_ENTER:
+    case GLFW_KEY_TAB:
+    case GLFW_KEY_BACKSPACE:
+    case GLFW_KEY_INSERT:
+    case GLFW_KEY_DELETE:
+    case GLFW_KEY_RIGHT:
+    case GLFW_KEY_LEFT:
+    case GLFW_KEY_DOWN:
+    case GLFW_KEY_UP:
+    case GLFW_KEY_PAGE_UP:
+    case GLFW_KEY_PAGE_DOWN:
+    case GLFW_KEY_HOME:
+    case GLFW_KEY_END:
+    case GLFW_KEY_CAPS_LOCK:
+    case GLFW_KEY_SCROLL_LOCK:
+    case GLFW_KEY_NUM_LOCK:
+    case GLFW_KEY_PRINT_SCREEN:
+    case GLFW_KEY_PAUSE:
+    case GLFW_KEY_F1:
+    case GLFW_KEY_F2:
+    case GLFW_KEY_F3:
+    case GLFW_KEY_F4:
+    case GLFW_KEY_F5:
+    case GLFW_KEY_F6:
+    case GLFW_KEY_F7:
+    case GLFW_KEY_F8:
+    case GLFW_KEY_F9:
+    case GLFW_KEY_F10:
+    case GLFW_KEY_F11:
+    case GLFW_KEY_F12:
+    case GLFW_KEY_F13:
+    case GLFW_KEY_F14:
+    case GLFW_KEY_F15:
+    case GLFW_KEY_F16:
+    case GLFW_KEY_F17:
+    case GLFW_KEY_F18:
+    case GLFW_KEY_F19:
+    case GLFW_KEY_F20:
+    case GLFW_KEY_F21:
+    case GLFW_KEY_F22:
+    case GLFW_KEY_F23:
+    case GLFW_KEY_F24:
+    case GLFW_KEY_F25:
+    case GLFW_KEY_LEFT_SHIFT:
+    case GLFW_KEY_LEFT_CONTROL:
+    case GLFW_KEY_LEFT_ALT:
+    case GLFW_KEY_LEFT_SUPER:
+    case GLFW_KEY_RIGHT_SHIFT:
+    case GLFW_KEY_RIGHT_CONTROL:
+    case GLFW_KEY_RIGHT_ALT:
+    case GLFW_KEY_RIGHT_SUPER:
+    case GLFW_KEY_MENU:
+      isPrintable = false;
+  }
+  
+  if (!isPrintable && action == GLFW_REPEAT) {
+    action = GLFW_PRESS;
+  }
 
-  int which = key;
   int charCode = key;
+  if (action == GLFW_RELEASE || action == GLFW_PRESS) {
+    switch (key) {
+      case GLFW_KEY_SLASH:        key = 191; break; // /
+      case GLFW_KEY_GRAVE_ACCENT: key = 192; break; // `
+      case GLFW_KEY_LEFT_BRACKET: key = 219; break; // [
+      case GLFW_KEY_BACKSLASH:    key = 220; break; /* \ */
+      case GLFW_KEY_RIGHT_BRACKET: key = 221; break; // ]
+      case GLFW_KEY_APOSTROPHE:   key = 222; break; // '
+      case GLFW_KEY_PERIOD:       key = 190; break; // '
+      case GLFW_KEY_COMMA:        key = 188; break; // '
+      case GLFW_KEY_SEMICOLON:    key = 186; break; // ;
+      case GLFW_KEY_EQUAL:        key = 187; break; // =
+      case GLFW_KEY_MINUS:        key = 189; break; // -
+    }
+  }
   switch (key) {
     case GLFW_KEY_ESCAPE:       key = 27; break;
     case GLFW_KEY_ENTER:        key = 13; break;
@@ -375,17 +444,6 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
     case GLFW_KEY_RIGHT_ALT:    key = 18; break;
     case GLFW_KEY_RIGHT_SUPER:  key = 93; break;
     case GLFW_KEY_MENU:         key = 18; break;
-    case GLFW_KEY_SEMICOLON:    key = 186; break; // ;
-    case GLFW_KEY_EQUAL:        key = 187; break; // =
-    case GLFW_KEY_COMMA:        key = 188; break; // ,
-    case GLFW_KEY_MINUS:        key = 189; break; // -
-    case GLFW_KEY_PERIOD:       key = 190; break; // .
-    case GLFW_KEY_SLASH:        key = 191; break; // /
-    case GLFW_KEY_GRAVE_ACCENT: key = 192; break; // `
-    case GLFW_KEY_LEFT_BRACKET: key = 219; break; // [
-    case GLFW_KEY_BACKSLASH:    key = 220; break; /* \ */
-    case GLFW_KEY_RIGHT_BRACKET: key = 221; break; // ]
-    case GLFW_KEY_APOSTROPHE:   key = 222; break; // '
   }
   if (
     action == 2 && // keypress
@@ -394,9 +452,18 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
   ) {
     key += 32;
   }
-  evt->Set(JS_STR("which"),JS_INT(which));
-  evt->Set(JS_STR("keyCode"),JS_INT(key));
-  evt->Set(JS_STR("charCode"),JS_INT(charCode));
+
+  int which = key;
+
+  Local<Object> evt = Nan::New<Object>();
+  evt->Set(JS_STR("type"), JS_STR(&actionNames[action << 3]));
+  evt->Set(JS_STR("ctrlKey"), JS_BOOL(mods & GLFW_MOD_CONTROL));
+  evt->Set(JS_STR("shiftKey"), JS_BOOL(mods & GLFW_MOD_SHIFT));
+  evt->Set(JS_STR("altKey"), JS_BOOL(mods & GLFW_MOD_ALT));
+  evt->Set(JS_STR("metaKey"), JS_BOOL(mods & GLFW_MOD_SUPER));
+  evt->Set(JS_STR("which"), JS_INT(which));
+  evt->Set(JS_STR("keyCode"), JS_INT(key));
+  evt->Set(JS_STR("charCode"), JS_INT(charCode));
   evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
@@ -405,8 +472,8 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
   };
   CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 
-  if (action == GLFW_PRESS) {
-    keyCB(window, which, scancode, GLFW_REPEAT, mods);
+  if (action == GLFW_PRESS && isPrintable) {
+    keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
   }
 }
 
