@@ -457,7 +457,9 @@ nativeWindow.setEventHandler((type, data) => {
         Promise.all(data.paths.map(p => new Promise((accept, reject) => {
           fs.readFile(p, (err, data) => {
             if (!err) {
-              accept(new window.Blob([data]));
+              const file = new window.Blob([data]);
+              file.name = path.basename(p);
+              accept(file);
             } else {
               reject(err);
             }
