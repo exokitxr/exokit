@@ -3374,7 +3374,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const _makeWindowStartScript = baseUrl => `(() => {
     const fs = require('fs');
     const fetch = require('window-fetch');
-    const {Request, Response, Blob} = fetch;
+    const {Request, Response, Headers, Blob} = fetch;
     const WebSocket = require('ws/lib/websocket');
     const {XMLHttpRequest} = require('window-xhr');
     const XHRUtils = require('window-xhr/lib/utils');
@@ -3415,6 +3415,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     };
     global.Request = Request;
     global.Response = Response;
+    global.Headers = Headers;
     global.Blob = Blob;
     global.WebSocket = WebSocket;
     global.XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
