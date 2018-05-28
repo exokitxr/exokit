@@ -511,6 +511,7 @@ const _bindWindow = (window, newWindowCb) => {
 
   window.document.addEventListener('pointerlockchange', () => {
     const {pointerLockElement} = window.document;
+
     if (pointerLockElement) {
       for (let i = 0; i < contexts.length; i++) {
         nativeWindow.setCursorMode(contexts[i].getWindowHandle(), false);
@@ -605,19 +606,6 @@ const _bindWindow = (window, newWindowCb) => {
     }
   };
   window.setDirtyFrameTimeout = setDirtyFrameTimeout;
-
-  window.document.addEventListener('pointerlockchange', () => {
-    const {pointerLockElement} = window.document;
-    if (pointerLockElement) {
-      for (let i = 0; i < contexts.length; i++) {
-        nativeWindow.setCursorMode(contexts[i].getWindowHandle(), false);
-      }
-    } else {
-      for (let i = 0; i < contexts.length; i++) {
-        nativeWindow.setCursorMode(contexts[i].getWindowHandle(), true);
-      }
-    }
-  });
 
   window.on('unload', () => {
     clearTimeout(timeout);
