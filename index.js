@@ -5,6 +5,7 @@ process.chdir(__dirname); // needed for global bin to find libraries
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const url = require('url');
 const repl = require('repl');
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
@@ -1098,16 +1099,20 @@ const _prepare = () => Promise.all([
     });
   }),
 ]);
+
 const _start = () => {
-  let {url} = args;
-  if (!url && args.home) {
-    url = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html');
+  let {url: u} = args;
+  if (!u && args.home) {
+    u = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html');
   }
-  if (url) {
-    if (url === '.') {
+  if (u) {
+    if (u === '.') {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
     }
-    return core.load(url, {
+    if (u && !url.parse(u).protocol) {
+      u = 'file://' + u;
+    }
+    return core.load(u, {
       dataPath,
     })
       .then(window => {
