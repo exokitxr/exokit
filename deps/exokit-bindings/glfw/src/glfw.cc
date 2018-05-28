@@ -483,8 +483,20 @@ void APIENTRY cursorPosCB(GLFWwindow* window, double x, double y) {
   if(x<0 || x>=w) return;
   if(y<0 || y>=h) return;
 
-  lastX=x;
-  lastY=y;
+  int mode = glfwGetInputMode(window, GLFW_CURSOR);
+  int movementX, movementY;
+  if (mode == GLFW_CURSOR_DISABLED) {
+    movementX = x - (w / 2);
+    movementY = y - (h / 2);
+
+    glfwSetCursorPos(window, w / 2, h / 2);
+  } else {
+    movementX = 0;
+    movementY = 0;
+  }
+
+  lastX = x;
+  lastY = y;
 
   Nan::HandleScope scope;
 
@@ -494,6 +506,8 @@ void APIENTRY cursorPosCB(GLFWwindow* window, double x, double y) {
   evt->Set(JS_STR("clientY"),JS_NUM(y));
   evt->Set(JS_STR("pageX"),JS_NUM(x));
   evt->Set(JS_STR("pageY"),JS_NUM(y));
+  evt->Set(JS_STR("movementX"),JS_NUM(movementX));
+  evt->Set(JS_STR("movementY"),JS_NUM(movementY));
   evt->Set(JS_STR("ctrlKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS));
   evt->Set(JS_STR("shiftKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS));
   evt->Set(JS_STR("altKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS));
@@ -1256,6 +1270,16 @@ NAN_METHOD(SetCursorMode) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   } else {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    
+    int centerX = w/2;
+    int centerY = h/2;
+    glfwSetCursorPos(window, centerX, centerY);
+    
+    lastX = centerX;
+    lastY = centerY;
   }
 }
 
