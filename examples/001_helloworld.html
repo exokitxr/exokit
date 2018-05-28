@@ -1,0 +1,37 @@
+<html>
+  <body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/92/three.js"></script>
+  <script>
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1500);
+      camera.position.set(0, 4, 7);
+      camera.lookAt(new THREE.Vector3());
+
+      fov = camera.fov;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x3B3961);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(800, 800);
+      container.appendChild(renderer.domElement);
+    }
+
+    function animate() {
+      renderer.state.reset();
+      camera.fov = fov;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      renderer.render(scene, camera);
+      camera.updateProjectionMatrix();
+      requestAnimationFrame(animate);
+    }
+
+    init();
+    animate();
+  </script>
+  </body>
+</html>
