@@ -444,13 +444,6 @@ nativeWindow.setEventHandler((type, data) => {
         break;
       }
       case 'mousemove': {
-        if (window.document.pointerLockElement) {
-          data.movementX = data.pageX - (window.innerWidth / 2);
-          data.movementY = data.pageY - (window.innerHeight / 2);
-
-          nativeWindow.setCursorPosition(context.getWindowHandle(), window.innerWidth / 2, window.innerHeight / 2);
-        }
-
         canvas.dispatchEvent(new window.MouseEvent(type, data));
         break;
       }
