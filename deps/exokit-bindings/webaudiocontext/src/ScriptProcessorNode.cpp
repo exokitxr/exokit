@@ -455,12 +455,22 @@ void ScriptProcessorNode::ProcessInAudioThread(lab::ContextRenderLock& r, vector
 }
 void ScriptProcessorNode::ProcessInMainThread(ScriptProcessorNode *self) {
   Nan::HandleScope scope;
-  
+
   size_t framesToProcess = self->bufferSize;
   vector<vector<float>> &sources = self->inputBuffers;
   vector<vector<float>> &destinations = self->outputBuffers;
 
-  if (!self->onAudioProcess.IsEmpty()) {
+  Local<Array> outputAudioNodes = Nan::New(self->outputAudioNodes);
+  size_t numOutputAudioNodes = outputAudioNodes->Length();
+  bool connectedOutput = false;
+  for (size_t i = 0; i < numOutputAudioNodes; i++) {
+    if (outputAudioNodes->Get(i)->BooleanValue()) {
+      connectedOutput = true;
+      break;
+    }
+  }
+
+  if (connectedOutput && !self->onAudioProcess.IsEmpty()) {
     Local<Function> onAudioProcessLocal = Nan::New(self->onAudioProcess);
 
     Local<Object> audioContextObj = Nan::New(self->context);
