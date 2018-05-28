@@ -82,6 +82,7 @@ protected:
   static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);
   static NAN_METHOD(UpdateAll);
+  static NAN_METHOD(GetDevices);
   double getRequiredCurrentTime();
   double getRequiredCurrentTimeS();
   double getFrameCurrentTimeS();

@@ -1,4 +1,5 @@
 #include <Video.h>
+#include "VideoMode.h"
 
 using namespace v8;
 
@@ -246,6 +247,7 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Local<Function> ctorFn = ctor->GetFunction();
 
   ctorFn->Set(JS_STR("updateAll"), Nan::New<Function>(UpdateAll));
+  ctorFn->Set(JS_STR("getDevices"), Nan::New<Function>(GetDevices));
 
   return scope.Escape(ctorFn);
 }
@@ -480,6 +482,23 @@ NAN_METHOD(Video::UpdateAll) {
     i->Update();
   }
 }
+NAN_METHOD(Video::GetDevices) {
+  DeviceList devices;
+  VideoMode::getDeviceList(devices);
+
+  Local<Object> lst = Array::New(Isolate::GetCurrent());
+  size_t i = 0;
+  for (auto device : devices) {
+    const DeviceString& id(device.first);
+    const DeviceString& name(device.second);
+    Local<Object> obj = Object::New(Isolate::GetCurrent());
+    obj->Set(JS_STR("id"), JS_STR(id.c_str()));
+    obj->Set(JS_STR("name"), JS_STR(name.c_str()));
+    lst->Set(i++, obj);
+  }
+  info.GetReturnValue().Set(lst);
+}
+
 
 double Video::getRequiredCurrentTimeS() {
   if (playing) {

@@ -12,6 +12,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 namespace ffmpeg {
 
@@ -44,6 +45,7 @@ namespace ffmpeg {
   }
 
   typedef std::string DeviceString;
+  typedef std::ostringstream DeviceStringStream;
   typedef std::pair<DeviceString, DeviceString> DevicePair;
   typedef std::vector<DevicePair> DeviceList;
   struct VideoMode;

@@ -2,7 +2,6 @@
 #define _HTML_VIDEO_MODE_ELEMENT_H_
 
 #include "VideoCommon.h"
-#include <vector>
 
 namespace ffmpeg {
 
@@ -27,6 +26,12 @@ struct VideoMode {
     if (height != r.height) return false;
     if (!FuzzyCompare(FPS, r.FPS)) return false;
     return true;
+  }
+
+  const DeviceString& toString() const {
+    DeviceStringStream stringStream;
+    stringStream << width << "x" << height << "@" << FPS << "fps";
+    return stringStream.str();
   }
 
   static size_t getDeviceList(DeviceList& devices);
