@@ -56,14 +56,18 @@ NAN_METHOD(AudioSourceNode::New) {
       Local<Object> microphoneMediaStreamObj = Local<Object>::Cast(info[0]);
       MicrophoneMediaStream *microphoneMediaStream = ObjectWrap::Unwrap<MicrophoneMediaStream>(Local<Object>::Cast(microphoneMediaStreamObj));
 
-      AudioSourceNode *audioSourceNode = new AudioSourceNode();
-      Local<Object> audioSourceNodeObj = info.This();
-      audioSourceNode->Wrap(audioSourceNodeObj);
+      if (microphoneMediaStream->audioNode) {
+        AudioSourceNode *audioSourceNode = new AudioSourceNode();
+        Local<Object> audioSourceNodeObj = info.This();
+        audioSourceNode->Wrap(audioSourceNodeObj);
 
-      audioSourceNode->context.Reset(audioContextObj);
-      audioSourceNode->audioNode = microphoneMediaStream->audioNode;
+        audioSourceNode->context.Reset(audioContextObj);
+        audioSourceNode->audioNode = microphoneMediaStream->audioNode;
 
-      info.GetReturnValue().Set(audioSourceNodeObj);
+        info.GetReturnValue().Set(audioSourceNodeObj);
+      } else {
+        Nan::ThrowError("AudioSourceNode: media stream is not live");
+      }
     } else {
       Nan::ThrowError("AudioSourceNode: invalid media element");
     }

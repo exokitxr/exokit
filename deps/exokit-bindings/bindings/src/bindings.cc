@@ -101,8 +101,11 @@ Local<Object> makeAudio() {
   exports->Set(JS_STR("AudioProcessingEvent"), audioProcessingEventCons);
   Local<Value> scriptProcessorNodeCons = webaudio::ScriptProcessorNode::Initialize(isolate, audioBufferCons, audioProcessingEventCons);
   exports->Set(JS_STR("ScriptProcessorNode"), scriptProcessorNodeCons);
+  Local<Value> mediaStreamTrackCons = webaudio::MediaStreamTrack::Initialize(isolate);
+  exports->Set(JS_STR("MediaStreamTrack"), mediaStreamTrackCons);
+  Local<Value> microphoneMediaStreamCons = webaudio::MicrophoneMediaStream::Initialize(isolate, mediaStreamTrackCons);
   exports->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
-  exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, pannerNodeCons, audioBufferCons, audioBufferSourceNodeCons, audioProcessingEventCons, stereoPannerNodeCons, scriptProcessorNodeCons, microphoneMediaStreamCons));
+  exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, pannerNodeCons, audioBufferCons, audioBufferSourceNodeCons, audioProcessingEventCons, stereoPannerNodeCons, scriptProcessorNodeCons, mediaStreamTrackCons, microphoneMediaStreamCons));
 
   return scope.Escape(exports);
 }
