@@ -5,6 +5,7 @@ process.chdir(__dirname); // needed for global bin to find libraries
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const URL = require('url');
 const repl = require('repl');
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
@@ -1108,7 +1109,7 @@ const _start = () => {
     if (url === '.') {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
     }
-    if (url && url.indexOf('://') < 0) {
+    if (url && !URL.parse(url).protocol) {
       url = 'file://' + url;
     }
     return core.load(url, {
