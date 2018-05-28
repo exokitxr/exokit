@@ -352,7 +352,7 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
     case GLFW_KEY_MENU:
       isPrintable = false;
   }
-  
+
   if (!isPrintable && action == GLFW_REPEAT) {
     action = GLFW_PRESS;
   }
@@ -478,7 +478,7 @@ void APIENTRY keyCB(GLFWwindow *window, int key, int scancode, int action, int m
 }
 
 void APIENTRY cursorPosCB(GLFWwindow* window, double x, double y) {
-  int w,h;
+  int w, h;
   glfwGetWindowSize(window, &w, &h);
   if(x<0 || x>=w) return;
   if(y<0 || y>=h) return;
