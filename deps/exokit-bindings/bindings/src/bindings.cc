@@ -101,7 +101,6 @@ Local<Object> makeAudio() {
   exports->Set(JS_STR("AudioProcessingEvent"), audioProcessingEventCons);
   Local<Value> scriptProcessorNodeCons = webaudio::ScriptProcessorNode::Initialize(isolate, audioBufferCons, audioProcessingEventCons);
   exports->Set(JS_STR("ScriptProcessorNode"), scriptProcessorNodeCons);
-  Local<Value> microphoneMediaStreamCons = webaudio::MicrophoneMediaStream::Initialize(isolate);
   exports->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
   exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, pannerNodeCons, audioBufferCons, audioBufferSourceNodeCons, audioProcessingEventCons, stereoPannerNodeCons, scriptProcessorNodeCons, microphoneMediaStreamCons));
 

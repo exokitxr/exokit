@@ -21,7 +21,7 @@ AudioContext::AudioContext(float sampleRate) {
 
 AudioContext::~AudioContext() {}
 
-Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> microphoneMediaStreamCons) {
+Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -59,6 +59,7 @@ Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioList
   ctorFn->Set(JS_STR("AudioBufferSourceNode"), audioBufferSourceNodeCons);
   ctorFn->Set(JS_STR("AudioProcessingEvent"), audioProcessingEventCons);
   ctorFn->Set(JS_STR("ScriptProcessorNode"), scriptProcessorNodeCons);
+  ctorFn->Set(JS_STR("MediaStreamTrack"), mediaStreamTrackCons);
   ctorFn->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
 
   return scope.Escape(ctorFn);
