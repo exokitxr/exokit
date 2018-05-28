@@ -1098,6 +1098,7 @@ const _prepare = () => Promise.all([
     });
   }),
 ]);
+
 const _start = () => {
   let {url} = args;
   if (!url && args.home) {
@@ -1106,6 +1107,9 @@ const _start = () => {
   if (url) {
     if (url === '.') {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
+    }
+    if (url && url.indexOf('://') < 0) {
+      url = 'file://' + url;
     }
     return core.load(url, {
       dataPath,
