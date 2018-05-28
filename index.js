@@ -514,11 +514,29 @@ const _bindWindow = (window, newWindowCb) => {
 
     if (pointerLockElement) {
       for (let i = 0; i < contexts.length; i++) {
-        nativeWindow.setCursorMode(contexts[i].getWindowHandle(), false);
+        const context = contexts[i];
+
+        if (context.canvas.ownerDocument.defaultView === window) {
+          const windowHandle = context.getWindowHandle();
+
+          if (nativeWindow.isVisible(windowHandle)) {
+            nativeWindow.setCursorMode(windowHandle, false);
+            break;
+          }
+        }
       }
     } else {
       for (let i = 0; i < contexts.length; i++) {
-        nativeWindow.setCursorMode(contexts[i].getWindowHandle(), true);
+        const context = contexts[i];
+
+        if (context.canvas.ownerDocument.defaultView === window) {
+          const windowHandle = context.getWindowHandle();
+
+          if (nativeWindow.isVisible(windowHandle)) {
+            nativeWindow.setCursorMode(windowHandle, true);
+            break;
+          }
+        }
       }
     }
   });
