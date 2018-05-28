@@ -85,6 +85,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden, hidden, firstWindowHandle, firstGl);
     } catch (err) {
       console.warn(err.message);
+      return null;
     }
   })();
   if (windowSpec) {
