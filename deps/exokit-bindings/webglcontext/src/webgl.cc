@@ -598,6 +598,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "linkProgram", glCallWrap<LinkProgram>);
   Nan::SetMethod(proto, "getProgramParameter", glCallWrap<GetProgramParameter>);
   Nan::SetMethod(proto, "getUniformLocation", glCallWrap<GetUniformLocation>);
+  Nan::SetMethod(proto, "getUniform", glCallWrap<GetUniform>);
   Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
   Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
 
