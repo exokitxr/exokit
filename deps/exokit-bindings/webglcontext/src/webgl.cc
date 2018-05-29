@@ -3150,7 +3150,6 @@ NAN_METHOD(WebGLRenderingContext::GetUniform) {
     GLint iData[16];
     GLuint uiData[16];
     GLdouble dData[16];
-    printf("%d %d %d\n", program, location, type);
     switch(type) {
       case GL_DOUBLE:
       case GL_DOUBLE_VEC2:
@@ -3172,7 +3171,6 @@ NAN_METHOD(WebGLRenderingContext::GetUniform) {
       case GL_FLOAT_MAT4x2:
       case GL_FLOAT_MAT4x3:
         glGetUniformfv(program, location, fData);
-        printf("%d %d %d %f\n", program, location, type, fData[0]);
         break;
       case GL_INT:
       case GL_INT_VEC2:
