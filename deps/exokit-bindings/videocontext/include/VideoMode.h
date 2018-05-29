@@ -34,7 +34,8 @@ struct VideoMode {
     return stringStream.str();
   }
 
-  static size_t getDeviceList(DeviceList& devices);
+  static size_t getDevices(DeviceList& devices);
+  static size_t getDeviceModes(VideoModeList& modes, const DeviceString& deviceName);
 };
 
 }

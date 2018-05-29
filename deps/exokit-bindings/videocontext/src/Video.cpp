@@ -483,8 +483,10 @@ NAN_METHOD(Video::UpdateAll) {
   }
 }
 NAN_METHOD(Video::GetDevices) {
+  Nan::HandleScope scope;
+
   DeviceList devices;
-  VideoMode::getDeviceList(devices);
+  VideoMode::getDevices(devices);
 
   Local<Object> lst = Array::New(Isolate::GetCurrent());
   size_t i = 0;
@@ -492,13 +494,26 @@ NAN_METHOD(Video::GetDevices) {
     const DeviceString& id(device.first);
     const DeviceString& name(device.second);
     Local<Object> obj = Object::New(Isolate::GetCurrent());
+    lst->Set(i++, obj);
     obj->Set(JS_STR("id"), JS_STR(id.c_str()));
     obj->Set(JS_STR("name"), JS_STR(name.c_str()));
-    lst->Set(i++, obj);
+
+    VideoModeList modes;
+    VideoMode::getDeviceModes(modes, id);
+
+    Local<Object> lst = Array::New(Isolate::GetCurrent());
+    size_t j = 0;
+    for (auto mode : modes) {
+      Local<Object> obj = Object::New(Isolate::GetCurrent());
+      lst->Set(j++, obj);
+      obj->Set(JS_STR("width"), JS_NUM(mode.width));
+      obj->Set(JS_STR("height"), JS_NUM(mode.height));
+      obj->Set(JS_STR("fps"), JS_NUM(mode.FPS));
+    }
+    obj->Set(JS_STR("modes"), lst);
   }
   info.GetReturnValue().Set(lst);
 }
-
 
 double Video::getRequiredCurrentTimeS() {
   if (playing) {
