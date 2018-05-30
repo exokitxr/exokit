@@ -787,8 +787,9 @@ const _bindWindow = (window, newWindowCb) => {
         leftGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
         leftGamepad.buttons[4].touched = localGamepadArray[6] !== 0; // system
 
-        for (let i = 0; i < 10; i++)
+        for (let i = 0; i < 10; i++) {
           leftGamepad.axes[i] = localGamepadArray[11+i];
+        }
         leftGamepad.buttons[1].value = leftGamepad.axes[2]; // trigger
 
         gamepads[0] = leftGamepad;
@@ -816,8 +817,9 @@ const _bindWindow = (window, newWindowCb) => {
         rightGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
         rightGamepad.buttons[4].touched = localGamepadArray[6] !== 0; // system
 
-        for (let i = 0; i < 10; i++)
+        for (let i = 0; i < 10; i++) {
           rightGamepad.axes[i] = localGamepadArray[11+i];
+        }
         rightGamepad.buttons[1].value = rightGamepad.axes[2]; // trigger
 
         gamepads[1] = rightGamepad;
