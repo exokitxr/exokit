@@ -939,7 +939,6 @@ const _bindWindow = (window, newWindowCb) => {
 
     // update media frames
     nativeVideo.Video.updateAll();
-    nativeVideo.VideoCapture.updateAll();
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
