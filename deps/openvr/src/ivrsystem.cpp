@@ -801,6 +801,14 @@ NAN_METHOD(IVRSystem::GetControllerState)
 
           buttons->Set(11, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].x));
           buttons->Set(12, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].y));
+          buttons->Set(13, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].x));
+          buttons->Set(14, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].y));
+          buttons->Set(15, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].x));
+          buttons->Set(16, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].y));
+          buttons->Set(17, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].x));
+          buttons->Set(18, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].y));
+          buttons->Set(19, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].x));
+          buttons->Set(20, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].y));
 
           break;
         }
