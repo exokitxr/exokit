@@ -1,4 +1,5 @@
 #include <Video.h>
+#include "VideoMode.h"
 
 using namespace v8;
 
@@ -246,6 +247,7 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Local<Function> ctorFn = ctor->GetFunction();
 
   ctorFn->Set(JS_STR("updateAll"), Nan::New<Function>(UpdateAll));
+  ctorFn->Set(JS_STR("getDevices"), Nan::New<Function>(GetDevices));
 
   return scope.Escape(ctorFn);
 }
@@ -479,6 +481,40 @@ NAN_METHOD(Video::UpdateAll) {
   for (auto i : videos) {
     i->Update();
   }
+}
+NAN_METHOD(Video::GetDevices) {
+  Nan::HandleScope scope;
+
+#if EXO_OS_WIN
+  DeviceList devices;
+  VideoMode::getDevices(devices);
+
+  Local<Object> lst = Array::New(Isolate::GetCurrent());
+  size_t i = 0;
+  for (auto device : devices) {
+    const DeviceString& id(device.first);
+    const DeviceString& name(device.second);
+    Local<Object> obj = Object::New(Isolate::GetCurrent());
+    lst->Set(i++, obj);
+    obj->Set(JS_STR("id"), JS_STR(id.c_str()));
+    obj->Set(JS_STR("name"), JS_STR(name.c_str()));
+
+    VideoModeList modes;
+    VideoMode::getDeviceModes(modes, id);
+
+    Local<Object> lst = Array::New(Isolate::GetCurrent());
+    size_t j = 0;
+    for (auto mode : modes) {
+      Local<Object> obj = Object::New(Isolate::GetCurrent());
+      lst->Set(j++, obj);
+      obj->Set(JS_STR("width"), JS_NUM(mode.width));
+      obj->Set(JS_STR("height"), JS_NUM(mode.height));
+      obj->Set(JS_STR("fps"), JS_NUM(mode.FPS));
+    }
+    obj->Set(JS_STR("modes"), lst);
+  }
+  info.GetReturnValue().Set(lst);
+#endif
 }
 
 double Video::getRequiredCurrentTimeS() {
