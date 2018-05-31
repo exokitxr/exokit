@@ -1,5 +1,5 @@
-#ifndef EXO_VIDEO_COMMON_H_
-#define EXO_VIDEO_COMMON_H_
+#ifndef _EXO_VIDEO_COMMON_H_
+#define _EXO_VIDEO_COMMON_H_
 
 #if defined(_WIN32)
 #define EXO_OS_WIN 1
