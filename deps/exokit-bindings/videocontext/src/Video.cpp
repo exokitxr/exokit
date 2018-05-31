@@ -485,6 +485,7 @@ NAN_METHOD(Video::UpdateAll) {
 NAN_METHOD(Video::GetDevices) {
   Nan::HandleScope scope;
 
+#if EXO_OS_WIN
   DeviceList devices;
   VideoMode::getDevices(devices);
 
@@ -513,6 +514,7 @@ NAN_METHOD(Video::GetDevices) {
     obj->Set(JS_STR("modes"), lst);
   }
   info.GetReturnValue().Set(lst);
+#endif
 }
 
 double Video::getRequiredCurrentTimeS() {
