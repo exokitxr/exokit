@@ -3889,7 +3889,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return _parseDocumentAst(htmlAst, window[optionsSymbol], window, false);
     }
   };
-  window.G = global;
   // window.Buffer = Buffer; // XXX non-standard
   window.Event = Event;
   window.KeyboardEvent = KeyboardEvent;
