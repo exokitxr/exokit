@@ -16,25 +16,16 @@
 
 namespace ffmpeg {
 
-  static int Abs(int a) {
+  template<typename T>
+  static int Abs(T a) {
     return (a < 0) ? -a : a;
   }
-  static float Abs(float a) {
-    return (a < 0) ? -a : a;
-  }
-  static double Abs(double a) {
-    return (a < 0) ? -a : a;
-  }
-  static float Min(float a, float b) {
+  template<typename T>
+  static float Min(T a, T b) {
     return (a < b) ? a : b;
   }
-  static double Min(double a, double b) {
-    return (a < b) ? a : b;
-  }
-  static float Max(float a, float b) {
-    return (a > b) ? a : b;
-  }
-  static double Max(double a, double b) {
+  template<typename T>
+  static float Max(T a, T b) {
     return (a > b) ? a : b;
   }
   static bool FuzzyCompare(float a, float b) {
