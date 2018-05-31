@@ -1,5 +1,5 @@
-#ifndef _HTML_VIDEO_COMMON_ELEMENT_H_
-#define _HTML_VIDEO_COMMON_ELEMENT_H_
+#ifndef EXO_VIDEO_COMMON_H_
+#define EXO_VIDEO_COMMON_H_
 
 #if defined(_WIN32)
 #define EXO_OS_WIN 1

@@ -1,5 +1,5 @@
-#ifndef _HTML_VIDEO_MODE_ELEMENT_H_
-#define _HTML_VIDEO_MODE_ELEMENT_H_
+#ifndef EXO_VIDEO_MODE_H_
+#define EXO_VIDEO_MODE_H_
 
 #include "VideoCommon.h"
 
