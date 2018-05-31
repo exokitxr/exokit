@@ -2761,7 +2761,190 @@ HTMLAudioElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
 HTMLAudioElement.HAVE_CURRENT_DATA = HTMLMediaElement.HAVE_CURRENT_DATA;
 HTMLAudioElement.HAVE_FUTURE_DATA = HTMLMediaElement.HAVE_FUTURE_DATA;
 HTMLAudioElement.HAVE_ENOUGH_DATA = HTMLMediaElement.HAVE_ENOUGH_DATA;
+class Video {
+  static getDevices() {
+    return [];
+  }
+}
+
+class MediaDeviceKind {
+}
+MediaDeviceKind.audioInput = "audioinput";
+MediaDeviceKind.audioOutput = "audiooutput";
+MediaDeviceKind.videoInput = "videoinput";
+
+class MediaDeviceInfo {
+  constructor(device, kind) {
+    if (kind === MediaDeviceKind.videoInput) {
+      this.kind = kind;
+      this.deviceId = device.id;
+      this.groupId = device.id;
+      this.label = device.name;
+    } else {
+      throw new Error("not implemented");
+    }
+  }
+}
+
+class MediaStreamTrack {
+  constructor(device, mode, kind) {
+    this._device = device;
+    this._mode = mode;
+    this._kind = kind;
+  }
+  getSettings() {
+    if (this._kind === 'video') {
+      const {width, height, fps} = this._mode;
+      return {
+        width,
+        height,
+        fps,
+        aspectRatio: width / height,
+        deviceId: this._device.id,
+      }
+    } else {
+      throw new Error('not implemented');
+    }
+  }
+}
+
+const _getDevices = () => {
+  return Video.getDevices();
+}
+
+const _enumDevices = () => {
+  return Video.getDevices().map(x => new MediaDeviceInfo(x, MediaDeviceKind.videoInput));
+}
+
+const _isConstraintSupported = () => true
+
+function _isConstraintRequired(constraint) {
+  if (typeof constraint === 'object') {
+    for (let k in constraint) {
+      if (k === 'min' || k === 'max' || k === 'exact') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+const _isConstraintSatisfied = (constraint, value) => {
+  if (typeof constraint === 'object') {
+    for (let [kind, setting] of Object.entries(constraint)) {
+      if (kind === 'min' && value < setting) {
+        return false;
+      }
+      if (kind === 'max' && value > setting) {
+        return false;
+      }
+      if (kind === 'exact' && value !== setting) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+const _isConstraintApplicable = (type, name) => {
+  // TODO
+  return true;
+}
+
+class OverconstrainedError extends Error {
+  constructor(constraint, message) {
+    super(message);
+    this.constraint = constraint;
+  }
+}
+
+const Infinity = 1 / 0;
+
+const _fitnessDistance = (type, settings, constraints) => {
+  let distance = 0;
+  for (let [name, constraint] of Object.entries(constraints)) {
+    constraint = (typeof constraint === 'object') ? constraint : {ideal: constraint};
+    const actual = settings[name];
+    const ideal = constraint.ideal;
+    let d = 0;
+    if (!_isConstraintSupported(name)) {
+      d = 0;
+    } else if (_isConstraintRequired(constraint) && !_isConstraintSatisfied(constraint, actual)) {
+      //d = Infinity;
+      throw new OverconstrainedError(name, undefined);
+    } else if (!_isConstraintRequired(constraint) && !_isConstraintApplicable(type, name)) {
+      d = 0;
+    } else if (!constraint.hasOwnProperty('ideal')) {
+      d = 0;
+    } else if (!_isConstraintRequired(constraint) && typeof settings[name] === 'number' && actual >= 0) {
+      d = (actual === ideal) ? 0 : (Math.abs(actual - ideal) / Math.max(Math.abs(actual), Math.abs(ideal)));
+    } else if (!_isConstraintRequired(constraint) && typeof settings[name] === 'string') {
+      d = (actual === ideal) ? 0 : 1;
+    } else {
+      throw new Error('unmatched');
+    }
+    distance += d;
+  }
+  return distance;
+}
+
+const _selectSettings = (kind, constraints) => {
+  let best = Infinity;
+  let bestTrack = null;
+  if (kind == 'video') {
+    for (const device of Video.getDevices()) {
+      for (const mode of device.modes) {
+        let track = new MediaStreamTrack(device, mode, kind);
+        let settings = track.getSettings();
+        let dist = _fitnessDistance('video', settings, constraints.video)
+        if (best == null || dist < best) {
+          best = dist;
+          bestTrack = track;
+        }
+      }
+    }
+  }
+  return [best, bestTrack];
+}
+
+class MediaStream {
+  constructor(track) {
+    this._tracks = [track];
+  }
+  getTracks() {
+    return this._tracks;
+  }
+  getVideoTracks() {
+    return this.getTracks().filter(x => x._kind === 'video');
+  }
+  getAudioTracks() {
+    return this.getTracks().filter(x => x._kind === 'audio');
+  }
+}
+
+class MediaDevices {
+  enumerateDevices() {
+    return Promise.resolve(_enumDevices());
+  }
+  getUserMedia(constraints) {
+    // https://w3c.github.io/mediacapture-main/#dom-mediadevices-getusermedia
+    const requestedMediaTypes = Object.entries(constraints).filter(([k, v]) => (k === 'audio' || k === 'video') && (v === true || typeof(v) === 'object'));
+    if (requestedMediaTypes.length <= 0) {
+      return Promise.reject(new TypeError(`Failed to execute 'getUserMedia' on 'MediaDevices': At least one of audio and video must be requested`))
+    }
+    if (constraints.audio) {
+      return Promise.resolve(new MicrophoneMediaStream());
+    } else if (constraints.video) {
+      const [dist, track] = _selectSettings('video', constraints);
+      return Promise.resolve(new MediaStream(track));
+    } else {
+      return Promise.reject(new Error('constraints not met'));
+    }
+  }
+}
+
 class MicrophoneMediaStream {}
+class VideoMediaStream {}
 class HTMLVideoElement extends HTMLMediaElement {
   constructor(attrs = [], value = '', location = null) {
     super('VIDEO', attrs, value, location);
@@ -2773,6 +2956,13 @@ class HTMLVideoElement extends HTMLMediaElement {
       if (name === 'src') {
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
+        if (urls.has(value)) {
+          const blob = urls.get(value);
+          if (blob instanceof VideoMediaStream) {
+            this.video = blob;
+          }
+        }
+
         process.nextTick(() => { // XXX
           this.dispatchEvent(new Event('canplay', {target: this}));
           this.dispatchEvent(new Event('canplaythrough', {target: this}));
@@ -2782,13 +2972,42 @@ class HTMLVideoElement extends HTMLMediaElement {
   }
 
   get width() {
-    return 0;
+    return this.video ? this.video.width : 0;
   }
   set width(width) {}
   get height() {
-    return 0;
+    return this.video ? this.video.height : 0;
   }
   set height(height) {}
+
+  get autoplay() {
+    return this.getAttribute('autoplay');
+  }
+  set autoplay(autoplay) {
+    this.setAttribute('autoplay', autoplay);
+  }
+
+  getBoundingClientRect() {
+    return new DOMRect(0, 0, this.width, this.height);
+  }
+
+  get data() {
+    return this.video ? this.video.data : null;
+  }
+  set data(data) {}
+
+  play() {
+    if (this.video)
+      this.video.play();
+  }
+  pause() {
+    if (this.video)
+      this.video.pause();
+  }
+  update() {
+    if (this.video)
+      this.video.update();
+  }
 }
 HTMLVideoElement.HAVE_NOTHING = HTMLMediaElement.HAVE_NOTHING;
 HTMLVideoElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
@@ -3502,15 +3721,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     appCodeName: 'Mozilla',
     appName: 'Netscape',
     appVersion: '5.0',
-    mediaDevices: {
-      getUserMedia(constraints) {
-        if (constraints.audio) {
-          return Promise.resolve(new MicrophoneMediaStream());
-        } else {
-          return Promise.reject(new Error('constraints not met'));
-        }
-      },
-    },
+    mediaDevices: new MediaDevices(),
     getVRDisplaysSync() {
       const result = [];
       if (nativeMl && nativeMl.IsPresent()) {
@@ -3678,6 +3889,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return _parseDocumentAst(htmlAst, window[optionsSymbol], window, false);
     }
   };
+  window.G = global;
   // window.Buffer = Buffer; // XXX non-standard
   window.Event = Event;
   window.KeyboardEvent = KeyboardEvent;
@@ -4372,6 +4584,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     }
   };
   MicrophoneMediaStream = nativeAudio.MicrophoneMediaStream;
+
+  Video = bindings.nativeVideo.Video;
 
   /* const {nativeVideo} = bindings;
   HTMLVideoElement = class extends HTMLMediaElement {
