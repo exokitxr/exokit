@@ -1,5 +1,9 @@
 #include "VideoMode.h"
 
+#ifndef EXO_OS_WIN
+#error "This file is meant to be compiled on Windows"
+#endif
+
 #pragma comment(lib, "Strmiids.lib")
 #include <objbase.h>
 #include <strmif.h>
@@ -200,3 +204,4 @@ VideoMode::getDeviceModes(VideoModeList& modes, const DeviceString& deviceName) 
 }
 
 }
+
