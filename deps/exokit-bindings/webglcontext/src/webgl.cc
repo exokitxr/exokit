@@ -598,6 +598,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "linkProgram", glCallWrap<LinkProgram>);
   Nan::SetMethod(proto, "getProgramParameter", glCallWrap<GetProgramParameter>);
   Nan::SetMethod(proto, "getUniformLocation", glCallWrap<GetUniformLocation>);
+  Nan::SetMethod(proto, "getUniform", glCallWrap<GetUniform>);
   Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
   Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
 
@@ -3137,16 +3138,124 @@ NAN_METHOD(WebGLRenderingContext::GetUniform) {
   GLuint program = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
   GLuint location = info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
 
-  float data[16]; // worst case scenario is 16 floats
+  char name[1024];
+  GLsizei length = 0;
+  GLsizei size;
+  GLenum type;
 
-  glGetUniformfv(program, location, data);
+  glGetActiveUniform(program, location, sizeof(name), &length, &size, &type, name);
 
-  Local<Array> arr=Nan::New<Array>(16);
-  for(int i=0;i<16;i++) {
-    arr->Set(i,JS_FLOAT(data[i]));
+  if (length > 0) {
+    GLfloat fData[16];
+    GLint iData[16];
+    GLuint uiData[16];
+    GLdouble dData[16];
+    switch(type) {
+      case GL_DOUBLE:
+      case GL_DOUBLE_VEC2:
+      case GL_DOUBLE_VEC3:
+      case GL_DOUBLE_VEC4:
+        glGetUniformdv(program, location, dData);
+        break;
+      case GL_FLOAT:
+      case GL_FLOAT_VEC2:
+      case GL_FLOAT_VEC3:
+      case GL_FLOAT_VEC4:
+      case GL_FLOAT_MAT2:
+      case GL_FLOAT_MAT3:
+      case GL_FLOAT_MAT4:
+      case GL_FLOAT_MAT2x3:
+      case GL_FLOAT_MAT2x4:
+      case GL_FLOAT_MAT3x2:
+      case GL_FLOAT_MAT3x4:
+      case GL_FLOAT_MAT4x2:
+      case GL_FLOAT_MAT4x3:
+        glGetUniformfv(program, location, fData);
+        break;
+      case GL_INT:
+      case GL_INT_VEC2:
+      case GL_INT_VEC3:
+      case GL_INT_VEC4:
+      case GL_BOOL:
+      case GL_BOOL_VEC2:
+      case GL_BOOL_VEC3:
+      case GL_BOOL_VEC4:
+        glGetUniformiv(program, location, iData);
+        break;
+      case GL_UNSIGNED_INT:
+      case GL_UNSIGNED_INT_VEC2:
+      case GL_UNSIGNED_INT_VEC3:
+      case GL_UNSIGNED_INT_VEC4:
+        glGetUniformuiv(program, location, uiData);
+        break;
+      case GL_SAMPLER_2D:
+      case GL_SAMPLER_CUBE:
+      case GL_SAMPLER_3D:
+      case GL_SAMPLER_2D_SHADOW:
+      case GL_SAMPLER_2D_ARRAY:
+      case GL_SAMPLER_2D_ARRAY_SHADOW:
+      case GL_SAMPLER_CUBE_SHADOW:
+      case GL_INT_SAMPLER_2D:
+      case GL_INT_SAMPLER_3D:
+      case GL_INT_SAMPLER_CUBE:
+      case GL_INT_SAMPLER_2D_ARRAY:
+      case GL_UNSIGNED_INT_SAMPLER_2D:
+      case GL_UNSIGNED_INT_SAMPLER_3D:
+      case GL_UNSIGNED_INT_SAMPLER_CUBE:
+      case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
+        glGetUniformiv(program, location, iData);
+        break;
+      default:
+        Nan::ThrowError("Not implemented");
+        break;
+    }
+    switch(type) {
+      case GL_FLOAT: info.GetReturnValue().Set(fData[0]); break;
+      case GL_FLOAT_VEC2: info.GetReturnValue().Set(createTypedArray<Float32Array>(2, fData)); break;
+      case GL_FLOAT_VEC3: info.GetReturnValue().Set(createTypedArray<Float32Array>(3, fData)); break;
+      case GL_FLOAT_VEC4: info.GetReturnValue().Set(createTypedArray<Float32Array>(4, fData)); break;
+      case GL_FLOAT_MAT2: info.GetReturnValue().Set(createTypedArray<Float32Array>(2*2, fData)); break;
+      case GL_FLOAT_MAT3: info.GetReturnValue().Set(createTypedArray<Float32Array>(3*3, fData)); break;
+      case GL_FLOAT_MAT4: info.GetReturnValue().Set(createTypedArray<Float32Array>(4*4, fData)); break;
+      case GL_FLOAT_MAT2x3: info.GetReturnValue().Set(createTypedArray<Float32Array>(2*3, fData)); break;
+      case GL_FLOAT_MAT2x4: info.GetReturnValue().Set(createTypedArray<Float32Array>(2*4, fData)); break;
+      case GL_FLOAT_MAT3x2: info.GetReturnValue().Set(createTypedArray<Float32Array>(3*2, fData)); break;
+      case GL_FLOAT_MAT3x4: info.GetReturnValue().Set(createTypedArray<Float32Array>(3*4, fData)); break;
+      case GL_FLOAT_MAT4x2: info.GetReturnValue().Set(createTypedArray<Float32Array>(4*2, fData)); break;
+      case GL_FLOAT_MAT4x3: info.GetReturnValue().Set(createTypedArray<Float32Array>(4*3, fData)); break;
+      case GL_INT: info.GetReturnValue().Set(iData[0]); break;
+      case GL_INT_VEC2: info.GetReturnValue().Set(createTypedArray<Int32Array>(2, iData)); break;
+      case GL_INT_VEC3: info.GetReturnValue().Set(createTypedArray<Int32Array>(3, iData)); break;
+      case GL_INT_VEC4: info.GetReturnValue().Set(createTypedArray<Int32Array>(4, iData)); break;
+      case GL_BOOL: info.GetReturnValue().Set(!!iData[0]); break;
+      case GL_UNSIGNED_INT: info.GetReturnValue().Set(uiData[0]); break;
+      case GL_UNSIGNED_INT_VEC2: info.GetReturnValue().Set(createTypedArray<Uint32Array>(2, uiData)); break;
+      case GL_UNSIGNED_INT_VEC3: info.GetReturnValue().Set(createTypedArray<Uint32Array>(3, uiData)); break;
+      case GL_UNSIGNED_INT_VEC4: info.GetReturnValue().Set(createTypedArray<Uint32Array>(4, uiData)); break;
+      case GL_SAMPLER_2D:
+      case GL_SAMPLER_CUBE:
+      case GL_SAMPLER_3D:
+      case GL_SAMPLER_2D_SHADOW:
+      case GL_SAMPLER_2D_ARRAY:
+      case GL_SAMPLER_2D_ARRAY_SHADOW:
+      case GL_SAMPLER_CUBE_SHADOW:
+      case GL_INT_SAMPLER_2D:
+      case GL_INT_SAMPLER_3D:
+      case GL_INT_SAMPLER_CUBE:
+      case GL_INT_SAMPLER_2D_ARRAY:
+      case GL_UNSIGNED_INT_SAMPLER_2D:
+      case GL_UNSIGNED_INT_SAMPLER_3D:
+      case GL_UNSIGNED_INT_SAMPLER_CUBE:
+      case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
+      info.GetReturnValue().Set(iData[0]);
+      break;
+      default:
+        Nan::ThrowError("Not implemented");
+        break;
+    }
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
   }
-
-  info.GetReturnValue().Set(arr);
 }
 
 NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {

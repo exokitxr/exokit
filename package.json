@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.277",
+  "version": "0.0.281",
   "description": "Javascript web browser for the post-screen world",
   "engines": {
     "node": ">=10.0.0"
@@ -40,7 +40,7 @@
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
     "css": "^2.2.3",
-    "exokit-home": "0.0.29",
+    "exokit-home": "0.0.30",
     "he": "^1.1.1",
     "history": "^4.7.2",
     "isolator": "0.0.9",
@@ -60,7 +60,7 @@
     "rimraf": "^2.6.2",
     "upng-js": "^2.1.0",
     "vm-one": "0.0.12",
-    "vr-display": "0.0.12",
+    "vr-display": "0.0.13",
     "webgl-to-opengl": "0.0.3",
     "window-classlist": "0.0.1",
     "window-fetch": "0.0.6",

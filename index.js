@@ -157,7 +157,7 @@ const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array4 = new Float32Array(16);
 const localFovArray = new Float32Array(4);
 const localFovArray2 = new Float32Array(4);
-const localGamepadArray = new Float32Array(16);
+const localGamepadArray = new Float32Array(24);
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -779,14 +779,18 @@ const _bindWindow = (window, newWindowCb) => {
         leftGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
         leftGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
         leftGamepad.buttons[3].pressed = localGamepadArray[2] !== 0; // menu
+        leftGamepad.buttons[4].pressed = localGamepadArray[1] !== 0; // system
 
         leftGamepad.buttons[0].touched = localGamepadArray[9] !== 0; // pad
         leftGamepad.buttons[1].touched = localGamepadArray[10] !== 0; // trigger
         leftGamepad.buttons[2].touched = localGamepadArray[8] !== 0; // grip
         leftGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
+        leftGamepad.buttons[4].touched = localGamepadArray[6] !== 0; // system
 
-        leftGamepad.axes[0] = localGamepadArray[11];
-        leftGamepad.axes[1] = localGamepadArray[12];
+        for (let i = 0; i < 10; i++) {
+          leftGamepad.axes[i] = localGamepadArray[11+i];
+        }
+        leftGamepad.buttons[1].value = leftGamepad.axes[2]; // trigger
 
         gamepads[0] = leftGamepad;
       } else {
@@ -805,14 +809,18 @@ const _bindWindow = (window, newWindowCb) => {
         rightGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
         rightGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
         rightGamepad.buttons[3].pressed = localGamepadArray[2] !== 0; // menu
+        rightGamepad.buttons[4].pressed = localGamepadArray[1] !== 0; // system
 
         rightGamepad.buttons[0].touched = localGamepadArray[9] !== 0; // pad
         rightGamepad.buttons[1].touched = localGamepadArray[10] !== 0; // trigger
         rightGamepad.buttons[2].touched = localGamepadArray[8] !== 0; // grip
         rightGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
+        rightGamepad.buttons[4].touched = localGamepadArray[6] !== 0; // system
 
-        rightGamepad.axes[0] = localGamepadArray[11];
-        rightGamepad.axes[1] = localGamepadArray[12];
+        for (let i = 0; i < 10; i++) {
+          rightGamepad.axes[i] = localGamepadArray[11+i];
+        }
+        rightGamepad.buttons[1].value = rightGamepad.axes[2]; // trigger
 
         gamepads[1] = rightGamepad;
       } else {
