@@ -259,8 +259,7 @@ NAN_METHOD(MLContext::New) {
       initThread->join();
       delete initThread;
       initThread = nullptr;
-
-      quick_exit(0);
+      //std::quick_exit(0);
     });
   }
 
