@@ -4203,6 +4203,34 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
       super('IMG', attrs, value);
 
       this.image = new bindings.nativeImage();
+
+      this.on('attribute', (name, value) => {
+        if (name === 'src') {
+          const src = value;
+
+          this.ownerDocument.defaultView.fetch(src)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.arrayBuffer();
+              } else {
+                return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
+              }
+            })
+            .then(arrayBuffer => {
+              try {
+                this.image.load(arrayBuffer);
+              } catch(err) {
+                throw new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
+              }
+            })
+            .then(() => {
+              this.dispatchEvent(new Event('load', {target: this}));
+            })
+            .catch(err => {
+              this.dispatchEvent(new Event('error', {target: this}));
+            });
+        }
+      });
     }
 
     get src() {
@@ -4210,30 +4238,6 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     }
     set src(src) {
       this.setAttribute('src', src);
-
-      // const srcError = new Error();
-
-      this.ownerDocument.defaultView.fetch(src)
-        .then(res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.arrayBuffer();
-          } else {
-            return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-          }
-        })
-        .then(arrayBuffer => {
-          try {
-            this.image.load(arrayBuffer);
-          } catch(err) {
-            throw new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-          }
-        })
-        .then(() => {
-          this.dispatchEvent(new Event('load', {target: this}));
-        })
-        .catch(err => {
-          this.dispatchEvent(new Event('error', {target: this}));
-        });
     }
 
     get onload() {
