@@ -2787,20 +2787,34 @@ class MediaDeviceInfo {
 }
 
 class MediaStreamTrack {
-  constructor(device, mode, kind) {
-    this._device = device;
-    this._mode = mode;
-    this._kind = kind;
+  constructor(kind, spec) {
+    this.kind = kind;
+    this._spec = spec;
+
+    this.id = Math.random().toString(36).substring(7);
+    this.enabled = true;
+    this.label = (() => {
+      switch (kind) {
+        case 'video': return 'webcam';
+        case 'audio': return 'microphone';
+        default: return null;
+      }
+    })();
+    this.muted = false;
+    this.readyState = 'live';
+  }
+  stop() {
+    this.readyState = 'ended';
   }
   getSettings() {
-    if (this._kind === 'video') {
-      const {width, height, fps} = this._mode;
+    if (this.kind === 'video') {
+      const {width, height, fps} = this._spec.mode;
       return {
         width,
         height,
         fps,
         aspectRatio: width / height,
-        deviceId: this._device.id,
+        deviceId: this._spec.device.id,
       }
     } else {
       throw new Error('not implemented');
@@ -2892,9 +2906,12 @@ const _selectMediaStreamTrack = (kind, constraints) => {
   if (kind == 'video') {
     for (const device of Video.getDevices()) {
       for (const mode of device.modes) {
-        let track = new MediaStreamTrack(device, mode, kind);
-        let settings = track.getSettings();
-        let dist = _fitnessDistance('video', settings, constraints.video)
+        const track = new MediaStreamTrack(kind, {
+          device,
+          mode,
+        });
+        const settings = track.getSettings();
+        const dist = _fitnessDistance('video', settings, constraints.video)
         if (best == null || dist < best) {
           best = dist;
           bestTrack = track;
@@ -2931,7 +2948,8 @@ class MediaDevices {
       return Promise.reject(new TypeError(`Failed to execute 'getUserMedia' on 'MediaDevices': At least one of audio and video must be requested`))
     }
     if (constraints.audio) {
-      return Promise.resolve(new MicrophoneMediaStream());
+      const track = new MediaStreamTrack('audio', null);
+      return Promise.resolve(new MediaStream(track));
     } else if (constraints.video) {
       try {
         const [dist, track] = _selectMediaStreamTrack('video', constraints);
