@@ -118,6 +118,7 @@ Local<Object> makeVideo() {
   Local<Object> exports = Nan::New<Object>();
 
   exports->Set(JS_STR("Video"), ffmpeg::Video::Initialize(isolate));
+  exports->Set(JS_STR("VideoDevice"), ffmpeg::VideoDevice::Initialize(isolate));
 
   return scope.Escape(exports);
 }

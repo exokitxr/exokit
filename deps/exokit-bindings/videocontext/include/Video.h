@@ -91,18 +91,45 @@ protected:
   Video();
   ~Video();
 
+private:
+  AppData data;
+  bool loaded;
+  bool playing;
+  bool loop;
+  int64_t startTime;
+  double startFrameTime;
+  Nan::Persistent<Uint8ClampedArray> dataArray;
+  bool dataDirty;
+};
+
+class IVideoDevice;
+class VideoDevice : public ObjectWrap {
+  public:
+    static Handle<Object> Initialize(Isolate *isolate);
+    bool Update();
+
+  protected:
+    static NAN_METHOD(New);
+    static NAN_METHOD(Open);
+    static NAN_METHOD(Close);
+    static NAN_METHOD(Update);
+    static NAN_GETTER(WidthGetter);
+    static NAN_GETTER(HeightGetter);
+    static NAN_GETTER(SizeGetter);
+    static NAN_GETTER(DataGetter);
+    static NAN_METHOD(UpdateAll);
+
+    VideoDevice();
+    ~VideoDevice();
+
   private:
-    AppData data;
-    bool loaded;
-    bool playing;
-    bool loop;
-    int64_t startTime;
-    double startFrameTime;
+    IVideoDevice* dev;
     Nan::Persistent<Uint8ClampedArray> dataArray;
     bool dataDirty;
 };
 
 extern std::vector<Video *> videos;
+extern std::vector<VideoDevice *> videoDevices;
 
 }
 

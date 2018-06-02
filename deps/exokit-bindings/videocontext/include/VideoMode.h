@@ -4,13 +4,21 @@
 #include "VideoCommon.h"
 
 namespace ffmpeg {
+class IVideoDevice {
+public:
+  virtual size_t getWidth() const = 0;
+  virtual size_t getHeight() const = 0;
+  virtual size_t getSize() const = 0;
+  virtual bool update() = 0;
+  virtual void copy(uint8_t* buffer) const = 0;
+};
 
 struct VideoMode {
   int width;
   int height;
-  float FPS;
+  double FPS;
 
-  VideoMode(int width = 0, int height = 0, float FPS = 0)
+  VideoMode(int width = 0, int height = 0, double FPS = 0)
     : width(width)
     , height(height)
     , FPS(FPS)
@@ -36,6 +44,8 @@ struct VideoMode {
 
   static size_t getDevices(DeviceList& devices);
   static size_t getDeviceModes(VideoModeList& modes, const DeviceString& deviceName);
+  static IVideoDevice* open(const DeviceString& name, const DeviceString& opts);
+  static void close(IVideoDevice*& device);
 };
 
 }
