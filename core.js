@@ -2767,11 +2767,11 @@ class Video {
   }
 }
 
-class MediaDeviceKind {
+const MediaDeviceKind = {
+  audioInput: "audioinput",
+  audioOutput: "audiooutput",
+  videoInput: "videoinput",
 }
-MediaDeviceKind.audioInput = "audioinput";
-MediaDeviceKind.audioOutput = "audiooutput";
-MediaDeviceKind.videoInput = "videoinput";
 
 class MediaDeviceInfo {
   constructor(device, kind) {
