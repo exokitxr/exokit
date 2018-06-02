@@ -2886,7 +2886,7 @@ const _fitnessDistance = (type, settings, constraints) => {
   return distance;
 }
 
-const _selectSettings = (kind, constraints) => {
+const _selectMediaStreamTrack = (kind, constraints) => {
   let best = Infinity;
   let bestTrack = null;
   if (kind == 'video') {
@@ -2934,7 +2934,7 @@ class MediaDevices {
       return Promise.resolve(new MicrophoneMediaStream());
     } else if (constraints.video) {
       try {
-        const [dist, track] = _selectSettings('video', constraints);
+        const [dist, track] = _selectMediaStreamTrack('video', constraints);
         return Promise.resolve(new MediaStream(track));
       } catch (e) {
         return Promise.reject(e);
