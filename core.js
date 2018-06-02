@@ -2858,8 +2858,6 @@ class OverconstrainedError extends Error {
   }
 }
 
-const Infinity = 1 / 0;
-
 const _fitnessDistance = (type, settings, constraints) => {
   let distance = 0;
   for (let [name, constraint] of Object.entries(constraints)) {
