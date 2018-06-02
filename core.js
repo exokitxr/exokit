@@ -2871,7 +2871,7 @@ const _fitnessDistance = (type, settings, constraints) => {
       d = 0;
     } else if (_isConstraintRequired(constraint) && !_isConstraintSatisfied(constraint, actual)) {
       //d = Infinity;
-      throw new OverconstrainedError(name, undefined);
+      throw new OverconstrainedError(name, `${name} is overconstrained`);
     } else if (!_isConstraintRequired(constraint) && !_isConstraintApplicable(type, name)) {
       d = 0;
     } else if (!constraint.hasOwnProperty('ideal')) {
@@ -2935,8 +2935,12 @@ class MediaDevices {
     if (constraints.audio) {
       return Promise.resolve(new MicrophoneMediaStream());
     } else if (constraints.video) {
-      const [dist, track] = _selectSettings('video', constraints);
-      return Promise.resolve(new MediaStream(track));
+      try {
+        const [dist, track] = _selectSettings('video', constraints);
+        return Promise.resolve(new MediaStream(track));
+      } catch (e) {
+        return Promise.reject(e);
+      }
     } else {
       return Promise.reject(new Error('constraints not met'));
     }
