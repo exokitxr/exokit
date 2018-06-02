@@ -764,7 +764,7 @@ class XRSession extends EventEmitter {
           );
           inputMatrix.toArray(inputSource._pose.pointerMatrix);
           inputMatrix.toArray(inputSource._pose.gripMatrix);
-          
+
           const pressed = gamepad.buttons[1].pressed;
           const lastPressed = this._lastPresseds[i];
           if (pressed && !lastPressed) {
@@ -1063,7 +1063,7 @@ class MLDisplay extends MRDisplay {
     // this._viewportArray = new Float32Array(4);
     this._planesArray = new Float32Array(maxNumPlanes * planeEntrySize);
     this._numPlanes = 0;
-    
+
     this._context = null;
   }
 
@@ -1117,7 +1117,7 @@ class MLDisplay extends MRDisplay {
       frameData.numPlanes = this._numPlanes;
     }
   }
-  
+
   getGeometry(positions, normals, indices, metrics) {
     if (this._context) {
       return this._context.stageGeometry.getGeometry(positions, normals, indices, metrics);
@@ -1135,7 +1135,7 @@ class MLDisplay extends MRDisplay {
 
     this._width = update.viewportArray[2] / 2;
     this._height = update.viewportArray[3];
-    
+
     this._context = update.context;
   }
 }
