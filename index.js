@@ -983,7 +983,7 @@ const _bindWindow = (window, newWindowCb) => {
       if (context.isDirty()) {
         const windowHandle = context.getWindowHandle();
 
-        if (nativeWindow.isVisible(windowHandle)) {
+        if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
           if (vrPresentState.glContext === context) {
             nativeWindow.setCurrentWindowContext(windowHandle);
 
