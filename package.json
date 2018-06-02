@@ -64,7 +64,7 @@
     "webgl-to-opengl": "0.0.3",
     "window-classlist": "0.0.1",
     "window-fetch": "0.0.6",
-    "window-selector": "0.0.1",
+    "window-selector": "0.0.2",
     "window-text-encoding": "0.0.2",
     "window-worker": "0.0.60",
     "window-xhr": "0.0.15",
