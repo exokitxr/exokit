@@ -284,8 +284,6 @@ nativeVr.requestPresent = function(layers) {
     } else {
       return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
     }
-  } else {
-    return Promise.reject(new Error('already presenting'));
   }
 };
 nativeVr.exitPresent = function() {
@@ -367,8 +365,6 @@ if (nativeMl) {
       } else {
         return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
       }
-    } else {
-      return Promise.reject(new Error('already presenting'));
     }
   };
   nativeMl.exitPresent = function() {
