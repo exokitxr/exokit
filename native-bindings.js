@@ -45,6 +45,7 @@ bindings.nativeGl = (nativeGl => {
       path = webGlToOpenGl.mapName(path);
       return getUniformLocation.call(this, program, path);
     })(gl.getUniformLocation);
+    gl.setCompatibleXRDevice = () => Promise.resolve();
 
     if (!WebGLRenderingContext.onconstruct || WebGLRenderingContext.onconstruct(gl, canvas)) {
       return gl;
