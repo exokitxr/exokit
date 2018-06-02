@@ -3017,16 +3017,19 @@ class HTMLVideoElement extends HTMLMediaElement {
   set data(data) {}
 
   play() {
-    if (this.video)
+    if (this.video) {
       this.video.play();
+    }
   }
   pause() {
-    if (this.video)
+    if (this.video) {
       this.video.pause();
+    }
   }
   update() {
-    if (this.video)
+    if (this.video) {
       this.video.update();
+    }
   }
 }
 HTMLVideoElement.HAVE_NOTHING = HTMLMediaElement.HAVE_NOTHING;
