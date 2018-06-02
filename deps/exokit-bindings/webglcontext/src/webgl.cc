@@ -1956,7 +1956,7 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
     GLint target = info[0]->Int32Value();
     glBindBuffer(target, 0);
   } else {
-    Nan::ThrowError(String::Concat(JS_STR("Second argument to BindBuffer must be a number or an object with an id field; was: "), info[1]->ToString()));
+    Nan::ThrowError(String::Concat(JS_STR("Second argument to BindBuffer must be null or a WebGLBuffer; was "), info[1]->ToString()));
   }
 }
 
