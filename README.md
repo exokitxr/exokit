@@ -99,6 +99,10 @@ The core is Javascript and is platform-agnostic. Porting work is restricted to t
 - **No** HTML rendering
 - **No** CSS
 
+## Keyboard
+![Keyboard](https://raw.githubusercontent.com/webmixedreality/exokit/master/assets/keyboard.png)
+
+
 ## Community
 
 - [Slack](https://communityinviter.com/apps/exokit/exokit)
