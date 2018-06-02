@@ -14,23 +14,22 @@ using namespace node;
 
 namespace webaudio {
   
-class MediaStreamTrack;
-  
 class MediaStream : public ObjectWrap {
   protected:
   std::shared_ptr<lab::AudioHardwareSourceNode> audioNode;
   
-  friend class MediaStreamTrack;
+  friend class MicrophoneMediaStream;
 };
 
 class MicrophoneMediaStream : public MediaStream {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> mediaStreamTrackCons);
+  static Handle<Object> Initialize(Isolate *isolate);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:
   static NAN_METHOD(New);
   static NAN_METHOD(GetTracks);
+  static NAN_METHOD(Stop);
 
   MicrophoneMediaStream();
   ~MicrophoneMediaStream();
