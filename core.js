@@ -2761,11 +2761,11 @@ HTMLAudioElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
 HTMLAudioElement.HAVE_CURRENT_DATA = HTMLMediaElement.HAVE_CURRENT_DATA;
 HTMLAudioElement.HAVE_FUTURE_DATA = HTMLMediaElement.HAVE_FUTURE_DATA;
 HTMLAudioElement.HAVE_ENOUGH_DATA = HTMLMediaElement.HAVE_ENOUGH_DATA;
-class Video {
-  static getDevices() {
+let Video = {
+  getDevices() {
     return [];
   }
-}
+};
 
 const MediaDeviceKind = {
   audioInput: "audioinput",
