@@ -110,5 +110,6 @@ The core is Javascript and is platform-agnostic. Porting work is restricted to t
 ## Contributors
 
 - [Avaer K](//github.com/modulesio)
-- [Nick L](https://github.com/Fierent)
+- [Nick L](//github.com/Fierent)
+- [Chris Eddy](//github.com/ChrisEddy)
 - [Noah A S](//github.com/NoahSchiffman)
