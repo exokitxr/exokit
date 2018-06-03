@@ -3,6 +3,10 @@
 
 using namespace v8;
 
+extern "C" {
+#include <libavdevice/avdevice.h>
+}
+
 namespace ffmpeg {
 
 const int kBufferSize = 4 * 1024;
@@ -49,9 +53,9 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
 
   // open video
   fmt_ctx = avformat_alloc_context();
-  io_ctx = avio_alloc_context((unsigned char *)av_malloc(kBufferSize), kBufferSize, 0, this, bufferRead, NULL, bufferSeek);
+  io_ctx = avio_alloc_context((unsigned char *)av_malloc(kBufferSize), kBufferSize, 0, this, bufferRead, nullptr, bufferSeek);
   fmt_ctx->pb = io_ctx;
-  if (avformat_open_input(&fmt_ctx, "memory input", NULL, NULL) < 0) {
+  if (avformat_open_input(&fmt_ctx, "memory input", nullptr, nullptr) < 0) {
     if (error) {
       *error = "failed to open input";
     }
@@ -59,7 +63,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   }
 
   // find stream info
-  if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
+  if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
     if (error) {
       *error = "failed to get stream info";
     }
@@ -91,7 +95,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
 
   // find the decoder
   decoder = avcodec_find_decoder(codec_ctx->codec_id);
-  if (decoder == NULL) {
+  if (decoder == nullptr) {
     if (error) {
       *error = "failed to find decoder";
     }
@@ -99,7 +103,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   }
 
   // open the decoder
-  if (avcodec_open2(codec_ctx, decoder, NULL) < 0) {
+  if (avcodec_open2(codec_ctx, decoder, nullptr) < 0) {
     if (error) {
       *error = "failed to open codec";
     }
@@ -118,7 +122,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   conv_ctx = sws_getContext(
     codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
     codec_ctx->width, codec_ctx->height, kPixelFormat,
-    SWS_BICUBIC, NULL, NULL, NULL
+    SWS_BICUBIC, nullptr, nullptr, nullptr
   );
 
   return true;
@@ -222,6 +226,8 @@ Video::~Video() {
 Handle<Object> Video::Initialize(Isolate *isolate) {
   // initialize libav
   av_register_all();
+  avcodec_register_all();
+  avdevice_register_all();
   avformat_network_init();
 
   Nan::EscapableHandleScope scope;
@@ -544,6 +550,169 @@ FrameStatus Video::advanceToFrameAt(double timestamp) {
   return status;
 }
 
+
+VideoDevice::VideoDevice() : dataDirty(true), dev(nullptr) {
+  cameras.push_back(this);
+}
+
+VideoDevice::~VideoDevice() {
+  if (dev) {
+    VideoMode::close(dev);
+  }
+  cameras.erase(std::find(cameras.begin(), cameras.end(), this));
+}
+
+Handle<Object> VideoDevice::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("VideoDevice"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "open", Open);
+  Nan::SetMethod(proto, "close", Close);
+  Nan::SetMethod(proto, "update", Update);
+  Nan::SetAccessor(proto, JS_STR("width"), WidthGetter);
+  Nan::SetAccessor(proto, JS_STR("height"), HeightGetter);
+  Nan::SetAccessor(proto, JS_STR("size"), SizeGetter);
+  Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  ctorFn->Set(JS_STR("updateAll"), Nan::New<Function>(UpdateAll));
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_METHOD(VideoDevice::New) {
+  Nan::HandleScope scope;
+
+  VideoDevice *video = new VideoDevice();
+  Local<Object> videoObj = info.This();
+  video->Wrap(videoObj);
+
+  info.GetReturnValue().Set(videoObj);
+}
+
+NAN_METHOD(VideoDevice::Open) {
+  VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
+  if (video->dev) {
+    VideoMode::close(video->dev);
+    video->dev = nullptr;
+  }
+  if (info.Length() < 1) {
+    Nan::ThrowError("VideoDevice.Open: pass in a device name");
+  } else {
+    Nan::Utf8String nameStr(info[0]);
+    std::string name(*nameStr, nameStr.length());
+    std::string opts;
+    if (info.Length() >= 2)
+    {
+      Nan::Utf8String optsStr(info[1]);
+      opts = std::string(*optsStr, optsStr.length());
+    }
+    video->dev = VideoMode::open(name, opts);
+    info.GetReturnValue().Set(JS_BOOL(video->dev != nullptr));
+    if (video->dev) {
+      unsigned int dataSize = video->dev->getSize();
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), dataSize);
+      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+      video->dataArray.Reset(uint8ClampedArray);
+      uint8_t* buffer = (uint8_t *)arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset();
+      video->dev->copy(buffer);
+      video->dataDirty = false;
+    }
+  }
+}
+
+NAN_METHOD(VideoDevice::Close) {
+  VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
+  if (video->dev) {
+    VideoMode::close(video->dev);
+    video->dev = nullptr;
+  }
+}
+
+NAN_METHOD(VideoDevice::Update) {
+  VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
+  info.GetReturnValue().Set(JS_BOOL(video->Update()));
+}
+
+bool VideoDevice::Update() {
+  if (dev) {
+    if (dev->update()) {
+      dataDirty = true;
+      return true;
+    }
+  }
+  return false;
+}
+
+NAN_GETTER(VideoDevice::WidthGetter) {
+  Nan::HandleScope scope;
+
+  VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
+  if (video->dev) {
+    info.GetReturnValue().Set(JS_INT((unsigned int)video->dev->getWidth()));
+  } else {
+    info.GetReturnValue().Set(JS_INT(0));
+  }
+}
+
+NAN_GETTER(VideoDevice::HeightGetter) {
+  Nan::HandleScope scope;
+
+  VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
+  if (video->dev) {
+    info.GetReturnValue().Set(JS_INT((unsigned int)video->dev->getHeight()));
+  } else {
+    info.GetReturnValue().Set(JS_INT(0));
+  }
+}
+
+NAN_GETTER(VideoDevice::SizeGetter) {
+  Nan::HandleScope scope;
+
+  VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
+  if (video->dev) {
+    info.GetReturnValue().Set(JS_INT((unsigned int)video->dev->getSize()));
+  } else {
+    info.GetReturnValue().Set(JS_INT(0));
+  }
+}
+
+NAN_GETTER(VideoDevice::DataGetter) {
+  Nan::HandleScope scope;
+
+  VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
+
+  Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
+  if (video->dev && video->dataDirty) {
+    if (video->dataArray.IsEmpty()) {
+      unsigned int dataSize = video->dev->getSize();
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), dataSize);
+      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+      video->dataArray.Reset(uint8ClampedArray);
+    }
+    uint8_t* buffer = (uint8_t *)uint8ClampedArray->Buffer()->GetContents().Data() + uint8ClampedArray->ByteOffset();
+    video->dev->copy(buffer);
+    video->dataDirty = false;
+  }
+
+  info.GetReturnValue().Set(uint8ClampedArray);
+}
+
+NAN_METHOD(VideoDevice::UpdateAll) {
+  for (auto i : cameras) {
+    i->Update();
+  }
+}
+
+
 std::vector<Video *> videos;
+std::vector<VideoDevice *> cameras;
 
 }

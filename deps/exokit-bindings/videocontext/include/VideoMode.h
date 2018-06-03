@@ -3,14 +3,45 @@
 
 #include "VideoCommon.h"
 
+#include <cassert>
+
+
+extern "C" {
+#include <libavutil/avstring.h>
+#include <libavcodec/avcodec.h>
+#include <libavdevice/avdevice.h>
+#include <libswscale/swscale.h>
+}
+
 namespace ffmpeg {
+
+class VideoCamera
+{
+public:
+  AVFormatContext* pFormatCtx;
+  int videoStream;
+  AVCodec* pCodec;
+  AVFrame* pFrame;
+  AVFrame* pFrameRGB;
+  AVPacket packet;
+  VideoCamera(AVFormatContext* formatContext, AVCodec* codec, int videoStream);
+  ~VideoCamera();
+  AVCodecContext* getCodecContext() const;
+  AVPixelFormat getFormat() const;
+  size_t getWidth() const;
+  size_t getHeight() const;
+  size_t getSize() const;
+  void copy(uint8_t* buffer) const;
+  bool update();
+  static VideoCamera* open(const char* deviceName, AVDictionary* options);
+};
 
 struct VideoMode {
   int width;
   int height;
-  float FPS;
+  double FPS;
 
-  VideoMode(int width = 0, int height = 0, float FPS = 0)
+  VideoMode(int width = 0, int height = 0, double FPS = 0)
     : width(width)
     , height(height)
     , FPS(FPS)
@@ -36,6 +67,8 @@ struct VideoMode {
 
   static size_t getDevices(DeviceList& devices);
   static size_t getDeviceModes(VideoModeList& modes, const DeviceString& deviceName);
+  static VideoCamera* open(const DeviceString& name, const DeviceString& opts);
+  static void close(VideoCamera*& device);
 };
 
 }
