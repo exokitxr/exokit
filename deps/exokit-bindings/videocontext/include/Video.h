@@ -1,7 +1,6 @@
 #ifndef _HTML_VIDEO_ELEMENT_H_
 #define _HTML_VIDEO_ELEMENT_H_
 
-
 #include <v8.h>
 #include <node.h>
 #include <nan/nan.h>
