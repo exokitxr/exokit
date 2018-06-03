@@ -552,14 +552,14 @@ FrameStatus Video::advanceToFrameAt(double timestamp) {
 
 
 VideoDevice::VideoDevice() : dataDirty(true), dev(NULL) {
-  videoDevices.push_back(this);
+  cameras.push_back(this);
 }
 
 VideoDevice::~VideoDevice() {
   if (dev) {
     VideoMode::close(dev);
   }
-  videoDevices.erase(std::find(videoDevices.begin(), videoDevices.end(), this));
+  cameras.erase(std::find(cameras.begin(), cameras.end(), this));
 }
 
 Handle<Object> VideoDevice::Initialize(Isolate *isolate) {
@@ -706,13 +706,13 @@ NAN_GETTER(VideoDevice::DataGetter) {
 }
 
 NAN_METHOD(VideoDevice::UpdateAll) {
-  for (auto i : videoDevices) {
+  for (auto i : cameras) {
     i->Update();
   }
 }
 
 
 std::vector<Video *> videos;
-std::vector<VideoDevice *> videoDevices;
+std::vector<VideoDevice *> cameras;
 
 }

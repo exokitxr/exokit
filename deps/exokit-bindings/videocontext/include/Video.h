@@ -1,6 +1,7 @@
 #ifndef _HTML_VIDEO_ELEMENT_H_
 #define _HTML_VIDEO_ELEMENT_H_
 
+
 #include <v8.h>
 #include <node.h>
 #include <nan/nan.h>
@@ -102,7 +103,8 @@ private:
   bool dataDirty;
 };
 
-class IVideoDevice;
+class VideoCamera;
+
 class VideoDevice : public ObjectWrap {
   public:
     static Handle<Object> Initialize(Isolate *isolate);
@@ -123,13 +125,13 @@ class VideoDevice : public ObjectWrap {
     ~VideoDevice();
 
   private:
-    IVideoDevice* dev;
+    VideoCamera* dev;
     Nan::Persistent<Uint8ClampedArray> dataArray;
     bool dataDirty;
 };
 
 extern std::vector<Video *> videos;
-extern std::vector<VideoDevice *> videoDevices;
+extern std::vector<VideoDevice *> cameras;
 
 }
 
