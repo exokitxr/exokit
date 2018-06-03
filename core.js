@@ -2761,6 +2761,7 @@ HTMLAudioElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
 HTMLAudioElement.HAVE_CURRENT_DATA = HTMLMediaElement.HAVE_CURRENT_DATA;
 HTMLAudioElement.HAVE_FUTURE_DATA = HTMLMediaElement.HAVE_FUTURE_DATA;
 HTMLAudioElement.HAVE_ENOUGH_DATA = HTMLMediaElement.HAVE_ENOUGH_DATA;
+class Video { static getDevices() { return []; } }
 class MicrophoneMediaStream {}
 class HTMLVideoElement extends HTMLMediaElement {
   constructor(attrs = [], value = '', location = null) {
@@ -2773,6 +2774,13 @@ class HTMLVideoElement extends HTMLMediaElement {
       if (name === 'src') {
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
+        if (urls.has(value)) {
+          const blob = urls.get(value);
+          if (blob instanceof VideoDevice) {
+            this.video = blob;
+          }
+        }
+
         process.nextTick(() => { // XXX
           this.dispatchEvent(new Event('canplay', {target: this}));
           this.dispatchEvent(new Event('canplaythrough', {target: this}));
@@ -2782,13 +2790,50 @@ class HTMLVideoElement extends HTMLMediaElement {
   }
 
   get width() {
-    return 0;
+    return this.video ? this.video.width : 0;
   }
   set width(width) {}
   get height() {
-    return 0;
+    return this.video ? this.video.height : 0;
   }
   set height(height) {}
+
+  get autoplay() {
+    return this.getAttribute('autoplay');
+  }
+  set autoplay(autoplay) {
+    this.setAttribute('autoplay', autoplay);
+  }
+
+  getBoundingClientRect() {
+    return new DOMRect(0, 0, this.width, this.height);
+  }
+
+  get data() {
+    return this.video ? this.video.data : null;
+  }
+  set data(data) {}
+
+  play() {
+    const _getDevice = (facingMode) => {
+      const devices = Video.getDevices();
+      return "video="+devices[({user: 0, environment: 1, left: 2, right: 3})[facingMode] || 0].name;
+    }
+    if (this.video) {
+      this.video.close();
+      this.video.open(_getDevice(this.video.constraints.facingMode));
+    }
+  }
+  pause() {
+    if (this.video) {
+      this.video.close();
+    }
+  }
+  update() {
+    if (this.video) {
+      this.video.update();
+    }
+  }
 }
 HTMLVideoElement.HAVE_NOTHING = HTMLMediaElement.HAVE_NOTHING;
 HTMLVideoElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
@@ -3506,6 +3551,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       getUserMedia(constraints) {
         if (constraints.audio) {
           return Promise.resolve(new MicrophoneMediaStream());
+        } else if (constraints.video) {
+          const dev = new VideoDevice();
+          dev.constraints = constraints.video;
+          return Promise.resolve(dev);
         } else {
           return Promise.reject(new Error('constraints not met'));
         }
@@ -4282,7 +4331,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     set data(data) {}
   };
 
-  const {nativeAudio} = bindings;
+  const {nativeAudio, nativeVideo} = bindings;
   AudioContext = nativeAudio.AudioContext;
   AudioNode = nativeAudio.AudioNode;
   AudioDestinationNode = nativeAudio.AudioDestinationNode;
@@ -4376,6 +4425,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     }
   };
   MicrophoneMediaStream = nativeAudio.MicrophoneMediaStream;
+  Video = nativeVideo.Video;
+  VideoDevice = nativeVideo.VideoDevice;
 
   /* const {nativeVideo} = bindings;
   HTMLVideoElement = class extends HTMLMediaElement {
