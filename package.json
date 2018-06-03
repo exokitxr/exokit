@@ -52,7 +52,7 @@
     "native-canvas-deps": "0.0.19",
     "native-graphics-deps": "0.0.15",
     "native-openvr-deps": "0.0.15",
-    "native-video-deps": "0.0.20",
+    "native-video-deps": "0.0.21",
     "node-localstorage": "^1.3.1",
     "parse-int": "^1.0.2",
     "parse5": "^4.0.0",
