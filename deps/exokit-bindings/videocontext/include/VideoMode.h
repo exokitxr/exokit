@@ -56,6 +56,7 @@ public:
   }
 
   AVPixelFormat getFormat() const {
+    // https://stackoverflow.com/a/23216860
     AVPixelFormat pixFormat = getCodecContext()->pix_fmt;
     switch (pixFormat) {
       case AV_PIX_FMT_YUVJ420P :
