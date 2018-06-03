@@ -3,7 +3,6 @@
 #include <cassert>
 #include <iomanip> // setprecision
 
-
 extern "C" {
 #include <libavutil/avstring.h>
 #include <libavcodec/avcodec.h>
