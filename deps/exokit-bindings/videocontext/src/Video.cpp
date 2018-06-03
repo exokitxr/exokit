@@ -53,9 +53,9 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
 
   // open video
   fmt_ctx = avformat_alloc_context();
-  io_ctx = avio_alloc_context((unsigned char *)av_malloc(kBufferSize), kBufferSize, 0, this, bufferRead, NULL, bufferSeek);
+  io_ctx = avio_alloc_context((unsigned char *)av_malloc(kBufferSize), kBufferSize, 0, this, bufferRead, nullptr, bufferSeek);
   fmt_ctx->pb = io_ctx;
-  if (avformat_open_input(&fmt_ctx, "memory input", NULL, NULL) < 0) {
+  if (avformat_open_input(&fmt_ctx, "memory input", nullptr, nullptr) < 0) {
     if (error) {
       *error = "failed to open input";
     }
@@ -63,7 +63,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   }
 
   // find stream info
-  if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
+  if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
     if (error) {
       *error = "failed to get stream info";
     }
@@ -95,7 +95,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
 
   // find the decoder
   decoder = avcodec_find_decoder(codec_ctx->codec_id);
-  if (decoder == NULL) {
+  if (decoder == nullptr) {
     if (error) {
       *error = "failed to find decoder";
     }
@@ -103,7 +103,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   }
 
   // open the decoder
-  if (avcodec_open2(codec_ctx, decoder, NULL) < 0) {
+  if (avcodec_open2(codec_ctx, decoder, nullptr) < 0) {
     if (error) {
       *error = "failed to open codec";
     }
@@ -122,7 +122,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   conv_ctx = sws_getContext(
     codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
     codec_ctx->width, codec_ctx->height, kPixelFormat,
-    SWS_BICUBIC, NULL, NULL, NULL
+    SWS_BICUBIC, nullptr, nullptr, nullptr
   );
 
   return true;
@@ -551,7 +551,7 @@ FrameStatus Video::advanceToFrameAt(double timestamp) {
 }
 
 
-VideoDevice::VideoDevice() : dataDirty(true), dev(NULL) {
+VideoDevice::VideoDevice() : dataDirty(true), dev(nullptr) {
   cameras.push_back(this);
 }
 
@@ -601,7 +601,7 @@ NAN_METHOD(VideoDevice::Open) {
   VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
   if (video->dev) {
     VideoMode::close(video->dev);
-    video->dev = NULL;
+    video->dev = nullptr;
   }
   if (info.Length() < 1) {
     Nan::ThrowError("VideoDevice.Open: pass in a device name");
@@ -615,7 +615,7 @@ NAN_METHOD(VideoDevice::Open) {
       opts = std::string(*optsStr, optsStr.length());
     }
     video->dev = VideoMode::open(name, opts);
-    info.GetReturnValue().Set(JS_BOOL(video->dev != NULL));
+    info.GetReturnValue().Set(JS_BOOL(video->dev != nullptr));
     if (video->dev) {
       unsigned int dataSize = video->dev->getSize();
       Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), dataSize);
@@ -632,7 +632,7 @@ NAN_METHOD(VideoDevice::Close) {
   VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
   if (video->dev) {
     VideoMode::close(video->dev);
-    video->dev = NULL;
+    video->dev = nullptr;
   }
 }
 
