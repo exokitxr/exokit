@@ -188,7 +188,7 @@ VideoMode::open(const DeviceString& name, const DeviceString& opts)
       av_dict_set(&options, xs[0].c_str(), xs[1].c_str(), 0);
     }
   }
-  return VideoDeviceImpl::open((DeviceString("video=")+name).c_str(), options);
+  return VideoDeviceImpl::open(name.c_str(), options);
 }
 
 void
