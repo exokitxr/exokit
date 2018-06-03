@@ -102,7 +102,7 @@ public:
 
         if(frameFinished){
           struct SwsContext * img_convert_ctx;
-          img_convert_ctx = sws_getCachedContext(NULL,getWidth(), getHeight(), getFormat(), getWidth(), getHeight(), AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL,NULL);
+          img_convert_ctx = sws_getCachedContext(nullptr,getWidth(), getHeight(), getFormat(), getWidth(), getHeight(), AV_PIX_FMT_RGB24, SWS_BICUBIC, nullptr, nullptr,nullptr);
           sws_scale(img_convert_ctx, ((AVPicture*)pFrame)->data, ((AVPicture*)pFrame)->linesize, 0, getHeight(), ((AVPicture *)pFrameRGB)->data, ((AVPicture *)pFrameRGB)->linesize);
 
           av_free_packet(&packet);
@@ -119,7 +119,7 @@ public:
   static AVInputFormat*
   getInputFormat()
   {
-    AVInputFormat* iformat = NULL;
+    AVInputFormat* iformat = nullptr;
 #if USING_V4L
     if ((iformat = av_find_input_format("v4l2")))
         return iformat;
@@ -138,7 +138,7 @@ public:
 #endif
 
     fprintf(stderr, "No valid input format found\n");
-    return NULL;
+    return nullptr;
   }
 
   static VideoCamera* open(const char* deviceName, AVDictionary* options)
@@ -147,7 +147,7 @@ public:
     if (format) {
       AVFormatContext *pFormatCtx = avformat_alloc_context();
       if(avformat_open_input(&pFormatCtx, deviceName, format, &options) >= 0) {
-        if(avformat_find_stream_info(pFormatCtx, NULL) >= 0) {
+        if(avformat_find_stream_info(pFormatCtx, nullptr) >= 0) {
           av_dump_format(pFormatCtx, 0, deviceName, 0);
 
           int videoStream = -1;
@@ -163,7 +163,7 @@ public:
             AVCodecContext* pCodecCtx = pFormatCtx->streams[videoStream]->codec;
             AVCodec* pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
             if(pCodec) {
-              if(avcodec_open2(pCodecCtx,pCodec,NULL) >= 0) {
+              if(avcodec_open2(pCodecCtx,pCodec,nullptr) >= 0) {
                 VideoCamera* device = new VideoCamera(pFormatCtx, pCodec, videoStream);
                 return device;
               }
@@ -173,7 +173,7 @@ public:
         avformat_close_input(&pFormatCtx);
       }
     }
-    return NULL;
+    return nullptr;
   }
 };
 

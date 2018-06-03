@@ -30,7 +30,7 @@ static std::vector<std::string> split(const std::string &s, char delim) {
 VideoCamera*
 VideoMode::open(const DeviceString& name, const DeviceString& opts)
 {
-  AVDictionary *options = NULL;
+  AVDictionary *options = nullptr;
   for (DeviceString opt : split(opts, '&')) {
     auto xs(split(opt, '='));
     if (xs.size() >= 2) {
@@ -47,7 +47,7 @@ VideoMode::close(VideoCamera*& pDevice)
   if (device) {
     delete device;
   }
-  pDevice = NULL;
+  pDevice = nullptr;
 }
 
 }
