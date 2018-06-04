@@ -202,11 +202,11 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
-const _requestContext = () => {
+const _getContext = () => {
   if (!vrPresentState.vrContext) {
     vrPresentState.vrContext = nativeVr.getContext();
   }
-  return Promise.resolve(vrPresentState.vrContext);
+  return vrPresentState.vrContext;
 };
 const _requestSystem = vrContext => new Promise((accept, reject) => {
   let err = null;
@@ -241,46 +241,44 @@ nativeVr.requestPresent = function(layers) {
       const context = canvas._context;
       const window = canvas.ownerDocument.defaultView;
 
-      return _requestContext()
-        .then(vrContext =>
-          _requestSystem()
-            .then(newSystem => {
-              const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
-              renderWidth = halfWidth;
-              renderHeight = height;
+      const vrContext = _getContext();
+      return _requestSystem()
+        .then(newSystem => {
+          const {width: halfWidth, height} = newSystem.GetRecommendedRenderTargetSize();
+          renderWidth = halfWidth;
+          renderHeight = height;
 
-              nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-              const width = halfWidth * 2;
-              const [msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 4, 0, 0);
-              const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 1, 0, 0);
+          const width = halfWidth * 2;
+          const [msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 4, 0, 0);
+          const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 1, 0, 0);
 
-              context.setDefaultFramebuffer(msFbo);
+          context.setDefaultFramebuffer(msFbo);
 
-              vrPresentState.isPresenting = true;
-              vrPresentState.system = newSystem;
-              vrPresentState.compositor = vrContext.compositor.NewCompositor();
-              vrPresentState.glContext = context;
-              vrPresentState.msFbo = msFbo;
-              vrPresentState.msTex = msTex;
-              vrPresentState.fbo = fbo;
-              vrPresentState.tex = tex;
+          vrPresentState.isPresenting = true;
+          vrPresentState.system = newSystem;
+          vrPresentState.compositor = vrContext.compositor.NewCompositor();
+          vrPresentState.glContext = context;
+          vrPresentState.msFbo = msFbo;
+          vrPresentState.msTex = msTex;
+          vrPresentState.fbo = fbo;
+          vrPresentState.tex = tex;
 
-              vrPresentState.lmContext = nativeLm && new nativeLm();
+          vrPresentState.lmContext = nativeLm && new nativeLm();
 
-              window.top.updateVrFrame({
-                renderWidth,
-                renderHeight,
-                force: true,
-              });
+          window.top.updateVrFrame({
+            renderWidth,
+            renderHeight,
+            force: true,
+          });
 
-              return Promise.resolve({
-                width,
-                height,
-                framebuffer: msFbo,
-              });
-            })
-        );
+          return Promise.resolve({
+            width,
+            height,
+            framebuffer: msFbo,
+          });
+        });
     } else {
       return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
     }
