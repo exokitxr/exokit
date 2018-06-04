@@ -170,7 +170,7 @@ NAN_METHOD(IVRCompositor::Submit)
   if (compositorError != vr::VRCompositorError_None) {
     if (compositorError == vr::VRCompositorError_RequestFailed) Nan::ThrowError("Compositor error: VRCompositorError_RequestFailed");
     else if (compositorError == vr::VRCompositorError_IncompatibleVersion) Nan::ThrowError("Compositor error: VRCompositorError_IncompatibleVersion");
-    else if (compositorError == vr::VRCompositorError_DoNotHaveFocus) Nan::ThrowError("Compositor error: VRCompositorError_DoNotHaveFocus");
+    else if (compositorError == vr::VRCompositorError_DoNotHaveFocus) {} // Nan::ThrowError("Compositor error: VRCompositorError_DoNotHaveFocus");
     else if (compositorError == vr::VRCompositorError_InvalidTexture) Nan::ThrowError("Compositor error: VRCompositorError_InvalidTexture");
     else if (compositorError == vr::VRCompositorError_IsNotSceneApplication) Nan::ThrowError("Compositor error: VRCompositorError_IsNotSceneApplication");
     else if (compositorError == vr::VRCompositorError_TextureIsOnWrongDevice) Nan::ThrowError("Compositor error: VRCompositorError_TextureIsOnWrongDevice");
@@ -192,7 +192,7 @@ NAN_METHOD(IVRCompositor::Submit)
   if (compositorError != vr::VRCompositorError_None) {
     if (compositorError == vr::VRCompositorError_RequestFailed) Nan::ThrowError("Compositor error: VRCompositorError_RequestFailed");
     else if (compositorError == vr::VRCompositorError_IncompatibleVersion) Nan::ThrowError("Compositor error: VRCompositorError_IncompatibleVersion");
-    else if (compositorError == vr::VRCompositorError_DoNotHaveFocus) Nan::ThrowError("Compositor error: VRCompositorError_DoNotHaveFocus");
+    else if (compositorError == vr::VRCompositorError_DoNotHaveFocus) {} // Nan::ThrowError("Compositor error: VRCompositorError_DoNotHaveFocus");
     else if (compositorError == vr::VRCompositorError_InvalidTexture) Nan::ThrowError("Compositor error: VRCompositorError_InvalidTexture");
     else if (compositorError == vr::VRCompositorError_IsNotSceneApplication) Nan::ThrowError("Compositor error: VRCompositorError_IsNotSceneApplication");
     else if (compositorError == vr::VRCompositorError_TextureIsOnWrongDevice) Nan::ThrowError("Compositor error: VRCompositorError_TextureIsOnWrongDevice");
