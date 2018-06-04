@@ -74,16 +74,22 @@
   </script>
   <script>
 
-			let camera, scene, renderer, video, controllerMeshes;
+			let camera, matrixWorld, projectionMatrix, scene, renderer, video, controllerMeshes, lastPresseds, points, presenting;
 
 			init();
 
 			function init() {
 
-				camera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.1, 300 );
-				camera.position.z = 0;
+        scene = new THREE.Scene();
 
-				scene = new THREE.Scene();
+				camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera.position.z = 1;
+        scene.add(camera);
+        camera.updateMatrixWorld();
+        camera.updateProjectionMatrix();
+
+        matrixWorld = camera.matrixWorldInverse.clone();
+        projectionMatrix = camera.projectionMatrix.clone();
 
 				video = document.getElementById('video');
 				const texture = new THREE.VideoTexture(video);
@@ -118,7 +124,16 @@
         scene.add(controllerMeshes[0]);
         scene.add(controllerMeshes[1]);
 
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
+        lastPresseds = [
+          false,
+          false,
+        ];
+        points = [];
+        presenting = false;
+
+				renderer = new THREE.WebGLRenderer({
+          antialias: true,
+        });
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				document.body.appendChild( renderer.domElement );
@@ -166,48 +181,100 @@
 
        function onWindowKeypress() {
 
-				 window.navigator.xr.requestDevice()
-           .then(device => {
-              return device.requestSession({
-                exclusive: true,
-                outputContext: renderer.getContext(),
-              })
-                .then(session => {
-                  device.session = session;
-                  
-                  session.update = (update => function(updateSpec) {
-                    updateSpec.renderWidth *= 2;
-                    return update.apply(this, arguments);
-                  })(session.update);
-                  session._frame.views = session._frame.views.slice(0, 1);
+         if (!presenting) {
+           window.navigator.xr.requestDevice()
+             .then(device => {
+                return device.requestSession({
+                  exclusive: true,
+                  outputContext: renderer.getContext(),
+                })
+                  .then(session => {
+                    device.session = session;
 
-                  renderer.setAnimationLoop(null);
+                    session.update = (update => function(updateSpec) {
+                      if (updateSpec.renderWidth !== undefined) {
+                        updateSpec.renderWidth *= 2;
+                      }
+                      if (updateSpec.frameData !== undefined) {
+                        matrixWorld.toArray(updateSpec.frameData.leftViewMatrix);
+                        projectionMatrix.toArray(updateSpec.frameData.leftProjectionMatrix);
 
-                  renderer.vr.enabled = true;
-                  renderer.vr.setDevice(device);
-                  renderer.vr.setSession(session, {
-                    frameOfReferenceType: 'stage',
+                        matrixWorld.toArray(updateSpec.frameData.rightViewMatrix);
+                        projectionMatrix.toArray(updateSpec.frameData.rightProjectionMatrix);
+                      }
+                      return update.apply(this, arguments);
+                    })(session.update);
+                    session._frame.views = session._frame.views.slice(0, 1);
+
+                    renderer.setAnimationLoop(null);
+
+                    renderer.vr.enabled = true;
+                    renderer.vr.setDevice(device);
+                    renderer.vr.setSession(session, {
+                      frameOfReferenceType: 'stage',
+                    });
+                    renderer.vr.setAnimationLoop(animate);
                   });
-                  renderer.vr.setAnimationLoop(animate);
-                });
-           });
+             });
+
+          presenting = true;
+        }
 
 			 }
 
 			 function animate() {
 
-         const device = renderer.vr.getDevice();
-         if (device) {
-           device.session._frame.views[0]._viewport.width *= 2;
-         }
-         
-         const gamepads = navigator.getGamepads()
-         for (let i = 0; i < 2; i++) {
-           const gamepad = gamepads[i];
-           if  (gamepad) {
+         if (presenting) {
+           const gamepads = navigator.getGamepads();
+           for (let i = 0; i < 2; i++) {
+             const gamepad = gamepads[i];
              const controllerMesh = controllerMeshes[i];
-             controllerMesh.position.fromArray(gamepad.pose.position);
-             controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+
+             if (gamepad) {
+               controllerMesh.position.fromArray(gamepad.pose.position);
+               controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+             }
+
+             const lastPressed = lastPresseds[i];
+             const pressed = Boolean(gamepad && gamepad.buttons[1].pressed);
+             if (!lastPressed && pressed) {
+               for (let j = 0; j < gamepad.hapticActuators.length; j++) {
+                 gamepad.hapticActuators[j].pulse(1, 100);
+               }
+
+               points.push(controllerMesh.position.clone());
+               console.log(`point ${points.length}: ${JSON.stringify(points[points.length - 1])}`);
+               if (points.length >= 3) {
+                 camera.position.copy(points[0]);
+                 camera.quaternion.setFromUnitVectors(
+                   new THREE.Vector3(0, 0, -1),
+                   points[1].clone()
+                     .add(points[2])
+                     .divideScalar(2)
+                     .sub(points[0])
+                     .normalize()
+                 );
+                 camera.updateMatrixWorld();
+                 matrixWorld.copy(camera.matrixWorldInverse);
+
+                 camera.fov = Math.acos(
+                   new THREE.Vector3(0, points[1].clone().sub(points[0]).normalize().y, 0)
+                     .dot(new THREE.Vector3(0, points[2].clone().sub(points[0]).normalize().y, 0))
+                 ) / (Math.PI * 2) * 360;
+
+                 camera.aspect = (video.width / 2) / video.height;
+                 camera.updateProjectionMatrix();
+                 projectionMatrix.copy(camera.projectionMatrix);
+
+                 console.log(`fov: ${JSON.stringify(camera.fov)}`);
+                 console.log(`aspect: ${JSON.stringify(camera.aspect)}`);
+                 console.log(`viewMatrix: ${JSON.stringify(matrixWorld.toArray())}`);
+                 console.log(`projectionMatrix: ${JSON.stringify(projectionMatrix.toArray())}`);
+
+                 points.length = 0;
+               }
+             }
+             lastPresseds[i] = pressed;
            }
          }
 
