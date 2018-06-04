@@ -131,8 +131,12 @@
 
           controllerMeshes.push(object.clone());
           controllerMeshes.push(object.clone());
+          controllerMeshes.push(object.clone());
+          controllerMeshes.push(object.clone());
           scene.add(controllerMeshes[0]);
           scene.add(controllerMeshes[1]);
+          scene.add(controllerMeshes[2]);
+          scene.add(controllerMeshes[3]);
         });
 
         if (localStorage.getItem('exokit.configure.points')) {
@@ -206,6 +210,10 @@
 			 }
 
        function onActivate() {
+         const localVector = new THREE.Vector3();
+         const localVector2 = new THREE.Vector3();
+         const localQuaternion = new THREE.Quaternion();
+         const localMatrix = new THREE.Matrix4();
 
          if (!presenting) {
            window.navigator.xr.requestDevice()
@@ -222,11 +230,27 @@
                         updateSpec.renderWidth *= 2;
                       }
                       if (updateSpec.frameData !== undefined) {
-                        matrixWorld.toArray(updateSpec.frameData.leftViewMatrix);
-                        projectionMatrix.toArray(updateSpec.frameData.leftProjectionMatrix);
+                        const {frameData} = updateSpec;
 
-                        matrixWorld.toArray(updateSpec.frameData.rightViewMatrix);
-                        projectionMatrix.toArray(updateSpec.frameData.rightProjectionMatrix);
+                        localMatrix.fromArray(frameData.leftViewMatrix);
+                        localMatrix.getInverse(localMatrix);
+                        localMatrix.decompose(localVector, localQuaternion, localVector2);
+                        controllerMeshes[2].quaternion.fromArray(frameData.pose.orientation);
+                        controllerMeshes[2].position.copy(localVector);
+                        controllerMeshes[2].updateMatrixWorld();
+
+                        localMatrix.fromArray(frameData.rightViewMatrix);
+                        localMatrix.getInverse(localMatrix);
+                        localMatrix.decompose(localVector, localQuaternion, localVector2);
+                        controllerMeshes[3].quaternion.fromArray(frameData.pose.orientation);
+                        controllerMeshes[3].position.copy(localVector);
+                        controllerMeshes[3].updateMatrixWorld();
+
+                        matrixWorld.toArray(frameData.leftViewMatrix);
+                        projectionMatrix.toArray(frameData.leftProjectionMatrix);
+
+                        matrixWorld.toArray(frameData.rightViewMatrix);
+                        projectionMatrix.toArray(frameData.rightProjectionMatrix);
                       }
                       return update.apply(this, arguments);
                     })(session.update);
