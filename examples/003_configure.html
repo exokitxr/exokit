@@ -298,9 +298,8 @@
                  points.push(controllerMesh.position.clone());
                  console.log(`point ${points.length}: ${JSON.stringify(points[points.length - 1])}`);
                }
-               if (points.length >= 3) {
-                 localStorage.setItem('exokit.configure.points', JSON.stringify(points));
 
+               const _configureCamera = (camera, points) => {
                  P = points[0]; // real-world camera position
                  A = points[1]; // upper right corner
                  B = points[2]; // lower left corner
@@ -322,11 +321,16 @@
                  camera.aspect = aspect;
                  camera.fov = fov;
                  camera.updateProjectionMatrix();
-                 projectionMatrix.copy(camera.projectionMatrix);
 
                  camera.position.copy(P);
                  camera.quaternion.copy(Q);
                  camera.updateMatrixWorld();
+               }
+
+               if (points.length >= 3) {
+                 localStorage.setItem('exokit.configure.points', JSON.stringify(points));
+                 _configureCamera(camera, points);
+                 projectionMatrix.copy(camera.projectionMatrix);
                  matrixWorld.copy(camera.matrixWorldInverse);
 
                  console.log(`fov: ${JSON.stringify(camera.fov)}`);
