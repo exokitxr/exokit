@@ -329,8 +329,6 @@ if (nativeMl) {
 
         const initResult = mlContext.Init(windowHandle);
         if (initResult) {
-          console.log('ml context stage geo', mlContext.stageGeometry.getGeometry);
-
           isMlPresenting = true;
 
           const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 1, 0, 0);
