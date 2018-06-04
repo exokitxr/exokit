@@ -1,4 +1,5 @@
 #include <VideoMode.h>
+#include "VideoCamera.h"
 
 extern "C" {
 #include <libavutil/avstring.h>

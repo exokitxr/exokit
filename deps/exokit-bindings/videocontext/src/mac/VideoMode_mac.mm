@@ -1,3 +1,4 @@
+#include <VideoCommon.h>
 #include <VideoMode.h>
 #include <AVFoundation/AVFoundation.h>
 
