@@ -3129,11 +3129,11 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
     if (tagName && uppercase) {
       tagName = tagName.toUpperCase();
     }
-    const {attrs, value, __location} = node;
+    const {attrs, value, sourceCodeLocation} = node;
     const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
-    const location = __location ? {
-      line: __location.line,
-      col: __location.col,
+    const location = sourceCodeLocation  ? {
+      line: sourceCodeLocation.startLine,
+      col: sourceCodeLocation.startCol,
     } : null;
     const element = HTMLElementTemplate ?
       new HTMLElementTemplate(
@@ -3997,7 +3997,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 };
 const _parseDocument = (s, options, window) => {
   const ast = parse5.parse(s, {
-    locationInfo: true,
+    sourceCodeLocationInfo: true,
   });
   ast.tagName = 'document';
   return _parseDocumentAst(ast, options, window, true);
