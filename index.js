@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const cwd = process.cwd();
 process.chdir(__dirname); // needed for global bin to find libraries
 
 const path = require('path');
@@ -1082,7 +1083,7 @@ const _start = () => {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
     }
     if (u && !url.parse(u).protocol) {
-      u = 'file://' + u;
+      u = 'file://' + path.resolve(cwd, u);
     }
     return core.load(u, {
       dataPath,
