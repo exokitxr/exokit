@@ -130,7 +130,7 @@ class VideoDevice : public ObjectWrap {
 };
 
 extern std::vector<Video *> videos;
-extern std::vector<VideoDevice *> cameras;
+extern std::vector<VideoDevice *> videoDevices;
 
 }
 
