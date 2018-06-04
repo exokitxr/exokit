@@ -1,8 +1,5 @@
 #include <VideoMode.h>
 
-#include <cassert>
-#include <iomanip> // setprecision
-
 extern "C" {
 #include <libavutil/avstring.h>
 #include <libavcodec/avcodec.h>
@@ -19,7 +16,6 @@ VideoCamera::VideoCamera(AVFormatContext* formatContext, AVCodec* codec, int vid
 , pFrame(av_frame_alloc())
 , pFrameRGB(av_frame_alloc())
 {
-  assert(videoStream >= 0);
 }
 
 VideoCamera::~VideoCamera()
@@ -39,7 +35,6 @@ VideoCamera::~VideoCamera()
 AVCodecContext*
 VideoCamera::getCodecContext() const
 {
-  assert(videoStream >= 0 && pFormatCtx);
   return pFormatCtx->streams[videoStream]->codec;
 }
 
