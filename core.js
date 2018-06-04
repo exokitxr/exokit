@@ -743,10 +743,14 @@ class XRSession extends EventEmitter {
       }
     }
     if (frameData !== undefined) {
-      this._frame.views[0].projectionMatrix.set(frameData.leftProjectionMatrix);
-      this._frame.views[0]._viewMatrix.set(frameData.leftViewMatrix);
-      this._frame.views[1].projectionMatrix.set(frameData.rightProjectionMatrix);
-      this._frame.views[1]._viewMatrix.set(frameData.rightViewMatrix);
+      if (this._frame.views[0]) {
+        this._frame.views[0].projectionMatrix.set(frameData.leftProjectionMatrix);
+        this._frame.views[0]._viewMatrix.set(frameData.leftViewMatrix);
+      }
+      if (this._frame.views[1]) {
+        this._frame.views[1].projectionMatrix.set(frameData.rightProjectionMatrix);
+        this._frame.views[1]._viewMatrix.set(frameData.rightViewMatrix);
+      }
     }
     /* if (stageParameters !== undefined) {
       this._frameOfReference.emulatedHeight = stageParameters.position.y; // XXX
