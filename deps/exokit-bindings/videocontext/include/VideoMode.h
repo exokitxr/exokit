@@ -1,7 +1,7 @@
 #ifndef _EXO_VIDEO_MODE_H_
 #define _EXO_VIDEO_MODE_H_
 
-#include "VideoCommon.h"
+#include <VideoCommon.h>
 
 namespace ffmpeg {
 

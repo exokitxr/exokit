@@ -1,4 +1,4 @@
-#include "VideoMode.h"
+#include <VideoMode.h>
 
 #ifndef EXO_OS_WIN
 #error "This file is meant to be compiled on Windows"

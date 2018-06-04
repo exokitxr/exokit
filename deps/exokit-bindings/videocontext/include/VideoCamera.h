@@ -1,7 +1,7 @@
 #ifndef _EXO_VIDEO_CAMERA_H_
 #define _EXO_VIDEO_CAMERA_H_
 
-#include "VideoCommon.h"
+#include <VideoCommon.h>
 
 // #include <cassert>
 // #include <iomanip> // setprecision
