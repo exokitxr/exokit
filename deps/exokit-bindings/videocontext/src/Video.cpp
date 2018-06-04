@@ -1,5 +1,6 @@
 #include <Video.h>
 #include "VideoMode.h"
+#include "VideoCamera.h"
 
 using namespace v8;
 
