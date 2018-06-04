@@ -63,17 +63,10 @@ matrix:
     - mkdir -p /tmp/Exokit.app/Contents/MacOS
     - cp -R * /tmp/Exokit.app/Contents/MacOS
     - cp Info.plist /tmp/Exokit.app/Contents
-    - cp appdmg.json /tmp
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
-    - security create-keychain -p nopassword build.keychain
-    - security default-keychain -s build.keychain
-    - security unlock-keychain -p nopassword build.keychain
-    - security set-keychain-settings -t 3600 -u build.keychain
-    - security import codesign-macos.pfx -k build.keychain -P "$PFX_KEY" -A
-    - "security set-key-partition-list -S apple-tool:,apple: -s -k nopassword build.keychain"
-    - appdmg /tmp/appdmg.json exokit-macos-x64.dmg
+    - ./exokit-codesign-macos.sh
     deploy:
     - provider: releases
       api_key:
