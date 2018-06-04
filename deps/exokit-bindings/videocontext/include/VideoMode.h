@@ -3,8 +3,10 @@
 
 #include "VideoCommon.h"
 
-#include <cassert>
-
+// #include <cassert>
+// #include <iomanip> // setprecision
+#include <mutex>
+#include <thread>
 
 extern "C" {
 #include <libavutil/avstring.h>
@@ -18,22 +20,24 @@ namespace ffmpeg {
 class VideoCamera
 {
 public:
-  AVFormatContext* pFormatCtx;
+  AVFormatContext *pFormatCtx;
+  AVFrame *pFrameRGB;
   int videoStream;
-  AVCodec* pCodec;
-  AVFrame* pFrame;
-  AVFrame* pFrameRGB;
-  AVPacket packet;
-  VideoCamera(AVFormatContext* formatContext, AVCodec* codec, int videoStream);
+  bool *pLive;
+  std::mutex *pMutex;
+  bool *pFrameReady;
+
+  VideoCamera(AVFormatContext *formatContext, int videoStream);
   ~VideoCamera();
-  AVCodecContext* getCodecContext() const;
+
+  AVCodecContext *getCodecContext() const;
   AVPixelFormat getFormat() const;
   size_t getWidth() const;
   size_t getHeight() const;
   size_t getSize() const;
-  void copy(uint8_t* buffer) const;
-  bool update();
-  static VideoCamera* open(const char* deviceName, AVDictionary* options);
+  bool isFrameReady() const;
+  void pullUpdate(uint8_t *buffer) const;
+  static VideoCamera* open(const char *deviceName, AVDictionary *options);
 };
 
 struct VideoMode {
