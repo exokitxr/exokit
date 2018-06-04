@@ -74,7 +74,7 @@
   </script>
   <script>
 
-			var camera, scene, renderer, video;
+			let camera, scene, renderer, video, controllerMeshes;
 
 			init();
 
@@ -103,16 +103,20 @@
         directionalLight.position.set(1, 1, 1);
         scene.add(directionalLight);
 
-        const cubeMesh = (() => {
+        const _makeControllerMesh = () => {
           const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
           const material = new THREE.MeshPhongMaterial({
             color: 0xFF0000,
           });
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.set(0, 0, -1);
           return mesh;
-        })();
-        scene.add(cubeMesh);
+        };
+        controllerMeshes = [
+          _makeControllerMesh(),
+          _makeControllerMesh(),
+        ];
+        scene.add(controllerMeshes[0]);
+        scene.add(controllerMeshes[1]);
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
@@ -195,6 +199,16 @@
          const device = renderer.vr.getDevice();
          if (device) {
            device.session._frame.views[0]._viewport.width *= 2;
+         }
+         
+         const gamepads = navigator.getGamepads()
+         for (let i = 0; i < 2; i++) {
+           const gamepad = gamepads[i];
+           if  (gamepad) {
+             const controllerMesh = controllerMeshes[i];
+             controllerMesh.position.fromArray(gamepad.pose.position);
+             controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+           }
          }
 
 				 renderer.render( scene, camera );
