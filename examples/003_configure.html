@@ -3,7 +3,6 @@
 
 		<video id="video" autoplay style="display:none"></video>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.js"></script>
-  <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
   <script>
     window.ScreenQuad = (() => {
 
@@ -20,7 +19,7 @@
       ].join("\n");
 
       var defaultFragmentShader = [
-        
+
         `varying vec2 vUv;
         uniform float numTextures;
         uniform sampler2D uTexture;
@@ -29,7 +28,6 @@
         }`
 
       ].join("\n");
-
 
       function ScreenQuad( params ){
 
@@ -79,54 +77,50 @@
 			var camera, scene, renderer, video;
 
 			init();
-			animate();
 
 			function init() {
 
-				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
-				camera.position.z = 0.01;
+				camera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 0.1, 300 );
+				camera.position.z = 0;
 
 				scene = new THREE.Scene();
 
-				video = document.getElementById( 'video' );
-				var texture = new THREE.VideoTexture( video );
+				video = document.getElementById('video');
+				const texture = new THREE.VideoTexture(video);
 				texture.minFilter = THREE.LinearFilter;
 				texture.magFilter = THREE.LinearFilter;
 				texture.format = THREE.RGBFormat;
 
-				var geometry = new THREE.PlaneBufferGeometry( 16, 9 );
-				geometry.scale( 0.5, 0.5, 0.5 );
-				var material = new THREE.MeshBasicMaterial( { map: texture } );
+        const screenQuad = new ScreenQuad({
+          texture,
+        });
+        scene.add(screenQuad);
 
-				var count = 128;
-				var radius = 32;
+        const ambientLight = new THREE.AmbientLight(0x808080);
+        scene.add(ambientLight);
 
-				var spherical = new THREE.Spherical();
+        const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
 
-				for ( var i = 1, l = count; i <= l; i ++ ) {
-
-					var phi = Math.acos( - 1 + ( 2 * i ) / l );
-					var theta = Math.sqrt( l * Math.PI ) * phi;
-
-					spherical.set( radius, phi, theta );
-
-					var mesh = new THREE.Mesh( geometry, material );
-					mesh.position.setFromSpherical( spherical );
-					mesh.lookAt( camera.position );
-					scene.add( mesh );
-
-				}
+        const cubeMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+          const material = new THREE.MeshPhongMaterial({
+            color: 0xFF0000,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(0, 0, -1);
+          return mesh;
+        })();
+        scene.add(cubeMesh);
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				document.body.appendChild( renderer.domElement );
 
-				var controls = new THREE.OrbitControls( camera, renderer.domElement );
-				controls.enableZoom = false;
-				controls.enablePan = false;
-
-				window.addEventListener( 'resize', onWindowResize, false );
+				window.addEventListener( 'resize', onWindowResize );
+				window.addEventListener( 'keypress', onWindowKeypress );
 
 				//
 
@@ -153,6 +147,8 @@
 
 				}
 
+        renderer.setAnimationLoop(animate);
+
 			 }
 
 			 function onWindowResize() {
@@ -164,9 +160,43 @@
 
 			 }
 
+       function onWindowKeypress() {
+
+				 window.navigator.xr.requestDevice()
+           .then(device => {
+              return device.requestSession({
+                exclusive: true,
+                outputContext: renderer.getContext(),
+              })
+                .then(session => {
+                  device.session = session;
+                  
+                  session.update = (update => function(updateSpec) {
+                    updateSpec.renderWidth *= 2;
+                    return update.apply(this, arguments);
+                  })(session.update);
+                  session._frame.views = session._frame.views.slice(0, 1);
+
+                  renderer.setAnimationLoop(null);
+
+                  renderer.vr.enabled = true;
+                  renderer.vr.setDevice(device);
+                  renderer.vr.setSession(session, {
+                    frameOfReferenceType: 'stage',
+                  });
+                  renderer.vr.setAnimationLoop(animate);
+                });
+           });
+
+			 }
+
 			 function animate() {
 
-				 requestAnimationFrame( animate );
+         const device = renderer.vr.getDevice();
+         if (device) {
+           device.session._frame.views[0]._viewport.width *= 2;
+         }
+
 				 renderer.render( scene, camera );
 
 			 }
