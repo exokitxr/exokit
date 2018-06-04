@@ -551,7 +551,7 @@ FrameStatus Video::advanceToFrameAt(double timestamp) {
 }
 
 
-VideoDevice::VideoDevice() : dataDirty(true), dev(nullptr) {
+VideoDevice::VideoDevice() : dev(nullptr) {
   videoDevices.push_back(this);
 }
 
@@ -574,15 +574,12 @@ Handle<Object> VideoDevice::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "open", Open);
   Nan::SetMethod(proto, "close", Close);
-  Nan::SetMethod(proto, "update", Update);
   Nan::SetAccessor(proto, JS_STR("width"), WidthGetter);
   Nan::SetAccessor(proto, JS_STR("height"), HeightGetter);
   Nan::SetAccessor(proto, JS_STR("size"), SizeGetter);
   Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
 
   Local<Function> ctorFn = ctor->GetFunction();
-
-  ctorFn->Set(JS_STR("updateAll"), Nan::New<Function>(UpdateAll));
 
   return scope.Escape(ctorFn);
 }
@@ -616,15 +613,6 @@ NAN_METHOD(VideoDevice::Open) {
     }
     video->dev = VideoMode::open(name, opts);
     info.GetReturnValue().Set(JS_BOOL(video->dev != nullptr));
-    if (video->dev) {
-      unsigned int dataSize = video->dev->getSize();
-      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), dataSize);
-      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-      video->dataArray.Reset(uint8ClampedArray);
-      uint8_t* buffer = (uint8_t *)arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset();
-      video->dev->copy(buffer);
-      video->dataDirty = false;
-    }
   }
 }
 
@@ -634,21 +622,6 @@ NAN_METHOD(VideoDevice::Close) {
     VideoMode::close(video->dev);
     video->dev = nullptr;
   }
-}
-
-NAN_METHOD(VideoDevice::Update) {
-  VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
-  info.GetReturnValue().Set(JS_BOOL(video->Update()));
-}
-
-bool VideoDevice::Update() {
-  if (dev) {
-    if (dev->update()) {
-      dataDirty = true;
-      return true;
-    }
-  }
-  return false;
 }
 
 NAN_GETTER(VideoDevice::WidthGetter) {
@@ -689,25 +662,25 @@ NAN_GETTER(VideoDevice::DataGetter) {
 
   VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
 
-  Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
-  if (video->dev && video->dataDirty) {
+
+  if (video->dev && video->dev->isFrameReady()) {
     if (video->dataArray.IsEmpty()) {
       unsigned int dataSize = video->dev->getSize();
       Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), dataSize);
       Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
       video->dataArray.Reset(uint8ClampedArray);
     }
-    uint8_t* buffer = (uint8_t *)uint8ClampedArray->Buffer()->GetContents().Data() + uint8ClampedArray->ByteOffset();
-    video->dev->copy(buffer);
-    video->dataDirty = false;
+
+    Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
+    uint8_t *buffer = (uint8_t *)uint8ClampedArray->Buffer()->GetContents().Data() + uint8ClampedArray->ByteOffset();
+    video->dev->pullUpdate(buffer);
   }
 
-  info.GetReturnValue().Set(uint8ClampedArray);
-}
-
-NAN_METHOD(VideoDevice::UpdateAll) {
-  for (auto i : videoDevices) {
-    i->Update();
+  if (!video->dataArray.IsEmpty()) {
+    Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
+    info.GetReturnValue().Set(uint8ClampedArray);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
   }
 }
 
