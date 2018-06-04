@@ -2761,7 +2761,6 @@ HTMLAudioElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
 HTMLAudioElement.HAVE_CURRENT_DATA = HTMLMediaElement.HAVE_CURRENT_DATA;
 HTMLAudioElement.HAVE_FUTURE_DATA = HTMLMediaElement.HAVE_FUTURE_DATA;
 HTMLAudioElement.HAVE_ENOUGH_DATA = HTMLMediaElement.HAVE_ENOUGH_DATA;
-class Video { static getDevices() { return []; } }
 class MicrophoneMediaStream {}
 class HTMLVideoElement extends HTMLMediaElement {
   constructor(attrs = [], value = '', location = null) {
@@ -2774,13 +2773,6 @@ class HTMLVideoElement extends HTMLMediaElement {
       if (name === 'src') {
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
-        if (urls.has(value)) {
-          const blob = urls.get(value);
-          if (blob instanceof VideoDevice) {
-            this.video = blob;
-          }
-        }
-
         process.nextTick(() => { // XXX
           this.dispatchEvent(new Event('canplay', {target: this}));
           this.dispatchEvent(new Event('canplaythrough', {target: this}));
@@ -2790,50 +2782,13 @@ class HTMLVideoElement extends HTMLMediaElement {
   }
 
   get width() {
-    return this.video ? this.video.width : 0;
+    return 0;
   }
   set width(width) {}
   get height() {
-    return this.video ? this.video.height : 0;
+    return 0;
   }
   set height(height) {}
-
-  get autoplay() {
-    return this.getAttribute('autoplay');
-  }
-  set autoplay(autoplay) {
-    this.setAttribute('autoplay', autoplay);
-  }
-
-  getBoundingClientRect() {
-    return new DOMRect(0, 0, this.width, this.height);
-  }
-
-  get data() {
-    return this.video ? this.video.data : null;
-  }
-  set data(data) {}
-
-  play() {
-    const _getDevice = (facingMode) => {
-      const devices = Video.getDevices();
-      return "video="+devices[({user: 0, environment: 1, left: 2, right: 3})[facingMode] || 0].name;
-    }
-    if (this.video) {
-      this.video.close();
-      this.video.open(_getDevice(this.video.constraints.facingMode));
-    }
-  }
-  pause() {
-    if (this.video) {
-      this.video.close();
-    }
-  }
-  update() {
-    if (this.video) {
-      this.video.update();
-    }
-  }
 }
 HTMLVideoElement.HAVE_NOTHING = HTMLMediaElement.HAVE_NOTHING;
 HTMLVideoElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
@@ -4331,7 +4286,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     set data(data) {}
   };
 
-  const {nativeAudio, nativeVideo} = bindings;
+  const {nativeAudio} = bindings;
   AudioContext = nativeAudio.AudioContext;
   AudioNode = nativeAudio.AudioNode;
   AudioDestinationNode = nativeAudio.AudioDestinationNode;
@@ -4425,8 +4380,82 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     }
   };
   MicrophoneMediaStream = nativeAudio.MicrophoneMediaStream;
+
+  const {nativeVideo} = bindings;
   Video = nativeVideo.Video;
   VideoDevice = nativeVideo.VideoDevice;
+  HTMLVideoElement = class extends HTMLMediaElement {
+    constructor(attrs = [], value = '', location = null) {
+      super('VIDEO', attrs, value, location);
+
+      this.readyState = HTMLMediaElement.HAVE_NOTHING;
+      this.data = new Uint8Array(0);
+
+      this.on('attribute', (name, value) => {
+        if (name === 'src') {
+          this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+
+          if (urls.has(value)) {
+            const blob = urls.get(value);
+            if (blob instanceof VideoDevice) {
+              this.video = blob;
+            }
+          }
+
+          process.nextTick(() => { // XXX
+            this.dispatchEvent(new Event('canplay', {target: this}));
+            this.dispatchEvent(new Event('canplaythrough', {target: this}));
+          });
+        }
+      });
+    }
+
+    get width() {
+      return this.video ? this.video.width : 0;
+    }
+    set width(width) {}
+    get height() {
+      return this.video ? this.video.height : 0;
+    }
+    set height(height) {}
+
+    get autoplay() {
+      return this.getAttribute('autoplay');
+    }
+    set autoplay(autoplay) {
+      this.setAttribute('autoplay', autoplay);
+    }
+
+    getBoundingClientRect() {
+      return new DOMRect(0, 0, this.width, this.height);
+    }
+
+    get data() {
+      return this.video ? this.video.data : null;
+    }
+    set data(data) {}
+
+    play() {
+      const _getDevice = (facingMode) => {
+        const devices = Video.getDevices();
+        return "video="+devices[({user: 0, environment: 1, left: 2, right: 3})[facingMode] || 0].name;
+      }
+      if (this.video) {
+        this.video.close();
+        this.video.open(_getDevice(this.video.constraints.facingMode));
+      }
+    }
+    pause() {
+      if (this.video) {
+        this.video.close();
+      }
+    }
+    update() {
+      if (this.video) {
+        this.video.update();
+      }
+    }
+  }
 
   /* const {nativeVideo} = bindings;
   HTMLVideoElement = class extends HTMLMediaElement {
