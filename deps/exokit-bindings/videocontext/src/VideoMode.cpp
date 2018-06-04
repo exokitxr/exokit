@@ -16,6 +16,22 @@ VideoCamera::VideoCamera(AVFormatContext* formatContext, AVCodec* codec, int vid
 , pFrame(av_frame_alloc())
 , pFrameRGB(av_frame_alloc())
 {
+AVPixelFormat normalizeFormat(AVPixelFormat pixFormat) {
+  switch (pixFormat) {
+    case AV_PIX_FMT_YUVJ420P :
+      pixFormat = AV_PIX_FMT_YUV420P;
+      break;
+    case AV_PIX_FMT_YUVJ422P  :
+      pixFormat = AV_PIX_FMT_YUV422P;
+      break;
+    case AV_PIX_FMT_YUVJ444P   :
+      pixFormat = AV_PIX_FMT_YUV444P;
+      break;
+    case AV_PIX_FMT_YUVJ440P :
+      pixFormat = AV_PIX_FMT_YUV440P;
+      break;
+  }
+  return pixFormat;
 }
 
 VideoCamera::~VideoCamera()
@@ -42,22 +58,7 @@ AVPixelFormat
 VideoCamera::getFormat() const
 {
   // https://stackoverflow.com/a/23216860
-  AVPixelFormat pixFormat = getCodecContext()->pix_fmt;
-  switch (pixFormat) {
-    case AV_PIX_FMT_YUVJ420P :
-      pixFormat = AV_PIX_FMT_YUV420P;
-      break;
-    case AV_PIX_FMT_YUVJ422P  :
-      pixFormat = AV_PIX_FMT_YUV422P;
-      break;
-    case AV_PIX_FMT_YUVJ444P   :
-      pixFormat = AV_PIX_FMT_YUV444P;
-      break;
-    case AV_PIX_FMT_YUVJ440P :
-      pixFormat = AV_PIX_FMT_YUV440P;
-      break;
-  }
-  return pixFormat;
+  return normalizeFormat(getCodecContext()->pix_fmt);
 }
 
 size_t
