@@ -202,12 +202,6 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
-const _getContext = () => {
-  if (!vrPresentState.vrContext) {
-    vrPresentState.vrContext = nativeVr.getContext();
-  }
-  return vrPresentState.vrContext;
-};
 nativeVr.requestPresent = function(layers) {
   if (!vrPresentState.isPresenting) {
     const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
@@ -216,7 +210,7 @@ nativeVr.requestPresent = function(layers) {
       const context = canvas._context;
       const window = canvas.ownerDocument.defaultView;
 
-      const vrContext = _getContext();
+      const vrContext = nativeVr.getContext();
       const system = nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
 
       const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
