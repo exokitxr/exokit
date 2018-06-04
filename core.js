@@ -738,8 +738,9 @@ class XRSession extends EventEmitter {
       this.depthFar = depthFar;
     }
     if (renderWidth !== undefined && renderHeight !== undefined) {
-      this._frame.views[0]._viewport.set(0, 0, renderWidth, renderHeight);
-      this._frame.views[1]._viewport.set(renderWidth, 0, renderWidth, renderHeight);
+      for (let i = 0; i < this._frame.views.length; i++) {
+        this._frame.views[i]._viewport.set(i * renderWidth, 0, renderWidth, renderHeight);
+      }
     }
     if (frameData !== undefined) {
       this._frame.views[0].projectionMatrix.set(frameData.leftProjectionMatrix);
