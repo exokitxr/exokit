@@ -242,14 +242,20 @@ nativeVr.requestPresent = function(layers) {
         force: true,
       });
 
-      return Promise.resolve({
+      return {
         width,
         height,
         framebuffer: msFbo,
-      });
+      };
     } else {
-      return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
+      throw new Error('no HTMLCanvasElement source with WebGLRenderingContext provided')
     }
+  } else {
+    return {
+      width,
+      height,
+      framebuffer: vrPresentState.msFbo,
+    };
   }
 };
 nativeVr.exitPresent = function() {
@@ -322,13 +328,15 @@ if (nativeMl) {
 
           mlGlContext = context;
 
-          return Promise.resolve();
+          return {};
         } else {
-          return Promise.reject(new Error('simulator not attached'));
+          throw new Error('simulator not attached');
         }
       } else {
-        return Promise.reject(new Error('no HTMLCanvasElement source with WebGLRenderingContext provided'));
+        throw new Error('no HTMLCanvasElement source with WebGLRenderingContext provided');
       }
+    } else {
+      return {};
     }
   };
   nativeMl.exitPresent = function() {

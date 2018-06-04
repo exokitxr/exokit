@@ -853,24 +853,23 @@ class XRWebGLLayer {
     this.framebufferWidth = 0;
     this.framebufferHeight = 0;
 
-    (() => {
-      const {canvas} = context;
-      const layers = [{
-        source: canvas,
-      }];
-      (session.device.onrequestpresent ? session.device.onrequestpresent(layers) : Promise.resolve())
-        .then(({
-          width,
-          height,
-          framebuffer,
-        }) => {
-          this.framebuffer = {
-            id: framebuffer,
-          };
-          this.framebufferWidth = width;
-          this.framebufferHeight = height;
-        });
-    })();
+    const presentSpec = session.device.onrequestpresent ?
+      session.device.onrequestpresent([{
+        source: context.canvas,
+      }])
+    :
+      {
+        width: context.drawingBufferWidth,
+        height: context.drawingBufferHeight,
+        framebuffer: 0,
+      };
+    const {width, height, framebuffer} = presentSpec;
+
+    this.framebuffer = {
+      id: framebuffer,
+    };
+    this.framebufferWidth = width;
+    this.framebufferHeight = height;
   }
   getViewport(view) {
     return view._viewport;
@@ -1068,14 +1067,15 @@ class MLDisplay extends MRDisplay {
   }
 
   requestPresent(layers) {
-    return (this.onrequestpresent ? this.onrequestpresent(layers) : Promise.resolve())
-      .then(() => {
-        this.isPresenting = true;
+    if (this.onrequestpresent) {
+      this.onrequestpresent(layers);
+    }
 
-        if (this.onvrdisplaypresentchange) {
-          this.onvrdisplaypresentchange();
-        }
-      });
+    this.isPresenting = true;
+
+    if (this.onvrdisplaypresentchange) {
+      this.onvrdisplaypresentchange();
+    }
   }
 
   exitPresent() {
