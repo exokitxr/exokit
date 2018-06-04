@@ -332,11 +332,7 @@ if (nativeMl) {
     }
   };
   nativeMl.exitPresent = function() {
-    if (isMlPresenting) {
-      throw new Error('not implemented'); // XXX
-    }
-
-    return Promise.resolve();
+    throw new Error('not implemented'); // XXX
   };
 }
 
