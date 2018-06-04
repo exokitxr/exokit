@@ -1,8 +1,5 @@
 #include <VideoMode.h>
 
-#include <cassert>
-#include <iomanip> // setprecision
-
 extern "C" {
 #include <libavutil/avstring.h>
 #include <libavcodec/avcodec.h>
@@ -12,42 +9,7 @@ extern "C" {
 
 namespace ffmpeg {
 
-VideoCamera::VideoCamera(AVFormatContext* formatContext, AVCodec* codec, int videoStream)
-: pFormatCtx(formatContext)
-, videoStream(videoStream)
-, pCodec(codec)
-, pFrame(av_frame_alloc())
-, pFrameRGB(av_frame_alloc())
-{
-  assert(videoStream >= 0);
-}
-
-VideoCamera::~VideoCamera()
-{
-  av_free_packet(&packet);
-  if (pFrameRGB) {
-    av_free(pFrameRGB);
-  }
-  if (pFrame) {
-    av_free(pFrame);
-  }
-  if (pFormatCtx) {
-    avformat_close_input(&pFormatCtx);
-  }
-}
-
-AVCodecContext*
-VideoCamera::getCodecContext() const
-{
-  assert(videoStream >= 0 && pFormatCtx);
-  return pFormatCtx->streams[videoStream]->codec;
-}
-
-AVPixelFormat
-VideoCamera::getFormat() const
-{
-  // https://stackoverflow.com/a/23216860
-  AVPixelFormat pixFormat = getCodecContext()->pix_fmt;
+AVPixelFormat normalizeFormat(AVPixelFormat pixFormat) {
   switch (pixFormat) {
     case AV_PIX_FMT_YUVJ420P :
       pixFormat = AV_PIX_FMT_YUV420P;
@@ -63,6 +25,76 @@ VideoCamera::getFormat() const
       break;
   }
   return pixFormat;
+}
+
+VideoCamera::VideoCamera(AVFormatContext *pFormatCtx, int videoStream)
+: pFormatCtx(pFormatCtx)
+, videoStream(videoStream)
+{
+  AVFrame *pFrame = av_frame_alloc();
+  AVFrame *pFrameRGB = av_frame_alloc();
+  uint8_t *internal_buffer = (uint8_t *)av_malloc(getSize() * sizeof(uint8_t));
+  avpicture_fill((AVPicture *)pFrameRGB, internal_buffer, AV_PIX_FMT_RGB24, getWidth(), getHeight());
+  
+  this->pFrameRGB = pFrameRGB;
+  bool *pLive = new bool(true);
+  this->pLive = pLive;
+  std::mutex *pMutex = new std::mutex();
+  this->pMutex = pMutex;
+  bool *pFrameReady = new bool(false);
+  this->pFrameReady = pFrameReady;
+
+  std::thread([pFormatCtx, videoStream, pFrame, pFrameRGB, pLive, pMutex, pFrameReady]() mutable -> void {
+    AVPacket packet;
+
+    while (*pLive) {
+      int frameFinished = 0;
+      if (av_read_frame(pFormatCtx, &packet) >= 0) {
+        if (packet.stream_index == videoStream) {
+          AVCodecContext *pCodecCtx = pFormatCtx->streams[videoStream]->codec;
+          avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
+
+          if (frameFinished) {
+            struct SwsContext *img_convert_ctx;
+            img_convert_ctx = sws_getCachedContext(nullptr, pCodecCtx->width, pCodecCtx->height, normalizeFormat(pCodecCtx->pix_fmt), pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_BICUBIC, nullptr, nullptr, nullptr);
+
+            {
+              std::lock_guard<std::mutex> lock(*pMutex);
+              sws_scale(img_convert_ctx, ((AVPicture*)pFrame)->data, ((AVPicture*)pFrame)->linesize, 0, pCodecCtx->height, ((AVPicture *)pFrameRGB)->data, ((AVPicture *)pFrameRGB)->linesize);
+              *pFrameReady = true;
+            }
+
+            sws_freeContext(img_convert_ctx);
+          }
+        }
+      }
+    }
+
+    av_free_packet(&packet);
+    av_free(pFrameRGB);
+    av_free(pFrame);
+    avformat_close_input(&pFormatCtx);
+    delete pLive;
+    delete pMutex;
+    delete pFrameReady;
+  }).detach();
+}
+
+VideoCamera::~VideoCamera() {
+  *pLive = false;
+}
+
+AVCodecContext*
+VideoCamera::getCodecContext() const
+{
+  return pFormatCtx->streams[videoStream]->codec;
+}
+
+AVPixelFormat
+VideoCamera::getFormat() const
+{
+  // https://stackoverflow.com/a/23216860
+  return normalizeFormat(getCodecContext()->pix_fmt);
 }
 
 size_t
@@ -83,36 +115,15 @@ VideoCamera::getSize() const
   return avpicture_get_size(AV_PIX_FMT_RGB24, getWidth(), getHeight());
 }
 
-void
-VideoCamera::copy(uint8_t* buffer) const
-{
-  avpicture_fill((AVPicture*)pFrameRGB, buffer, AV_PIX_FMT_RGB24, getWidth(), getHeight());
+bool VideoCamera::isFrameReady() const {
+  std::lock_guard<std::mutex> lock(*pMutex);
+  return *pFrameReady;
 }
 
-bool VideoCamera::update()
-{
-  int res = 0;
-  int frameFinished = 0;
-  if(res = av_read_frame(pFormatCtx,&packet)>=0)
-  {
-    if(packet.stream_index == videoStream){
-      AVCodecContext* pCodecCtx(getCodecContext());
-      avcodec_decode_video2(pCodecCtx,pFrame,&frameFinished,&packet);
-
-      if(frameFinished){
-        struct SwsContext * img_convert_ctx;
-        img_convert_ctx = sws_getCachedContext(nullptr,getWidth(), getHeight(), getFormat(), getWidth(), getHeight(), AV_PIX_FMT_RGB24, SWS_BICUBIC, nullptr, nullptr,nullptr);
-        sws_scale(img_convert_ctx, ((AVPicture*)pFrame)->data, ((AVPicture*)pFrame)->linesize, 0, getHeight(), ((AVPicture *)pFrameRGB)->data, ((AVPicture *)pFrameRGB)->linesize);
-
-        av_free_packet(&packet);
-        sws_freeContext(img_convert_ctx);
-        return true;
-      }
-
-    }
-
-  }
-  return false;
+void VideoCamera::pullUpdate(uint8_t *buffer) const {
+  std::lock_guard<std::mutex> lock(*pMutex);
+  avpicture_fill((AVPicture*)pFrameRGB, buffer, AV_PIX_FMT_RGB24, getWidth(), getHeight());
+  *pFrameReady = false;
 }
 
 static AVInputFormat*
@@ -146,25 +157,25 @@ VideoCamera::open(const char* deviceName, AVDictionary* options)
   AVInputFormat* format = getInputFormat();
   if (format) {
     AVFormatContext *pFormatCtx = avformat_alloc_context();
-    if(avformat_open_input(&pFormatCtx, deviceName, format, &options) >= 0) {
-      if(avformat_find_stream_info(pFormatCtx, nullptr) >= 0) {
+    if (avformat_open_input(&pFormatCtx, deviceName, format, &options) >= 0) {
+      if (avformat_find_stream_info(pFormatCtx, nullptr) >= 0) {
         av_dump_format(pFormatCtx, 0, deviceName, 0);
 
         int videoStream = -1;
-        for(unsigned int i=0; i < pFormatCtx->nb_streams; i++)
+        for (unsigned int i=0; i < pFormatCtx->nb_streams; i++)
         {
-          if(pFormatCtx->streams[i]->codec->coder_type==AVMEDIA_TYPE_VIDEO)
+          if (pFormatCtx->streams[i]->codec->coder_type==AVMEDIA_TYPE_VIDEO)
           {
             videoStream = i;
             break;
           }
         }
-        if(videoStream != -1) {
-          AVCodecContext* pCodecCtx = pFormatCtx->streams[videoStream]->codec;
-          AVCodec* pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
-          if(pCodec) {
-            if(avcodec_open2(pCodecCtx,pCodec,nullptr) >= 0) {
-              VideoCamera* device = new VideoCamera(pFormatCtx, pCodec, videoStream);
+        if (videoStream != -1) {
+          AVCodecContext *pCodecCtx = pFormatCtx->streams[videoStream]->codec;
+          AVCodec *pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
+          if (pCodec) {
+            if (avcodec_open2(pCodecCtx, pCodec, nullptr) >= 0) {
+              VideoCamera* device = new VideoCamera(pFormatCtx, videoStream);
               return device;
             }
           }
@@ -178,17 +189,17 @@ VideoCamera::open(const char* deviceName, AVDictionary* options)
 
 template<typename Out>
 static void split(const std::string &s, char delim, Out result) {
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-        *(result++) = item;
-    }
+  std::stringstream ss(s);
+  std::string item;
+  while (std::getline(ss, item, delim)) {
+    *(result++) = item;
+  }
 }
 
 static std::vector<std::string> split(const std::string &s, char delim) {
-    std::vector<std::string> elems;
-    split(s, delim, std::back_inserter(elems));
-    return elems;
+  std::vector<std::string> elems;
+  split(s, delim, std::back_inserter(elems));
+  return elems;
 }
 
 VideoCamera*
