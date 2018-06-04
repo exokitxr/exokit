@@ -215,12 +215,12 @@ nativeVr.requestPresent = function(layers) {
       const system = nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
 
       const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2;
       renderWidth = halfWidth;
       renderHeight = height;
 
       nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-      const width = halfWidth * 2;
       const [msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 4, 0, 0);
       const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 1, 0, 0);
 
@@ -252,6 +252,9 @@ nativeVr.requestPresent = function(layers) {
       throw new Error('no HTMLCanvasElement source with WebGLRenderingContext provided')
     }
   } else {
+    const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
+    const width = halfWidth * 2;
+    
     return {
       width,
       height,
