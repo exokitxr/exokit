@@ -276,31 +276,29 @@
                console.log(`point ${points.length}: ${JSON.stringify(points[points.length - 1])}`);
 
                const _configureCamera = (camera, points) => {
-                 P = points[0]; // real-world camera position
-                 A = points[1]; // upper right corner
-                 B = points[2]; // lower left corner
-                 PA = A.clone().sub(P).normalize();
-                 PB = B.clone().sub(P).normalize();
-                 PMid = PA.clone().add(PB).divideScalar(2).normalize();
-                 Q = new THREE.Quaternion();
-                 Q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), PMid);
+                 const [P, A, B] = points;
+                 const PA = A.clone().sub(P).normalize();
+                 const PB = B.clone().sub(P).normalize();
+                 const PMid = PA.clone().add(PB).divideScalar(2).normalize();
+                 const Q = new THREE.Quaternion();
+                 const Q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), PMid);
 
-                 X = new THREE.Vector3(1, 0,  0); X.applyQuaternion(Q); // camera right
-                 Y = new THREE.Vector3(0, 1,  0); Y.applyQuaternion(Q); // camera up
-                 Z = new THREE.Vector3(0, 0, -1); Z.applyQuaternion(Q); // camera forward
+                 const X = new THREE.Vector3(1, 0,  0); X.applyQuaternion(Q); // camera right
+                 const Y = new THREE.Vector3(0, 1,  0); Y.applyQuaternion(Q); // camera up
+                 const Z = new THREE.Vector3(0, 0, -1); Z.applyQuaternion(Q); // camera forward
 
-                 aspect = video.width / video.height;
-                 fov = Math.acos(Y.dot(PA) / Z.dot(PA)) * 90 / Math.PI;
+                 const aspect = video.width / video.height;
+                 const fov = Math.acos(Y.dot(PA) / Z.dot(PA)) * 90 / Math.PI;
 
                  console.dir({P, A, B, PA, PB, X, Y, Z, aspect, fov, points})
-
-                 camera.aspect = aspect;
-                 camera.fov = fov;
-                 camera.updateProjectionMatrix();
 
                  camera.position.copy(P);
                  camera.quaternion.copy(Q);
                  camera.updateMatrixWorld();
+                 
+                 camera.aspect = aspect;
+                 camera.fov = fov;
+                 camera.updateProjectionMatrix();
                }
 
                if (points.length >= 3) {
