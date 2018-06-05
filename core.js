@@ -3777,15 +3777,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     }
   };
-  const _requestAnimationFrame = which => {
-    return fn => {
-      fn[windowSymbol] = window;
-      fn[whichSymbol] = which;
-      rafCbs.push(fn);
-      return fn;
-    };
+  const _makeRequestAnimationFrame = which => fn => {
+    fn[windowSymbol] = window;
+    fn[whichSymbol] = which;
+    rafCbs.push(fn);
+    return fn;
   }
-  window.requestAnimationFrame = _requestAnimationFrame('window');
+  window.requestAnimationFrame = _makeRequestAnimationFrame('window');
   window.cancelAnimationFrame = fn => {
     const index = rafCbs.indexOf(fn);
     if (index !== -1) {
@@ -3900,7 +3898,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     window.tickAnimationFrame = tickAnimationFrame;
 
     const _bindMRDisplay = display => {
-      display.onrequestanimationframe = _requestAnimationFrame('device');
+      display.onrequestanimationframe = _makeRequestAnimationFrame('device');
       display.oncancelanimationframe = window.cancelAnimationFrame;
       display.onvrdisplaypresentchange = () => {
         process.nextTick(() => {
@@ -3917,7 +3915,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     const xrDisplay = new XRDevice();
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    xrDisplay.onrequestanimationframe = _requestAnimationFrame('device');
+    xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame('device');
     xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
