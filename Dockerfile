@@ -9,7 +9,7 @@ ADD . /app
 WORKDIR /app
 
 RUN \
-  rm -Rf dump examples && \
+  rm -Rf dump && \
   wget "https://nodejs.org/dist/v10.3.0/node-v10.3.0-linux-x64.tar.gz" -O node.tar.gz && \
   tar -zxf node.tar.gz && \
   rm node.tar.gz && \
