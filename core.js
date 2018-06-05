@@ -3778,7 +3778,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     }
   };
-  const _makeRequestAnimationFrame = which => fn => {
+  const _makeRequestAnimationFrame = device => fn => {
     fn[windowSymbol] = window;
     fn[deviceSymbol] = device;
     rafCbs.push(fn);
