@@ -3334,9 +3334,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   })(HTMLImageElement);
   const HTMLAudioElementBound = (Old => class HTMLAudioElement extends Old {
     constructor() {
-      super(...arguments);
-
+      let [attrs, ...args] = [...arguments]
+      super(typeof attrs === 'string' ? [] : attrs, ...args);
       this.ownerDocument = window.document; // need to set owner document here because HTMLAudioElement can be manually constructed via new Audio()
+      if (typeof attrs === 'string') {
+        this.setAttribute('src', attrs);
+      }
     }
   })(HTMLAudioElement);
   function createImageBitmap(src, x, y, w, h, options) {
