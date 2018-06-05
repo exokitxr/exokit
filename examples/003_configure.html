@@ -282,7 +282,7 @@
                  const PB = B.clone().sub(P).normalize();
                  const PMid = PA.clone().add(PB).divideScalar(2).normalize();
                  const Q = new THREE.Quaternion();
-                 const Q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), PMid);
+                 Q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), PMid);
 
                  const X = new THREE.Vector3(1, 0,  0); X.applyQuaternion(Q); // camera right
                  const Y = new THREE.Vector3(0, 1,  0); Y.applyQuaternion(Q); // camera up
