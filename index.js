@@ -522,7 +522,7 @@ const _bindWindow = (window, newWindowCb) => {
     console.warn('got error', err);
   });
 
-  const _blit = (submit, swap, update) => {
+  const _blit = toDevice => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
 
@@ -530,28 +530,24 @@ const _bindWindow = (window, newWindowCb) => {
         const windowHandle = context.getWindowHandle();
 
         if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
-          if (vrPresentState.glContext === context) {
-            nativeWindow.setCurrentWindowContext(windowHandle);
+          if (toDevice) {
+            if (vrPresentState.glContext === context) {
+              nativeWindow.setCurrentWindowContext(windowHandle);
 
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
-            if (submit) {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
               vrPresentState.compositor.Submit(context, vrPresentState.tex);
-            }
 
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
-          } else if (mlGlContext === context) {
-            nativeWindow.setCurrentWindowContext(windowHandle);
+              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
+            } else if (mlGlContext === context) {
+              nativeWindow.setCurrentWindowContext(windowHandle);
 
-            if (submit) {
               mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
-            }
 
-            nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
-          }
-          if (swap) {
+              nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
+            }
+          } else {
             nativeWindow.swapBuffers(windowHandle);
-          }
-          if (update) {
+
             numDirtyFrames++;
             _checkDirtyFrameTimeout();
 
@@ -979,7 +975,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    _blit(true, false, false)
+    _blit(true)
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -995,7 +991,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    _blit(false, true, true)
+    _blit(false)
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
