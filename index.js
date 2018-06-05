@@ -975,7 +975,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    _blit(true)
+    _blit(true);
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -991,7 +991,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    _blit(false)
+    _blit(false);
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
