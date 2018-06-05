@@ -3297,7 +3297,7 @@ const tickAnimationFrame = device => {
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
       if (localRafCb[deviceSymbol] === device) {
-        if (localRafCb[windowSymbol].document.hidden) {
+        if (!localRafCb[windowSymbol].document.hidden) {
           _handleRaf(localRafCb);
         }
       }
