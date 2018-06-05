@@ -110,15 +110,6 @@
         directionalLight.position.set(1, 1, 1);
         scene.add(directionalLight);
 
-        const _makeBox = () => {
-          const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
-          const material = new THREE.MeshPhongMaterial({
-            color: 0xFF0000,
-          });
-          const mesh = new THREE.Mesh(geometry, material);
-          return mesh;
-        };
-
         points = [];
         controllerMeshes = [];
         const controllerMeshLoader = new THREE.OBJLoader();
