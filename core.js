@@ -39,6 +39,7 @@ const {
 } = require('vr-display')(THREE);
 
 const windowSymbol = Symbol();
+const whichSymbol = Symbol();
 const htmlTagsSymbol = Symbol();
 const optionsSymbol = Symbol();
 const elementSymbol = Symbol();
@@ -3267,11 +3268,14 @@ const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, c
 };
 
 let rafCbs = [];
-const tickAnimationFrame = () => {
+const tickAnimationFrame = which => {
   if (rafCbs.length > 0) {
     const localRafCbs = rafCbs.slice();
 
     const _handleRaf = localRafCb => {
+      if (which && !which(localRafCb[whichSymbol])) {
+        return;
+      }
       if (rafCbs.includes(localRafCb)) {
         localRafCb(now);
 
@@ -3779,11 +3783,15 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     }
   };
-  window.requestAnimationFrame = fn => {
-    fn[windowSymbol] = window;
-    rafCbs.push(fn);
-    return fn;
-  };
+  const _requestAnimationFrame = which => {
+    return fn => {
+      fn[windowSymbol] = window;
+      fn[whichSymbol] = which;
+      rafCbs.push(fn);
+      return fn;
+    };
+  }
+  window.requestAnimationFrame = _requestAnimationFrame('window');
   window.cancelAnimationFrame = fn => {
     const index = rafCbs.indexOf(fn);
     if (index !== -1) {
@@ -3898,7 +3906,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     window.tickAnimationFrame = tickAnimationFrame;
 
     const _bindMRDisplay = display => {
-      display.onrequestanimationframe = window.requestAnimationFrame;
+      display.onrequestanimationframe = _requestAnimationFrame('device');
       display.oncancelanimationframe = window.cancelAnimationFrame;
       display.onvrdisplaypresentchange = () => {
         process.nextTick(() => {
@@ -3915,7 +3923,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     const xrDisplay = new XRDevice();
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    xrDisplay.onrequestanimationframe = window.requestAnimationFrame;
+    xrDisplay.onrequestanimationframe = _requestAnimationFrame('device');
     xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
