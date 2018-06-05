@@ -50,6 +50,7 @@ matrix:
     before_install:
     - brew install glfw glew
     install:
+    - rm -Rf dump examples
     - npm install -g appdmg
     - curl "https://nodejs.org/dist/v10.3.0/node-v10.3.0-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
