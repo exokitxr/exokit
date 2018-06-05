@@ -3287,19 +3287,15 @@ const tickAnimationFrame = device => {
     // hidden rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      if (localRafCb[deviceSymbol] === device) {
-        if (localRafCb[windowSymbol].document.hidden) {
-          _handleRaf(localRafCb);
-        }
+      if (localRafCb[deviceSymbol] === device && localRafCb[windowSymbol].document.hidden) {
+        _handleRaf(localRafCb);
       }
     }
     // visible rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      if (localRafCb[deviceSymbol] === device) {
-        if (!localRafCb[windowSymbol].document.hidden) {
-          _handleRaf(localRafCb);
-        }
+      if (localRafCb[deviceSymbol] === device && !localRafCb[windowSymbol].document.hidden) {
+        _handleRaf(localRafCb);
       }
     }
   }
