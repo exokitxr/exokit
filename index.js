@@ -522,7 +522,7 @@ const _bindWindow = (window, newWindowCb) => {
     console.warn('got error', err);
   });
 
-  const _blit = ({submit, swap, update}) => {
+  const _blit = (submit, swap, update) => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
 
@@ -979,7 +979,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    _blit({submit: true})
+    _blit(true, false, false)
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -995,7 +995,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    _blit({swap: true, update: true})
+    _blit(false, true, true)
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
