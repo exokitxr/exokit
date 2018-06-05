@@ -23,6 +23,8 @@ test_script:
 
 after_test:
   - ps: |
+      rm -R -fo dump
+      rm -R -fo examples
       wget "https://nodejs.org/dist/v10.3.0/node-v10.3.0-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
