@@ -132,21 +132,6 @@
           scene.add(controllerMeshes[3]);
         });
 
-        if (localStorage.getItem('exokit.configure.points')) {
-          for (const p of JSON.parse(localStorage.getItem('exokit.configure.points'))) {
-            points.push(new THREE.Vector3(p.x,p.y,p.z));
-            if (points.length >= 3) {
-              break;
-            }
-          }
-
-          if (points.length >= 3) {
-            points.init = true;
-          } else {
-            points.length = 0;
-          }
-        }
-
         lastPresseds = [
           false,
           false,
@@ -280,17 +265,15 @@
 
              const lastPressed = lastPresseds[i];
              const pressed = Boolean(gamepad && gamepad.buttons[1].pressed);
-             if (!lastPressed && pressed || points.init) {
+             if (!lastPressed && pressed) {
                if (gamepad) {
                  for (let j = 0; j < gamepad.hapticActuators.length; j++) {
                    gamepad.hapticActuators[j].pulse(1, 100);
                  }
                }
 
-               if (!points.init) {
-                 points.push(controllerMesh.position.clone());
-                 console.log(`point ${points.length}: ${JSON.stringify(points[points.length - 1])}`);
-               }
+               points.push(controllerMesh.position.clone());
+               console.log(`point ${points.length}: ${JSON.stringify(points[points.length - 1])}`);
 
                const _configureCamera = (camera, points) => {
                  P = points[0]; // real-world camera position
@@ -321,7 +304,6 @@
                }
 
                if (points.length >= 3) {
-                 localStorage.setItem('exokit.configure.points', JSON.stringify(points));
                  _configureCamera(camera, points);
                  projectionMatrix.copy(camera.projectionMatrix);
                  matrixWorld.copy(camera.matrixWorldInverse);
@@ -332,7 +314,6 @@
                  console.log(`projectionMatrix: ${JSON.stringify(projectionMatrix.toArray())}`);
 
                  points.length = 0;
-                 points.init = false;
                }
              }
              lastPresseds[i] = pressed;
