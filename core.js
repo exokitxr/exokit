@@ -3333,12 +3333,15 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   })(HTMLImageElement);
   const HTMLAudioElementBound = (Old => class HTMLAudioElement extends Old {
-    constructor() {
-      let [attrs, ...args] = [...arguments]
-      super(typeof attrs === 'string' ? [] : attrs, ...args);
-      this.ownerDocument = window.document; // need to set owner document here because HTMLAudioElement can be manually constructed via new Audio()
-      if (typeof attrs === 'string') {
-        this.setAttribute('src', attrs);
+    constructor(src) {
+      if (typeof src === 'string') {
+        const audio = new HTMLAudioElementBound();
+        audio.setAttribute('src', src);
+        return audio;
+      } else {
+        super(...arguments);
+
+        this.ownerDocument = window.document; // need to set owner document here because HTMLAudioElement can be manually constructed via new Audio()
       }
     }
   })(HTMLAudioElement);
