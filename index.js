@@ -971,7 +971,7 @@ const _bindWindow = (window, newWindowCb) => {
         }
       }
     }
-    window.tickAnimationFrame(x => x === 'device');
+    window.tickAnimationFrame('device');
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -987,7 +987,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    window.tickAnimationFrame(x => x === 'window');
+    window.tickAnimationFrame('window');
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;

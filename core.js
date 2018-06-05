@@ -39,13 +39,13 @@ const {
 } = require('vr-display')(THREE);
 
 const windowSymbol = Symbol();
-const whichSymbol = Symbol();
 const htmlTagsSymbol = Symbol();
 const optionsSymbol = Symbol();
 const elementSymbol = Symbol();
 const computedStyleSymbol = Symbol();
 const disabledEventsSymbol = Symbol();
 const pointerLockElementSymbol = Symbol();
+const deviceSymbol = Symbol();
 const mrDisplaysSymbol = Symbol();
 let nativeBindings = false;
 let args = {};
@@ -3268,14 +3268,11 @@ const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, c
 };
 
 let rafCbs = [];
-const tickAnimationFrame = which => {
+const tickAnimationFrame = device => {
   if (rafCbs.length > 0) {
     const localRafCbs = rafCbs.slice();
 
     const _handleRaf = localRafCb => {
-      if (which && !which(localRafCb[whichSymbol])) {
-        return;
-      }
       if (rafCbs.includes(localRafCb)) {
         localRafCb(now);
 
@@ -3290,15 +3287,19 @@ const tickAnimationFrame = which => {
     // hidden rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      if (localRafCb[windowSymbol].document.hidden) {
-        _handleRaf(localRafCb);
+      if (localRafCb[deviceSymbol] === device) {
+        if (localRafCb[windowSymbol].document.hidden) {
+          _handleRaf(localRafCb);
+        }
       }
     }
     // visible rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      if (!localRafCb[windowSymbol].document.hidden) {
-        _handleRaf(localRafCb);
+      if (localRafCb[deviceSymbol] === device) {
+        if (localRafCb[windowSymbol].document.hidden) {
+          _handleRaf(localRafCb);
+        }
       }
     }
   }
@@ -3779,7 +3780,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   const _makeRequestAnimationFrame = which => fn => {
     fn[windowSymbol] = window;
-    fn[whichSymbol] = which;
+    fn[deviceSymbol] = device;
     rafCbs.push(fn);
     return fn;
   }
