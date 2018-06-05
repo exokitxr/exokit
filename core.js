@@ -3290,20 +3290,14 @@ const tickAnimationFrame = which => {
     // hidden rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      const window = localRafCb[windowSymbol];
-      const {document} = window;
-      const {hidden} = document;
-      if (hidden) {
+      if (localRafCb[windowSymbol].document.hidden) {
         _handleRaf(localRafCb);
       }
     }
     // visible rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      const window = localRafCb[windowSymbol];
-      const {document} = window;
-      const {hidden} = document;
-      if (!hidden) {
+      if (!localRafCb[windowSymbol].document.hidden) {
         _handleRaf(localRafCb);
       }
     }
