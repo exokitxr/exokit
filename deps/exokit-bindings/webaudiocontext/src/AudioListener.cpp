@@ -15,7 +15,9 @@ Handle<Object> AudioListener::Initialize(Isolate *isolate, Local<Value> fakeAudi
   ctor->SetClassName(JS_STR("AudioListener"));
 
   // prototype
-  // Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "setPosition", SetPosition);
+  Nan::SetMethod(proto, "setOrientation", SetOrientation);
 
   Local<Function> ctorFn = ctor->GetFunction();
   
