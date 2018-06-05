@@ -113,7 +113,7 @@
         points = [];
         controllerMeshes = [];
         const controllerMeshLoader = new THREE.OBJLoader();
-        controllerMeshLoader.setPath('vive-controller/');
+        controllerMeshLoader.setPath('https://cdn.rawgit.com/mrdoob/three.js/r93/examples/models/obj/vive-controller/');
         controllerMeshLoader.load('vr_controller_vive_1_5.obj', object => {
           const textureLoader = new THREE.TextureLoader();
           textureLoader.setPath('vive-controller/');
