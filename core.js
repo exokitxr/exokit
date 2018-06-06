@@ -1749,6 +1749,11 @@ class Element extends Node {
       throw new Error('The node to be removed is not a child of this node.');
     }
   }
+  remove() {
+    if (this.parentNode !== null) {
+      this.parentNode.removeChild(this);
+    }
+  }
   replaceChild(newChild, oldChild) {
     const index = this.childNodes.indexOf(oldChild);
     if (index !== -1) {
