@@ -4128,7 +4128,7 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
     document.dispatchEvent(new Event('readystatechange', {target: document}));
 
     document.dispatchEvent(new Event('load', {target: document}));
-    window.dispatchEvent(new Event('load', {target: document}));
+    window.dispatchEvent(new Event('load', {target: window}));
   });
 
   return document;
