@@ -4098,9 +4098,19 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
 
   process.nextTick(async () => {
     document.readyState = 'complete';
+    const bodyChildNodes = body.childNodes;
+    body.childNodes = [];
 
     try {
-      await _runHtml(document, window);
+      await _runHtml(document.head, window);
+    } catch(err) {
+      console.warn(err);
+    }
+
+    body.childNodes = bodyChildNodes;
+
+    try {
+      await _runHtml(document.body, window);
     } catch(err) {
       console.warn(err);
     }
