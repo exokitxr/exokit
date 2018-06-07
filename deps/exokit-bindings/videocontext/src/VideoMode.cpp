@@ -1,6 +1,9 @@
 #include <VideoMode.h>
 #include <VideoCamera.h>
 
+#include <algorithm>
+#include <iterator>
+
 namespace ffmpeg {
 
 template<typename Out>
