@@ -295,10 +295,6 @@ class CustomEvent extends Event {
   constructor(type, init = {}) {
     super(type, init);
 
-    this.init(init);
-  }
-
-  init(init = {}) {
     this.detail = init.detail !== undefined ? init.detail : null;
   }
 }
