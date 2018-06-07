@@ -155,7 +155,9 @@ class History extends EventEmitter {
 class Event {
   constructor(type, init = {}) {
     this.type = type;
-    this.target = init.target ? init.target : null;
+    this.target = init.target !== undefined ? init.target : null;
+    this.bubbles = init.bubbles !== undefined ? init.bubbles : false;
+    this.cancelable = init.cancelable !== undefined ? init.cancelable : false;
 
     this.defaultPrevented = false;
     this.propagationStopped = false;
