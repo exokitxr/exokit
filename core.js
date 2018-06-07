@@ -4449,16 +4449,23 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     set data(data) {}
 
     play() {
-      const _getDevice = (facingMode) => {
+      const _getDevice = facingMode => {
         const devices = Video.getDevices();
-        return devices[({user: 0, environment: 1, left: 2, right: 3})[facingMode] || 0]
+        switch (facingMode) {
+          case 'user': return devices[0];
+          case 'environment': return devices[1];
+          case 'left': return devices[2];
+          case 'right': return devices[3];
+          default: return devices[0];
+        }
       }
-      const _getName = (facingMode) => {
-        return (process.platform === 'darwin' ? '' : 'video=') + _getDevice(facingMode).name
-      }
-      const _getOptions = (facingMode) => {
-        if (process.platform === 'darwin')
-          return "framerate="+_getDevice(facingMode).modes[0].fps;
+      const _getName = facingMode => (process.platform === 'darwin' ? '' : 'video=') + _getDevice(facingMode).name;
+      const _getOptions = facingMode => {
+        if (process.platform === 'darwin') {
+          return 'framerate='+_getDevice(facingMode).modes[0].fps;
+        } else {
+          return null;
+        }
       }
       if (this.video) {
         this.video.close();
