@@ -4451,11 +4451,21 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     play() {
       const _getDevice = (facingMode) => {
         const devices = Video.getDevices();
-        return "video="+devices[({user: 0, environment: 1, left: 2, right: 3})[facingMode] || 0].name;
+        return devices[({user: 0, environment: 1, left: 2, right: 3})[facingMode] || 0]
+      }
+      const _getName = (facingMode) => {
+        return (process.platform === 'darwin' ? '' : 'video=') + _getDevice(facingMode).name
+      }
+      const _getOptions = (facingMode) => {
+        if (process.platform === 'darwin')
+          return "framerate="+_getDevice(facingMode).modes[0].fps;
       }
       if (this.video) {
         this.video.close();
-        this.video.open(_getDevice(this.video.constraints.facingMode));
+        this.video.open(
+          _getName(this.video.constraints.facingMode),
+          _getOptions(this.video.constraints.facingMode)
+        );
       }
     }
     pause() {
