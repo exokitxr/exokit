@@ -601,14 +601,13 @@ NAN_METHOD(VideoDevice::Open) {
     VideoMode::close(video->dev);
     video->dev = nullptr;
   }
-  if (info.Length() < 1) {
+  if (info[0]->IsString()) {
     Nan::ThrowError("VideoDevice.Open: pass in a device name");
   } else {
     Nan::Utf8String nameStr(info[0]);
     std::string name(*nameStr, nameStr.length());
     std::string opts;
-    if (info.Length() >= 2)
-    {
+    if (info[1]->IsString()) {
       Nan::Utf8String optsStr(info[1]);
       opts = std::string(*optsStr, optsStr.length());
     }
