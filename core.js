@@ -170,8 +170,10 @@ class Event {
     this.propagationStopped = true;
   }
 
-  initEvent(type, bubbles, cancelable) {
+  initEvent(type = '', bubbles = false, cancelable = false) {
     this.type = type;
+    this.bubbles = bubbles;
+    this.cancelable = cancelable;
   }
 }
 class KeyboardEvent extends Event {
