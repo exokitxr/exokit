@@ -4023,7 +4023,7 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
   const body = html ? html.childNodes.find(el => el.tagName === 'BODY') : null;
 
   document.documentElement = documentElement;
-  document.readyState = null;
+  document.readyState = 'loading';
   document.head = head;
   document.body = body;
   document.location = window.location;
@@ -4097,7 +4097,6 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
   }
 
   process.nextTick(async () => {
-    document.readyState = 'complete';
     const bodyChildNodes = body.childNodes;
     body.childNodes = [];
 
@@ -4115,7 +4114,14 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
       console.warn(err);
     }
 
+    document.readyState = 'interactive';
     document.dispatchEvent(new Event('readystatechange', {target: document}));
+    
+    document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
+    
+    document.readyState = 'complete';
+    document.dispatchEvent(new Event('readystatechange', {target: document}));
+
     document.dispatchEvent(new Event('load', {target: document}));
     window.dispatchEvent(new Event('load', {target: document}));
   });
