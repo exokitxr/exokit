@@ -1920,10 +1920,6 @@ class Element extends Node {
       }
     };
     _recurse(this, event);
-
-    if (this.ownerDocument) {
-      _emit(this.ownerDocument.defaultView, event);
-    }
   }
 
   getBoundingClientRect() {
