@@ -1455,43 +1455,27 @@ const _makeAttributesProxy = el => new Proxy(el.attrs, {
 });
 const _makeChildrenProxy = el => {
   const {HTMLElement} = el.ownerDocument.defaultView;
-  const _getChildren = childNodes => childNodes.filter(childNode => childNode instanceof HTMLElement);
 
-  return new Proxy(el.childNodes, {
-    get(target, prop) {
-      const propN = parseIntStrict(prop);
-      if (propN !== undefined) {
-        return _getChildren(target)[propN];
-      } else if (prop === 'length') {
-        return _getChildren(target).length;
-      } else if (prop === 'item') {
-        return i => {
-          if (typeof i === 'number') {
-            return _getChildren(target)[i];
-          } else {
-            return undefined;
-          }
-        };
-      } else {
-        return undefined;
+  const result = [];
+  result.item = i => {
+    if (typeof i === 'number') {
+      return result[i];
+    } else {
+      return undefined;
+    }
+  };
+  result.update = () => {
+    result.length = 0;
+
+    for (let i = 0; i < el.childNodes.length; i++) {
+      const childNode = el.childNodes[i];
+      if (childNode instanceof HTMLElement) {
+        result.push(childNode);
       }
-    },
-    set(target, prop, value) {
-      return true;
-    },
-    deleteProperty(target, prop) {
-      return true;
-    },
-    has(target, prop) {
-      if (typeof prop === 'number') {
-        return _getChildren(target)[prop] !== undefined;
-      } else if (prop === 'length' || prop === 'item') {
-        return true;
-      } else {
-        return false;
-      }
-    },
-  });
+    }
+  };
+  result.update();
+  return result;
 };
 const _makeHtmlCollectionProxy = (el, query) => new Proxy(el, {
   get(target, prop) {
@@ -1735,6 +1719,10 @@ class Element extends Node {
     this.childNodes.push(childNode);
     childNode.parentNode = this;
 
+    if (this._children) {
+      this._children.update();
+    }
+
     this._emit('children', [childNode], [], this.childNodes[this.childNodes.length - 2] || null, null);
     this.ownerDocument._emit('domchange');
 
@@ -1745,6 +1733,10 @@ class Element extends Node {
     if (index !== -1) {
       this.childNodes.splice(index, 1);
       childNode.parentNode = null;
+
+      if (this._children) {
+        this._children.update();
+      }
 
       this._emit('children', [], [childNode], this.childNodes[index - 1] || null, this.childNodes[index] || null);
       this.ownerDocument._emit('domchange');
@@ -1765,6 +1757,10 @@ class Element extends Node {
       this.childNodes.splice(index, 1, newChild);
       oldChild.parentNode = null;
 
+      if (this._children) {
+        this._children.update();
+      }
+
       this._emit('children', [], [oldChild], this.childNodes[index - 1] || null, this.childNodes[index] || null);
       this.ownerDocument._emit('domchange');
 
@@ -1779,6 +1775,10 @@ class Element extends Node {
       this.childNodes.splice(index, 0, childNode);
       childNode.parentNode = this;
 
+      if (this._children) {
+        this._children.update();
+      }
+
       this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
       this.ownerDocument._emit('domchange');
     }
@@ -1788,6 +1788,10 @@ class Element extends Node {
     if (index !== -1) {
       this.childNodes.splice(index + 1, 0, childNode);
       childNode.parentNode = this;
+
+      if (this._children) {
+        this._children.update();
+      }
 
       this._emit('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
       this.ownerDocument._emit('domchange');
@@ -2015,6 +2019,10 @@ class Element extends Node {
       locationInfo: true,
     }).childNodes.map(childNode => _fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true));
     this.childNodes = newChildNodes;
+
+    if (this._children) {
+      this._children.update();
+    }
 
     if (oldChildNodes.length > 0) {
       this._emit('children', [], oldChildNodes, null, null);
