@@ -120,13 +120,14 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       process.nextTick(() => { // show/hide synchronously emits events
         const {hidden} = canvas.ownerDocument;
         if (!hidden) {
-          const visible = canvas.ownerDocument.documentElement.contains(canvas);
-          if (visible && !hidden) {
-            if (!nativeWindow.isVisible(windowHandle)) {
+          const domVisible = canvas.ownerDocument.documentElement.contains(canvas);
+          const windowVisible = nativeWindow.isVisible(windowHandle);
+          if (domVisible && !hidden) {
+            if (!windowVisible) {
               nativeWindow.show(windowHandle);
             }
           } else {
-            if (nativeWindow.isVisible(windowHandle)) {
+            if (windowVisible) {
               nativeWindow.hide(windowHandle);
             }
           }
