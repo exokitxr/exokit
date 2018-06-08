@@ -122,9 +122,13 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         if (!hidden) {
           const visible = canvas.ownerDocument.documentElement.contains(canvas);
           if (visible && !hidden) {
-            nativeWindow.show(windowHandle);
+            if (!nativeWindow.isVisible(windowHandle)) {
+              nativeWindow.show(windowHandle);
+            }
           } else {
-            nativeWindow.hide(windowHandle);
+            if (nativeWindow.isVisible(windowHandle)) {
+              nativeWindow.hide(windowHandle);
+            }
           }
         }
       });
