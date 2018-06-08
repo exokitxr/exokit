@@ -4129,9 +4129,9 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
 
     document.readyState = 'interactive';
     document.dispatchEvent(new Event('readystatechange', {target: document}));
-    
+
     document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
-    
+
     document.readyState = 'complete';
     document.dispatchEvent(new Event('readystatechange', {target: document}));
 
