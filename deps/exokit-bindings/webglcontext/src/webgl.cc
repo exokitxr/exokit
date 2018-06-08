@@ -1529,7 +1529,7 @@ NAN_METHOD(WebGLRenderingContext::BindTexture) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
   GLenum target = info[0]->Int32Value();
-  GLuint texture = info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLuint texture = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
 
   glBindTexture(target, texture);
 
