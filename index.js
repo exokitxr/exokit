@@ -957,7 +957,7 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
-    if ((numFrames % FPS) === 0) {
+    if (window.document.readyState === 'complete' && (numFrames % FPS) === 0) {
       const displays = window.navigator.getVRDisplaysSync();
       if (!displays.some(display => display.isPresenting)) {
         for (let i = 0; i < displays.length; i++) {
