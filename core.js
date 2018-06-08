@@ -362,15 +362,17 @@ class MutationObserver {
   unbind(el) {
     el.traverse(el => {
       const bindings = this.bindings.get(el);
-      const [
-        _attribute,
-        _children,
-        _value,
-      ] = bindings;
-      el.removeListener('attribute', _attribute);
-      el.removeListener('children', _children);
-      el.removeListener('value', _value);
-      this.bindings.delete(el);
+      if (bindings) {
+        const [
+          _attribute,
+          _children,
+          _value,
+        ] = bindings;
+        el.removeListener('attribute', _attribute);
+        el.removeListener('children', _children);
+        el.removeListener('value', _value);
+        this.bindings.delete(el);
+      }
     });
   }
 
