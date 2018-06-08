@@ -3363,7 +3363,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       image = src.image;
     } else if (src.constructor.name === 'Blob') {
       image = new Image();
-      // console.log('load blob', src.buffer.byteLength);
       try {
         image.load(src.buffer);
       } catch (err) {
