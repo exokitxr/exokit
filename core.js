@@ -1,4 +1,3 @@
-Error.stackTraceLimit = 40;
 const events = require('events');
 const {EventEmitter} = events;
 const stream = require('stream');
