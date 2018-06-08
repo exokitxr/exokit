@@ -3839,7 +3839,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return window[disabledEventsSymbol]['load'] !== undefined ? window[disabledEventsSymbol]['load'] : _elementGetter(window, 'load');
     },
     set(onload) {
-      if (vmOne.isCompiling()) {
+      if (nativeVm.isCompiling()) {
         this[disabledEventsSymbol]['load'] = onload;
       } else {
         if (window[disabledEventsSymbol]['load'] !== undefined) {
@@ -3855,7 +3855,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return window[disabledEventsSymbol]['error'] !== undefined ? window[disabledEventsSymbol]['error'] : _elementGetter(window, 'error');
     },
     set(onerror) {
-      if (vmOne.isCompiling()) {
+      if (nativeVm.isCompiling()) {
         window[disabledEventsSymbol]['error'] = onerror;
       } else {
         if (window[disabledEventsSymbol]['error'] !== undefined) {
