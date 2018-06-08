@@ -1913,7 +1913,7 @@ class Element extends Node {
     const _recurse = (node, event) => {
       _emit(node, event);
 
-      if (!event.propagationStopped && node.parentNode) {
+      if (event.bubbles && !event.propagationStopped && node.parentNode) {
         _recurse(node.parentNode, event);
       }
     };
