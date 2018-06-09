@@ -259,7 +259,7 @@ nativeVr.requestPresent = function(layers) {
   } else {
     const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
     const width = halfWidth * 2;
-    
+
     return {
       width,
       height,
