@@ -4121,7 +4121,7 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
     }
 
     body.childNodes = bodyChildNodes;
-    
+
     document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
 
     try {
