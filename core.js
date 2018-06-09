@@ -152,6 +152,45 @@ class History extends EventEmitter {
   set state(state) {}
 }
 
+class EventTarget extends EventEmitter {
+  addEventListener(event, listener) {
+    if (typeof listener === 'function') {
+      this.on(event, listener);
+    }
+  }
+  removeEventListener(event, listener) {
+    if (typeof listener === 'function') {
+      this.removeListener(event, listener);
+    }
+  }
+
+  dispatchEvent(event) {
+    event.target = this;
+
+    const _emit = (node, event) => {
+      event.currentTarget = this;
+      node._emit(event.type, event);
+      event.currentTarget = null;
+    };
+    const _recurse = (node, event) => {
+      _emit(node, event);
+
+      if (event.bubbles && node instanceof Document) {
+        _emit(node.defaultView, event);
+      }
+
+      if (event.bubbles && !event.propagationStopped && node.parentNode) {
+        _recurse(node.parentNode, event);
+      }
+    };
+    _recurse(this, event);
+  }
+
+  _emit() { // need to call this instead of EventEmitter.prototype.emit because some frameworks override HTMLElement.prototype.emit()
+    return EventEmitter.prototype.emit.apply(this, arguments);
+  }
+}
+
 class Event {
   constructor(type, init = {}) {
     this.type = type;
@@ -672,7 +711,7 @@ class XRDevice {
     }
   }
 }
-class XRSession extends EventEmitter {
+class XRSession extends EventTarget {
   constructor({device = null, exclusive = false, outputContext} = {}) {
     super();
 
@@ -692,16 +731,6 @@ class XRSession extends EventEmitter {
     ];
     this._lastPresseds = [false, false];
     this._rafs = [];
-  }
-  addEventListener(event, listener) {
-    if (typeof listener === 'function') {
-      this.on(event, listener);
-    }
-  }
-  removeEventListener(event, listener) {
-    if (typeof listener === 'function') {
-      this.removeListener(event, listener);
-    }
   }
   requestFrameOfReference(type, options = {}) {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
@@ -1294,7 +1323,7 @@ class DOMRect {
   }
 }
 
-class Node extends EventEmitter {
+class Node extends EventTarget {
   constructor() {
     super();
 
@@ -1392,10 +1421,6 @@ class Node extends EventEmitter {
       el.childNodes = this.childNodes.map(childNode => childNode.cloneNode(true));
     }
     return el;
-  }
-
-  _emit() { // need to call this instead of EventEmitter.prototype.emit because some frameworks override HTMLElement.prototype.emit()
-    return EventEmitter.prototype.emit.apply(this, arguments);
   }
 }
 Node.ELEMENT_NODE = 1;
@@ -1910,27 +1935,7 @@ class Element extends Node {
     return selector.matches(this, s);
   }
 
-  dispatchEvent(event) {
-    event.target = this;
 
-    const _emit = (node, event) => {
-      event.currentTarget = this;
-      node._emit(event.type, event);
-      event.currentTarget = null;
-    };
-    const _recurse = (node, event) => {
-      _emit(node, event);
-      
-      if (event.bubbles && node instanceof Document) {
-        _emit(node.defaultView, event);
-      }
-
-      if (event.bubbles && !event.propagationStopped && node.parentNode) {
-        _recurse(node.parentNode, event);
-      }
-    };
-    _recurse(this, event);
-  }
 
   getBoundingClientRect() {
     return new DOMRect();
@@ -1957,17 +1962,6 @@ class Element extends Node {
 
   click() {
     this.dispatchEvent(new MouseEvent('click'));
-  }
-
-  addEventListener(event, listener) {
-    if (typeof listener === 'function') {
-      this.on(event, listener);
-    }
-  }
-  removeEventListener(event, listener) {
-    if (typeof listener === 'function') {
-      this.removeListener(event, listener);
-    }
   }
 
   get clientWidth() {
