@@ -964,12 +964,17 @@ const _bindWindow = (window, newWindowCb) => {
     }
     if (window.document.readyState === 'complete' && (numFrames % FPS) === 0) {
       const displays = window.navigator.getVRDisplaysSync();
-      if (!displays.some(display => display.isPresenting)) {
+      const presentingDisplay = displays.find(display => display.isPresenting);
+      if (!presentingDisplay) {
         for (let i = 0; i < displays.length; i++) {
           const e = new window.Event('vrdisplayactivate');
           e.display = displays[i];
           window.dispatchEvent(e);
         }
+      } else {
+        const e = new window.Event('vrdisplaycheck');
+        e.display = presentingDisplay;
+        window.dispatchEvent(e);
       }
     }
     window.tickAnimationFrame('device');
