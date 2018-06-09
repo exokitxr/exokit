@@ -180,6 +180,8 @@ class Event {
 }
 class KeyboardEvent extends Event {
   constructor(type, init = {}) {
+    init.bubbles = true;
+    init.cancelable = true;
     super(type, init);
 
     KeyboardEvent.prototype.init.call(this, init);
@@ -220,7 +222,9 @@ class KeyboardEvent extends Event {
 }
 class MouseEvent extends Event {
   constructor(type, init = {}) {
-    super(type);
+    init.bubbles = true;
+    init.cancelable = true;
+    super(type, init);
 
     MouseEvent.prototype.init.call(this, init);
   }
@@ -262,6 +266,8 @@ class MouseEvent extends Event {
 }
 class WheelEvent extends MouseEvent {
   constructor(type, init = {}) {
+    init.bubbles = true;
+    init.cancelable = true;
     super(type, init);
 
     this.deltaX = init.deltaX !== undefined ? init.deltaX : 0;
