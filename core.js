@@ -3621,14 +3621,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       },
     },
     getVRDisplaysSync() {
-      const result = [];
+      const result = fakeVrDisplays.slice();
       if (nativeMl && nativeMl.IsPresent()) {
         result.push(_getMlDisplay(window));
       }
       if (nativeVr.VR_IsHmdPresent()) {
         result.push(_getVrDisplay(window));
       }
-      result.push.apply(result, fakeVrDisplays);
       return result;
     },
     getVRDisplays() {
