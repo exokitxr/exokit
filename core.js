@@ -2944,12 +2944,11 @@ class HTMLIframeElement extends HTMLSrcableElement {
                 parentWindow.emit('destroy', e);
               });
 
-              contentDocument.once('readystatechange', () => {
-                this.dispatchEvent(new Event('load', {target: this}));
-              });
               contentDocument.on('framebuffer', framebuffer => {
                 this._emit('framebuffer', framebuffer);
               });
+
+              this.dispatchEvent(new Event('load', {target: this}));
             }
           })
           .catch(err => {
