@@ -1920,6 +1920,10 @@ class Element extends Node {
     };
     const _recurse = (node, event) => {
       _emit(node, event);
+      
+      if (event.bubbles && node instanceof Document) {
+        _emit(node.defaultView, event);
+      }
 
       if (event.bubbles && !event.propagationStopped && node.parentNode) {
         _recurse(node.parentNode, event);
