@@ -191,6 +191,71 @@ class EventTarget extends EventEmitter {
   }
 }
 
+class Resource extends EventEmitter {
+  constructor(value = 0.5, total = 1) {
+    super();
+
+    this.value = value;
+    this.total = total;
+  }
+
+  setProgress(value) {
+    this.value = value;
+
+    this.emit('update');
+  }
+}
+class Resources extends EventTarget {
+  constructor() {
+    super();
+    this.resources = [];
+  }
+
+  getValue() {
+    let value = 0;
+    for (let i = 0; i < this.resources.length; i++) {
+      value += this.resources[i].value;
+    }
+    return value;
+  }
+  getTotal() {
+    let total = 0;
+    for (let i = 0; i < this.resources.length; i++) {
+      total += this.resources[i].total;
+    }
+    return total;
+  }
+  getProgress() {
+    let value = 0;
+    let total = 0;
+    for (let i = 0; i < this.resources.length; i++) {
+      const resource = this.resources[i];
+      value += resource.value;
+      total += resource.total;
+    }
+    return total > 0 ? (value / total) : 1;
+  }
+
+  addResource() {
+    const resource = new Resource();
+    resource.on('update', () => {
+      if (resource.value >= resource.total) {
+        this.resources.splice(this.resources.indexOf(resource), 1);
+      }
+
+      const e = new Event('update');
+      e.value = this.getValue();
+      e.total = this.getTotal();
+      e.progress = this.getProgress();
+      this.dispatchEvent(e);
+    });
+
+    this.resources.push(resource);
+
+    return resource;
+  }
+}
+
 class Event {
   constructor(type, init = {}) {
     this.type = type;
@@ -2525,6 +2590,8 @@ class HTMLScriptElement extends HTMLLoadableElement {
       if (name === 'src' && this.isRunnable()) {
         this.readyState = null;
 
+        const resource = this.ownerDocument.resources.addResource();
+
         const url = value;
         this.ownerDocument.defaultView.fetch(url)
           .then(res => {
@@ -2545,6 +2612,9 @@ class HTMLScriptElement extends HTMLLoadableElement {
             this.readyState = 'complete';
 
             this.dispatchEvent(new Event('error', {target: this}));
+          })
+          .finally(() => {
+            resource.setProgress(1);
           });
       }
     });
@@ -2555,8 +2625,12 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
         this.readyState = 'complete';
 
+        const resource = this.ownerDocument.resources.addResource();
+
         process.nextTick(() => {
           this.dispatchEvent(new Event('load', {target: this}));
+
+          resource.setProgress(1);
         });
       }
     });
@@ -2836,6 +2910,9 @@ class HTMLIframeElement extends HTMLSrcableElement {
         if (match) {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
+
+        const resource = this.ownerDocument.resources.addResource();
+
         this.ownerDocument.defaultView.fetch(url)
           .then(res => {
             if (res.status >= 200 && res.status < 300) {
@@ -2877,6 +2954,9 @@ class HTMLIframeElement extends HTMLSrcableElement {
           })
           .catch(err => {
             this._emit('error', err);
+          })
+          .finally(() => {
+            resource.setProgress(1);
           });
       } else if (name === 'hidden') {
         if (this.contentDocument) {
@@ -4076,6 +4156,7 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
   document.scripts = _makeHtmlCollectionProxy(document.documentElement, 'script');
   document.styleSheets = [];
   document.implementation = new DOMImplementation(window);
+  document.resources = new Resources(); // non-standard
   document.activeElement = body;
   document.open = () => {
     document.innerHTML = '';
@@ -4255,6 +4336,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
         if (name === 'src') {
           const src = value;
 
+          const resource = this.ownerDocument.resources.addResource();
+
           this.ownerDocument.defaultView.fetch(src)
             .then(res => {
               if (res.status >= 200 && res.status < 300) {
@@ -4275,6 +4358,9 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
             })
             .catch(err => {
               this.dispatchEvent(new Event('error', {target: this}));
+            })
+            .finally(() => {
+              resource.setProgress(1);
             });
         }
       });
@@ -4349,6 +4435,9 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
       this.on('attribute', (name, value) => {
         if (name === 'src') {
           const src = value;
+
+          const resource = this.ownerDocument.resources.addResource();
+
           this.ownerDocument.defaultView.fetch(src)
             .then(res => {
               if (res.status >= 200 && res.status < 300) {
@@ -4371,6 +4460,9 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
             })
             .catch(err => {
               this._emit('error', err);
+            })
+            .finally(() => {
+              resource.setProgress(1);
             });
         }
       });
@@ -4445,9 +4537,13 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
             }
           }
 
+          const resource = this.ownerDocument.resources.addResource();
+
           process.nextTick(() => { // XXX
             this.dispatchEvent(new Event('canplay', {target: this}));
             this.dispatchEvent(new Event('canplaythrough', {target: this}));
+
+            resource.setProgress(1);
           });
         }
       });
