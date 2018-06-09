@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.297",
+  "version": "0.0.298",
   "description": "Javascript web browser for the post-screen world",
   "engines": {
     "node": ">=10.0.0"
