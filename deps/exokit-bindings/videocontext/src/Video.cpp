@@ -601,7 +601,7 @@ NAN_METHOD(VideoDevice::Open) {
     VideoMode::close(video->dev);
     video->dev = nullptr;
   }
-  if (info[0]->IsString()) {
+  if (!info[0]->IsString()) {
     Nan::ThrowError("VideoDevice.Open: pass in a device name");
   } else {
     Nan::Utf8String nameStr(info[0]);
