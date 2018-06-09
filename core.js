@@ -2961,7 +2961,7 @@ class HTMLIframeElement extends HTMLSrcableElement {
             }
           })
           .catch(err => {
-            this._emit('error', err);
+            this.dispatchEvent(new Event('load', {target: this}));
           })
           .finally(() => {
             resource.setProgress(1);
