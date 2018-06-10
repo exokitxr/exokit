@@ -527,35 +527,37 @@ const _bindWindow = (window, newWindowCb) => {
     console.warn('got error', err);
   });
 
-  const _blit = () => {
+  const _blit = toDevice => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
 
       if (context.isDirty()) {
         const windowHandle = context.getWindowHandle();
+        nativeWindow.setCurrentWindowContext(windowHandle);
 
-        if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
-          if (vrPresentState.glContext === context) {
-            nativeWindow.setCurrentWindowContext(windowHandle);
-
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
-            vrPresentState.compositor.Submit(context, vrPresentState.tex);
-
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
-          } else if (mlGlContext === context) {
-            nativeWindow.setCurrentWindowContext(windowHandle);
-
-            mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
-
-            nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
+        if (toDevice) {
+          if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
+            if (vrPresentState.glContext === context) {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
+              vrPresentState.compositor.Submit(context, vrPresentState.tex);
+            } else if (mlGlContext === context) {
+              mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
+            }
           }
-          
-          nativeWindow.swapBuffers(windowHandle);
 
           numDirtyFrames++;
           _checkDirtyFrameTimeout();
 
           context.clearDirty();
+        } else {
+          if (vrPresentState.fbo) {
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
+          }
+          if (mlFbo) {
+            nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
+          }
+          nativeWindow.swapBuffers(windowHandle);
         }
       }
     }
@@ -975,25 +977,48 @@ const _bindWindow = (window, newWindowCb) => {
         }
       }
     }
+    window.requestAnimationFrame(
+      () => {
+        if (args.performance) {
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.user += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
+        }
+        _blit(true);
+        if (args.performance) {
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.submit += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
+        }
+      },
+      1);
+    window.requestAnimationFrame(
+      () => {
+        if (args.performance) {
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.user += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
+        }
+        _blit(false);
+        if (args.performance) {
+          const now = Date.now();
+          const diff = now - timestamps.last;
+          timestamps.submit += diff;
+          timestamps.total += diff;
+          timestamps.last = now;
+        }
+        if (args.frame || args.minimalFrame) {
+          console.log('-'.repeat(80) + 'end frame');
+        }
+      },
+      3);
     window.tickAnimationFrame();
-    if (args.performance) {
-      const now = Date.now();
-      const diff = now - timestamps.last;
-      timestamps.user += diff;
-      timestamps.total += diff;
-      timestamps.last = now;
-    }
-    _blit();
-    if (args.performance) {
-      const now = Date.now();
-      const diff = now - timestamps.last;
-      timestamps.submit += diff;
-      timestamps.total += diff;
-      timestamps.last = now;
-    }
-    if (args.frame || args.minimalFrame) {
-      console.log('-'.repeat(80) + 'end frame');
-    }
     numFrames++;
 
     // wait for next frame

@@ -3409,11 +3409,11 @@ const tickAnimationFrame = () => {
   }
 };
 
-const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
+const _makeRequestAnimationFrame = (window, prio = 0) => (fn, priority = prio) => {
   fn[windowSymbol] = window;
   fn[prioritySymbol] = priority;
   rafCbs.push(fn);
-  rafCbs.sort((a, b) => b[prioritySymbol] - a[prioritySymbol]);
+  rafCbs.sort((a, b) => a[prioritySymbol] - b[prioritySymbol]);
   return fn;
 };
 const _getFakeVrDisplay = window => window[mrDisplaysSymbol].fakeVrDisplay;
@@ -3913,7 +3913,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     }
   };
-  window.requestAnimationFrame = _makeRequestAnimationFrame(window);
+  window.requestAnimationFrame = _makeRequestAnimationFrame(window, 2);
   window.cancelAnimationFrame = fn => {
     const index = rafCbs.indexOf(fn);
     if (index !== -1) {
