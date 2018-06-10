@@ -4526,6 +4526,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   const {nativeVideo} = bindings;
   Video = nativeVideo.Video;
   VideoDevice = nativeVideo.VideoDevice;
+  // Video.getDevices fails after opening a webcam, so in order to
+  // open multiple webcams we need to call this once on startup.
   const devices = Video.getDevices();
   HTMLVideoElement = class extends HTMLMediaElement {
     constructor(attrs = [], value = '', location = null) {
