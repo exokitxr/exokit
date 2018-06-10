@@ -3662,6 +3662,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       if (nativeVr.VR_IsHmdPresent()) {
         result.push(_getVrDisplay(window));
       }
+      result.sort((a, b) => +b.isPresenting - +a.isPresenting);
       return result;
     },
     getVRDisplays() {
