@@ -3427,11 +3427,9 @@ const _cloneMrDisplays = function(window) {
   for (const k in this) {
     const mrDisplay = this[k];
     
-    if (mrDisplay.clone) {
+    if (mrDisplay instanceof FakeVRDisplay) {
       const mrDisplayClone = mrDisplay.clone();
-      if (mrDisplayClone.onrequestanimationframe) {
-        mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
-      }
+      mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
       result[k] = mrDisplayClone;
     } else {
       result[k] = mrDisplay;
