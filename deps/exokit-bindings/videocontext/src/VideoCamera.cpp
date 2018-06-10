@@ -9,7 +9,7 @@ extern "C" {
 
 namespace ffmpeg {
 
-AVPixelFormat normalizeFormat(AVPixelFormat pixFormat) {
+static AVPixelFormat normalizeFormat(AVPixelFormat pixFormat) {
   switch (pixFormat) {
     case AV_PIX_FMT_YUVJ420P :
       pixFormat = AV_PIX_FMT_YUV420P;
@@ -48,6 +48,7 @@ VideoCamera::VideoCamera(AVFormatContext *pFormatCtx, int videoStream)
     AVPacket packet;
 
     while (*pLive) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
       int frameFinished = 0;
       if (av_read_frame(pFormatCtx, &packet) >= 0) {
         if (packet.stream_index == videoStream) {
