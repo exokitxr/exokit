@@ -4047,6 +4047,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
     xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
+    xrDisplay.requestSession = (requestSession => function() {
+      return requestSession.apply(this, arguments)
+        .then(session => {
+          vrDisplay.isPresenting = true;
+          session.once('end', () => {
+            vrDisplay.isPresenting = false;
+          });
+          return session;
+        });
+    })(xrDisplay.requestSession);
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
