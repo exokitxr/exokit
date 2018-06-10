@@ -3409,16 +3409,16 @@ const tickAnimationFrame = device => {
   }
 };
 
-const fakeVrDisplays = [];
-const _getVrDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].vrDisplay : window.top[mrDisplaysSymbol].vrDisplay;
-const _getXrDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].xrDisplay : window.top[mrDisplaysSymbol].xrDisplay;
-const _getMlDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].mlDisplay : window.top[mrDisplaysSymbol].mlDisplay;
 const _makeRequestAnimationFrame = (window, device) => fn => {
   fn[windowSymbol] = window;
   fn[deviceSymbol] = device;
   rafCbs.push(fn);
   return fn;
 };
+const _getFakeVrDisplay = window => window[mrDisplaysSymbol].fakeVrDisplay;
+const _getVrDisplay = window => window[mrDisplaysSymbol].vrDisplay;
+const _getXrDisplay = window => window[mrDisplaysSymbol].xrDisplay;
+const _getMlDisplay = window => window[mrDisplaysSymbol].mlDisplay;
 
 function _makeNormalizeUrl(baseUrl) {
   return src => {
@@ -3632,7 +3632,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       },
     },
     getVRDisplaysSync() {
-      const result = fakeVrDisplays.slice();
+      const result = [];
+      const fakeVrDisplay = _getFakeVrDisplay(window);
+      if (fakeVrDisplay) {
+        result.push(fakeVrDisplay);
+      }
       if (nativeMl && nativeMl.IsPresent()) {
         result.push(_getMlDisplay(window));
       }
@@ -3646,7 +3650,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
     createVRDisplay() {
       const display = new FakeVRDisplay();
-      fakeVrDisplays.push(display);
+      window[mrDisplaysSymbol].fakeVrDisplay = display;
       return display;
     },
     getGamepads,
@@ -4028,6 +4032,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
     window[mrDisplaysSymbol] = {
+      fakeVrDisplay: null,
       vrDisplay,
       xrDisplay,
       mlDisplay,
