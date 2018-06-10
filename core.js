@@ -4526,6 +4526,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   const {nativeVideo} = bindings;
   Video = nativeVideo.Video;
   VideoDevice = nativeVideo.VideoDevice;
+  const devices = Video.getDevices();
   HTMLVideoElement = class extends HTMLMediaElement {
     constructor(attrs = [], value = '', location = null) {
       super('VIDEO', attrs, value, location);
@@ -4583,7 +4584,6 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
     play() {
       const _getDevice = facingMode => {
-        const devices = Video.getDevices();
         switch (facingMode) {
           case 'user': return devices[0];
           case 'environment': return devices[1];
