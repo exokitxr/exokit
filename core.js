@@ -3410,9 +3410,6 @@ const tickAnimationFrame = device => {
 };
 
 const fakeVrDisplays = [];
-/* let vrMode = null;
-let vrTexture = null;
-let vrTextures = []; */
 const _getVrDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].vrDisplay : window.top[mrDisplaysSymbol].vrDisplay;
 const _getXrDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].xrDisplay : window.top[mrDisplaysSymbol].xrDisplay;
 const _getMlDisplay = window => window[mrDisplaysSymbol] ? window[mrDisplaysSymbol].mlDisplay : window.top[mrDisplaysSymbol].mlDisplay;
