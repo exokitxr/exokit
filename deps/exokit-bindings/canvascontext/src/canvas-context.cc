@@ -1213,7 +1213,12 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
     Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(arg->ToObject()->Get(JS_STR("image"))));
     return image->image;
   } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLVideoElement"))) {
-    return nullptr; // XXX support this
+    auto video = arg->ToObject()->Get(JS_STR("video"));
+    if (video->IsObject()) {
+      return getImage(video->ToObject()->Get(JS_STR("imageData")));
+    }
+    Nan::ThrowError("HTMLVideoElement: no source");
+    return nullptr;
   } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
     ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(arg));
     return SkImage::MakeFromBitmap(imageData->bitmap);
