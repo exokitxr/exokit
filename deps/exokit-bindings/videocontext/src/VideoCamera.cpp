@@ -48,7 +48,7 @@ VideoCamera::VideoCamera(AVFormatContext *pFormatCtx, int videoStream)
     AVPacket packet;
 
     while (*pLive) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
       int frameFinished = 0;
       if (av_read_frame(pFormatCtx, &packet) >= 0) {
         if (packet.stream_index == videoStream) {
