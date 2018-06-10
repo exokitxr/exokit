@@ -45,7 +45,7 @@ const elementSymbol = Symbol();
 const computedStyleSymbol = Symbol();
 const disabledEventsSymbol = Symbol();
 const pointerLockElementSymbol = Symbol();
-const deviceSymbol = Symbol();
+const prioritySymbol = Symbol();
 const mrDisplaysSymbol = Symbol();
 let nativeBindings = false;
 let args = {};
@@ -3376,7 +3376,7 @@ const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, c
 };
 
 let rafCbs = [];
-const tickAnimationFrame = device => {
+const tickAnimationFrame = () => {
   if (rafCbs.length > 0) {
     const localRafCbs = rafCbs.slice();
 
@@ -3395,24 +3395,25 @@ const tickAnimationFrame = device => {
     // hidden rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      if (localRafCb[deviceSymbol] === device && localRafCb[windowSymbol].document.hidden) {
+      if (localRafCb[windowSymbol].document.hidden) {
         _handleRaf(localRafCb);
       }
     }
     // visible rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      if (localRafCb[deviceSymbol] === device && !localRafCb[windowSymbol].document.hidden) {
+      if (!localRafCb[windowSymbol].document.hidden) {
         _handleRaf(localRafCb);
       }
     }
   }
 };
 
-const _makeRequestAnimationFrame = (window, device) => fn => {
+const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   fn[windowSymbol] = window;
-  fn[deviceSymbol] = device;
+  fn[prioritySymbol] = priority;
   rafCbs.push(fn);
+  rafCbs.sort((a, b) => b[prioritySymbol] - a[prioritySymbol]);
   return fn;
 };
 const _getFakeVrDisplay = window => window[mrDisplaysSymbol].fakeVrDisplay;
@@ -3429,7 +3430,7 @@ const _cloneMrDisplays = function(window) {
     if (mrDisplay.clone) {
       const mrDisplayClone = mrDisplay.clone();
       if (mrDisplayClone.onrequestanimationframe) {
-        mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window, 'device');
+        mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
       }
       result[k] = mrDisplayClone;
     } else {
@@ -3913,7 +3914,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     }
   };
-  window.requestAnimationFrame = _makeRequestAnimationFrame(window, 'window');
+  window.requestAnimationFrame = _makeRequestAnimationFrame(window);
   window.cancelAnimationFrame = fn => {
     const index = rafCbs.indexOf(fn);
     if (index !== -1) {
@@ -4028,7 +4029,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     window.tickAnimationFrame = tickAnimationFrame;
 
     const _bindMRDisplay = display => {
-      display.onrequestanimationframe = _makeRequestAnimationFrame(window, 'device');
+      display.onrequestanimationframe = _makeRequestAnimationFrame(window);
       display.oncancelanimationframe = window.cancelAnimationFrame;
       display.onvrdisplaypresentchange = () => {
         process.nextTick(() => {
@@ -4045,7 +4046,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     const xrDisplay = new XRDevice();
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window, 'device');
+    xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
