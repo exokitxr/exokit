@@ -30,6 +30,6 @@ v8::Local<v8::Object> makePath2D();
 v8::Local<v8::Object> makeCanvasGradient();
 v8::Local<v8::Object> makeCanvasPattern();
 v8::Local<v8::Object> makeAudio();
-v8::Local<v8::Object> makeVideo();
+v8::Local<v8::Object> makeVideo(Local<Value> imageDataCons);
 
 #endif

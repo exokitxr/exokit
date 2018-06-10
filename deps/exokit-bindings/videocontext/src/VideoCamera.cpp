@@ -9,6 +9,7 @@ extern "C" {
 
 namespace ffmpeg {
 
+// https://stackoverflow.com/a/23216860
 static AVPixelFormat normalizeFormat(AVPixelFormat pixFormat) {
   switch (pixFormat) {
     case AV_PIX_FMT_YUVJ420P :
@@ -34,7 +35,7 @@ VideoCamera::VideoCamera(AVFormatContext *pFormatCtx, int videoStream)
   AVFrame *pFrame = av_frame_alloc();
   AVFrame *pFrameRGB = av_frame_alloc();
   uint8_t *internal_buffer = (uint8_t *)av_malloc(getSize() * sizeof(uint8_t));
-  avpicture_fill((AVPicture *)pFrameRGB, internal_buffer, AV_PIX_FMT_RGB24, getWidth(), getHeight());
+  avpicture_fill((AVPicture *)pFrameRGB, internal_buffer, AV_PIX_FMT_RGBA, getWidth(), getHeight());
   
   this->pFrameRGB = pFrameRGB;
   bool *pLive = new bool(true);
@@ -57,7 +58,7 @@ VideoCamera::VideoCamera(AVFormatContext *pFormatCtx, int videoStream)
 
           if (frameFinished) {
             struct SwsContext *img_convert_ctx;
-            img_convert_ctx = sws_getCachedContext(nullptr, pCodecCtx->width, pCodecCtx->height, normalizeFormat(pCodecCtx->pix_fmt), pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_BICUBIC, nullptr, nullptr, nullptr);
+            img_convert_ctx = sws_getCachedContext(nullptr, pCodecCtx->width, pCodecCtx->height, normalizeFormat(pCodecCtx->pix_fmt), pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGBA, SWS_BICUBIC, nullptr, nullptr, nullptr);
 
             {
               std::lock_guard<std::mutex> lock(*pMutex);
@@ -94,7 +95,6 @@ VideoCamera::getCodecContext() const
 AVPixelFormat
 VideoCamera::getFormat() const
 {
-  // https://stackoverflow.com/a/23216860
   return normalizeFormat(getCodecContext()->pix_fmt);
 }
 
@@ -113,7 +113,7 @@ VideoCamera::getHeight() const
 size_t
 VideoCamera::getSize() const
 {
-  return avpicture_get_size(AV_PIX_FMT_RGB24, getWidth(), getHeight());
+  return avpicture_get_size(AV_PIX_FMT_RGBA, getWidth(), getHeight());
 }
 
 bool VideoCamera::isFrameReady() const {
@@ -123,7 +123,7 @@ bool VideoCamera::isFrameReady() const {
 
 void VideoCamera::pullUpdate(uint8_t *buffer) const {
   std::lock_guard<std::mutex> lock(*pMutex);
-  avpicture_fill((AVPicture*)pFrameRGB, buffer, AV_PIX_FMT_RGB24, getWidth(), getHeight());
+  avpicture_fill((AVPicture*)pFrameRGB, buffer, AV_PIX_FMT_RGBA, getWidth(), getHeight());
   *pFrameReady = false;
 }
 

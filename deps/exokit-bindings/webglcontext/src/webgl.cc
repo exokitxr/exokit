@@ -1694,13 +1694,12 @@ int getImageFormat(Local<Value> arg) {
     Local<Value> constructorName = arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
     if (
       constructorName->StrictEquals(JS_STR("HTMLImageElement")) ||
+      constructorName->StrictEquals(JS_STR("HTMLVideoElement")) ||
       constructorName->StrictEquals(JS_STR("ImageData")) ||
       constructorName->StrictEquals(JS_STR("ImageBitmap")) ||
       constructorName->StrictEquals(JS_STR("HTMLCanvasElement"))
     ) {
       return GL_RGBA;
-    } else if (constructorName->StrictEquals(JS_STR("HTMLVideoElement"))) {
-      return GL_RGB;
     } else {
       return -1;
     }

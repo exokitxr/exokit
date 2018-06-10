@@ -106,7 +106,7 @@ class VideoCamera;
 
 class VideoDevice : public ObjectWrap {
   public:
-    static Handle<Object> Initialize(Isolate *isolate);
+    static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons);
 
   protected:
     static NAN_METHOD(New);
@@ -116,13 +116,14 @@ class VideoDevice : public ObjectWrap {
     static NAN_GETTER(HeightGetter);
     static NAN_GETTER(SizeGetter);
     static NAN_GETTER(DataGetter);
+    static NAN_GETTER(ImageDataGetter);
 
     VideoDevice();
     ~VideoDevice();
 
   private:
     VideoCamera *dev;
-    Nan::Persistent<Uint8ClampedArray> dataArray;
+    Nan::Persistent<Object> imageData;
 };
 
 extern std::vector<Video *> videos;
