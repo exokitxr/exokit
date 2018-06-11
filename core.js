@@ -3425,24 +3425,6 @@ const _getFakeVrDisplay = window => window[mrDisplaysSymbol].fakeVrDisplay;
 const _getVrDisplay = window => window[mrDisplaysSymbol].vrDisplay;
 const _getXrDisplay = window => window[mrDisplaysSymbol].xrDisplay;
 const _getMlDisplay = window => window[mrDisplaysSymbol].mlDisplay;
-const _cloneMrDisplays = function(window) {
-  const result = {
-    clone: _cloneMrDisplays,
-  };
-  for (const k in this) {
-    const mrDisplay = this[k];
-    
-    if (mrDisplay instanceof FakeVRDisplay) {
-      const mrDisplayClone = mrDisplay.clone();
-      mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
-      result[k] = mrDisplayClone;
-    } else {
-      result[k] = mrDisplay;
-    }
-  }
-  return result;
-};
-
 
 function _makeNormalizeUrl(baseUrl) {
   return src => {
@@ -4066,14 +4048,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
-    const mrDisplays = {
+    window[mrDisplaysSymbol] = {
       fakeVrDisplay: null,
       vrDisplay,
       xrDisplay,
       mlDisplay,
-      clone: _cloneMrDisplays,
     };
-    window[mrDisplaysSymbol] = mrDisplays;
 
     const _updateGamepads = newGamepads => {
       if (newGamepads !== undefined) {
@@ -4133,7 +4113,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       });
     }
   } else {
-    window[mrDisplaysSymbol] = top[mrDisplaysSymbol].clone(window);
+    window[mrDisplaysSymbol] = top[mrDisplaysSymbol];
     
     top.on('vrdisplaypresentchange', e => {
       window._emit('vrdisplaypresentchange', e);
