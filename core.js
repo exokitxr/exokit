@@ -4033,7 +4033,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       display.onvrdisplaypresentchange = () => {
         process.nextTick(() => {
           const e = new Event('vrdisplaypresentchange');
-          e.display = this;
+          e.display = display;
           window.dispatchEvent(e);
         });
       };
