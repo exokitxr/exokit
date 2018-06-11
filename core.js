@@ -3374,8 +3374,10 @@ const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, c
 };
 
 let rafCbs = [];
-const tickAnimationFrame = () => {
+function tickAnimationFrame() {
   if (rafCbs.length > 0) {
+    tickAnimationFrame.window = this;
+    
     const localRafCbs = rafCbs.slice();
 
     const _handleRaf = localRafCb => {
@@ -3404,9 +3406,11 @@ const tickAnimationFrame = () => {
         _handleRaf(localRafCb);
       }
     }
+    
+    tickAnimationFrame.window = null;
   }
-};
-
+}
+tickAnimationFrame.window = null;
 const _makeRequestAnimationFrame = window => (fn, priority) => {
   if (priority === undefined) {
     priority = 0;
