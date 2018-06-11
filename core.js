@@ -3004,12 +3004,10 @@ class HTMLCanvasElement extends HTMLElement {
     this._context = null;
 
     this.on('attribute', (name, value) => {
-      if (name === 'width') {
-        // console.log('gl canvas set width', this.width, this.height, this._context && this._context.resize, new Error().stack);
-        this._context && this._context.resize && this._context.resize(this.width, this.height);
-      } else if (name === 'height') {
-        // console.log('gl canvas set height', this.width, this.height, this._context && this._context.resize, new Error().stack);
-        this._context && this._context.resize && this._context.resize(this.width, this.height);
+      if (name === 'width' || name === 'height') {
+        if (this._context && this._context.resize) {
+          this._context.resize(this.width, this.height);
+        }
       }
     });
   }
