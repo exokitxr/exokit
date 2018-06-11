@@ -3013,7 +3013,7 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get width() {
-     return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
   }
   set width(value) {
     if (typeof value === 'number' && isFinite(value)) {
