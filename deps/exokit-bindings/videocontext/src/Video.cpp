@@ -253,8 +253,8 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
 
   Local<Function> ctorFn = ctor->GetFunction();
 
-  ctorFn->Set(JS_STR("updateAll"), Nan::New<Function>(UpdateAll));
-  ctorFn->Set(JS_STR("getDevices"), Nan::New<Function>(GetDevices));
+  Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
+  Nan::SetMethod(ctorFn, "getDevices", GetDevices);
 
   return scope.Escape(ctorFn);
 }
