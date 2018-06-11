@@ -4133,15 +4133,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     top.on('vrdisplaypresentchange', e => {
       window._emit('vrdisplaypresentchange', e);
     });
-    /* top.on('updatevrframe', update => { // XXX clean up listeners on window destroy
-      window._emit('updatevrframe', update);
-    });
-    top.on('updatearframe', update => {
-      window._emit('updatearframe', update);
-    });
-    top.on('updatemlframe', update => {
-      window._emit('updatemlframe', update);
-    }); */
   }
   return window;
 };
