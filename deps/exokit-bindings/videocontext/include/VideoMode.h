@@ -3,6 +3,9 @@
 
 #include <VideoCommon.h>
 
+#include <algorithm>
+#include <iterator>
+
 namespace ffmpeg {
 
 class VideoCamera;
