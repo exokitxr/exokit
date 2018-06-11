@@ -3409,7 +3409,10 @@ const tickAnimationFrame = () => {
   }
 };
 
-const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
+const _makeRequestAnimationFrame = window => (fn, priority) => {
+  if (priority === undefined) {
+    priority = 0;
+  }
   fn[windowSymbol] = window;
   fn[prioritySymbol] = priority;
   rafCbs.push(fn);
