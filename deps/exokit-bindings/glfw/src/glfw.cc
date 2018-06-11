@@ -895,6 +895,40 @@ NAN_METHOD(CreateRenderTarget) {
   }
 }
 
+NAN_METHOD(ResizeRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = info[1]->Uint32Value();
+  int height = info[2]->Uint32Value();
+  // int samples = info[3]->Uint32Value();
+  // GLuint fbo = info[4]->Uint32Value();
+  GLuint colorTex = info[5]->Uint32Value();
+  GLuint depthStencilTex = info[6]->Uint32Value();
+
+  if (gl->activeTexture != WebGLRenderingContext::SystemTextureUnit) {
+    glActiveTexture(WebGLRenderingContext::SystemTextureUnit);
+  }
+
+  glBindTexture(GL_TEXTURE_2D, colorTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+  glBindTexture(GL_TEXTURE_2D, depthStencilTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+
+  if (gl->activeTexture == WebGLRenderingContext::SystemTextureUnit) {
+    if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
+    }
+    if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
+    }
+    if (gl->HasTextureBinding(GL_TEXTURE_CUBE_MAP)) {
+      glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(GL_TEXTURE_CUBE_MAP));
+    }
+  } else {
+    glActiveTexture(gl->activeTexture);
+  }
+}
+
 NAN_METHOD(DestroyRenderTarget) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     GLuint fbo = info[0]->Uint32Value();
@@ -1696,6 +1730,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "getClipboard", glfw::GetClipboard);
   Nan::SetMethod(target, "setClipboard", glfw::SetClipboard);
   Nan::SetMethod(target, "createRenderTarget", glfw::CreateRenderTarget);
+  Nan::SetMethod(target, "resizeRenderTarget", glfw::ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", glfw::DestroyRenderTarget);
   // Nan::SetMethod(target, "createFramebuffer", glfw::CreateFramebuffer);
   // Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
