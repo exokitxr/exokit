@@ -108,6 +108,12 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     if (document.hidden) {
       const [framebuffer, colorTexture, depthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, 1, sharedColorTexture, sharedDepthStencilTexture);
       gl.setDefaultFramebuffer(framebuffer);
+      
+      canvas.on('attribute', (name, value) => {
+        if (name === 'width' || name === 'height') {
+          nativeWindow.resizeRenderTarget(gl, canvas.width, canvas.height, 1, framebuffer, colorTexture, depthStencilTexture);
+        }
+      });
 
       document._emit('framebuffer', {
         framebuffer: sharedFramebuffer,
