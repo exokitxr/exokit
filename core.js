@@ -1803,7 +1803,6 @@ class Element extends Node {
     this.attributes[name] = value;
   }
   setAttributeNS(namespace, name, value) {
-    value = value + '';
     this.setAttribute(name, value);
   }
   hasAttribute(name) {
