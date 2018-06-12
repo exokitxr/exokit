@@ -4577,7 +4577,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
           const resource = this.ownerDocument.resources.addResource();
 
-          process.nextTick(() => { // XXX
+          process.nextTick(() => {
             this.dispatchEvent(new Event('canplay', {target: this}));
             this.dispatchEvent(new Event('canplaythrough', {target: this}));
 
