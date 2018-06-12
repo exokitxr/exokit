@@ -2002,8 +2002,14 @@ class Element extends Node {
     s = s + '';
     return selector.matches(this, s);
   }
-
-
+  closest(s) {
+    for (let el = this; el; el = el.parentElement || el.parentNode) {
+      if (el.matches(s)) {
+        return el;
+      }
+    }
+    return null;
+  }
 
   getBoundingClientRect() {
     return new DOMRect();
