@@ -4390,6 +4390,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
               this.dispatchEvent(new Event('load', {target: this}));
             })
             .catch(err => {
+              console.warn('failed to load image:', src);
               this.dispatchEvent(new Event('error', {target: this}));
             })
             .finally(() => {
@@ -4494,6 +4495,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
               this._emit('canplaythrough');
             })
             .catch(err => {
+              console.warn('failed to load audio:', src);
               this.dispatchEvent(new Event('error', {target: this}));
             })
             .finally(() => {
