@@ -16,6 +16,7 @@ const fetch = require('window-fetch');
 const {Blob} = fetch;
 
 const {LocalStorage} = require('node-localstorage');
+const indexedDB = require('fake-indexeddb');
 const createMemoryHistory = require('history/createMemoryHistory').default;
 const ClassList = require('window-classlist');
 const he = require('he');
@@ -3700,6 +3701,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.setInterval = setInterval;
   window.clearInterval = clearInterval;
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
+  window.indexedDB = indexedDB;
   window.performance = performance;
   window.screen = new Screen(window);
   window.urls = urls; // XXX non-standard
