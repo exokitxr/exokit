@@ -3693,13 +3693,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.destroy = function() {
     this._emit('destroy', {window: this});
   };
-  window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.URL = URL;
   window.console = console;
   window.setTimeout = setTimeout;
   window.clearTimeout = clearTimeout;
   window.setInterval = setInterval;
   window.clearInterval = clearInterval;
+  window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.performance = performance;
   window.screen = new Screen(window);
   window.urls = urls; // XXX non-standard
