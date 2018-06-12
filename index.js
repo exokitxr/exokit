@@ -5,6 +5,8 @@ process.chdir(__dirname); // needed for global bin to find libraries
 
 const path = require('path');
 const fs = require('fs');
+const events = require('events');
+const {EventEmitter} = events;
 const os = require('os');
 const url = require('url');
 const repl = require('repl');
@@ -1262,6 +1264,7 @@ if (require.main === module) {
   process.on('unhandledRejection', err => {
     console.warn(err.stack);
   });
+  EventEmitter.defaultMaxListeners = 100;
   
   if (args.version) {
     console.log(version);
