@@ -3376,6 +3376,8 @@ const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, c
 let rafCbs = [];
 function tickAnimationFrame() {
   if (rafCbs.length > 0) {
+    // console.log('tick rafs', rafCbs.length)
+
     tickAnimationFrame.window = this;
     
     const localRafCbs = rafCbs.slice();
