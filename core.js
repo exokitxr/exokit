@@ -3088,9 +3088,10 @@ class HTMLTemplateElement extends HTMLElement {
   }
 
   get content() {
-    const wrapperEl = this.ownerDocument.createElement('div');
-    wrapperEl.childNodes = this.childNodes;
-    return wrapperEl;
+    const content = new DocumentFragment();
+    content.ownerDocument = this.ownerDocument;
+    content.childNodes = this.childNodes;
+    return content;
   }
   set content(content) {}
 }
@@ -3250,7 +3251,7 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
     if (tagName && uppercase) {
       tagName = tagName.toUpperCase();
     }
-    const {attrs, value, sourceCodeLocation} = node;
+    let {attrs, value, content, childNodes, sourceCodeLocation} = node;
     const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
     const location = sourceCodeLocation  ? {
       line: sourceCodeLocation.startLine,
@@ -3275,8 +3276,10 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
       ownerDocument.defaultView = window;
     }
     element.ownerDocument = ownerDocument;
-    if (node.childNodes) {
-      element.childNodes = node.childNodes.map(childNode => _fromAST(childNode, window, element, ownerDocument, uppercase));
+    if (content) {
+      element.childNodes = content.childNodes.map(childNode => _fromAST(childNode, window, element, ownerDocument, uppercase));
+    } else if (childNodes) {
+      element.childNodes = childNodes.map(childNode => _fromAST(childNode, window, element, ownerDocument, uppercase));
     }
     return element;
   }
