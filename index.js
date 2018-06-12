@@ -454,7 +454,6 @@ nativeWindow.setEventHandler((type, data) => {
       }
       case 'quit': {
         context.destroy();
-        contexts.splice(contexts.indexOf(context), 1);
         break;
       }
     }
