@@ -49,7 +49,7 @@
     "magicleap": "0.0.18",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
-    "native-audio-deps": "0.0.29",
+    "native-audio-deps": "0.0.30",
     "native-canvas-deps": "0.0.19",
     "native-graphics-deps": "0.0.15",
     "native-openvr-deps": "0.0.15",
