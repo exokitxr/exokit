@@ -52,8 +52,8 @@ let nativeBindings = false;
 let args = {};
 let version = '';
 
-const btoa = s => new Buffer(s, 'binary').toString('base64');
-const atob = s => new Buffer(s, 'base64').toString('binary');
+const btoa = s => Buffer.from(s, 'binary').toString('base64');
+const atob = s => Buffer.from(s, 'base64').toString('binary');
 
 let styleEpoch = 0;
 

@@ -1134,7 +1134,7 @@ const _start = () => {
               const arrayBuffer = new ArrayBuffer(width * height * 4);
               const uint8Array = new Uint8Array(arrayBuffer);
               gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
-              const result = new Buffer(UPNG.encode([
+              const result = Buffer.from(UPNG.encode([
                 _flipImage(width, height, 4, arrayBuffer),
               ], width, height, 0));
               fs.writeFileSync(args.image, result);
@@ -1156,14 +1156,14 @@ const _start = () => {
               const arrayBuffer = new ArrayBuffer(width * height * 4);
               const uint8Array = new Uint8Array(arrayBuffer);
               gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
-              const diffuseImage = new Buffer(UPNG.encode([
+              const diffuseImage = Buffer.from(UPNG.encode([
                 _flipImage(width, height, 4, arrayBuffer),
               ], width, height, 0));
               fs.writeFileSync(args.depthImage + '.png', diffuseImage);
 
               const float32Array = new Float32Array(arrayBuffer);
               gl.readPixels(0, 0, width, height, gl.DEPTH_COMPONENT, gl.FLOAT, float32Array);
-              const depthImage = new Buffer(_flipImage(width, height, 4, arrayBuffer));
+              const depthImage = Buffer.from(_flipImage(width, height, 4, arrayBuffer));
               fs.writeFileSync(args.depthImage + '.depth', depthImage);
 
               process.exit(0);
