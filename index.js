@@ -1256,6 +1256,13 @@ const _start = () => {
 };
 
 if (require.main === module) {
+  process.on('uncaughtException', err => {
+    console.warn(err.stack);
+  });
+  process.on('unhandledRejection', err => {
+    console.warn(err.stack);
+  });
+  
   if (args.version) {
     console.log(version);
     process.exit(0);
@@ -1277,13 +1284,6 @@ if (require.main === module) {
 
   _prepare()
     .then(() => _start());
-
-  process.on('uncaughtException', err => {
-    console.warn(err.stack);
-  });
-  process.on('unhandledRejection', err => {
-    console.warn(err.stack);
-  });
 } else {
   core.setNativeBindingsModule(nativeBindingsModulePath);
 }
