@@ -1321,6 +1321,8 @@ class BiquadFilterNode extends AudioNode {
   }
 }
 class AudioBuffer {}
+class AudioBufferSourceNode extends AudioNode {}
+class OscillatorNode extends AudioNode {}
 class StereoPannerNode extends AudioNode {}
 class AudioContext {
   constructor() {
@@ -3864,6 +3866,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.TextDecoder = TextDecoder;
   window.AudioContext = AudioContext;
   window.AudioNode = AudioNode;
+  window.AudioBufferSourceNode = AudioBufferSourceNode;
+  window.OscillatorNode = OscillatorNode;
   window.AudioDestinationNode = AudioDestinationNode;
   window.AudioParam = AudioParam;
   window.AudioListener = AudioListener;
@@ -4439,6 +4443,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   const {nativeAudio} = bindings;
   AudioContext = nativeAudio.AudioContext;
   AudioNode = nativeAudio.AudioNode;
+  AudioBufferSourceNode = nativeAudio.AudioBufferSourceNode;
+  OscillatorNode = nativeAudio.OscillatorNode;
   AudioDestinationNode = nativeAudio.AudioDestinationNode;
   AudioParam = nativeAudio.AudioParam;
   AudioListener = nativeAudio.AudioListener;
