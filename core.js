@@ -4488,7 +4488,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
               this._emit('canplaythrough');
             })
             .catch(err => {
-              this._emit('error', err);
+              this.dispatchEvent(new Event('error', {target: this}));
             })
             .finally(() => {
               resource.setProgress(1);
