@@ -3382,7 +3382,7 @@ function tickAnimationFrame() {
     // console.log('tick rafs', rafCbs.length)
 
     tickAnimationFrame.window = this;
-    
+
     const localRafCbs = rafCbs.slice();
 
     const _handleRaf = localRafCb => {
@@ -3411,7 +3411,7 @@ function tickAnimationFrame() {
         _handleRaf(localRafCb);
       }
     }
-    
+
     tickAnimationFrame.window = null;
   }
 }
@@ -4128,7 +4128,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   } else {
     window[mrDisplaysSymbol] = top[mrDisplaysSymbol];
-    
+
     top.on('vrdisplaypresentchange', e => {
       window._emit('vrdisplaypresentchange', e);
     });
