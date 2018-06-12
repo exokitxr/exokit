@@ -3506,6 +3506,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     const {XMLHttpRequest} = require('window-xhr');
     const XHRUtils = require('window-xhr/lib/utils');
     ${!args.require ? 'global.require = undefined;' : ''}
+    process.on('uncaughtException', err => {
+      console.warn(err.stack);
+    });
+    process.on('unhandledRejection', err => {
+      console.warn(err.stack);
+    });
 
     XHRUtils.createClient = (createClient => function() {
       const properties = arguments[0];
