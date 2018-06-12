@@ -2897,7 +2897,7 @@ HTMLVideoElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
 HTMLVideoElement.HAVE_CURRENT_DATA = HTMLMediaElement.HAVE_CURRENT_DATA;
 HTMLVideoElement.HAVE_FUTURE_DATA = HTMLMediaElement.HAVE_FUTURE_DATA;
 HTMLVideoElement.HAVE_ENOUGH_DATA = HTMLMediaElement.HAVE_ENOUGH_DATA;
-class HTMLIframeElement extends HTMLSrcableElement {
+class HTMLIFrameElement extends HTMLSrcableElement {
   constructor(attrs = [], value = '', location = null) {
     super('IFRAME', attrs, value, location);
 
@@ -3719,7 +3719,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     AUDIO: HTMLAudioElementBound,
     VIDEO: HTMLVideoElement,
     SOURCE: HTMLSourceElement,
-    IFRAME: HTMLIframeElement,
+    IFRAME: HTMLIFrameElement,
     CANVAS: HTMLCanvasElement,
     TEMPLATE: HTMLTemplateElement,
   };
@@ -3733,7 +3733,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.HTMLImageElement = HTMLImageElementBound,
   window.HTMLAudioElement = HTMLAudioElementBound;
   window.HTMLVideoElement = HTMLVideoElement;
-  window.HTMLIframeElement = HTMLIframeElement;
+  window.HTMLIFrameElement = HTMLIFrameElement;
   window.HTMLCanvasElement = HTMLCanvasElement;
   window.HTMLTemplateElement = HTMLTemplateElement;
   window.Node = Node;
