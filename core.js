@@ -1400,6 +1400,15 @@ class NodeList extends Array {
     return v !== undefined ? v : null;
   }
 }
+class HTMLCollection extends Array {
+  constructor(nodes) {
+    super();
+
+    if (Array.isArray(nodes)) {
+      this.push.apply(this, nodes);
+    }
+  }
+}
 
 class Node extends EventTarget {
   constructor() {
@@ -3790,6 +3799,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.MutationObserver = MutationObserver;
   window.DOMRect = DOMRect;
   window.NodeList = NodeList;
+  window.HTMLCollection = HTMLCollection;
   window.getComputedStyle = el => {
     let styleSpec = el[computedStyleSymbol];
     if (!styleSpec || styleSpec.epoch !== styleEpoch) {
