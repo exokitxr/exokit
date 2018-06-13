@@ -3774,6 +3774,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Text = Text;
   window.Comment = Comment;
   window.MutationObserver = MutationObserver;
+  window.DOMRect = DOMRect;
   window.getComputedStyle = el => {
     let styleSpec = el[computedStyleSymbol];
     if (!styleSpec || styleSpec.epoch !== styleEpoch) {
