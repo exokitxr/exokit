@@ -1386,6 +1386,20 @@ class DOMRect {
     this.bottom = h >= 0 ? y + h : y;
   }
 }
+class NodeList extends Array {
+  constructor(nodes) {
+    super();
+
+    if (Array.isArray(nodes)) {
+      this.push.apply(this, nodes);
+    }
+  }
+  
+  item(k) {
+    const v = this[k];
+    return v !== undefined ? v : null;
+  }
+}
 
 class Node extends EventTarget {
   constructor() {
@@ -3775,6 +3789,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Comment = Comment;
   window.MutationObserver = MutationObserver;
   window.DOMRect = DOMRect;
+  window.NodeList = NodeList;
   window.getComputedStyle = el => {
     let styleSpec = el[computedStyleSymbol];
     if (!styleSpec || styleSpec.epoch !== styleEpoch) {
