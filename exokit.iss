@@ -45,7 +45,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
-Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "dist\*"
+Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "\dist"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-h"; IconFilename: "{app}\{#MyIcon}"
