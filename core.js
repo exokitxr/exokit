@@ -1861,7 +1861,7 @@ class Element extends Node {
 
   getAttribute(name) {
     const attr = this.attributes[name];
-    return attr && attr.value;
+    return attr !== undefined ? attr.value : null;
   }
   setAttribute(name, value) {
     value = value + '';
