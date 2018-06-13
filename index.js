@@ -606,7 +606,7 @@ const _bindWindow = (window, newWindowCb) => {
           const _recurse = () => {
             if ((Date.now() - startTime) < duration) {
               state.system.TriggerHapticPulse(deviceIndex, actuatorId, value, 4000);
-              setTimeout(_recurse, 50);
+              process.nextTick(_recurse);
             } else {
               state.system.TriggerHapticPulse(deviceIndex, actuatorId, 0, 0);
             }
