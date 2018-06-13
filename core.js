@@ -750,26 +750,22 @@ class XRDevice {
   constructor() {
     this.session = null; // non-standard
   }
-  supportsSession({exclusive = false, outputContext} = {}) {
+  supportsSession({exclusive = false, outputContext = null} = {}) {
     return Promise.resolve(null);
   }
-  requestSession({exclusive = false, outputContext} = {}) {
-    if (outputContext) {
-      if (!this.session) {
-        const session = new XRSession({
-          device: this,
-          exclusive,
-          outputContext,
-        });
-        session.once('end', () => {
-          this.session = null;
-        });
-        this.session = session;
-      }
-      return Promise.resolve(this.session);
-    } else {
-      return Promise.reject(new Error('outputContext is required'));
+  requestSession({exclusive = false, outputContext = null} = {}) {
+    if (!this.session) {
+      const session = new XRSession({
+        device: this,
+        exclusive,
+        outputContext,
+      });
+      session.once('end', () => {
+        this.session = null;
+      });
+      this.session = session;
     }
+    return Promise.resolve(this.session);
   }
   update(update) {
     if (this.session) {
@@ -778,7 +774,7 @@ class XRDevice {
   }
 }
 class XRSession extends EventTarget {
-  constructor({device = null, exclusive = false, outputContext} = {}) {
+  constructor({device = null, exclusive = false, outputContext = null} = {}) {
     super();
 
     this.device = device;
