@@ -2020,7 +2020,7 @@ class Element extends Node {
     return selector.matches(this, s);
   }
   closest(s) {
-    for (let el = this; el; el = el.parentElement || el.parentNode) {
+    for (let el = this; el; el = el.parentNode) {
       if (el.matches(s)) {
         return el;
       }
