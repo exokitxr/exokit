@@ -1495,10 +1495,7 @@ Node.DOCUMENT_NODE = 9;
 Node.DOCUMENT_TYPE_NODE = 10;
 Node.DOCUMENT_FRAGMENT_NODE = 11;
 const _setAttributeRaw = (el, prop, value) => {
-  const propN = parseIntStrict(prop);
-  if (propN !== undefined) { // XXX handle attribute emits for indexed attribute sets
-    el.attrs[propN] = value;
-  } else if (prop === 'length') {
+  if (prop === 'length') {
     el.attrs.length = value;
   } else {
     const attr = el.attrs.find(attr => attr.name === prop);
