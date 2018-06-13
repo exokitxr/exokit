@@ -1415,7 +1415,7 @@ class Node extends EventTarget {
     super();
 
     this.parentNode = null;
-    this.childNodes = [];
+    this.childNodes = new NodeList();
     this.ownerDocument = null;
   }
 
@@ -1505,7 +1505,11 @@ class Node extends EventTarget {
     el.attrs = this.attrs;
     el.value = this.value;
     if (deep) {
-      el.childNodes = this.childNodes.map(childNode => childNode.cloneNode(true));
+      el.childNodes = new NodeList(
+        this.childNodes.map(childNode =>
+          childNode.cloneNode(true)
+        )
+      );
     }
     return el;
   }
@@ -2108,9 +2112,15 @@ class Element extends Node {
   set innerHTML(innerHTML) {
     innerHTML = innerHTML + '';
     const oldChildNodes = this.childNodes;
-    const newChildNodes = parse5.parseFragment(innerHTML, {
-      locationInfo: true,
-    }).childNodes.map(childNode => _fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true));
+    const newChildNodes = new NodeList(
+      parse5.parseFragment(innerHTML, {
+        locationInfo: true,
+      })
+        .childNodes
+        .map(childNode =>
+          _fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
+        )
+    );
     this.childNodes = newChildNodes;
 
     if (this._children) {
@@ -3103,19 +3113,19 @@ class HTMLTemplateElement extends HTMLElement {
   constructor(attrs = [], value = '', location = null) {
     super('TEMPLATE', attrs, value, location);
 
-    this._childNodes = [];
+    this._childNodes = new NodeList();
   }
 
   get content() {
     const content = new DocumentFragment();
     content.ownerDocument = this.ownerDocument;
-    content.childNodes = this.childNodes;
+    content.childNodes = new NodeList(this.childNodes);
     return content;
   }
   set content(content) {}
 
   get childNodes() {
-    return [];
+    return new NodeList();
   }
   set childNodes(childNodes) {
     this._childNodes = childNodes;
@@ -3317,9 +3327,17 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
     }
     element.ownerDocument = ownerDocument;
     if (content) {
-      element.childNodes = content.childNodes.map(childNode => _fromAST(childNode, window, element, ownerDocument, uppercase));
+      element.childNodes = new NodeList(
+        content.childNodes.map(childNode =>
+          _fromAST(childNode, window, element, ownerDocument, uppercase)
+        )
+      );
     } else if (childNodes) {
-      element.childNodes = childNodes.map(childNode => _fromAST(childNode, window, element, ownerDocument, uppercase));
+      element.childNodes = new NodeList(
+        childNodes.map(childNode =>
+          _fromAST(childNode, window, element, ownerDocument, uppercase)
+        )
+      );
     }
     return element;
   }
@@ -4278,7 +4296,7 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
 
   process.nextTick(async () => {
     const bodyChildNodes = body.childNodes;
-    body.childNodes = [];
+    body.childNodes = new NodeList();
 
     try {
       await _runHtml(document.head, window);
