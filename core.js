@@ -3854,6 +3854,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   // window.Buffer = Buffer; // XXX non-standard
+  window.G = global;
   window.Event = Event;
   window.KeyboardEvent = KeyboardEvent;
   window.MouseEvent = MouseEvent;
@@ -4102,25 +4103,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       mlDisplay,
     };
 
-    const _updateGamepads = newGamepads => {
-      if (newGamepads !== undefined) {
-        const gamepads = getGamepads();
+    const _updateGamepad = (i, gamepad) => {
+      const gamepads = getGamepads();
+      if (gamepad) {
         const allGamepads = getAllGamepads();
-
-        if (newGamepads[0]) {
-          gamepads[0] = allGamepads[0];
-          gamepads[0].copy(newGamepads[0]);
-        } else {
-          gamepads[0] = null;
-        }
-        if (newGamepads[1]) {
-          gamepads[1] = allGamepads[1];
-          gamepads[1].copy(newGamepads[1]);
-        } else {
-          gamepads[1] = null;
-        }
+        gamepads[i] = allGamepads[i];
+        gamepads[i].copy(gamepad);
+      } else {
+        gamepads[i] = null;
       }
-    };
+    }
+    window.updateGamepad = _updateGamepad;
+
     window.updateVrFrame = update => {
       let updatedHmd = false;
       if (vrDisplay.isPresenting || update.force) {
@@ -4131,8 +4125,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         xrDisplay.update(update);
         updatedHmd = true;
       }
-      if (updatedHmd) {
-        _updateGamepads(update.gamepads);
+      if (update.gamepads) {
+        for (let i = 0; i < update.gamepads.length; i++) {
+          const gamepad = update.gamepads[i];
+          if (gamepad && gamepad.index >= 0) {
+            _updateGamepad(i, gamepad);
+          }
+        }
       }
     };
     /* window.updateArFrame = (viewMatrix, projectionMatrix) => {
@@ -4140,7 +4139,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }; */
     window.updateMlFrame = update => {
       mlDisplay.update(update);
-      _updateGamepads(update.gamepads);
+      if (update.gamepads) {
+        for (let i = 0; i < update.gamepads.length; i++) {
+          const gamepad = update.gamepads[i];
+          if (gamepad && gamepad.index >= 0) {
+            _updateGamepad(i, gamepad);
+          }
+        }
+      }
     };
 
     if (nativeMl) {

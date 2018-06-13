@@ -5,6 +5,11 @@
 #include <node.h>
 #include <openvr.h>
 
+#ifdef _MSC_VER
+#include <xinput.h>
+#pragma comment(lib, "xinput.lib")
+#endif
+
 using namespace v8;
 
 using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTrackedDeviceCount>;
@@ -721,10 +726,15 @@ NAN_METHOD(IVRSystem::GetTrackedDeviceIndexForControllerRole)
     return;
   }
 
-  vr::ETrackedControllerRole role = static_cast<vr::ETrackedControllerRole>(info[0]->Uint32Value());
-  vr::TrackedDeviceIndex_t deviceClass = obj->self_->GetTrackedDeviceIndexForControllerRole(role);
-  info.GetReturnValue().Set(Nan::New<Number>(
-    static_cast<uint32_t>(deviceClass)));
+  int i = info[0]->Int32Value();
+  if (i < 0) {
+    info.GetReturnValue().Set(Nan::New<Number>(i));
+  } else {
+    vr::ETrackedControllerRole role = static_cast<vr::ETrackedControllerRole>(i);
+    vr::TrackedDeviceIndex_t deviceClass = obj->self_->GetTrackedDeviceIndexForControllerRole(role);
+    info.GetReturnValue().Set(Nan::New<Number>(
+      static_cast<uint32_t>(deviceClass)));
+  }
 }
 
 //=============================================================================
@@ -777,40 +787,95 @@ NAN_METHOD(IVRSystem::GetControllerState)
   Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
   buttons->Set(0, Number::New(Isolate::GetCurrent(), std::numeric_limits<float>::quiet_NaN()));
 
-  uint32_t side = info[0]->Uint32Value();
-  for (unsigned int i = 0; i < vr::k_unMaxTrackedDeviceCount; i++) {
-    vr::ETrackedDeviceClass deviceClass = obj->self_->GetTrackedDeviceClass(i);
-    if (deviceClass == vr::TrackedDeviceClass_Controller) {
-      const vr::ETrackedControllerRole controllerRole = obj->self_->GetControllerRoleForTrackedDeviceIndex(i);
-      if ((side == 0 && controllerRole == vr::TrackedControllerRole_LeftHand) || (side == 1 && controllerRole == vr::TrackedControllerRole_RightHand)) {
-        vr::VRControllerState_t controllerState;
-        if (obj->self_->GetControllerState(i, &controllerState, sizeof(controllerState))) {
-          buttons->Set(0, Number::New(Isolate::GetCurrent(), 1));
+  int32_t iIndex = info[0]->Int32Value();
 
-          buttons->Set(1, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
-          buttons->Set(2, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0));
-          buttons->Set(3, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0));
-          buttons->Set(4, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0));
-          buttons->Set(5, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0));
+  if (iIndex < 0) {
+#ifdef _MSC_VER
+    DWORD i = -iIndex-1;
+    if (i < XUSER_MAX_COUNT)
+    {
+      XINPUT_STATE state;
+      ZeroMemory( &state, sizeof(XINPUT_STATE) );
 
-          buttons->Set(6, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
-          buttons->Set(7, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0));
-          buttons->Set(8, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0));
-          buttons->Set(9, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0));
-          buttons->Set(10, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0));
+      // get the state of the controller from XInput.
+      if( XInputGetState( i, &state ) == ERROR_SUCCESS )
+      {
+        // the controller is conneceted.
+        buttons->Set(0, Number::New(Isolate::GetCurrent(), 1));
 
-          buttons->Set(11, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].x));
-          buttons->Set(12, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].y));
-          buttons->Set(13, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].x));
-          buttons->Set(14, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].y));
-          buttons->Set(15, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].x));
-          buttons->Set(16, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].y));
-          buttons->Set(17, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].x));
-          buttons->Set(18, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].y));
-          buttons->Set(19, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].x));
-          buttons->Set(20, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].y));
+        buttons->Set(1, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? 1 : 0));
+        buttons->Set(2, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? 1 : 0));
+        buttons->Set(3, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1 : 0));
+        buttons->Set(4, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1 : 0));
 
-          break;
+        buttons->Set(5, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? 1 : 0));
+        buttons->Set(6, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? 1 : 0));
+        buttons->Set(7, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0));
+        buttons->Set(8, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0));
+        buttons->Set(9, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? 1 : 0));
+        buttons->Set(10, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? 1 : 0));
+
+        buttons->Set(11, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? 1 : 0));
+        buttons->Set(12, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) ? 1 : 0));
+        buttons->Set(13, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_X) ? 1 : 0));
+        buttons->Set(14, Number::New(Isolate::GetCurrent(), (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) ? 1 : 0));
+
+        buttons->Set(15, Number::New(Isolate::GetCurrent(), state.Gamepad.sThumbLX/32768.0));
+        buttons->Set(16, Number::New(Isolate::GetCurrent(), state.Gamepad.sThumbLY/32768.0));
+
+        buttons->Set(17, Number::New(Isolate::GetCurrent(), state.Gamepad.sThumbRX/32768.0));
+        buttons->Set(18, Number::New(Isolate::GetCurrent(), state.Gamepad.sThumbRY/32768.0));
+
+        buttons->Set(19, Number::New(Isolate::GetCurrent(), state.Gamepad.bLeftTrigger/255.0));
+        buttons->Set(20, Number::New(Isolate::GetCurrent(), 0.0));
+
+        buttons->Set(21, Number::New(Isolate::GetCurrent(), state.Gamepad.bRightTrigger/255.0));
+        buttons->Set(22, Number::New(Isolate::GetCurrent(), 0.0));
+
+        buttons->Set(23, Number::New(Isolate::GetCurrent(), 0.0));
+        buttons->Set(24, Number::New(Isolate::GetCurrent(), 0.0));
+      }
+    }
+#endif
+  } else {
+    for (unsigned int i = 0; i < vr::k_unMaxTrackedDeviceCount; i++) {
+      vr::ETrackedDeviceClass deviceClass = obj->self_->GetTrackedDeviceClass(i);
+      if (deviceClass == vr::TrackedDeviceClass_Controller) {
+        const vr::ETrackedControllerRole controllerRole = obj->self_->GetControllerRoleForTrackedDeviceIndex(i);
+        if ((iIndex == 0 && controllerRole == vr::TrackedControllerRole_LeftHand) || (iIndex == 1 && controllerRole == vr::TrackedControllerRole_RightHand)) {
+          vr::VRControllerState_t controllerState;
+          if (obj->self_->GetControllerState(i, &controllerState, sizeof(controllerState))) {
+            buttons->Set(0, Number::New(Isolate::GetCurrent(), 1));
+
+            buttons->Set(1, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
+            buttons->Set(2, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0));
+            buttons->Set(3, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0));
+            buttons->Set(4, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0));
+            buttons->Set(5, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0));
+
+            buttons->Set(6, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
+            buttons->Set(7, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0));
+            buttons->Set(8, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0));
+            buttons->Set(9, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0));
+            buttons->Set(10, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0));
+
+            buttons->Set(11, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].x));
+            buttons->Set(12, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].y));
+
+            buttons->Set(13, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].x));
+            buttons->Set(14, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].y));
+
+            buttons->Set(15, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].x));
+            buttons->Set(16, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].y));
+
+            buttons->Set(17, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].x));
+            buttons->Set(18, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].y));
+
+            buttons->Set(19, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].x));
+            buttons->Set(20, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].y));
+
+            break;
+          }
         }
       }
     }
@@ -821,7 +886,7 @@ NAN_METHOD(IVRSystem::TriggerHapticPulse)
 {
   IVRSystem* obj = ObjectWrap::Unwrap<IVRSystem>(info.Holder());
 
-  if (info.Length() != 3)
+  if (info.Length() < 4)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
@@ -841,12 +906,42 @@ NAN_METHOD(IVRSystem::TriggerHapticPulse)
     Nan::ThrowTypeError("Argument[2] must be a number.");
     return;
   }
+  if (!info[3]->IsNumber())
+  {
+    Nan::ThrowTypeError("Argument[3] must be a number.");
+    return;
+  }
   
-  vr::TrackedDeviceIndex_t unControllerDeviceIndex = info[0]->Uint32Value();
-  uint32_t unAxisId = info[1]->Uint32Value();
-  unsigned short usDurationMicroSec  = info[2]->Uint32Value();
+  int iIndex = info[0]->Int32Value();
+  uint32_t unAxisId = info[1]->Int32Value();
+  double dValue  = info[2]->NumberValue();
+  unsigned short usDurationMicroSec = info[3]->Uint32Value();
+  if (unAxisId >= 2) {
+    Nan::ThrowTypeError("Argument[1] must be 0 or 1.");
+    return;
+  }
 
-  obj->self_->TriggerHapticPulse(unControllerDeviceIndex, unAxisId, usDurationMicroSec);
+  if (iIndex < 0) {
+#ifdef _MSC_VER
+    WORD value = (WORD)(65535 * dValue);
+    DWORD i = -iIndex-1;
+    if (i >= XUSER_MAX_COUNT) {
+      Nan::ThrowTypeError("Argument[0] must be >= -4.");
+      return;
+    }
+    static XINPUT_VIBRATION xiVibration[XUSER_MAX_COUNT];
+    if (unAxisId == 0) {
+      xiVibration[i].wLeftMotorSpeed = value;
+    } else {
+      xiVibration[i].wRightMotorSpeed = value;
+    }
+    XInputSetState(i, &xiVibration[i]);
+#endif
+  } else {
+    vr::TrackedDeviceIndex_t unControllerDeviceIndex = iIndex;
+
+    obj->self_->TriggerHapticPulse(unControllerDeviceIndex, unAxisId, dValue * usDurationMicroSec);
+  }
 }
 
 //=============================================================================

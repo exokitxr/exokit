@@ -171,7 +171,7 @@ const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array4 = new Float32Array(16);
 const localFovArray = new Float32Array(4);
 const localFovArray2 = new Float32Array(4);
-const localGamepadArray = new Float32Array(24);
+const localGamepadArray = new Float32Array(32);
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -199,6 +199,16 @@ const _normalizeMatrixArray = float32Array => {
     zeroMatrix.toArray(float32Array);
   }
 };
+
+const gamepadState = {
+  system: null,
+  isPresenting: true,
+}
+
+{
+  const vrContext = nativeVr.getContext();
+  gamepadState.system = nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+}
 
 const vrPresentState = {
   vrContext: null,
@@ -336,7 +346,7 @@ if (nativeMl) {
             viewportArray,
             planesArray,
             numPlanes: numPlanesArray[0],
-            gamepads: [null, null],
+            gamepads: [null, null, null, null, null, null],
             context: mlContext,
           });
           mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
@@ -541,7 +551,7 @@ const _bindWindow = (window, newWindowCb) => {
       if (context.isDirty()) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
-        context.flush();
+        context.flush(); // TODO: Get rid of this; it causes a pipeline stall.
 
         if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
           if (vrPresentState.glContext === context) {
@@ -580,8 +590,33 @@ const _bindWindow = (window, newWindowCb) => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 90;
-  const [leftGamepad, rightGamepad] = core.getAllGamepads();
-  const gamepads = [null, null];
+  const allGamepads = core.getAllGamepads();
+  const [leftGamepad, rightGamepad, player1, player2, player3, player4] = allGamepads;
+  const gamepads = [null, null, null, null, null, null];
+  for (let i = 0; i < allGamepads.length; i++) {
+    allGamepads[i].ontriggerhapticpulse = (value, duration, actuatorId) => {
+      const gamepad = gamepads[i];
+      if (gamepad) {
+        const state = (gamepad.index < 0) ? gamepadState : vrPresentState;
+        const deviceIndex = (gamepad.index < 0) ? gamepad.index : state.system.GetTrackedDeviceIndexForControllerRole(i + 1);
+        if (state.isPresenting) {
+          value = Math.min(Math.max(value, 0), 1);
+
+          const startTime = Date.now();
+          const _recurse = () => {
+            if ((Date.now() - startTime) < duration) {
+              state.system.TriggerHapticPulse(deviceIndex, actuatorId, value, 4000);
+              setTimeout(_recurse, 50);
+            } else {
+              state.system.TriggerHapticPulse(deviceIndex, actuatorId, 0, 0);
+            }
+          };
+          _recurse();
+        }
+      }
+    };
+  }
+
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
   let timeout = null;
@@ -653,34 +688,6 @@ const _bindWindow = (window, newWindowCb) => {
     }
   });
 
-  window.on('vrdisplaypresentchange', e => {
-    if (e.display) {
-      const gamepads = [leftGamepad, rightGamepad];
-      for (let i = 0; i < gamepads.length; i++) {
-        gamepads[i].ontriggerhapticpulse = (value, duration) => {
-          if (vrPresentState.isPresenting) {
-            value = Math.min(Math.max(value, 0), 1);
-            const deviceIndex = vrPresentState.system.GetTrackedDeviceIndexForControllerRole(i + 1);
-
-            const startTime = Date.now();
-            const _recurse = () => {
-              if ((Date.now() - startTime) < duration) {
-                vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
-                setTimeout(_recurse, 50);
-              }
-            };
-            setTimeout(_recurse, 50);
-          }
-        };
-      }
-    } else {
-      const gamepads = [leftGamepad, rightGamepad];
-      for (let i = 0; i < gamepads.length; i++) {
-        gamepads[i].ontriggerhapticpulse = null
-      }
-    }
-  });
-
   window.addEventListener('error', err => {
     console.warn('got error', err);
   });
@@ -707,6 +714,79 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.wait += diff;
       timestamps.total += diff;
       timestamps.last = now;
+    }
+
+    for (let i = 0; i < allGamepads.length; i++) {
+      const gamepad = gamepads[i] = allGamepads[i];
+      if (gamepad && gamepad.index < 0) {
+        gamepadState.system.GetControllerState(gamepad.index, localGamepadArray);
+        if (!isNaN(localGamepadArray[0])) {
+
+          let u = 1;
+          const GAMEPAD = {
+            DPAD_UP: u++,
+            DPAD_DOWN: u++,
+            DPAD_LEFT: u++,
+            DPAD_RIGHT: u++,
+            START: u++,
+            BACK: u++,
+            LEFT_THUMB: u++,
+            RIGHT_THUMB: u++,
+            LEFT_SHOULDER: u++,
+            RIGHT_SHOULDER: u++,
+            A: u++,
+            B: u++,
+            X: u++,
+            Y: u++,
+            THUMB_LX: u++,
+            THUMB_LY: u++,
+            THUMB_RX: u++,
+            THUMB_RY: u++,
+            LEFT_TRIGGER: u++,
+            RIGHT_TRIGGER: (u++,u++),
+          }
+          // https://w3c.github.io/gamepad/#remapping
+          gamepad.buttons[0].pressed = localGamepadArray[GAMEPAD.A] !== 0;
+          gamepad.buttons[1].pressed = localGamepadArray[GAMEPAD.B] !== 0;
+          gamepad.buttons[2].pressed = localGamepadArray[GAMEPAD.X] !== 0;
+          gamepad.buttons[3].pressed = localGamepadArray[GAMEPAD.Y] !== 0;
+          gamepad.buttons[4].pressed = localGamepadArray[GAMEPAD.LEFT_SHOULDER] !== 0;
+          gamepad.buttons[5].pressed = localGamepadArray[GAMEPAD.RIGHT_SHOULDER] !== 0;
+          gamepad.buttons[6].value = localGamepadArray[GAMEPAD.LEFT_TRIGGER];
+          gamepad.buttons[7].value = localGamepadArray[GAMEPAD.RIGHT_TRIGGER];
+          gamepad.buttons[6].pressed = gamepad.buttons[6].value >= 1.0;
+          gamepad.buttons[7].pressed = gamepad.buttons[7].value >= 1.0;
+          gamepad.buttons[6].touched = gamepad.buttons[6].value > 0.0;
+          gamepad.buttons[7].touched = gamepad.buttons[7].value > 0.0;
+          gamepad.buttons[8].pressed = localGamepadArray[GAMEPAD.BACK] !== 0;
+          gamepad.buttons[9].pressed = localGamepadArray[GAMEPAD.START] !== 0;
+          gamepad.buttons[10].pressed = localGamepadArray[GAMEPAD.LEFT_THUMB] !== 0;
+          gamepad.buttons[11].pressed = localGamepadArray[GAMEPAD.RIGHT_THUMB] !== 0;
+          gamepad.buttons[12].pressed = localGamepadArray[GAMEPAD.DPAD_UP] !== 0;
+          gamepad.buttons[13].pressed = localGamepadArray[GAMEPAD.DPAD_DOWN] !== 0;
+          gamepad.buttons[14].pressed = localGamepadArray[GAMEPAD.DPAD_LEFT] !== 0;
+          gamepad.buttons[15].pressed = localGamepadArray[GAMEPAD.DPAD_RIGHT] !== 0;
+          gamepad.axes[0] = localGamepadArray[GAMEPAD.THUMB_LX];
+          gamepad.axes[1] = localGamepadArray[GAMEPAD.THUMB_LY];
+          gamepad.axes[2] = localGamepadArray[GAMEPAD.THUMB_RX];
+          gamepad.axes[3] = localGamepadArray[GAMEPAD.THUMB_RY];
+          gamepad.axes[4] = localGamepadArray[GAMEPAD.LEFT_TRIGGER];
+          gamepad.axes[5] = 0;
+          gamepad.axes[6] = localGamepadArray[GAMEPAD.RIGHT_TRIGGER];
+          gamepad.axes[7] = 0;
+
+          for (let i = 0; i < 16; i++) {
+            if (i !== 6 && i !== 7) {
+              gamepad.buttons[i].touched = gamepad.buttons[i].pressed;
+            }
+          }
+
+          gamepads[i] = gamepad;
+        } else {
+          gamepads[i] = null;
+        }
+        window.top.updateGamepad(i, gamepads[i]);
+      }
     }
 
     if (vrPresentState.isPresenting) {
