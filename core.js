@@ -3082,7 +3082,7 @@ class MediaRecorder extends EventEmitter {
 class HTMLTemplateElement extends HTMLElement {
   constructor(attrs = [], value = '', location = null) {
     super('TEMPLATE', attrs, value, location);
-    
+
     this._childNodes = [];
   }
 
@@ -3093,19 +3093,19 @@ class HTMLTemplateElement extends HTMLElement {
     return content;
   }
   set content(content) {}
-  
+
   get childNodes() {
     return [];
   }
   set childNodes(childNodes) {
     this._childNodes = childNodes;
   }
-  
+
   get children() {
     return [];
   }
   set children(children) {}
-  
+
   get innerHTML() {
     return parse5.serialize({
       tagName: this.tagName,
