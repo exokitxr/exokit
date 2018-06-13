@@ -754,22 +754,18 @@ class XRDevice {
     return Promise.resolve(null);
   }
   requestSession({exclusive = false, outputContext} = {}) {
-    if (outputContext) {
-      if (!this.session) {
-        const session = new XRSession({
-          device: this,
-          exclusive,
-          outputContext,
-        });
-        session.once('end', () => {
-          this.session = null;
-        });
-        this.session = session;
-      }
-      return Promise.resolve(this.session);
-    } else {
-      return Promise.reject(new Error('outputContext is required'));
+    if (!this.session) {
+      const session = new XRSession({
+        device: this,
+        exclusive,
+        outputContext,
+      });
+      session.once('end', () => {
+        this.session = null;
+      });
+      this.session = session;
     }
+    return Promise.resolve(this.session);
   }
   update(update) {
     if (this.session) {
