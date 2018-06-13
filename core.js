@@ -1956,7 +1956,7 @@ class Element extends Node {
   get classList() {
     if (!this._classList) {
       this._classList = new ClassList(this.className, className => {
-        _setAttributeRaw(this, 'className', className);
+        _setAttributeRaw(this, 'class', className);
       });
     }
     return this._classList;
