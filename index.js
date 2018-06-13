@@ -570,6 +570,7 @@ const _bindWindow = (window, newWindowCb) => {
   const timestamps = {
     frames: 0,
     last: Date.now(),
+    idle: 0,
     wait: 0,
     pose: 0,
     prepare: 0,
@@ -688,9 +689,10 @@ const _bindWindow = (window, newWindowCb) => {
   const _recurse = () => {
     if (args.performance) {
       if (timestamps.frames >= TIMESTAMP_FRAMES) {
-        console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.wait}ms wait | ${timestamps.pose}ms pose | ${timestamps.prepare}ms prepare | ${timestamps.events}ms events | ${timestamps.media}ms media | ${timestamps.user}ms user | ${timestamps.submit}ms submit`);
+        console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.idle}ms idle | ${timestamps.wait}ms wait | ${timestamps.pose}ms pose | ${timestamps.prepare}ms prepare | ${timestamps.events}ms events | ${timestamps.media}ms media | ${timestamps.user}ms user | ${timestamps.submit}ms submit`);
 
         timestamps.frames = 0;
+        timestamps.idle = 0;
         timestamps.wait = 0;
         timestamps.pose = 0;
         timestamps.prepare = 0;
@@ -704,7 +706,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
       const now = Date.now();
       const diff = now - timestamps.last;
-      timestamps.wait += diff;
+      timestamps.idle += diff;
       timestamps.total += diff;
       timestamps.last = now;
     }
