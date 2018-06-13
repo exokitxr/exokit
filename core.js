@@ -454,24 +454,64 @@ class MutationObserver {
   }
 
   bind(el) {
-    el.traverse(el => {
-      const _attribute = (name, value) => this.handleAttribute(el, name, value);
-      el.on('attribute', _attribute);
-      const _children = (addedNodes, removedNodes, previousSibling, nextSibling) => this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
+    const _bind = el => {
+      let _attribute = null;
+      let _children = null;
+      let _value = null;
+
+      if (this.options.attributes) {
+        if (this.options.attributeFilter) {
+          _attribute = (name, value) => {
+            if (this.options.attributeFilter.includes(name)) {
+              this.handleAttribute(el, name, value);
+            }
+          };
+        } else {
+          _attribute = (name, value) => {
+            this.handleAttribute(el, name, value);
+          };
+        }
+        el.on('attribute', _attribute);
+      }
+
+      _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
+        // if (this.options.childList) {
+          this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
+        // }
+        if (this.subtree) {
+          for (let i = 0; i < removedNodes.length; i++) {
+            this.unbind(removedNodes[i]);
+          }
+          for (let i = 0; i < addedNodes.length; i++) {
+            this.bind(addedNodes[i]);
+          }
+        }
+      };
       el.on('children', _children);
-      const _value = () => this.handleValue(el);
-      el.on('value', _value);
+
+      if (this.options.characterData) {
+        _value = () => {
+          this.handleValue(el);
+        }
+        el.on('value', _value);
+      }
 
       this.bindings.set(el, [
         _attribute,
         _children,
         _value,
       ]);
-    });
+    };
+
+    if (this.options.subtree) {
+      el.traverse(_bind);
+    } else {
+      _bind(el);
+    }
   }
 
   unbind(el) {
-    el.traverse(el => {
+    const _unbind = el => {
       const bindings = this.bindings.get(el);
       if (bindings) {
         const [
@@ -479,12 +519,24 @@ class MutationObserver {
           _children,
           _value,
         ] = bindings;
-        el.removeListener('attribute', _attribute);
-        el.removeListener('children', _children);
-        el.removeListener('value', _value);
+        if (_attribute) {
+          el.removeListener('attribute', _attribute);
+        }
+        if (_children) {
+          el.removeListener('children', _children);
+        }
+        if (_value) {
+          el.removeListener('value', _value);
+        }
         this.bindings.delete(el);
       }
-    });
+    };
+
+    if (this.options.subtree) {
+      el.traverse(_unbind);
+    } else {
+      _unbind(el);
+    }
   }
 
   flush() {
@@ -505,13 +557,6 @@ class MutationObserver {
 
   handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
     this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes, previousSibling, nextSibling, null, null, null));
-
-    for (let i = 0; i < addedNodes.length; i++) {
-      this.bind(addedNodes[i]);
-    }
-    for (let i = 0; i < removedNodes.length; i++) {
-      this.unbind(removedNodes[i]);
-    }
 
     setImmediate(() => {
       this.flush();
