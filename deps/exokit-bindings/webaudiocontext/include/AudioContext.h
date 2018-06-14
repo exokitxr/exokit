@@ -13,6 +13,7 @@
 #include <GainNode.h>
 #include <AnalyserNode.h>
 #include <PannerNode.h>
+#include <OscillatorNode.h>
 #include <StereoPannerNode.h>
 #include <ScriptProcessorNode.h>
 #include <AudioListener.h>
@@ -29,7 +30,7 @@ lab::AudioContext *getDefaultAudioContext(float sampleRate = lab::DefaultSampleR
 
 class AudioContext : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons);
+  static Handle<Object> Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons);
   void Close();
   Local<Object> CreateMediaElementSource(Local<Function> audioDestinationNodeConstructor, Local<Object> mediaElement, Local<Object> audioContextObj);
   Local<Object> CreateMediaStreamSource(Local<Function> audioSourceNodeConstructor, Local<Object> mediaStream, Local<Object> audioContextObj);
@@ -39,6 +40,7 @@ public:
   Local<Object> CreateAnalyser(Local<Function> analyserNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreatePanner(Local<Function> pannerNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateStereoPanner(Local<Function> stereoPannerNodeConstructor, Local<Object> audioContextObj);
+  Local<Object> CreateOscillator(Local<Function> oscillatorNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateBuffer(Local<Function> audioBufferConstructor, uint32_t bufferSize, uint32_t numberOfInputChannels, uint32_t numberOfOutputChannels);
   Local<Object> CreateBufferSource(Local<Function> audioBufferSourceNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateScriptProcessor(Local<Function> scriptProcessorNodeConstructor, uint32_t bufferSize, uint32_t numberOfInputChannels, uint32_t numberOfOutputChannels, Local<Object> audioContextObj);
@@ -56,6 +58,7 @@ protected:
   static NAN_METHOD(CreateAnalyser);
   static NAN_METHOD(CreatePanner);
   static NAN_METHOD(CreateStereoPanner);
+  static NAN_METHOD(CreateOscillator);
   static NAN_METHOD(CreateBuffer);
   static NAN_METHOD(CreateBufferSource);
   static NAN_METHOD(CreateScriptProcessor);
