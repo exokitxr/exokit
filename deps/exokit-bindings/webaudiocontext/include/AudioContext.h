@@ -15,6 +15,7 @@
 #include <PannerNode.h>
 #include <OscillatorNode.h>
 #include <StereoPannerNode.h>
+#include <AudioBuffer.h>
 #include <ScriptProcessorNode.h>
 #include <AudioListener.h>
 #include <MediaStreamTrack.h>
