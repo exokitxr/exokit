@@ -2706,7 +2706,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     this.on('innerHTML', innerHTML => {
       if (this.isRunnable()) {
         const window = this.ownerDocument.defaultView;
-        _runJavascript(innerHTML, window, window.location.href, this.location.line !== null ? this.location.line - 1 : 0, this.location.col !== null ? this.location.col - 1 : 0);
+        _runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
 
         this.readyState = 'complete';
 
