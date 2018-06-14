@@ -2229,12 +2229,7 @@ class Element extends Node {
       this._children.update();
     }
 
-    if (oldChildNodes.length > 0) {
-      this._emit('children', [], oldChildNodes, null, null);
-    }
-    if (newChildNodes.length > 0) {
-      this._emit('children', newChildNodes, [], null, null);
-    }
+    this._emit('children', newChildNodes, oldChildNodes, null, null);
     this.ownerDocument._emit('domchange');
 
     _promiseSerial(newChildNodes.map(childNode => () => _runHtml(childNode, this.ownerDocument.defaultView)))
