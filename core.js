@@ -478,7 +478,7 @@ class MutationObserver {
         // if (this.options.childList) {
           this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
         // }
-        if (this.subtree) {
+        if (this.options.subtree) {
           for (let i = 0; i < removedNodes.length; i++) {
             this.unbind(removedNodes[i]);
           }
