@@ -33,7 +33,7 @@ after_test:
       set version "$env:APPVEYOR_REPO_TAG_NAME"
       if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_REPO_COMMIT".Substring(0, 8) }
       mkdir dist
-      .\buildtools\iscc "$pwd\exokit.iss" "/dMyAppVersion=$version" /odist
+      .\buildtools\iscc "$pwd\exokit.iss" "/dMyAppVersion=$version" /odist /qp
       mv dist\*.exe exokit-win-x64.exe
       rm -R -fo dist
       & "C:/Program Files (x86)/Microsoft SDKs/Windows/v7.1A/Bin/SignTool.exe" sign /f .\codesign-windows.pfx /t http://timestamp.comodoca.com/authenticode /p "$env:PFX_KEY" exokit-win-x64.exe
