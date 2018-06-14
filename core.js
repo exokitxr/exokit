@@ -2752,6 +2752,8 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
   set innerHTML(innerHTML) {
     innerHTML = innerHTML + '';
+
+    this.childNodes = new NodeList([new Text(innerHTML)]);
     this._emit('innerHTML', innerHTML);
   }
 
