@@ -1968,6 +1968,59 @@ class Element extends Node {
       this.ownerDocument._emit('domchange');
     }
   }
+  insertAdjacentHTML(position, text) {
+    const _getEls = text => parse5.parseFragment(text, {
+      locationInfo: true,
+    })
+      .childNodes
+      .map(childNode =>
+        _fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
+      );
+    switch (position) {
+      case 'beforebegin': {
+        const index = this.parentNode.childNodes.indexOf(this);
+        const newChildNodes = _getEls(text);
+        this.parentNode.childNodes.splice.apply(this.parentNode.childNodes, [
+          index,
+          0,
+        ].concat(newChildNodes));
+        this.parentNode._emit('children', newChildNodes, [], null, null);
+        break;
+      }
+      case 'afterbegin': {
+        const newChildNodes = _getEls(text);
+        this.childNodes.splice.apply(this.childNodes, [
+          0,
+          0,
+        ].concat(newChildNodes));
+        this._emit('children', newChildNodes, [], null, null);
+        break;
+      }
+      case 'beforeend': {
+        const newChildNodes = _getEls(text);
+        this.childNodes.splice.apply(this.childNodes, [
+          this.childNodes.length,
+          0,
+        ].concat(newChildNodes));
+        this._emit('children', newChildNodes, [], null, null);
+        break;
+      }
+      case 'afterend': {
+        const index = this.parentNode.childNodes.indexOf(this);
+        const newChildNodes = _getEls(text);
+        this.parentNode.childNodes.splice.apply(this.parentNode.childNodes, [
+          index + 1,
+          0,
+        ].concat(newChildNodes));
+        this.parentNode._emit('children', newChildNodes, [], null, null);
+        break;
+      }
+      default: {
+        throw new Error('invalid position: ' + position);
+        break;
+      }
+    }
+  }
 
   get firstChild() {
     return this.childNodes.length > 0 ? this.childNodes[0] : null;
