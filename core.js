@@ -1443,7 +1443,7 @@ class NodeList extends Array {
       this.push.apply(this, nodes);
     }
   }
-  
+
   item(k) {
     const v = this[k];
     return v !== undefined ? v : null;
