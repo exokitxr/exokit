@@ -2812,6 +2812,7 @@ class HTMLMediaElement extends HTMLSrcableElement {
     this._startTimestamp = Date.now();
   }
   pause() {}
+  load() {}
 
   get paused() {
     return true;
