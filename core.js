@@ -2808,11 +2808,6 @@ class HTMLMediaElement extends HTMLSrcableElement {
     this._startTimestamp = null;
   }
 
-  get currentTime() {
-    return this._startTime + (this._startTimestamp !== null ? (Date.now() - this._startTimestamp) : 0);
-  }
-  set currentTime(currentTime) {}
-
   play() {
     this._startTimestamp = Date.now();
   }
@@ -2825,6 +2820,10 @@ class HTMLMediaElement extends HTMLSrcableElement {
     this._startTime = this.currentTime;
     this._startTimestamp = null;
   }
+  get currentTime() {
+    return this._startTime + (this._startTimestamp !== null ? (Date.now() - this._startTimestamp) : 0);
+  }
+  set currentTime(currentTime) {}
   get duration() {
     return 1;
   }
