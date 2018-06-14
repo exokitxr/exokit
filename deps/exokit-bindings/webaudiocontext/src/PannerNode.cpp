@@ -77,7 +77,7 @@ NAN_METHOD(PannerNode::New) {
     Local<Object> positionZAudioParamObj = fakeAudioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
     FakeAudioParam *positionZAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(positionZAudioParamObj);
     positionZAudioParam->getter = [=]() -> float { return labPannerNode->position().z; };
-    positionYAudioParam->setter = [=](float z) -> void { lab::FloatPoint3D position = labPannerNode->position(); labPannerNode->setPosition(position.x, position.y, z); };
+    positionZAudioParam->setter = [=](float z) -> void { lab::FloatPoint3D position = labPannerNode->position(); labPannerNode->setPosition(position.x, position.y, z); };
     pannerNodeObj->Set(JS_STR("positionZ"), positionZAudioParamObj);
 
     Local<Object> orientationXAudioParamObj = fakeAudioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
