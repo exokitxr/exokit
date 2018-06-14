@@ -1928,7 +1928,7 @@ class Element extends Node {
         this._children.update();
       }
 
-      this._emit('children', [], [oldChild], this.childNodes[index - 1] || null, this.childNodes[index] || null);
+      this._emit('children', [newChild], [oldChild], this.childNodes[index - 1] || null, this.childNodes[index] || null);
       this.ownerDocument._emit('domchange');
 
       return oldChild;
