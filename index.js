@@ -545,7 +545,7 @@ const _bindWindow = (window, newWindowCb) => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
 
-      if (context.isDirty()) {
+      if (context.canvas.ownerDocument.defaultView === window && context.isDirty()) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
         context.flush();
