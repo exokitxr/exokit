@@ -45,7 +45,6 @@ void Audio::Load(uint8_t *bufferValue, size_t bufferLength) {
   memcpy(buffer.data(), bufferValue, bufferLength);
 
   string error;
-
   shared_ptr<lab::AudioBus> audioBus(lab::MakeBusFromMemory(buffer, false, &error));
   if (audioBus) {
     lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
