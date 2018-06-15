@@ -224,7 +224,7 @@ let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
 nativeVr.requestPresent = function(layers) {
-  if (!vrPresentState.isPresenting) {
+  if (!vrPresentState.glContext) {
     const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
     if (layer) {
       const canvas = layer.source;
