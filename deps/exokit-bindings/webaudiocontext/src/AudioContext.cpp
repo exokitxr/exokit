@@ -161,7 +161,8 @@ Local<Object> AudioContext::DecodeAudioData(Local<Function> audioBufferConstruct
       lab::AudioChannel *audioChannel = audioBus->channel(i);
       const float *source = audioChannel->data();
 
-      Local<ArrayBuffer> sourceArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (void *)source, numFrames * sizeof(float));
+      Local<ArrayBuffer> sourceArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), numFrames * sizeof(float));
+      memcpy(sourceArrayBuffer->GetContents().Data(), source, sourceArrayBuffer->ByteLength());
       Local<Float32Array> sourceFloat32Array = Float32Array::New(sourceArrayBuffer, 0, numFrames);
       sourcesArray->Set(i, sourceFloat32Array);
     }
