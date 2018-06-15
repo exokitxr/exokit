@@ -231,8 +231,11 @@ nativeVr.requestPresent = function(layers) {
       const context = canvas._context;
       const window = canvas.ownerDocument.defaultView;
 
-      const vrContext = nativeVr.getContext();
-      const system = nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+      const vrContext = vrPresentState.vrContext || nativeVr.getContext();
+      const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+      const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
+
+      const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
 
       const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
       const width = halfWidth * 2;
@@ -247,15 +250,16 @@ nativeVr.requestPresent = function(layers) {
       context.setDefaultFramebuffer(msFbo);
 
       vrPresentState.isPresenting = true;
+      vrPresentState.vrContext = vrContext;
       vrPresentState.system = system;
-      vrPresentState.compositor = vrContext.compositor.NewCompositor();
+      vrPresentState.compositor = compositor;
       vrPresentState.glContext = context;
       vrPresentState.msFbo = msFbo;
       vrPresentState.msTex = msTex;
       vrPresentState.fbo = fbo;
       vrPresentState.tex = tex;
 
-      vrPresentState.lmContext = nativeLm && new nativeLm();
+      vrPresentState.lmContext = lmContext;
 
       window.top.updateVrFrame({
         renderWidth,
