@@ -149,6 +149,13 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       canvas._context = null;
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
+      if (gl === vrPresentState.glContext) {
+        vrPresentState.glContext = null;
+      }
+      if (gl === mlGlContext) {
+        mlGlContext = null;
+      }
+
       contexts.splice(contexts.indexOf(gl), 1);
     })(gl.destroy);
 
