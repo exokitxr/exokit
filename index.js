@@ -1142,7 +1142,7 @@ const _start = () => {
 
         if (args.test) {
             process.exit(0);
-            /*
+          /*
           window.setDirtyFrameTimeout({
             dirtyFrames: 1,
             timeout: 5000,
@@ -1152,9 +1152,10 @@ const _start = () => {
             } else {
               console.warn(err.stack);
               process.exit(1);
-            */
-        }
+            }
+
           });
+          */
         } else if (args.image) {
           window.setDirtyFrameTimeout({
             dirtyFrames: 100,
