@@ -110,7 +110,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     if (document.hidden) {
       const [framebuffer, colorTexture, depthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, 1, sharedColorTexture, sharedDepthStencilTexture);
       gl.setDefaultFramebuffer(framebuffer);
-      
+
       canvas.on('attribute', (name, value) => {
         if (name === 'width' || name === 'height') {
           nativeWindow.resizeRenderTarget(gl, canvas.width, canvas.height, 1, framebuffer, colorTexture, depthStencilTexture);
@@ -561,7 +561,7 @@ const _bindWindow = (window, newWindowCb) => {
 
             nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
           }
-          
+
           nativeWindow.swapBuffers(windowHandle);
 
           numDirtyFrames++;
