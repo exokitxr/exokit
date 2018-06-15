@@ -241,17 +241,15 @@ public:
     return framebufferBindings.find(target) != framebufferBindings.end();
   }
   
-  void SetTextureBinding(GLenum target, GLuint texture) {
-    textureBindings[target] = texture;
+  void SetTextureBinding(GLenum framebuffer, GLenum target, GLuint texture) {
+    textureBindings[std::make_pair(framebuffer, target)] = texture;
   }
-  GLuint GetTextureBinding(GLenum target) {
-    return textureBindings[target];
+  GLuint GetTextureBinding(GLenum framebuffer, GLenum target) {
+    return textureBindings[std::make_pair(framebuffer, target)];
   }
-  bool HasTextureBinding(GLenum target) {
-    return textureBindings.find(target) != textureBindings.end();
+  bool HasTextureBinding(GLenum framebuffer, GLenum target) {
+    return textureBindings.find(std::make_pair(framebuffer, target)) != textureBindings.end();
   }
-  
-  static GLuint SystemTextureUnit;
 
   bool live;
   GLFWwindow *windowHandle;
@@ -263,7 +261,7 @@ public:
   GLint unpackAlignment;
   GLuint activeTexture;
   std::map<GLenum, GLuint> framebufferBindings;
-  std::map<GLenum, GLuint> textureBindings;
+  std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
 };
 
 #endif

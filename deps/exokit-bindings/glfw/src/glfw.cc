@@ -809,10 +809,6 @@ NAN_METHOD(CreateRenderTarget) {
   GLuint sharedColorTex = info[4]->Uint32Value();
   GLuint sharedDepthStencilTex = info[5]->Uint32Value();
 
-  if (gl->activeTexture != WebGLRenderingContext::SystemTextureUnit) {
-    glActiveTexture(WebGLRenderingContext::SystemTextureUnit);
-  }
-
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -880,18 +876,14 @@ NAN_METHOD(CreateRenderTarget) {
   if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
     glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
   }
-  if (gl->activeTexture == WebGLRenderingContext::SystemTextureUnit) {
-    if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
-      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
-    }
-    if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
-    }
-    if (gl->HasTextureBinding(GL_TEXTURE_CUBE_MAP)) {
-      glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(GL_TEXTURE_CUBE_MAP));
-    }
-  } else {
-    glActiveTexture(gl->activeTexture);
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
   }
 }
 
@@ -904,28 +896,20 @@ NAN_METHOD(ResizeRenderTarget) {
   GLuint colorTex = info[5]->Uint32Value();
   GLuint depthStencilTex = info[6]->Uint32Value();
 
-  if (gl->activeTexture != WebGLRenderingContext::SystemTextureUnit) {
-    glActiveTexture(WebGLRenderingContext::SystemTextureUnit);
-  }
-
   glBindTexture(GL_TEXTURE_2D, colorTex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
   glBindTexture(GL_TEXTURE_2D, depthStencilTex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 
-  if (gl->activeTexture == WebGLRenderingContext::SystemTextureUnit) {
-    if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
-      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
-    }
-    if (gl->HasTextureBinding(GL_TEXTURE_2D_MULTISAMPLE)) {
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE_2D_MULTISAMPLE));
-    }
-    if (gl->HasTextureBinding(GL_TEXTURE_CUBE_MAP)) {
-      glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(GL_TEXTURE_CUBE_MAP));
-    }
-  } else {
-    glActiveTexture(gl->activeTexture);
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
   }
 }
 
