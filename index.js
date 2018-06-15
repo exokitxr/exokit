@@ -716,7 +716,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.last = now;
     }
 
-    if (vrPresentState.isPresenting && vrPresentState.glContext.canvas.ownerDocument.defaultView === window) {
+    if (vrPresentState.isPresenting && vrPresentState.glContext && vrPresentState.glContext.canvas.ownerDocument.defaultView === window) {
       // wait for frame
       vrPresentState.compositor.WaitGetPoses(
         vrPresentState.system,
@@ -873,7 +873,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.total += diff;
         timestamps.last = now;
       }
-    } else if (isMlPresenting && mlGlContext.canvas.ownerDocument === window) {
+    } else if (isMlPresenting && mlGlContext && mlGlContext.canvas.ownerDocument === window) {
       mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
       if (args.performance) {
         const now = Date.now();
