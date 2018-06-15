@@ -20,7 +20,7 @@ test_script:
   - npm --version
   # run tests
   - npm test
-  - ./testRun.sh
+  - bash testRun.sh
 
 after_test:
   - ps: |
