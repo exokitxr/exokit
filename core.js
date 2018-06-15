@@ -158,6 +158,14 @@ class History extends EventEmitter {
 }
 
 class EventTarget extends EventEmitter {
+  constructor() {
+    super();
+    
+    this.on('error', err => {
+      console.warn(err);
+    });
+  }
+  
   addEventListener(event, listener) {
     if (typeof listener === 'function') {
       this.on(event, listener);
