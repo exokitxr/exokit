@@ -20,7 +20,6 @@ test_script:
   - npm --version
   # run tests
   - npm test
-  - bash testRun.sh
 
 after_test:
   - ps: |
@@ -31,6 +30,7 @@ after_test:
       mv node-v10.4.1-win-x64 node
       $env:Path = "$pwd\node;$env:Path";
       .\node\npm install
+      bash testRun.sh
       set version "$env:APPVEYOR_REPO_TAG_NAME"
       if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_REPO_COMMIT".Substring(0, 8) }
       mkdir dist
@@ -41,7 +41,6 @@ after_test:
       7z a exokit-windows-full.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe'
       rm -r -fo node
       7z a exokit-windows.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe' -xr'!exokit-windows-full.zip'
-      ./testRun.sh
 
 artifacts:
   - path: "exokit-windows.zip"
