@@ -1142,15 +1142,17 @@ const _start = () => {
 
         if (args.test) {
             process.exit(0);
-          // window.setDirtyFrameTimeout({
-          //   dirtyFrames: 1,
-          //   timeout: 5000,
-          // }, err => {
-          //   if (!err) {
-          //     process.exit(0);
-          //   } else {
-          //     console.warn(err.stack);
-          //     process.exit(1);
+            /*
+          window.setDirtyFrameTimeout({
+            dirtyFrames: 1,
+            timeout: 5000,
+          }, err => {
+            if (!err) {
+              process.exit(0);
+            } else {
+              console.warn(err.stack);
+              process.exit(1);
+            */
         }
           });
         } else if (args.image) {
