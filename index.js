@@ -37,6 +37,7 @@ const args = (() => {
         'performance',
         'frame',
         'minimalFrame',
+        'test',
         'blit',
         'require',
       ],
@@ -52,6 +53,7 @@ const args = (() => {
         s: 'size',
         f: 'frame',
         m: 'minimalFrame',
+        t: 'test',
         b: 'blit',
         i: 'image',
         r: 'require',
@@ -65,6 +67,7 @@ const args = (() => {
       size: minimistArgs.size,
       frame: minimistArgs.frame,
       minimalFrame: minimistArgs.minimalFrame,
+      test: minimistArgs.test,
       blit: minimistArgs.blit,
       image: minimistArgs.image,
       require: minimistArgs.require,
@@ -79,7 +82,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasHeight = canvas.height || innerHeight;
   const windowSpec = (() => {
     try {
-      const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
+      const visible = !args.test && !args.image && canvas.ownerDocument.documentElement.contains(canvas);
       const {hidden} = canvas.ownerDocument;
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
       const firstGl = contexts.length > 0 ? contexts[0] : null;
@@ -1137,7 +1140,19 @@ const _start = () => {
           return arrayBuffer2;
         };
 
-        if (args.image) {
+        if (args.test) {
+          window.setDirtyFrameTimeout({
+            dirtyFrames: 1,
+            timeout: 5000,
+          }, err => {
+            if (!err) {
+              process.exit(0);
+            } else {
+              console.warn(err.stack);
+              process.exit(1);
+            }
+          });
+        } else if (args.image) {
           window.setDirtyFrameTimeout({
             dirtyFrames: 100,
             timeout: 5000,
