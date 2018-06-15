@@ -43,7 +43,6 @@ const args = (() => {
       string: [
         'size',
         'image',
-        'depth-image',
       ],
       alias: {
         v: 'version',
@@ -55,7 +54,6 @@ const args = (() => {
         m: 'minimalFrame',
         b: 'blit',
         i: 'image',
-        d: 'depth-image',
         r: 'require',
       },
     });
@@ -69,7 +67,6 @@ const args = (() => {
       minimalFrame: minimistArgs.minimalFrame,
       blit: minimistArgs.blit,
       image: minimistArgs.image,
-      depthImage: minimistArgs['depth-image'],
       require: minimistArgs.require,
     };
   } else {
@@ -1156,33 +1153,6 @@ const _start = () => {
                 _flipImage(width, height, 4, arrayBuffer),
               ], width, height, 0));
               fs.writeFileSync(args.image, result);
-
-              process.exit(0);
-            } else {
-              throw err;
-            }
-          });
-        } else if (args.depthImage) {
-          window.setDirtyFrameTimeout({
-            dirtyFrames: 100,
-            timeout: 5000,
-          }, (err, gl) => {
-            if (!err) {
-              const {canvas} = gl;
-              const {width, height} = canvas;
-
-              const arrayBuffer = new ArrayBuffer(width * height * 4);
-              const uint8Array = new Uint8Array(arrayBuffer);
-              gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
-              const diffuseImage = Buffer.from(UPNG.encode([
-                _flipImage(width, height, 4, arrayBuffer),
-              ], width, height, 0));
-              fs.writeFileSync(args.depthImage + '.png', diffuseImage);
-
-              const float32Array = new Float32Array(arrayBuffer);
-              gl.readPixels(0, 0, width, height, gl.DEPTH_COMPONENT, gl.FLOAT, float32Array);
-              const depthImage = Buffer.from(_flipImage(width, height, 4, arrayBuffer));
-              fs.writeFileSync(args.depthImage + '.depth', depthImage);
 
               process.exit(0);
             } else {
