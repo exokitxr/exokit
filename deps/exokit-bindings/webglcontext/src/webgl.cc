@@ -2507,13 +2507,17 @@ NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
 }
 
 NAN_METHOD(WebGLRenderingContext::BindRenderbuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLenum target = info[0]->Int32Value();
-  GLuint buffer = info[1]->IsNull() ?
+  GLuint renderbuffer = info[1]->IsNull() ?
     0
   :
     info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
 
-  glBindRenderbuffer(target, buffer);
+  glBindRenderbuffer(target, renderbuffer);
+
+  gl->SetRenderbufferBinding(target, renderbuffer);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }

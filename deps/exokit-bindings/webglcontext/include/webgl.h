@@ -241,6 +241,16 @@ public:
     return framebufferBindings.find(target) != framebufferBindings.end();
   }
   
+  void SetRenderbufferBinding(GLenum target, GLuint renderbuffer) {
+    renderbufferBindings[target] = renderbuffer;
+  }
+  GLuint GetRenderbufferBinding(GLenum target) {
+    return renderbufferBindings[target];
+  }
+  bool HasRenderbufferBinding(GLenum target) {
+    return renderbufferBindings.find(target) != renderbufferBindings.end();
+  }
+  
   void SetTextureBinding(GLenum framebuffer, GLenum target, GLuint texture) {
     textureBindings[std::make_pair(framebuffer, target)] = texture;
   }
@@ -261,6 +271,7 @@ public:
   GLint unpackAlignment;
   GLuint activeTexture;
   std::map<GLenum, GLuint> framebufferBindings;
+  std::map<GLenum, GLuint> renderbufferBindings;
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
 };
 
