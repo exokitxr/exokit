@@ -1141,7 +1141,7 @@ const _start = () => {
         };
 
         if (args.test) {
-            process.exit(0);
+          process.exit(0);
           /*
           window.setDirtyFrameTimeout({
             dirtyFrames: 1,
@@ -1245,7 +1245,6 @@ const _start = () => {
       }
       callback(err, result);
     };
-      process.exit();
       const r = repl.start({
       prompt: _getPrompt(),
       eval: replEval,
