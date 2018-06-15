@@ -2511,7 +2511,7 @@ NAN_METHOD(WebGLRenderingContext::BindRenderbuffer) {
   GLuint buffer = info[1]->IsNull() ?
     0
   :
-    info[1]->ToObject()->Get(JS_STR("id"))->Int32Value();
+    info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
 
   glBindRenderbuffer(target, buffer);
 
