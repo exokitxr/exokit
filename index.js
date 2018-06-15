@@ -1241,7 +1241,8 @@ const _start = () => {
       }
       callback(err, result);
     };
-    const r = repl.start({
+      process.exit();
+      const r = repl.start({
       prompt: _getPrompt(),
       eval: replEval,
     });
