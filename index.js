@@ -1140,9 +1140,7 @@ const _start = () => {
           return arrayBuffer2;
         };
 
-        if (args.test) {
-          process.exit(0);
-        } else if (args.image) {
+        if (args.image) {
           window.setDirtyFrameTimeout({
             dirtyFrames: 100,
             timeout: 5000,
@@ -1231,7 +1229,10 @@ const _start = () => {
       }
       callback(err, result);
     };
-      const r = repl.start({
+    if (args.test) {
+      process.exit();
+    }
+    const r = repl.start({
       prompt: _getPrompt(),
       eval: replEval,
     });
