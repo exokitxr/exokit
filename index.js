@@ -217,6 +217,7 @@ const vrPresentState = {
   msTex: null,
   fbo: null,
   tex: null,
+  hasPose: false,
   lmContext: null,
 };
 let renderWidth = 0;
@@ -314,6 +315,7 @@ let isMlPresenting = false;
 let mlFbo = null;
 let mlTex = null;
 let mlGlContext = null;
+let mlHasPose = false;
 if (nativeMl) {
   mlContext = new nativeMl();
   nativeMl.requestPresent = function(layers) {
@@ -555,13 +557,16 @@ const _bindWindow = (window, newWindowCb) => {
         context.flush();
 
         if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
-          if (vrPresentState.glContext === context) {
+          if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
+
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
+            vrPresentState.hasPose = false;
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
-          } else if (mlGlContext === context) {
+          } else if (mlGlContext === context && mlHasPose) {
             mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
+            mlHasPose = false;
 
             nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
           }
@@ -728,6 +733,7 @@ const _bindWindow = (window, newWindowCb) => {
         localFloat32Array2, // left controller
         localFloat32Array3 // right controller
       );
+      vrPresentState.hasPose = true;
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -879,6 +885,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     } else if (isMlPresenting && mlGlContext && mlGlContext.canvas.ownerDocument === window) {
       mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
+      mlHasPose = true;
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
