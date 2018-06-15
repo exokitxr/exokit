@@ -76,7 +76,7 @@ class Location extends EventEmitter {
   }
   // triggers navigation
   get href() { return this._url.href || ''; }
-  set href(href) { this._url.href = href; this.update(); }
+  set href(href) { this._url = new url.URL(href, this._url.href); this.update(); }
   get protocol() { return this._url.protocol || ''; }
   set protocol(protocol) { this._url.protocol = protocol; this.update(); }
   get host() { return this._url.host || ''; }
@@ -158,6 +158,14 @@ class History extends EventEmitter {
 }
 
 class EventTarget extends EventEmitter {
+  constructor() {
+    super();
+    
+    this.on('error', err => {
+      console.warn(err);
+    });
+  }
+  
   addEventListener(event, listener) {
     if (typeof listener === 'function') {
       this.on(event, listener);

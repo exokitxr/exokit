@@ -37,13 +37,13 @@ const args = (() => {
         'performance',
         'frame',
         'minimalFrame',
+        'test',
         'blit',
         'require',
       ],
       string: [
         'size',
         'image',
-        'depth-image',
       ],
       alias: {
         v: 'version',
@@ -53,9 +53,9 @@ const args = (() => {
         s: 'size',
         f: 'frame',
         m: 'minimalFrame',
+        t: 'test',
         b: 'blit',
         i: 'image',
-        d: 'depth-image',
         r: 'require',
       },
     });
@@ -67,9 +67,9 @@ const args = (() => {
       size: minimistArgs.size,
       frame: minimistArgs.frame,
       minimalFrame: minimistArgs.minimalFrame,
+      test: minimistArgs.test,
       blit: minimistArgs.blit,
       image: minimistArgs.image,
-      depthImage: minimistArgs['depth-image'],
       require: minimistArgs.require,
     };
   } else {
@@ -82,7 +82,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasHeight = canvas.height || innerHeight;
   const windowSpec = (() => {
     try {
-      const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
+      const visible = !args.test && !args.image && canvas.ownerDocument.documentElement.contains(canvas);
       const {hidden} = canvas.ownerDocument;
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
       const firstGl = contexts.length > 0 ? contexts[0] : null;
@@ -110,7 +110,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     if (document.hidden) {
       const [framebuffer, colorTexture, depthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, 1, sharedColorTexture, sharedDepthStencilTexture);
       gl.setDefaultFramebuffer(framebuffer);
-      
+
       canvas.on('attribute', (name, value) => {
         if (name === 'width' || name === 'height') {
           nativeWindow.resizeRenderTarget(gl, canvas.width, canvas.height, 1, framebuffer, colorTexture, depthStencilTexture);
@@ -148,6 +148,13 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       nativeWindow.destroy(windowHandle);
       canvas._context = null;
       canvas.ownerDocument.removeListener('domchange', ondomchange);
+
+      if (gl === vrPresentState.glContext) {
+        vrPresentState.glContext = null;
+      }
+      if (gl === mlGlContext) {
+        mlGlContext = null;
+      }
 
       contexts.splice(contexts.indexOf(gl), 1);
     })(gl.destroy);
@@ -210,6 +217,7 @@ const vrPresentState = {
   msTex: null,
   fbo: null,
   tex: null,
+  hasPose: false,
   lmContext: null,
 };
 let renderWidth = 0;
@@ -217,15 +225,18 @@ let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
 nativeVr.requestPresent = function(layers) {
-  if (!vrPresentState.isPresenting) {
+  if (!vrPresentState.glContext) {
     const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
     if (layer) {
       const canvas = layer.source;
       const context = canvas._context;
       const window = canvas.ownerDocument.defaultView;
 
-      const vrContext = nativeVr.getContext();
-      const system = nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+      const vrContext = vrPresentState.vrContext || nativeVr.getContext();
+      const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+      const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
+
+      const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
 
       const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
       const width = halfWidth * 2;
@@ -240,15 +251,16 @@ nativeVr.requestPresent = function(layers) {
       context.setDefaultFramebuffer(msFbo);
 
       vrPresentState.isPresenting = true;
+      vrPresentState.vrContext = vrContext;
       vrPresentState.system = system;
-      vrPresentState.compositor = vrContext.compositor.NewCompositor();
+      vrPresentState.compositor = compositor;
       vrPresentState.glContext = context;
       vrPresentState.msFbo = msFbo;
       vrPresentState.msTex = msTex;
       vrPresentState.fbo = fbo;
       vrPresentState.tex = tex;
 
-      vrPresentState.lmContext = nativeLm && new nativeLm();
+      vrPresentState.lmContext = lmContext;
 
       window.top.updateVrFrame({
         renderWidth,
@@ -303,10 +315,11 @@ let isMlPresenting = false;
 let mlFbo = null;
 let mlTex = null;
 let mlGlContext = null;
+let mlHasPose = false;
 if (nativeMl) {
   mlContext = new nativeMl();
   nativeMl.requestPresent = function(layers) {
-    if (!isMlPresenting) {
+    if (!mlGlContext) {
       const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
       if (layer) {
         const canvas = layer.source;
@@ -538,23 +551,26 @@ const _bindWindow = (window, newWindowCb) => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
 
-      if (context.isDirty()) {
+      if (context.canvas.ownerDocument.defaultView === window && context.isDirty()) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
         context.flush();
 
         if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
-          if (vrPresentState.glContext === context) {
+          if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
+
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
+            vrPresentState.hasPose = false;
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
-          } else if (mlGlContext === context) {
+          } else if (mlGlContext === context && mlHasPose) {
             mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
+            mlHasPose = false;
 
             nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
           }
-          
+
           nativeWindow.swapBuffers(windowHandle);
 
           numDirtyFrames++;
@@ -709,7 +725,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.last = now;
     }
 
-    if (vrPresentState.isPresenting && vrPresentState.glContext.canvas.ownerDocument.defaultView === window) {
+    if (vrPresentState.isPresenting && vrPresentState.glContext && vrPresentState.glContext.canvas.ownerDocument.defaultView === window) {
       // wait for frame
       vrPresentState.compositor.WaitGetPoses(
         vrPresentState.system,
@@ -717,6 +733,7 @@ const _bindWindow = (window, newWindowCb) => {
         localFloat32Array2, // left controller
         localFloat32Array3 // right controller
       );
+      vrPresentState.hasPose = true;
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -866,8 +883,9 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.total += diff;
         timestamps.last = now;
       }
-    } else if (isMlPresenting && mlGlContext.canvas.ownerDocument === window) {
+    } else if (isMlPresenting && mlGlContext && mlGlContext.canvas.ownerDocument === window) {
       mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
+      mlHasPose = true;
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -1006,7 +1024,7 @@ const _bindWindow = (window, newWindowCb) => {
     timeout = setTimeout(_recurse, Math.min(Math.max(FRAME_TIME_MAX - ~~(now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX));
     lastFrameTime = now;
   };
-  _recurse();
+  process.nextTick(_recurse);
 };
 const _bindDirectWindow = newWindow => {
   _bindWindow(newWindow, _bindDirectWindow);
@@ -1122,7 +1140,19 @@ const _start = () => {
           return arrayBuffer2;
         };
 
-        if (args.image) {
+        if (args.test) {
+          window.setDirtyFrameTimeout({
+            dirtyFrames: 1,
+            timeout: 5000,
+          }, err => {
+            if (!err) {
+              process.exit(0);
+            } else {
+              console.warn(err.stack);
+              process.exit(1);
+            }
+          });
+        } else if (args.image) {
           window.setDirtyFrameTimeout({
             dirtyFrames: 100,
             timeout: 5000,
@@ -1138,33 +1168,6 @@ const _start = () => {
                 _flipImage(width, height, 4, arrayBuffer),
               ], width, height, 0));
               fs.writeFileSync(args.image, result);
-
-              process.exit(0);
-            } else {
-              throw err;
-            }
-          });
-        } else if (args.depthImage) {
-          window.setDirtyFrameTimeout({
-            dirtyFrames: 100,
-            timeout: 5000,
-          }, (err, gl) => {
-            if (!err) {
-              const {canvas} = gl;
-              const {width, height} = canvas;
-
-              const arrayBuffer = new ArrayBuffer(width * height * 4);
-              const uint8Array = new Uint8Array(arrayBuffer);
-              gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
-              const diffuseImage = Buffer.from(UPNG.encode([
-                _flipImage(width, height, 4, arrayBuffer),
-              ], width, height, 0));
-              fs.writeFileSync(args.depthImage + '.png', diffuseImage);
-
-              const float32Array = new Float32Array(arrayBuffer);
-              gl.readPixels(0, 0, width, height, gl.DEPTH_COMPONENT, gl.FLOAT, float32Array);
-              const depthImage = Buffer.from(_flipImage(width, height, 4, arrayBuffer));
-              fs.writeFileSync(args.depthImage + '.depth', depthImage);
 
               process.exit(0);
             } else {
