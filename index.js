@@ -82,7 +82,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasHeight = canvas.height || innerHeight;
   const windowSpec = (() => {
     try {
-      const visible = !args.test && !args.image && canvas.ownerDocument.documentElement.contains(canvas);
+      const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
       const {hidden} = canvas.ownerDocument;
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
       const firstGl = contexts.length > 0 ? contexts[0] : null;
@@ -1141,6 +1141,8 @@ const _start = () => {
         };
 
         if (args.test) {
+          process.exit(0);
+          /*
           window.setDirtyFrameTimeout({
             dirtyFrames: 1,
             timeout: 5000,
@@ -1151,7 +1153,9 @@ const _start = () => {
               console.warn(err.stack);
               process.exit(1);
             }
+
           });
+          */
         } else if (args.image) {
           window.setDirtyFrameTimeout({
             dirtyFrames: 100,
@@ -1241,7 +1245,7 @@ const _start = () => {
       }
       callback(err, result);
     };
-    const r = repl.start({
+      const r = repl.start({
       prompt: _getPrompt(),
       eval: replEval,
     });
