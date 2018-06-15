@@ -2570,7 +2570,7 @@ NAN_METHOD(WebGLRenderingContext::DeleteShader) {
 }
 
 NAN_METHOD(WebGLRenderingContext::DeleteTexture) {
-  GLuint texture = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLuint texture = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
 
   glDeleteTextures(1, &texture);
 
