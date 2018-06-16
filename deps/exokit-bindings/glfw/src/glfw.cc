@@ -1341,11 +1341,11 @@ NAN_METHOD(SetCursorMode) {
 
     int w, h;
     glfwGetWindowSize(window, &w, &h);
-    
+
     int centerX = w/2;
     int centerY = h/2;
     glfwSetCursorPos(window, centerX, centerY);
-    
+
     lastX = centerX;
     lastY = centerY;
   }
