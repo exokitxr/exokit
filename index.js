@@ -408,9 +408,19 @@ nativeWindow.setEventHandler((type, data) => {
         break;
       }
       case 'keydown': {
-        if (data.keyCode === 27 && window.top.document.pointerLockElement) {
-          window.top.document.exitPointerLock();
-        } else {
+        let handled = false;
+        if (data.keyCode === 27) {
+          if (window.top.document.pointerLockElement) {
+            window.top.document.exitPointerLock();
+            handled = true;
+          }
+          if (window.top.document.fullscreenElement) {
+            window.top.document.exitFullscreen();
+            handled = true;
+          }
+        }
+          
+        if (!handled) {
           canvas.dispatchEvent(new window.KeyboardEvent(type, data));
         }
         break;
