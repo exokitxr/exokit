@@ -183,6 +183,8 @@ const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array4 = new Float32Array(16);
+const localOffsetArray = new Float32Array(3);
+const localOffsetArray2 = new Float32Array(3);
 const localFovArray = new Float32Array(4);
 const localFovArray2 = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
@@ -205,8 +207,6 @@ const gesturesArray = new Float32Array(4 * 2);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
-const localVector3 = new THREE.Vector3();
-const localVector4 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
@@ -803,12 +803,14 @@ const _bindWindow = (window, newWindowCb) => {
       hmdMatrix.getInverse(hmdMatrix);
 
       vrPresentState.system.GetEyeToHeadTransform(0, localFloat32Array4);
-      localMatrix2.fromArray(localFloat32Array4)
+      localMatrix2.fromArray(localFloat32Array4);
+      localMatrix2.decompose(localVector, localQuaternion, localVector2);
+      localVector.toArray(localOffsetArray);
+      const leftOffset = localOffsetArray;
+      localMatrix2
         .getInverse(localMatrix2)
         .multiply(hmdMatrix);
       localMatrix2.toArray(frameData.leftViewMatrix);
-      localMatrix2.decompose(localVector, localQuaternion, localVector2);
-      const leftOffset = localVector;
 
       vrPresentState.system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
       _normalizeMatrixArray(localFloat32Array4);
@@ -822,12 +824,14 @@ const _bindWindow = (window, newWindowCb) => {
 
       vrPresentState.system.GetEyeToHeadTransform(1, localFloat32Array4);
       _normalizeMatrixArray(localFloat32Array4);
-      localMatrix2.fromArray(localFloat32Array4)
+      localMatrix2.fromArray(localFloat32Array4);
+      localMatrix2.decompose(localVector, localQuaternion, localVector2);
+      localVector.toArray(localOffsetArray2);
+      const rightOffset = localOffsetArray2;
+      localMatrix2
         .getInverse(localMatrix2)
         .multiply(hmdMatrix);
       localMatrix2.toArray(frameData.rightViewMatrix);
-      localMatrix2.decompose(localVector2, localQuaternion, localVector3);
-      const rightOffset = localVector2;
 
       vrPresentState.system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
       _normalizeMatrixArray(localFloat32Array4);
@@ -849,8 +853,8 @@ const _bindWindow = (window, newWindowCb) => {
       if (!isNaN(localGamepadArray[0])) {
         // matrix
         localMatrix.fromArray(localFloat32Array2);
-        localMatrix.decompose(localVector3, localQuaternion, localVector4);
-        localVector3.toArray(leftGamepad.pose.position);
+        localMatrix.decompose(localVector, localQuaternion, localVector2);
+        localVector.toArray(leftGamepad.pose.position);
         localQuaternion.toArray(leftGamepad.pose.orientation);
 
         leftGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
@@ -879,8 +883,8 @@ const _bindWindow = (window, newWindowCb) => {
       if (!isNaN(localGamepadArray[0])) {
         // matrix
         localMatrix.fromArray(localFloat32Array3);
-        localMatrix.decompose(localVector3, localQuaternion, localVector4);
-        localVector3.toArray(rightGamepad.pose.position);
+        localMatrix.decompose(localVector, localQuaternion, localVector2);
+        localVector.toArray(rightGamepad.pose.position);
         localQuaternion.toArray(rightGamepad.pose.orientation);
 
         rightGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
