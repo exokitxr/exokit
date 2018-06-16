@@ -925,11 +925,11 @@ NAN_METHOD(ResizeRenderTarget) {
   const int samples = 4;
 
   {
-    glBindTexture(GL_TEXTURE_2D, msDepthStencilTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
 
-    glBindTexture(GL_TEXTURE_2D, msColorTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
   }
   {
     glBindTexture(GL_TEXTURE_2D, depthStencilTex);
