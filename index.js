@@ -147,10 +147,10 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     gl.destroy = (destroy => function() {
       nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-      
+
       if (gl === vrPresentState.glContext) {
         nativeVr.VR_Shutdown();
-        
+
         vrPresentState.glContext = null;
         vrPresentState.system = null;
         vrPresentState.compositor = null;
@@ -158,7 +158,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       if (gl === mlGlContext) {
         mlGlContext = null;
       }
-      
+
       nativeWindow.destroy(windowHandle);
       canvas._context = null;
       canvas.ownerDocument.removeListener('domchange', ondomchange);
@@ -238,7 +238,7 @@ nativeVr.requestPresent = function(layers) {
       const canvas = layer.source;
       const context = canvas._context;
       const window = canvas.ownerDocument.defaultView;
-      
+
       nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
       const vrContext = vrPresentState.vrContext || nativeVr.getContext();
