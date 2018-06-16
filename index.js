@@ -93,7 +93,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     }
   })();
   if (windowSpec) {
-    const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture] = windowSpec;
+    const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture] = windowSpec;
 
     gl.setWindowHandle(windowHandle);
 
@@ -245,8 +245,7 @@ nativeVr.requestPresent = function(layers) {
 
       nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-      const [msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 4, 0, 0);
-      const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 1, 0, 0);
+      const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
       context.setDefaultFramebuffer(msFbo);
 
