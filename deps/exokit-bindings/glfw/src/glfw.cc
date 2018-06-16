@@ -987,6 +987,10 @@ NAN_METHOD(SetCurrentWindowContext) {
 NAN_METHOD(DestroyWindow) {
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   glfwDestroyWindow(window);
+
+  if (currentWindow == window) {
+    currentWindow = nullptr;
+  }
 }
 
 NAN_METHOD(SetWindowTitle) {
