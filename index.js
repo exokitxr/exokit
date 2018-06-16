@@ -540,6 +540,37 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
+  window.document.addEventListener('fullscreenchange', () => {
+    const {fullscreenElement} = window.document;
+
+    if (fullscreenElement) {
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+
+        if (context.canvas.ownerDocument.defaultView === window) {
+          const windowHandle = context.getWindowHandle();
+
+          if (nativeWindow.isVisible(windowHandle)) {
+            nativeWindow.setFullscreen(windowHandle);
+            break;
+          }
+        }
+      }
+    } else {
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+
+        if (context.canvas.ownerDocument.defaultView === window) {
+          const windowHandle = context.getWindowHandle();
+
+          if (nativeWindow.isVisible(windowHandle)) {
+            nativeWindow.exitFullscreen(windowHandle);
+            break;
+          }
+        }
+      }
+    }
+  });
   window.addEventListener('destroy', e => {
     const {window} = e;
     for (let i = 0; i < contexts.length; i++) {

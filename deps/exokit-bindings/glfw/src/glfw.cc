@@ -1110,6 +1110,43 @@ NAN_METHOD(IsVisible) {
   info.GetReturnValue().Set(JS_BOOL(visible));
 }
 
+const GLFWvidmode *getBestVidMode(GLFWwindow *window, GLFWmonitor *monitor) {
+  int numVidModes;
+  const GLFWvidmode *vidModes = glfwGetVideoModes(monitor, &numVidModes);
+  const GLFWvidmode *bestVidMode = nullptr;
+
+  for (int i = 0; i < numVidModes; i++) {
+    const GLFWvidmode *vidMode = &vidModes[i];
+    if (bestVidMode == nullptr || vidMode->width > bestVidMode->width) {
+      bestVidMode = vidMode;
+    }
+  }
+
+  return bestVidMode;
+}
+
+NAN_METHOD(SetFullscreen) {
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+
+  const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
+  if (vidMode != nullptr) {
+    glfwSetWindowMonitor(window, monitor, 0, 0, vidMode->width, vidMode->height, 0);
+
+    info.GetReturnValue().Set(JS_BOOL(true));
+  } else {
+    info.GetReturnValue().Set(JS_BOOL(false));
+  }
+}
+
+NAN_METHOD(ExitFullscreen) {
+  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  
+  const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
+  glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
+}
+
 NAN_METHOD(WindowShouldClose) {
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   info.GetReturnValue().Set(JS_INT(glfwWindowShouldClose(window)));
@@ -1749,6 +1786,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "show", glfw::Show);
   Nan::SetMethod(target, "hide", glfw::Hide);
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
+  Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
+  Nan::SetMethod(target, "exitFullscreen", glfw::ExitFullscreen);
   Nan::SetMethod(target, "setWindowTitle", glfw::SetWindowTitle);
   Nan::SetMethod(target, "getWindowSize", glfw::GetWindowSize);
   Nan::SetMethod(target, "setWindowSize", glfw::SetWindowSize);

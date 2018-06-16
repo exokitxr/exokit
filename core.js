@@ -46,6 +46,7 @@ const elementSymbol = Symbol();
 const computedStyleSymbol = Symbol();
 const disabledEventsSymbol = Symbol();
 const pointerLockElementSymbol = Symbol();
+const fullscreenElementSymbol = Symbol();
 const prioritySymbol = Symbol();
 const mrDisplaysSymbol = Symbol();
 let nativeBindings = false;
@@ -2309,6 +2310,17 @@ class Element extends Node {
       });
     }
   }
+  requestFullscreen() {
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[fullscreenElementSymbol] === null) {
+      topDocument[fullscreenElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('fullscreenchange');
+      });
+    }
+  }
 
   [util.inspect.custom]() {
     const _getIndent = depth => Array(depth*2 + 1).join(' ');
@@ -2608,6 +2620,14 @@ class Document extends HTMLLoadableElement {
     }
   }
   set pointerLockElement(pointerLockElement) {}
+  get fullscreenElement() {
+    if (this.defaultView.top === this.defaultView) {
+      return this[fullscreenElementSymbol];
+    } else {
+      return this.defaultView.top.document.fullscreenElement;
+    }
+  }
+  set fullscreenElement(fullscreenElement) {}
 
   exitPointerLock() {
     const topDocument = this.defaultView.top.document;
@@ -2617,6 +2637,17 @@ class Document extends HTMLLoadableElement {
 
       process.nextTick(() => {
         topDocument._emit('pointerlockchange');
+      });
+    }
+  }
+  exitFullscreen() {
+    const topDocument = this.defaultView.top.document;
+
+    if (topDocument[fullscreenElementSymbol] !== null) {
+      topDocument[fullscreenElementSymbol] = null;
+
+      process.nextTick(() => {
+        topDocument._emit('fullscreenchange');
       });
     }
   }
@@ -4393,6 +4424,7 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
     }
   };
   document[pointerLockElementSymbol] = null;
+  document[fullscreenElementSymbol] = null;
 
   if (window.top === window) {
     document.addEventListener('pointerlockchange', () => {
@@ -4401,6 +4433,15 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
         const iframe = iframes[i];
         if (iframe.contentDocument) {
           iframe.contentDocument._emit('pointerlockchange');
+        }
+      }
+    });
+    document.addEventListener('fullscreenchange', () => {
+      const iframes = document.getElementsByTagName('iframe');
+      for (let i = 0; i < iframes.length; i++) {
+        const iframe = iframes[i];
+        if (iframe.contentDocument) {
+          iframe.contentDocument._emit('fullscreenchange');
         }
       }
     });
