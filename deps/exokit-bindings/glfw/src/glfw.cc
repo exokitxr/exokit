@@ -876,17 +876,28 @@ NAN_METHOD(CreateRenderTarget) {
 
   if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
     glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
   if (gl->HasRenderbufferBinding(GL_RENDERBUFFER)) {
     glBindRenderbuffer(GL_RENDERBUFFER, gl->GetRenderbufferBinding(GL_RENDERBUFFER));
+  } else {
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
   }
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
   }
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  } else {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
   }
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
     glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
+  } else {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   }
 }
 
@@ -907,12 +918,18 @@ NAN_METHOD(ResizeRenderTarget) {
 
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
   }
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  } else {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
   }
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
     glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
+  } else {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   }
 }
 
@@ -972,6 +989,8 @@ NAN_METHOD(BlitFrameBuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
     glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_FRAMEBUFFER, gl->defaultFramebuffer);
   }
 }
 
