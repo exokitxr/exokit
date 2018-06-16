@@ -1214,13 +1214,13 @@ NAN_METHOD(Create) {
 
   glfwWindowHint(GLFW_VISIBLE, initialVisible);
 
-  GLuint framebuffer = 0;
-  GLuint framebufferTextures[] = {0, 0};
+  GLuint framebuffers[] = {0, 0};
+  GLuint framebufferTextures[] = {0, 0, 0, 0};
   bool shared = hidden && sharedWindow != nullptr && gl != nullptr;
   if (shared) {
     SetCurrentWindowContext(sharedWindow);
 
-    glGenFramebuffers(1, &framebuffer);
+    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
   }
 
@@ -1271,11 +1271,14 @@ NAN_METHOD(Create) {
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
 
-      Local<Array> result = Nan::New<Array>(3);
+      Local<Array> result = Nan::New<Array>(7);
       result->Set(0, pointerToArray(windowHandle));
-      result->Set(1, JS_NUM(framebuffer));
+      result->Set(1, JS_NUM(framebuffers[0]));
       result->Set(2, JS_NUM(framebufferTextures[0]));
       result->Set(3, JS_NUM(framebufferTextures[1]));
+      result->Set(4, JS_NUM(framebuffers[1]));
+      result->Set(5, JS_NUM(framebufferTextures[2]));
+      result->Set(6, JS_NUM(framebufferTextures[3]));
       info.GetReturnValue().Set(result);
     } else {
       /* Problem: glewInit failed, something is seriously wrong. */
