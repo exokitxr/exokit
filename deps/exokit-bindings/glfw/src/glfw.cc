@@ -1256,7 +1256,6 @@ NAN_METHOD(Create) {
 
       // GLFW.SetWindowTitle(win, "WebGL");
 
-      glfwSwapBuffers(windowHandle);
       glfwSwapInterval(0);
 
       /* int fbWidth, fbHeight;
