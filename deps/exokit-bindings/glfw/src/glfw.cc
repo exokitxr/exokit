@@ -809,7 +809,7 @@ NAN_METHOD(CreateRenderTarget) {
   GLuint sharedDepthStencilTex = info[4]->Uint32Value();
   GLuint sharedMsColorTex = info[5]->Uint32Value();
   GLuint sharedMsDepthStencilTex = info[6]->Uint32Value();
-  
+
   const int samples = 4;
 
   GLuint fbo;
@@ -822,7 +822,7 @@ NAN_METHOD(CreateRenderTarget) {
   {
     glGenFramebuffers(1, &msFbo);
     glBindFramebuffer(GL_FRAMEBUFFER, msFbo);
-    
+
     if (!sharedMsDepthStencilTex) {
       glGenTextures(1, &msDepthStencilTex);
     } else {
@@ -850,7 +850,7 @@ NAN_METHOD(CreateRenderTarget) {
   {
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    
+
     if (!sharedDepthStencilTex) {
       glGenTextures(1, &depthStencilTex);
     } else {
@@ -872,7 +872,7 @@ NAN_METHOD(CreateRenderTarget) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
   }
-  
+
   Local<Value> result;
   GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (framebufferStatus == GL_FRAMEBUFFER_COMPLETE) {
@@ -921,7 +921,7 @@ NAN_METHOD(ResizeRenderTarget) {
   // GLuint msFbo = info[6]->Uint32Value();
   GLuint msColorTex = info[7]->Uint32Value();
   GLuint msDepthStencilTex = info[8]->Uint32Value();
-  
+
   const int samples = 4;
 
   {
