@@ -818,6 +818,7 @@ NAN_METHOD(CreateRenderTarget) {
     GLuint renderBuffer;
     glGenRenderbuffers(1, &renderBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
+
     if (samples > 1) {
       glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_STENCIL, width, height);
     } else {
