@@ -118,7 +118,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       });
 
       document._emit('framebuffer', {
-        framebuffer: sharedFramebuffer,
+        framebuffer: framebuffer,
         colorTexture,
         depthStencilTexture,
       });
