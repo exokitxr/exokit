@@ -332,7 +332,7 @@ if (nativeMl) {
         if (initResult) {
           isMlPresenting = true;
 
-          const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 1, 0, 0);
+          const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 0, 0, 0, 0);
           mlFbo = fbo;
           mlTex = tex;
 
