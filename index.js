@@ -1258,7 +1258,7 @@ if (require.main === module) {
     console.warn(err.stack);
   });
   EventEmitter.defaultMaxListeners = 100;
-  
+
   if (args.version) {
     console.log(version);
     process.exit(0);
