@@ -232,6 +232,8 @@ nativeVr.requestPresent = function(layers) {
       const canvas = layer.source;
       const context = canvas._context;
       const window = canvas.ownerDocument.defaultView;
+      
+      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
       const vrContext = vrPresentState.vrContext || nativeVr.getContext();
       const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
@@ -243,8 +245,6 @@ nativeVr.requestPresent = function(layers) {
       const width = halfWidth * 2;
       renderWidth = halfWidth;
       renderHeight = height;
-
-      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
       const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
