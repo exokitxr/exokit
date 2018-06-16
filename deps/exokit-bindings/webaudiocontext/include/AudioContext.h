@@ -37,7 +37,7 @@ public:
   Local<Object> CreateMediaStreamSource(Local<Function> audioSourceNodeConstructor, Local<Object> mediaStream, Local<Object> audioContextObj);
   void CreateMediaStreamDestination();
   void CreateMediaStreamTrackSource();
-  Local<Object> DecodeAudioData(Local<Function> audioBufferConstructor, Local<ArrayBuffer> srcArrayBuffer);
+  Local<Value> DecodeAudioData(Local<Function> audioBufferConstructor, Local<ArrayBuffer> srcArrayBuffer);
   Local<Object> CreateGain(Local<Function> gainNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateAnalyser(Local<Function> analyserNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreatePanner(Local<Function> pannerNodeConstructor, Local<Object> audioContextObj);

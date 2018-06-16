@@ -145,7 +145,7 @@ Local<Object> AudioContext::CreateOscillator(Local<Function> oscillatorNodeConst
   return oscillatorNodeObj;
 }
 
-Local<Object> AudioContext::DecodeAudioData(Local<Function> audioBufferConstructor, Local<ArrayBuffer> srcArrayBuffer) {
+Local<Value> AudioContext::DecodeAudioData(Local<Function> audioBufferConstructor, Local<ArrayBuffer> srcArrayBuffer) {
   size_t bufferLength = srcArrayBuffer->ByteLength();
   vector<uint8_t> buffer(bufferLength);
   memcpy(buffer.data(), srcArrayBuffer->GetContents().Data(), bufferLength);
@@ -177,6 +177,8 @@ Local<Object> AudioContext::DecodeAudioData(Local<Function> audioBufferConstruct
     return audioBuffer;
   } else {
     Nan::ThrowError(error.c_str());
+
+    return Nan::Null();
   }
 }
 
@@ -279,7 +281,7 @@ NAN_METHOD(AudioContext::DecodeAudioData) {
     Local<ArrayBuffer> srcArrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
 
     Local<Function> audioBufferConstructor = Local<Function>::Cast(audioContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioBuffer")));
-    Local<Object> audioBufferObj = audioContext->DecodeAudioData(audioBufferConstructor, srcArrayBuffer);
+    Local<Value> audioBufferObj = audioContext->DecodeAudioData(audioBufferConstructor, srcArrayBuffer);
 
     info.GetReturnValue().Set(audioBufferObj);
   } else {
