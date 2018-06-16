@@ -876,6 +876,8 @@ NAN_METHOD(CreateRenderTarget) {
 
   if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
     glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  if (gl->HasRenderbufferBinding(GL_RENDERBUFFER)) {
+    glBindRenderbuffer(GL_RENDERBUFFER, gl->GetRenderbufferBinding(GL_RENDERBUFFER));
   }
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
