@@ -915,27 +915,26 @@ NAN_METHOD(ResizeRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   int width = info[1]->Uint32Value();
   int height = info[2]->Uint32Value();
-  int samples = info[3]->Uint32Value();
-  // GLuint fbo = info[4]->Uint32Value();
-  GLuint colorTex = info[5]->Uint32Value();
-  GLuint depthStencilTex = info[6]->Uint32Value();
+  // GLuint fbo = info[3]->Uint32Value();
+  GLuint colorTex = info[4]->Uint32Value();
+  GLuint depthStencilTex = info[5]->Uint32Value();
+  // GLuint msFbo = info[6]->Uint32Value();
+  GLuint msColorTex = info[7]->Uint32Value();
+  GLuint msDepthStencilTex = info[8]->Uint32Value();
+  
+  const int samples = 4;
 
-  // depthStencilTex
-  /* if (samples > 1) {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, depthStencilTex);
-    // glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
-  } else { */
+  {
+    glBindTexture(GL_TEXTURE_2D, msDepthStencilTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+
+    glBindTexture(GL_TEXTURE_2D, msColorTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+  }
+  {
     glBindTexture(GL_TEXTURE_2D, depthStencilTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
-  // }
 
-  // colorTex
-  if (samples > 1) {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, colorTex);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
-  } else {
     glBindTexture(GL_TEXTURE_2D, colorTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   }
