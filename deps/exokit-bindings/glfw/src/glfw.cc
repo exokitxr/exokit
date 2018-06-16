@@ -807,8 +807,8 @@ NAN_METHOD(CreateRenderTarget) {
   int height = info[2]->Uint32Value();
   GLuint sharedColorTex = info[3]->Uint32Value();
   GLuint sharedDepthStencilTex = info[4]->Uint32Value();
-  GLuint sharedMsColorTex = info[3]->Uint32Value();
-  GLuint sharedMsDepthStencilTex = info[4]->Uint32Value();
+  GLuint sharedMsColorTex = info[5]->Uint32Value();
+  GLuint sharedMsDepthStencilTex = info[6]->Uint32Value();
   
   const int samples = 4;
 
