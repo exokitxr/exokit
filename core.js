@@ -3495,6 +3495,44 @@ class DataTransferItem {
   }
 }
 
+class FileReader extends EventTarget {
+  constructor() {
+    super();
+
+    this.result = null;
+  }
+
+  get onload() {
+    return _elementGetter(this, 'load');
+  }
+  set onload(onload) {
+    _elementSetter(this, 'load', onload);
+  }
+
+  get onerror() {
+    return _elementGetter(this, 'error');
+  }
+  set onerror(onerror) {
+    _elementSetter(this, 'error', onerror);
+  }
+
+  readAsArrayBuffer(file) {
+    this.result = file.buffer.buffer.slice(file.buffer.byteOffset, file.buffer.byteLength);
+
+    process.nextTick(() => {
+      this.emit('load');
+    });
+  }
+
+  readAsDataURL(file) {
+    this.result = 'data:' + file.type + ';base64,' + file.buffer.toString('base64');
+
+    process.nextTick(() => {
+      this.emit('load');
+    });
+  }
+}
+
 const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   if (node.nodeName === '#text') {
     const text = new Text(node.value);
@@ -4114,6 +4152,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.DOMImplementation = DOMImplementation;
   window.DataTransfer = DataTransfer;
   window.DataTransferItem = DataTransferItem;
+  window.FileReader = FileReader;
   window.Screen = Screen;
   window.Gamepad = Gamepad;
   window.VRStageParameters = VRStageParameters;
