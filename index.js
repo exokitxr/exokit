@@ -115,6 +115,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       canvas.on('attribute', (name, value) => {
         if (name === 'width' || name === 'height') {
+          nativeWindow.setCurrentWindowContext(windowHandle);
+
           nativeWindow.resizeRenderTarget(gl, canvas.width, canvas.height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
         }
       });
