@@ -474,17 +474,54 @@ nativeWindow.setEventHandler((type, data) => {
         break;
       }
       case 'drop': {
-        Promise.all(data.paths.map(p => new Promise((accept, reject) => {
-          fs.readFile(p, (err, data) => {
-            if (!err) {
-              const file = new window.Blob([data]);
-              file.name = path.basename(p);
-              accept(file);
-            } else {
-              reject(err);
-            }
-          });
-        })))
+        const _readFiles = paths => {
+          const result = [];
+
+          return Promise.all(paths.map(p =>
+            new Promise((accept, reject) => {
+              fs.lstat(p, (err, stats) => {
+                if (!err) {
+                  if (stats.isFile()) {
+                    fs.readFile(p, (err, data) => {
+                      if (!err) {
+                        const file = new window.Blob([data]);
+                        file.name = path.basename(p);
+                        result.push(file);
+
+                        accept();
+                      } else {
+                        reject(err);
+                      }
+                    });
+                  } else if (stats.isDirectory()) {
+                    fs.readdir(p, (err, fileNames) => {
+                      if (!err) {
+                        _readFiles(fileNames.map(fileName => path.join(p, fileName)))
+                          .then(files => {
+                            result.push.apply(result, files);
+
+                            accept();
+                          })
+                          .catch(err => {
+                            reject(err);
+                          });
+                      } else {
+                        reject(err);
+                      }
+                    });
+                  } else {
+                    accept();
+                  }
+                } else {
+                  reject(err);
+                }
+              });
+            })
+          ))
+            .then(() => result);
+        };
+
+        _readFiles(data.paths)
           .then(files => {
             const dataTransfer = new window.DataTransfer({
               files,
