@@ -110,7 +110,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     if (document.hidden) {
       const [framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
 
-      gl.setDefaultFramebuffer(framebuffer);
+      gl.setDefaultFramebuffer(msFramebuffer);
 
       canvas.on('attribute', (name, value) => {
         if (name === 'width' || name === 'height') {
@@ -119,9 +119,16 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       });
 
       document._emit('framebuffer', {
-        framebuffer: framebuffer,
+        framebuffer,
         colorTexture,
         depthStencilTexture,
+        render() {
+          nativeWindow.setCurrentWindowContext(windowHandle);
+
+          // color blit is linear, depth/stencil is nearest
+          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, true, false, false);
+          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
+        },
       });
     }
 
