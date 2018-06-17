@@ -3942,13 +3942,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.Request = Request;
-  window.Response = (OldResponse => class Response extends OldResponse {
+  window.Response = (Old => class Response extends Old {
     constructor(body, opts) {
       super(_normalizeBuffer(body, global), opts);
     }
   })(Response);
   window.Headers = Headers;
-  window.Blob = (OldBlob => class Blob extends OldBlob {
+  window.Blob = (Old => class Blob extends Old {
     constructor(parts, opts) {
       super(parts && parts.map(part => _normalizeBuffer(part, global)), opts);
     }
