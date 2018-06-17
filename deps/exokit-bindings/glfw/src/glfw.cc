@@ -1007,7 +1007,7 @@ NAN_METHOD(BlitFrameBuffer) {
     (color ? GL_COLOR_BUFFER_BIT : 0) |
     (depth ? GL_DEPTH_BUFFER_BIT : 0) |
     (stencil ? GL_STENCIL_BUFFER_BIT : 0),
-    GL_LINEAR);
+    (depth || stencil) ? GL_NEAREST : GL_LINEAR);
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
