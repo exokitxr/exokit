@@ -168,6 +168,10 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       nativeWindow.destroy(windowHandle);
       canvas._context = null;
+
+      if (hidden) {
+        document._emit('framebuffer', null);
+      }
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       contexts.splice(contexts.indexOf(gl), 1);
