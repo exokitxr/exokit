@@ -107,7 +107,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     const title = `Exokit ${version}`
     nativeWindow.setWindowTitle(windowHandle, title);
 
-    if (document.hidden) {
+    const {hidden} = document;
+    if (hidden) {
       const [framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
 
       gl.setDefaultFramebuffer(msFramebuffer);
@@ -134,11 +135,10 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
-        const {hidden} = canvas.ownerDocument;
         if (!hidden) {
           const domVisible = canvas.ownerDocument.documentElement.contains(canvas);
           const windowVisible = nativeWindow.isVisible(windowHandle);
-          if (domVisible && !hidden) {
+          if (domVisible) {
             if (!windowVisible) {
               nativeWindow.show(windowHandle);
             }
