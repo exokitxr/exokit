@@ -108,6 +108,36 @@ const {
   getAllGamepads,
 } = require('vr-display')(THREE);
 
+const _normalizeBuffer = (b, target) => {
+  const name = b && b.constructor && b.constructor.name;
+  switch (name) {
+    case 'Buffer':
+    case 'ArrayBuffer':
+    case 'Uint8Array':
+    case 'Uint8ClampedArray':
+    case 'Int8Array':
+    case 'Uint16Array':
+    case 'Int16Array':
+    case 'Uint32Array':
+    case 'Int32Array':
+    case 'Float32Array':
+    case 'Float64Array':
+    case 'DataView': {
+      if (!(b instanceof target[name])) {
+        nativeVm.setPrototype(b, target[name].prototype);
+      }
+      break;
+    }
+    case 'Blob': {
+      if (!(b.buffer instanceof target.Buffer)) {
+        nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
+      }
+      break;
+    }
+  }
+  return b;
+};
+
 const windowSymbol = Symbol();
 const htmlTagsSymbol = Symbol();
 const optionsSymbol = Symbol();
@@ -131,7 +161,7 @@ let id = 0;
 const urls = new Map();
 URL.createObjectURL = blob => {
   const url = 'blob:' + id++;
-  urls.set(url, blob);
+  urls.set(url, _normalizeBuffer(blob, global));
   return url;
 };
 URL.revokeObjectURL = blob => {
@@ -3827,35 +3857,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     });
     
   })();`;
-  const _normalizeBuffer = (b, target) => {
-    const name = b && b.constructor && b.constructor.name;
-    switch (name) {
-      case 'Buffer':
-      case 'ArrayBuffer':
-      case 'Uint8Array':
-      case 'Uint8ClampedArray':
-      case 'Int8Array':
-      case 'Uint16Array':
-      case 'Int16Array':
-      case 'Uint32Array':
-      case 'Int32Array':
-      case 'Float32Array':
-      case 'Float64Array':
-      case 'DataView': {
-        if (!(b instanceof target[name])) {
-          nativeVm.setPrototype(b, target[name].prototype);
-        }
-        break;
-      }
-      case 'Blob': {
-        if (!(b.buffer instanceof target.Buffer)) {
-          nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
-        }
-        break;
-      }
-    }
-    return b;
-  };
 
   for (const k in EventEmitter.prototype) {
     window[k] = EventEmitter.prototype[k];
