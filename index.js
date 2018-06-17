@@ -432,7 +432,7 @@ nativeWindow.setEventHandler((type, data) => {
             handled = true;
           }
         }
-          
+
         if (!handled) {
           canvas.dispatchEvent(new window.KeyboardEvent(type, data));
         }
