@@ -1142,7 +1142,7 @@ NAN_METHOD(SetFullscreen) {
 NAN_METHOD(ExitFullscreen) {
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   GLFWmonitor *monitor = glfwGetPrimaryMonitor();
-  
+
   const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
   glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
 }
