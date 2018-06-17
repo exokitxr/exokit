@@ -1153,7 +1153,7 @@ NAN_METHOD(WebGLRenderingContext::BindAttribLocation) {
 
 
 NAN_METHOD(WebGLRenderingContext::GetError) {
-  GLint error = glGetError();
+  GLenum error = glGetError();
   info.GetReturnValue().Set(Nan::New<Integer>(error));
 }
 
