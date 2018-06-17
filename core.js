@@ -13,7 +13,7 @@ const parseIntStrict = require('parse-int');
 const parse5 = require('parse5');
 
 const fetch = require('window-fetch');
-const {Blob} = fetch;
+const {Request, Response, Headers, Blob} = fetch;
 
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
@@ -3707,8 +3707,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.vm = vmo;
 
   const _makeWindowStartScript = baseUrl => `(() => {
-    const fetch = require('window-fetch');
-    const {Request, Response, Headers, Blob} = fetch;
     const WebSocket = require('ws/lib/websocket');
     const {XMLHttpRequest} = require('window-xhr');
     const XHRUtils = require('window-xhr/lib/utils');
@@ -3739,24 +3737,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     ${_makeNormalizeUrl.toString()}
     const _normalizeUrl = _makeNormalizeUrl(${JSON.stringify(baseUrl)});
 
-    global.fetch = (url, options) => {
-      if (typeof url === 'string') {
-        const blob = urls.get(url);
-        if (blob) {
-          return Promise.resolve(new Response(blob));
-        } else {
-          const oldUrl = url;
-          url = _normalizeUrl(url);
-          return fetch(url, options);
-        }
-      } else {
-        return fetch(url, options);
-      }
-    };
-    global.Request = Request;
-    global.Response = Response;
-    global.Headers = Headers;
-    global.Blob = Blob;
     global.WebSocket = WebSocket;
     global.XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
@@ -3907,6 +3887,73 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.destroy = function() {
     this._emit('destroy', {window: this});
   };
+  
+  const _normalizeBuffer = (b, target) => {
+    const name = b && b.constructor && b.constructor.name;
+    switch (name) {
+      case 'Buffer':
+      case 'ArrayBuffer':
+      case 'Uint8Array':
+      case 'Uint8ClampedArray':
+      case 'Int8Array':
+      case 'Uint16Array':
+      case 'Int16Array':
+      case 'Uint32Array':
+      case 'Int32Array':
+      case 'Float32Array':
+      case 'Float64Array':
+      case 'DataView': {
+        if (!(b instanceof target[name])) {
+          nativeVm.setPrototype(b, target[name].prototype);
+        }
+        break;
+      }
+      case 'Blob': {
+        if (!(b.buffer instanceof target.Buffer.prototype)) {
+          nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
+        }
+        break;
+      }
+    }
+    return b;
+  };
+
+  window.fetch = (url, options) => {
+    const _boundFetch = (url, options) => fetch(url, options)
+      .then(res => {
+        res.arrayBuffer = (arrayBuffer => function() {
+          return arrayBuffer.apply(this, arguments)
+            .then(ab => _normalizeBuffer(ab, window));
+        })(res.arrayBuffer);
+        return res;
+      });
+
+    if (typeof url === 'string') {
+      const blob = urls.get(url);
+      if (blob) {
+        return Promise.resolve(new Response(blob));
+      } else {
+        const oldUrl = url;
+        url = _normalizeUrl(url);
+        return _boundFetch(url, options);
+      }
+    } else {
+      return _boundFetch(url, options);
+    }
+  };
+  window.Request = Request;
+  window.Response = (OldResponse => class Response extends OldResponse {
+    constructor(body, opts) {
+      super(_normalizeBuffer(body, global), opts);
+    }
+  })(Response);
+  window.Headers = Headers;
+  window.Blob = (OldBlob => class Blob extends OldBlob {
+    constructor(parts, opts) {
+      super(parts && parts.map(part => _normalizeBuffer(part, global)), opts);
+    }
+  })(Blob);
+
   window.URL = URL;
   window.console = console;
   window.setTimeout = setTimeout;
