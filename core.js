@@ -28,6 +28,7 @@ const XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
           response.headers = {
             'content-length': buffer.length + '',
           };
+          response.end(buffer);
           cb(response);
         });
       };
