@@ -486,6 +486,7 @@ nativeWindow.setEventHandler((type, data) => {
                       if (!err) {
                         const file = new window.Blob([data]);
                         file.name = path.basename(p);
+                        file.path = p;
                         result.push(file);
 
                         accept();
