@@ -3848,7 +3848,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         break;
       }
       case 'Blob': {
-        if (!(b.buffer instanceof target.Buffer.prototype)) {
+        if (!(b.buffer instanceof target.Buffer)) {
           nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
         }
         break;
