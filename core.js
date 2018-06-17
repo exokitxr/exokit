@@ -15,6 +15,74 @@ const parse5 = require('parse5');
 const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
 
+const {XMLHttpRequest: XMLHttpRequestBase} = require('window-xhr');
+const XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
+  open(method, url, async, username, password) {
+    const blob = urls.get(url);
+    if (blob) {
+      this._properties._responseFn = cb => {
+        process.nextTick(() => {
+          const {buffer} = blob;
+          const response = new stream.PassThrough();
+          response.statusCode = 200;
+          response.headers = {
+            'content-length': buffer.length + '',
+          };
+          cb(response);
+        });
+      };
+    } else {
+      const match = url.match(/^file:\/\/(.*)$/);
+      if (match) {
+        const p = match[1];
+        this._properties._responseFn = cb => {
+          fs.lstat(p, (err, stats) => {
+            if (!err) {
+              const response = fs.createReadStream(p);
+              response.statusCode = 200;
+              response.headers = {
+                'content-length': stats.size + '',
+              };
+              cb(response);
+            } else if (err.code === 'ENOENT') {
+              const response = new stream.PassThrough();
+              response.statusCode = 404;
+              response.headers = {};
+              response.end('file not found: ' + p);
+              cb(response);
+            } else {
+              const response = new stream.PassThrough();
+              response.statusCode = 500;
+              response.headers = {};
+              response.end(err.stack);
+              cb(response);
+            }
+          });
+        };
+        arguments[1] = 'http://127.0.0.1/'; // needed to pass protocol check, will not be fetched
+      }
+    }
+
+    return Old.prototype.open.apply(this, arguments);
+  }
+})(XMLHttpRequestBase);
+const XHRUtils = require('window-xhr/lib/utils');
+XHRUtils.createClient = (createClient => function() {
+  const properties = arguments[0];
+  if (properties._responseFn) {
+    const cb = arguments[2];
+    properties._responseFn(cb);
+    return {
+      on() {},
+      setHeader() {},
+      write() {},
+      end() {},
+    };
+  } else {
+    return createClient.apply(this, arguments);
+  }
+})(XHRUtils.createClient);
+
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
 const createMemoryHistory = require('history/createMemoryHistory').default;
@@ -3706,90 +3774,49 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const window = vmo.getGlobal();
   window.vm = vmo;
 
-  const _makeWindowStartScript = baseUrl => `(() => {
+  const windowStartScript = `(() => {
     const WebSocket = require('ws/lib/websocket');
-    const {XMLHttpRequest} = require('window-xhr');
-    const XHRUtils = require('window-xhr/lib/utils');
     ${!args.require ? 'global.require = undefined;' : ''}
+    
+    global.WebSocket = WebSocket;
+    
     process.on('uncaughtException', err => {
       console.warn(err.stack);
     });
     process.on('unhandledRejection', err => {
       console.warn(err.stack);
     });
-
-    XHRUtils.createClient = (createClient => function() {
-      const properties = arguments[0];
-      if (properties._responseFn) {
-        const cb = arguments[2];
-        properties._responseFn(cb);
-        return {
-          on() {},
-          setHeader() {},
-          write() {},
-          end() {},
-        };
-      } else {
-        return createClient.apply(this, arguments);
-      }
-    })(XHRUtils.createClient);
-
-    ${_makeNormalizeUrl.toString()}
-    const _normalizeUrl = _makeNormalizeUrl(${JSON.stringify(baseUrl)});
-
-    global.WebSocket = WebSocket;
-    global.XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
-      open(method, url, async, username, password) {
-        const blob = urls.get(url);
-        if (blob) {
-          this._properties._responseFn = cb => {
-            process.nextTick(() => {
-              const {buffer} = blob;
-              const response = new stream.PassThrough();
-              response.statusCode = 200;
-              response.headers = {
-                'content-length': buffer.length + '',
-              };
-              cb(response);
-            });
-          };
-        } else {
-          arguments[1] = _normalizeUrl(arguments[1]);
-          const match = arguments[1].match(/^file:\\/\\/(.*)$/);
-          if (match) {
-            const p = match[1];
-            this._properties._responseFn = cb => {
-              fs.lstat(p, (err, stats) => {
-                if (!err) {
-                  const response = fs.createReadStream(p);
-                  response.statusCode = 200;
-                  response.headers = {
-                    'content-length': stats.size + '',
-                  };
-                  cb(response);
-                } else if (err.code === 'ENOENT') {
-                  const response = new stream.PassThrough();
-                  response.statusCode = 404;
-                  response.headers = {};
-                  response.end('file not found: ' + p);
-                  cb(response);
-                } else {
-                  const response = new stream.PassThrough();
-                  response.statusCode = 500;
-                  response.headers = {};
-                  response.end(err.stack);
-                  cb(response);
-                }
-              });
-            };
-            arguments[1] = 'http://127.0.0.1/'; // needed to pass protocol check, will not be fetched
-          }
-        }
-
-        return Old.prototype.open.apply(this, arguments);
-      }
-    })(XMLHttpRequest);
+    
   })();`;
+  const _normalizeBuffer = (b, target) => {
+    const name = b && b.constructor && b.constructor.name;
+    switch (name) {
+      case 'Buffer':
+      case 'ArrayBuffer':
+      case 'Uint8Array':
+      case 'Uint8ClampedArray':
+      case 'Int8Array':
+      case 'Uint16Array':
+      case 'Int16Array':
+      case 'Uint32Array':
+      case 'Int32Array':
+      case 'Float32Array':
+      case 'Float64Array':
+      case 'DataView': {
+        if (!(b instanceof target[name])) {
+          nativeVm.setPrototype(b, target[name].prototype);
+        }
+        break;
+      }
+      case 'Blob': {
+        if (!(b.buffer instanceof target.Buffer.prototype)) {
+          nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
+        }
+        break;
+      }
+    }
+    return b;
+  };
 
   for (const k in EventEmitter.prototype) {
     window[k] = EventEmitter.prototype[k];
@@ -3887,37 +3914,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.destroy = function() {
     this._emit('destroy', {window: this});
   };
-  
-  const _normalizeBuffer = (b, target) => {
-    const name = b && b.constructor && b.constructor.name;
-    switch (name) {
-      case 'Buffer':
-      case 'ArrayBuffer':
-      case 'Uint8Array':
-      case 'Uint8ClampedArray':
-      case 'Int8Array':
-      case 'Uint16Array':
-      case 'Int16Array':
-      case 'Uint32Array':
-      case 'Int32Array':
-      case 'Float32Array':
-      case 'Float64Array':
-      case 'DataView': {
-        if (!(b instanceof target[name])) {
-          nativeVm.setPrototype(b, target[name].prototype);
-        }
-        break;
-      }
-      case 'Blob': {
-        if (!(b.buffer instanceof target.Buffer.prototype)) {
-          nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
-        }
-        break;
-      }
-    }
-    return b;
-  };
-
+  window.URL = URL;
+  window.console = console;
+  window.setTimeout = setTimeout;
+  window.clearTimeout = clearTimeout;
+  window.setInterval = setInterval;
+  window.clearInterval = clearInterval;
   window.fetch = (url, options) => {
     const _boundFetch = (url, options) => fetch(url, options)
       .then(res => {
@@ -3953,13 +3955,21 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       super(parts && parts.map(part => _normalizeBuffer(part, global)), opts);
     }
   })(Blob);
-
-  window.URL = URL;
-  window.console = console;
-  window.setTimeout = setTimeout;
-  window.clearTimeout = clearTimeout;
-  window.setInterval = setInterval;
-  window.clearInterval = clearInterval;
+  window.XMLHttpRequest = (Old => {
+    class XMLHttpRequest extends Old {
+      open(method, url, async, username, password) {
+        url = _normalizeUrl(url);
+        return super.open(method, url, async, username, password);
+      }
+      get response() {
+        return _normalizeBuffer(super.response, window);
+      }
+    }
+    for (const k in XMLHttpRequestBase) {
+      XMLHttpRequest[k] = XMLHttpRequestBase[k];
+    }
+    return XMLHttpRequest;
+  })(XMLHttpRequest);
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.indexedDB = indexedDB;
   window.performance = performance;
@@ -4147,7 +4157,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       workerOptions.baseUrl = options.baseUrl;
       if (nativeBindings) {
         workerOptions.startScript = `
-          ${_makeWindowStartScript(options.baseUrl)}
+          ${windowStartScript}
 
           const bindings = requireNative("nativeBindings");
           const smiggles = require("smiggles");
@@ -4249,7 +4259,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
   });
 
-  vmo.run(_makeWindowStartScript(options.baseUrl), 'window-start-script.js');
+  vmo.run(windowStartScript, 'window-start-script.js');
 
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
