@@ -3846,16 +3846,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const windowStartScript = `(() => {
     const WebSocket = require('ws/lib/websocket');
     ${!args.require ? 'global.require = undefined;' : ''}
-    
+
     global.WebSocket = WebSocket;
-    
+
     process.on('uncaughtException', err => {
       console.warn(err.stack);
     });
     process.on('unhandledRejection', err => {
       console.warn(err.stack);
     });
-    
+
   })();`;
 
   for (const k in EventEmitter.prototype) {
