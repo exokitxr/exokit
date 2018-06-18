@@ -3856,7 +3856,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     process.on('unhandledRejection', err => {
       console.warn(err.stack);
     });
-
   })();`;
 
   for (const k in EventEmitter.prototype) {
