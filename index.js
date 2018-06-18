@@ -155,7 +155,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     canvas.ownerDocument.on('domchange', ondomchange);
 
     gl.destroy = (destroy => function() {
-      nativeWindow.setCurrentWindowContext(gl.getWindowHandle());
+      nativeWindow.setCurrentWindowContext(windowHandle);
 
       if (gl === vrPresentState.glContext) {
         nativeVr.VR_Shutdown();
