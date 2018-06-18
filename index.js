@@ -107,18 +107,24 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     const title = `Exokit ${version}`
     nativeWindow.setWindowTitle(windowHandle, title);
 
+    const cleanups = [];
+
     const {hidden} = document;
     if (hidden) {
       const [framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
 
       gl.setDefaultFramebuffer(msFramebuffer);
 
-      canvas.on('attribute', (name, value) => {
+      const _attribute = (name, value) => {
         if (name === 'width' || name === 'height') {
           nativeWindow.setCurrentWindowContext(windowHandle);
 
           nativeWindow.resizeRenderTarget(gl, canvas.width, canvas.height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
         }
+      };
+      canvas.on('attribute', _attribute);
+      cleanups.push(() => {
+        canvas.removeListener('attribute', _attribute);
       });
 
       document._emit('framebuffer', {
@@ -154,7 +160,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     };
     canvas.ownerDocument.on('domchange', ondomchange);
 
-    gl.destroy = (destroy => function() {
+    cleanups.push(() => {
       nativeWindow.setCurrentWindowContext(windowHandle);
 
       if (gl === vrPresentState.glContext) {
@@ -169,7 +175,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       }
 
       nativeWindow.destroy(windowHandle);
-      destroy.call(this);
       canvas._context = null;
 
       if (hidden) {
@@ -178,6 +183,14 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       contexts.splice(contexts.indexOf(gl), 1);
+    });
+
+    gl.destroy = (destroy => function() {
+      destroy.call(this);
+
+      for (let i = 0; i < cleanups.length; i++) {
+        cleanups[i]();
+      }
     })(gl.destroy);
 
     contexts.push(gl);
