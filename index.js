@@ -169,6 +169,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       }
 
       nativeWindow.destroy(windowHandle);
+      destroy.call(this);
       canvas._context = null;
 
       if (hidden) {
