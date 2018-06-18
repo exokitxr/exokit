@@ -3386,6 +3386,9 @@ class HTMLTemplateElement extends HTMLElement {
       childNodes: this._childNodes,
     });
   }
+  set innerHTML(innerHTML) {
+    super.innerHTML = innerHTML;
+  }
 }
 class CharacterNode extends Node {
   constructor(value) {
