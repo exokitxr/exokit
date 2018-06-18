@@ -3928,9 +3928,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return Promise.resolve(this.getVRDisplaysSync());
     },
     createVRDisplay() {
-      const display = new FakeVRDisplay();
-      window[mrDisplaysSymbol].fakeVrDisplay = display;
-      return display;
+      return _getFakeVrDisplay(window);
     },
     getGamepads,
     xr: new XR(window),
@@ -4372,6 +4370,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         });
       };
     };
+    const fakeVrDisplay = new FakeVRDisplay();
     const vrDisplay = new VRDisplay();
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
@@ -4396,7 +4395,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
     window[mrDisplaysSymbol] = {
-      fakeVrDisplay: null,
+      fakeVrDisplay,
       vrDisplay,
       xrDisplay,
       mlDisplay,
