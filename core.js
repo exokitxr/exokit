@@ -4016,6 +4016,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         }
         return super.emit.apply(this, arguments);
       }
+      send(data) {
+        return super.send(_normalizeBuffer(data, global));
+      }
     }
     for (const k in Old) {
       WebSocket[k] = Old[k];
