@@ -3787,6 +3787,16 @@ const _getFakeVrDisplay = window => window[mrDisplaysSymbol].fakeVrDisplay;
 const _getVrDisplay = window => window[mrDisplaysSymbol].vrDisplay;
 const _getXrDisplay = window => window[mrDisplaysSymbol].xrDisplay;
 const _getMlDisplay = window => window[mrDisplaysSymbol].mlDisplay;
+const _cloneMrDisplays = (mrDisplays, window) => {
+  const result = {};
+  for (const k in mrDisplays) {
+    console.log('check clone', Object.keys(mrDisplays), k, mrDisplays[k].clone);
+    const mrDisplayClone = mrDisplays[k].clone();
+    mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    result[k] = mrDisplayClone;
+  }
+  return result;
+};
 
 function _makeNormalizeUrl(baseUrl) {
   return src => {
@@ -4459,7 +4469,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       });
     }
   } else {
-    window[mrDisplaysSymbol] = top[mrDisplaysSymbol];
+    window[mrDisplaysSymbol] = _cloneMrDisplays(top[mrDisplaysSymbol], window);
 
     top.on('vrdisplaypresentchange', e => {
       window._emit('vrdisplaypresentchange', e);
