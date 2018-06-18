@@ -931,6 +931,13 @@ class XRDevice {
       this.session.update(update);
     }
   }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    return o;
+  }
 }
 class XRSession extends EventTarget {
   constructor({device = null, exclusive = false, outputContext = null} = {}) {
