@@ -84,6 +84,8 @@ XHRUtils.createClient = (createClient => function() {
   }
 })(XHRUtils.createClient);
 
+const WebSocket = require('ws/lib/websocket');
+
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
 const createMemoryHistory = require('history/createMemoryHistory').default;
@@ -3844,11 +3846,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.vm = vmo;
 
   const windowStartScript = `(() => {
-    const WebSocket = require('ws/lib/websocket');
     ${!args.require ? 'global.require = undefined;' : ''}
-
-    global.WebSocket = WebSocket;
-
     process.on('uncaughtException', err => {
       console.warn(err.stack);
     });
@@ -4010,6 +4008,20 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return XMLHttpRequest;
   })(XMLHttpRequest);
+  window.WebSocket = (Old => {
+    class WebSocket extends Old {
+      emit(type, event) {
+        if (type === 'message') {
+          event = _normalizeBuffer(event, window);
+        }
+        return super.emit.apply(this, arguments);
+      }
+    }
+    for (const k in Old) {
+      WebSocket[k] = Old[k];
+    }
+    return WebSocket;
+  })(WebSocket);
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.indexedDB = indexedDB;
   window.performance = performance;
