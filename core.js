@@ -4150,7 +4150,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         const blob = new window.Blob(bs, {
           type: 'image/png',
         });
-        const img = new windowa.Image();
+        const img = new window.Image();
         const u = URL.createObjectURL(blob);
         const _cleanup = () => {
           URL.revokeObjectURL(u);
