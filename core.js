@@ -110,6 +110,16 @@ const {
   getAllGamepads,
 } = require('vr-display')(THREE);
 
+const wkhtiPath = (() => {
+  const basePath = require.resolve('wkhtp').slice(0, -'/index.js'.length);
+  switch (os.platform()) {
+    case 'win32': return path.join(basePath, 'lib', 'win', 'bin', 'wkhtmltoimage.exe');
+    case 'darwin': return path.join(basePath, 'lib', 'macos', 'bin', 'wkhtmltoimage');
+    case 'linux': return path.join(basePath, 'lib', 'linux', 'bin', 'wkhtmltoimage');
+    default: return null;
+  }
+})();
+
 const _normalizeBuffer = (b, target) => {
   const name = b && b.constructor && b.constructor.name;
   switch (name) {
@@ -4685,6 +4695,49 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   Path2D = bindings.nativePath2D;
   CanvasGradient = bindings.nativeCanvasGradient;
   CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
+  CanvasRenderingContext2D.prototype.drawWindow = function(window, x = 0, y = 0, w = this.width, h = this.height) {
+    return new Promise((accept, reject) => {
+      const src = window;
+      const wkhti = child_process.spawn(
+        wkhtiPath,
+        [
+          '--width', 1280 + '',
+          '--height', 1024 + '',
+          '-f', 'png',
+          src,
+          '-',
+        ]
+      );
+      const bs = [];
+      wkhti.stdout.on('data', d => {
+        bs.push(d);
+      });
+      wkhti.stdout.on('end', () => {
+        const blob = new this.canvas.ownerDocument.defaultView.Blob(bs, {
+          type: 'image/png',
+        });
+        const img = new this.canvas.ownerDocument.defaultView.Image();
+        const u = URL.createObjectURL(blob);
+        const _cleanup = () => {
+          URL.revokeObjectURL(u);
+        };
+        img.onload = () => {
+          this.drawImage(img, x, y, w, h);
+
+          _cleanup();
+
+          accept();
+        };
+        img.onerror = err => {
+          _cleanup();
+
+          reject(err);
+        };
+        img.src = u;
+      });
+      // wkhti.stderr.pipe(process.stderr);
+    });
+  };
   WebGLRenderingContext = bindings.nativeGl;
   if (args.frame || args.minimalFrame) {
     WebGLRenderingContext = (OldWebGLRenderingContext => {
