@@ -3801,7 +3801,6 @@ const _getMlDisplay = window => window[mrDisplaysSymbol].mlDisplay;
 const _cloneMrDisplays = (mrDisplays, window) => {
   const result = {};
   for (const k in mrDisplays) {
-    console.log('check clone', Object.keys(mrDisplays), k, mrDisplays[k].clone);
     const mrDisplayClone = mrDisplays[k].clone();
     mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
     result[k] = mrDisplayClone;
