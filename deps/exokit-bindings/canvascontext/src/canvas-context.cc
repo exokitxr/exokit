@@ -1103,6 +1103,8 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
 
       context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
     }
+    
+    context->dataArray.Reset();
   } else {
     Nan::ThrowError("drawImage: invalid arguments");
   }
