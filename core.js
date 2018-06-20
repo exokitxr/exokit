@@ -3794,7 +3794,10 @@ const _makeRequestAnimationFrame = window => (fn, priority) => {
   rafCbs.sort((a, b) => b[prioritySymbol] - a[prioritySymbol]);
   return fn;
 };
-const _getFakeVrDisplay = window => window[mrDisplaysSymbol].fakeVrDisplay;
+const _getFakeVrDisplay = window => {
+  const {fakeVrDisplay} = window[mrDisplaysSymbol];
+  return fakeVrDisplay.isActive ? fakeVrDisplay : null;
+};
 const _getVrDisplay = window => window[mrDisplaysSymbol].vrDisplay;
 const _getXrDisplay = window => window[mrDisplaysSymbol].xrDisplay;
 const _getMlDisplay = window => window[mrDisplaysSymbol].mlDisplay;
@@ -3948,7 +3951,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return Promise.resolve(this.getVRDisplaysSync());
     },
     createVRDisplay() {
-      return _getFakeVrDisplay(window);
+      const {fakeVrDisplay} = window[mrDisplaysSymbol];
+      fakeVrDisplay.isActive = true;
+      return fakeVrDisplay;
     },
     getGamepads,
     xr: new XR(window),
@@ -4432,6 +4437,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       };
     };
     const fakeVrDisplay = new FakeVRDisplay();
+    fakeVrDisplay.isActive = false;
     const vrDisplay = new VRDisplay();
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
