@@ -4147,8 +4147,22 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       width: w,
       height: h,
     });
-    await page.goto(new URL(src, options.baseUrl).href);
+    src = new URL(src, options.baseUrl).href;
+    await page.goto(src, {
+      waitUntil: 'load',
+    });
+
+    page.on('pagerror', err => {
+      console.warn(err);
+    });
+    page.on('error', err => {
+      console.warn(err);
+    });
+
     let metrics = [];
+    const _log = args => {
+      console.log(args);
+    };
     page.on('console', msg => {
       const args = msg.args();
       if (args.length > 0) {
@@ -4158,10 +4172,40 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           const j = parseJson(o.value);
           if (j !== null && j.metrics) {
             metrics = j.metrics;
+          } else {
+            _log(args);
           }
+        } else {
+          _log(args);
         }
       }
-      // console.log('got message', .map(a => a._remoteObject)); // XXX
+    });
+
+    await page.evaluate(async () => {
+      const _eval = s => {
+        try {
+          eval(s);
+        } catch (err) {
+          console.warn(err);
+        }
+      };
+
+      const scripts = Array.from(document.querySelectorAll('script'));
+      await Promise.all(scripts.map(async script => {
+        if (script.src) {
+          const text = await fetch(script.src)
+            .then(res => {
+              if (res.ok) {
+                return res.text();
+              } else {
+                return Promise.reject(new Error('script src got invalid status code: ' + res.status));
+              }
+            });
+          _eval(text);
+        } else {
+          _eval(script.innerHTML);
+        }
+      }));
     });
     await page.addScriptTag({
       content: `
