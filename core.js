@@ -4193,14 +4193,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           if (document.readyState === 'complete') {
             render();
           }
-        })
+        });
       `,
     });
     const b = await page.screenshot();
     page.close().catch(err => {console.warn(err);});
 
     const img = await new Promise((accept, reject) => {
-       const blob = new window.Blob([b], {
+      const blob = new window.Blob([b], {
         type: 'image/png',
       });
       const img = new window.Image();
