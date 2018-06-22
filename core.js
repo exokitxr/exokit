@@ -111,15 +111,15 @@ const {
   getAllGamepads,
 } = require('vr-display')(THREE);
 
-const wkhtiPath = (() => {
-  const basePath = require.resolve('wkhtp').slice(0, -'/index.js'.length);
-  switch (os.platform()) {
-    case 'win32': return path.join(basePath, 'lib', 'win', 'bin', 'wkhtmltoimage.exe');
-    case 'darwin': return path.join(basePath, 'lib', 'macos', 'bin', 'wkhtmltoimage');
-    case 'linux': return path.join(basePath, 'lib', 'linux', 'bin', 'wkhtmltoimage');
-    default: return null;
+const puppeteer = require('puppeteer');
+
+let browser = null;
+const _requestBrowser = async () => {
+  if (browser === null) {
+    browser = await puppeteer.launch()
   }
-})();
+  return browser;
+};
 
 const _normalizeBuffer = (b, target) => {
   const name = b && b.constructor && b.constructor.name;
@@ -167,6 +167,13 @@ let version = '';
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
+const parseJson = s => {
+  try {
+    return JSON.parse(s);
+  } catch (err) {
+    return null;
+  }
+};
 
 let styleEpoch = 0;
 
@@ -4133,46 +4140,91 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return styleSpec.style;
   };
-  window.drawWindow = (src, w = 1280, h = 1024) => {
-    return new Promise((accept, reject) => {
-      const wkhti = child_process.spawn(
-        wkhtiPath,
-        ['-f', 'png']
-          .concat(
-            w ? ['--width', w + ''] : []
-          )
-          .concat(
-            h ? ['--height', h + ''] : []
-          )
-          .concat([src, '-'])
-      );
-      const bs = [];
-      wkhti.stdout.on('data', d => {
-        bs.push(d);
-      });
-      wkhti.stdout.on('end', () => {
-        const blob = new window.Blob(bs, {
-          type: 'image/png',
-        });
-        const img = new window.Image();
-        const u = URL.createObjectURL(blob);
-        const _cleanup = () => {
-          URL.revokeObjectURL(u);
-        };
-        img.onload = () => {
-          _cleanup();
-
-          accept(img);
-        };
-        img.onerror = err => {
-          _cleanup();
-
-          reject(err);
-        };
-        img.src = u;
-      });
-      // wkhti.stderr.pipe(process.stderr);
+  window.drawWindow = async (src, w = 1280, h = 1024) => {
+    const browser = await _requestBrowser();
+    const page = await browser.newPage();
+    await page.setViewport({
+      width: w,
+      height: h,
     });
+    await page.goto('https://google.com');
+    let metrics = [];
+    page.on('console', msg => {
+      const args = msg.args();
+      if (args.length > 0) {
+        const arg = args[0];
+        const o = arg._remoteObject;
+        if (o && o.type === 'string') {
+          const j = parseJson(o.value);
+          if (j !== null && j.metrics) {
+            metrics = j.metrics;
+          }
+        }
+      }
+      // console.log('got message', .map(a => a._remoteObject)); // XXX
+    });
+    await page.addScriptTag({
+      content: `
+        function render() {
+          const metrics = [].slice.call(document.querySelectorAll('a, button, input')).map(function(a) {
+            const r = a.getBoundingClientRect();
+            return {
+              tagName: a.tagName || null,
+              className: a.className || null,
+              id: a.id || null,
+              src: a.src || null,
+              onclick: a.onclick || null,
+              left: r.left,
+              right: r.right,
+              top: r.top,
+              bottom: r.bottom,
+              width: r.width,
+              height: r.height
+            };
+          });
+          console.warn(JSON.stringify({
+            metrics,
+          }));
+        };
+        if (document.readyState === 'complete') {
+          render();
+        }
+        document.addEventListener('readystatechange', function() {
+          if (document.readyState === 'complete') {
+            render();
+          }
+        })
+      `,
+    });
+    const b = await page.screenshot();
+    await browser.close();
+
+    const img = await new Promise((accept, reject) => {
+       const blob = new window.Blob([b], {
+        type: 'image/png',
+      });
+      const img = new window.Image();
+      const u = URL.createObjectURL(blob);
+      const _cleanup = () => {
+        URL.revokeObjectURL(u);
+      };
+      img.onload = () => {
+        _cleanup();
+
+        accept(img);
+      };
+      img.onerror = err => {
+        _cleanup();
+
+        reject(err);
+      };
+      img.src = u;
+    });
+
+    return {
+      img,
+      metrics,
+    };
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
