@@ -4147,7 +4147,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       width: w,
       height: h,
     });
-    await page.goto('https://google.com');
+    await page.goto(new URL(src, options.baseUrl).href);
     let metrics = [];
     page.on('console', msg => {
       const args = msg.args();
