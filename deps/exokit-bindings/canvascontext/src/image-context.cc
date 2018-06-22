@@ -72,7 +72,7 @@ void Image::RunInMainThread(uv_async_t *handle) {
 }
 
 void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn) {
-  if (!this->cbFn.IsEmpty()) {
+  if (this->cbFn.IsEmpty()) {
     unsigned char *buffer = (unsigned char *)arrayBuffer->GetContents().Data() + byteOffset;
 
     this->arrayBuffer.Reset(arrayBuffer);
