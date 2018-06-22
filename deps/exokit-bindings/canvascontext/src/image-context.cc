@@ -48,62 +48,93 @@ unsigned int Image::GetNumChannels() {
   }
 } */
 
-bool Image::Load(const unsigned char *buffer, size_t size, std::string *error) {
-  sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, size);
-  SkBitmap bitmap;
-  bool ok = DecodeDataToBitmap(data, &bitmap);
+std::map<uv_async_t *, Image *> handleToImageMap;
+void Image::RunInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
 
-  if (ok) {
-    bitmap.setImmutable();
-    image = SkImage::MakeFromBitmap(bitmap);
+  auto iter = handleToImageMap.find(handle);
+  Image *image = (*iter).second;
+  handleToImageMap.erase(iter);
 
-    return true;
-  } else {
-    unique_ptr<char[]> svgString(new char[size + 1]);
-    memcpy(svgString.get(), buffer, size);
-    svgString[size] = 0;
+  Local<Function> cbFn = Nan::New(image->cbFn);
+  Local<String> arg0 = Nan::New<String>(image->error).ToLocalChecked();
+  Local<Value> argv[] = {
+    arg0,
+  };
+  cbFn->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
 
-    NSVGimage *svgImage = nsvgParse(svgString.get(), "px", 96);
-    if (svgImage != nullptr) {
-      if (svgImage->width > 0 && svgImage->height > 0 && svgImage->shapes != nullptr) {
-        int w = svgImage->width;
-        int h = svgImage->height;
-        unsigned char *address = (unsigned char *)malloc(w * h * 4);
-        nsvgRasterize(imageContextSvgRasterizer, svgImage, 0, 0, 1, address, w, h, w * 4);
+  image->cbFn.Reset();
+  image->arrayBuffer.Reset();
+  image->error = "";
 
-        SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-        SkPixmap pixmap(info, address, w * 4);
+  uv_close((uv_handle_t *)handle, nullptr);
+  delete handle;
+}
 
-        SkBitmap bitmap;
-        bool ok = bitmap.installPixels(pixmap);
-        if (ok) {
-          bitmap.setImmutable();
-          image = SkImage::MakeFromBitmap(bitmap);
+void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn) {
+  if (!this->cbFn.IsEmpty()) {
+    unsigned char *buffer = (unsigned char *)arrayBuffer->GetContents().Data() + byteOffset;
 
-          return true;
-        } else {
-          if (error) {
-            *error = "failed to install svg pixels";
-          }
+    this->arrayBuffer.Reset(arrayBuffer);
+    this->cbFn.Reset(cbFn);
+    this->error = "";
 
-          free(address);
+    uv_async_t *threadAsync = new uv_async_t();
+    uv_async_init(uv_default_loop(), threadAsync, RunInMainThread);
 
-          return false;
-        }
+    handleToImageMap[threadAsync] = this;
+
+    std::thread([this, buffer, byteLength, threadAsync]() -> void {
+      sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, byteLength);
+      SkBitmap bitmap;
+      bool ok = DecodeDataToBitmap(data, &bitmap);
+
+      if (ok) {
+        bitmap.setImmutable();
+        this->image = SkImage::MakeFromBitmap(bitmap);
       } else {
-        if (error) {
-          *error = "invalid svg parameters";
-        }
+        unique_ptr<char[]> svgString(new char[byteLength + 1]);
+        memcpy(svgString.get(), buffer, byteLength);
+        svgString[byteLength] = 0;
 
-        return false;
+        NSVGimage *svgImage = nsvgParse(svgString.get(), "px", 96);
+        if (svgImage != nullptr) {
+          if (svgImage->width > 0 && svgImage->height > 0 && svgImage->shapes != nullptr) {
+            int w = svgImage->width;
+            int h = svgImage->height;
+            unsigned char *address = (unsigned char *)malloc(w * h * 4);
+            nsvgRasterize(imageContextSvgRasterizer, svgImage, 0, 0, 1, address, w, h, w * 4);
+
+            SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+            SkPixmap pixmap(info, address, w * 4);
+
+            SkBitmap bitmap;
+            bool ok = bitmap.installPixels(pixmap);
+            if (ok) {
+              bitmap.setImmutable();
+              this->image = SkImage::MakeFromBitmap(bitmap);
+            } else {
+              this->error = "failed to install svg pixels";
+
+              free(address);
+            }
+          } else {
+            this->error = "invalid svg parameters";
+          }
+        } else {
+          this->error = "unknown image type";
+          // throw ImageLoadingException(stbi_failure_reason());
+        }
       }
-    } else {
-      if (error) {
-        *error = "unknown image type";
-      }
-      // throw ImageLoadingException(stbi_failure_reason());
-      return false;
-    }
+
+      uv_async_send(threadAsync);
+    }).detach();
+  } else {
+    Local<String> arg0 = Nan::New<String>("already loading").ToLocalChecked();
+    Local<Value> argv[] = {
+      arg0,
+    };
+    cbFn->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
   }
 }
 
@@ -166,26 +197,24 @@ NAN_GETTER(Image::DataGetter) {
 NAN_METHOD(Image::LoadMethod) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsArrayBuffer()) {
-    Image *image = ObjectWrap::Unwrap<Image>(info.This());
+  if (info[1]->IsFunction()) {
+    if (info[0]->IsArrayBuffer()) {
+      Image *image = ObjectWrap::Unwrap<Image>(info.This());
 
-    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+      Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+      Local<Function> cbFn = Local<Function>::Cast(info[1]);
 
-    std::string error;
-    bool ok = image->Load((unsigned char *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength(), &error);
-    if (!ok) {
-      Nan::ThrowError(error.c_str());
-    }
-  } else if (info[0]->IsTypedArray()) {
-    Image *image = ObjectWrap::Unwrap<Image>(info.This());
+      image->Load(arrayBuffer, 0, arrayBuffer->ByteLength(), cbFn);
+    } else if (info[0]->IsTypedArray()) {
+      Image *image = ObjectWrap::Unwrap<Image>(info.This());
 
-    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
-    Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
+      Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
+      Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
+      Local<Function> cbFn = Local<Function>::Cast(info[1]);
 
-    std::string error;
-    bool ok = image->Load((unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength(), &error);
-    if (!ok) {
-      Nan::ThrowError(error.c_str());
+      image->Load(arrayBuffer, arrayBufferView->ByteOffset(), arrayBufferView->ByteLength(), cbFn);
+    } else {
+      Nan::ThrowError("invalid arguments");
     }
   } else {
     Nan::ThrowError("invalid arguments");
