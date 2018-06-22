@@ -31,7 +31,6 @@ after_test:
       $env:Path = "$pwd\node;$env:Path";
       .\node\npm install
       bash testRun.sh
-      wget "https://aka.ms/vs/15/release/vc_redist.x64.exe" -OutFile vc_redist.x64.exe
       set version "$env:APPVEYOR_REPO_TAG_NAME"
       if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_REPO_COMMIT".Substring(0, 8) }
       mkdir dist
