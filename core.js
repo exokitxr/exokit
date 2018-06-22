@@ -4197,7 +4197,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       `,
     });
     const b = await page.screenshot();
-    await browser.close();
+    page.close().catch(err => {console.warn(err);});
 
     const img = await new Promise((accept, reject) => {
        const blob = new window.Blob([b], {
