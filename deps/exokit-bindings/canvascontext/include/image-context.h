@@ -13,6 +13,7 @@
 #include <nanosvg.h>
 #include <nanosvgrast.h>
 #include <string>
+#include <thread>
 
 using namespace v8;
 using namespace node;
@@ -24,7 +25,8 @@ public:
   unsigned int GetHeight();
   unsigned int GetNumChannels();
   // unsigned char *GetData();
-  bool Load(const unsigned char *buffer, size_t size, std::string *error = nullptr);
+  static void RunInMainThread(uv_async_t *handle);
+  void Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn);
   // void Set(canvas::Image *image);
 
 protected:
@@ -40,6 +42,11 @@ protected:
 private:
   sk_sp<SkImage> image;
   Nan::Persistent<Uint8ClampedArray> dataArray;
+
+  Nan::Persistent<ArrayBuffer> arrayBuffer;
+  Nan::Persistent<Function> cbFn;
+  std::string error;
+  uv_async_t threadAsync;
 
   friend class CanvasRenderingContext2D;
   friend class ImageData;

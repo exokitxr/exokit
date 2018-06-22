@@ -4884,13 +4884,15 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
                 return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
               }
             })
-            .then(arrayBuffer => {
-              try {
-                this.image.load(arrayBuffer);
-              } catch(err) {
-                throw new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-              }
-            })
+            .then(arrayBuffer => new Promise((accept, reject) => {
+              this.image.load(arrayBuffer, err => {
+                if (!err) {
+                  accept();
+                } else {
+                  reject(new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength}, message: ${err})`));
+                }
+              });
+            }))
             .then(() => {
               this.dispatchEvent(new Event('load', {target: this}));
             })
