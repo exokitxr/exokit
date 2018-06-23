@@ -1374,12 +1374,11 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  process.on('uncaughtException', err => {
+  const _logStack = err => {
     console.warn(err.stack);
-  });
-  process.on('unhandledRejection', err => {
-    console.warn(err.stack);
-  });
+  };
+  process.on('uncaughtException', _logStack);
+  process.on('unhandledRejection', _logStack);
   EventEmitter.defaultMaxListeners = 100;
 
   if (args.version) {
