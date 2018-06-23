@@ -3887,12 +3887,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   const windowStartScript = `(() => {
     ${!args.require ? 'global.require = undefined;' : ''}
-    process.on('uncaughtException', err => {
+    const _logStack = err => {
       console.warn(err.stack);
-    });
-    process.on('unhandledRejection', err => {
-      console.warn(err.stack);
-    });
+    };
+    process.on('uncaughtException', _logStack);
+    process.on('unhandledRejection', _logStack);
   })();`;
 
   for (const k in EventEmitter.prototype) {
