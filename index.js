@@ -11,20 +11,7 @@ const os = require('os');
 const url = require('url');
 const repl = require('repl');
 
-const bugsnag = require('bugsnag');
-const bugsnagApiKey = (() => {
-  try {
-    return fs.readFileSync(path.join(__dirname, 'bugsnag.txt'), 'utf8');
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      console.warn(err.stack);
-    }
-    return null;
-  }
-})();
-if (bugsnagApiKey) {
-  bugsnag.register(bugsnagApiKey);
-}
+require(path.join(__dirname, 'bugsnag'));
 
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
