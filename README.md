@@ -70,14 +70,15 @@ With Exokit, anyone can write some Javascript to control their experience of the
 
 Works:
 
-- Android
+- Windows
+- macOS
+- Linux
 
 Planned:
 
-- Windows
-- macOS
+- Electron
+- Android
 - iOS
-- Linux
 
 The core is Javascript and is platform-agnostic. Porting work is restricted to the native graphics APIs.
 
@@ -105,7 +106,9 @@ The core is Javascript and is platform-agnostic. Porting work is restricted to t
 
 ## Community
 
-- [Slack](https://communityinviter.com/apps/exokit/exokit)
+- [Slack](https://communityinviter.com/apps/exokit/exokit) for development
+- [Discord](https://discord.gg/cf5tfTV) for hanging out
+- [Twitter](https://twitter.com/webmixedreality) for silliness
 
 ## Contributors
 
