@@ -10,11 +10,28 @@ const {EventEmitter} = events;
 const os = require('os');
 const url = require('url');
 const repl = require('repl');
+
+const bugsnag = require('bugsnag');
+const bugsnagApiKey = (() => {
+  try {
+    return fs.readFileSync(path.join(__dirname, 'bugsnag.txt'), 'utf8');
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.warn(err.stack);
+    }
+    return null;
+  }
+})();
+if (bugsnagApiKey) {
+  bugsnag.register(bugsnagApiKey);
+}
+
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
 const replHistory = require('repl.history');
 const minimist = require('minimist');
 const UPNG = require('upng-js');
+
 const {version} = require('./package.json');
 const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
