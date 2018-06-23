@@ -9,9 +9,20 @@ const events = require('events');
 const {EventEmitter} = events;
 const os = require('os');
 const url = require('url');
+const child_process = require('child_process');
 const repl = require('repl');
 
 require(path.join(__dirname, 'bugsnag'));
+require('fault-zone').registerHandler((stack, stackLen) => {
+  const message = new Buffer(stack, 0, stackLen).toString('utf8');
+  console.warn(message);
+  child_process.execFileSync(process.argv[0], [
+    path.join(__dirname, 'bugsnag.js'),
+  ], {
+    input: message,
+  });
+  process.exit(1);
+});
 
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
