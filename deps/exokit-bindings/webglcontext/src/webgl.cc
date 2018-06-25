@@ -1927,7 +1927,7 @@ NAN_METHOD(WebGLRenderingContext::Clear) {
 
 
 NAN_METHOD(WebGLRenderingContext::UseProgram) {
-  GLint programId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLint programId = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Int32Value() : 0;
   glUseProgram(programId);
 }
 
