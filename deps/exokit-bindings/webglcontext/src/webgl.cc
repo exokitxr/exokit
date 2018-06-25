@@ -3309,9 +3309,16 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
 }
 
 NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
-  char *extensions = (char *)glGetString(GL_EXTENSIONS);
+  GLint numExtensions;
+  glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
-  info.GetReturnValue().Set(JS_STR(extensions));
+  Local<Array> result = Nan::New<Array>(numExtensions);
+  for (GLint i = 0; i < numExtensions; i++) {
+    char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
+    result->Set(i, JS_STR(extension));
+  }
+
+  info.GetReturnValue().Set(result);
 }
 
 // TODO GetExtension(name) return the extension name if found, should be an object...
