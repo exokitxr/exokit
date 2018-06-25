@@ -1,4 +1,5 @@
 node_modules
+site_modules
 build
 CMakeFiles
 CMakeCache.txt

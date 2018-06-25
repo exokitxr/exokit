@@ -1,0 +1,326 @@
+<html>
+  <body>
+
+    <script src="https://registry.npmjs.org/normalize-registry-url/-/normalize-registry-url-1.0.0.tgz"></script>
+
+		<video id="video" autoplay style="display:none"></video>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/r93/examples/js/loaders/OBJLoader.js"></script>
+  <script>
+    window.ScreenQuad = (() => {
+
+      var defaultQuad = new THREE.PlaneBufferGeometry(2,2,1,1);
+
+      var defaultVertexShader = [
+
+        "varying vec2 vUv;",
+        "void main(){",
+          "vUv = uv;",
+          "gl_Position = vec4(position.xy, 1., 1.);",
+        "}",
+
+      ].join("\n");
+
+      var defaultFragmentShader = [
+
+        `varying vec2 vUv;
+        uniform float numTextures;
+        uniform sampler2D uTexture;
+        void main() {
+          gl_FragColor = texture2D(uTexture, vUv);
+        }`
+
+      ].join("\n");
+
+      function ScreenQuad( params ){
+
+        params = params || {};
+
+        THREE.Mesh.apply( this, [ defaultQuad , new THREE.ShaderMaterial({
+
+          uniforms:{
+            numTextures: {
+              type: 'f',
+              value: undefined !== params.numTextures ? params.numTextures : 1
+            },
+            uTexture: {
+              type:'t',
+              value: undefined !== params.texture ? params.texture : null
+            },
+          },
+
+          vertexShader: defaultVertexShader,
+
+          fragmentShader: params.fragmentShader ? params.fragmentShader : defaultFragmentShader,
+
+          depthWrite: false,
+
+        })]);
+
+        this.frustumCulled = false;
+
+        this.renderOrder = -1;
+
+        //end mesh setup
+
+        // console.log( this , this.width , this.height );
+
+      }
+
+      ScreenQuad.prototype = Object.create( THREE.Mesh.prototype );
+
+      ScreenQuad.constructor = ScreenQuad;
+
+      return ScreenQuad
+
+    })();
+  </script>
+  <script>
+
+      let camera, matrixWorld, projectionMatrix, scene, renderer, video, controllerMeshes, lastPresseds, points, presenting;
+
+			init();
+
+			function init() {
+
+        scene = new THREE.Scene();
+
+				camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera.position.z = 1;
+        scene.add(camera);
+        camera.updateMatrixWorld();
+        camera.updateProjectionMatrix();
+
+        matrixWorld = camera.matrixWorldInverse.clone();
+        projectionMatrix = camera.projectionMatrix.clone();
+
+				video = document.getElementById('video');
+				const texture = new THREE.VideoTexture(video);
+				texture.minFilter = THREE.LinearFilter;
+				texture.magFilter = THREE.LinearFilter;
+				texture.format = THREE.RGBFormat;
+
+        const screenQuad = new ScreenQuad({
+          texture,
+        });
+        scene.add(screenQuad);
+
+        const ambientLight = new THREE.AmbientLight(0x808080);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        points = [];
+        controllerMeshes = [];
+        const controllerMeshLoader = new THREE.OBJLoader();
+        controllerMeshLoader.setPath('https://cdn.rawgit.com/mrdoob/three.js/r93/examples/models/obj/vive-controller/');
+        controllerMeshLoader.load('vr_controller_vive_1_5.obj', object => {
+          const textureLoader = new THREE.TextureLoader();
+          textureLoader.setPath('vive-controller/');
+
+          const controllerMesh = object.children[0];
+          controllerMesh.material.map = textureLoader.load('onepointfive_texture.png');
+          controllerMesh.material.specularMap = textureLoader.load('onepointfive_spec.png');
+
+          controllerMeshes.push(object.clone());
+          controllerMeshes.push(object.clone());
+          controllerMeshes.push(object.clone());
+          controllerMeshes.push(object.clone());
+          scene.add(controllerMeshes[0]);
+          scene.add(controllerMeshes[1]);
+          scene.add(controllerMeshes[2]);
+          scene.add(controllerMeshes[3]);
+        });
+
+        lastPresseds = [
+          false,
+          false,
+        ];
+        points = [];
+        presenting = false;
+
+				renderer = new THREE.WebGLRenderer({
+          antialias: true,
+        });
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				window.addEventListener( 'resize', onWindowResize );
+				window.addEventListener( 'keypress', onActivate );
+				window.addEventListener( 'vrdisplayactivate', onActivate );
+
+				//
+
+				if ( navigator.mediaDevices && navigator.mediaDevices.getUserMedia ) {
+
+					var constraints = { video: { width: 1280, height: 720, facingMode: 'user' } };
+
+					navigator.mediaDevices.getUserMedia( constraints ).then( function( stream ) {
+
+							// apply the stream to the video element used in the texture
+
+							video.src = window.URL.createObjectURL( stream );
+							video.play();
+
+					} ).catch( function( error ) {
+
+						console.error( 'Unable to access the camera/webcam.', error );
+
+					} );
+
+				} else {
+
+					console.error( 'MediaDevices interface not available.' );
+
+				}
+
+        renderer.setAnimationLoop(animate);
+
+			 }
+
+			 function onWindowResize() {
+
+				 camera.aspect = window.innerWidth / window.innerHeight;
+				 camera.updateProjectionMatrix();
+
+				 renderer.setSize( window.innerWidth, window.innerHeight );
+
+			 }
+
+       function onActivate() {
+         const localVector = new THREE.Vector3();
+         const localVector2 = new THREE.Vector3();
+         const localQuaternion = new THREE.Quaternion();
+         const localMatrix = new THREE.Matrix4();
+
+         if (!presenting) {
+           window.navigator.xr.requestDevice()
+             .then(device => {
+                return device.requestSession({
+                  exclusive: true,
+                  outputContext: renderer.getContext(),
+                })
+                  .then(session => {
+                    device.session = session;
+
+                    session.update = (update => function(updateSpec) {
+                      if (updateSpec.renderWidth !== undefined) {
+                        updateSpec.renderWidth *= 2;
+                      }
+                      if (updateSpec.frameData !== undefined && controllerMeshes[2] && controllerMeshes[3]) {
+                        const {frameData} = updateSpec;
+
+                        localMatrix.fromArray(frameData.leftViewMatrix);
+                        localMatrix.getInverse(localMatrix);
+                        localMatrix.decompose(localVector, localQuaternion, localVector2);
+                        controllerMeshes[2].quaternion.fromArray(frameData.pose.orientation);
+                        controllerMeshes[2].position.copy(localVector);
+                        controllerMeshes[2].updateMatrixWorld();
+
+                        localMatrix.fromArray(frameData.rightViewMatrix);
+                        localMatrix.getInverse(localMatrix);
+                        localMatrix.decompose(localVector, localQuaternion, localVector2);
+                        controllerMeshes[3].quaternion.fromArray(frameData.pose.orientation);
+                        controllerMeshes[3].position.copy(localVector);
+                        controllerMeshes[3].updateMatrixWorld();
+
+                        matrixWorld.toArray(frameData.leftViewMatrix);
+                        projectionMatrix.toArray(frameData.leftProjectionMatrix);
+
+                        matrixWorld.toArray(frameData.rightViewMatrix);
+                        projectionMatrix.toArray(frameData.rightProjectionMatrix);
+                      }
+                      return update.apply(this, arguments);
+                    })(session.update);
+                    session._frame.views = session._frame.views.slice(0, 1);
+
+                    renderer.setAnimationLoop(null);
+
+                    renderer.vr.enabled = true;
+                    renderer.vr.setDevice(device);
+                    renderer.vr.setSession(session, {
+                      frameOfReferenceType: 'stage',
+                    });
+                    renderer.vr.setAnimationLoop(animate);
+                  });
+             });
+
+          presenting = true;
+        }
+
+			 }
+
+			 function animate() {
+
+         if (presenting) {
+           const gamepads = navigator.getGamepads();
+           for (let i = 0; i < 2; i++) {
+             const gamepad = gamepads[i];
+             const controllerMesh = controllerMeshes[i];
+
+             if (gamepad) {
+               controllerMesh.position.fromArray(gamepad.pose.position);
+               controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
+             }
+
+             const lastPressed = lastPresseds[i];
+             const pressed = Boolean(gamepad && gamepad.buttons[1].pressed);
+             if (!lastPressed && pressed) {
+               if (gamepad) {
+                 for (let j = 0; j < gamepad.hapticActuators.length; j++) {
+                   gamepad.hapticActuators[j].pulse(1, 100);
+                 }
+               }
+
+               points.push(controllerMesh.position.clone());
+               console.log(`point ${points.length}: ${JSON.stringify(points[points.length - 1])}`);
+
+               const _configureCamera = (camera, points) => {
+                 const [P, A, B] = points;
+                 const PA = A.clone().sub(P).normalize();
+                 const PB = B.clone().sub(P).normalize();
+                 const PMid = PA.clone().add(PB).divideScalar(2).normalize();
+                 const Q = new THREE.Quaternion();
+                 Q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), PMid);
+
+                 const X = new THREE.Vector3(1, 0,  0); X.applyQuaternion(Q); // camera right
+                 const Y = new THREE.Vector3(0, 1,  0); Y.applyQuaternion(Q); // camera up
+                 const Z = new THREE.Vector3(0, 0, -1); Z.applyQuaternion(Q); // camera forward
+
+                 const aspect = video.width / video.height;
+                 const fov = Math.acos(Y.dot(PA) / Z.dot(PA)) * 90 / Math.PI;
+
+                 console.dir({P, A, B, PA, PB, X, Y, Z, aspect, fov, points})
+
+                 camera.position.copy(P);
+                 camera.quaternion.copy(Q);
+                 camera.updateMatrixWorld();
+                 
+                 camera.aspect = aspect;
+                 camera.fov = fov;
+                 camera.updateProjectionMatrix();
+               }
+
+               if (points.length >= 3) {
+                 _configureCamera(camera, points);
+                 projectionMatrix.copy(camera.projectionMatrix);
+                 matrixWorld.copy(camera.matrixWorldInverse);
+
+                 console.log(`viewMatrix: ${JSON.stringify(matrixWorld.toArray())}`);
+                 console.log(`projectionMatrix: ${JSON.stringify(projectionMatrix.toArray())}`);
+
+                 points.length = 0;
+               }
+             }
+             lastPresseds[i] = pressed;
+           }
+         }
+
+				 renderer.render(scene, camera);
+			 }
+  </script>
+  </body>
+</html>
