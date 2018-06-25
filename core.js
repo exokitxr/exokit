@@ -2933,14 +2933,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
                     writer.on('finish', () => {
                       decompress(dst, SITE_MODULES).then(files => {
                         const dir = path.join(SITE_MODULES, name);
-                        try {
-                          rmrf(dir);
-                        } catch (e) {
-                          console.warn(e.message);
-                          console.warn(e.stack);
-                          reject(e);
-                          return;
-                        }
+                        rmrf(dir);
                         fs.renameSync(path.join(SITE_MODULES, 'package'), dir);
                         accept(this.ownerDocument.defaultView.exports = require(dir));
                       });
