@@ -1820,7 +1820,7 @@ const _cssText = style => {
   return styleString;
 };
 const _makeStyleProxy = el => {
-  let style = {};
+  const style = {};
   let needsReset = true;
   const _reset = () => {
     needsReset = false;
@@ -1831,7 +1831,9 @@ const _makeStyleProxy = el => {
       err = e;
     }
     if (!err) {
-      style = {};
+      for (const k in style) {
+        delete style[k];
+      }
       const {rules} = stylesheet;
       for (let j = 0; j < rules.length; j++) {
         const rule = rules[j];
@@ -1843,40 +1845,84 @@ const _makeStyleProxy = el => {
       }
     }
   };
-  return new Proxy({}, {
+  const _getValue = (style, key) => {
+    if (needsReset) {
+      _reset();
+    }
+    return style[key];
+  };
+  const _setValue = (style, key, value) => {
+    if (key === 'cssText') {
+      el.setAttribute('style', value);
+    } else {
+      style[key] = value;
+      el.setAttribute('style', _cssText(style));
+    }
+  };
+  const _removeValue = (style, key, value) => {
+    delete style[key];
+    el.setAttribute('style', _cssText(style));
+  };
+  const _makeProxy = (style, getValue, setValue, removeValue) => new Proxy({}, {
     get(target, key) {
       if (key === 'reset') {
         return _reset;
       } else if (key === 'clone') {
         return () => {
-          const result = {};
+          const newStyle = {};
           for (const k in style) {
             const v = style[k];
             if (v !== undefined) {
-              result[k] = v;
+              newStyle[k] = v;
             }
           }
-          return result;
+
+          const _getValue = (style, key) => style[key];
+          const _setValue = (style, key, value) => {
+            style[key] = value;
+          };
+          const _removeValue = (style, key) => {
+            delete style[value];
+          };
+          return _makeProxy(newStyle, _getValue, _setValue, _removeValue);
         };
       } else if (key === 'cssText') {
         return el.getAttribute('style') || '';
+      } else if (key === 'length') {
+        return Object.keys(style).length;
+      } else if (key === 'getPropertyPriority') {
+        return () => '';
+      } else if (key === 'getPropertyValue') {
+        return key => getValue(style, key);
+      } else if (key === 'setProperty') {
+        return (propertyName, value, priority) => {
+          setValue(style, propertyName, value);
+        };
+      } else if (key === 'removeProperty') {
+        return property => {
+          removeValue(style, property);
+        };
+      } else if (key === 'item') {
+        return k => {
+          const n = parseInt(k, 10);
+          if (!isNaN(n)) {
+            const keys = Object.keys(style);
+            const key = keys[n];
+            return style[key];
+          } else {
+            return undefined;
+          }
+        };
       } else {
-        if (needsReset) {
-          _reset();
-        }
-        return style[key];
+        return getValue(style, key);
       }
     },
     set(target, key, value) {
-      if (key === 'cssText') {
-        el.setAttribute('style', value);
-      } else {
-        style[key] = value;
-        el.setAttribute('style', _cssText(style));
-      }
+      setValue(target, key, value);
       return true;
     },
   });
+  return _makeProxy(style, _getValue, _setValue, _removeValue);
 };
 const _dashToCamelCase = s => {
   let match = s.match(/^data-(.+)$/);
