@@ -3308,15 +3308,52 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
   //info.GetReturnValue().Set(Nan::Undefined());
 }
 
+const char *webglExtensions[] = {
+  "ANGLE_instanced_arrays",
+  "EXT_blend_minmax",
+  "EXT_color_buffer_float",
+  "EXT_color_buffer_half_float",
+  "EXT_disjoint_timer_query",
+  "EXT_frag_depth",
+  "EXT_sRGB",
+  "EXT_shader_texture_lod",
+  "EXT_texture_filter_anisotropic",
+  "OES_element_index_uint",
+  "OES_standard_derivatives",
+  "OES_texture_float",
+  "OES_texture_float_linear",
+  "OES_texture_half_float",
+  "OES_texture_half_float_linear",
+  "OES_vertex_array_object",
+  "WEBGL_color_buffer_float",
+  "WEBGL_compressed_texture_astc",
+  "WEBGL_compressed_texture_atc",
+  "WEBGL_compressed_texture_etc",
+  "WEBGL_compressed_texture_etc1",
+  "WEBGL_compressed_texture_pvrtc",
+  "WEBGL_compressed_texture_s3tc",
+  "WEBGL_compressed_texture_s3tc_srgb",
+  "WEBGL_debug_renderer_info",
+  "WEBGL_debug_shaders",
+  "WEBGL_depth_texture",
+  "WEBGL_draw_buffers",
+  "WEBGL_lose_context",
+};  
 NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
-  GLint numExtensions;
-  glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+  // GLint numExtensions;
+  // glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
+  int numExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
   Local<Array> result = Nan::New<Array>(numExtensions);
   for (GLint i = 0; i < numExtensions; i++) {
+    // char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
+    result->Set(i, JS_STR(webglExtensions[i]));
+  }
+
+  /* for (GLint i = 0; i < numExtensions; i++) {
     char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
     result->Set(i, JS_STR(extension));
-  }
+  } */
 
   info.GetReturnValue().Set(result);
 }
