@@ -27,7 +27,7 @@ Handle<Object> AudioBuffer::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 NAN_METHOD(AudioBuffer::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     uint32_t numOfChannels = info[0]->Uint32Value();
@@ -53,13 +53,13 @@ NAN_METHOD(AudioBuffer::New) {
   }
 }
 NAN_GETTER(AudioBuffer::SampleRate) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
   info.GetReturnValue().Set(JS_INT(audioBuffer->sampleRate));
 }
 NAN_GETTER(AudioBuffer::Length) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
   Local<Array> buffers = Nan::New(audioBuffer->buffers);
@@ -73,7 +73,7 @@ NAN_GETTER(AudioBuffer::Length) {
   }
 }
 NAN_GETTER(AudioBuffer::NumberOfChannels) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
   Local<Array> buffers = Nan::New(audioBuffer->buffers);
@@ -81,7 +81,7 @@ NAN_GETTER(AudioBuffer::NumberOfChannels) {
   info.GetReturnValue().Set(JS_INT(buffers->Length()));
 }
 NAN_METHOD(AudioBuffer::GetChannelData) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsNumber()) {
     uint32_t channelIndex = info[0]->Uint32Value();
@@ -96,7 +96,7 @@ NAN_METHOD(AudioBuffer::GetChannelData) {
   }
 }
 NAN_METHOD(AudioBuffer::CopyFromChannel) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsFloat32Array() && info[1]->IsNumber()) {
     Local<Float32Array> destinationFloat32Array = Local<Float32Array>::Cast(info[0]);
@@ -121,7 +121,7 @@ NAN_METHOD(AudioBuffer::CopyFromChannel) {
   }
 }
 NAN_METHOD(AudioBuffer::CopyToChannel) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsFloat32Array() && info[1]->IsNumber()) {
     Local<Float32Array> sourceFloat32Array = Local<Float32Array>::Cast(info[0]);
@@ -176,7 +176,7 @@ void AudioBufferSourceNode::InitializePrototype(Local<ObjectTemplate> proto) {
   Nan::SetMethod(proto, "stop", Stop);
 }
 NAN_METHOD(AudioBufferSourceNode::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
@@ -194,26 +194,26 @@ NAN_METHOD(AudioBufferSourceNode::New) {
   }
 }
 NAN_METHOD(AudioBufferSourceNode::Start) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBufferSourceNode *audioBufferSourceNode = ObjectWrap::Unwrap<AudioBufferSourceNode>(info.This());
   ((lab::FinishableSourceNode *)audioBufferSourceNode->audioNode.get())->start(0);
 }
 NAN_METHOD(AudioBufferSourceNode::Stop) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBufferSourceNode *audioBufferSourceNode = ObjectWrap::Unwrap<AudioBufferSourceNode>(info.This());
   ((lab::FinishableSourceNode *)audioBufferSourceNode->audioNode.get())->stop(0);
 }
 NAN_GETTER(AudioBufferSourceNode::BufferGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBufferSourceNode *audioBufferSourceNode = ObjectWrap::Unwrap<AudioBufferSourceNode>(info.This());
   Local<Object> buffer = Nan::New(audioBufferSourceNode->buffer);
   info.GetReturnValue().Set(buffer);
 }
 NAN_SETTER(AudioBufferSourceNode::BufferSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBufferSourceNode *audioBufferSourceNode = ObjectWrap::Unwrap<AudioBufferSourceNode>(info.This());
   Local<Object> audioContextObj = Nan::New(audioBufferSourceNode->context);
@@ -255,14 +255,14 @@ NAN_SETTER(AudioBufferSourceNode::BufferSetter) {
   }
 }
 NAN_GETTER(AudioBufferSourceNode::OnEndedGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBufferSourceNode *audioBufferSourceNode = ObjectWrap::Unwrap<AudioBufferSourceNode>(info.This());
   Local<Function> onended = Nan::New(audioBufferSourceNode->onended);
   info.GetReturnValue().Set(onended);
 }
 NAN_SETTER(AudioBufferSourceNode::OnEndedSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioBufferSourceNode *audioBufferSourceNode = ObjectWrap::Unwrap<AudioBufferSourceNode>(info.This());
 
