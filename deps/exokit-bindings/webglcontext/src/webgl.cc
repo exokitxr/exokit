@@ -866,12 +866,12 @@ template <typename T>
 void expandLuminanceAlpha(char *dstData, char *srcData, size_t width, size_t height) {
   size_t size = width * height;
   for (size_t i = 0; i < size; i++) {
-    T value1 = ((T *)srcData)[i*2 + 0];
-    ((T *)dstData)[i * 4 + 0] = value1;
-    ((T *)dstData)[i * 4 + 1] = value1;
-    T value2 = ((T *)srcData)[i*2 + 1];
-    ((T *)dstData)[i * 4 + 2] = value2;
-    ((T *)dstData)[i * 4 + 3] = value2;
+    T luminance = ((T *)srcData)[i*2 + 0];
+    T alpha = ((T *)srcData)[i*2 + 1];
+    ((T *)dstData)[i * 4 + 0] = luminance;
+    ((T *)dstData)[i * 4 + 1] = luminance;
+    ((T *)dstData)[i * 4 + 2] = luminance;
+    ((T *)dstData)[i * 4 + 3] = alpha;
   }
 }
 
