@@ -3338,7 +3338,7 @@ const char *webglExtensions[] = {
   "WEBGL_depth_texture",
   "WEBGL_draw_buffers",
   "WEBGL_lose_context",
-};  
+};
 NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   // GLint numExtensions;
   // glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
