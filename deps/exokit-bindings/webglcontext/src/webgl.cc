@@ -1850,7 +1850,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
 
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV3Buffer.get());
     } else if (formatV == GL_LUMINANCE || formatV == GL_ALPHA) {
-      unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * typeSize * 4]);
+      unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * 4]);
 
       if (typeV == GL_UNSIGNED_BYTE) {
         expandLuminance<unsigned char>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
