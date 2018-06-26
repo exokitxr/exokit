@@ -430,10 +430,12 @@ class KeyboardEvent extends Event {
       }
       return null;
     };
-    const keySpec = findKeySpecByKeyCode(init.keyCode);
-    if (keySpec) {
-      init.key = keySpec.key;
-      init.code = /^[a-z]$/i.test(keySpec.key) ? ('Key' + keySpec.key.toUpperCase()) : keySpec.key;
+    if (init.key === undefined || init.code === undefined) {
+      const keySpec = findKeySpecByKeyCode(init.keyCode);
+      if (keySpec) {
+        init.key = keySpec.key;
+        init.code = /^[a-z]$/i.test(keySpec.key) ? ('Key' + keySpec.key.toUpperCase()) : keySpec.key;
+      }
     }
 
     super(type, init);
