@@ -226,6 +226,8 @@ public:
 
   static NAN_METHOD(FrontFace);
   
+  static NAN_METHOD(IsContextLost);
+  
   static NAN_GETTER(DrawingBufferWidthGetter);
   static NAN_GETTER(DrawingBufferHeightGetter);
 

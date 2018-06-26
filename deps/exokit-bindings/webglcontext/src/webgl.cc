@@ -1343,6 +1343,10 @@ NAN_METHOD(WebGLRenderingContext::FrontFace) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(WebGLRenderingContext::IsContextLost) {
+  info.GetReturnValue().Set(JS_BOOL(false));
+}
+
 NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
   Nan::HandleScope scope;
 
