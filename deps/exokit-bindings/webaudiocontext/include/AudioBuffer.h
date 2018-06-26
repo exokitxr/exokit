@@ -30,6 +30,7 @@ protected:
 
   static NAN_GETTER(SampleRate);
   static NAN_GETTER(Length);
+  static NAN_GETTER(Duration);
   static NAN_GETTER(NumberOfChannels);
   static NAN_METHOD(GetChannelData);
   static NAN_METHOD(CopyFromChannel);

@@ -17,6 +17,7 @@ Handle<Object> AudioBuffer::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetAccessor(proto, JS_STR("sampleRate"), SampleRate);
   Nan::SetAccessor(proto, JS_STR("length"), Length);
+  Nan::SetAccessor(proto, JS_STR("duration"), Duration);
   Nan::SetAccessor(proto, JS_STR("numberOfChannels"), NumberOfChannels);
   Nan::SetMethod(proto, "getChannelData", GetChannelData);
   Nan::SetMethod(proto, "copyFromChannel", CopyFromChannel);
@@ -70,6 +71,22 @@ NAN_GETTER(AudioBuffer::Length) {
     info.GetReturnValue().Set(JS_INT(numFrames));
   } else {
     info.GetReturnValue().Set(JS_INT(0));
+  }
+}
+NAN_GETTER(AudioBuffer::Duration) {
+  // Nan::HandleScope scope;
+
+  AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
+  Local<Array> buffers = Nan::New(audioBuffer->buffers);
+  if (buffers->Length() > 0) {
+    Local<Float32Array> firstBuffer = Local<Float32Array>::Cast(buffers->Get(0));
+    double numFrames = firstBuffer->Length();
+    double sampleRate = audioBuffer->sampleRate;
+    double duration = numFrames / sampleRate;
+
+    info.GetReturnValue().Set(JS_NUM(duration));
+  } else {
+    info.GetReturnValue().Set(JS_NUM(0));
   }
 }
 NAN_GETTER(AudioBuffer::NumberOfChannels) {
