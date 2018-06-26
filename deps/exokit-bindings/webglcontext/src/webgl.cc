@@ -1888,7 +1888,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
         expandLuminanceAlpha<unsigned char>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
       }
 
-      glTexImage2D(targetV, levelV, GL_RG8, widthV, heightV, borderV, GL_RG, typeV, pixelsV3Buffer.get());
+      glTexImage2D(targetV, levelV, GL_RGBA8, widthV, heightV, borderV, GL_RGBA, typeV, pixelsV3Buffer.get());
     } else {
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2);
     }
