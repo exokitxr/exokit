@@ -64,7 +64,7 @@
     "rimraf": "^2.6.2",
     "upng-js": "^2.1.0",
     "vm-one": "0.0.13",
-    "vr-display": "0.0.25",
+    "vr-display": "0.0.26",
     "webgl-to-opengl": "0.0.3",
     "window-classlist": "0.0.4",
     "window-fetch": "0.0.9",
