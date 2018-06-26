@@ -704,6 +704,8 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
 
   Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
+  
+  Nan::SetMethod(proto, "isContextLost", glCallWrap<IsContextLost>);
 
   Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), DrawingBufferWidthGetter);
   Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), DrawingBufferHeightGetter);
