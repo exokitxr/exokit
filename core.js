@@ -112,6 +112,7 @@ const {
 } = require('vr-display')(THREE);
 
 const puppeteer = require('puppeteer');
+const USKeyboardLayout = require('puppeteer/lib/USKeyboardLayout');
 
 let browser = null;
 const _requestBrowser = async () => {
@@ -419,6 +420,22 @@ class KeyboardEvent extends Event {
   constructor(type, init = {}) {
     init.bubbles = true;
     init.cancelable = true;
+
+    const findKeySpecByKeyCode = keyCode => {
+      for (const k in USKeyboardLayout) {
+        const keySpec = USKeyboardLayout[k];
+        if (keySpec.keyCode === keyCode) {
+          return keySpec;
+        }
+      }
+      return null;
+    };
+    const keySpec = findKeySpecByKeyCode(init.keyCode);
+    if (keySpec) {
+      init.key = keySpec.key;
+      init.code = /^[a-z]$/i.test(keySpec.key) ? ('Key' + keySpec.key.toUpperCase()) : keySpec.key;
+    }
+
     super(type, init);
 
     KeyboardEvent.prototype.init.call(this, init);
