@@ -47,8 +47,6 @@ NAN_METHOD(glCallWrap) {
       glfw::SetCurrentWindowContext(gl->windowHandle);
     }
 
-    gl->dirty = true;
-
     F(info);
   }
 }
@@ -1960,8 +1958,12 @@ NAN_METHOD(WebGLRenderingContext::TexParameterf) {
 
 
 NAN_METHOD(WebGLRenderingContext::Clear) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = info[0]->Int32Value();
+
   glClear(arg);
+
+  gl->dirty = true;
 }
 
 
