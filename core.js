@@ -16,6 +16,24 @@ const parse5 = require('parse5');
 const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
 
+const SITE_MODULES = path.join(__dirname, 'site_modules');
+
+const rmrf = path => {
+  try {
+    return require('rimraf').sync(path);
+  } catch(e) {
+    return e;
+  }
+}
+
+const mkdir = path => {
+  return require('mkdirp').sync(path);
+}
+
+// Nuke site_modules on startup.
+rmrf(SITE_MODULES)
+require('mkdirp').sync(SITE_MODULES);
+
 const {XMLHttpRequest: XMLHttpRequestBase} = require('window-xhr');
 const XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
   open(method, url, async, username, password) {
@@ -2943,6 +2961,10 @@ class HTMLStyleElement extends HTMLLoadableElement {
     return running;
   }
 }
+const _shouldRequire = url => (url.endsWith('.tgz') ||
+  url.endsWith('.tar.gz') || url.endsWith('.tar') ||
+  url.endsWith('.gz') || url.endsWith('.zip') || url.endsWith('.7z'));
+
 class HTMLScriptElement extends HTMLLoadableElement {
   constructor(attrs = [], value = '', location = null) {
     super('SCRIPT', attrs, value, location);
@@ -2959,7 +2981,41 @@ class HTMLScriptElement extends HTMLLoadableElement {
         this.ownerDocument.defaultView.fetch(url)
           .then(res => {
             if (res.status >= 200 && res.status < 300) {
-              return res.text();
+              // when script type is set to 'application/require', fetch refuses to fetch.
+              //if (this.getAttribute('type') == 'application/require')
+              if (_shouldRequire(url)) {
+                if (process.env.DEBUG) console.log('require: ' + url);
+                return new Promise((accept, reject) => {
+                  res.arrayBuffer().then(ab => {
+                    const data = new Uint8ClampedArray(ab);
+                    const filename = path.basename(url);
+                    const name = filename.split('.')[0];
+                    const dst = path.join(SITE_MODULES, filename);
+                    fs.writeFileSync(dst, data);
+                    const decompress = require('decompress');
+                    var writer = fs.createWriteStream(dst);
+                    writer.write(Buffer.from(ab));
+                    writer.on('finish', () => {
+                      decompress(dst, SITE_MODULES).then(files => {
+                        const dir = path.join(SITE_MODULES, name);
+                        rmrf(dir);
+                        fs.renameSync(path.join(SITE_MODULES, 'package'), dir);
+                        accept(this.ownerDocument.defaultView.exports = require(dir));
+                      });
+                    });
+                    writer.on('error', e => {
+                      console.warn(e.message);
+                      console.warn(e.stack);
+                      reject(e);
+                    });
+                    writer.end();
+                  })
+                  .catch(err => reject(err));
+                });
+              } else {
+                if (process.env.DEBUG) console.log('script: ' + url);
+                return res.text();
+              }
             } else {
               return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
             }
