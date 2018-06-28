@@ -57,12 +57,14 @@ const args = (() => {
         'require',
       ],
       string: [
+        'tab',
         'size',
         'image',
       ],
       alias: {
         v: 'version',
         h: 'home',
+        t: 'tab',
         p: 'performance',
         perf: 'performance',
         s: 'size',
@@ -77,7 +79,8 @@ const args = (() => {
     return {
       version: minimistArgs.version,
       url: minimistArgs._[0] || '',
-      home: minimistArgs.home,
+      home: minimistArgs.home || !!minimistArgs.tab,
+      tab: minimistArgs.tab,
       performance: !!minimistArgs.performance,
       size: minimistArgs.size,
       frame: minimistArgs.frame,
@@ -1248,7 +1251,7 @@ const _prepare = () => Promise.all([
 const _start = () => {
   let {url: u} = args;
   if (!u && args.home) {
-    u = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html');
+    u = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html') + (args.tag ? ('?t=' + encodeURIComponent(args.tab)) : '');
   }
   if (u) {
     if (u === '.') {
