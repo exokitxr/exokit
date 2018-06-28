@@ -52,7 +52,7 @@ const args = (() => {
         'performance',
         'frame',
         'minimalFrame',
-        'test',
+        'quit',
         'blit',
         'require',
       ],
@@ -68,7 +68,7 @@ const args = (() => {
         s: 'size',
         f: 'frame',
         m: 'minimalFrame',
-        t: 'test',
+        q: 'quit',
         b: 'blit',
         i: 'image',
         r: 'require',
@@ -82,7 +82,7 @@ const args = (() => {
       size: minimistArgs.size,
       frame: minimistArgs.frame,
       minimalFrame: minimistArgs.minimalFrame,
-      test: minimistArgs.test,
+      quit: minimistArgs.quit,
       blit: minimistArgs.blit,
       image: minimistArgs.image,
       require: minimistArgs.require,
@@ -1362,7 +1362,7 @@ const _start = () => {
       }
       callback(err, result);
     };
-    if (args.test) {
+    if (args.quit) {
       process.exit();
     }
     const r = repl.start({
