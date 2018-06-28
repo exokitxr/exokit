@@ -1,6 +1,6 @@
 #!/bin/bash
 
-"./exokit.sh" -t
+"./exokit.sh" --quit
 
 exitCode=$?
 
