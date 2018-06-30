@@ -4204,7 +4204,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return styleSpec.style;
   };
-  window.drawWindow = async (src, w = 1280, h = 1024) => {
+  window.requestPage = async (src, w = 1280, h = 1024) => {
     const browser = await _requestBrowser();
     const page = await browser.newPage();
     await page.setViewport({
@@ -4215,8 +4215,62 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     await page.goto(src, {
       waitUntil: 'load',
     });
+    /* await page.evaluate(async () => {
+      const _eval = s => {
+        try {
+          eval(s);
+        } catch (err) {
+          console.warn(err);
+        }
+      };
 
-    page.on('pagerror', err => {
+      const scripts = Array.from(document.querySelectorAll('script'));
+      await Promise.all(scripts.map(async script => {
+        if (script.src) {
+          const text = await fetch(script.src)
+            .then(res => {
+              if (res.ok) {
+                return res.text();
+              } else {
+                return Promise.reject(new Error('script src got invalid status code: ' + res.status));
+              }
+            });
+          _eval(text);
+        } else {
+          _eval(script.innerHTML);
+        }
+      }));
+    }); */
+
+    page.requestImage = async () => {
+      const b = await page.screenshot({
+        omitBackground: true,
+      });
+      const img = await new Promise((accept, reject) => {
+        const blob = new window.Blob([b], {
+          type: 'image/png',
+        });
+        const img = new window.Image();
+        const u = URL.createObjectURL(blob);
+        const _cleanup = () => {
+          URL.revokeObjectURL(u);
+        };
+        img.onload = () => {
+          _cleanup();
+
+          accept(img);
+        };
+        img.onerror = err => {
+          _cleanup();
+
+          reject(err);
+        };
+        img.src = u;
+      });
+      return img;
+    };
+
+    /* page.on('pagerror', err => {
       console.warn(err);
     });
     page.on('error', err => {
@@ -4243,35 +4297,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           _log(args);
         }
       }
-    });
+    }); */
 
-    await page.evaluate(async () => {
-      const _eval = s => {
-        try {
-          eval(s);
-        } catch (err) {
-          console.warn(err);
-        }
-      };
-
-      const scripts = Array.from(document.querySelectorAll('script'));
-      await Promise.all(scripts.map(async script => {
-        if (script.src) {
-          const text = await fetch(script.src)
-            .then(res => {
-              if (res.ok) {
-                return res.text();
-              } else {
-                return Promise.reject(new Error('script src got invalid status code: ' + res.status));
-              }
-            });
-          _eval(text);
-        } else {
-          _eval(script.innerHTML);
-        }
-      }));
-    });
-    await page.addScriptTag({
+    /* await page.addScriptTag({
       content: `
         function render() {
           const metrics = [].slice.call(document.querySelectorAll('a, button, input')).map(function(a) {
@@ -4303,36 +4331,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           }
         });
       `,
-    });
-    const b = await page.screenshot();
-    page.close().catch(err => {console.warn(err);});
+    }); */
 
-    const img = await new Promise((accept, reject) => {
-      const blob = new window.Blob([b], {
-        type: 'image/png',
-      });
-      const img = new window.Image();
-      const u = URL.createObjectURL(blob);
-      const _cleanup = () => {
-        URL.revokeObjectURL(u);
-      };
-      img.onload = () => {
-        _cleanup();
-
-        accept(img);
-      };
-      img.onerror = err => {
-        _cleanup();
-
-        reject(err);
-      };
-      img.src = u;
-    });
-
-    return {
+   /*  return {
       img,
       metrics,
-    };
+    }; */
+    return page;
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
