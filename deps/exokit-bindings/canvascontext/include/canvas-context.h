@@ -143,6 +143,7 @@ protected:
   static NAN_METHOD(PutImageData);
   static NAN_METHOD(Save);
   static NAN_METHOD(Restore);
+  static NAN_METHOD(Destroy);
 
   static bool isImageType(Local<Value> arg);
   static sk_sp<SkImage> getImage(Local<Value> arg);

@@ -67,6 +67,8 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"getImageData", GetImageData);
   Nan::SetMethod(proto,"putImageData", PutImageData);
 
+  Nan::SetMethod(proto,"destroy", Destroy);
+
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
   ctorFn->Set(JS_STR("CanvasGradient"), canvasGradientCons);
@@ -1210,6 +1212,10 @@ NAN_METHOD(CanvasRenderingContext2D::Restore) {
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   context->Restore();
+}
+
+NAN_METHOD(CanvasRenderingContext2D::Destroy) {
+  // nothing
 }
 
 bool CanvasRenderingContext2D::isImageType(Local<Value> arg) {
