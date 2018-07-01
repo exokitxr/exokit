@@ -2083,7 +2083,7 @@ class Element extends Node {
   }
 
   getAttributeNames() {
-    return Object.keys(this.attributes);
+    return this.attrs.map(attr => attr.name);
   }
 
   appendChild(childNode) {
