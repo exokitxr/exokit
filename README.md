@@ -13,8 +13,19 @@
 [Download for current OS](https://get.webmr.io)
 
 Then either:
-- Run the home environment with the shortcut. This gets you reality tabs (multiple sites at once), multiplayer, keyboard emulation, and other goodies. Or...
-- Run a WebGL/WebXR site by passing the URL as an argument. This is the same experience as any other browser.
+
+#### Open the app to the home environment.
+
+This gets you reality tabs (multiple sites at once), multiplayer, keyboard emulation, and other goodies.
+
+Or...
+
+#### Run a standalone WebGL/WebXR site by passing the URL as an argument:
+
+```
+exokit https://emukit.webmr.io/
+```
+This is the same experience as any other browser.
 
 # Introduction
 
