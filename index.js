@@ -280,10 +280,13 @@ const depthNear = 0.1;
 const depthFar = 10000.0;
 nativeVr.requestPresent = function(layers) {
   if (!vrPresentState.glContext) {
-    const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
+    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'canvas');
     if (layer) {
       const canvas = layer.source;
-      const context = canvas._context;
+      let context = canvas._context;
+      if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+        context = canvas.getContext('webgl');
+      }
       const window = canvas.ownerDocument.defaultView;
 
       nativeWindow.setCurrentWindowContext(context.getWindowHandle());
@@ -327,7 +330,7 @@ nativeVr.requestPresent = function(layers) {
         framebuffer: msFbo,
       };
     } else {
-      throw new Error('no HTMLCanvasElement source with WebGLRenderingContext provided')
+      throw new Error('no HTMLCanvasElement source provided');
     }
   } else {
     const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
@@ -373,10 +376,13 @@ if (nativeMl) {
   mlContext = new nativeMl();
   nativeMl.requestPresent = function(layers) {
     if (!mlGlContext) {
-      const layer = layers.find(layer => layer && layer.source && layer.source.constructor && layer.source.constructor.name === 'HTMLCanvasElement' && layer.source._context && layer.source._context.constructor && layer.source._context.constructor.name === 'WebGLRenderingContext');
+      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'canvas');
       if (layer) {
         const canvas = layer.source;
-        const context = canvas._context;
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
+        }
         const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
@@ -416,7 +422,7 @@ if (nativeMl) {
           throw new Error('simulator not attached');
         }
       } else {
-        throw new Error('no HTMLCanvasElement source with WebGLRenderingContext provided');
+        throw new Error('no HTMLCanvasElement source provided');
       }
     } else {
       return {};
