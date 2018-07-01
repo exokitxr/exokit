@@ -72,6 +72,6 @@
     "window-text-encoding": "0.0.2",
     "window-worker": "0.0.67",
     "window-xhr": "0.0.17",
-    "ws": "^5.2.0"
+    "ws": "^5.2.1"
   }
 }
