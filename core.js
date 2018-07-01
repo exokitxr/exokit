@@ -4837,35 +4837,37 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
     });
   }
 
-  process.nextTick(async () => {
-    const bodyChildNodes = body.childNodes;
-    body.childNodes = new NodeList();
+  if (body) {
+    process.nextTick(async () => {
+      const bodyChildNodes = body.childNodes;
+      body.childNodes = new NodeList();
 
-    try {
-      await _runHtml(document.head, window);
-    } catch(err) {
-      console.warn(err);
-    }
+      try {
+        await _runHtml(document.head, window);
+      } catch(err) {
+        console.warn(err);
+      }
 
-    body.childNodes = bodyChildNodes;
+      body.childNodes = bodyChildNodes;
 
-    document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
+      document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
 
-    try {
-      await _runHtml(document.body, window);
-    } catch(err) {
-      console.warn(err);
-    }
+      try {
+        await _runHtml(document.body, window);
+      } catch(err) {
+        console.warn(err);
+      }
 
-    document.readyState = 'interactive';
-    document.dispatchEvent(new Event('readystatechange', {target: document}));
+      document.readyState = 'interactive';
+      document.dispatchEvent(new Event('readystatechange', {target: document}));
 
-    document.readyState = 'complete';
-    document.dispatchEvent(new Event('readystatechange', {target: document}));
+      document.readyState = 'complete';
+      document.dispatchEvent(new Event('readystatechange', {target: document}));
 
-    document.dispatchEvent(new Event('load', {target: document}));
-    window.dispatchEvent(new Event('load', {target: window}));
-  });
+      document.dispatchEvent(new Event('load', {target: document}));
+      window.dispatchEvent(new Event('load', {target: window}));
+    });
+  }
 
   return document;
 };
