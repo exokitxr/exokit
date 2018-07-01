@@ -3421,11 +3421,26 @@ class HTMLCanvasElement extends HTMLElement {
   set data(data) {}
 
   getContext(contextType) {
-    if (this._context === null) {
-      if (contextType === '2d') {
+    if (contextType === '2d') {
+      if (this._context && this._context.constructor && this._context.constructor.name !== 'CanvasRenderingContext2D') {
+        this._context.destroy();
+        this._context = null;
+      }
+      if (this._context === null) {
         this._context = new CanvasRenderingContext2D(this.width, this.height);
-      } else if (contextType === 'webgl' || contextType === 'xrpresent') {
+      }
+    } else if (contextType === 'webgl' || contextType === 'xrpresent') {
+      if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext') {
+        this._context.destroy();
+        this._context = null;
+      }
+      if (this._context === null) {
         this._context = new WebGLRenderingContext(this);
+      }
+    } else {
+      if (this._context) {
+        this._context.destroy();
+        this._context = null;
       }
     }
     return this._context;
