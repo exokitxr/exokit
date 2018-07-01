@@ -1070,43 +1070,45 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
 NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
   Nan::HandleScope scope;
 
-  sk_sp<SkImage> image = getImage(info[0]);
-  if (image) {
-    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  if (isImageType(info[0])) {
+    sk_sp<SkImage> image = getImage(info[0]);
+    if (image) {
+      CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    int x = info[1]->Int32Value();
-    int y = info[2]->Int32Value();
+      int x = info[1]->Int32Value();
+      int y = info[2]->Int32Value();
 
-    if (info.Length() > 3) {
-      if (info.Length() > 5) {
-        unsigned int sw = info[3]->Uint32Value();
-        unsigned int sh = info[4]->Uint32Value();
-        unsigned int dx = info[5]->Uint32Value();
-        unsigned int dy = info[6]->Uint32Value();
-        unsigned int dw = info[7]->Uint32Value();
-        unsigned int dh = info[8]->Uint32Value();
+      if (info.Length() > 3) {
+        if (info.Length() > 5) {
+          unsigned int sw = info[3]->Uint32Value();
+          unsigned int sh = info[4]->Uint32Value();
+          unsigned int dx = info[5]->Uint32Value();
+          unsigned int dy = info[6]->Uint32Value();
+          unsigned int dw = info[7]->Uint32Value();
+          unsigned int dh = info[8]->Uint32Value();
 
-        context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
+          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
+        } else {
+          unsigned int dw = info[3]->Uint32Value();
+          unsigned int dh = info[4]->Uint32Value();
+          unsigned int sw = image->width();
+          unsigned int sh = image->height();
+
+          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
+        }
       } else {
-        unsigned int dw = info[3]->Uint32Value();
-        unsigned int dh = info[4]->Uint32Value();
         unsigned int sw = image->width();
         unsigned int sh = image->height();
+        unsigned int dw = sw;
+        unsigned int dh = sh;
 
         context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
       }
-    } else {
-      unsigned int sw = image->width();
-      unsigned int sh = image->height();
-      unsigned int dw = sw;
-      unsigned int dh = sh;
 
-      context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
+      context->dataArray.Reset();
+    } else {
+      Nan::ThrowError("drawImage: invalid arguments");
     }
-    
-    context->dataArray.Reset();
-  } else {
-    Nan::ThrowError("drawImage: invalid arguments");
   }
 }
 
@@ -1208,6 +1210,16 @@ NAN_METHOD(CanvasRenderingContext2D::Restore) {
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   context->Restore();
+}
+
+bool CanvasRenderingContext2D::isImageType(Local<Value> arg) {
+  Local<Value> constructorName = arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
+  return
+    constructorName->StrictEquals(JS_STR("HTMLImageElement")) ||
+    constructorName->StrictEquals(JS_STR("HTMLVideoElement")) ||
+    constructorName->StrictEquals(JS_STR("ImageData")) ||
+    constructorName->StrictEquals(JS_STR("ImageBitmap")) ||
+    constructorName->StrictEquals(JS_STR("HTMLCanvasElement"));
 }
 
 sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
