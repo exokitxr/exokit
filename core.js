@@ -562,8 +562,60 @@ class CustomEvent extends Event {
 }
 
 class CustomElementRegistry {
+  constructor(window) {
+    this._window = window;
+
+    this.elements = {};
+    this.elementPromises = {};
+  }
+
   define(name, constructor, options) {
-    // XXX
+    name = name.toUpperCase();
+
+    this.elements[name] = constructor;
+
+    this._window.document.traverse(el => {
+      if (el.tagName === name) {
+        this.upgrade(el, constructor);
+      }
+    });
+
+    const promises = this.elementPromises[name];
+    if (promises) {
+      for (let i = 0; i < promises.length; i++) {
+        promises[i].accept();
+      }
+      this.elementPromises[name] = null;
+    }
+  }
+  get(name) {
+    name = name.toUpperCase();
+
+    return this.elements[name];
+  }
+  whenDefined(name) {
+    name = name.toUpperCase();
+
+    if (this.elements[name]) {
+      return Promise.resolve();
+    } else {
+      let promises = this.elementPromises[name];
+      if (!promises) {
+        promises = [];
+        this.elementPromises[name] = promises;
+      }
+      const promise = new Promise((accept, reject) => {
+        promise.accept = accept;
+        promise.reject = reject;
+      });
+      promises.push(promise);
+      return promise;
+    }
+  }
+  
+  upgrade(el, constructor) {
+    el.setProtototypeOf(el, constructor.prototype);
+    constructor.call(el);
   }
 }
 class MutationRecord {
@@ -3827,6 +3879,11 @@ const _runHtml = (element, window) => {
         }
       } else if (el instanceof window.HTMLAudioElement || el instanceof window.HTMLVideoElement) {
         el.run();
+      } else if (/\-/.test(el.tagName)) {
+        const constructor = customElements.get(el.tagName);
+        if (constructor) {
+          customElements.upgrade(el, constructor);
+        }
       }
     });
   } else {
@@ -4214,7 +4271,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Node = Node;
   window.Text = Text;
   window.Comment = Comment;
-  window.customElements = new CustomElementRegistry();
+  window.customElements = new CustomElementRegistry(window);
   window.CustomElementRegistry = CustomElementRegistry;
   window.MutationObserver = MutationObserver;
   window.DOMRect = DOMRect;
@@ -4844,8 +4901,8 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
     });
   }
 
-  if (body) {
-    process.nextTick(async () => {
+  process.nextTick(async () => {
+    if (body) {
       const bodyChildNodes = body.childNodes;
       body.childNodes = new NodeList();
 
@@ -4873,8 +4930,14 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
 
       document.dispatchEvent(new Event('load', {target: document}));
       window.dispatchEvent(new Event('load', {target: window}));
-    });
-  }
+    } else {
+      try {
+        await _runHtml(document, window);
+      } catch(err) {
+        console.warn(err);
+      }
+    }
+  });
 
   return document;
 };
