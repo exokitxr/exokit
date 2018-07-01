@@ -16,7 +16,7 @@ const parse5 = require('parse5');
 const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
 
-const {XMLHttpRequest: XMLHttpRequestBase} = require('window-xhr');
+const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 const XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
   open(method, url, async, username, password) {
     const blob = urls.get(url);
@@ -4101,6 +4101,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       super(parts && parts.map(part => _normalizeBuffer(part, global)), opts);
     }
   })(Blob);
+  window.FormData = FormData;
   window.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
