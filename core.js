@@ -2082,6 +2082,10 @@ class Element extends Node {
     delete this.attributes[name];
   }
 
+  getAttributeNames() {
+    return Object.keys(this.attributes);
+  }
+
   appendChild(childNode) {
     if (childNode.parentNode) {
       childNode.parentNode.removeChild(childNode);
