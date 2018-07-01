@@ -41,7 +41,7 @@
     "@rgrove/parse-xml": "^1.1.1",
     "bugsnag": "^2.4.3",
     "css": "^2.2.3",
-    "exokit-home": "0.0.68",
+    "exokit-home": "0.0.69",
     "fake-indexeddb": "^2.0.4",
     "fault-zone": "0.0.11",
     "he": "^1.1.1",
