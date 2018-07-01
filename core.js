@@ -3888,6 +3888,24 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   return result;
 };
 
+function _getBaseUrl(u) {
+  let baseUrl;
+  if (/^file:\/\/(.*)$/.test(u)) {
+    baseUrl = u;
+  } else {
+    const parsedUrl = url.parse(u);
+    baseUrl = url.format({
+      protocol: parsedUrl.protocol || 'http:',
+      host: parsedUrl.host || '127.0.0.1',
+      pathname: parsedUrl.pathname,
+      search: parsedUrl.search,
+    });
+  }
+  if (!/\/$/.test(baseUrl) && !/\./.test(baseUrl.match(/\/([^\/]*)$/)[1])) {
+    baseUrl = baseUrl + '/';
+  }
+  return baseUrl;
+}
 function _makeNormalizeUrl(baseUrl) {
   return src => {
     if (!/^[a-z]+:\/\//i.test(src)) {
@@ -4865,22 +4883,7 @@ exokit.load = (src, options = {}) => {
       if (options.baseUrl) {
         baseUrl = options.baseUrl;
       } else {
-        if (/^file:\/\/(.*)$/.test(src)) {
-          baseUrl = src;
-        } else {
-          const parsedUrl = url.parse(src, {
-            locationInfo: true,
-          });
-          baseUrl = url.format({
-            protocol: parsedUrl.protocol || 'http:',
-            host: parsedUrl.host || '127.0.0.1',
-            pathname: parsedUrl.pathname,
-            search: parsedUrl.search,
-          });
-        }
-      }
-      if (!/\/$/.test(baseUrl)) {
-        baseUrl = baseUrl + '/';
+        baseUrl = _getBaseUrl(src);
       }
 
       return exokit(htmlString, {
