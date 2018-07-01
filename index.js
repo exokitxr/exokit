@@ -280,7 +280,7 @@ const depthNear = 0.1;
 const depthFar = 10000.0;
 nativeVr.requestPresent = function(layers) {
   if (!vrPresentState.glContext) {
-    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'canvas');
+    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
       let context = canvas._context;
@@ -376,7 +376,7 @@ if (nativeMl) {
   mlContext = new nativeMl();
   nativeMl.requestPresent = function(layers) {
     if (!mlGlContext) {
-      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'canvas');
+      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
       if (layer) {
         const canvas = layer.source;
         let context = canvas._context;
