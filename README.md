@@ -12,6 +12,10 @@
 
 [Download for current OS](https://get.webmr.io)
 
+Then either:
+- Run the home environment with the shortcut. This gets you reality tabs (multiple sites at once), multiplayer, keyboard emulation, and other goodies. Or...
+- Run a WebGL/WebXR site by passing the URL as an argument. This is the same experience as any other browser.
+
 # Introduction
 
 [Exokit Browser](https://exokit.webmr.io) is a brand new post-screen web browser written in JavaScript as a Node module. It supports WebGL, WebVR, Magic Leap and other mixed reality hardware, and also supports vintage keyboard and mouse. And it's faster and lower latency than Chrome and Firefox in many cases, since it does less (Exokit doesn't render HTML).
