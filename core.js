@@ -4859,25 +4859,28 @@ exokit.load = (src, options = {}) => {
       }
     })
     .then(htmlString => {
-      const baseUrl = (() => {
-        if (options.baseUrl) {
-          return options.baseUrl;
+      let baseUrl;
+      if (options.baseUrl) {
+        baseUrl = options.baseUrl;
+      } else {
+        if (/^file:\/\/(.*)$/.test(src)) {
+          baseUrl = src;
         } else {
-          if (/^file:\/\/(.*)$/.test(src)) {
-            return src;
-          } else {
-            const parsedUrl = url.parse(src, {
-              locationInfo: true,
-            });
-            return url.format({
-              protocol: parsedUrl.protocol || 'http:',
-              host: parsedUrl.host || '127.0.0.1',
-              pathname: parsedUrl.pathname,
-              search: parsedUrl.search,
-            });
-          }
+          const parsedUrl = url.parse(src, {
+            locationInfo: true,
+          });
+          baseUrl = url.format({
+            protocol: parsedUrl.protocol || 'http:',
+            host: parsedUrl.host || '127.0.0.1',
+            pathname: parsedUrl.pathname,
+            search: parsedUrl.search,
+          });
         }
-      })();
+      }
+      if (!/\/$/.test(baseUrl)) {
+        baseUrl = baseUrl + '/';
+      }
+
       return exokit(htmlString, {
         url: options.url || src,
         baseUrl,
