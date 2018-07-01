@@ -3880,9 +3880,9 @@ const _runHtml = (element, window) => {
       } else if (el instanceof window.HTMLAudioElement || el instanceof window.HTMLVideoElement) {
         el.run();
       } else if (/\-/.test(el.tagName)) {
-        const constructor = customElements.get(el.tagName);
+        const constructor = window.customElements.get(el.tagName);
         if (constructor) {
-          customElements.upgrade(el, constructor);
+          window.customElements.upgrade(el, constructor);
         }
       }
     });
