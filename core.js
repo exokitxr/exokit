@@ -561,6 +561,11 @@ class CustomEvent extends Event {
   }
 }
 
+class CustomElementRegistry {
+  define(name, constructor, options) {
+    // XXX
+  }
+}
 class MutationRecord {
   constructor(type, target, addedNodes, removedNodes, previousSibling, nextSibling, attributeName, attributeNamespace, oldValue) {
     this.type = type;
@@ -4209,6 +4214,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Node = Node;
   window.Text = Text;
   window.Comment = Comment;
+  window.customElements = new CustomElementRegistry();
+  window.CustomElementRegistry = CustomElementRegistry;
   window.MutationObserver = MutationObserver;
   window.DOMRect = DOMRect;
   window.NodeList = NodeList;
