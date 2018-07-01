@@ -3991,7 +3991,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const windowStartScript = `(() => {
     ${!args.require ? 'global.require = undefined;' : ''}
     const _logStack = err => {
-      console.warn(err.stack);
+      console.warn(err);
     };
     process.on('uncaughtException', _logStack);
     process.on('unhandledRejection', _logStack);

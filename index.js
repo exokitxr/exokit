@@ -1395,7 +1395,7 @@ const _start = () => {
 
 if (require.main === module) {
   const _logStack = err => {
-    console.warn(err.stack);
+    console.warn(err);
   };
   process.on('uncaughtException', _logStack);
   process.on('unhandledRejection', _logStack);
