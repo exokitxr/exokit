@@ -2506,6 +2506,7 @@ class Element extends Node {
     }
   }
   requestFullscreen() {
+    return; // XXX
     const topDocument = this.ownerDocument.defaultView.top.document;
 
     if (topDocument[fullscreenElementSymbol] === null) {
