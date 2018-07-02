@@ -1220,12 +1220,16 @@ NAN_METHOD(CanvasRenderingContext2D::Destroy) {
 
 bool CanvasRenderingContext2D::isImageType(Local<Value> arg) {
   Local<Value> constructorName = arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
+
+  v8::String::Utf8Value utf8Value(constructorName);
+  std::string stringValue(*utf8Value, utf8Value.length());
+
   return
-    constructorName->StrictEquals(JS_STR("HTMLImageElement")) ||
-    constructorName->StrictEquals(JS_STR("HTMLVideoElement")) ||
-    constructorName->StrictEquals(JS_STR("ImageData")) ||
-    constructorName->StrictEquals(JS_STR("ImageBitmap")) ||
-    constructorName->StrictEquals(JS_STR("HTMLCanvasElement"));
+    stringValue == "HTMLImageElement" ||
+    stringValue == "HTMLVideoElement" ||
+    stringValue == "ImageData" ||
+    stringValue == "ImageBitmap" ||
+    stringValue == "HTMLCanvasElement";
 }
 
 sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
