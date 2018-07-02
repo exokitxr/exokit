@@ -5,7 +5,7 @@ ENV MAGICLEAP_ENV ${MAGICLEAP_ARG}
 
 RUN apt-get update && \
   apt-get install -y \
-    build-essential wget python libglfw3-dev libglew-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev
+    build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontconfig1-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev
 
 ADD . /app
 WORKDIR /app
