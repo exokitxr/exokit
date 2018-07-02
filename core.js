@@ -612,7 +612,7 @@ class CustomElementRegistry {
       return promise;
     }
   }
-  
+
   upgrade(el, constructor) {
     el.setProtototypeOf(el, constructor.prototype);
     constructor.call(el);
@@ -1958,7 +1958,7 @@ const _makeStyleProxy = el => {
             style[key] = value;
           };
           const _removeValue = (style, key) => {
-            delete style[value];
+            delete style[key];
           };
           return _makeProxy(newStyle, _getValue, _setValue, _removeValue);
         };
