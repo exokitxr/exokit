@@ -3719,7 +3719,7 @@ class FileReader extends EventTarget {
   }
 
   readAsArrayBuffer(file) {
-    this.result = file.buffer.buffer.slice(file.buffer.byteOffset, file.buffer.byteLength);
+    this.result = file.buffer.buffer.slice(file.buffer.byteOffset, file.buffer.byteOffset + file.buffer.byteLength);
 
     process.nextTick(() => {
       this.emit('load');
