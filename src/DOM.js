@@ -616,7 +616,7 @@ class Element extends Node {
     })
       .childNodes
       .map(childNode =>
-        _fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
+        GlobalContext._fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
       );
     switch (position) {
       case 'beforebegin': {
@@ -861,7 +861,7 @@ class Element extends Node {
       })
         .childNodes
         .map(childNode =>
-          _fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
+          GlobalContext._fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
         )
     );
     this.childNodes = newChildNodes;
@@ -873,7 +873,7 @@ class Element extends Node {
     this._emit('children', newChildNodes, oldChildNodes, null, null);
     this.ownerDocument._emit('domchange');
 
-    _promiseSerial(newChildNodes.map(childNode => () => _runHtml(childNode, this.ownerDocument.defaultView)))
+    _promiseSerial(newChildNodes.map(childNode => () => GlobalContext._runHtml(childNode, this.ownerDocument.defaultView)))
       .catch(err => {
         console.warn(err);
       });
@@ -1750,7 +1750,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               const options = parentWindow[symbols.optionsSymbol];
 
               url = utils._makeNormalizeUrl(options.baseUrl)(url);
-              const contentWindow = _makeWindow({
+              const contentWindow = GlobalContext._makeWindow({
                 url,
                 baseUrl: url,
                 dataPath: options.dataPath,

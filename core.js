@@ -775,7 +775,7 @@ class FileReader extends EventTarget {
   }
 }
 
-global._fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
+const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   if (node.nodeName === '#text') {
     const text = new DOM.Text(node.value);
     text.parentNode = parentNode;
@@ -832,6 +832,7 @@ global._fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
     return element;
   }
 };
+GlobalContext._fromAST = _fromAST;
 const _loadPromise = el => new Promise((accept, reject) => {
   const load = () => {
     _cleanup();
@@ -848,7 +849,7 @@ const _loadPromise = el => new Promise((accept, reject) => {
   el.on('load', load);
   el.on('error', error);
 });
-global._runHtml = (element, window) => {
+const _runHtml = (element, window) => {
   if (element instanceof DOM.HTMLElement) {
     return element.traverseAsync(async el => {
       const {id} = el;
@@ -914,6 +915,7 @@ global._runHtml = (element, window) => {
     return Promise.resolve();
   }
 };
+GlobalContext._runHtml = _runHtml;
 
 let rafCbs = [];
 function tickAnimationFrame() {
@@ -981,7 +983,7 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   return result;
 };
 
-global._makeWindow = (options = {}, parent = null, top = null) => {
+const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
@@ -1556,9 +1558,9 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
 
           smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
 
-          global.Image = bindings.nativeImage;
-          global.ImageBitmap = bindings.nativeImageBitmap;
-          global.createImageBitmap = ${createImageBitmap.toString()};
+          GlobalContext.Image = bindings.nativeImage;
+          GlobalContext.ImageBitmap = bindings.nativeImageBitmap;
+          GlobalContext.createImageBitmap = ${createImageBitmap.toString()};
         `;
       }
 
@@ -1797,6 +1799,7 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
   }
   return window;
 };
+GlobalContext._makeWindow = _makeWindow;
 const _parseDocument = GlobalContext._parseDocument = (s, options, window) => {
   const ast = parse5.parse(s, {
     sourceCodeLocationInfo: true,
