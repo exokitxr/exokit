@@ -284,27 +284,34 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
     unsigned int width = info[0]->Uint32Value();
     unsigned int height = info[1]->Uint32Value();
     CanvasRenderingContext2D *context = new CanvasRenderingContext2D(width, height);
-    Local<Object> canvasObj = info.This();
-    context->Wrap(canvasObj);
+    
+    if (context->isValid()) {
+      Local<Object> canvasObj = info.This();
+      context->Wrap(canvasObj);
 
-    Nan::SetAccessor(canvasObj, JS_STR("width"), WidthGetter);
-    Nan::SetAccessor(canvasObj, JS_STR("height"), HeightGetter);
-    Nan::SetAccessor(canvasObj, JS_STR("data"), DataGetter);
-    Nan::SetAccessor(canvasObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("font"), FontGetter, FontSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("fontFamily"), FontFamilyGetter, FontFamilySetter);
-    Nan::SetAccessor(canvasObj, JS_STR("fontSize"), FontSizeGetter, FontSizeSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("fontVariant"), FontVariantGetter, FontVariantSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("fontWeight"), FontWeightGetter, FontWeightSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("lineHeight"), LineHeightGetter, LineHeightSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("fontStyle"), FontStyleGetter, FontStyleSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("textAlign"), TextAlignGetter, TextAlignSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("textBaseline"), TextBaselineGetter, TextBaselineSetter);
-    Nan::SetAccessor(canvasObj, JS_STR("direction"), DirectionGetter, DirectionSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("width"), WidthGetter);
+      Nan::SetAccessor(canvasObj, JS_STR("height"), HeightGetter);
+      Nan::SetAccessor(canvasObj, JS_STR("data"), DataGetter);
+      Nan::SetAccessor(canvasObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("font"), FontGetter, FontSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("fontFamily"), FontFamilyGetter, FontFamilySetter);
+      Nan::SetAccessor(canvasObj, JS_STR("fontSize"), FontSizeGetter, FontSizeSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("fontVariant"), FontVariantGetter, FontVariantSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("fontWeight"), FontWeightGetter, FontWeightSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("lineHeight"), LineHeightGetter, LineHeightSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("fontStyle"), FontStyleGetter, FontStyleSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("textAlign"), TextAlignGetter, TextAlignSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("textBaseline"), TextBaselineGetter, TextBaselineSetter);
+      Nan::SetAccessor(canvasObj, JS_STR("direction"), DirectionGetter, DirectionSetter);
 
-    info.GetReturnValue().Set(canvasObj);
+      info.GetReturnValue().Set(canvasObj);
+    } else {
+      delete context;
+      
+      Nan::ThrowError("CanvasRenderingContext2D: failed to create");
+    }
   } else {
     Nan::ThrowError("CanvasRenderingContext2D: invalid arguments");
   }
