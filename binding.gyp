@@ -258,6 +258,13 @@
             '-lswresample',
             '-lopenvr_api',
             '-luuid',
+            '-lXcursor',
+            '-lXinerama',
+            '-lXxf86vm',
+            '-lXrandr',
+            '-lXi',
+            '-lasound',
+            '-lexpat',
           ],
           'ldflags': [
             '-Wl,-Bsymbolic', # required for ffmpeg asm linkage
