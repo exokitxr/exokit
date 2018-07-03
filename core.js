@@ -827,6 +827,9 @@ const _loadPromise = el => new Promise((accept, reject) => {
   el.on('load', load);
   el.on('error', error);
 });
+// To "run" the HTML means to walk it and execute behavior on the elements such as <script src="...">.
+// Each candidate element exposes a method on runSymbol which returns a Promise.
+// We run that method and potentially await it, if it needs to block for correctness (like a script).
 const _runHtml = (element, window) => {
   if (element instanceof DOM.HTMLElement) {
     return element.traverseAsync(async el => {
