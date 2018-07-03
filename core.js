@@ -1263,6 +1263,7 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
   window.HTMLElement = DOM.HTMLElement;
   window.HTMLAnchorElement = DOM.HTMLAnchorElement;
   window.HTMLStyleElement = DOM.HTMLStyleElement;
+  window.HTMLLinkElement = DOM.HTMLLinkElement;
   window.HTMLScriptElement = DOM.HTMLScriptElement;
   window.HTMLImageElement = HTMLImageElementBound,
   window.HTMLAudioElement = HTMLAudioElementBound;
