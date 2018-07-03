@@ -1264,28 +1264,6 @@ class HTMLStyleElement extends HTMLLoadableElement {
 
     this.stylesheet = null;
 
-    this.on('attribute', (name, value) => {
-      if (name === 'src' && this.isRunnable()) {
-        const url = value;
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('style src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(s => css.parse(s).stylesheet)
-          .then(stylesheet => {
-            this.stylesheet = stylesheet;
-            GlobalContext.styleEpoch++;
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            this.dispatchEvent(new Event('error', {target: this}));
-          });
-      }
-    });
     this.on('innerHTML', innerHTML => {
       Promise.resolve()
         .then(() => css.parse(innerHTML).stylesheet)
@@ -1323,11 +1301,6 @@ class HTMLStyleElement extends HTMLLoadableElement {
 
   run() {
     let running = false;
-    const srcAttr = this.attributes.src;
-    if (srcAttr) {
-      this._emit('attribute', 'src', srcAttr.value);
-      running = true;
-    }
     if (this.childNodes.length > 0) {
       this.innerHTML = this.childNodes[0].value;
       running = true;
