@@ -777,7 +777,7 @@ class Element extends Node {
   }
 
   getBoundingClientRect() {
-    return new DOMRect();
+    return new DOMRect(0, 0, this.clientWidth, this.clientHeight);
   }
 
   focus() {
