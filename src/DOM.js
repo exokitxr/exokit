@@ -1299,7 +1299,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
     this._emit('innerHTML', innerHTML);
   }
 
-  [runSymbol]() {
+  [symbols.runSymbol]() {
     let running = false;
     if (this.childNodes.length > 0) {
       this.innerHTML = this.childNodes[0].value;
@@ -1368,7 +1368,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
     return this.rel === 'stylesheet';
   }
 
-  [runSymbol]() {
+  [symbols.runSymbol]() {
     let running = false;
     if (this.isRunnable()) {
       const hrefAttr = this.attributes.href;
@@ -1482,7 +1482,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
   }
 
-  [runSymbol]() {
+  [symbols.runSymbol]() {
     let running = false;
     if (this.isRunnable()) {
       const srcAttr = this.attributes.src;
@@ -1521,7 +1521,7 @@ class HTMLSrcableElement extends HTMLLoadableElement {
     this.setAttribute('src', value);
   }
 
-  [runSymbol]() {
+  [symbols.runSymbol]() {
     const srcAttr = this.attributes.src;
     if (srcAttr) {
       this._emit('attribute', 'src', srcAttr.value);
