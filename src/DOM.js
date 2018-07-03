@@ -1496,7 +1496,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     }
     if (running) {
-      const asyncAttr = el.attributes.async;
+      const asyncAttr = this.attributes.async;
       if (asyncAttr && asyncAttr.value) {
         return 'asyncLoad';
       } else {
