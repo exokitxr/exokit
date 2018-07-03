@@ -316,6 +316,10 @@ const _makeStyleProxy = el => {
         return _reset;
       } else if (key === 'clone') {
         return () => {
+          if (needsReset) {
+            _reset();
+          }
+
           const newStyle = {};
           for (const k in style) {
             const v = style[k];
