@@ -1310,6 +1310,78 @@ class HTMLStyleElement extends HTMLLoadableElement {
 }
 module.exports.HTMLStyleElement = HTMLStyleElement;
 
+class HTMLLinkElement extends HTMLLoadableElement {
+  constructor(attrs = [], value = '', location = null) {
+    super('LINK', attrs, value, location);
+
+    this.stylesheet = null;
+
+    this.on('attribute', (name, value) => {
+      if (name === 'href' && this.isRunnable()) {
+        const url = value;
+        this.ownerDocument.defaultView.fetch(url)
+          .then(res => {
+            if (res.status >= 200 && res.status < 300) {
+              return res.text();
+            } else {
+              return Promise.reject(new Error('link href got invalid status code: ' + res.status + ' : ' + url));
+            }
+          })
+          .then(s => css.parse(s).stylesheet)
+          .then(stylesheet => {
+            this.stylesheet = stylesheet;
+            styleEpoch++;
+            this.dispatchEvent(new Event('load', {target: this}));
+          })
+          .catch(err => {
+            this.dispatchEvent(new Event('error', {target: this}));
+          });
+      }
+    });
+  }
+
+  get rel() {
+    return this.getAttribute('rel') || '';
+  }
+  set rel(rel) {
+    rel = href + '';
+    this.setAttribute('rel', rel);
+  }
+
+  get href() {
+    return this.getAttribute('href') || '';
+  }
+  set href(href) {
+    href = href + '';
+    this.setAttribute('href', href);
+  }
+
+  get type() {
+    type = type + '';
+    return this.getAttribute('type') || '';
+  }
+  set type(type) {
+    this.setAttribute('type', type);
+  }
+
+  isRunnable() {
+    return this.rel === 'stylesheet';
+  }
+
+  run() {
+    let running = false;
+    if (this.isRunnable()) {
+      const hrefAttr = this.attributes.href;
+      if (hrefAttr) {
+        this._emit('attribute', 'href', hrefAttr.value);
+        running = true;
+      }
+    }
+    return running;
+  }
+}
+module.exports.HTMLLinkElement = HTMLLinkElement;
+
 class HTMLScriptElement extends HTMLLoadableElement {
   constructor(attrs = [], value = '', location = null) {
     super('SCRIPT', attrs, value, location);

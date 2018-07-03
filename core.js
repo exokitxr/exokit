@@ -874,6 +874,24 @@ global._runHtml = (element, window) => {
               });
           }
         }
+      } else if (el instanceof window.HTMLLinkElement) {
+        if (el.run()) {
+          if (el.childNodes.length > 0) {
+            try {
+              await _loadPromise(el)
+                .catch(err => {
+                  console.warn(err);
+                });
+            } catch(err) {
+              console.warn(err);
+            }
+          } else {
+            _loadPromise(el)
+              .catch(err => {
+                console.warn(err);
+              });
+          }
+        }
       } else if (el instanceof window.HTMLScriptElement) {
         if (el.run()) {
           const asyncAttr = el.attributes.async;
@@ -1228,6 +1246,7 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
     A: DOM.HTMLAnchorElement,
     STYLE: DOM.HTMLStyleElement,
     SCRIPT: DOM.HTMLScriptElement,
+    LINK: DOM.HTMLLinkElement,
     IMG: HTMLImageElementBound,
     AUDIO: HTMLAudioElementBound,
     VIDEO: HTMLVideoElement,
@@ -1266,9 +1285,10 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
     let styleSpec = el[symbols.computedStyleSymbol];
     if (!styleSpec || styleSpec.epoch !== GlobalContext.styleEpoch) {
       const style = el.style.clone();
-      const styleEls = el.ownerDocument.documentElement.getElementsByTagName('style');
-      for (let i = 0; i < styleEls.length; i++) {
-        const {stylesheet} = styleEls[i];
+      const stylesheetEls = el.ownerDocument.documentElement.getElementsByTagName('style')
+        .concat(el.ownerDocument.documentElement.getElementsByTagName('link'));
+      for (let i = 0; i < stylesheetEls.length; i++) {
+        const {stylesheet} = stylesheetEls[i];
         if (stylesheet) {
           const {rules} = stylesheet;
           for (let j = 0; j < rules.length; j++) {
