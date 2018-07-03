@@ -838,54 +838,26 @@ const _runHtml = (element, window) => {
         el._emit('attribute', 'id', id);
       }
 
-      if (el instanceof window.HTMLStyleElement) {
-        if (el[symbols.runSymbol]()) {
-          if (el.childNodes.length > 0) {
-            try {
-              await _loadPromise(el)
-                .catch(err => {
-                  console.warn(err);
-                });
-            } catch(err) {
-              console.warn(err);
-            }
-          } else {
-            _loadPromise(el)
+      if (el[symbols.runSymbol]) {
+        const runResult = el[symbols.runSymbol]();
+        if (runResult === 'syncLoad') {
+          try {
+            await _loadPromise(el)
               .catch(err => {
                 console.warn(err);
               });
+          } catch(err) {
+            console.warn(err);
           }
-        }
-      } else if (el instanceof window.HTMLLinkElement) {
-        if (el[symbols.runSymbol]()) {
+        } else if (runResult === 'asyncLoad') {
           _loadPromise(el)
             .catch(err => {
               console.warn(err);
             });
         }
-      } else if (el instanceof window.HTMLScriptElement) {
-        if (el[symbols.runSymbol]()) {
-          const asyncAttr = el.attributes.async;
-          if (!(asyncAttr && asyncAttr.value)) {
-            try {
-              await _loadPromise(el);
-            } catch(err) {
-              console.warn(err);
-            }
-          } else {
-            _loadPromise(el)
-              .catch(err => {
-                console.warn(err);
-              });
-          }
-        }
-      } else if (el instanceof window.HTMLImageElement) {
-        if (el[symbols.runSymbol]()) {
-          await _loadPromise(el);
-        }
-      } else if (el instanceof window.HTMLAudioElement || el instanceof window.HTMLVideoElement) {
-        el[symbols.runSymbol]();
-      } else if (/\-/.test(el.tagName)) {
+      }
+
+      if (/\-/.test(el.tagName)) {
         const constructor = window.customElements.get(el.tagName);
         if (constructor) {
           window.customElements.upgrade(el, constructor);
