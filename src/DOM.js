@@ -1305,7 +1305,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
       this.innerHTML = this.childNodes[0].value;
       running = true;
     }
-    return running;
+    return running ? 'syncLoad' : null;
   }
 }
 module.exports.HTMLStyleElement = HTMLStyleElement;
@@ -1377,7 +1377,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
         running = true;
       }
     }
-    return running;
+    return running ? 'syncLoad' : null;
   }
 }
 module.exports.HTMLLinkElement = HTMLLinkElement;
@@ -1483,8 +1483,8 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   [runSymbol]() {
+    let running = false;
     if (this.isRunnable()) {
-      let running = false;
       const srcAttr = this.attributes.src;
       if (srcAttr) {
         this._emit('attribute', 'src', srcAttr.value);
@@ -1494,9 +1494,16 @@ class HTMLScriptElement extends HTMLLoadableElement {
         this.innerHTML = this.childNodes[0].value;
         running = true;
       }
-      return running;
+    }
+    if (running) {
+      const asyncAttr = el.attributes.async;
+      if (asyncAttr && asyncAttr.value) {
+        return 'asyncLoad';
+      } else {
+        return 'syncLoad';
+      }
     } else {
-      return false;
+      return null;
     }
   }
 }
@@ -1518,9 +1525,9 @@ class HTMLSrcableElement extends HTMLLoadableElement {
     const srcAttr = this.attributes.src;
     if (srcAttr) {
       this._emit('attribute', 'src', srcAttr.value);
-      return true;
+      return 'syncLoad';
     } else {
-      return false;
+      return null;
     }
   }
 }
