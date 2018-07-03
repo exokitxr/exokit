@@ -49,6 +49,7 @@ public:
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();
+  bool isValid();
   void Scale(float x, float y);
   void Rotate(float angle);
   void Translate(float x, float y);
@@ -74,7 +75,7 @@ public:
   void ClearRect(float x, float y, float w, float h);
   void FillText(const std::string &text, float x, float y);
   void StrokeText(const std::string &text, float x, float y);
-  void Resize(unsigned int w, unsigned int h);
+  bool Resize(unsigned int w, unsigned int h);
   void DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, bool flipY);
   void Save();
   void Restore();
