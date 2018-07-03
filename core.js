@@ -876,21 +876,10 @@ global._runHtml = (element, window) => {
         }
       } else if (el instanceof window.HTMLLinkElement) {
         if (el.run()) {
-          if (el.childNodes.length > 0) {
-            try {
-              await _loadPromise(el)
-                .catch(err => {
-                  console.warn(err);
-                });
-            } catch(err) {
+          _loadPromise(el)
+            .catch(err => {
               console.warn(err);
-            }
-          } else {
-            _loadPromise(el)
-              .catch(err => {
-                console.warn(err);
-              });
-          }
+            });
         }
       } else if (el instanceof window.HTMLScriptElement) {
         if (el.run()) {
