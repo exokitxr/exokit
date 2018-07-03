@@ -1100,16 +1100,14 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
       return result;
     },
-    getVRDisplays() {
-      return Promise.resolve(this.getVRDisplaysSync());
-    },
+    getVRDisplays: args.xr === 'webvr' ? () => Promise.resolve(this.getVRDisplaysSync()) : null,
     createVRDisplay() {
       const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
       fakeVrDisplay.isActive = true;
       return fakeVrDisplay;
     },
     getGamepads,
-    xr: new XR.XR(window),
+    xr: args.xr === 'webxr' ? new XR.XR(window) : null,
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
