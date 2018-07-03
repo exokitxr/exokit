@@ -1330,7 +1330,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
           .then(s => css.parse(s).stylesheet)
           .then(stylesheet => {
             this.stylesheet = stylesheet;
-            styleEpoch++;
+            GlobalContext.styleEpoch++;
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .catch(err => {
