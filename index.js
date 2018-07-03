@@ -83,7 +83,7 @@ const args = (() => {
       url: minimistArgs._[0] || '',
       home: minimistArgs.home || !!minimistArgs.tab,
       tab: minimistArgs.tab,
-      xr: minimistArgs.xr || 'webxr',
+      xr: minimistArgs.xr || 'all',
       performance: !!minimistArgs.performance,
       size: minimistArgs.size,
       frame: minimistArgs.frame,
