@@ -19,7 +19,8 @@ RUN \
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
   if [ ! -z "$MAGICLEAP_ENV" ]; then export MAGICLEAP="$MAGICLEAP_ENV"; fi && \
-  npm install --unsafe-perm .
+  npm install --unsafe-perm . && \
+  npm run test:ci
 RUN \
   mkdir -p /tmp/exokit-bin/bin /tmp/exokit-bin/lib/exokit && \
   cp -R . /tmp/exokit-bin/lib/exokit && \

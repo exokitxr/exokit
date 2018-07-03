@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-- '9'
+- '10'
 env:
   matrix:
     secure: CTziiKsHYCjdRYftawXT7oBMFm3nOQNRc+ZFv0rUxTaGkw9ImwuxBv6yqMGh6YfykIe94aFNwV+oN8vbuG9NZ56xotAW7mt4r/eCQRnutm54IoJV4SoCdBlgRFPk26nRafnogmDq/pH7lzLI7csDvup0ABF3R6Ysji19vR4LnNIotahdOtyt5jHBnn60XxibluCy6q03Xg2bw1UNjGFN0PVrw5wpPnpB3WugEkyd4Nos5US7q80KC3ltThw1c9TYDz38rryghMnm0lPe1/ruxCMzHx9KLwZl/D3Bikxf2YLaifwphf5NIkAQiAUpaYcMamBZsABxtzE45+TBhSc4sKGJL+ZuFwXAp/gbBbxgtY+9BKHnV78v1+bcAY4Geb8kKAsUgN7Q3Tqk0mjy+L4pML2BXyD5v7x8ev9MRfKbamx1GRX+XvP1pDVLFCHsT4cnPoUoE4SjXma9s6ry0cvN2crkVfRk1KQJhbpYphmQHVfY49nNN77es0Uo+T51w5zHfvzjWwx12C1rauX5s2tdmm3mkSUNgSMsu4egE7LoGARZYqlxRlpmjzvwhDo2jKhMPnOE9lbmH9v6s3BeizMSHbtKDRgpaH1G4dqwC/rL+vIf5ED/Sfm3KEdAVadk0U8E4a3L5jqTYbSLYT1wvYCZmvvt47OKQY9ubuFkhLRht9M=
@@ -68,6 +68,7 @@ matrix:
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - ./exokit-codesign-macos.sh
+    - npm run test:ci
     deploy:
     - provider: releases
       api_key:

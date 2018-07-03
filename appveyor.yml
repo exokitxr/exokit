@@ -2,7 +2,7 @@ version: 0.0.{build}
 
 # Test against the latest version of this Node.js version
 environment:
-  nodejs_version: "9"
+  nodejs_version: "10"
   MAGICLEAP:
     secure: 4mAodSQiCUr1X1maLOYyj4nYCb87r4J54Wb1jw1EE9tT4tpcbic6hpDynrSu7Ep3
   PFX_KEY:
@@ -18,8 +18,6 @@ test_script:
   # Output useful info for debugging.
   - node --version
   - npm --version
-  # run tests
-  - npm test
 
 after_test:
   - ps: |
@@ -30,6 +28,7 @@ after_test:
       mv node-v10.4.1-win-x64 node
       $env:Path = "$pwd\node;$env:Path";
       .\node\npm install
+      .\node\npm run test:ci
       bash testRun.sh
       set version "$env:APPVEYOR_REPO_TAG_NAME"
       if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_REPO_COMMIT".Substring(0, 8) }

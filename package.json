@@ -15,7 +15,8 @@
     "lint": "eslint core.js index.js native-bindings.js src",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "start": "node .",
-    "test": "echo \"Error: no test specified\" && exit 0"
+    "test:ci": "cross-env NODE_ENV=test mocha tests/unit/**/*.test.js",
+    "test:watch": "cross-env NODE_ENV=test mocha --watch tests/unit/**/*.test.js"
   },
   "repository": {
     "type": "git",
@@ -42,6 +43,7 @@
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
     "bugsnag": "^2.4.3",
+    "cross-env": "^5.2.0",
     "css": "^2.2.3",
     "exokit-home": "0.0.69",
     "fake-indexeddb": "^2.0.4",
@@ -78,6 +80,9 @@
   },
   "devDependencies": {
     "eslint": "^5.0.1",
-    "shx": "^0.3.1"
+    "shx": "^0.3.1",
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
+    "sinon": "^6.0.1"
   }
 }
