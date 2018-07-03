@@ -246,10 +246,17 @@ void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, floa
   surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
 }
 
-void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
+bool CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
   SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  surface = SkSurface::MakeRaster(info);
-  // flipCanvasY(surface->getCanvas());
+  sk_sp<SkSurface> newSurface = SkSurface::MakeRaster(info);
+
+  if (newSurface) {
+    surface = newSurface;
+    // flipCanvasY(surface->getCanvas());
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, bool flipY) {
@@ -1073,11 +1080,13 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
   unsigned int w = info[0]->Uint32Value();
   unsigned int h = info[1]->Uint32Value();
 
-  context->Resize(w, h);
+  if (context->Resize(w, h)) {
+    context->dataArray.Reset();
 
-  context->dataArray.Reset();
-
-  // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
+    // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
+  } else {
+    Nan::ThrowError("failed to resize CanvasRenderingContext2D");
+  }
 }
 
 NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
