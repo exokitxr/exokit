@@ -197,7 +197,24 @@ class Location extends EventEmitter {
   }
   // triggers navigation
   get href() { return this._url.href || ''; }
-  set href(href) { this._url = new url.URL(href, _getBaseUrl(this._url.href)); this.update(); }
+  set href(href) {
+    const oldUrl = this._url;
+    const newUrl = new url.URL(href, _getBaseUrl(this._url.href));
+    this._url = newUrl;
+    if (
+      newUrl.origin !== oldUrl.origin ||
+      newUrl.protocol !== oldUrl.protocol ||
+      newUrl.username !== oldUrl.username ||
+      newUrl.password !== oldUrl.password ||
+      newUrl.host !== oldUrl.host ||
+      newUrl.hostname !== oldUrl.hostname ||
+      newUrl.port !== oldUrl.port ||
+      newUrl.pathname !== oldUrl.pathname ||
+      newUrl.search !== oldUrl.search
+    ) {
+      this.update();
+    }
+  }
   get protocol() { return this._url.protocol || ''; }
   set protocol(protocol) { this._url.protocol = protocol; this.update(); }
   get host() { return this._url.host || ''; }
