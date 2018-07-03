@@ -1558,9 +1558,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
           smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
 
-          GlobalContext.Image = bindings.nativeImage;
-          GlobalContext.ImageBitmap = bindings.nativeImageBitmap;
-          GlobalContext.createImageBitmap = ${createImageBitmap.toString()};
+          global.Image = bindings.nativeImage;
+          global.ImageBitmap = bindings.nativeImageBitmap;
+          global.createImageBitmap = ${createImageBitmap.toString()};
         `;
       }
 
