@@ -89,6 +89,10 @@ unsigned int CanvasRenderingContext2D::GetNumChannels() {
   return 4;
 }
 
+bool CanvasRenderingContext2D::isValid() {
+  return (bool)surface;
+}
+
 void CanvasRenderingContext2D::Scale(float x, float y) {
   surface->getCanvas()->scale(x, y);
 }
