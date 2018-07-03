@@ -369,7 +369,7 @@ const _makeStyleProxy = el => {
       }
     },
     set(target, key, value) {
-      setValue(target, key, value);
+      setValue(style, key, value);
       return true;
     },
   });
