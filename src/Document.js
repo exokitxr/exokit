@@ -1,7 +1,190 @@
-const {HTMLElement, HTMLLoadableElement, Node} = require('./DOM');
-const symbols = require('./symbols');
+const parse5 = require('parse5');
 
-class Document extends HTMLLoadableElement {
+const DOM = require('./DOM');
+const {Event} = require('./Event');
+const GlobalContext = require('./GlobalContext');
+const symbols = require('./symbols');
+const utils = require('./utils');
+
+const _parseDocument = (s, options, window) => {
+  const ast = parse5.parse(s, {
+    sourceCodeLocationInfo: true,
+  });
+  ast.tagName = 'document';
+  return _parseDocumentAst(ast, options, window, true);
+};
+module.exports._parseDocument = _parseDocument;
+GlobalContext._parseDocument = _parseDocument;
+
+const _parseDocumentAst = (ast, options, window, uppercase) => {
+  const document = GlobalContext._fromAST(ast, window, null, null, uppercase);
+  return initDocument(document, window);
+};
+module.exports._parseDocumentAst = _parseDocumentAst;
+
+/**
+ * Initialize document instance with properties and methods.
+ */
+function initDocument (document, window) {
+  const html = document.childNodes.find(el => el.tagName === 'HTML');
+  const documentElement = html || (document.childNodes.length > 0 ? document.childNodes[0] : null);
+  const head = html ? html.childNodes.find(el => el.tagName === 'HEAD') : null;
+  const body = html ? html.childNodes.find(el => el.tagName === 'BODY') : null;
+
+  document.documentElement = documentElement;
+  document.readyState = 'loading';
+  document.head = head;
+  document.body = body;
+  document.location = window.location;
+  document.createElement = tagName => {
+    tagName = tagName.toUpperCase();
+    const HTMLElementTemplate = window[symbols.htmlTagsSymbol][tagName];
+    const element = HTMLElementTemplate ? new HTMLElementTemplate() : new DOM.HTMLElement(tagName);
+    element.ownerDocument = document;
+    return element;
+  };
+  document.createElementNS = (namespace, tagName) => document.createElement(tagName);
+  document.createDocumentFragment = () => {
+    const documentFragment = new DocumentFragment();
+    documentFragment.ownerDocument = document;
+    return documentFragment;
+  };
+  document.createTextNode = text => new DOM.Text(text);
+  document.createComment = comment => new DOM.Comment(comment);
+  document.createEvent = type => {
+    switch (type) {
+      case 'KeyboardEvent':
+      case 'KeyboardEvents':
+        return new KeyboardEvent();
+      case 'MouseEvent':
+      case 'MouseEvents':
+        return new MouseEvent();
+      case 'Event':
+      case 'Events':
+      case 'HTMLEvents':
+        return new Event();
+      default:
+        throw new Error('invalid createEvent type: ' + type);
+    }
+  };
+  document.importNode = (el, deep) => el.cloneNode(deep);
+  document.scripts = utils._makeHtmlCollectionProxy(document.documentElement, 'script');
+  document.styleSheets = [];
+  document.implementation = new DOMImplementation(window);
+  document.resources = new GlobalContext.Resources(); // non-standard
+  document.activeElement = body;
+  document.open = () => {
+    document.innerHTML = '';
+  };
+  document.close = () => {};
+  document.write = htmlString => {
+    const childNodes = parse5.parseFragment(htmlString, {
+      locationInfo: true,
+    }).childNodes.map(childNode => GlobalContext._fromAST(childNode, window, document.body, document, true));
+    for (let i = 0; i < childNodes.length; i++) {
+      document.body.appendChild(childNodes[i]);
+    }
+  };
+  document.execCommand = command => {
+    if (command === 'copy') {
+      // nothing
+    } else if (command === 'paste') {
+      document.dispatchEvent(new Event('paste'));
+    }
+  };
+  document[symbols.pointerLockElementSymbol] = null;
+  document[symbols.fullscreenElementSymbol] = null;
+
+  if (window.top === window) {
+    document.addEventListener('pointerlockchange', () => {
+      const iframes = document.getElementsByTagName('iframe');
+      for (let i = 0; i < iframes.length; i++) {
+        const iframe = iframes[i];
+        if (iframe.contentDocument) {
+          iframe.contentDocument._emit('pointerlockchange');
+        }
+      }
+    });
+    document.addEventListener('fullscreenchange', () => {
+      const iframes = document.getElementsByTagName('iframe');
+      for (let i = 0; i < iframes.length; i++) {
+        const iframe = iframes[i];
+        if (iframe.contentDocument) {
+          iframe.contentDocument._emit('fullscreenchange');
+        }
+      }
+    });
+  }
+
+  process.nextTick(async () => {
+    if (body) {
+      const bodyChildNodes = body.childNodes;
+      body.childNodes = new DOM.NodeList();
+
+      try {
+        await GlobalContext._runHtml(document.head, window);
+      } catch(err) {
+        console.warn(err);
+      }
+
+      body.childNodes = bodyChildNodes;
+
+      document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
+
+      try {
+        await GlobalContext._runHtml(document.body, window);
+      } catch(err) {
+        console.warn(err);
+      }
+
+      document.readyState = 'interactive';
+      document.dispatchEvent(new Event('readystatechange', {target: document}));
+
+      document.readyState = 'complete';
+      document.dispatchEvent(new Event('readystatechange', {target: document}));
+
+      document.dispatchEvent(new Event('load', {target: document}));
+      window.dispatchEvent(new Event('load', {target: window}));
+    } else {
+      try {
+        await GlobalContext._runHtml(document, window);
+      } catch(err) {
+        console.warn(err);
+      }
+    }
+  });
+
+  return document;
+}
+module.exports.initDocument = initDocument;
+
+class DocumentType {}
+module.exports.DocumentType = DocumentType;
+
+class DOMImplementation {
+  constructor(window) {
+    this._window = window;
+  }
+
+  createDocument() {
+    throw new Error('not implemented');
+  }
+
+  createDocumentType() {
+    return new DocumentType();
+  }
+
+  createHTMLDocument() {
+    return _parseDocument('', this._window[symbols.optionsSymbol], this._window);
+  }
+
+  hasFeature() {
+    return false;
+  }
+}
+module.exports.DOMImplementation = DOMImplementation;
+
+class Document extends DOM.HTMLLoadableElement {
   constructor() {
     super('DOCUMENT');
 
@@ -9,7 +192,7 @@ class Document extends HTMLLoadableElement {
   }
 
   get nodeType() {
-    return Node.DOCUMENT_NODE;
+    return DOM.Node.DOCUMENT_NODE;
   }
 
   get pointerLockElement() {
@@ -57,13 +240,13 @@ module.exports.Document = Document;
 // FIXME: Temporary until we can refactor out into modules more and not have circular dependencies.
 require('./GlobalContext').Document = Document;
 
-class DocumentFragment extends HTMLElement {
+class DocumentFragment extends DOM.HTMLElement {
   constructor() {
     super('DOCUMENTFRAGMENT');
   }
 
   get nodeType() {
-    return Node.DOCUMENT_FRAGMENT_NODE;
+    return DOM.Node.DOCUMENT_FRAGMENT_NODE;
   }
 }
 module.exports.DocumentFragment = DocumentFragment;
