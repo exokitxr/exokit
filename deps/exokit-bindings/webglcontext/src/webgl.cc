@@ -2064,14 +2064,25 @@ NAN_METHOD(WebGLRenderingContext::BufferSubData) {
   GLint offset = info[1]->Int32Value();
   Local<Object> obj = Local<Object>::Cast(info[2]);
 
-  int element_size = 1;
-  Local<ArrayBufferView> arr = Local<ArrayBufferView>::Cast(obj);
-  int size = arr->ByteLength() * element_size;
-  char *data = (char *)arr->Buffer()->GetContents().Data() + arr->ByteOffset();
+  if (obj->IsArrayBufferView()) {
+    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(obj);
+    int size = arrayBufferView->ByteLength();
+    char *data = (char *)arrayBufferView->Buffer()->GetContents().Data() + arrayBufferView->ByteOffset();
+    
+    glBufferSubData(target, offset, size, data);
 
-  glBufferSubData(target, offset, size, data);
+    // info.GetReturnValue().Set(Nan::Undefined());
+  } else if (obj->IsArrayBuffer()) {
+    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(obj);
+    int size = arrayBuffer->ByteLength();
+    char *data = (char *)arrayBuffer->GetContents().Data();
+    
+    glBufferSubData(target, offset, size, data);
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+    // info.GetReturnValue().Set(Nan::Undefined());
+  } else {
+    Nan::ThrowError("Invalid texture argument");
+  }
 }
 
 
