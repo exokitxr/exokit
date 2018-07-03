@@ -1525,7 +1525,7 @@ class HTMLSrcableElement extends HTMLLoadableElement {
     const srcAttr = this.attributes.src;
     if (srcAttr) {
       this._emit('attribute', 'src', srcAttr.value);
-      return 'syncLoad';
+      return 'asyncLoad';
     } else {
       return null;
     }
