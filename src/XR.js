@@ -1,6 +1,7 @@
 const {EventEmitter} = require('events');
 const {Event, EventTarget} = require('./Event');
 const {defaultCanvasSize} = require('./constants');
+const GlobalContext = require('./GlobalContext');
 const THREE = require('../lib/three-min.js');
 const symbols = require('./symbols');
 const {_elementGetter, _elementSetter} = require('./utils');
@@ -19,7 +20,7 @@ class XR extends EventEmitter {
     this._window = window;
   }
   requestDevice() {
-    if (nativeVr.VR_IsHmdPresent()) {
+    if (GlobalContext.nativeVr.VR_IsHmdPresent()) {
       return Promise.resolve(_getXrDisplay(this._window));
     } else {
       return Promise.resolve(null);

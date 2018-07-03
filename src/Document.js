@@ -55,7 +55,7 @@ class Document extends HTMLLoadableElement {
 module.exports.Document = Document;
 
 // FIXME: Temporary until we can refactor out into modules more and not have circular dependencies.
-global._Document = Document;
+require('./GlobalContext').Document = Document;
 
 class DocumentFragment extends HTMLElement {
   constructor() {

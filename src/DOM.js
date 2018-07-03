@@ -9,6 +9,7 @@ const util = require('util');
 
 const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MouseEvent} = require('./Event');
+const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = require('./utils');
@@ -1273,7 +1274,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
           .then(s => css.parse(s).stylesheet)
           .then(stylesheet => {
             this.stylesheet = stylesheet;
-            styleEpoch++;
+            GlobalContext.styleEpoch++;
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .catch(err => {
@@ -1286,7 +1287,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
         .then(() => css.parse(innerHTML).stylesheet)
         .then(stylesheet => {
           this.stylesheet = stylesheet;
-          styleEpoch++;
+          GlobalContext.styleEpoch++;
           this.dispatchEvent(new Event('load', {target: this}));
         })
         .catch(err => {
@@ -1705,7 +1706,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 baseUrl: url,
                 dataPath: options.dataPath,
               }, parentWindow, parentWindow.top);
-              const contentDocument = _parseDocument(htmlString, contentWindow[symbols.optionsSymbol], contentWindow);
+              const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow[symbols.optionsSymbol], contentWindow);
               contentDocument.hidden = this.hidden;
 
               contentWindow.document = contentDocument;
@@ -1828,7 +1829,7 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
       if (this._context === null) {
-        this._context = new CanvasRenderingContext2D(this.width, this.height);
+        this._context = new GlobalContext.CanvasRenderingContext2D(this.width, this.height);
       }
     } else if (contextType === 'webgl' || contextType === 'xrpresent') {
       if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext') {
@@ -1836,7 +1837,7 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
       if (this._context === null) {
-        this._context = new WebGLRenderingContext(this);
+        this._context = new GlobalContext.WebGLRenderingContext(this);
       }
     } else {
       if (this._context) {

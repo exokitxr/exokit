@@ -1,5 +1,6 @@
 const parseIntStrict = require('parse-int');
 const url = require('url');
+const GlobalContext = require('./GlobalContext');
 
 function _getBaseUrl(u) {
   let baseUrl;
@@ -86,13 +87,13 @@ const _normalizeBuffer = (b, target) => {
     case 'Float64Array':
     case 'DataView': {
       if (!(b instanceof target[name])) {
-        nativeVm.setPrototype(b, target[name].prototype);
+        GlobalContext.nativeVm.setPrototype(b, target[name].prototype);
       }
       break;
     }
     case 'Blob': {
       if (!(b.buffer instanceof target.Buffer)) {
-        nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
+        GlobalContext.nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
       }
       break;
     }

@@ -1,5 +1,6 @@
 const {EventEmitter} = require('events');
 const USKeyboardLayout = require('puppeteer/lib/USKeyboardLayout');
+const GlobalContext = require('./GlobalContext');
 
 class EventTarget extends EventEmitter {
   constructor() {
@@ -32,7 +33,7 @@ class EventTarget extends EventEmitter {
     const _recurse = (node, event) => {
       _emit(node, event);
 
-      if (event.bubbles && node instanceof _Document) {
+      if (event.bubbles && node instanceof GlobalContext.Document) {
         _emit(node.defaultView, event);
       }
 

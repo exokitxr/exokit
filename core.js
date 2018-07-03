@@ -37,6 +37,7 @@ const {
 const puppeteer = require('puppeteer');
 
 const {defaultCanvasSize} = require('./src/constants');
+const GlobalContext = require('./src/GlobalContext');
 const symbols = require('./src/symbols');
 const {urls} = require('./src/urls');
 
@@ -75,7 +76,7 @@ const parseJson = s => {
   }
 };
 
-global.styleEpoch = 0;
+GlobalContext.styleEpoch = 0;
 
 class Resource extends EventEmitter {
   constructor(value = 0.5, total = 1) {
@@ -228,7 +229,7 @@ class ImageBitmap {
 ImageBitmap.createImageBitmap = function() {
   return Reflect.construct(ImageBitmap, arguments);
 };
-global.nativeVm = null;
+let nativeVm = GlobalContext.nativeVm = null;
 class nativeWorker {
   terminate() {}
 }
@@ -357,8 +358,8 @@ class Screen {
   }
   set availHeight(availHeight) {}
 }
-global.nativeVr = null;
-global.nativeMl = null;
+let nativeVr = GlobalContext.nativeVr = null;
+let nativeMl = GlobalContext.nativeMl = null;
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -1263,7 +1264,7 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
   window.DOMRect = DOMRect;
   window.getComputedStyle = el => {
     let styleSpec = el[symbols.computedStyleSymbol];
-    if (!styleSpec || styleSpec.epoch !== styleEpoch) {
+    if (!styleSpec || styleSpec.epoch !== GlobalContext.styleEpoch) {
       const style = el.style.clone();
       const styleEls = el.ownerDocument.documentElement.getElementsByTagName('style');
       for (let i = 0; i < styleEls.length; i++) {
@@ -1285,7 +1286,7 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
       }
       styleSpec = {
         style,
-        styleEpoch,
+        styleEpoch: GlobalContext.styleEpoch,
       };
       el[symbols.computedStyleSymbol] = styleSpec;
     }
@@ -1786,14 +1787,13 @@ global._makeWindow = (options = {}, parent = null, top = null) => {
   }
   return window;
 };
-const _parseDocument = (s, options, window) => {
+const _parseDocument = GlobalContext._parseDocument = (s, options, window) => {
   const ast = parse5.parse(s, {
     sourceCodeLocationInfo: true,
   });
   ast.tagName = 'document';
   return _parseDocumentAst(ast, options, window, true);
 };
-global._parseDocument = _parseDocument;
 
 const _parseDocumentAst = (ast, options, window, uppercase) => {
   const document = _fromAST(ast, window, null, null, uppercase);
@@ -1980,20 +1980,20 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   const bindings = require(nativeBindingsModule);
 
-  nativeVm = bindings.nativeVm;
+  nativeVm = GlobalContext.nativeVm = bindings.nativeVm;
   nativeWorker = bindings.nativeWorker;
   nativeWorker.setNativeRequire('nativeBindings', bindings.initFunctionAddress);
   nativeWorker.bind({
     ImageBitmap: bindings.nativeImageBitmap,
   });
 
-  global.Image = bindings.nativeImage;
-  global.ImageData = bindings.nativeImageData;
-  global.ImageBitmap = bindings.nativeImageBitmap;
-  global.Path2D = bindings.nativePath2D;
-  global.CanvasGradient = bindings.nativeCanvasGradient;
-  global.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
-  global.WebGLRenderingContext = bindings.nativeGl;
+  Image = bindings.nativeImage;
+  ImageData = bindings.nativeImageData;
+  ImageBitmap = bindings.nativeImageBitmap;
+  Path2D = bindings.nativePath2D;
+  CanvasGradient = bindings.nativeCanvasGradient;
+  CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
+  WebGLRenderingContext = GlobalContext.WebGLRenderingContext = bindings.nativeGl;
   if (args.frame || args.minimalFrame) {
     WebGLRenderingContext = (OldWebGLRenderingContext => {
       function WebGLRenderingContext() {
@@ -2019,7 +2019,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     })(WebGLRenderingContext);
   }
 
-  global.HTMLImageElement = class extends DOM.HTMLSrcableElement {
+  HTMLImageElement = class extends DOM.HTMLSrcableElement {
     constructor(attrs = [], value = '') {
       super('IMG', attrs, value);
 
@@ -2123,7 +2123,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   AnalyserNode = nativeAudio.AnalyserNode;
   PannerNode = nativeAudio.PannerNode;
   StereoPannerNode = nativeAudio.StereoPannerNode;
-  global.HTMLAudioElement = class extends DOM.HTMLMediaElement {
+  HTMLAudioElement = class extends DOM.HTMLMediaElement {
     constructor(attrs = [], value = '') {
       super('AUDIO', attrs, value);
 
@@ -2221,7 +2221,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   // Video.getDevices fails after opening a webcam, so in order to
   // open multiple webcams we need to call this once on startup.
   const devices = Video.getDevices();
-  global.HTMLVideoElement = class extends DOM.HTMLMediaElement {
+  HTMLVideoElement = class extends DOM.HTMLMediaElement {
     constructor(attrs = [], value = '', location = null) {
       super('VIDEO', attrs, value, location);
 
@@ -2489,8 +2489,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     }
   }; */
 
-  nativeVr = bindings.nativeVr;
-  nativeMl = bindings.nativeMl;
+  nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
+  nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
 };
 module.exports = exokit;
 
