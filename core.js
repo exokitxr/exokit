@@ -2416,7 +2416,7 @@ class Element extends Node {
   }
 
   getBoundingClientRect() {
-    return new DOMRect();
+    return new DOMRect(0, 0, this.clientWidth, this.clientHeight);
   }
 
   focus() {
@@ -2444,22 +2444,21 @@ class Element extends Node {
 
   get clientWidth() {
     const style = this.ownerDocument.defaultView.getComputedStyle(this);
-    const fontFamily = style['font-family'];
+    const fontFamily = style.fontFamily;
     if (fontFamily) {
-      return _hash(fontFamily) * _hash(this.innerHTML);
+      if (fontFamily === 'sans-serif') {
+        return 0;
+      } else {
+        return _hash(fontFamily) * _hash(this.innerHTML);
+      }
     } else {
-      let result = 0;
-      const _recurse = el => {
-        if (el.nodeType === Node.ELEMENT_NODE) {
-          if (el.tagName === 'CANVAS' || el.tagName === 'IMAGE' || el.tagName === 'VIDEO') {
-            result = Math.max(el.width, result);
-          }
-          for (let i = 0; i < el.childNodes.length; i++) {
-            _recurse(el.childNodes[i]);
-          }
+      let result = 1;
+      this.traverse(el => {
+        if (el.tagName === 'CANVAS' || el.tagName === 'IMAGE' || el.tagName === 'VIDEO') {
+          result = Math.max(el.width, result);
+          return true;
         }
-      };
-      _recurse(this);
+      });
       return result;
     }
   }
