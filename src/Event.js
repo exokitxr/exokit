@@ -32,7 +32,7 @@ class EventTarget extends EventEmitter {
     const _recurse = (node, event) => {
       _emit(node, event);
 
-      if (event.bubbles && node instanceof Document) {
+      if (event.bubbles && node instanceof _Document) {
         _emit(node.defaultView, event);
       }
 
