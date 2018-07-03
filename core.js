@@ -240,6 +240,9 @@ class Location extends EventEmitter {
   reload() {
     this.href = this.href;
   }
+  replace(href) {
+    this.href = href;
+  }
   // conversions
   toString() {
     return this.href;
