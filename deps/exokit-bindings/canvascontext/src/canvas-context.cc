@@ -302,7 +302,7 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
 
     info.GetReturnValue().Set(canvasObj);
   } else {
-    return Nan::ThrowError("CanvasRenderingContext2D: invalid arguments");
+    Nan::ThrowError("CanvasRenderingContext2D: invalid arguments");
   }
 }
 
