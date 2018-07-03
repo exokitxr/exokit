@@ -1,6 +1,5 @@
 const events = require('events');
 const {EventEmitter} = events;
-const stream = require('stream');
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
@@ -8,93 +7,17 @@ const child_process = require('child_process');
 const os = require('os');
 const util = require('util');
 const {URL} = url;
-const {performance} = require('perf_hooks');
-
-const parseIntStrict = require('parse-int');
 const parse5 = require('parse5');
+const {performance} = require('perf_hooks');
+const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
 const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
-
-const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
-const XMLHttpRequest = (Old => class XMLHttpRequest extends Old {
-  open(method, url, async, username, password) {
-    const blob = urls.get(url);
-    if (blob) {
-      this._properties._responseFn = cb => {
-        process.nextTick(() => {
-          const {buffer} = blob;
-          const response = new stream.PassThrough();
-          response.statusCode = 200;
-          response.headers = {
-            'content-length': buffer.length + '',
-          };
-          response.end(buffer);
-          cb(response);
-        });
-      };
-    } else {
-      const match = url.match(/^file:\/\/(.*)$/);
-      if (match) {
-        const p = match[1];
-        this._properties._responseFn = cb => {
-          fs.lstat(p, (err, stats) => {
-            if (!err) {
-              const response = fs.createReadStream(p);
-              response.statusCode = 200;
-              response.headers = {
-                'content-length': stats.size + '',
-              };
-              cb(response);
-            } else if (err.code === 'ENOENT') {
-              const response = new stream.PassThrough();
-              response.statusCode = 404;
-              response.headers = {};
-              response.end('file not found: ' + p);
-              cb(response);
-            } else {
-              const response = new stream.PassThrough();
-              response.statusCode = 500;
-              response.headers = {};
-              response.end(err.stack);
-              cb(response);
-            }
-          });
-        };
-        arguments[1] = 'http://127.0.0.1/'; // needed to pass protocol check, will not be fetched
-      }
-    }
-
-    return Old.prototype.open.apply(this, arguments);
-  }
-})(XMLHttpRequestBase);
-const XHRUtils = require('window-xhr/lib/utils');
-XHRUtils.createClient = (createClient => function() {
-  const properties = arguments[0];
-  if (properties._responseFn) {
-    const cb = arguments[2];
-    properties._responseFn(cb);
-    return {
-      on() {},
-      setHeader() {},
-      write() {},
-      end() {},
-    };
-  } else {
-    return createClient.apply(this, arguments);
-  }
-})(XHRUtils.createClient);
 
 const WebSocket = require('ws/lib/websocket');
 
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
-const createMemoryHistory = require('history/createMemoryHistory').default;
-const ClassList = require('window-classlist');
-const he = require('he');
-he.encode.options.useNamedReferences = true;
-const selector = require('window-selector');
-const css = require('css');
 const {TextEncoder, TextDecoder} = require('window-text-encoding');
 const parseXml = require('@rgrove/parse-xml');
 const THREE = require('./lib/three-min.js');
@@ -112,7 +35,24 @@ const {
 } = require('vr-display')(THREE);
 
 const puppeteer = require('puppeteer');
-const USKeyboardLayout = require('puppeteer/lib/USKeyboardLayout');
+
+const {defaultCanvasSize} = require('./src/constants');
+const GlobalContext = require('./src/GlobalContext');
+const symbols = require('./src/symbols');
+const {urls} = require('./src/urls');
+
+// Class imports.
+const {Document, DocumentFragment} = require('./src/Document');
+const DOM = require('./src/DOM');
+const {DOMRect, Node, NodeList} = require('./src/DOM');
+const {CustomEvent, DragEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent,
+       WheelEvent} = require('./src/Event');
+const {History} = require('./src/History');
+const {Location} = require('./src/Location');
+const {XMLHttpRequest} = require('./src/Network');
+const XR = require('./src/XR');
+const utils = require('./src/utils');
+const {_elementGetter, _elementSetter} = require('./src/utils');
 
 let browser = null;
 const _requestBrowser = async () => {
@@ -122,46 +62,6 @@ const _requestBrowser = async () => {
   return browser;
 };
 
-const _normalizeBuffer = (b, target) => {
-  const name = b && b.constructor && b.constructor.name;
-  switch (name) {
-    case 'Buffer':
-    case 'ArrayBuffer':
-    case 'Uint8Array':
-    case 'Uint8ClampedArray':
-    case 'Int8Array':
-    case 'Uint16Array':
-    case 'Int16Array':
-    case 'Uint32Array':
-    case 'Int32Array':
-    case 'Float32Array':
-    case 'Float64Array':
-    case 'DataView': {
-      if (!(b instanceof target[name])) {
-        nativeVm.setPrototype(b, target[name].prototype);
-      }
-      break;
-    }
-    case 'Blob': {
-      if (!(b.buffer instanceof target.Buffer)) {
-        nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
-      }
-      break;
-    }
-  }
-  return b;
-};
-
-const windowSymbol = Symbol();
-const htmlTagsSymbol = Symbol();
-const optionsSymbol = Symbol();
-const elementSymbol = Symbol();
-const computedStyleSymbol = Symbol();
-const disabledEventsSymbol = Symbol();
-const pointerLockElementSymbol = Symbol();
-const fullscreenElementSymbol = Symbol();
-const prioritySymbol = Symbol();
-const mrDisplaysSymbol = Symbol();
 let nativeBindings = false;
 let args = {};
 let version = '';
@@ -176,174 +76,7 @@ const parseJson = s => {
   }
 };
 
-let styleEpoch = 0;
-
-let id = 0;
-const urls = new Map();
-URL.createObjectURL = blob => {
-  const url = 'blob:' + id++;
-  urls.set(url, _normalizeBuffer(blob, global));
-  return url;
-};
-URL.revokeObjectURL = blob => {
-  urls.delete(url);
-};
-
-class Location extends EventEmitter {
-  constructor(u) {
-    super();
-
-    this._url = new url.URL(u);
-  }
-  // triggers navigation
-  get href() { return this._url.href || ''; }
-  set href(href) {
-    const oldUrl = this._url;
-    const newUrl = new url.URL(href, _getBaseUrl(this._url.href));
-    this._url = newUrl;
-    if (
-      newUrl.origin !== oldUrl.origin ||
-      newUrl.protocol !== oldUrl.protocol ||
-      newUrl.username !== oldUrl.username ||
-      newUrl.password !== oldUrl.password ||
-      newUrl.host !== oldUrl.host ||
-      newUrl.hostname !== oldUrl.hostname ||
-      newUrl.port !== oldUrl.port ||
-      newUrl.pathname !== oldUrl.pathname ||
-      newUrl.search !== oldUrl.search
-    ) {
-      this.update();
-    }
-  }
-  get protocol() { return this._url.protocol || ''; }
-  set protocol(protocol) { this._url.protocol = protocol; this.update(); }
-  get host() { return this._url.host || ''; }
-  set host(host) { this._url.host = host; this.update(); }
-  get hostname() { return this._url.hostname || ''; }
-  set hostname(hostname) { this._url.hostname = hostname; this.update(); }
-  get port() { return this._url.port || ''; }
-  set port(port) { this._url.port = port; this.update(); }
-  get pathname() { return this._url.pathname || ''; }
-  set pathname(pathname) { this._url.pathname = pathname; this.update(); }
-  get search() { return this._url.search || ''; }
-  set search(search) { this._url.search = search; this.update(); }
-  // does not trigger navigation
-  get hash() { return this._url.hash || ''; }
-  set hash(hash) { this._url.hash = hash; }
-  get username() { return this._url.username || ''; }
-  set username(username) { this._url.username = username; }
-  get password() { return this._url.password || ''; }
-  set password(password) { this._url.password = password; }
-  get origin() { return this._url.origin || ''; }
-  set origin(origin) {} // read only
-  // methods
-  reload() {
-    this.href = this.href;
-  }
-  replace(href) {
-    this.href = href;
-  }
-  // conversions
-  toString() {
-    return this.href;
-  }
-  // helpers
-  set(u) {
-    this._url.href = u;
-  }
-  update() {
-    this.emit('update', this.href);
-  }
-}
-class History extends EventEmitter {
-  constructor(u) {
-    super();
-
-    this._history = createMemoryHistory({
-      initialEntries: [u],
-    });
-    this._history.listen((location, action) => {
-      if (action === 'POP') {
-        const {pathname, search, hash, state} = location;
-        this.emit('popstate', url.format({
-          pathname,
-          search,
-          hash,
-        }), state);
-      }
-    });
-  }
-  back(n) {
-    this._history.goBack(n);
-  }
-  forward(n) {
-    this._history.goForward(n);
-  }
-  go(n) {
-    this._history.go(n);
-  }
-  pushState(state, title, url) {
-    this._history.push(url, state);
-  }
-  replaceState(state, title, url) {
-    this._history.replace(url, state);
-  }
-  get length() {
-    return this._history.length;
-  }
-  set length(length) {}
-  get state() {
-    return this._history.location.state;
-  }
-  set state(state) {}
-}
-
-class EventTarget extends EventEmitter {
-  constructor() {
-    super();
-
-    this.on('error', err => {
-      console.warn(err);
-    });
-  }
-
-  addEventListener(event, listener) {
-    if (typeof listener === 'function') {
-      this.on(event, listener);
-    }
-  }
-  removeEventListener(event, listener) {
-    if (typeof listener === 'function') {
-      this.removeListener(event, listener);
-    }
-  }
-
-  dispatchEvent(event) {
-    event.target = this;
-
-    const _emit = (node, event) => {
-      event.currentTarget = this;
-      node._emit(event.type, event);
-      event.currentTarget = null;
-    };
-    const _recurse = (node, event) => {
-      _emit(node, event);
-
-      if (event.bubbles && node instanceof Document) {
-        _emit(node.defaultView, event);
-      }
-
-      if (event.bubbles && !event.propagationStopped && node.parentNode) {
-        _recurse(node.parentNode, event);
-      }
-    };
-    _recurse(this, event);
-  }
-
-  _emit() { // need to call this instead of EventEmitter.prototype.emit because some frameworks override HTMLElement.prototype.emit()
-    return EventEmitter.prototype.emit.apply(this, arguments);
-  }
-}
+GlobalContext.styleEpoch = 0;
 
 class Resource extends EventEmitter {
   constructor(value = 0.5, total = 1) {
@@ -359,6 +92,7 @@ class Resource extends EventEmitter {
     this.emit('update');
   }
 }
+
 class Resources extends EventTarget {
   constructor() {
     super();
@@ -407,177 +141,6 @@ class Resources extends EventTarget {
     this.resources.push(resource);
 
     return resource;
-  }
-}
-
-class Event {
-  constructor(type, init = {}) {
-    this.type = type;
-    this.target = init.target !== undefined ? init.target : null;
-    this.bubbles = init.bubbles !== undefined ? init.bubbles : false;
-    this.cancelable = init.cancelable !== undefined ? init.cancelable : false;
-
-    this.defaultPrevented = false;
-    this.propagationStopped = false;
-    this.currentTarget = null;
-  }
-
-  preventDefault() {
-    this.defaultPrevented = true;
-  }
-
-  stopPropagation() {
-    this.propagationStopped = true;
-  }
-
-  initEvent(type = '', bubbles = false, cancelable = false) {
-    this.type = type;
-    this.bubbles = bubbles;
-    this.cancelable = cancelable;
-  }
-}
-class KeyboardEvent extends Event {
-  constructor(type, init = {}) {
-    init.bubbles = true;
-    init.cancelable = true;
-
-    const findKeySpecByKeyCode = keyCode => {
-      for (const k in USKeyboardLayout) {
-        const keySpec = USKeyboardLayout[k];
-        if (keySpec.keyCode === keyCode) {
-          return keySpec;
-        }
-      }
-      return null;
-    };
-    if (init.key === undefined || init.code === undefined) {
-      const keySpec = findKeySpecByKeyCode(init.keyCode);
-      if (keySpec) {
-        init.key = keySpec.key;
-        init.code = /^[a-z]$/i.test(keySpec.key) ? ('Key' + keySpec.key.toUpperCase()) : keySpec.key;
-      }
-    }
-
-    super(type, init);
-
-    KeyboardEvent.prototype.init.call(this, init);
-  }
-
-  init(init) {
-    this.key = init.key !== undefined ? init.key : '';
-    this.code = init.code !== undefined ? init.code : '';
-    this.location = init.location !== undefined ? init.location : 0;
-    this.ctrlKey = init.ctrlKey !== undefined ? init.ctrlKey : false;
-    this.shiftKey = init.shiftKey !== undefined ? init.shiftKey : false;
-    this.altKey = init.altKey !== undefined ? init.altKey : false;
-    this.metaKey = init.metaKey !== undefined ? init.metaKey : false;
-    this.repeat = init.repeat !== undefined ? init.repeat : false;
-    this.isComposing = init.isComposing !== undefined ? init.isComposing : false;
-    this.charCode = init.charCode !== undefined ? init.charCode : 0;
-    this.keyCode = init.keyCode !== undefined ? init.keyCode : 0;
-    this.which = init.which !== undefined ? init.which : 0;
-  }
-
-  initKeyboardEvent(type, canBubble, cancelable, view, charCode, keyCode, location, modifiersList, repeat) {
-    this.type = type;
-
-    const modifiers = modifiers.split(/\s/);
-    const ctrlKey = modifiers.includes('Control') || modifiers.includes('AltGraph');
-    const altKey = modifiers.includes('Alt') || modifiers.includes('AltGraph');
-    const metaKey = modifiers.includes('Meta');
-
-    this.init({
-      charCode,
-      keyCode,
-      ctrlKey,
-      altKey,
-      metaKey,
-      repeat,
-    });
-  }
-}
-class MouseEvent extends Event {
-  constructor(type, init = {}) {
-    init.bubbles = true;
-    init.cancelable = true;
-    super(type, init);
-
-    MouseEvent.prototype.init.call(this, init);
-  }
-
-  init(init = {}) {
-    this.screenX = init.screenX !== undefined ? init.screenX : 0;
-    this.screenY = init.screenY !== undefined ? init.screenY : 0;
-    this.clientX = init.clientX !== undefined ? init.clientX : 0;
-    this.clientY = init.clientY !== undefined ? init.clientY : 0;
-    this.pageX = init.pageX !== undefined ? init.pageX : 0;
-    this.pageY = init.pageY !== undefined ? init.pageY : 0;
-    this.movementX = init.movementX !== undefined ? init.movementX : 0;
-    this.movementY = init.movementY !== undefined ? init.movementY : 0;
-    this.ctrlKey = init.ctrlKey !== undefined ? init.ctrlKey : false;
-    this.shiftKey = init.shiftKey !== undefined ? init.shiftKey : false;
-    this.altKey = init.altKey !== undefined ? init.altKey : false;
-    this.metaKey = init.metaKey !== undefined ? init.metaKey : false;
-    this.button = init.button !== undefined ? init.button : 0;
-    this.relatedTarget = init.relatedTarget !== undefined ? init.relatedTarget : null;
-    this.region = init.region !== undefined ? init.region : null;
-  }
-
-  initMouseEvent(type, canBubble, cancelable, view, detail, screenX, screenY, clientX, clientY, ctrlKey, altKey, shiftKey, metaKey, button, relatedTarget) {
-    this.type = type;
-
-    this.init({
-      screenX,
-      screenY,
-      clientX,
-      clientY,
-      ctrlKey,
-      altKey,
-      shiftKey,
-      metaKey,
-      button,
-      relatedTarget,
-    });
-  }
-}
-class WheelEvent extends MouseEvent {
-  constructor(type, init = {}) {
-    init.bubbles = true;
-    init.cancelable = true;
-    super(type, init);
-
-    this.deltaX = init.deltaX !== undefined ? init.deltaX : 0;
-    this.deltaY = init.deltaY !== undefined ? init.deltaY : 0;
-    this.deltaZ = init.deltaZ !== undefined ? init.deltaZ : 0;
-    this.deltaMode = init.deltaMode !== undefined ? init.deltaMode : 0;
-  }
-}
-WheelEvent.DOM_DELTA_PIXEL = 0x00;
-WheelEvent.DOM_DELTA_LINE = 0x01;
-WheelEvent.DOM_DELTA_PAGE = 0x02;
-class DragEvent extends MouseEvent {
-  constructor(type, init = {}) {
-    super(type, init);
-
-    DragEvent.prototype.init.call(this, init);
-  }
-
-  init(init = {}) {
-    this.dataTransfer = init.dataTransfer !== undefined ? init.dataTransfer : null;
-  }
-}
-class MessageEvent extends Event {
-  constructor(data) {
-    super('message');
-
-    this.data = data;
-  }
-}
-class CustomEvent extends Event {
-  constructor(type, init = {}) {
-    super(type, init);
-
-    this.detail = init.detail !== undefined ? init.detail : null;
   }
 }
 
@@ -638,167 +201,6 @@ class CustomElementRegistry {
     constructor.call(el);
   }
 }
-class MutationRecord {
-  constructor(type, target, addedNodes, removedNodes, previousSibling, nextSibling, attributeName, attributeNamespace, oldValue) {
-    this.type = type;
-    this.target = target;
-    this.addedNodes = addedNodes;
-    this.removedNodes = removedNodes;
-    this.previousSibling = previousSibling;
-    this.nextSibling = nextSibling;
-    this.attributeName = attributeName;
-    this.attributeNamespace = attributeNamespace;
-    this.oldValue = oldValue;
-  }
-}
-class MutationObserver {
-  constructor(callback) {
-    this.callback = callback;
-
-    this.element = null;
-    this.options = null;
-    this.queue = [];
-    this.bindings = new WeakMap();
-  }
-
-  observe(element, options) {
-    this.element = element;
-    this.options = options;
-
-    this.bind(element);
-  }
-
-  disconnect() {
-    this.unbind(this.element);
-
-    this.element = null;
-    this.options = null;
-  }
-
-  takeRecords() {
-    const oldQueue = this.queue.slice();
-    this.queue.length = 0;
-    return oldQueue;
-  }
-
-  bind(el) {
-    const _bind = el => {
-      let _attribute = null;
-      let _children = null;
-      let _value = null;
-
-      if (this.options.attributes) {
-        if (this.options.attributeFilter) {
-          _attribute = (name, value) => {
-            if (this.options.attributeFilter.includes(name)) {
-              this.handleAttribute(el, name, value);
-            }
-          };
-        } else {
-          _attribute = (name, value) => {
-            this.handleAttribute(el, name, value);
-          };
-        }
-        el.on('attribute', _attribute);
-      }
-
-      _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
-        // if (this.options.childList) {
-          this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
-        // }
-        if (this.options.subtree) {
-          for (let i = 0; i < removedNodes.length; i++) {
-            this.unbind(removedNodes[i]);
-          }
-          for (let i = 0; i < addedNodes.length; i++) {
-            this.bind(addedNodes[i]);
-          }
-        }
-      };
-      el.on('children', _children);
-
-      if (this.options.characterData) {
-        _value = () => {
-          this.handleValue(el);
-        }
-        el.on('value', _value);
-      }
-
-      this.bindings.set(el, [
-        _attribute,
-        _children,
-        _value,
-      ]);
-    };
-
-    if (this.options.subtree) {
-      el.traverse(_bind);
-    } else {
-      _bind(el);
-    }
-  }
-
-  unbind(el) {
-    const _unbind = el => {
-      const bindings = this.bindings.get(el);
-      if (bindings) {
-        const [
-          _attribute,
-          _children,
-          _value,
-        ] = bindings;
-        if (_attribute) {
-          el.removeListener('attribute', _attribute);
-        }
-        if (_children) {
-          el.removeListener('children', _children);
-        }
-        if (_value) {
-          el.removeListener('value', _value);
-        }
-        this.bindings.delete(el);
-      }
-    };
-
-    if (this.options.subtree) {
-      el.traverse(_unbind);
-    } else {
-      _unbind(el);
-    }
-  }
-
-  flush() {
-    if (this.queue.length > 0) {
-      const oldQueue = this.queue.slice();
-      this.queue.length = 0;
-      this.callback(oldQueue, this);
-    }
-  }
-
-  handleAttribute(el, name, value, oldValue) {
-    this.queue.push(new MutationRecord('attributes', el, null, null, null, null, name, null, oldValue));
-
-    setImmediate(() => {
-      this.flush();
-    });
-  }
-
-  handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
-    this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes, previousSibling, nextSibling, null, null, null));
-
-    setImmediate(() => {
-      this.flush();
-    });
-  }
-
-  handleValue(el) {
-    this.queue.push(new MutationRecord('characterData', el, [], [], null, null, null, null, null));
-
-    setImmediate(() => {
-      this.flush();
-    });
-  }
-}
 let Image = null;
 class ImageData {
   constructor(width, height) {
@@ -827,7 +229,7 @@ class ImageBitmap {
 ImageBitmap.createImageBitmap = function() {
   return Reflect.construct(ImageBitmap, arguments);
 };
-let nativeVm = null;
+let nativeVm = GlobalContext.nativeVm = null;
 class nativeWorker {
   terminate() {}
 }
@@ -956,8 +358,8 @@ class Screen {
   }
   set availHeight(availHeight) {}
 }
-let nativeVr = null;
-let nativeMl = null;
+let nativeVr = GlobalContext.nativeVr = null;
+let nativeMl = GlobalContext.nativeMl = null;
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -998,390 +400,6 @@ Gamepad.nonstandard = {
     this.gesture.copy(gamepad.gesture);
   },
 };
-
-class XR extends EventEmitter {
-  constructor(window) {
-    super();
-
-    this._window = window;
-  }
-  requestDevice() {
-    if (nativeVr.VR_IsHmdPresent()) {
-      return Promise.resolve(_getXrDisplay(this._window));
-    } else {
-      return Promise.resolve(null);
-    }
-  }
-  get onvrdevicechange() {
-    return _elementGetter(this, 'vrdevicechange');
-  }
-  set onvrdevicechange(onvrdevicechange) {
-    _elementSetter(this, 'vrdevicechange', onvrdevicechange);
-  }
-};
-class XRDevice {
-  constructor() {
-    this.session = null; // non-standard
-  }
-  supportsSession({exclusive = false, outputContext = null} = {}) {
-    return Promise.resolve(null);
-  }
-  requestSession({exclusive = false, outputContext = null} = {}) {
-    if (!this.session) {
-      const session = new XRSession({
-        device: this,
-        exclusive,
-        outputContext,
-      });
-      session.once('end', () => {
-        this.session = null;
-      });
-      this.session = session;
-    }
-    return Promise.resolve(this.session);
-  }
-  update(update) {
-    if (this.session) {
-      this.session.update(update);
-    }
-  }
-  clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    return o;
-  }
-}
-class XRSession extends EventTarget {
-  constructor({device = null, exclusive = false, outputContext = null} = {}) {
-    super();
-
-    this.device = device;
-    this.exclusive = exclusive;
-    this.outputContext = outputContext;
-
-    this.depthNear = 0.1;
-    this.depthFar = 10000.0;
-    this.baseLayer = null;
-
-    this._frame = new XRPresentationFrame(this);
-    this._frameOfReference = new XRFrameOfReference();
-    this._inputSources = [
-      new XRInputSource('left', 'hand'),
-      new XRInputSource('right', 'hand'),
-    ];
-    this._lastPresseds = [false, false];
-    this._rafs = [];
-  }
-  requestFrameOfReference(type, options = {}) {
-    // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
-    return Promise.resolve(this._frameOfReference);
-  }
-  getInputSources() {
-    return this._inputSources;
-  }
-  requestAnimationFrame(fn) {
-    if (this.device.onrequestanimationframe) {
-      const animationFrame = this.device.onrequestanimationframe(timestamp => {
-        this._rafs.splice(animationFrame, 1);
-        fn(timestamp, this._frame);
-      });
-      this._rafs.push(animationFrame);
-      return animationFrame;
-    }
-  }
-  cancelAnimationFrame(animationFrame) {
-    if (this.device.oncancelanimationframe) {
-      const result = this.device.oncancelanimationframe(animationFrame);
-      const index = this._rafs.indexOf(animationFrame);
-      if (index !== -1) {
-        this._rafs.splice(index, 1);
-      }
-      return result;
-    }
-  }
-  end() {
-    this.emit('end');
-    return Promise.resolve();
-  }
-  update(update) {
-    const {
-      depthNear,
-      depthFar,
-      renderWidth,
-      renderHeight,
-      frameData,
-      stageParameters,
-      gamepads,
-    } = update;
-
-    if (depthNear !== undefined) {
-      this.depthNear = depthNear;
-    }
-    if (depthFar !== undefined) {
-      this.depthFar = depthFar;
-    }
-    if (renderWidth !== undefined && renderHeight !== undefined) {
-      for (let i = 0; i < this._frame.views.length; i++) {
-        this._frame.views[i]._viewport.set(i * renderWidth, 0, renderWidth, renderHeight);
-      }
-    }
-    if (frameData !== undefined) {
-      if (this._frame.views[0]) {
-        this._frame.views[0].projectionMatrix.set(frameData.leftProjectionMatrix);
-        this._frame.views[0]._viewMatrix.set(frameData.leftViewMatrix);
-      }
-      if (this._frame.views[1]) {
-        this._frame.views[1].projectionMatrix.set(frameData.rightProjectionMatrix);
-        this._frame.views[1]._viewMatrix.set(frameData.rightViewMatrix);
-      }
-    }
-    /* if (stageParameters !== undefined) {
-      this._frameOfReference.emulatedHeight = stageParameters.position.y; // XXX
-    } */
-    if (gamepads !== undefined) {
-      const scale = localVector2.set(1, 1, 1);
-
-      for (let i = 0; i < 2; i++) {
-        const gamepad = gamepads[i];
-        if (gamepad) {
-          const inputSource = this._inputSources[i];
-          const inputMatrix = localMatrix.compose(
-            localVector.fromArray(gamepad.pose.position),
-            localQuaternion.fromArray(gamepad.pose.orientation),
-            scale
-          );
-          inputMatrix.toArray(inputSource._pose.pointerMatrix);
-          inputMatrix.toArray(inputSource._pose.gripMatrix);
-
-          const pressed = gamepad.buttons[1].pressed;
-          const lastPressed = this._lastPresseds[i];
-          if (pressed && !lastPressed) {
-            this.emit('selectstart', new XRInputSourceEvent('selectstart', {
-              frame: this._frame,
-              inputSource,
-            }));
-            this.emit('select', new XRInputSourceEvent('select', {
-              frame: this._frame,
-              inputSource,
-            }));
-          } else if (lastPressed && !pressed) {
-            this.emit('selectend', new XRInputSourceEvent('selectend', {
-              frame: this._frame,
-              inputSource,
-            }));
-          }
-          this._lastPresseds[i] = pressed;
-        }
-      }
-    }
-  }
-  get onblur() {
-    return _elementGetter(this, 'blur');
-  }
-  set onblur(onblur) {
-    _elementSetter(this, 'blur', onblur);
-  }
-  get onfocus() {
-    return _elementGetter(this, 'focus');
-  }
-  set onfocus(onfocus) {
-    _elementSetter(this, 'focus', onfocus);
-  }
-  get onresetpose() {
-    return _elementGetter(this, 'resetpose');
-  }
-  set onresetpose(onresetpose) {
-    _elementSetter(this, 'resetpose', onresetpose);
-  }
-  get onend() {
-    return _elementGetter(this, 'end');
-  }
-  set onend(onend) {
-    _elementSetter(this, 'end', onend);
-  }
-  get onselect() {
-    return _elementGetter(this, 'select');
-  }
-  set onselect(onselect) {
-    _elementSetter(this, 'select', onselect);
-  }
-  get onselectstart() {
-    return _elementGetter(this, 'selectstart');
-  }
-  set onselectstart(onselectstart) {
-    _elementSetter(this, 'selectstart', onselectstart);
-  }
-  get onselectend() {
-    return _elementGetter(this, 'selectend');
-  }
-  set onselectend(onselectend) {
-    _elementSetter(this, 'selectend', onselectend);
-  }
-}
-class XRWebGLLayer {
-  constructor(session, context, options = {}) {
-    const {
-      antialias = true,
-      depth = false,
-      stencil = false,
-      alpha = true,
-      multiview = false,
-      framebufferScaleFactor = 1,
-    } = options;
-
-    this.context = context;
-
-    this.antialias = antialias;
-    this.depth = depth;
-    this.stencil = stencil;
-    this.alpha = alpha;
-    this.multiview = multiview;
-
-    this.framebuffer = null;
-    this.framebufferWidth = 0;
-    this.framebufferHeight = 0;
-
-    const presentSpec = session.device.onrequestpresent ?
-      session.device.onrequestpresent([{
-        source: context.canvas,
-      }])
-    :
-      {
-        width: context.drawingBufferWidth,
-        height: context.drawingBufferHeight,
-        framebuffer: 0,
-      };
-    const {width, height, framebuffer} = presentSpec;
-
-    this.framebuffer = {
-      id: framebuffer,
-    };
-    this.framebufferWidth = width;
-    this.framebufferHeight = height;
-  }
-  getViewport(view) {
-    return view._viewport;
-  }
-  requestViewportScaling(viewportScaleFactor) {
-    throw new Error('not implemented'); // XXX
-  }
-}
-class XRPresentationFrame {
-  constructor(session) {
-    this.session = session;
-    this.views = [
-      new XRView('left'),
-      new XRView('right'),
-    ];
-
-    this._pose = new XRDevicePose();
-  }
-  getDevicePose(coordinateSystem) {
-    return this._pose;
-  }
-  getInputPose(inputSource, coordinateSystem) {
-    return inputSource._pose;
-  }
-}
-class XRView {
-  constructor(
-    eye = 'left',
-    projectionMatrix = Float32Array.from([
-      2.1445069205095586, 0, 0, 0,
-      0, 2.1445069205095586, 0, 0,
-      0, 0, -1.00010000500025, -1,
-      0, 0, -0.200010000500025, 0,
-    ]),
-  ) {
-    this.eye = eye;
-    this.projectionMatrix = projectionMatrix;
-
-    this._viewport = new XRViewport();
-    this._viewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-  }
-}
-class XRViewport {
-  constructor(x = 0, y = 0, width = defaultCanvasSize[0], height = defaultCanvasSize[1]) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-  }
-  set(x, y, width, height) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-  }
-}
-class XRDevicePose {
-  constructor() {
-    this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-  }
-  getViewMatrix(view) {
-    return view._viewMatrix;
-  }
-}
-class XRInputSource {
-  constructor(handedness = 'left', pointerOrigin = 'hand') {
-    this.handedness = handedness;
-    this.pointerOrigin = pointerOrigin;
-
-    this._pose = new XRInputPose();
-  }
-}
-class XRInputPose {
-  constructor() {
-    this.emulatedPosition = false;
-    this.pointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-  }
-}
-class XRInputSourceEvent extends Event {
-  constructor(type, init = {}) {
-    super(type);
-
-    this.frame = init.frame !== undefined ? init.frame : null;
-    this.inputSource = init.inputSource !== undefined ? init.inputSource : null;
-  }
-}
-class XRCoordinateSystem {
-  getTransformTo(other) {
-    return Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); // XXX
-  }
-}
-class XRFrameOfReference extends XRCoordinateSystem {
-  constructor() {
-    super();
-
-    this.bounds = new XRStageBounds();
-    this.emulatedHeight = 0;
-  }
-  get onboundschange() {
-    return _elementGetter(this, 'boundschange');
-  }
-  set onboundschange(onboundschange) {
-    _elementSetter(this, 'boundschange', onboundschange);
-  }
-}
-class XRStageBounds {
-  constructor() {
-    this.geometry = [
-      new XRStageBoundsPoint(-3, -3),
-      new XRStageBoundsPoint(3, -3),
-      new XRStageBoundsPoint(3, 3),
-      new XRStageBoundsPoint(-3, 3),
-    ];
-  }
-}
-class XRStageBoundsPoint {
-  constructor(x, z) {
-    this.x = x;
-    this.z = z;
-  }
-}
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -1529,6 +547,7 @@ class MLDisplay extends MRDisplay {
     this._context = update.context;
   }
 }
+
 class AudioNode {
   connect() {}
 }
@@ -1654,1878 +673,6 @@ class AudioContext {
   }
 }
 
-class DOMRect {
-  constructor(x = 0, y = 0, w = 0, h = 0) {
-    this.x = x;
-    this.y = y;
-    this.width = w;
-    this.height = h;
-    this.left = w >= 0 ? x : x + w;
-    this.top = h >= 0 ? y : y + h;
-    this.right = w >= 0 ? x + w : x;
-    this.bottom = h >= 0 ? y + h : y;
-  }
-}
-class NodeList extends Array {
-  constructor(nodes) {
-    super();
-
-    if (Array.isArray(nodes)) {
-      this.push.apply(this, nodes);
-    }
-  }
-
-  item(k) {
-    const v = this[k];
-    return v !== undefined ? v : null;
-  }
-}
-class HTMLCollection extends Array {
-  constructor(nodes) {
-    super();
-
-    if (Array.isArray(nodes)) {
-      this.push.apply(this, nodes);
-    }
-  }
-}
-
-class Node extends EventTarget {
-  constructor() {
-    super();
-
-    this.parentNode = null;
-    this.childNodes = new NodeList();
-    this.ownerDocument = null;
-  }
-
-  get parentElement() {
-    if (this.parentNode && this.parentNode.nodeType === Node.ELEMENT_NODE) {
-      return this.parentNode;
-    } else {
-      return null;
-    }
-  }
-  set parentElement(parentElement) {}
-
-  get nextSibling() {
-    if (this.parentNode) {
-      const selfIndex = this.parentNode.childNodes.indexOf(this);
-      const nextIndex = selfIndex + 1;
-      if (nextIndex < this.parentNode.childNodes.length) {
-        return this.parentNode.childNodes[nextIndex];
-      } else {
-        return null;
-      }
-    } else {
-      return null;
-    }
-  }
-  set nextSibling(nextSibling) {}
-  get previousSibling() {
-    if (this.parentNode) {
-      const selfIndex = this.parentNode.childNodes.indexOf(this);
-      const prevIndex = selfIndex - 1;
-      if (prevIndex >= 0) {
-        return this.parentNode.childNodes[prevIndex];
-      } else {
-        return null;
-      }
-    } else {
-      return null;
-    }
-  }
-  set previousSibling(previousSibling) {}
-
-  get nextElementSibling() {
-    if (this.parentNode) {
-      const selfIndex = this.parentNode.childNodes.indexOf(this);
-      for (let i = selfIndex + 1; i < this.parentNode.childNodes.length; i++) {
-        const childNode = this.parentNode.childNodes[i];
-        if (childNode.nodeType === Node.ELEMENT_NODE) {
-          return childNode;
-        }
-      }
-      return null;
-    } else {
-      return null;
-    }
-  }
-  set nextElementSibling(nextElementSibling) {}
-  get previousElementSibling() {
-    if (this.parentNode) {
-      const selfIndex = this.parentNode.childNodes.indexOf(this);
-      for (let i = selfIndex - 1; i >= 0; i--) {
-        const childNode = this.parentNode.childNodes[i];
-        if (childNode.nodeType === Node.ELEMENT_NODE) {
-          return childNode;
-        }
-      }
-      return null;
-    } else {
-      return null;
-    }
-  }
-  set previousElementSibling(previousElementSibling) {}
-
-  contains(el) {
-    for (;;) {
-      if (el === this) {
-        return true;
-      } else if (el.parentNode) {
-        el = el.parentNode;
-      } else {
-        return false;
-      }
-    }
-  }
-
-  cloneNode(deep = false) {
-    const el = new this.constructor();
-    el.attrs = this.attrs;
-    el.value = this.value;
-    if (deep) {
-      el.childNodes = new NodeList(
-        this.childNodes.map(childNode =>
-          childNode.cloneNode(true)
-        )
-      );
-    }
-    return el;
-  }
-}
-Node.ELEMENT_NODE = 1;
-Node.TEXT_NODE = 3;
-Node.PROCESSING_INSTRUCTION_NODE = 7;
-Node.COMMENT_NODE = 8;
-Node.DOCUMENT_NODE = 9;
-Node.DOCUMENT_TYPE_NODE = 10;
-Node.DOCUMENT_FRAGMENT_NODE = 11;
-const _setAttributeRaw = (el, prop, value) => {
-  if (prop === 'length') {
-    el.attrs.length = value;
-  } else {
-    const attr = el.attrs.find(attr => attr.name === prop);
-    if (!attr) {
-      const attr = {
-        name: prop,
-        value,
-      };
-      el.attrs.push(attr);
-      el._emit('attribute', prop, value, null);
-    } else {
-      const oldValue = attr.value;
-      attr.value = value;
-      el._emit('attribute', prop, value, oldValue);
-    }
-  }
-};
-const _makeAttributesProxy = el => new Proxy(el.attrs, {
-  get(target, prop) {
-    const propN = parseIntStrict(prop);
-    if (propN !== undefined) {
-      return target[propN];
-    } else if (prop === 'length') {
-      return target.length;
-    } else {
-      return target.find(attr => attr.name === prop);
-    }
-  },
-  set(target, prop, value) {
-    _setAttributeRaw(el, prop, value);
-    return true;
-  },
-  deleteProperty(target, prop) {
-    const index = target.findIndex(attr => attr.name === prop);
-    if (index !== -1) {
-      const oldValue = target[index].value;
-      target.splice(index, 1);
-      el._emit('attribute', prop, null, oldValue);
-    }
-    return true;
-  },
-  has(target, prop) {
-    if (typeof prop === 'number') {
-      return target[prop] !== undefined;
-    } else if (prop === 'length') {
-      return true;
-    } else {
-      return target.findIndex(attr => attr.name === prop) !== -1;
-    }
-  },
-});
-const _makeChildrenProxy = el => {
-  const {HTMLElement} = el.ownerDocument.defaultView;
-
-  const result = [];
-  result.item = i => {
-    if (typeof i === 'number') {
-      return result[i];
-    } else {
-      return undefined;
-    }
-  };
-  result.update = () => {
-    result.length = 0;
-
-    for (let i = 0; i < el.childNodes.length; i++) {
-      const childNode = el.childNodes[i];
-      if (childNode instanceof HTMLElement) {
-        result.push(childNode);
-      }
-    }
-  };
-  result.update();
-  return result;
-};
-const _makeHtmlCollectionProxy = (el, query) => new Proxy(el, {
-  get(target, prop) {
-    const propN = parseIntStrict(prop);
-    if (propN !== undefined) {
-      return el.querySelectorAll(query)[propN];
-    } else if (prop === 'length') {
-      return el.querySelectorAll(query).length;
-    } else {
-      return undefined;
-    }
-  },
-  set(target, prop, value) {
-    return true;
-  },
-  deleteProperty(target, prop) {
-    return true;
-  },
-  has(target, prop) {
-    if (typeof prop === 'number') {
-      return el.querySelectorAll(query)[prop] !== undefined;
-    } else if (prop === 'length') {
-      return true;
-    } else {
-      return false;
-    }
-  },
-});
-const _cssText = style => {
-  let styleString = '';
-  for (const k in style) {
-    const v = style[k];
-    if (v !== undefined) {
-      styleString += (styleString.length > 0 ? ' ' : '') + k + ': ' + v + ';';
-    }
-  }
-  return styleString;
-};
-const _makeStyleProxy = el => {
-  const style = {};
-  let needsReset = true;
-  const _reset = () => {
-    needsReset = false;
-    let stylesheet, err;
-    try {
-      stylesheet = css.parse(`x{${el.getAttribute('style')}}`).stylesheet;
-    } catch(e) {
-      err = e;
-    }
-    if (!err) {
-      for (const k in style) {
-        delete style[k];
-      }
-      const {rules} = stylesheet;
-      for (let j = 0; j < rules.length; j++) {
-        const rule = rules[j];
-        const {declarations} = rule;
-        for (let k = 0; k < declarations.length; k++) {
-          const {property, value} = declarations[k];
-          style[property] = value;
-        }
-      }
-    }
-  };
-  const _getValue = (style, key) => {
-    if (needsReset) {
-      _reset();
-    }
-    return style[key];
-  };
-  const _setValue = (style, key, value) => {
-    if (key === 'cssText') {
-      el.setAttribute('style', value);
-    } else {
-      style[key] = value;
-      el.setAttribute('style', _cssText(style));
-    }
-  };
-  const _removeValue = (style, key, value) => {
-    delete style[key];
-    el.setAttribute('style', _cssText(style));
-  };
-  const _makeProxy = (style, getValue, setValue, removeValue) => new Proxy({}, {
-    get(target, key) {
-      if (key === 'reset') {
-        return _reset;
-      } else if (key === 'clone') {
-        return () => {
-          const newStyle = {};
-          for (const k in style) {
-            const v = style[k];
-            if (v !== undefined) {
-              newStyle[k] = v;
-            }
-          }
-
-          const _getValue = (style, key) => style[key];
-          const _setValue = (style, key, value) => {
-            style[key] = value;
-          };
-          const _removeValue = (style, key) => {
-            delete style[key];
-          };
-          return _makeProxy(newStyle, _getValue, _setValue, _removeValue);
-        };
-      } else if (key === 'cssText') {
-        return el.getAttribute('style') || '';
-      } else if (key === 'length') {
-        return Object.keys(style).length;
-      } else if (key === 'getPropertyPriority') {
-        return () => '';
-      } else if (key === 'getPropertyValue') {
-        return key => getValue(style, key);
-      } else if (key === 'setProperty') {
-        return (propertyName, value, priority) => {
-          setValue(style, propertyName, value);
-        };
-      } else if (key === 'removeProperty') {
-        return property => {
-          removeValue(style, property);
-        };
-      } else if (key === 'item') {
-        return k => {
-          const n = parseInt(k, 10);
-          if (!isNaN(n)) {
-            const keys = Object.keys(style);
-            const key = keys[n];
-            return style[key];
-          } else {
-            return undefined;
-          }
-        };
-      } else {
-        return getValue(style, key);
-      }
-    },
-    set(target, key, value) {
-      setValue(target, key, value);
-      return true;
-    },
-  });
-  return _makeProxy(style, _getValue, _setValue, _removeValue);
-};
-const _dashToCamelCase = s => {
-  let match = s.match(/^data-(.+)$/);
-  if (match) {
-    s = match[1];
-    s = s.replace(/-([a-z])/g, (all, letter) => letter.toUpperCase());
-    return s;
-  } else {
-    return null;
-  }
-};
-const _camelCaseToDash = s => {
-  if (!/-[a-z]/.test(s)) {
-    s = 'data-' + s;
-    s = s.replace(/([A-Z])/g, (all, letter) => '-' + letter.toLowerCase());
-    return s;
-  } else {
-    return null;
-  }
-};
-const _makeDataset = el => new Proxy(el.attrs, {
-  get(target, key) {
-    for (let i = 0; i < target.length; i++) {
-      const attr = target[i];
-      if (_dashToCamelCase(attr.name) === key) {
-        return attr.value;
-      }
-    }
-  },
-  set(target, key, value) {
-    const dashName = _camelCaseToDash(key);
-    if (dashName) {
-      _setAttributeRaw(el, dashName, value);
-    }
-    return true;
-  },
-});
-const autoClosingTags = {
-  area: true,
-  base: true,
-  br: true,
-  embed: true,
-  hr: true,
-  iframe: true,
-  img: true,
-  input: true,
-  link: true,
-  meta: true,
-  param: true,
-  source: true,
-  track: true,
-  window: true,
-};
-const _defineId = (window, id, el) => {
-  let value;
-  Object.defineProperty(window, id, {
-    get() {
-      if (value !== undefined) {
-        return value;
-      } else if (el.ownerDocument.documentElement.contains(el) && el.getAttribute('id') === id) {
-        return el;
-      }
-    },
-    set(newValue) {
-      value = newValue;
-    },
-    configurable: true,
-  });
-};
-class Element extends Node {
-  constructor(tagName = 'DIV', attrs = [], value = '', location = null) {
-    super();
-
-    this.tagName = tagName;
-    this.attrs = attrs;
-    this.value = value;
-    this.location = location;
-
-    this._attributes = null;
-    this._children = null;
-    this._innerHTML = '';
-    this._classList = null;
-    this._dataset = null;
-
-    this.on('attribute', (name, value) => {
-      if (name === 'id') {
-        if (this.ownerDocument.defaultView[value] === undefined) {
-          _defineId(this.ownerDocument.defaultView, value, this);
-        }
-      } else if (name === 'class' && this._classList) {
-        this._classList.reset(value);
-      }
-    });
-  }
-
-  get nodeType() {
-    return Node.ELEMENT_NODE;
-  }
-  set nodeType(nodeType) {}
-
-  get nodeName() {
-    return this.tagName;
-  }
-  set nodeName(nodeName) {}
-
-  get attributes() {
-    if (!this._attributes) {
-      this._attributes = _makeAttributesProxy(this);
-    }
-    return this._attributes;
-  }
-  set attributes(attributes) {}
-
-  get children() {
-    if (!this._children) {
-      this._children = _makeChildrenProxy(this);
-    }
-    return this._children;
-  }
-  set children(children) {}
-
-  getAttribute(name) {
-    const attr = this.attributes[name];
-    return attr !== undefined ? attr.value : null;
-  }
-  setAttribute(name, value) {
-    value = value + '';
-    this.attributes[name] = value;
-  }
-  setAttributeNS(namespace, name, value) {
-    this.setAttribute(name, value);
-  }
-  hasAttribute(name) {
-    return name in this.attributes;
-  }
-  removeAttribute(name) {
-    const oldValue = this.attributes[name];
-    delete this.attributes[name];
-  }
-
-  getAttributeNames() {
-    return this.attrs.map(attr => attr.name);
-  }
-
-  appendChild(childNode) {
-    if (childNode.parentNode) {
-      childNode.parentNode.removeChild(childNode);
-    }
-
-    this.childNodes.push(childNode);
-    childNode.parentNode = this;
-
-    if (this._children) {
-      this._children.update();
-    }
-
-    this._emit('children', [childNode], [], this.childNodes[this.childNodes.length - 2] || null, null);
-    this.ownerDocument._emit('domchange');
-
-    return childNode;
-  }
-  removeChild(childNode) {
-    const index = this.childNodes.indexOf(childNode);
-    if (index !== -1) {
-      this.childNodes.splice(index, 1);
-      childNode.parentNode = null;
-
-      if (this._children) {
-        this._children.update();
-      }
-
-      this._emit('children', [], [childNode], this.childNodes[index - 1] || null, this.childNodes[index] || null);
-      this.ownerDocument._emit('domchange');
-
-      return childNode;
-    } else {
-      throw new Error('The node to be removed is not a child of this node.');
-    }
-  }
-  remove() {
-    if (this.parentNode !== null) {
-      this.parentNode.removeChild(this);
-    }
-  }
-  replaceChild(newChild, oldChild) {
-    const index = this.childNodes.indexOf(oldChild);
-    if (index !== -1) {
-      this.childNodes.splice(index, 1, newChild);
-      oldChild.parentNode = null;
-
-      if (this._children) {
-        this._children.update();
-      }
-
-      this._emit('children', [newChild], [oldChild], this.childNodes[index - 1] || null, this.childNodes[index] || null);
-      this.ownerDocument._emit('domchange');
-
-      return oldChild;
-    } else {
-      throw new Error('The node to be replaced is not a child of this node.');
-    }
-  }
-  insertBefore(childNode, nextSibling) {
-    const index = this.childNodes.indexOf(nextSibling);
-    if (index !== -1) {
-      this.childNodes.splice(index, 0, childNode);
-      childNode.parentNode = this;
-
-      if (this._children) {
-        this._children.update();
-      }
-
-      this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
-      this.ownerDocument._emit('domchange');
-    }
-  }
-  insertAfter(childNode, nextSibling) {
-    const index = this.childNodes.indexOf(nextSibling);
-    if (index !== -1) {
-      this.childNodes.splice(index + 1, 0, childNode);
-      childNode.parentNode = this;
-
-      if (this._children) {
-        this._children.update();
-      }
-
-      this._emit('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
-      this.ownerDocument._emit('domchange');
-    }
-  }
-  insertAdjacentHTML(position, text) {
-    const _getEls = text => parse5.parseFragment(text, {
-      locationInfo: true,
-    })
-      .childNodes
-      .map(childNode =>
-        _fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
-      );
-    switch (position) {
-      case 'beforebegin': {
-        const index = this.parentNode.childNodes.indexOf(this);
-        const newChildNodes = _getEls(text);
-        this.parentNode.childNodes.splice.apply(this.parentNode.childNodes, [
-          index,
-          0,
-        ].concat(newChildNodes));
-        this.parentNode._emit('children', newChildNodes, [], null, null);
-        break;
-      }
-      case 'afterbegin': {
-        const newChildNodes = _getEls(text);
-        this.childNodes.splice.apply(this.childNodes, [
-          0,
-          0,
-        ].concat(newChildNodes));
-        this._emit('children', newChildNodes, [], null, null);
-        break;
-      }
-      case 'beforeend': {
-        const newChildNodes = _getEls(text);
-        this.childNodes.splice.apply(this.childNodes, [
-          this.childNodes.length,
-          0,
-        ].concat(newChildNodes));
-        this._emit('children', newChildNodes, [], null, null);
-        break;
-      }
-      case 'afterend': {
-        const index = this.parentNode.childNodes.indexOf(this);
-        const newChildNodes = _getEls(text);
-        this.parentNode.childNodes.splice.apply(this.parentNode.childNodes, [
-          index + 1,
-          0,
-        ].concat(newChildNodes));
-        this.parentNode._emit('children', newChildNodes, [], null, null);
-        break;
-      }
-      default: {
-        throw new Error('invalid position: ' + position);
-        break;
-      }
-    }
-  }
-
-  get firstChild() {
-    return this.childNodes.length > 0 ? this.childNodes[0] : null;
-  }
-  set firstChild(firstChild) {}
-  get lastChild() {
-    return this.childNodes.length > 0 ? this.childNodes[this.childNodes.length - 1] : null;
-  }
-  set lastChild(lastChild) {}
-
-  get firstElementChild() {
-    for (let i = 0; i < this.childNodes.length; i++) {
-      const childNode = this.childNodes[i];
-      if (childNode.nodeType === Node.ELEMENT_NODE) {
-        return childNode;
-      }
-    }
-    return null;
-  }
-  set firstElementChild(firstElementChild) {}
-  get lastElementChild() {
-    for (let i = this.childNodes.length - 1; i >= 0; i--) {
-      const childNode = this.childNodes[i];
-      if (childNode.nodeType === Node.ELEMENT_NODE) {
-        return childNode;
-      }
-    }
-    return null;
-  }
-  set lastElementChild(lastElementChild) {}
-
-  get childElementCount() {
-    let result = 0;
-    for (let i = 0; i < this.childNodes.length; i++) {
-      if (this.childNodes[i].nodeType === Node.ELEMENT_NODE) {
-        result++;
-      }
-    }
-    return result;
-  }
-  set childElementCount(childElementCount) {}
-
-  get id() {
-    return this.getAttribute('id') || '';
-  }
-  set id(id) {
-    id = id + '';
-    this.setAttribute('id', id);
-  }
-
-  get className() {
-    return this.getAttribute('class') || '';
-  }
-  set className(className) {
-    className = className + '';
-    this.setAttribute('class', className);
-  }
-
-  get classList() {
-    if (!this._classList) {
-      this._classList = new ClassList(this.className, className => {
-        _setAttributeRaw(this, 'class', className);
-      });
-    }
-    return this._classList;
-  }
-  set classList(classList) {}
-
-  getElementById(id) {
-    id = id + '';
-    return selector.find(this, '#' + id, true);
-  }
-  getElementByClassName(className) {
-    className = className + '';
-    return selector.find(this, '.' + className, true);
-  }
-  getElementByTagName(tagName) {
-    tagName = tagName + '';
-    return selector.find(this, tagName, true);
-  }
-  querySelector(s) {
-    s = s + '';
-    return selector.find(this, s, true);
-  }
-  getElementsById(id) {
-    id = id + '';
-    return selector.find(this, '#' + id);
-  }
-  getElementsByClassName(className) {
-    className = className + '';
-    return selector.find(this, '.' + className);
-  }
-  getElementsByTagName(tagName) {
-    tagName = tagName + '';
-    return selector.find(this, tagName);
-  }
-  querySelectorAll(s) {
-    s = s + '';
-    return selector.find(this, s);
-  }
-  matches(s) {
-    s = s + '';
-    return selector.matches(this, s);
-  }
-  closest(s) {
-    for (let el = this; el; el = el.parentNode) {
-      if (el.matches(s)) {
-        return el;
-      }
-    }
-    return null;
-  }
-
-  getBoundingClientRect() {
-    return new DOMRect(0, 0, this.clientWidth, this.clientHeight);
-  }
-
-  focus() {
-    const document = this.ownerDocument;
-    document.activeElement.dispatchEvent(new Event('blur', {
-      target: document.activeElement,
-    }));
-
-    document.activeElement = this;
-    this.dispatchEvent(new Event('focus', {
-      target: this,
-    }));
-  }
-
-  blur() {
-    const document = this.ownerDocument;
-    if (document.activeElement !== document.body) {
-      document.body.focus();
-    }
-  }
-
-  click() {
-    this.dispatchEvent(new MouseEvent('click'));
-  }
-
-  get clientWidth() {
-    const style = this.ownerDocument.defaultView.getComputedStyle(this);
-    const fontFamily = style.fontFamily;
-    if (fontFamily) {
-      if (fontFamily === 'sans-serif') {
-        return 0;
-      } else {
-        return _hash(fontFamily) * _hash(this.innerHTML);
-      }
-    } else {
-      let result = 1;
-      this.traverse(el => {
-        if (el.tagName === 'CANVAS' || el.tagName === 'IMAGE' || el.tagName === 'VIDEO') {
-          result = Math.max(el.width, result);
-          return true;
-        }
-      });
-      return result;
-    }
-  }
-  set clientWidth(clientWidth) {}
-  get clientHeight() {
-    let result = 0;
-    const _recurse = el => {
-      if (el.nodeType === Node.ELEMENT_NODE) {
-        if (el.tagName === 'CANVAS' || el.tagName === 'IMAGE' || el.tagName === 'VIDEO') {
-          result = Math.max(el.height, result);
-        }
-        for (let i = 0; i < el.childNodes.length; i++) {
-          _recurse(el.childNodes[i]);
-        }
-      }
-    };
-    _recurse(this);
-    return result;
-  }
-  set clientHeight(clientHeight) {}
-
-  get dataset() {
-    if (!this._dataset) {
-      this._dataset = _makeDataset(this);
-    }
-    return this._dataset;
-  }
-  set dataset(dataset) {}
-
-  get innerHTML() {
-    return parse5.serialize(this);
-  }
-  set innerHTML(innerHTML) {
-    innerHTML = innerHTML + '';
-    const oldChildNodes = this.childNodes;
-    const newChildNodes = new NodeList(
-      parse5.parseFragment(innerHTML, {
-        locationInfo: true,
-      })
-        .childNodes
-        .map(childNode =>
-          _fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
-        )
-    );
-    this.childNodes = newChildNodes;
-
-    if (this._children) {
-      this._children.update();
-    }
-
-    this._emit('children', newChildNodes, oldChildNodes, null, null);
-    this.ownerDocument._emit('domchange');
-
-    _promiseSerial(newChildNodes.map(childNode => () => _runHtml(childNode, this.ownerDocument.defaultView)))
-      .catch(err => {
-        console.warn(err);
-      });
-
-    this._emit('innerHTML', innerHTML);
-  }
-
-  get innerText() {
-    return he.encode(this.innerHTML);
-  }
-  set innerText(innerText) {
-    innerText = innerText + '';
-    this.innerHTML = he.decode(innerText);
-  }
-
-  get textContent() {
-    let result = '';
-    const _recurse = el => {
-      if (el.nodeType === Node.TEXT_NODE) {
-        result += el.value;
-      } else if (el.childNodes) {
-        for (let i = 0; i < el.childNodes.length; i++) {
-          _recurse(el.childNodes[i]);
-        }
-      }
-    };
-    _recurse(this);
-    return result;
-  }
-  set textContent(textContent) {
-    textContent = textContent + '';
-
-    while (this.childNodes.length > 0) {
-      this.removeChild(this.childNodes[this.childNodes.length - 1]);
-    }
-    this.appendChild(new Text(textContent));
-  }
-
-  get onclick() {
-    return _elementGetter(this, 'click');
-  }
-  set onclick(onclick) {
-    _elementSetter(this, 'click', onclick);
-  }
-  get onmousedown() {
-    return _elementGetter(this, 'mousedown');
-  }
-  set onmousedown(onmousedown) {
-    _elementSetter(this, 'mousedown', onmousedown);
-  }
-  get onmouseup() {
-    return _elementGetter(this, 'mouseup');
-  }
-  set onmouseup(onmouseup) {
-    _elementSetter(this, 'mouseup', onmouseup);
-  }
-
-  requestPointerLock() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[pointerLockElementSymbol] === null) {
-      topDocument[pointerLockElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
-      });
-    }
-  }
-  requestFullscreen() {
-    return; // XXX
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[fullscreenElementSymbol] === null) {
-      topDocument[fullscreenElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
-      });
-    }
-  }
-
-  [util.inspect.custom]() {
-    const _getIndent = depth => Array(depth*2 + 1).join(' ');
-    const _recurse = (el, depth = 0) => {
-      let result = '';
-      if (el.tagName) {
-        const tagName = el.tagName.toLowerCase();
-        const indent = _getIndent(depth);
-        const isAutoClosingTag = autoClosingTags[tagName];
-
-        result += indent;
-        result += '<' + tagName;
-        for (let i = 0; i < el.attrs.length; i++) {
-          const attr = el.attrs[i];
-          result += ' ' + attr.name + '=' + JSON.stringify(attr.value);
-        }
-        if (isAutoClosingTag) {
-          result += '/';
-        }
-        result += '>';
-
-        if (!isAutoClosingTag) {
-          let childrenResult = '';
-          const childNodes = el.childNodes.concat(el.contentDocument ? [el.contentDocument] : []);
-          for (let i = 0; i < childNodes.length; i++) {
-            const childResult = _recurse(childNodes[i], depth + 1);
-            if (childResult && !childrenResult) {
-              childrenResult += '\n';
-            }
-            childrenResult += childResult;
-          }
-          if (childrenResult) {
-            result += childrenResult;
-            result += indent;
-          }
-          result += '</' + tagName + '>';
-        }
-        if (depth !== 0) {
-          result += '\n';
-        }
-      } else if (el.constructor.name === 'Text' && /\S/.test(el.value)) {
-        result += _getIndent(depth);
-        result += el.value;
-        if (depth !== 0) {
-          result += '\n';
-        }
-      } else if (el.constructor.name === 'Comment') {
-        result += _getIndent(depth);
-        result += '<!--' + el.value + '-->';
-        if (depth !== 0) {
-          result += '\n';
-        }
-      }
-      return result;
-    };
-    return _recurse(this);
-  }
-
-  traverse(fn) {
-    const _recurse = node => {
-      const result = fn(node);
-      if (result !== undefined) {
-        return result;
-      } else {
-        if (node.childNodes) {
-          for (let i = 0; i < node.childNodes.length; i++) {
-            const result = _recurse(node.childNodes[i]);
-            if (result !== undefined) {
-              return result;
-            }
-          }
-        }
-        if (node.contentDocument) {
-          return _recurse(node.contentDocument);
-        }
-      }
-    };
-    return _recurse(this);
-  }
-  async traverseAsync(fn) {
-    const nodes = [];
-    (function _recurse(node) {
-      nodes.push(node);
-      if (node.childNodes) {
-        for (let i = 0; i < node.childNodes.length; i++) {
-          _recurse(node.childNodes[i]);
-        }
-      }
-      if (node.contentDocument) {
-        _recurse(node.contentDocument);
-      }
-    })(this);
-
-    for (let i = 0; i < nodes.length; i++) {
-      const result = await fn(nodes[i]);
-      if (result !== undefined) {
-        return result;
-      }
-    }
-  }
-}
-class HTMLElement extends Element {
-  constructor(tagName = 'DIV', attrs = [], value = '', location = null) {
-    super(tagName, attrs, value, location);
-
-    this._style = null;
-    this[computedStyleSymbol] = null;
-
-    this.on('attribute', (name, value) => {
-      if (name === 'class' && this._classList) {
-        this._classList.reset(value);
-      } else if (name === 'style') {
-        if (this._style) {
-          this._style.reset();
-        }
-        if (this[computedStyleSymbol]) {
-          this[computedStyleSymbol] = null;
-        }
-      }
-    });
-  }
-
-  get offsetWidth() {
-    return this.clientWidth;
-  }
-  set offsetWidth(offsetWidth) {}
-  get offsetHeight() {
-    return this.clientHeight;
-  }
-  set offsetHeight(offsetHeight) {}
-  get offsetTop() {
-    return 0;
-  }
-  set offsetTop(offsetTop) {}
-  get offsetLeft() {
-    return 0;
-  }
-  set offsetLeft(offsetLeft) {}
-
-  get offsetParent() {
-    const body = this.ownerDocument.body;
-    for (let el = this; el; el = el.parentNode) {
-      if (el.parentNode === body) {
-        return body;
-      }
-    }
-    return null;
-  }
-  set offsetParent(offsetParent) {}
-
-  get style() {
-    if (!this._style) {
-      this._style = _makeStyleProxy(this);
-    }
-    return this._style;
-  }
-  set style(style) {}
-}
-class HTMLAnchorElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('A', attrs, value, location);
-  }
-
-  get href() {
-    return this.getAttribute('href') || '';
-  }
-  set href(href) {
-    href = href + '';
-    this.setAttribute('href', href);
-  }
-  get hash() {
-    return new url.URL(this.href).hash || '';
-  }
-  set hash(hash) {
-    hash = hash + '';
-    const u = new url.URL(this.href);
-    u.hash = hash;
-    this.href = u.href;
-  }
-  get host() {
-    return new url.URL(this.href).host || '';
-  }
-  set host(host) {
-    host = host + '';
-    const u = new url.URL(this.href);
-    u.host = host;
-    this.href = u.href;
-  }
-  get hostname() {
-    return new url.URL(this.href).hostname || '';
-  }
-  set hostname(hostname) {
-    hostname = hostname + '';
-    const u = new url.URL(this.href);
-    u.hostname = hostname;
-    this.href = u.href;
-  }
-  get password() {
-    return new url.URL(this.href).password || '';
-  }
-  set password(password) {
-    password = password + '';
-    const u = new url.URL(this.href);
-    u.password = password;
-    this.href = u.href;
-  }
-  get origin() {
-    return new url.URL(this.href).origin || '';
-  }
-  set origin(origin) {
-    origin = origin + '';
-    const u = new url.URL(this.href);
-    u.origin = origin;
-    this.href = u.href;
-  }
-  get pathname() {
-    return new url.URL(this.href).pathname || '';
-  }
-  set pathname(pathname) {
-    pathname = pathname + '';
-    const u = new url.URL(this.href);
-    u.pathname = pathname;
-    this.href = u.href;
-  }
-  get port() {
-    return new url.URL(this.href).port || '';
-  }
-  set port(port) {
-    port = port + '';
-    const u = new url.URL(this.href);
-    u.port = port;
-    this.href = u.href;
-  }
-  get protocol() {
-    return new url.URL(this.href).protocol || '';
-  }
-  set protocol(protocol) {
-    protocol = protocol + '';
-    const u = new url.URL(this.href);
-    u.protocol = protocol;
-    this.href = u.href;
-  }
-  get search() {
-    return new url.URL(this.href).search || '';
-  }
-  set search(search) {
-    search = search + '';
-    const u = new url.URL(this.href);
-    u.search = search;
-    this.href = u.href;
-  }
-  get username() {
-    return new url.URL(this.href).username || '';
-  }
-  set username(username) {
-    username = username + '';
-    const u = new url.URL(this.href);
-    u.username = username;
-    this.href = u.href;
-  }
-}
-class HTMLLoadableElement extends HTMLElement {
-  constructor(tagName, attrs = [], value = '', location = null) {
-    super(tagName, attrs, value, location);
-  }
-
-  get onload() {
-    return _elementGetter(this, 'load');
-  }
-  set onload(onload) {
-    _elementSetter(this, 'load', onload);
-  }
-
-  get onerror() {
-    return _elementGetter(this, 'error');
-  }
-  set onerror(onerror) {
-    _elementSetter(this, 'error', onerror);
-  }
-}
-class Document extends HTMLLoadableElement {
-  constructor() {
-    super('DOCUMENT');
-
-    this.hidden = false;
-  }
-
-  get nodeType() {
-    return Node.DOCUMENT_NODE;
-  }
-
-  get pointerLockElement() {
-    if (this.defaultView.top === this.defaultView) {
-      return this[pointerLockElementSymbol];
-    } else {
-      return this.defaultView.top.document.pointerLockElement;
-    }
-  }
-  set pointerLockElement(pointerLockElement) {}
-  get fullscreenElement() {
-    if (this.defaultView.top === this.defaultView) {
-      return this[fullscreenElementSymbol];
-    } else {
-      return this.defaultView.top.document.fullscreenElement;
-    }
-  }
-  set fullscreenElement(fullscreenElement) {}
-
-  exitPointerLock() {
-    const topDocument = this.defaultView.top.document;
-
-    if (topDocument[pointerLockElementSymbol] !== null) {
-      topDocument[pointerLockElementSymbol] = null;
-
-      process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
-      });
-    }
-  }
-  exitFullscreen() {
-    const topDocument = this.defaultView.top.document;
-
-    if (topDocument[fullscreenElementSymbol] !== null) {
-      topDocument[fullscreenElementSymbol] = null;
-
-      process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
-      });
-    }
-  }
-}
-class DocumentFragment extends HTMLElement {
-  constructor() {
-    super('DOCUMENTFRAGMENT');
-  }
-
-  get nodeType() {
-    return Node.DOCUMENT_FRAGMENT_NODE;
-  }
-}
-class HTMLBodyElement extends HTMLElement {
-  constructor() {
-    super('BODY');
-  }
-
-  get clientWidth() {
-    return this.ownerDocument.defaultView.innerWidth;
-  }
-  set clientWidth(clientWidth) {}
-  get clientHeight() {
-    return this.ownerDocument.defaultView.innerHeight;
-  }
-  set clientHeight(clientHeight) {}
-}
-class HTMLStyleElement extends HTMLLoadableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('STYLE', attrs, value, location);
-
-    this.stylesheet = null;
-
-    this.on('attribute', (name, value) => {
-      if (name === 'src' && this.isRunnable()) {
-        const url = value;
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('style src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(s => css.parse(s).stylesheet)
-          .then(stylesheet => {
-            this.stylesheet = stylesheet;
-            styleEpoch++;
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            this.dispatchEvent(new Event('error', {target: this}));
-          });
-      }
-    });
-    this.on('innerHTML', innerHTML => {
-      Promise.resolve()
-        .then(() => css.parse(innerHTML).stylesheet)
-        .then(stylesheet => {
-          this.stylesheet = stylesheet;
-          styleEpoch++;
-          this.dispatchEvent(new Event('load', {target: this}));
-        })
-        .catch(err => {
-          this.dispatchEvent(new Event('error', {target: this}));
-        });
-    });
-  }
-
-  get src() {
-    return this.getAttribute('src') || '';
-  }
-  set src(src) {
-    src = src + '';
-    this.setAttribute('src', src);
-  }
-
-  get type() {
-    type = type + '';
-    return this.getAttribute('type') || '';
-  }
-  set type(type) {
-    this.setAttribute('type', type);
-  }
-
-  set innerHTML(innerHTML) {
-    innerHTML = innerHTML + '';
-    this._emit('innerHTML', innerHTML);
-  }
-
-  run() {
-    let running = false;
-    const srcAttr = this.attributes.src;
-    if (srcAttr) {
-      this._emit('attribute', 'src', srcAttr.value);
-      running = true;
-    }
-    if (this.childNodes.length > 0) {
-      this.innerHTML = this.childNodes[0].value;
-      running = true;
-    }
-    return running;
-  }
-}
-class HTMLScriptElement extends HTMLLoadableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('SCRIPT', attrs, value, location);
-
-    this.readyState = null;
-
-    this.on('attribute', (name, value) => {
-      if (name === 'src' && this.isRunnable()) {
-        this.readyState = null;
-
-        const resource = this.ownerDocument.resources.addResource();
-
-        const url = value;
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(s => {
-            _runJavascript(s, this.ownerDocument.defaultView, url);
-
-            this.readyState = 'complete';
-
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            this.readyState = 'complete';
-
-            this.dispatchEvent(new Event('error', {target: this}));
-          })
-          .finally(() => {
-            resource.setProgress(1);
-          });
-      }
-    });
-    this.on('innerHTML', innerHTML => {
-      if (this.isRunnable()) {
-        const window = this.ownerDocument.defaultView;
-        _runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
-
-        this.readyState = 'complete';
-
-        const resource = this.ownerDocument.resources.addResource();
-
-        process.nextTick(() => {
-          this.dispatchEvent(new Event('load', {target: this}));
-
-          resource.setProgress(1);
-        });
-      }
-    });
-  }
-
-  get src() {
-    return this.getAttribute('src') || '';
-  }
-  set src(src) {
-    src = src + '';
-    this.setAttribute('src', src);
-  }
-
-  get type() {
-    return this.getAttribute('type') || '';
-  }
-  set type(type) {
-    type = type + '';
-    this.setAttribute('type', type);
-  }
-
-  get text() {
-    let result = '';
-    this.traverse(el => {
-      if (el.nodeType === Node.TEXT_NODE) {
-        result += el.value;
-      }
-    });
-    return result;
-  }
-  set text(text) {
-    this.textContent = text;
-  }
-
-  get innerHTML() {
-    return parse5.serialize(this);
-  }
-  set innerHTML(innerHTML) {
-    innerHTML = innerHTML + '';
-
-    this.childNodes = new NodeList([new Text(innerHTML)]);
-    this._emit('innerHTML', innerHTML);
-  }
-
-  isRunnable() {
-    const {type} = this;
-    return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
-  }
-
-  run() {
-    if (this.isRunnable()) {
-      let running = false;
-      const srcAttr = this.attributes.src;
-      if (srcAttr) {
-        this._emit('attribute', 'src', srcAttr.value);
-        running = true;
-      }
-      if (this.childNodes.length > 0) {
-        this.innerHTML = this.childNodes[0].value;
-        running = true;
-      }
-      return running;
-    } else {
-      return false;
-    }
-  }
-}
-class HTMLSrcableElement extends HTMLLoadableElement {
-  constructor(tagName = null, attrs = [], value = '', location = null) {
-    super(tagName, attrs, value, location);
-  }
-
-  get src() {
-    return this.getAttribute('src');
-  }
-  set src(value) {
-    this.setAttribute('src', value);
-  }
-
-  run() {
-    const srcAttr = this.attributes.src;
-    if (srcAttr) {
-      this._emit('attribute', 'src', srcAttr.value);
-      return true;
-    } else {
-      return false;
-    }
-  }
-}
-class HTMLMediaElement extends HTMLSrcableElement {
-  constructor(tagName = null, attrs = [], value = '', location = null) {
-    super(tagName, attrs, value, location);
-
-    this._startTime = 0;
-    this._startTimestamp = null;
-  }
-
-  play() {
-    this._startTimestamp = Date.now();
-  }
-  pause() {}
-  load() {}
-
-  get paused() {
-    return true;
-  }
-  set paused(paused) {
-    this._startTime = this.currentTime;
-    this._startTimestamp = null;
-  }
-  get currentTime() {
-    return this._startTime + (this._startTimestamp !== null ? (Date.now() - this._startTimestamp) : 0);
-  }
-  set currentTime(currentTime) {}
-  get duration() {
-    return 1;
-  }
-  set duration(duration) {}
-  get loop() {
-    return false;
-  }
-  set loop(loop) {}
-  get autoplay() {
-    return false;
-  }
-  set autoplay(autoplay) {}
-
-  canPlayType(type) {
-    return ''; // XXX
-  }
-
-  get HAVE_NOTHING() {
-    return HTMLMediaElement.HAVE_NOTHING;
-  }
-  set HAVE_NOTHING(v) {}
-  get HAVE_METADATA() {
-    return HTMLMediaElement.HAVE_METADATA;
-  }
-  set HAVE_METADATA(v) {}
-  get HAVE_CURRENT_DATA() {
-    return HTMLMediaElement.HAVE_CURRENT_DATA;
-  }
-  set HAVE_CURRENT_DATA(v) {}
-  get HAVE_FUTURE_DATA() {
-    return HTMLMediaElement.HAVE_FUTURE_DATA;
-  }
-  set HAVE_FUTURE_DATA(v) {}
-  get HAVE_ENOUGH_DATA() {
-    return HTMLMediaElement.HAVE_ENOUGH_DATA;
-  }
-  set HAVE_ENOUGH_DATA(v) {}
-}
-HTMLMediaElement.HAVE_NOTHING = 0;
-HTMLMediaElement.HAVE_METADATA = 1;
-HTMLMediaElement.HAVE_CURRENT_DATA = 2;
-HTMLMediaElement.HAVE_FUTURE_DATA = 3;
-HTMLMediaElement.HAVE_ENOUGH_DATA = 4;
-class HTMLSourceElement extends HTMLSrcableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('SOURCE', attrs, value, location);
-  }
-}
-class HTMLImageElement extends HTMLSrcableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('IMG', attrs, value, location);
-
-    this.data = new Uint8Array(0);
-    // this.stack = new Error().stack;
-
-    this.on('attribute', (name, value) => {
-      if (name === 'src') {
-        process.nextTick(() => { // XXX
-          this.dispatchEvent(new Event('load', {target: this}));
-        });
-      }
-    });
-  }
-
-  get width() {
-    return 0;
-  }
-  set width(width) {}
-
-  get height() {
-    return 0;
-  }
-  set height(height) {}
-
-  get naturalWidth() {
-    return this.width;
-  }
-  set naturalWidth(naturalWidth) {}
-
-  get naturalHeight() {
-    return this.height;
-  }
-  set naturalHeight(naturalHeight) {}
-};
-class HTMLAudioElement extends HTMLMediaElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('AUDIO', attrs, value, location);
-
-    this.readyState = HTMLMediaElement.HAVE_NOTHING;
-
-    this.on('attribute', (name, value) => {
-      if (name === 'src') {
-        this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
-
-        process.nextTick(() => { // XXX
-          this.dispatchEvent(new Event('canplay', {target: this}));
-          this.dispatchEvent(new Event('canplaythrough', {target: this}));
-        });
-      }
-    });
-  }
-
-  get oncanplay() {
-    return _elementGetter(this, 'canplay');
-  }
-  set oncanplay(oncanplay) {
-    _elementSetter(this, 'canplay', oncanplay);
-  }
-
-  get oncanplaythrough() {
-    return _elementGetter(this, 'canplaythrough');
-  }
-  set oncanplaythrough(oncanplaythrough) {
-    _elementSetter(this, 'canplaythrough', oncanplaythrough);
-  }
-}
-HTMLAudioElement.HAVE_NOTHING = HTMLMediaElement.HAVE_NOTHING;
-HTMLAudioElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
-HTMLAudioElement.HAVE_CURRENT_DATA = HTMLMediaElement.HAVE_CURRENT_DATA;
-HTMLAudioElement.HAVE_FUTURE_DATA = HTMLMediaElement.HAVE_FUTURE_DATA;
-HTMLAudioElement.HAVE_ENOUGH_DATA = HTMLMediaElement.HAVE_ENOUGH_DATA;
-class MicrophoneMediaStream {}
-class HTMLVideoElement extends HTMLMediaElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('VIDEO', attrs, value, location);
-
-    this.readyState = HTMLMediaElement.HAVE_NOTHING;
-    this.data = new Uint8Array(0);
-
-    this.on('attribute', (name, value) => {
-      if (name === 'src') {
-        this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
-
-        process.nextTick(() => { // XXX
-          this.dispatchEvent(new Event('canplay', {target: this}));
-          this.dispatchEvent(new Event('canplaythrough', {target: this}));
-        });
-      }
-    });
-  }
-
-  get width() {
-    return 0;
-  }
-  set width(width) {}
-  get height() {
-    return 0;
-  }
-  set height(height) {}
-}
-HTMLVideoElement.HAVE_NOTHING = HTMLMediaElement.HAVE_NOTHING;
-HTMLVideoElement.HAVE_METADATA = HTMLMediaElement.HAVE_METADATA;
-HTMLVideoElement.HAVE_CURRENT_DATA = HTMLMediaElement.HAVE_CURRENT_DATA;
-HTMLVideoElement.HAVE_FUTURE_DATA = HTMLMediaElement.HAVE_FUTURE_DATA;
-HTMLVideoElement.HAVE_ENOUGH_DATA = HTMLMediaElement.HAVE_ENOUGH_DATA;
-class SVGElement {}
-class HTMLIFrameElement extends HTMLSrcableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('IFRAME', attrs, value, location);
-
-    this.contentWindow = null;
-    this.contentDocument = null;
-    this.live = true;
-
-    this.on('attribute', (name, value) => {
-      if (name === 'src') {
-        let url = value;
-        const match = url.match(/^javascript:(.+)$/); // XXX should support this for regular fetches too
-        if (match) {
-          url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
-        }
-
-        const resource = this.ownerDocument.resources.addResource();
-
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('iframe src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(htmlString => {
-            if (this.live) {
-              const parentWindow = this.ownerDocument.defaultView;
-              const options = parentWindow[optionsSymbol];
-
-              url = _makeNormalizeUrl(options.baseUrl)(url);
-              const contentWindow = _makeWindow({
-                url,
-                baseUrl: url,
-                dataPath: options.dataPath,
-              }, parentWindow, parentWindow.top);
-              const contentDocument = _parseDocument(htmlString, contentWindow[optionsSymbol], contentWindow);
-              contentDocument.hidden = this.hidden;
-
-              contentWindow.document = contentDocument;
-
-              this.contentWindow = contentWindow;
-              this.contentDocument = contentDocument;
-
-              contentDocument.on('framebuffer', framebuffer => {
-                this._emit('framebuffer', framebuffer);
-              });
-              const _vrdisplaycheck = e => {
-                if (contentDocument.readyState === 'complete') {
-                  const newEvent = new Event('vrdisplayactivate');
-                  newEvent.display = e.display;
-                  contentWindow.dispatchEvent(newEvent);
-                }
-              };
-              parentWindow.top.on('vrdisplaycheck', _vrdisplaycheck);
-              contentWindow.on('destroy', e => {
-                parentWindow.emit('destroy', e);
-
-                parentWindow.top.removeListener('vrdisplaycheck', _vrdisplaycheck);
-              });
-
-              this.dispatchEvent(new Event('load', {target: this}));
-            }
-          })
-          .catch(err => {
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .finally(() => {
-            resource.setProgress(1);
-          });
-      } else if (name === 'hidden') {
-        if (this.contentDocument) {
-          this.contentDocument.hidden = value;
-        }
-      }
-    });
-    this.on('destroy', () => {
-      if (this.contentWindow) {
-        this.contentWindow.destroy();
-        this.contentWindow = null;
-      }
-      this.contentDocument = null;
-    });
-  }
-
-  get hidden() {
-    return this.getAttribute('hidden');
-  }
-  set hidden(hidden) {
-    this.setAttribute('hidden', hidden);
-  }
-
-  destroy() {
-    if (this.live) {
-      this._emit('destroy');
-      this.live = false;
-    }
-  }
-}
-const defaultCanvasSize = [1280, 1024];
-class HTMLCanvasElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('CANVAS', attrs, value, location);
-
-    this._context = null;
-
-    this.on('attribute', (name, value) => {
-      if (name === 'width' || name === 'height') {
-        if (this._context && this._context.resize) {
-          this._context.resize(this.width, this.height);
-        }
-      }
-    });
-  }
-
-  get width() {
-    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
-  }
-  set width(value) {
-    if (typeof value === 'number' && isFinite(value)) {
-      this.setAttribute('width', value);
-    }
-  }
-  get height() {
-    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
-  }
-  set height(value) {
-    if (typeof value === 'number' && isFinite(value)) {
-      this.setAttribute('height', value);
-    }
-  }
-
-  get clientWidth() {
-    return this.width;
-  }
-  set clientWidth(clientWidth) {}
-  get clientHeight() {
-    return this.height;
-  }
-  set clientHeight(clientHeight) {}
-
-  getBoundingClientRect() {
-    return new DOMRect(0, 0, this.width, this.height);
-  }
-
-  get data() {
-    return (this._context && this._context.data) || null;
-  }
-  set data(data) {}
-
-  getContext(contextType) {
-    if (contextType === '2d') {
-      if (this._context && this._context.constructor && this._context.constructor.name !== 'CanvasRenderingContext2D') {
-        this._context.destroy();
-        this._context = null;
-      }
-      if (this._context === null) {
-        this._context = new CanvasRenderingContext2D(this.width, this.height);
-      }
-    } else if (contextType === 'webgl' || contextType === 'xrpresent') {
-      if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext') {
-        this._context.destroy();
-        this._context = null;
-      }
-      if (this._context === null) {
-        this._context = new WebGLRenderingContext(this);
-      }
-    } else {
-      if (this._context) {
-        this._context.destroy();
-        this._context = null;
-      }
-    }
-    return this._context;
-  }
-
-  captureStream(frameRate) {
-    return {}; // XXX
-  }
-}
 class MediaRecorder extends EventEmitter {
   constructor() {
     super();
@@ -3537,134 +684,8 @@ class MediaRecorder extends EventEmitter {
 
   requestData() {}
 }
-class HTMLTemplateElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('TEMPLATE', attrs, value, location);
 
-    this._childNodes = new NodeList();
-  }
-
-  get content() {
-    const content = new DocumentFragment();
-    content.ownerDocument = this.ownerDocument;
-    content.childNodes = new NodeList(this.childNodes);
-    return content;
-  }
-  set content(content) {}
-
-  get childNodes() {
-    return new NodeList();
-  }
-  set childNodes(childNodes) {
-    this._childNodes = childNodes;
-  }
-
-  get children() {
-    return [];
-  }
-  set children(children) {}
-
-  get innerHTML() {
-    return parse5.serialize({
-      tagName: this.tagName,
-      attrs: this.attrs,
-      value: this.value,
-      childNodes: this._childNodes,
-    });
-  }
-  set innerHTML(innerHTML) {
-    super.innerHTML = innerHTML;
-  }
-}
-class CharacterNode extends Node {
-  constructor(value) {
-    super();
-
-    this.value = value;
-  }
-
-  get textContent() {
-    return this.value;
-  }
-  set textContent(textContent) {
-    this.value = textContent;
-
-    this._emit('value');
-  }
-
-  get data() {
-    return this.value;
-  }
-  set data(data) {
-    this.value = data;
-
-    this._emit('value');
-  }
-  get length() {
-    return this.value.length;
-  }
-  set length(length) {}
-
-  get firstChild() {
-    return null;
-  }
-  set firstChild(firstChild) {}
-  get lastChild() {
-    return null;
-  }
-  set lastChild(lastChild) {}
-
-  traverse(fn) {
-    fn(this);
-  }
-}
-class Text extends CharacterNode {
-  constructor(value) {
-    super(value);
-  }
-
-  get nodeType() {
-    return Node.TEXT_NODE;
-  }
-  set nodeType(nodeType) {}
-
-  get nodeName() {
-    return '#text';
-  }
-  set nodeName(nodeName) {}
-
-  get firstChild() {
-    return null;
-  }
-  set firstChild(firstChild) {}
-  get lastChild() {
-    return null;
-  }
-  set lastChild(lastChild) {}
-
-  [util.inspect.custom]() {
-    return JSON.stringify(this.value);
-  }
-}
-class Comment extends CharacterNode {
-  constructor(value) {
-    super(value);
-  }
-
-  get nodeType() {
-    return Node.COMMENT_NODE;
-  }
-  set nodeType(nodeType) {}
-
-  get nodeName() {
-    return '#comment';
-  }
-  set nodeName(nodeName) {}
-
-  [util.inspect.custom]() {
-    return `<!--${this.value}-->`;
-  }
-}
+class MicrophoneMediaStream {}
 
 class DocumentType {}
 class DOMImplementation {
@@ -3681,7 +702,7 @@ class DOMImplementation {
   }
 
   createHTMLDocument() {
-    return _parseDocument('', this._window[optionsSymbol], this._window);
+    return _parseDocument('', this._window[symbols.optionsSymbol], this._window);
   }
 
   hasFeature() {
@@ -3754,14 +775,14 @@ class FileReader extends EventTarget {
   }
 }
 
-const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
+global._fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   if (node.nodeName === '#text') {
-    const text = new Text(node.value);
+    const text = new DOM.Text(node.value);
     text.parentNode = parentNode;
     text.ownerDocument = ownerDocument;
     return text;
   } else if (node.nodeName === '#comment') {
-    const comment = new Comment(node.data);
+    const comment = new DOM.Comment(node.data);
     comment.parentNode = parentNode;
     comment.ownerDocument = ownerDocument;
     return comment;
@@ -3771,7 +792,7 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
       tagName = tagName.toUpperCase();
     }
     let {attrs, value, content, childNodes, sourceCodeLocation} = node;
-    const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
+    const HTMLElementTemplate = window[symbols.htmlTagsSymbol][tagName];
     const location = sourceCodeLocation  ? {
       line: sourceCodeLocation.startLine,
       col: sourceCodeLocation.startCol,
@@ -3783,7 +804,7 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
         location,
       )
     :
-      new HTMLElement(
+      new DOM.HTMLElement(
         tagName,
         attrs,
         value,
@@ -3811,29 +832,6 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
     return element;
   }
 };
-const _hash = s => {
-  let result = 0;
-  for (let i = 0; i < s.length; i++) {
-    result += s.codePointAt(i);
-  }
-  return result;
-};
-const _elementGetter = (self, attribute) => self.listeners(attribute)[0];
-const _elementSetter = (self, attribute, cb) => {
-  if (typeof cb === 'function') {
-    self.addEventListener(attribute, cb);
-  } else {
-    const listeners = self.listeners(attribute);
-    for (let i = 0; i < listeners.length; i++) {
-      self.removeEventListener(attribute, listeners[i]);
-    }
-  }
-};
-const _promiseSerial = async promiseFns => {
-  for (let i = 0; i < promiseFns.length; i++) {
-    await promiseFns[i]();
-  }
-};
 const _loadPromise = el => new Promise((accept, reject) => {
   const load = () => {
     _cleanup();
@@ -3850,8 +848,8 @@ const _loadPromise = el => new Promise((accept, reject) => {
   el.on('load', load);
   el.on('error', error);
 });
-const _runHtml = (element, window) => {
-  if (element instanceof HTMLElement) {
+global._runHtml = (element, window) => {
+  if (element instanceof DOM.HTMLElement) {
     return element.traverseAsync(async el => {
       const {id} = el;
       if (id) {
@@ -3909,13 +907,6 @@ const _runHtml = (element, window) => {
     return Promise.resolve();
   }
 };
-const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, colOffset = 0) => {
-  try {
-    window.vm.run(jsString, filename, lineOffset, colOffset);
-  } catch (err) {
-    console.warn(err.stack);
-  }
-};
 
 let rafCbs = [];
 function tickAnimationFrame() {
@@ -3941,14 +932,14 @@ function tickAnimationFrame() {
     // hidden rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      if (localRafCb[windowSymbol].document.hidden) {
+      if (localRafCb[symbols.windowSymbol].document.hidden) {
         _handleRaf(localRafCb);
       }
     }
     // visible rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
-      if (!localRafCb[windowSymbol].document.hidden) {
+      if (!localRafCb[symbols.windowSymbol].document.hidden) {
         _handleRaf(localRafCb);
       }
     }
@@ -3961,19 +952,18 @@ const _makeRequestAnimationFrame = window => (fn, priority) => {
   if (priority === undefined) {
     priority = 0;
   }
-  fn[windowSymbol] = window;
-  fn[prioritySymbol] = priority;
+  fn[symbols.windowSymbol] = window;
+  fn[symbols.prioritySymbol] = priority;
   rafCbs.push(fn);
-  rafCbs.sort((a, b) => b[prioritySymbol] - a[prioritySymbol]);
+  rafCbs.sort((a, b) => b[symbols.prioritySymbol] - a[symbols.prioritySymbol]);
   return fn;
 };
 const _getFakeVrDisplay = window => {
-  const {fakeVrDisplay} = window[mrDisplaysSymbol];
+  const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
   return fakeVrDisplay.isActive ? fakeVrDisplay : null;
 };
-const _getVrDisplay = window => window[mrDisplaysSymbol].vrDisplay;
-const _getXrDisplay = window => window[mrDisplaysSymbol].xrDisplay;
-const _getMlDisplay = window => window[mrDisplaysSymbol].mlDisplay;
+const _getVrDisplay = window => window[symbols.mrDisplaysSymbol].vrDisplay;
+const _getMlDisplay = window => window[symbols.mrDisplaysSymbol].mlDisplay;
 const _cloneMrDisplays = (mrDisplays, window) => {
   const result = {};
   for (const k in mrDisplays) {
@@ -3984,35 +974,8 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   return result;
 };
 
-function _getBaseUrl(u) {
-  let baseUrl;
-  if (/^file:\/\/(.*)$/.test(u)) {
-    baseUrl = u;
-  } else {
-    const parsedUrl = url.parse(u);
-    baseUrl = url.format({
-      protocol: parsedUrl.protocol || 'http:',
-      host: parsedUrl.host || '127.0.0.1',
-      pathname: parsedUrl.pathname,
-      search: parsedUrl.search,
-    });
-  }
-  if (!/\/$/.test(baseUrl) && !/\./.test(baseUrl.match(/\/([^\/]*)$/)[1])) {
-    baseUrl = baseUrl + '/';
-  }
-  return baseUrl;
-}
-function _makeNormalizeUrl(baseUrl) {
-  return src => {
-    if (!/^[a-z]+:\/\//i.test(src)) {
-      src = new URL(src, baseUrl).href
-        .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
-    }
-    return src;
-  };
-}
-const _makeWindow = (options = {}, parent = null, top = null) => {
-  const _normalizeUrl = _makeNormalizeUrl(options.baseUrl);
+global._makeWindow = (options = {}, parent = null, top = null) => {
+  const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
     constructor() {
@@ -4141,12 +1104,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return Promise.resolve(this.getVRDisplaysSync());
     },
     createVRDisplay() {
-      const {fakeVrDisplay} = window[mrDisplaysSymbol];
+      const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
       fakeVrDisplay.isActive = true;
       return fakeVrDisplay;
     },
     getGamepads,
-    xr: new XR(window),
+    xr: new XR.XR(window),
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
@@ -4185,7 +1148,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       .then(res => {
         res.arrayBuffer = (arrayBuffer => function() {
           return arrayBuffer.apply(this, arguments)
-            .then(ab => _normalizeBuffer(ab, window));
+            .then(ab => utils._normalizeBuffer(ab, window));
         })(res.arrayBuffer);
         return res;
       });
@@ -4206,13 +1169,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Request = Request;
   window.Response = (Old => class Response extends Old {
     constructor(body, opts) {
-      super(_normalizeBuffer(body, global), opts);
+      super(utils._normalizeBuffer(body, global), opts);
     }
   })(Response);
   window.Headers = Headers;
   window.Blob = (Old => class Blob extends Old {
     constructor(parts, opts) {
-      super(parts && parts.map(part => _normalizeBuffer(part, global)), opts);
+      super(parts && parts.map(part => utils._normalizeBuffer(part, global)), opts);
     }
   })(Blob);
   window.FormData = FormData;
@@ -4223,7 +1186,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         return super.open(method, url, async, username, password);
       }
       get response() {
-        return _normalizeBuffer(super.response, window);
+        return utils._normalizeBuffer(super.response, window);
       }
     }
     for (const k in XMLHttpRequestBase) {
@@ -4235,12 +1198,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     class WebSocket extends Old {
       emit(type, event) {
         if (type === 'message') {
-          event = _normalizeBuffer(event, window);
+          event = utils._normalizeBuffer(event, window);
         }
         return super.emit.apply(this, arguments);
       }
       send(data) {
-        return super.send(_normalizeBuffer(data, global));
+        return super.send(utils._normalizeBuffer(data, global));
       }
     }
     for (const k in Old) {
@@ -4259,46 +1222,49 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.scrollX = 0;
   window.scrollY = 0;
-  window[htmlTagsSymbol] = {
+  window[symbols.htmlTagsSymbol] = {
     DOCUMENT: Document,
-    BODY: HTMLBodyElement,
-    A: HTMLAnchorElement,
-    STYLE: HTMLStyleElement,
-    SCRIPT: HTMLScriptElement,
+    BODY: DOM.HTMLBodyElement,
+    A: DOM.HTMLAnchorElement,
+    STYLE: DOM.HTMLStyleElement,
+    SCRIPT: DOM.HTMLScriptElement,
     IMG: HTMLImageElementBound,
     AUDIO: HTMLAudioElementBound,
     VIDEO: HTMLVideoElement,
-    SOURCE: HTMLSourceElement,
-    IFRAME: HTMLIFrameElement,
-    CANVAS: HTMLCanvasElement,
-    TEMPLATE: HTMLTemplateElement,
+    SOURCE: DOM.HTMLSourceElement,
+    IFRAME: DOM.HTMLIFrameElement,
+    CANVAS: DOM.HTMLCanvasElement,
+    TEMPLATE: DOM.HTMLTemplateElement,
   };
-  window[optionsSymbol] = options;
+  window[symbols.optionsSymbol] = options;
   window.DocumentFragment = DocumentFragment;
-  window.Element = Element;
-  window.HTMLElement = HTMLElement;
-  window.HTMLAnchorElement = HTMLAnchorElement;
-  window.HTMLStyleElement = HTMLStyleElement;
-  window.HTMLScriptElement = HTMLScriptElement;
+
+  // DOM.
+  window.Element = DOM.Element;
+  window.HTMLElement = DOM.HTMLElement;
+  window.HTMLAnchorElement = DOM.HTMLAnchorElement;
+  window.HTMLStyleElement = DOM.HTMLStyleElement;
+  window.HTMLScriptElement = DOM.HTMLScriptElement;
   window.HTMLImageElement = HTMLImageElementBound,
   window.HTMLAudioElement = HTMLAudioElementBound;
   window.HTMLVideoElement = HTMLVideoElement;
-  window.SVGElement = SVGElement;
-  window.HTMLIFrameElement = HTMLIFrameElement;
-  window.HTMLCanvasElement = HTMLCanvasElement;
-  window.HTMLTemplateElement = HTMLTemplateElement;
+  window.SVGElement = DOM.SVGElement;
+  window.HTMLIFrameElement = DOM.HTMLIFrameElement;
+  window.HTMLCanvasElement = DOM.HTMLCanvasElement;
+  window.HTMLTemplateElement = DOM.HTMLTemplateElement;
   window.Node = Node;
-  window.Text = Text;
-  window.Comment = Comment;
+  window.Text = DOM.Text;
+  window.Comment = DOM.Comment;
+  window.NodeList = NodeList;
+  window.HTMLCollection = DOM.HTMLCollection;
+
   window.customElements = new CustomElementRegistry(window);
   window.CustomElementRegistry = CustomElementRegistry;
-  window.MutationObserver = MutationObserver;
+  window.MutationObserver = require('./src/MutationObserver').MutationObserver;
   window.DOMRect = DOMRect;
-  window.NodeList = NodeList;
-  window.HTMLCollection = HTMLCollection;
   window.getComputedStyle = el => {
-    let styleSpec = el[computedStyleSymbol];
-    if (!styleSpec || styleSpec.epoch !== styleEpoch) {
+    let styleSpec = el[symbols.computedStyleSymbol];
+    if (!styleSpec || styleSpec.epoch !== GlobalContext.styleEpoch) {
       const style = el.style.clone();
       const styleEls = el.ownerDocument.documentElement.getElementsByTagName('style');
       for (let i = 0; i < styleEls.length; i++) {
@@ -4320,9 +1286,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
       styleSpec = {
         style,
-        styleEpoch,
+        styleEpoch: GlobalContext.styleEpoch,
       };
-      el[computedStyleSymbol] = styleSpec;
+      el[symbols.computedStyleSymbol] = styleSpec;
     }
     return styleSpec.style;
   };
@@ -4500,7 +1466,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         // preserveComments: true,
       });
       const htmlAst = _recurse(xmlAst);
-      return _parseDocumentAst(htmlAst, window[optionsSymbol], window, false);
+      return _parseDocumentAst(htmlAst, window[symbols.optionsSymbol], window, false);
     }
   };
   // window.Buffer = Buffer; // XXX non-standard
@@ -4511,9 +1477,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.DragEvent = DragEvent;
   window.MessageEvent = MessageEvent;
   window.CustomEvent = CustomEvent;
-  window.addEventListener = Element.prototype.addEventListener.bind(window);
-  window.removeEventListener = Element.prototype.removeEventListener.bind(window);
-  window.dispatchEvent = Element.prototype.dispatchEvent.bind(window);
+  window.addEventListener = DOM.Element.prototype.addEventListener.bind(window);
+  window.removeEventListener = DOM.Element.prototype.removeEventListener.bind(window);
+  window.dispatchEvent = DOM.Element.prototype.dispatchEvent.bind(window);
   window.Image = HTMLImageElementBound;
   window.ImageData = ImageData;
   window.ImageBitmap = ImageBitmap;
@@ -4537,21 +1503,21 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
-  window.XR = XR;
-  window.XRDevice = XRDevice;
-  window.XRSession = XRSession;
-  window.XRWebGLLayer = XRWebGLLayer;
-  window.XRPresentationFrame = XRPresentationFrame;
-  window.XRView = XRView;
-  window.XRViewport = XRViewport;
-  window.XRDevicePose = XRDevicePose;
-  window.XRInputSource = XRInputSource;
-  window.XRInputPose = XRInputPose;
-  window.XRInputSourceEvent = XRInputSourceEvent;
-  window.XRCoordinateSystem = XRCoordinateSystem;
-  window.XRFrameOfReference = XRFrameOfReference;
-  window.XRStageBounds = XRStageBounds;
-  window.XRStageBoundsPoint = XRStageBoundsPoint;
+  window.XR = XR.XR;
+  window.XRDevice = XR.XRDevice;
+  window.XRSession = XR.XRSession;
+  window.XRWebGLLayer = XR.XRWebGLLayer;
+  window.XRPresentationFrame = XR.XRPresentationFrame;
+  window.XRView = XR.XRView;
+  window.XRViewport = XR.XRViewport;
+  window.XRDevicePose = XR.XRDevicePose;
+  window.XRInputSource = XR.XRInputSource;
+  window.XRInputPose = XR.XRInputPose;
+  window.XRInputSourceEvent = XR.XRInputSourceEvent;
+  window.XRCoordinateSystem = XR.XRCoordinateSystem;
+  window.XRFrameOfReference = XR.XRFrameOfReference;
+  window.XRStageBounds = XR.XRStageBounds;
+  window.XRStageBoundsPoint = XR.XRStageBoundsPoint;
   window.btoa = btoa;
   window.atob = atob;
   window.TextEncoder = TextEncoder;
@@ -4617,25 +1583,25 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         window.onload = onload;
       </script></head></html>
   */
-  window[disabledEventsSymbol] = {
+  window[symbols.disabledEventsSymbol] = {
     load: undefined,
     error: undefined,
   };
   window._emit = function(type) {
-    if (!this[disabledEventsSymbol][type]) {
+    if (!this[symbols.disabledEventsSymbol][type]) {
       Node.prototype._emit.apply(this, arguments);
     }
   };
   Object.defineProperty(window, 'onload', {
     get() {
-      return window[disabledEventsSymbol]['load'] !== undefined ? window[disabledEventsSymbol]['load'] : _elementGetter(window, 'load');
+      return window[symbols.disabledEventsSymbol]['load'] !== undefined ? window[symbols.disabledEventsSymbol]['load'] : _elementGetter(window, 'load');
     },
     set(onload) {
       if (nativeVm.isCompiling()) {
-        this[disabledEventsSymbol]['load'] = onload;
+        this[symbols.disabledEventsSymbol]['load'] = onload;
       } else {
-        if (window[disabledEventsSymbol]['load'] !== undefined) {
-          this[disabledEventsSymbol]['load'] = onload;
+        if (window[symbols.disabledEventsSymbol]['load'] !== undefined) {
+          this[symbols.disabledEventsSymbol]['load'] = onload;
         } else {
           _elementSetter(window, 'load', onload);
         }
@@ -4644,14 +1610,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   });
   Object.defineProperty(window, 'onerror', {
     get() {
-      return window[disabledEventsSymbol]['error'] !== undefined ? window[disabledEventsSymbol]['error'] : _elementGetter(window, 'error');
+      return window[symbols.disabledEventsSymbol]['error'] !== undefined ? window[symbols.disabledEventsSymbol]['error'] : _elementGetter(window, 'error');
     },
     set(onerror) {
       if (nativeVm.isCompiling()) {
-        window[disabledEventsSymbol]['error'] = onerror;
+        window[symbols.disabledEventsSymbol]['error'] = onerror;
       } else {
-        if (window[disabledEventsSymbol]['error'] !== undefined) {
-          window[disabledEventsSymbol]['error'] = onerror;
+        if (window[symbols.disabledEventsSymbol]['error'] !== undefined) {
+          window[symbols.disabledEventsSymbol]['error'] = onerror;
         } else {
           _elementSetter(window, 'error', onerror);
         }
@@ -4679,7 +1645,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
-    rafCbs = rafCbs.filter(fn => fn[windowSymbol] !== destroyedWindow);
+    rafCbs = rafCbs.filter(fn => fn[symbols.windowSymbol] !== destroyedWindow);
   });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
@@ -4697,7 +1663,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          rafCbs = rafCbs.filter(fn => fn[windowSymbol] !== window);
+          rafCbs = rafCbs.filter(fn => fn[symbols.windowSymbol] !== window);
         })
         .catch(err => {
           loading = false;
@@ -4729,7 +1695,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    const xrDisplay = new XRDevice();
+    const xrDisplay = new XR.XRDevice();
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
     xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
@@ -4748,7 +1714,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
-    window[mrDisplaysSymbol] = {
+    window[symbols.mrDisplaysSymbol] = {
       fakeVrDisplay,
       vrDisplay,
       xrDisplay,
@@ -4813,7 +1779,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       });
     }
   } else {
-    window[mrDisplaysSymbol] = _cloneMrDisplays(top[mrDisplaysSymbol], window);
+    window[symbols.mrDisplaysSymbol] = _cloneMrDisplays(top[symbols.mrDisplaysSymbol], window);
 
     top.on('vrdisplaypresentchange', e => {
       window._emit('vrdisplaypresentchange', e);
@@ -4821,13 +1787,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   }
   return window;
 };
-const _parseDocument = (s, options, window) => {
+const _parseDocument = GlobalContext._parseDocument = (s, options, window) => {
   const ast = parse5.parse(s, {
     sourceCodeLocationInfo: true,
   });
   ast.tagName = 'document';
   return _parseDocumentAst(ast, options, window, true);
 };
+
 const _parseDocumentAst = (ast, options, window, uppercase) => {
   const document = _fromAST(ast, window, null, null, uppercase);
   const html = document.childNodes.find(el => el.tagName === 'HTML');
@@ -4842,8 +1809,8 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
   document.location = window.location;
   document.createElement = tagName => {
     tagName = tagName.toUpperCase();
-    const HTMLElementTemplate = window[htmlTagsSymbol][tagName];
-    const element = HTMLElementTemplate ? new HTMLElementTemplate() : new HTMLElement(tagName);
+    const HTMLElementTemplate = window[symbols.htmlTagsSymbol][tagName];
+    const element = HTMLElementTemplate ? new HTMLElementTemplate() : new DOM.HTMLElement(tagName);
     element.ownerDocument = document;
     return element;
   };
@@ -4853,8 +1820,8 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
     documentFragment.ownerDocument = document;
     return documentFragment;
   };
-  document.createTextNode = text => new Text(text);
-  document.createComment = comment => new Comment(comment);
+  document.createTextNode = text => new DOM.Text(text);
+  document.createComment = comment => new DOM.Comment(comment);
   document.createEvent = type => {
     switch (type) {
       case 'KeyboardEvent':
@@ -4872,7 +1839,7 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
     }
   };
   document.importNode = (el, deep) => el.cloneNode(deep);
-  document.scripts = _makeHtmlCollectionProxy(document.documentElement, 'script');
+  document.scripts = utils._makeHtmlCollectionProxy(document.documentElement, 'script');
   document.styleSheets = [];
   document.implementation = new DOMImplementation(window);
   document.resources = new Resources(); // non-standard
@@ -4896,8 +1863,8 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
       document.dispatchEvent(new Event('paste'));
     }
   };
-  document[pointerLockElementSymbol] = null;
-  document[fullscreenElementSymbol] = null;
+  document[symbols.pointerLockElementSymbol] = null;
+  document[symbols.fullscreenElementSymbol] = null;
 
   if (window.top === window) {
     document.addEventListener('pointerlockchange', () => {
@@ -4960,6 +1927,7 @@ const documentElement = html || (document.childNodes.length > 0 ? document.child
 
   return document;
 };
+
 const _makeWindowWithDocument = (s, options, parent, top) => {
   const window = _makeWindow(options, parent, top);
   window.document = _parseDocument(s, options, window);
@@ -4989,7 +1957,7 @@ exokit.load = (src, options = {}) => {
       if (options.baseUrl) {
         baseUrl = options.baseUrl;
       } else {
-        baseUrl = _getBaseUrl(src);
+        baseUrl = utils._getBaseUrl(src);
       }
 
       return exokit(htmlString, {
@@ -5012,7 +1980,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   const bindings = require(nativeBindingsModule);
 
-  nativeVm = bindings.nativeVm;
+  nativeVm = GlobalContext.nativeVm = bindings.nativeVm;
   nativeWorker = bindings.nativeWorker;
   nativeWorker.setNativeRequire('nativeBindings', bindings.initFunctionAddress);
   nativeWorker.bind({
@@ -5024,8 +1992,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   ImageBitmap = bindings.nativeImageBitmap;
   Path2D = bindings.nativePath2D;
   CanvasGradient = bindings.nativeCanvasGradient;
-  CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
-  WebGLRenderingContext = bindings.nativeGl;
+  CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
+  WebGLRenderingContext = GlobalContext.WebGLRenderingContext = bindings.nativeGl;
   if (args.frame || args.minimalFrame) {
     WebGLRenderingContext = (OldWebGLRenderingContext => {
       function WebGLRenderingContext() {
@@ -5051,7 +2019,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     })(WebGLRenderingContext);
   }
 
-  HTMLImageElement = class extends HTMLSrcableElement {
+  HTMLImageElement = class extends DOM.HTMLSrcableElement {
     constructor(attrs = [], value = '') {
       super('IMG', attrs, value);
 
@@ -5155,11 +2123,11 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   AnalyserNode = nativeAudio.AnalyserNode;
   PannerNode = nativeAudio.PannerNode;
   StereoPannerNode = nativeAudio.StereoPannerNode;
-  HTMLAudioElement = class extends HTMLMediaElement {
+  HTMLAudioElement = class extends DOM.HTMLMediaElement {
     constructor(attrs = [], value = '') {
       super('AUDIO', attrs, value);
 
-      this.readyState = HTMLMediaElement.HAVE_NOTHING;
+      this.readyState = DOM.HTMLMediaElement.HAVE_NOTHING;
       this.audio = new nativeAudio.Audio();
 
       this.on('attribute', (name, value) => {
@@ -5184,7 +2152,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
               }
             })
             .then(() => {
-              this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+              this.readyState = DOM.HTMLMediaElement.HAVE_ENOUGH_DATA;
               this._emit('canplay');
               this._emit('canplaythrough');
             })
@@ -5253,16 +2221,16 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   // Video.getDevices fails after opening a webcam, so in order to
   // open multiple webcams we need to call this once on startup.
   const devices = Video.getDevices();
-  HTMLVideoElement = class extends HTMLMediaElement {
+  HTMLVideoElement = class extends DOM.HTMLMediaElement {
     constructor(attrs = [], value = '', location = null) {
       super('VIDEO', attrs, value, location);
 
-      this.readyState = HTMLMediaElement.HAVE_NOTHING;
+      this.readyState = DOM.HTMLMediaElement.HAVE_NOTHING;
       this.data = new Uint8Array(0);
 
       this.on('attribute', (name, value) => {
         if (name === 'src') {
-          this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+          this.readyState = DOM.HTMLMediaElement.HAVE_ENOUGH_DATA;
 
           if (urls.has(value)) {
             const blob = urls.get(value);
@@ -5347,11 +2315,11 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   }
 
   /* const {nativeVideo} = bindings;
-  HTMLVideoElement = class extends HTMLMediaElement {
+  HTMLVideoElement = class extends DOM.HTMLMediaElement {
     constructor(attrs = [], value = '') {
       super('VIDEO', attrs, value);
 
-      this.readyState = HTMLMediaElement.HAVE_NOTHING;
+      this.readyState = DOM.HTMLMediaElement.HAVE_NOTHING;
       this.video = new nativeVideo.Video();
 
       this.on('attribute', (name, value) => {
@@ -5377,7 +2345,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
             })
             .then(() => {
               console.log('video download done');
-              this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+              this.readyState = DOM.HTMLMediaElement.HAVE_ENOUGH_DATA;
               this._emit('canplay');
               this._emit('canplaythrough');
             })
@@ -5521,8 +2489,8 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     }
   }; */
 
-  nativeVr = bindings.nativeVr;
-  nativeMl = bindings.nativeMl;
+  nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
+  nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
 };
 module.exports = exokit;
 
