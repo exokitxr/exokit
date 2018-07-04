@@ -12,6 +12,7 @@
   "scripts": {
     "install": "node ./preinstall.js && node-gyp rebuild",
     "build": "node-gyp rebuild",
+    "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 0"
   },
@@ -73,5 +74,8 @@
     "window-worker": "0.0.68",
     "window-xhr": "0.0.19",
     "ws": "^5.2.1"
+  },
+  "devDependencies": {
+    "shx": "^0.3.1"
   }
 }
