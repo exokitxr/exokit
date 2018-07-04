@@ -15,8 +15,13 @@
     "lint": "eslint core.js index.js native-bindings.js src",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "start": "node .",
+<<<<<<< HEAD
     "test:ci": "TEST_ENV=ci npm run test:command",
     "test:command": "mocha tests/unit/__setup.test.js tests/unit/**/*.test.js",
+=======
+    "test:ci": "npm run test:command",
+    "test:command": "mocha tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
+>>>>>>> remove ownerDocument checks
     "test:watch": "npm run test:command -- --watch"
   },
   "repository": {

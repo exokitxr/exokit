@@ -1,6 +1,5 @@
-const assert = require('assert');
-
-const exokit = require('../../..');
+/* global assert, beforeEach, describe */
+const exokit = require('../../../index');
 
 describe('Element', () => {
   var document;

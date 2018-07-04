@@ -490,7 +490,7 @@ class Element extends Node {
 
     this.on('attribute', (name, value) => {
       if (name === 'id') {
-        if (this.ownerDocument && this.ownerDocument.defaultView[value] === undefined) {
+        if (this.ownerDocument.defaultView[value] === undefined) {
           _defineId(this.ownerDocument.defaultView, value, this);
         }
       } else if (name === 'class' && this._classList) {
@@ -575,8 +575,7 @@ class Element extends Node {
     // Notify observers.
     this._emit('children', newChildren, EMPTY_ARRAY,
                this.childNodes[this.childNodes.length - 2] || null, null);
-
-    if (this.ownerDocument) { this.ownerDocument._emit('domchange'); }
+    this.ownerDocument._emit('domchange');
 
     return childNode;
   }
