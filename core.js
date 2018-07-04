@@ -1061,16 +1061,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
       return result;
     },
-    getVRDisplays: ['all', 'webvr'].includes(args.xr) ? function() {
-      return Promise.resolve(this.getVRDisplaysSync());
-    } : null,
     createVRDisplay() {
       const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
       fakeVrDisplay.isActive = true;
       return fakeVrDisplay;
     },
     getGamepads,
-    xr: ['all', 'webxr'].includes(args.xr) ? new XR.XR(window) : null,
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
@@ -1095,6 +1091,19 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       vrTextures = newVrTextures;
     }, */
   };
+
+  // WebVR enabled.
+  if (['all', 'webvr'].includes(args.xr)) {
+    window.navigator.getVRDisplays = function() {
+      return Promise.resolve(this.getVRDisplaysSync());
+    }
+  }
+
+  // WebXR enabled.
+  if (['all', 'webxr'].includes(args.xr)) {
+    window.navigator.xr = new XR.XR(window);
+  }
+
   window.destroy = function() {
     this._emit('destroy', {window: this});
   };
