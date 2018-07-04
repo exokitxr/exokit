@@ -31,7 +31,6 @@ const minimist = require('minimist');
 const UPNG = require('upng-js');
 
 const {version} = require('./package.json');
-const emojis = require('./assets/emojis');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
@@ -1319,10 +1318,7 @@ const _start = () => {
       dataPath,
     }));
 
-    const _getPrompt = os.platform() !== 'win32' ?
-      () => `[${emojis[Math.floor(Math.random() * emojis.length)]}] `
-    :
-      () => '[x] ';
+    const prompt = '[x] ';
 
     let lastUnderscore = window._;
     const replEval = (cmd, context, filename, callback) => {
@@ -1365,7 +1361,7 @@ const _start = () => {
           lastUnderscore = result;
         }
         if (result !== undefined) {
-          r.setPrompt(_getPrompt());
+          r.setPrompt(prompt);
         }
       } else {
         if (err.name === 'SyntaxError') {
@@ -1378,7 +1374,7 @@ const _start = () => {
       process.exit();
     }
     const r = repl.start({
-      prompt: _getPrompt(),
+      prompt,
       eval: replEval,
     });
     r.defineCommand('go', {
