@@ -13,17 +13,17 @@ describe('Element', () => {
       let clone = el.cloneNode();
       assert.notEqual(clone, el);
       assert.equal(clone.getAttribute('id'), 'foo');
-      assert.equal(clone.tagName, 'a');
-      assert.notOk(clone.parentNode);
+      assert.equal(clone.tagName, 'A');
+      assert.ok(!clone.parentNode);
     });
 
     it('clones recursively', () => {
       // Create child.
-      let child = new Element('p');
+      let child = document.createElement('p');
       child.setAttribute('id', 'bar');
 
       // Create grandchild.
-      let child2 = new Element('span');
+      let child2 = document.createElement('span');
       child2.setAttribute('id', 'qux');
 
       // Append
@@ -39,13 +39,14 @@ describe('Element', () => {
       // Assert child.
       assert.equal(clone.childNodes[0].getAttribute('id'), 'bar');
       assert.equal(clone.childNodes[0].childNodes.length, 1);
-      assert.equal(clone.childNodes[0].tagName, 'p');
+      assert.equal(clone.childNodes[0].tagName, 'P');
       assert.notEqual(clone.childNodes[0], child);
 
       // Assert grandchild.
       assert.equal(clone.childNodes[0].childNodes[0].getAttribute('id'), 'qux');
-      assert.equal(clone.childNodes[0].childNodes[0].tagName, 'span');
+      assert.equal(clone.childNodes[0].childNodes[0].tagName, 'SPAN');
       assert.notEqual(clone.childNodes[0].childNodes[0], child2);
     });
   });
 });
+
