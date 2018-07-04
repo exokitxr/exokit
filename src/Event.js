@@ -27,7 +27,13 @@ class EventTarget extends EventEmitter {
 
     const _emit = (node, event) => {
       event.currentTarget = this;
-      node._emit(event.type, event);
+
+      try {
+        node._emit(event.type, event);
+      } catch (err) {
+        console.warn(err);
+      }
+
       event.currentTarget = null;
     };
     const _recurse = (node, event) => {
