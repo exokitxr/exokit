@@ -68,7 +68,7 @@ matrix:
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - ./exokit-codesign-macos.sh
-    - npm run test:ci
+    - "./node/bin/npm run test:ci"
     deploy:
     - provider: releases
       api_key:
