@@ -68,7 +68,7 @@ matrix:
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
-    # - ./exokit-codesign-macos.sh # TODO https://github.com/webmixedreality/exokit/issues/169
+    - ./exokit-codesign-macos.sh
     deploy:
     - provider: releases
       api_key:

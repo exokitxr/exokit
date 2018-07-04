@@ -1,6 +1,7 @@
 #!/bin/sh
 
-if [ -z "${PFX_KEY}" ]
+# TODO https://github.com/webmixedreality/exokit/issues/169
+if false && [ -z "${PFX_KEY}" ]
 then
   cp appdmg.json /tmp
   appdmg /tmp/appdmg.json exokit-macos-x64.dmg
