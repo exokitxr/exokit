@@ -827,6 +827,8 @@ const _loadPromise = el => new Promise((accept, reject) => {
   el.on('load', load);
   el.on('error', error);
 });
+// To "run" the HTML means to walk it and execute behavior on the elements such as <script src="...">.
+// Each candidate element exposes a method on runSymbol which returns whether to await the element load or not.
 const _runHtml = (element, window) => {
   if (element instanceof DOM.HTMLElement) {
     return element.traverseAsync(async el => {
@@ -835,54 +837,26 @@ const _runHtml = (element, window) => {
         el._emit('attribute', 'id', id);
       }
 
-      if (el instanceof window.HTMLStyleElement) {
-        if (el.run()) {
-          if (el.childNodes.length > 0) {
-            try {
-              await _loadPromise(el)
-                .catch(err => {
-                  console.warn(err);
-                });
-            } catch(err) {
-              console.warn(err);
-            }
-          } else {
-            _loadPromise(el)
+      if (el[symbols.runSymbol]) {
+        const runResult = el[symbols.runSymbol]();
+        if (runResult === 'syncLoad') {
+          try {
+            await _loadPromise(el)
               .catch(err => {
                 console.warn(err);
               });
+          } catch(err) {
+            console.warn(err);
           }
-        }
-      } else if (el instanceof window.HTMLLinkElement) {
-        if (el.run()) {
+        } else if (runResult === 'asyncLoad') {
           _loadPromise(el)
             .catch(err => {
               console.warn(err);
             });
         }
-      } else if (el instanceof window.HTMLScriptElement) {
-        if (el.run()) {
-          const asyncAttr = el.attributes.async;
-          if (!(asyncAttr && asyncAttr.value)) {
-            try {
-              await _loadPromise(el);
-            } catch(err) {
-              console.warn(err);
-            }
-          } else {
-            _loadPromise(el)
-              .catch(err => {
-                console.warn(err);
-              });
-          }
-        }
-      } else if (el instanceof window.HTMLImageElement) {
-        if (el.run()) {
-          await _loadPromise(el);
-        }
-      } else if (el instanceof window.HTMLAudioElement || el instanceof window.HTMLVideoElement) {
-        el.run();
-      } else if (/\-/.test(el.tagName)) {
+      }
+
+      if (/\-/.test(el.tagName)) {
         const constructor = window.customElements.get(el.tagName);
         if (constructor) {
           window.customElements.upgrade(el, constructor);

@@ -1299,13 +1299,13 @@ class HTMLStyleElement extends HTMLLoadableElement {
     this._emit('innerHTML', innerHTML);
   }
 
-  run() {
+  [symbols.runSymbol]() {
     let running = false;
     if (this.childNodes.length > 0) {
       this.innerHTML = this.childNodes[0].value;
       running = true;
     }
-    return running;
+    return running ? 'syncLoad' : null;
   }
 }
 module.exports.HTMLStyleElement = HTMLStyleElement;
@@ -1368,7 +1368,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
     return this.rel === 'stylesheet';
   }
 
-  run() {
+  [symbols.runSymbol]() {
     let running = false;
     if (this.isRunnable()) {
       const hrefAttr = this.attributes.href;
@@ -1377,7 +1377,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
         running = true;
       }
     }
-    return running;
+    return running ? 'syncLoad' : null;
   }
 }
 module.exports.HTMLLinkElement = HTMLLinkElement;
@@ -1482,9 +1482,9 @@ class HTMLScriptElement extends HTMLLoadableElement {
     return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
   }
 
-  run() {
+  [symbols.runSymbol]() {
+    let running = false;
     if (this.isRunnable()) {
-      let running = false;
       const srcAttr = this.attributes.src;
       if (srcAttr) {
         this._emit('attribute', 'src', srcAttr.value);
@@ -1494,9 +1494,16 @@ class HTMLScriptElement extends HTMLLoadableElement {
         this.innerHTML = this.childNodes[0].value;
         running = true;
       }
-      return running;
+    }
+    if (running) {
+      const asyncAttr = this.attributes.async;
+      if (asyncAttr && asyncAttr.value) {
+        return 'asyncLoad';
+      } else {
+        return 'syncLoad';
+      }
     } else {
-      return false;
+      return null;
     }
   }
 }
@@ -1514,13 +1521,13 @@ class HTMLSrcableElement extends HTMLLoadableElement {
     this.setAttribute('src', value);
   }
 
-  run() {
+  [symbols.runSymbol]() {
     const srcAttr = this.attributes.src;
     if (srcAttr) {
       this._emit('attribute', 'src', srcAttr.value);
-      return true;
+      return 'asyncLoad';
     } else {
-      return false;
+      return null;
     }
   }
 }
