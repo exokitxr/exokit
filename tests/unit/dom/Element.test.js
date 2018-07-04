@@ -1,10 +1,14 @@
-const {Element} = require('../../../src/DOM');
+const assert = require('assert');
+
+const exokit = require('../../..');
 
 describe('Element', () => {
+  var document;
   var el;
 
   beforeEach(() => {
-    el = new Element('a');
+    document = exokit().document;
+    el = document.createElement('a');
   });
 
   describe('cloneNode', () => {
@@ -49,4 +53,3 @@ describe('Element', () => {
     });
   });
 });
-
