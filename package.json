@@ -12,6 +12,7 @@
   "scripts": {
     "install": "node ./preinstall.js && node-gyp rebuild",
     "build": "node-gyp rebuild",
+    "lint": "eslint core.js index.js native-bindings.js src",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 0"
@@ -76,6 +77,7 @@
     "ws": "^5.2.1"
   },
   "devDependencies": {
+    "eslint": "^5.0.1",
     "shx": "^0.3.1"
   }
 }
