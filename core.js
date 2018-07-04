@@ -1456,7 +1456,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         // preserveComments: true,
       });
       const htmlAst = _recurse(xmlAst);
-      return _parseDocumentAst(htmlAst, window[symbols.optionsSymbol], window, false);
+      return _parseDocumentAst(htmlAst, window, false);
     }
   };
   // window.Buffer = Buffer; // XXX non-standard
@@ -1781,7 +1781,7 @@ GlobalContext._makeWindow = _makeWindow;
 
 const _makeWindowWithDocument = (s, options, parent, top) => {
   const window = _makeWindow(options, parent, top);
-  window.document = _parseDocument(s, options, window);
+  window.document = _parseDocument(s, window);
   return window;
 };
 

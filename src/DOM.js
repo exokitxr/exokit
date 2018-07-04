@@ -1755,7 +1755,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 baseUrl: url,
                 dataPath: options.dataPath,
               }, parentWindow, parentWindow.top);
-              const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow[symbols.optionsSymbol], contentWindow);
+              const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
               contentDocument.hidden = this.hidden;
 
               contentWindow.document = contentDocument;
