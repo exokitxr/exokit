@@ -1631,7 +1631,21 @@ class HTMLSourceElement extends HTMLSrcableElement {
 module.exports.HTMLSourceElement = HTMLSourceElement;
 
 class HTMLImageElement extends HTMLSrcableElement {
-  constructor(attrs = [], value = '', location = null) {
+  constructor() {
+    if (typeof arguments[0] === 'number') {
+      const [width = 0, height = 0] = arguments;
+      return new HTMLImageElement([
+        {
+          name: 'width',
+          value: width + '',
+        },
+        {
+          name: 'height',
+          value: height + '',
+        },
+      ], '', null);
+    }
+    const [attrs = [], value = '', location = null] = arguments;
     super('IMG', attrs, value, location);
 
     this.data = new Uint8Array(0);
