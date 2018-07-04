@@ -1450,9 +1450,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.DragEvent = DragEvent;
   window.MessageEvent = MessageEvent;
   window.CustomEvent = CustomEvent;
-  window.addEventListener = DOM.Element.prototype.addEventListener.bind(window);
-  window.removeEventListener = DOM.Element.prototype.removeEventListener.bind(window);
-  window.dispatchEvent = DOM.Element.prototype.dispatchEvent.bind(window);
+  window.addEventListener = EventTarget.prototype.addEventListener.bind(window);
+  window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
+  window.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(window);
   window.Image = HTMLImageElementBound;
   window.ImageData = ImageData;
   window.ImageBitmap = ImageBitmap;
