@@ -22,6 +22,9 @@ const _promiseSerial = async promiseFns => {
   }
 
 };
+
+const EMPTY_ARRAY = [];
+
 class DOMRect {
   constructor(x = 0, y = 0, w = 0, h = 0) {
     this.x = x;
@@ -155,6 +158,8 @@ class Node extends EventTarget {
   cloneNode(deep = false) {
     const el = new this.constructor();
     el.attrs = this.attrs;
+    el.ownerDocument = this.ownerDocument;
+    el.tagName = this.tagName;
     el.value = this.value;
     if (deep) {
       el.childNodes = new NodeList(
@@ -525,22 +530,37 @@ class Element extends Node {
   }
 
   appendChild(childNode) {
-    if (childNode.parentNode) {
-      childNode.parentNode.removeChild(childNode);
+    var newChildren = [];
+
+    if (childNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+      // Appending DocumentFragment, append all children from node.
+      let fragment = childNode;
+      for (let i = 0; i < fragment.childNodes.length; i++) {
+        let newChildNode = fragment.childNodes[i].cloneNode(true);
+        this.childNodes.push(newChildNode);
+        newChildNode.parentNode = this;
+        newChildren.push(newChildNode);
+      }
+    } else {
+      // Normal appendChild.
+      if (childNode.parentNode) {
+        childNode.parentNode.removeChild(childNode);
+      }
+      this.childNodes.push(childNode);
+      childNode.parentNode = this;
+      newChildren.push(childNode);
     }
 
-    this.childNodes.push(childNode);
-    childNode.parentNode = this;
+    if (this._children) { this._children.update(); }
 
-    if (this._children) {
-      this._children.update();
-    }
-
-    this._emit('children', [childNode], [], this.childNodes[this.childNodes.length - 2] || null, null);
+    // Notify observers.
+    this._emit('children', newChildren, EMPTY_ARRAY,
+               this.childNodes[this.childNodes.length - 2] || null, null);
     this.ownerDocument._emit('domchange');
 
     return childNode;
   }
+
   removeChild(childNode) {
     const index = this.childNodes.indexOf(childNode);
     if (index !== -1) {

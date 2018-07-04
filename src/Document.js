@@ -49,6 +49,11 @@ function initDocument (document, window) {
     documentFragment.ownerDocument = document;
     return documentFragment;
   };
+  document.createRange = () => {
+    const range = new Range();
+    range.ownerDocument = document;
+    return range;
+  };
   document.createTextNode = text => new DOM.Text(text);
   document.createComment = comment => new DOM.Comment(comment);
   document.createEvent = type => {
@@ -236,9 +241,8 @@ class Document extends DOM.HTMLLoadableElement {
   }
 }
 module.exports.Document = Document;
-
-// FIXME: Temporary until we can refactor out into modules more and not have circular dependencies.
-require('./GlobalContext').Document = Document;
+// FIXME: Temporary until refactor out into modules more and not have circular dependencies.
+GlobalContext.Document = Document;
 
 class DocumentFragment extends DOM.HTMLElement {
   constructor() {
@@ -250,3 +254,16 @@ class DocumentFragment extends DOM.HTMLElement {
   }
 }
 module.exports.DocumentFragment = DocumentFragment;
+
+class Range extends DocumentFragment {
+  constructor() {
+    super('RANGE');
+  }
+
+  createContextualFragment(str) {
+    var fragment = this.ownerDocument.createDocumentFragment();
+    fragment.innerHTML = str;
+    return fragment;
+  }
+}
+module.exports.Range = Range;
