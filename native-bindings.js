@@ -62,7 +62,6 @@ bindings.nativeGl = (nativeGl => {
 
 const {PannerNode} = nativeAudio;
 PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
-
 nativeVr.EVRInitError = {
   None: 0,
   Unknown: 1,
