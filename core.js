@@ -1829,7 +1829,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
   WebGLRenderingContext = GlobalContext.WebGLRenderingContext = bindings.nativeGl;
   if (args.frame || args.minimalFrame) {
-    WebGLRenderingContext = (OldWebGLRenderingContext => {
+    WebGLRenderingContext = GlobalContext.WebGLRenderingContext = (OldWebGLRenderingContext => {
       function WebGLRenderingContext() {
         const result = Reflect.construct(bindings.nativeGl, arguments);
         for (const k in result) {
