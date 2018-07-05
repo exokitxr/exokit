@@ -6,7 +6,7 @@ const helpers = require('./helpers');
 let testBuffer = fs.readFileSync(path.resolve(__dirname, './data/test.ogg'));
 testBuffer = new Uint8Array(testBuffer).buffer;
 
-helpers.describeSkipCI('audio', () => {
+helpers.describeSkipCI()('audio', () => {
   var window;
 
   it('creates audio context', done => {

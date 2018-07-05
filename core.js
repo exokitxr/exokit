@@ -1841,14 +1841,18 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
      * Wrap AudioContext.DecodeAudioDataSync binding with promises and callbacks.
      */
     decodeAudioData(arrayBuffer, successCallback, errorCallback) {
-      try {
-        let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
-        if (successCallback) { successCallback(audioBuffer); }
-        return Promise.resolve(audioBuffer);
-      } catch(err) {
-        if (errorCallback) { errorCallback(err); }
-        return Promise.reject(err);
-      }
+      return new Promise((resolve, reject) => {
+        process.nextTick(() => {
+          try {
+            let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
+            if (successCallback) { successCallback(audioBuffer); }
+            resolve(audioBuffer);
+          } catch(err) {
+            if (errorCallback) { errorCallback(err); }
+            reject(err);
+          }
+        });
+      });
     }
   }
   AudioNode = nativeAudio.AudioNode;
