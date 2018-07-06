@@ -1842,19 +1842,34 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
      */
     decodeAudioData(arrayBuffer, successCallback, errorCallback) {
       return new Promise((resolve, reject) => {
-        process.nextTick(() => {
-          try {
-            let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
-            if (successCallback) { successCallback(audioBuffer); }
-            resolve(audioBuffer);
-          } catch(err) {
-            if (errorCallback) { errorCallback(err); }
-            reject(err);
+        try {
+          let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
+          if (successCallback) {
+            process.nextTick(() => {
+              try {
+                successCallback(audioBuffer);
+              } catch(err) {
+                console.warn(err);
+              }
+            });
           }
-        });
+          resolve(audioBuffer);
+        } catch(err) {
+          console.warn(err);
+          if (errorCallback) {
+            process.nextTick(() => {
+              try {
+                errorCallback(err);
+              } catch(err) {
+                console.warn(err);
+              }
+            });
+          }
+          reject(err);
+        }
       });
     }
-  }
+  };
   AudioNode = nativeAudio.AudioNode;
   AudioBufferSourceNode = nativeAudio.AudioBufferSourceNode;
   OscillatorNode = nativeAudio.OscillatorNode;

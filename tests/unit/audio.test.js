@@ -17,4 +17,22 @@ helpers.describeSkipCI()('audio', () => {
       done();
     });
   });
+
+  it('handles invalid audio context data', done => {
+    window = helpers.createWindow();
+    let context = new window.AudioContext();
+    context.decodeAudioData('foo').catch(() => {
+      done();
+    });
+  });
+
+
+  it('catches user callback error', done => {
+    window = helpers.createWindow();
+    let context = new window.AudioContext();
+    context.decodeAudioData(testBuffer, () => {
+      done();
+      throw new Error();
+    });
+  });
 });
