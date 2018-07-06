@@ -1,3 +1,4 @@
+/* global afterEach, beforeEach */
 var chai = require('chai');
 var express = require('express');
 var path = require('path');

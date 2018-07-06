@@ -1,5 +1,10 @@
+const {Node, NodeList} = require('./DOM');
+
+const emptyNodeList = new NodeList();
+
 class MutationRecord {
-  constructor(type, target, addedNodes, removedNodes, previousSibling, nextSibling, attributeName, attributeNamespace, oldValue) {
+  constructor(type, target, addedNodes, removedNodes, previousSibling, nextSibling,
+              attributeName, attributeNamespace, oldValue) {
     this.type = type;
     this.target = target;
     this.addedNodes = addedNodes;
@@ -50,24 +55,16 @@ class MutationObserver {
       let _value = null;
 
       if (this.options.attributes) {
-        if (this.options.attributeFilter) {
-          _attribute = (name, value) => {
-            if (this.options.attributeFilter.includes(name)) {
-              this.handleAttribute(el, name, value);
-            }
-          };
-        } else {
-          _attribute = (name, value) => {
-            this.handleAttribute(el, name, value);
-          };
-        }
+        _attribute = (name, value, oldValue) => {
+          this.handleAttribute(el, name, value, oldValue);
+        };
         el.on('attribute', _attribute);
       }
 
       _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
-        // if (this.options.childList) {
-          this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
-        // }
+        // TODO: Check options.childList and notify childList-listening ancestors.
+        this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
+
         if (this.options.subtree) {
           for (let i = 0; i < removedNodes.length; i++) {
             this.unbind(removedNodes[i]);
@@ -82,15 +79,11 @@ class MutationObserver {
       if (this.options.characterData) {
         _value = () => {
           this.handleValue(el);
-        }
+        };
         el.on('value', _value);
       }
 
-      this.bindings.set(el, [
-        _attribute,
-        _children,
-        _value,
-      ]);
+      this.bindings.set(el, [_attribute, _children, _value]);
     };
 
     if (this.options.subtree) {
@@ -138,27 +131,44 @@ class MutationObserver {
   }
 
   handleAttribute(el, name, value, oldValue) {
-    this.queue.push(new MutationRecord('attributes', el, null, null, null, null, name, null, oldValue));
+    // Respect attribute filter.
+    if (this.options.attributeFilter && !this.options.attributeFilter.includes(name)) {
+      return;
+    }
 
-    setImmediate(() => {
-      this.flush();
-    });
+    this.queue.push(new MutationRecord('attributes', el, emptyNodeList, emptyNodeList,
+                                       null, null, name, null, oldValue));
+    setImmediate(() => { this.flush(); });
   }
 
   handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
-    this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes, previousSibling, nextSibling, null, null, null));
+    // Include recursive children in added and removed nodes list.
+    if (addedNodes) {
+      for (let i = 0; i < addedNodes.length; i++) {
+        addedNodes[i].traverse(node => {
+          if (node.nodeType !== Node.ELEMENT_NODE || addedNodes.includes(node)) { return; }
+          addedNodes.push(node);
+        });
+      }
+    }
+    if (removedNodes) {
+      for (let i = 0; i < removedNodes.length; i++) {
+        removedNodes[i].traverse(node => {
+          if (node.nodeType !== Node.ELEMENT_NODE || removedNodes.includes(node)) { return; }
+          removedNodes.push(node);
+        });
+      }
+    }
 
-    setImmediate(() => {
-      this.flush();
-    });
+    this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes,
+                                       previousSibling, nextSibling, null, null, null));
+    setImmediate(() => { this.flush(); });
   }
 
   handleValue(el) {
-    this.queue.push(new MutationRecord('characterData', el, [], [], null, null, null, null, null));
-
-    setImmediate(() => {
-      this.flush();
-    });
+    this.queue.push(new MutationRecord('characterData', el, emptyNodeList, emptyNodeList,
+                                       null, null, null, null, null));
+    setImmediate(() => { this.flush(); });
   }
 }
 module.exports.MutationObserver = MutationObserver;

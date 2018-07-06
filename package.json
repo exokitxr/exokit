@@ -12,7 +12,7 @@
   "scripts": {
     "install": "node ./preinstall.js && node-gyp rebuild",
     "build": "node-gyp build",
-    "lint": "eslint core.js index.js native-bindings.js src",
+    "lint": "eslint core.js index.js native-bindings.js src tests",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "start": "node .",
     "test:ci": "TEST_ENV=ci npm run test:command -- --exit",

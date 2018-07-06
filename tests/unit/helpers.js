@@ -1,4 +1,4 @@
-/* global describe, suite */
+/* global describe */
 const exokit = require('../../index');
 
 module.exports.createWindow = function () {
