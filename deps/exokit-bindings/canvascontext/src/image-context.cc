@@ -56,12 +56,15 @@ void Image::RunInMainThread(uv_async_t *handle) {
   Image *image = (*iter).second;
   handleToImageMap.erase(iter);
 
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "imageLoad");
+  
   Local<Function> cbFn = Nan::New(image->cbFn);
   Local<String> arg0 = Nan::New<String>(image->error).ToLocalChecked();
   Local<Value> argv[] = {
     arg0,
   };
-  cbFn->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 
   image->cbFn.Reset();
   image->arrayBuffer.Reset();

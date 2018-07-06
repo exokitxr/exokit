@@ -2,6 +2,7 @@
 #define _CANVASCONTEXT_IMAGE_H_
 
 #include <v8.h>
+#include <node.h>
 #include <nan/nan.h>
 #include <defines.h>
 #include <canvas/include/Context.h>
