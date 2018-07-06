@@ -11,7 +11,6 @@ ADD . /app
 WORKDIR /app
 
 RUN \
-  rm -Rf dump && \
   wget "https://nodejs.org/dist/v10.4.1/node-v10.4.1-linux-x64.tar.gz" -O node.tar.gz && \
   tar -zxf node.tar.gz && \
   rm node.tar.gz && \

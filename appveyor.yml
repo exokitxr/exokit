@@ -21,7 +21,6 @@ test_script:
 
 after_test:
   - ps: |
-      rm -R -fo dump
       wget "https://nodejs.org/dist/v10.4.1/node-v10.4.1-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
