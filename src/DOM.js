@@ -7,11 +7,12 @@ const selector = require('window-selector');
 const url = require('url');
 const util = require('util');
 
+const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MouseEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
-const bindings = require('../native-bindings');
 const symbols = require('./symbols');
+const urls = require('./urls').urls;
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = require('./utils');
 
@@ -2185,7 +2186,7 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         if (urls.has(value)) {
           const blob = urls.get(value);
-          if (blob instanceof bindings.nativeVideo.VideoDevice) {
+          if (blob instanceof Bindings.bindings.nativeVideo.VideoDevice) {
             this.video = blob;
           }
         }

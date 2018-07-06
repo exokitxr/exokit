@@ -35,6 +35,7 @@ const {
 
 const puppeteer = require('puppeteer');
 
+const BindingsModule = require('./src/bindings');
 const {defaultCanvasSize} = require('./src/constants');
 const GlobalContext = require('./src/GlobalContext');
 const symbols = require('./src/symbols');
@@ -1595,6 +1596,8 @@ exokit.setVersion = newVersion => {
 /**
  * Initialize classes and modules that require native bindings.
  * Required before creating any windows or documents.
+ * Set rather than `require`d directly due to way `require` works with multithreading
+ * (for `Worker`), use this route to make sure binaries only get initialized once.
  *
  * @param {string} nativeBindingsModule - Path to native bindings JS module.
  */
@@ -1602,6 +1605,9 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   nativeBindings = true;
 
   const bindings = require(nativeBindingsModule);
+
+  // Set in binding module to be referenced from other modules.
+  for (let key in bindings) { BindingsModule[key] = bindings[key]; }
 
   nativeVm = GlobalContext.nativeVm = bindings.nativeVm;
   nativeWorker = bindings.nativeWorker;
