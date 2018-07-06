@@ -122,7 +122,7 @@ describe('HTMLSrcableElement', () => {
     });
   });
 
-  describe('<video> setAttribute', () => {
+  describe('<video>', () => {
     it('can setAttribute', done => {
       el = document.createElement('video');
       el.oncanplay = () => { done(); };
