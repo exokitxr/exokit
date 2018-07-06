@@ -156,21 +156,40 @@ class Node extends EventTarget {
   }
 
   cloneNode(deep = false) {
-    const el = new this.constructor();
-    el.attrs = this.attrs;
-    el.ownerDocument = this.ownerDocument;
-    el.tagName = this.tagName;
-    el.value = this.value;
-    if (deep) {
-      el.childNodes = new NodeList(
-        this.childNodes.map(childNode =>
-          childNode.cloneNode(true)
-        )
-      );
-    }
-    return el;
+    return _cloneNode(deep, this);
   }
 }
+
+/**
+ * Clone node. Internal function to not expose the `sourceNode` and `parentNode` args
+ * used to facilitate recursive cloning.
+ *
+ * @param {boolean} deep - Recursive.
+ * @param {object} sourceNode - Node to clone.
+ * @param {parentNode} parentNode - Used for recursive cloning to attach parent.
+ */
+function _cloneNode(deep, sourceNode, parentNode) {
+  const clone = new sourceNode.constructor();
+  clone.attrs = sourceNode.attrs;
+  clone.ownerDocument = sourceNode.ownerDocument;
+  clone.tagName = sourceNode.tagName;
+  clone.value = sourceNode.value;
+
+  // Link the parent.
+  if (parentNode) { clone.parentNode = parentNode; }
+
+  // Copy children.
+  if (deep) {
+    clone.childNodes = new NodeList(
+      sourceNode.childNodes.map(childNode =>
+        _cloneNode(true, childNode, clone)
+      )
+    );
+  }
+
+  return clone;
+}
+
 Node.ELEMENT_NODE = 1;
 Node.TEXT_NODE = 3;
 Node.PROCESSING_INSTRUCTION_NODE = 7;
