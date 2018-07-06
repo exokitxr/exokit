@@ -43,6 +43,21 @@ describe('HTMLSrcableElement', () => {
       el.onerror = err => { done(err); };
       el.src = imageDataUri;
     });
+
+    it('is async', done => {
+      el = document.createElement('img');
+      let passed = false;
+      el.onload = () => {
+        if (passed) {
+          done(); 
+        } else {
+          done(new Error('seems sync'));
+        }
+      };
+      passed = true;
+      el.onerror = err => { done(err); };
+      el.src = `${TEST_URL}/test.png`;
+    });
   });
 
   helpers.describeSkipCI('<audio>', () => {
@@ -66,6 +81,21 @@ describe('HTMLSrcableElement', () => {
       el.onerror = err => { done(err); };
       el.src = audioDataUri;
     });
+
+    it('is async', done => {
+      el = document.createElement('audio');
+      let passed = false;
+      el.oncanplay = () => {
+        if (passed) {
+          done(); 
+        } else {
+          done(new Error('seems sync'));
+        }
+      };
+      passed = true;
+      el.onerror = err => { done(err); };
+      el.src = `${TEST_URL}/test.ogg`;
+    });
   });
 
   describe('<video> setAttribute', () => {
@@ -82,12 +112,27 @@ describe('HTMLSrcableElement', () => {
       el.onerror = err => { done(err); };
       el.src = `${TEST_URL}/test.mp4`;
     })
-
+    
     it('works with data url', done => {
       el = document.createElement('video');
       el.oncanplay = () => { done(); };
       el.onerror = err => { done(err); };
       el.src = videoDataUri;
-    });;
+    });
+
+    it('is async', done => {
+      el = document.createElement('video');
+      let passed = false;
+      el.oncanplay = () => {
+        if (passed) {
+          done(); 
+        } else {
+          done(new Error('seems sync'));
+        }
+      };
+      passed = true;
+      el.onerror = err => { done(err); };
+      el.src = `${TEST_URL}/test.mp4`;
+    });
   });
 });
