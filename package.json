@@ -15,7 +15,7 @@
     "lint": "eslint core.js index.js native-bindings.js src",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "start": "node .",
-    "test:ci": "cross-env NODE_ENV=test mocha tests/unit/**/*.test.js",
+    "test:ci": "cross-env NODE_ENV=test TEST_ENV=ci mocha tests/unit/**/*.test.js",
     "test:watch": "cross-env NODE_ENV=test mocha --watch tests/unit/**/*.test.js"
   },
   "repository": {

@@ -549,131 +549,6 @@ class MLDisplay extends MRDisplay {
   }
 }
 
-class AudioNode {
-  connect() {}
-}
-class AudioDestinationNode extends AudioNode {}
-class AudioListener extends AudioNode {
-  constructor() {
-    super();
-
-    this.positionX = new AudioParam();
-    this.positionY = new AudioParam();
-    this.positionZ = new AudioParam();
-    this.forwardX = new AudioParam();
-    this.forwardY = new AudioParam();
-    this.forwardZ = new AudioParam();
-    this.upX = new AudioParam();
-    this.upY = new AudioParam();
-    this.upZ = new AudioParam();
-  }
-
-  setPosition(x, y, z) {
-    this.positionX.value = x;
-    this.positionY.value = y;
-    this.positionZ.value = z;
-  }
-
-  setOrientation(fx, fy, fz, ux, uy, uz) {
-    this.forwardX.value = fx;
-    this.forwardY.value = fy;
-    this.forwardZ.value = fz;
-    this.upX.value = ux;
-    this.upY.value = uy;
-    this.upZ.value = uz;
-  }
-}
-class AudioParam {
-  constructor() {
-    this.value = 0;
-    this.minValue = 0;
-    this.maxValue = 0;
-    this.defaultValue = 0;
-  }
-
-  setValueAtTime() {}
-  exponentialRampToValueAtTime() {}
-  cancelScheduledValues() {}
-}
-class GainNode extends AudioNode {
-  constructor() {
-    super();
-
-    this.gain = new AudioParam();
-  }
-}
-class AnalyserNode extends AudioNode {}
-class PannerNode extends AudioNode {
-  setPosition() {}
-}
-class BiquadFilterNode extends AudioNode {
-  constructor() {
-    super();
-
-    this.frequency = new AudioParam();
-    this.detune = new AudioParam();
-    this.Q = new AudioParam();
-    this.gain = new AudioParam();
-    this.type = '';
-  }
-}
-class AudioBuffer {}
-class AudioBufferSourceNode extends AudioNode {}
-class OscillatorNode extends AudioNode {}
-class StereoPannerNode extends AudioNode {}
-class AudioContext {
-  constructor() {
-    this.listener = new AudioListener();
-
-    this._startTime = 0;
-    this._startTimestamp = Date.now();
-  }
-
-  get currentTime() {
-    return this._startTime + (this._startTimestamp !== null ? (Date.now() - this._startTimestamp) : 0);
-  }
-  set currentTime(currentTime) {}
-
-  suspend() {
-    this._startTime = this.currentTime;
-    this._startTimestamp = null;
-    return Promise.resolve();
-  }
-  resume() {
-    this._startTimestamp = Date.now();
-    return Promise.resolve();
-  }
-  close() {
-    this._startTimestamp = null;
-    return Promise.resolve();
-  }
-
-  createMediaElementSource() {
-    return new AudioNode();
-  }
-  createMediaStreamSource() {
-    return new AudioNode();
-  }
-  createBufferSource() {
-    return new AudioNode();
-  }
-  createGain() {
-    return new GainNode();
-  }
-  createAnalyser() {
-    return new AnalyserNode();
-  }
-  createPanner() {
-    return new PannerNode();
-  }
-  createBiquadFilter() {
-    return new BiquadFilterNode();
-  }
-  createBuffer() {
-    return new AudioBuffer();
-  }
-}
-
 class MediaRecorder extends EventEmitter {
   constructor() {
     super();
@@ -827,6 +702,7 @@ const _loadPromise = el => new Promise((accept, reject) => {
   el.on('load', load);
   el.on('error', error);
 });
+
 // To "run" the HTML means to walk it and execute behavior on the elements such as <script src="...">.
 // Each candidate element exposes a method on runSymbol which returns whether to await the element load or not.
 const _runHtml = (element, window) => {
@@ -1960,7 +1836,40 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   };
 
   const {nativeAudio} = bindings;
-  AudioContext = nativeAudio.AudioContext;
+  AudioContext = class AudioContext extends nativeAudio.AudioContext {
+    /**
+     * Wrap AudioContext.DecodeAudioDataSync binding with promises and callbacks.
+     */
+    decodeAudioData(arrayBuffer, successCallback, errorCallback) {
+      return new Promise((resolve, reject) => {
+        try {
+          let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
+          if (successCallback) {
+            process.nextTick(() => {
+              try {
+                successCallback(audioBuffer);
+              } catch(err) {
+                console.warn(err);
+              }
+            });
+          }
+          resolve(audioBuffer);
+        } catch(err) {
+          console.warn(err);
+          if (errorCallback) {
+            process.nextTick(() => {
+              try {
+                errorCallback(err);
+              } catch(err) {
+                console.warn(err);
+              }
+            });
+          }
+          reject(err);
+        }
+      });
+    }
+  };
   AudioNode = nativeAudio.AudioNode;
   AudioBufferSourceNode = nativeAudio.AudioBufferSourceNode;
   OscillatorNode = nativeAudio.OscillatorNode;
