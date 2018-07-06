@@ -6,6 +6,8 @@ class EventTarget extends EventEmitter {
   constructor() {
     super();
 
+    this.setMaxListeners(Infinity);
+
     this.on('error', err => {
       console.warn(err);
     });
