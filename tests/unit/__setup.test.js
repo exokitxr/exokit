@@ -9,7 +9,7 @@ var core = require('../../core');
 core.setNativeBindingsModule(path.resolve('native-bindings.js'));
 
 global.assert = chai.assert;
-global.TEST_URL = `http://localhost:${PORT}`;
+global.TEST_URL = `http://127.0.0.1:${PORT}`;
 
 const server = express();
 let serverListener;
