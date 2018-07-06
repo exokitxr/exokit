@@ -1,4 +1,4 @@
-/* global assert, beforeEach, describe */
+/* global assert, beforeEach, describe, it, TEST_URL */
 const fs = require('fs');
 const path = require('path');
 
@@ -14,7 +14,7 @@ const imageUri = `data:image/img;base64,${imageData}`;
 const videoData = fs.readFileSync(path.resolve(__dirname, '../data/test.mp4'), 'base64');
 const videoUri = `data:video/mp4;base64,${videoData}`;
 
-describe('MediaElement', () => {
+describe('HTMLSrcableElement', () => {
   var document;
   var el;
 
@@ -22,24 +22,27 @@ describe('MediaElement', () => {
     document = exokit().document;
   });
 
-  describe('<video>', () => {
-    it('can set src', () => {
-      el = document.createElement('video');
-      el.setAttribute('src', videoUri);
+  helpers.describeSkipCI('<audio>', () => {
+    it('can set src', done => {
+      el = document.createElement('audio');
+      el.oncanplay = () => { done(); };
+      el.setAttribute('src', `${TEST_URL}/test.ogg`);
     });
   });
 
   describe('<img>', () => {
-    it('can set src', () => {
+    it('can set src', done => {
       el = document.createElement('img');
-      el.setAttribute('src', imageUri);
+      el.onload = () => { done(); };
+      el.setAttribute('src', `${TEST_URL}/test.png`);
     });
   });
 
-  helpers.describeSkipCI('<audio>', () => {
-    it('can set src', () => {
-      el = document.createElement('audio');
-      el.setAttribute('src', audioUri);
+  describe('<video>', () => {
+    it('can set src', done => {
+      el = document.createElement('video');
+      el.oncanplay = () => { done(); };
+      el.setAttribute('src', `${TEST_URL}/test.mp4`);
     });
   });
 });

@@ -1616,6 +1616,27 @@ class HTMLMediaElement extends HTMLSrcableElement {
     return ''; // XXX
   }
 
+  get oncanplay() {
+    return _elementGetter(this, 'canplay');
+  }
+  set oncanplay(oncanplay) {
+    _elementSetter(this, 'canplay', oncanplay);
+  }
+
+  get oncanplaythrough() {
+    return _elementGetter(this, 'canplaythrough');
+  }
+  set oncanplaythrough(oncanplaythrough) {
+    _elementSetter(this, 'canplaythrough', oncanplaythrough);
+  }
+
+  get onerror() {
+    return _elementGetter(this, 'error');
+  }
+  set onerror(onerror) {
+    _elementSetter(this, 'error', onerror);
+  }
+
   get HAVE_NOTHING() {
     return HTMLMediaElement.HAVE_NOTHING;
   }
@@ -2149,27 +2170,6 @@ class HTMLAudioElement extends HTMLMediaElement {
       this.audio.duration = duration;
     }
   }
-
-  get oncanplay() {
-    return _elementGetter(this, 'canplay');
-  }
-  set oncanplay(oncanplay) {
-    _elementSetter(this, 'canplay', oncanplay);
-  }
-
-  get oncanplaythrough() {
-    return _elementGetter(this, 'canplaythrough');
-  }
-  set oncanplaythrough(oncanplaythrough) {
-    _elementSetter(this, 'canplaythrough', oncanplaythrough);
-  }
-
-  get onerror() {
-    return _elementGetter(this, 'error');
-  }
-  set onerror(onerror) {
-    _elementSetter(this, 'error', onerror);
-  }
 };
 module.exports.HTMLAudioElement = HTMLAudioElement;
 
@@ -2385,27 +2385,6 @@ class HTMLVideoElement extends HTMLMediaElement {
     if (this.video) {
       this.video.duration = duration;
     }
-  }
-
-  get oncanplay() {
-    return _elementGetter(this, 'canplay');
-  }
-  set oncanplay(oncanplay) {
-    _elementSetter(this, 'canplay', oncanplay);
-  }
-
-  get oncanplaythrough() {
-    return _elementGetter(this, 'canplaythrough');
-  }
-  set oncanplaythrough(oncanplaythrough) {
-    _elementSetter(this, 'canplaythrough', oncanplaythrough);
-  }
-
-  get onerror() {
-    return _elementGetter(this, 'error');
-  }
-  set onerror(onerror) {
-    _elementSetter(this, 'error', onerror);
   }
 
   run() {
