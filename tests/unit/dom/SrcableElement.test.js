@@ -44,6 +44,13 @@ describe('HTMLSrcableElement', () => {
       el.src = imageDataUri;
     });
 
+    it('supports addEventListener', done => {
+      el = document.createElement('img');
+      el.addEventListener('load', () => { done(); });
+      el.addEventListener('error', err => { done(err); });
+      el.src = `${TEST_URL}/test.png`;
+    });
+
     it('is async', done => {
       el = document.createElement('img');
       let passed = false;
@@ -82,6 +89,13 @@ describe('HTMLSrcableElement', () => {
       el.src = audioDataUri;
     });
 
+    it('supports addEventListener', done => {
+      el = document.createElement('audio');
+      el.addEventListener('canplay', () => { done(); });
+      el.addEventListener('error', err => { done(err); });
+      el.src = `${TEST_URL}/test.ogg`;
+    });
+
     it('is async', done => {
       el = document.createElement('audio');
       let passed = false;
@@ -118,6 +132,13 @@ describe('HTMLSrcableElement', () => {
       el.oncanplay = () => { done(); };
       el.onerror = err => { done(err); };
       el.src = videoDataUri;
+    });
+
+    it('supports addEventListener', done => {
+      el = document.createElement('video');
+      el.addEventListener('canplay', () => { done(); });
+      el.addEventListener('error', err => { done(err); });
+      el.src = `${TEST_URL}/test.mp4`;
     });
 
     it('is async', done => {
