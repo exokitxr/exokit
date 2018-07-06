@@ -285,7 +285,7 @@ NAN_METHOD(AudioContext::_DecodeAudioDataSync) {
 
     info.GetReturnValue().Set(audioBufferObj);
   } else {
-    Nan::ThrowError("AudioContext::CreateMediaElementSource: invalid arguments");
+    Nan::ThrowError("AudioContext::_DecodeAudioDataSync: invalid arguments");
   }
 }
 
