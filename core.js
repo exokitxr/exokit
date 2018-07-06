@@ -202,108 +202,12 @@ class CustomElementRegistry {
     constructor.call(el);
   }
 }
-let Image = null;
-class ImageData {
-  constructor(width, height) {
-    this.width = width;
-    this.height = height;
-    this.data = new Uint8ClampedArray(0);
-  }
-}
-class ImageBitmap {
-  constructor() {
-    if (arguments.length === 1) {
-      const [image] = arguments;
-      this.width = image.width;
-      this.height = image.height;
-      this.data = image.data;
-    } else if (arguments.length === 3) {
-      const [width, height, data] = arguments;
-      this.width = width;
-      this.height = height;
-      this.data = data;
-    } else {
-      throw new Error('invalid arguments');
-    }
-  }
-}
-ImageBitmap.createImageBitmap = function() {
-  return Reflect.construct(ImageBitmap, arguments);
-};
+
 let nativeVm = GlobalContext.nativeVm = null;
 class nativeWorker {
   terminate() {}
 }
-class Path2D {
-  moveTo() {}
-  lineTo() {}
-  quadraticCurveTo() {}
-}
-class CanvasGradient {}
-class CanvasRenderingContext2D {
-  drawImage() {}
-  fillRect() {}
-  clearRect() {}
-  fillText() {}
-  stroke() {}
-  scale() {}
-  measureText() {
-    return {width: 0};
-  }
-  createImageData(w, h) {
-    return new ImageData(w, h);
-  }
-  getImageData(sx, sy, sw, sh) {
-    return new ImageData(sw, sh);
-  }
-  putImageData() {}
-}
-const VERSION = Symbol();
-class WebGLRenderingContext {
-  get VERSION() {
-    return VERSION;
-  }
-  getExtension() {
-    return null;
-  }
-  getParameter(param) {
-    if (param === VERSION) {
-      return 'WebGL 1';
-    } else {
-      return null;
-    }
-  }
-  createTexture() {}
-  bindTexture() {}
-  texParameteri() {}
-  texImage2D() {}
-  createProgram() {}
-  createShader() {}
-  shaderSource() {}
-  compileShader() {}
-  getShaderParameter() {}
-  getShaderInfoLog() {
-    return '';
-  }
-  attachShader() {}
-  linkProgram() {}
-  getProgramInfoLog() {
-    return '';
-  }
-  getProgramParameter() {}
-  deleteShader() {}
-  clearColor() {}
-  clearDepth() {}
-  clearStencil() {}
-  enable() {}
-  disable() {}
-  depthFunc() {}
-  frontFace() {}
-  cullFace() {}
-  blendEquationSeparate() {}
-  blendFuncSeparate() {}
-  viewport() {}
-}
+
 class Screen {
   constructor(window) {
     this._window = window;
@@ -561,8 +465,6 @@ class MediaRecorder extends EventEmitter {
   requestData() {}
 }
 
-class MicrophoneMediaStream {}
-
 class DataTransfer {
   constructor({items = [], files = []} = {}) {
     this.items = items;
@@ -818,9 +720,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     constructor() {
       super(...arguments);
 
-      this.ownerDocument = window.document; // need to set owner document here because HTMLImageElement can be manually constructed via new Image()
+      // need to set owner document here because HTMLImageElement can be manually constructed via new Image()
+      this.ownerDocument = window.document;
     }
-  })(HTMLImageElement);
+  })(DOM.HTMLImageElement);
+
   const HTMLAudioElementBound = (Old => class HTMLAudioElement extends Old {
     constructor(src) {
       if (typeof src === 'string') {
@@ -830,10 +734,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       } else {
         super(...arguments);
 
-        this.ownerDocument = window.document; // need to set owner document here because HTMLAudioElement can be manually constructed via new Audio()
+        // need to set owner document here because HTMLAudioElement can be manually constructed via new Audio()
+        this.ownerDocument = window.document;
       }
     }
-  })(HTMLAudioElement);
+  })(DOM.HTMLAudioElement);
+
   function createImageBitmap(src, x, y, w, h, options) {
     let image;
     if (src.constructor.name === 'HTMLImageElement') {
@@ -1077,7 +983,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     LINK: DOM.HTMLLinkElement,
     IMG: HTMLImageElementBound,
     AUDIO: HTMLAudioElementBound,
-    VIDEO: HTMLVideoElement,
+    VIDEO: DOM.HTMLVideoElement,
     SOURCE: DOM.HTMLSourceElement,
     IFRAME: DOM.HTMLIFrameElement,
     CANVAS: DOM.HTMLCanvasElement,
@@ -1095,7 +1001,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.HTMLScriptElement = DOM.HTMLScriptElement;
   window.HTMLImageElement = HTMLImageElementBound,
   window.HTMLAudioElement = HTMLAudioElementBound;
-  window.HTMLVideoElement = HTMLVideoElement;
+  window.HTMLVideoElement = DOM.HTMLVideoElement;
   window.SVGElement = DOM.SVGElement;
   window.HTMLIFrameElement = DOM.HTMLIFrameElement;
   window.HTMLCanvasElement = DOM.HTMLCanvasElement;
@@ -1685,6 +1591,13 @@ exokit.setArgs = newArgs => {
 exokit.setVersion = newVersion => {
   version = newVersion;
 };
+
+/**
+ * Initialize classes and modules that require native bindings.
+ * Required before creating any windows or documents.
+ *
+ * @param {string} nativeBindingsModule - Path to native bindings JS module.
+ */
 exokit.setNativeBindingsModule = nativeBindingsModule => {
   nativeBindings = true;
 
@@ -1728,112 +1641,6 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
       return WebGLRenderingContext;
     })(WebGLRenderingContext);
   }
-
-  HTMLImageElement = class extends DOM.HTMLSrcableElement {
-    constructor(...args) {
-      if (typeof arguments[0] === 'number') {
-        const [width = 0, height = 0] = arguments;
-        return new HTMLImageElement([
-          {
-            name: 'width',
-            value: width + '',
-          },
-          {
-            name: 'height',
-            value: height + '',
-          },
-        ], '', null);
-      }
-      const [attrs = [], value = '', location = null] = arguments;
-      super('IMG', attrs, value, location);
-
-      this.image = new bindings.nativeImage();
-
-      this.on('attribute', (name, value) => {
-        if (name === 'src') {
-          const src = value;
-
-          const resource = this.ownerDocument.resources.addResource();
-
-          this.ownerDocument.defaultView.fetch(src)
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.arrayBuffer();
-              } else {
-                return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-              }
-            })
-            .then(arrayBuffer => new Promise((accept, reject) => {
-              this.image.load(arrayBuffer, err => {
-                if (!err) {
-                  accept();
-                } else {
-                  reject(new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength}, message: ${err})`));
-                }
-              });
-            }))
-            .then(() => {
-              this.dispatchEvent(new Event('load', {target: this}));
-            })
-            .catch(err => {
-              console.warn('failed to load image:', src);
-              this.dispatchEvent(new Event('error', {target: this}));
-            })
-            .finally(() => {
-              resource.setProgress(1);
-            });
-        }
-      });
-    }
-
-    get src() {
-      return this.getAttribute('src');
-    }
-    set src(src) {
-      this.setAttribute('src', src);
-    }
-
-    get onload() {
-      return _elementGetter(this, 'load');
-    }
-    set onload(onload) {
-      _elementSetter(this, 'load', onload);
-    }
-
-    get onerror() {
-      return _elementGetter(this, 'error');
-    }
-    set onerror(onerror) {
-      _elementSetter(this, 'error', onerror);
-    }
-
-    get width() {
-      return this.image.width;
-    }
-    set width(width) {}
-    get height() {
-      return this.image.height;
-    }
-    set height(height) {}
-
-    get naturalWidth() {
-      return this.width;
-    }
-    set naturalWidth(naturalWidth) {}
-    get naturalHeight() {
-      return this.height;
-    }
-    set naturalHeight(naturalHeight) {}
-
-    getBoundingClientRect() {
-      return new DOMRect(0, 0, this.width, this.height);
-    }
-
-    get data() {
-      return this.image.data;
-    }
-    set data(data) {}
-  };
 
   const {nativeAudio} = bindings;
   AudioContext = class AudioContext extends nativeAudio.AudioContext {
@@ -1880,96 +1687,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   AnalyserNode = nativeAudio.AnalyserNode;
   PannerNode = nativeAudio.PannerNode;
   StereoPannerNode = nativeAudio.StereoPannerNode;
-  HTMLAudioElement = class extends DOM.HTMLMediaElement {
-    constructor(attrs = [], value = '') {
-      super('AUDIO', attrs, value);
 
-      this.readyState = DOM.HTMLMediaElement.HAVE_NOTHING;
-      this.audio = new nativeAudio.Audio();
-
-      this.on('attribute', (name, value) => {
-        if (name === 'src') {
-          const src = value;
-
-          const resource = this.ownerDocument.resources.addResource();
-
-          this.ownerDocument.defaultView.fetch(src)
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.arrayBuffer();
-              } else {
-                return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-              }
-            })
-            .then(arrayBuffer => {
-              try {
-                this.audio.load(arrayBuffer);
-              } catch(err) {
-                throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-              }
-            })
-            .then(() => {
-              this.readyState = DOM.HTMLMediaElement.HAVE_ENOUGH_DATA;
-              this._emit('canplay');
-              this._emit('canplaythrough');
-            })
-            .catch(err => {
-              console.warn('failed to load audio:', src);
-              this.dispatchEvent(new Event('error', {target: this}));
-            })
-            .finally(() => {
-              resource.setProgress(1);
-            });
-        }
-      });
-    }
-
-    play() {
-      this.audio.play();
-    }
-    pause() {
-      this.audio.pause();
-    }
-
-    get currentTime() {
-      return this.audio && this.audio.currentTime;
-    }
-    set currentTime(currentTime) {
-      if (this.audio) {
-        this.audio.currentTime = currentTime;
-      }
-    }
-
-    get duration() {
-      return this.audio && this.audio.duration;
-    }
-    set duration(duration) {
-      if (this.audio) {
-        this.audio.duration = duration;
-      }
-    }
-
-    get oncanplay() {
-      return _elementGetter(this, 'canplay');
-    }
-    set oncanplay(oncanplay) {
-      _elementSetter(this, 'canplay', oncanplay);
-    }
-
-    get oncanplaythrough() {
-      return _elementGetter(this, 'canplaythrough');
-    }
-    set oncanplaythrough(oncanplaythrough) {
-      _elementSetter(this, 'canplaythrough', oncanplaythrough);
-    }
-
-    get onerror() {
-      return _elementGetter(this, 'error');
-    }
-    set onerror(onerror) {
-      _elementSetter(this, 'error', onerror);
-    }
-  };
   MicrophoneMediaStream = nativeAudio.MicrophoneMediaStream;
 
   const {nativeVideo} = bindings;
@@ -1978,273 +1696,6 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   // Video.getDevices fails after opening a webcam, so in order to
   // open multiple webcams we need to call this once on startup.
   const devices = Video.getDevices();
-  HTMLVideoElement = class extends DOM.HTMLMediaElement {
-    constructor(attrs = [], value = '', location = null) {
-      super('VIDEO', attrs, value, location);
-
-      this.readyState = DOM.HTMLMediaElement.HAVE_NOTHING;
-      this.data = new Uint8Array(0);
-
-      this.on('attribute', (name, value) => {
-        if (name === 'src') {
-          this.readyState = DOM.HTMLMediaElement.HAVE_ENOUGH_DATA;
-
-          if (urls.has(value)) {
-            const blob = urls.get(value);
-            if (blob instanceof VideoDevice) {
-              this.video = blob;
-            }
-          }
-
-          const resource = this.ownerDocument.resources.addResource();
-
-          process.nextTick(() => {
-            this.dispatchEvent(new Event('canplay', {target: this}));
-            this.dispatchEvent(new Event('canplaythrough', {target: this}));
-
-            resource.setProgress(1);
-          });
-        }
-      });
-    }
-
-    get width() {
-      return this.video ? this.video.width : 0;
-    }
-    set width(width) {}
-    get height() {
-      return this.video ? this.video.height : 0;
-    }
-    set height(height) {}
-
-    get autoplay() {
-      return this.getAttribute('autoplay');
-    }
-    set autoplay(autoplay) {
-      this.setAttribute('autoplay', autoplay);
-    }
-
-    getBoundingClientRect() {
-      return new DOMRect(0, 0, this.width, this.height);
-    }
-
-    get data() {
-      return this.video ? this.video.data : null;
-    }
-    set data(data) {}
-
-    play() {
-      const _getDevice = facingMode => {
-        switch (facingMode) {
-          case 'user': return devices[0];
-          case 'environment': return devices[1];
-          case 'left': return devices[2];
-          case 'right': return devices[3];
-          default: return devices[0];
-        }
-      }
-      const _getName = facingMode => (process.platform === 'darwin' ? '' : 'video=') + _getDevice(facingMode).name;
-      const _getOptions = facingMode => {
-        if (process.platform === 'darwin') {
-          return 'framerate='+_getDevice(facingMode).modes[0].fps;
-        } else {
-          return null;
-        }
-      }
-      if (this.video) {
-        this.video.close();
-        this.video.open(
-          _getName(this.video.constraints.facingMode),
-          _getOptions(this.video.constraints.facingMode)
-        );
-      }
-    }
-    pause() {
-      if (this.video) {
-        this.video.close();
-      }
-    }
-    update() {
-      if (this.video) {
-        this.video.update();
-      }
-    }
-  }
-
-  /* const {nativeVideo} = bindings;
-  HTMLVideoElement = class extends DOM.HTMLMediaElement {
-    constructor(attrs = [], value = '') {
-      super('VIDEO', attrs, value);
-
-      this.readyState = DOM.HTMLMediaElement.HAVE_NOTHING;
-      this.video = new nativeVideo.Video();
-
-      this.on('attribute', (name, value) => {
-        if (name === 'src') {
-          console.log('video downloading...');
-          const src = value;
-          this.ownerDocument.defaultView.fetch(src)
-            .then(res => {
-              console.log('video download res');
-              if (res.status >= 200 && res.status < 300) {
-                return res.arrayBuffer();
-              } else {
-                return Promise.reject(new Error(`video src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-              }
-            })
-            .then(arrayBuffer => {
-              console.log('video download arraybuffer');
-              try {
-                this.video.load(arrayBuffer);
-              } catch(err) {
-                throw new Error(`failed to decode video: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-              }
-            })
-            .then(() => {
-              console.log('video download done');
-              this.readyState = DOM.HTMLMediaElement.HAVE_ENOUGH_DATA;
-              this._emit('canplay');
-              this._emit('canplaythrough');
-            })
-            .catch(err => {
-              this._emit('error', err);
-            });
-        } else if (name === 'loop') {
-          this.video.loop = !!value || value === '';
-        } else if (name === 'autoplay') {
-          const autoplay = !!value || value === '';
-          if (autoplay) {
-            console.log('video set autoplay');
-            const canplay = () => {
-              console.log('video autoplay play');
-              this.video.play();
-              _cleanup();
-            };
-            const error = () => {
-              _cleanup();
-            };
-            const _cleanup = () => {
-              this.removeListener('canplay', canplay);
-              this.removeListener('error', error);
-            };
-            this.on('canplay', canplay);
-            this.on('error', error);
-          }
-        }
-      });
-    }
-
-    get width() {
-      return this.video.width;
-    }
-    set width(width) {}
-    get height() {
-      return this.video.height;
-    }
-    set height(height) {}
-
-    get loop() {
-      return this.getAttribute('loop');
-    }
-    set loop(loop) {
-      this.setAttribute('loop', loop);
-    }
-
-    get autoplay() {
-      return this.getAttribute('autoplay');
-    }
-    set autoplay(autoplay) {
-      this.setAttribute('autoplay', autoplay);
-    }
-
-    getBoundingClientRect() {
-      return new DOMRect(0, 0, this.width, this.height);
-    }
-
-    get data() {
-      return this.video.data;
-    }
-    set data(data) {}
-
-    play() {
-      this.video.play();
-    }
-    pause() {
-      this.video.pause();
-    }
-
-    get currentTime() {
-      return this.video && this.video.currentTime;
-    }
-    set currentTime(currentTime) {
-      if (this.video) {
-        this.video.currentTime = currentTime;
-      }
-    }
-
-    get duration() {
-      return this.video && this.video.duration;
-    }
-    set duration(duration) {
-      if (this.video) {
-        this.video.duration = duration;
-      }
-    }
-
-    get oncanplay() {
-      return _elementGetter(this, 'canplay');
-    }
-    set oncanplay(oncanplay) {
-      _elementSetter(this, 'canplay', oncanplay);
-    }
-
-    get oncanplaythrough() {
-      return _elementGetter(this, 'canplaythrough');
-    }
-    set oncanplaythrough(oncanplaythrough) {
-      _elementSetter(this, 'canplaythrough', oncanplaythrough);
-    }
-
-    get onerror() {
-      return _elementGetter(this, 'error');
-    }
-    set onerror(onerror) {
-      _elementSetter(this, 'error', onerror);
-    }
-
-    run() {
-      let running = false;
-
-      let sources;
-      const srcAttr = this.attributes.src;
-      if (srcAttr) {
-        this._emit('attribute', 'src', srcAttr.value);
-        running = true;
-      } else if (sources = this.childNodes.filter(childNode => childNode.nodeType === Node.ELEMENT_NODE && childNode.matches('source'))) {
-        for (let i = 0; i < sources.length; i++) {
-          const source = sources[i];
-          const {src} = source;
-          if (src) {
-            this.src = src;
-            running = true;
-            break;
-          }
-        }
-      }
-      const loopAttr = this.attributes.loop;
-      const loopAttrValue = loopAttr && loopAttr.value;
-      if (loopAttrValue || loopAttrValue === '') {
-        this.loop = loopAttrValue;
-      }
-      const autoplayAttr = this.attributes.loop;
-      const autoplayAttrValue = autoplayAttr && autoplayAttr.value;
-      if (autoplayAttrValue || autoplayAttrValue === '') {
-        this.autoplay = autoplayAttrValue;
-      }
-
-      return running;
-    }
-  }; */
 
   nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
   nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
