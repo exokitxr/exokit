@@ -53,6 +53,7 @@ describe('HTMLSrcableElement', () => {
 
     it('is async', done => {
       el = document.createElement('img');
+
       let passed = false;
       el.onload = () => {
         if (passed) {
@@ -61,8 +62,12 @@ describe('HTMLSrcableElement', () => {
           done(new Error('seems sync'));
         }
       };
-      passed = true;
       el.onerror = err => { done(err); };
+
+      process.nextTick(() => {
+        passed = true;
+      });
+
       el.src = `${TEST_URL}/test.png`;
     });
   });
@@ -98,6 +103,7 @@ describe('HTMLSrcableElement', () => {
 
     it('is async', done => {
       el = document.createElement('audio');
+
       let passed = false;
       el.oncanplay = () => {
         if (passed) {
@@ -106,8 +112,12 @@ describe('HTMLSrcableElement', () => {
           done(new Error('seems sync'));
         }
       };
-      passed = true;
       el.onerror = err => { done(err); };
+
+      process.nextTick(() => {
+        passed = true;
+      });
+
       el.src = `${TEST_URL}/test.ogg`;
     });
   });
@@ -143,6 +153,7 @@ describe('HTMLSrcableElement', () => {
 
     it('is async', done => {
       el = document.createElement('video');
+
       let passed = false;
       el.oncanplay = () => {
         if (passed) {
@@ -153,6 +164,11 @@ describe('HTMLSrcableElement', () => {
       };
       passed = true;
       el.onerror = err => { done(err); };
+
+      process.nextTick(() => {
+        passed = true;
+      });
+
       el.src = `${TEST_URL}/test.mp4`;
     });
   });
