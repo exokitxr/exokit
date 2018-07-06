@@ -1608,6 +1608,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   // Set in binding module to be referenced from other modules.
   for (let key in bindings) { BindingsModule[key] = bindings[key]; }
+  console.log(BindingsModule);
 
   nativeVm = GlobalContext.nativeVm = bindings.nativeVm;
   nativeWorker = bindings.nativeWorker;

@@ -1,6 +1,8 @@
 /* global assert, beforeEach, describe */
 const fs = require('fs');
 const path = require('path');
+
+const helpers = require('../helpers');
 const exokit = require('../../../index');
 
 const audioData = fs.readFileSync(path.resolve(__dirname, '../data/test.ogg'), 'base64');
@@ -34,7 +36,7 @@ describe('MediaElement', () => {
     });
   });
 
-  describe('<audio>', () => {
+  helpers.describeSkipCI('<audio>', () => {
     it('can set src', () => {
       el = document.createElement('audio');
       el.setAttribute('src', audioUri);
