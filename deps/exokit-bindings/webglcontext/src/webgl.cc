@@ -623,6 +623,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "blendFunc", glCallWrap<BlendFunc>);
   Nan::SetMethod(proto, "enableVertexAttribArray", glCallWrap<EnableVertexAttribArray>);
   Nan::SetMethod(proto, "vertexAttribPointer", glCallWrap<VertexAttribPointer>);
+  Nan::SetMethod(proto, "vertexAttribIPointer", glCallWrap<VertexAttribIPointer>);
   Nan::SetMethod(proto, "activeTexture", glCallWrap<ActiveTexture>);
   Nan::SetMethod(proto, "drawElements", glCallWrap<DrawElements>);
   Nan::SetMethod(proto, "drawElementsInstancedANGLE", glCallWrap<DrawElementsInstancedANGLE>);
@@ -2149,6 +2150,18 @@ NAN_METHOD(WebGLRenderingContext::VertexAttribPointer) {
 
   //    printf("VertexAttribPointer %d %d %d %d %d %d\n", indx, size, type, normalized, stride, offset);
   glVertexAttribPointer(indx, size, type, normalized, stride, (const GLvoid *)offset);
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(WebGLRenderingContext::VertexAttribIPointer) {
+  GLuint indx = info[0]->Uint32Value();
+  GLint size = info[1]->Int32Value();
+  GLenum type = info[2]->Uint32Value();
+  GLint stride = info[3]->Int32Value();
+  GLint offset = info[4]->Int32Value();
+
+  glVertexAttribIPointer(indx, size, type, stride, (const GLvoid *)offset);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }

@@ -142,6 +142,7 @@ public:
   static NAN_METHOD(BlendFunc);
   static NAN_METHOD(EnableVertexAttribArray);
   static NAN_METHOD(VertexAttribPointer);
+  static NAN_METHOD(VertexAttribIPointer);
   static NAN_METHOD(ActiveTexture);
   static NAN_METHOD(DrawElements);
   static NAN_METHOD(DrawElementsInstancedANGLE);
