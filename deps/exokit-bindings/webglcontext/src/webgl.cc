@@ -613,6 +613,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "createFramebuffer", glCallWrap<CreateFramebuffer>);
   Nan::SetMethod(proto, "bindFramebuffer", glCallWrap<BindFramebuffer>);
   Nan::SetMethod(proto, "framebufferTexture2D", glCallWrap<FramebufferTexture2D>);
+  Nan::SetMethod(proto, "blitFramebuffer", glCallWrap<BlitFramebuffer>);
   Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
   Nan::SetMethod(proto, "bindBuffer", glCallWrap<BindBuffer>);
   Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
@@ -2035,6 +2036,30 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
 
   glFramebufferTexture2D(target, attachment, textarget, texture, level);
 
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
+  int sx = info[0]->Uint32Value();
+  int sy = info[1]->Uint32Value();
+  int sw = info[2]->Uint32Value();
+  int sh = info[3]->Uint32Value();
+  int dx = info[4]->Uint32Value();
+  int dy = info[5]->Uint32Value();
+  int dw = info[6]->Uint32Value();
+  int dh = info[7]->Uint32Value();
+  GLbitfield mask = info[8]->Uint32Value();
+  GLenum filter = info[9]->Uint32Value();
+
+  glBlitFramebuffer(
+    sx, sy,
+    sw, sh,
+    dx, dy,
+    dw, dh,
+    mask,
+    filter
+  );
+  
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 

@@ -135,6 +135,7 @@ public:
   static NAN_METHOD(CreateFramebuffer);
   static NAN_METHOD(BindFramebuffer);
   static NAN_METHOD(FramebufferTexture2D);
+  static NAN_METHOD(BlitFramebuffer);
   static NAN_METHOD(BufferData);
   static NAN_METHOD(BufferSubData);
   static NAN_METHOD(BlendEquation);
