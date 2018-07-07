@@ -543,7 +543,10 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
-  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(WebGLRenderingContext::New);
+
+  s_ct.Reset(ctor);
+
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("WebGLRenderingContext"));
 
@@ -3559,6 +3562,48 @@ NAN_METHOD(WebGLRenderingContext::CheckFramebufferStatus) {
 
   info.GetReturnValue().Set(JS_INT(ret));
 }
+
+Nan::Persistent<FunctionTemplate> WebGLRenderingContext::s_ct;
+
+// WebGL2RenderingContext
+
+WebGL2RenderingContext::WebGL2RenderingContext() {}
+
+WebGL2RenderingContext::~WebGL2RenderingContext() {}
+
+Handle<Object> WebGL2RenderingContext::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(WebGL2RenderingContext::New);
+
+  s_ct.Reset(ctor);
+  Local<FunctionTemplate> baseSCT = Nan::New(WebGLRenderingContext::s_ct);
+  ctor->Inherit(baseSCT);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("WebGL2RenderingContext"));
+  
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "lol", Lol);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+  setGlConstants(ctorFn);
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_METHOD(WebGL2RenderingContext::New) {
+  WebGL2RenderingContext *gl2 = new WebGL2RenderingContext();
+  Local<Object> gl2Obj = info.This();
+  gl2->Wrap(gl2Obj);
+
+  info.GetReturnValue().Set(gl2Obj);
+}
+
+NAN_METHOD(WebGL2RenderingContext::Lol) {
+  info.GetReturnValue().Set(JS_STR("zol"));
+}
+
+Nan::Persistent<FunctionTemplate> WebGL2RenderingContext::s_ct;
 
 /* struct GLObj {
   GLObjectType type;
