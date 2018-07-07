@@ -1243,6 +1243,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.CanvasGradient = CanvasGradient;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
   window.WebGLRenderingContext = WebGLRenderingContext;
+  window.WebGL2RenderingContext = WebGL2RenderingContext;
   window.Audio = HTMLAudioElementBound;
   window.MediaRecorder = MediaRecorder;
   window.Document = Document;
@@ -1623,6 +1624,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   CanvasGradient = bindings.nativeCanvasGradient;
   CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
   WebGLRenderingContext = GlobalContext.WebGLRenderingContext = bindings.nativeGl;
+  WebGL2RenderingContext = GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
   if (args.frame || args.minimalFrame) {
     WebGLRenderingContext = GlobalContext.WebGLRenderingContext = (OldWebGLRenderingContext => {
       function WebGLRenderingContext() {

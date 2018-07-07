@@ -11,6 +11,10 @@ Local<Object> makeGl() {
   return WebGLRenderingContext::Initialize(Isolate::GetCurrent());
 }
 
+Local<Object> makeGl2() {
+  return WebGL2RenderingContext::Initialize(Isolate::GetCurrent());
+}
+
 Local<Object> makeImage() {
   Isolate *isolate = Isolate::GetCurrent();
 

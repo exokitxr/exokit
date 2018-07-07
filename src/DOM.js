@@ -1837,13 +1837,17 @@ class HTMLCanvasElement extends HTMLElement {
       if (this._context === null) {
         this._context = new GlobalContext.CanvasRenderingContext2D(this.width, this.height);
       }
-    } else if (contextType === 'webgl' || contextType === 'xrpresent') {
-      if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext') {
+    } else if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'xrpresent') {
+      if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext' && name !== 'WebGL2RenderingContext') {
         this._context.destroy();
         this._context = null;
       }
       if (this._context === null) {
-        this._context = new GlobalContext.WebGLRenderingContext(this);
+        if (contextType === 'webgl') {
+          this._context = new WebGLRenderingContext(this);
+        } else {
+          this._context = new WebGL2RenderingContext(this);
+        }
       }
     } else {
       if (this._context) {

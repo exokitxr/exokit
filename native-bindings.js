@@ -7,47 +7,50 @@ const webGlToOpenGl = require('webgl-to-opengl');
 
 bindings.nativeWorker = WindowWorker;
 bindings.nativeVm = vmOne;
+const _decorateGlIntercepts = gl => {
+  gl.createShader = (createShader => function(type) {
+    const result = createShader.call(this, type);
+    result.type = type;
+    return result;
+  })(gl.createShader);
+  gl.shaderSource = (shaderSource => function(shader, source) {
+    if (shader.type === gl.VERTEX_SHADER) {
+      source = webGlToOpenGl.vertex(source);
+    } else if (shader.type === gl.FRAGMENT_SHADER) {
+      source = webGlToOpenGl.fragment(source);
+    }
+    return shaderSource.call(this, shader, source);
+  })(gl.shaderSource);
+  gl.getActiveAttrib = (getActiveAttrib => function(program, index) {
+    const result = getActiveAttrib.call(this, program, index);
+    if (result) {
+      result.name = webGlToOpenGl.unmapName(result.name);
+    }
+    return result;
+  })(gl.getActiveAttrib);
+  gl.getActiveUniform = (getActiveUniform => function(program, index) {
+    const result = getActiveUniform.call(this, program, index);
+    if (result) {
+      result.name = webGlToOpenGl.unmapName(result.name);
+    }
+    return result;
+  })(gl.getActiveUniform);
+  gl.getAttribLocation = (getAttribLocation => function(program, path) {
+    path = webGlToOpenGl.mapName(path);
+    return getAttribLocation.call(this, program, path);
+  })(gl.getAttribLocation);
+  gl.getUniformLocation = (getUniformLocation => function(program, path) {
+    path = webGlToOpenGl.mapName(path);
+    return getUniformLocation.call(this, program, path);
+  })(gl.getUniformLocation);
+  gl.setCompatibleXRDevice = () => Promise.resolve();
+};
 bindings.nativeGl = (nativeGl => {
   function WebGLRenderingContext(canvas) {
     const gl = new nativeGl();
-    gl.createShader = (createShader => function(type) {
-      const result = createShader.call(this, type);
-      result.type = type;
-      return result;
-    })(gl.createShader);
-    gl.shaderSource = (shaderSource => function(shader, source) {
-      if (shader.type === gl.VERTEX_SHADER) {
-        source = webGlToOpenGl.vertex(source);
-      } else if (shader.type === gl.FRAGMENT_SHADER) {
-        source = webGlToOpenGl.fragment(source);
-      }
-      return shaderSource.call(this, shader, source);
-    })(gl.shaderSource);
-    gl.getActiveAttrib = (getActiveAttrib => function(program, index) {
-      const result = getActiveAttrib.call(this, program, index);
-      if (result) {
-        result.name = webGlToOpenGl.unmapName(result.name);
-      }
-      return result;
-    })(gl.getActiveAttrib);
-    gl.getActiveUniform = (getActiveUniform => function(program, index) {
-      const result = getActiveUniform.call(this, program, index);
-      if (result) {
-        result.name = webGlToOpenGl.unmapName(result.name);
-      }
-      return result;
-    })(gl.getActiveUniform);
-    gl.getAttribLocation = (getAttribLocation => function(program, path) {
-      path = webGlToOpenGl.mapName(path);
-      return getAttribLocation.call(this, program, path);
-    })(gl.getAttribLocation);
-    gl.getUniformLocation = (getUniformLocation => function(program, path) {
-      path = webGlToOpenGl.mapName(path);
-      return getUniformLocation.call(this, program, path);
-    })(gl.getUniformLocation);
-    gl.setCompatibleXRDevice = () => Promise.resolve();
+    _decorateGlIntercepts(gl);
 
-    if (!WebGLRenderingContext.onconstruct || WebGLRenderingContext.onconstruct(gl, canvas)) {
+    if (WebGLRenderingContext.onconstruct(gl, canvas)) {
       return gl;
     } else {
       return null;
@@ -59,6 +62,22 @@ bindings.nativeGl = (nativeGl => {
   WebGLRenderingContext.onconstruct = null;
   return WebGLRenderingContext;
 })(bindings.nativeGl);
+bindings.nativeGl2 = (nativeGl2 => {
+  function WebGL2RenderingContext(canvas) {
+    const gl = new nativeGl2();
+    _decorateGlIntercepts(gl);
+    
+    if (WebGLRenderingContext.onconstruct(gl, canvas)) {
+      return gl;
+    } else {
+      return null;
+    }
+  }
+  for (const k in nativeGl2) {
+    WebGL2RenderingContext[k] = nativeGl2[k];
+  }
+  return WebGL2RenderingContext;
+})(bindings.nativeGl2);
 
 const {PannerNode} = nativeAudio;
 PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));

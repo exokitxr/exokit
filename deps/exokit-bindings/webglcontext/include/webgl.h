@@ -265,6 +265,8 @@ public:
     return textureBindings.find(std::make_pair(framebuffer, target)) != textureBindings.end();
   }
 
+  static Nan::Persistent<FunctionTemplate> s_ct;
+
   bool live;
   GLFWwindow *windowHandle;
   bool dirty;
@@ -277,6 +279,19 @@ public:
   std::map<GLenum, GLuint> framebufferBindings;
   std::map<GLenum, GLuint> renderbufferBindings;
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
+};
+
+class WebGL2RenderingContext : public WebGLRenderingContext {
+public:
+  WebGL2RenderingContext();
+  ~WebGL2RenderingContext();
+
+  static Handle<Object> Initialize(Isolate *isolate);
+
+  static NAN_METHOD(New);
+  static NAN_METHOD(Lol);
+
+  static Nan::Persistent<FunctionTemplate> s_ct;
 };
 
 #endif
