@@ -62,6 +62,22 @@ bindings.nativeGl = (nativeGl => {
   WebGLRenderingContext.onconstruct = null;
   return WebGLRenderingContext;
 })(bindings.nativeGl);
+bindings.nativeGl2 = (nativeGl2 => {
+  function WebGL2RenderingContext(canvas) {
+    const gl = new nativeGl2();
+    _decorateGlIntercepts(gl);
+    
+    if (WebGLRenderingContext.onconstruct(gl, canvas)) {
+      return gl;
+    } else {
+      return null;
+    }
+  }
+  for (const k in nativeGl2) {
+    WebGL2RenderingContext[k] = nativeGl2[k];
+  }
+  return WebGL2RenderingContext;
+})(bindings.nativeGl2);
 
 const {PannerNode} = nativeAudio;
 PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
