@@ -227,14 +227,14 @@ public:
   static NAN_METHOD(CheckFramebufferStatus);
 
   static NAN_METHOD(FrontFace);
-  
+
   static NAN_METHOD(IsContextLost);
-  
+
   static NAN_GETTER(DrawingBufferWidthGetter);
   static NAN_GETTER(DrawingBufferHeightGetter);
 
   static NAN_METHOD(SetDefaultFramebuffer);
-  
+
   void SetFramebufferBinding(GLenum target, GLuint framebuffer) {
     framebufferBindings[target] = framebuffer;
   }
@@ -244,7 +244,7 @@ public:
   bool HasFramebufferBinding(GLenum target) {
     return framebufferBindings.find(target) != framebufferBindings.end();
   }
-  
+
   void SetRenderbufferBinding(GLenum target, GLuint renderbuffer) {
     renderbufferBindings[target] = renderbuffer;
   }
@@ -254,7 +254,7 @@ public:
   bool HasRenderbufferBinding(GLenum target) {
     return renderbufferBindings.find(target) != renderbufferBindings.end();
   }
-  
+
   void SetTextureBinding(GLenum framebuffer, GLenum target, GLuint texture) {
     textureBindings[std::make_pair(framebuffer, target)] = texture;
   }
