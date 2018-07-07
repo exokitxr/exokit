@@ -142,6 +142,9 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
 void InitExports(Handle<Object> exports) {
   Local<Value> gl = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
+  
+  Local<Value> gl2 = makeGl2();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl2"), gl2);
 
   Local<Value> image = makeImage();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImage"), image);

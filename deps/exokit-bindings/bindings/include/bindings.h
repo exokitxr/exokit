@@ -22,6 +22,7 @@
 #endif
 
 v8::Local<v8::Object> makeGl();
+v8::Local<v8::Object> makeGl2();
 v8::Local<v8::Object> makeImage();
 v8::Local<v8::Object> makeImageData();
 v8::Local<v8::Object> makeImageBitmap();
