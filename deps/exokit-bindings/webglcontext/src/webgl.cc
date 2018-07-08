@@ -517,6 +517,24 @@ void setGlConstants(T &proto) {
   JS_GL_CONSTANT(MAX_RENDERBUFFER_SIZE);
 
   JS_GL_CONSTANT(INVALID_FRAMEBUFFER_OPERATION);
+  
+  /* Sync objects */
+  JS_GL_CONSTANT(OBJECT_TYPE);
+  JS_GL_CONSTANT(SYNC_FENCE);
+  JS_GL_CONSTANT(SYNC_STATUS);
+  JS_GL_CONSTANT(SIGNALED);
+  JS_GL_CONSTANT(UNSIGNALED);
+  JS_GL_CONSTANT(SYNC_CONDITION);
+  JS_GL_CONSTANT(SYNC_GPU_COMMANDS_COMPLETE);
+  JS_GL_CONSTANT(SYNC_FLAGS);
+  JS_GL_CONSTANT(SYNC_FLUSH_COMMANDS_BIT);
+  JS_GL_CONSTANT(ALREADY_SIGNALED);
+  JS_GL_CONSTANT(TIMEOUT_EXPIRED);
+  JS_GL_CONSTANT(CONDITION_SATISFIED);
+  JS_GL_CONSTANT(WAIT_FAILED);
+  GLint64 GL_TIMEOUT_IGNORED_TEMP_64 = GL_TIMEOUT_IGNORED;
+  double GL_TIMEOUT_IGNORED_TEMP_DOUBLE = *(double *)(&GL_TIMEOUT_IGNORED_TEMP_64);
+  proto->Set(JS_STR("TIMEOUT_IGNORED"), Nan::New<v8::Number>(GL_TIMEOUT_IGNORED_TEMP_DOUBLE));
 
   /* WebGL-specific enums */
   JS_GL_SET_CONSTANT("UNPACK_FLIP_Y_WEBGL", UNPACK_FLIP_Y_WEBGL);
@@ -524,6 +542,7 @@ void setGlConstants(T &proto) {
   JS_GL_SET_CONSTANT("CONTEXT_LOST_WEBGL", CONTEXT_LOST_WEBGL);
   JS_GL_SET_CONSTANT("UNPACK_COLORSPACE_CONVERSION_WEBGL", UNPACK_COLORSPACE_CONVERSION_WEBGL);
   JS_GL_SET_CONSTANT("BROWSER_DEFAULT_WEBGL", BROWSER_DEFAULT_WEBGL);
+  JS_GL_SET_CONSTANT("MAX_CLIENT_WAIT_TIMEOUT_WEBGL", MAX_CLIENT_WAIT_TIMEOUT_WEBGL);
 
   //////////////////////////////
   // NOT in WebGL spec
@@ -687,6 +706,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "isShader", glCallWrap<IsShader>);
   Nan::SetMethod(proto, "isTexture", glCallWrap<IsTexture>);
   Nan::SetMethod(proto, "isVertexArray", glCallWrap<IsVertexArray>);
+  Nan::SetMethod(proto, "isSync", glCallWrap<IsSync>);
 
   Nan::SetMethod(proto, "renderbufferStorage", glCallWrap<RenderbufferStorage>);
   Nan::SetMethod(proto, "getShaderSource", glCallWrap<GetShaderSource>);
@@ -714,6 +734,12 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "createVertexArray", glCallWrap<CreateVertexArray>);
   Nan::SetMethod(proto, "deleteVertexArray", glCallWrap<DeleteVertexArray>);
   Nan::SetMethod(proto, "bindVertexArray", glCallWrap<BindVertexArray>);
+  
+  Nan::SetMethod(proto, "fenceSync", glCallWrap<FenceSync>);
+  Nan::SetMethod(proto, "deleteSync", glCallWrap<DeleteSync>);
+  Nan::SetMethod(proto, "clientWaitSync", glCallWrap<ClientWaitSync>);
+  Nan::SetMethod(proto, "waitSync", glCallWrap<WaitSync>);
+  Nan::SetMethod(proto, "getSyncParameter", glCallWrap<GetSyncParameter>);
 
   Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
 
@@ -2853,6 +2879,27 @@ NAN_METHOD(WebGLRenderingContext::IsVertexArray) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::IsSync) {
+  if (info[0]->IsObject()) {
+    Local<Value> syncId = info[0]->ToObject()->Get(JS_STR("id"));
+    if (syncId->IsArray()) {
+      Local<Array> syncArray = Local<Array>::Cast(syncId);
+      if (syncArray->Get(0)->IsNumber() && syncArray->Get(1)->IsNumber()) {
+        GLsync sync = (GLsync)arrayToPointer(syncArray);
+        bool ret = glIsSync(sync) != 0;
+
+        info.GetReturnValue().Set(JS_BOOL(ret));
+      } else {
+        info.GetReturnValue().Set(Nan::New<Boolean>(false));
+      }
+    } else {
+      info.GetReturnValue().Set(Nan::New<Boolean>(false));
+    }
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }
+}
+
 NAN_METHOD(WebGLRenderingContext::RenderbufferStorage) {
   GLenum target = info[0]->Int32Value();
   GLenum internalformat = info[1]->Int32Value();
@@ -3680,6 +3727,59 @@ NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
     info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
 
   glBindVertexArray(vao);
+}
+
+NAN_METHOD(WebGLRenderingContext::FenceSync) {
+  GLenum condition = info[0]->Uint32Value();
+  GLbitfield flags = info[1]->Uint32Value();
+  
+  GLsync sync = (GLsync)glFenceSync(condition, flags);
+  Local<Array> syncArray = pointerToArray(sync);
+
+  Local<Object> syncObject = Nan::New<Object>();
+  syncObject->Set(JS_STR("id"), syncArray);
+  info.GetReturnValue().Set(syncObject);
+}
+
+NAN_METHOD(WebGLRenderingContext::DeleteSync) {
+  Local<Array> syncArray = Local<Array>::Cast(info[0]->ToObject()->Get(JS_STR("id")));
+  GLsync sync = (GLsync)arrayToPointer(syncArray);
+  
+  glDeleteSync(sync);
+}
+
+NAN_METHOD(WebGLRenderingContext::ClientWaitSync) {
+  Local<Array> syncArray = Local<Array>::Cast(info[0]->ToObject()->Get(JS_STR("id")));
+  GLsync sync = (GLsync)arrayToPointer(syncArray);
+  GLbitfield flags = info[1]->Uint32Value();
+  double timeoutValue = info[2]->NumberValue();
+  GLint64 timeout = *(GLint64 *)(&timeoutValue);
+  
+  GLenum ret = glClientWaitSync(sync, flags, timeout);
+  
+  info.GetReturnValue().Set(JS_INT(ret));
+}
+
+NAN_METHOD(WebGLRenderingContext::WaitSync) {
+  Local<Array> syncArray = Local<Array>::Cast(info[0]->ToObject()->Get(JS_STR("id")));
+  GLsync sync = (GLsync)arrayToPointer(syncArray);
+  GLbitfield flags = info[1]->Uint32Value();
+  double timeoutValue = info[2]->NumberValue();
+  GLint64 timeout = *(GLint64 *)(&timeoutValue);
+  
+  glWaitSync(sync, flags, timeout);
+}
+
+NAN_METHOD(WebGLRenderingContext::GetSyncParameter) {
+  Local<Array> syncArray = Local<Array>::Cast(info[0]->ToObject()->Get(JS_STR("id")));
+  GLsync sync = (GLsync)arrayToPointer(syncArray);
+  GLbitfield pname = info[1]->Uint32Value();
+
+  GLint result = 0;
+  GLsizei len;
+  glGetSynciv(sync, pname, 1, &len, &result);
+  
+  info.GetReturnValue().Set(JS_INT(result));
 }
 
 Nan::Persistent<FunctionTemplate> WebGLRenderingContext::s_ct;

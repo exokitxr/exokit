@@ -56,6 +56,7 @@
 #define CONTEXT_LOST_WEBGL 0x9242
 #define UNPACK_COLORSPACE_CONVERSION_WEBGL 0x9243
 #define BROWSER_DEFAULT_WEBGL 0x9244
+#define MAX_CLIENT_WAIT_TIMEOUT_WEBGL ((uint32_t)2e7)
 
 #include <defines.h>
 #include <glfw.h>
@@ -205,6 +206,7 @@ public:
   static NAN_METHOD(IsShader);
   static NAN_METHOD(IsTexture);
   static NAN_METHOD(IsVertexArray);
+  static NAN_METHOD(IsSync);
 
   static NAN_METHOD(RenderbufferStorage);
   static NAN_METHOD(GetShaderSource);
@@ -232,6 +234,12 @@ public:
   static NAN_METHOD(CreateVertexArray);
   static NAN_METHOD(DeleteVertexArray);
   static NAN_METHOD(BindVertexArray);
+  
+  static NAN_METHOD(FenceSync);
+  static NAN_METHOD(DeleteSync);
+  static NAN_METHOD(ClientWaitSync);
+  static NAN_METHOD(WaitSync);
+  static NAN_METHOD(GetSyncParameter);
 
   static NAN_METHOD(FrontFace);
 
