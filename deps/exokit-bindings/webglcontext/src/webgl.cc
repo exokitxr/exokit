@@ -1741,6 +1741,18 @@ int getImageFormat(Local<Value> arg) {
   }
 }
 
+size_t getArrayBufferViewElementSize(Local<ArrayBufferView> arrayBufferView) {
+  if (arrayBufferView->IsFloat64Array()) {
+    return 8;
+  } else if (arrayBufferView->IsFloat32Array() || arrayBufferView->IsUint32Array() || arrayBufferView->IsInt32Array()) {
+    return 4;
+  } else if (arrayBufferView->IsUint16Array() || arrayBufferView->IsInt16Array()) {
+    return 2;
+  } else {
+    return 0;
+  }
+}
+
 NAN_METHOD(WebGLRenderingContext::TexImage2D) {
   Isolate *isolate = Isolate::GetCurrent();
 
