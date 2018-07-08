@@ -1821,7 +1821,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       !levelNumber.IsEmpty() && !internalformat.IsEmpty() &&
       !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
       !formatNumber.IsEmpty() && !typeNumber.IsEmpty() &&
-        (pixels->IsNull() || !Nan::To<Object>(pixels).IsEmpty())
+      (pixels->IsNull() || pixels->isObject() || pixels->IsNumber())
     ) {
       /* if (pixels) {
         pixels = _getImageData(pixels);
@@ -1862,14 +1862,14 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     return;
   }
 
-  int targetV = target->Int32Value();
-  int levelV = level->Int32Value();
-  int internalformatV = internalformat->Int32Value();
-  int widthV = width->Int32Value();
-  int heightV = height->Int32Value();
-  int borderV = border->Int32Value();
-  int formatV = format->Int32Value();
-  int typeV = type->Int32Value();
+  GLenum targetV = target->Uint32Value();
+  GLenum levelV = level->Uint32Value();
+  GLenum internalformatV = internalformat->Uint32Value();
+  GLsizei widthV = width->Uint32Value();
+  GLsizei heightV = height->Uint32Value();
+  GLint borderV = border->Int32Value();
+  GLenum formatV = format->Uint32Value();
+  GLenum typeV = type->Uint32Value();
 
   internalformatV = normalizeInternalFormat(internalformatV, formatV, typeV);
 
@@ -1878,6 +1878,9 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
   char *pixelsV;
   if (pixels->IsNull()) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, nullptr);
+  } else if (pixels->IsNumber()) {
+    GLintptr offsetV = pixels->Uint32Value();
+    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, (void *)offsetV);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     size_t formatSize = getFormatSize(formatV);
     size_t typeSize = getTypeSize(typeV);
