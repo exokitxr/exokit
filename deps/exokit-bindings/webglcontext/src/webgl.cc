@@ -2446,13 +2446,13 @@ NAN_METHOD(WebGLRenderingContext::ColorMask) {
 }
 
 NAN_METHOD(WebGLRenderingContext::CopyTexImage2D) {
-  GLenum target = info[0]->Int32Value();
+  GLenum target = info[0]->Uint32Value();
   GLint level = info[1]->Int32Value();
-  GLenum internalformat = info[2]->Int32Value();
+  GLenum internalformat = info[2]->Uint32Value();
   GLint x = info[3]->Int32Value();
   GLint y = info[4]->Int32Value();
-  GLsizei width = info[5]->Int32Value();
-  GLsizei height = info[6]->Int32Value();
+  GLsizei width = info[5]->Uint32Value();
+  GLsizei height = info[6]->Uint32Value();
   GLint border = info[7]->Int32Value();
 
   glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
@@ -2461,14 +2461,14 @@ NAN_METHOD(WebGLRenderingContext::CopyTexImage2D) {
 }
 
 NAN_METHOD(WebGLRenderingContext::CopyTexSubImage2D) {
-  GLenum target = info[0]->Int32Value();
+  GLenum target = info[0]->Uint32Value();
   GLint level = info[1]->Int32Value();
   GLint xoffset = info[2]->Int32Value();
   GLint yoffset = info[3]->Int32Value();
   GLint x = info[4]->Int32Value();
   GLint y = info[5]->Int32Value();
-  GLsizei width = info[6]->Int32Value();
-  GLsizei height = info[7]->Int32Value();
+  GLsizei width = info[6]->Uint32Value();
+  GLsizei height = info[7]->Uint32Value();
 
   glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
 
@@ -2551,8 +2551,8 @@ NAN_METHOD(WebGLRenderingContext::SampleCoverage) {
 NAN_METHOD(WebGLRenderingContext::Scissor) {
   GLint x = info[0]->Int32Value();
   GLint y = info[1]->Int32Value();
-  GLsizei width = info[2]->Int32Value();
-  GLsizei height = info[3]->Int32Value();
+  GLsizei width = info[2]->Uint32Value();
+  GLsizei height = info[3]->Uint32Value();
 
   glScissor(x, y, width, height);
 
@@ -2843,14 +2843,14 @@ NAN_METHOD(WebGLRenderingContext::ValidateProgram) {
 
 NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  GLenum targetV = info[0]->Int32Value();
+  GLenum targetV = info[0]->Uint32Value();
   GLint levelV = info[1]->Int32Value();
   GLint xoffsetV = info[2]->Int32Value();
   GLint yoffsetV = info[3]->Int32Value();
-  GLsizei widthV = info[4]->Int32Value();
-  GLsizei heightV = info[5]->Int32Value();
-  GLenum formatV = info[6]->Int32Value();
-  GLenum typeV = info[7]->Int32Value();
+  GLsizei widthV = info[4]->Uint32Value();
+  GLsizei heightV = info[5]->Uint32Value();
+  GLenum formatV = info[6]->Uint32Value();
+  GLenum typeV = info[7]->Uint32Value();
   Local<Value> pixels = info[8];
 
   // int num;
@@ -2895,10 +2895,10 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
 NAN_METHOD(WebGLRenderingContext::ReadPixels) {
   GLint x = info[0]->Int32Value();
   GLint y = info[1]->Int32Value();
-  GLsizei width = info[2]->Int32Value();
-  GLsizei height = info[3]->Int32Value();
-  GLenum format = info[4]->Int32Value();
-  GLenum type = info[5]->Int32Value();
+  GLsizei width = info[2]->Uint32Value();
+  GLsizei height = info[3]->Uint32Value();
+  GLenum format = info[4]->Uint32Value();
+  GLenum type = info[5]->Uint32Value();
   char *pixels = (char *)getImageData(info[6]);
 
   if (pixels != nullptr) {
