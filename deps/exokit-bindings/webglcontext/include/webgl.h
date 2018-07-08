@@ -204,6 +204,7 @@ public:
   static NAN_METHOD(IsRenderbuffer);
   static NAN_METHOD(IsShader);
   static NAN_METHOD(IsTexture);
+  static NAN_METHOD(IsVertexArray);
 
   static NAN_METHOD(RenderbufferStorage);
   static NAN_METHOD(GetShaderSource);
@@ -225,6 +226,10 @@ public:
   static NAN_METHOD(GetSupportedExtensions);
   static NAN_METHOD(GetExtension);
   static NAN_METHOD(CheckFramebufferStatus);
+
+  static NAN_METHOD(CreateVertexArray);
+  static NAN_METHOD(DeleteVertexArray);
+  static NAN_METHOD(BindVertexArray);
 
   static NAN_METHOD(FrontFace);
 
