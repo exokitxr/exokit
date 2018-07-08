@@ -1779,7 +1779,7 @@ size_t getArrayBufferViewElementSize(Local<ArrayBufferView> arrayBufferView) {
   } else if (arrayBufferView->IsUint16Array() || arrayBufferView->IsInt16Array()) {
     return 2;
   } else {
-    return 0;
+    return 1;
   }
 }
 
