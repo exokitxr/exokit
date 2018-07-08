@@ -1846,11 +1846,9 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
 
   internalformatV = normalizeInternalFormat(internalformatV, formatV, typeV);
 
-  // int num;
-  char *pixelsV;
-
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
+  char *pixelsV;
   if (pixels->IsNull()) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, nullptr);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
