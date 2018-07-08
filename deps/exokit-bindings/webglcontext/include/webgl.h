@@ -289,7 +289,6 @@ public:
   static Handle<Object> Initialize(Isolate *isolate);
 
   static NAN_METHOD(New);
-  static NAN_METHOD(Lol);
 
   static Nan::Persistent<FunctionTemplate> s_ct;
 };

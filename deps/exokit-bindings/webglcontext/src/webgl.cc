@@ -3581,9 +3581,6 @@ Handle<Object> WebGL2RenderingContext::Initialize(Isolate *isolate) {
   ctor->Inherit(baseSCT);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("WebGL2RenderingContext"));
-  
-  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "lol", Lol);
 
   Local<Function> ctorFn = ctor->GetFunction();
   setGlConstants(ctorFn);
@@ -3597,10 +3594,6 @@ NAN_METHOD(WebGL2RenderingContext::New) {
   gl2->Wrap(gl2Obj);
 
   info.GetReturnValue().Set(gl2Obj);
-}
-
-NAN_METHOD(WebGL2RenderingContext::Lol) {
-  info.GetReturnValue().Set(JS_STR("zol"));
 }
 
 Nan::Persistent<FunctionTemplate> WebGL2RenderingContext::s_ct;
