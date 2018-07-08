@@ -211,6 +211,8 @@ public:
   static NAN_METHOD(ValidateProgram);
 
   static NAN_METHOD(TexSubImage2D);
+  static NAN_METHOD(TexStorage2D);
+  
   static NAN_METHOD(ReadPixels);
   static NAN_METHOD(GetTexParameter);
   static NAN_METHOD(GetActiveAttrib);
