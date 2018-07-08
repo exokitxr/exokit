@@ -1765,6 +1765,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
   Local<Value> format = info[6];
   Local<Value> type = info[7];
   Local<Value> pixels = info[8];
+  Local<Value> srcOffset = info[9];
 
   Local<String> widthString = String::NewFromUtf8(isolate, "width", NewStringType::kInternalized).ToLocalChecked();
   Local<String> heightString = String::NewFromUtf8(isolate, "height", NewStringType::kInternalized).ToLocalChecked();
@@ -1828,6 +1829,32 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       // return _texImage2D(target, level, internalformat, width, height, border, format, type, pixels);
     } else {
       Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView pixels)");
+      return;
+    }
+  } else if (info.Length() == 10) {
+    MaybeLocal<Number> targetNumber(Nan::To<Number>(target));
+    MaybeLocal<Number> levelNumber(Nan::To<Number>(level));
+    MaybeLocal<Number> internalformatNumber(Nan::To<Number>(internalformat));
+    MaybeLocal<Number> widthNumber(Nan::To<Number>(width));
+    MaybeLocal<Number> heightNumber(Nan::To<Number>(height));
+    MaybeLocal<Number> formatNumber(Nan::To<Number>(format));
+    MaybeLocal<Number> typeNumber(Nan::To<Number>(type));
+    MaybeLocal<Number> srcOffsetNumber(Nan::To<Number>(srcOffset));
+    if (
+      !targetNumber.IsEmpty() &&
+      !levelNumber.IsEmpty() && !internalformat.IsEmpty() &&
+      !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
+      !formatNumber.IsEmpty() && !typeNumber.IsEmpty() &&
+      (pixels->IsNull() || !Nan::To<Object>(pixels).IsEmpty()) &&
+      !srcOffsetNumber.IsEmpty()
+    ) {
+      Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(pixels);
+      size_t srcOffsetInt = srcOffset->Uint32Value();
+      size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
+      size_t extraOffset = srcOffsetInt * elementSize;
+      pixels = Uint8Array::New(arrayBufferView->Buffer(), arrayBufferView->ByteOffset() + extraOffset, arrayBufferView->ByteLength() - extraOffset);
+    } else {
+      Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView srcData, number srcOffset)");
       return;
     }
   } else {
