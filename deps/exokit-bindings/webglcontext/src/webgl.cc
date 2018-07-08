@@ -2177,28 +2177,32 @@ NAN_METHOD(WebGLRenderingContext::BufferData) {
 
 NAN_METHOD(WebGLRenderingContext::BufferSubData) {
   GLenum target = info[0]->Uint32Value();
-  GLint offset = info[1]->Int32Value();
+  GLint dstOffset = info[1]->Int32Value();
   Local<Object> obj = Local<Object>::Cast(info[2]);
 
+  char *data;
+  GLuint size;
   if (obj->IsArrayBufferView()) {
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(obj);
-    int size = arrayBufferView->ByteLength();
-    char *data = (char *)arrayBufferView->Buffer()->GetContents().Data() + arrayBufferView->ByteOffset();
-
-    glBufferSubData(target, offset, size, data);
-
-    // info.GetReturnValue().Set(Nan::Undefined());
+    data = (char *)arrayBufferView->Buffer()->GetContents().Data() + arrayBufferView->ByteOffset();
+    
+    if (info[3]->IsNumber()) {
+      size_t srcOffset = info[3]->Uint32Value() * getArrayBufferViewElementSize(arrayBufferView);
+      data += srcOffset;
+      size = info[4]->IsNumber() ? info[4]->NumberValue() : 0;
+    } else {
+      size = arrayBufferView->ByteLength();
+    }
   } else if (obj->IsArrayBuffer()) {
     Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(obj);
-    int size = arrayBuffer->ByteLength();
-    char *data = (char *)arrayBuffer->GetContents().Data();
-
-    glBufferSubData(target, offset, size, data);
-
-    // info.GetReturnValue().Set(Nan::Undefined());
+    data = (char *)arrayBuffer->GetContents().Data();
+    size = arrayBuffer->ByteLength();
   } else {
     Nan::ThrowError("Invalid texture argument");
+    return;
   }
+
+  glBufferSubData(target, dstOffset, size, data);
 }
 
 
