@@ -715,6 +715,12 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "createVertexArray", glCallWrap<CreateVertexArray>);
   Nan::SetMethod(proto, "deleteVertexArray", glCallWrap<DeleteVertexArray>);
   Nan::SetMethod(proto, "bindVertexArray", glCallWrap<BindVertexArray>);
+  
+  Nan::SetMethod(proto, "fenceSync", glCallWrap<FenceSync>);
+  Nan::SetMethod(proto, "deleteSync", glCallWrap<DeleteSync>);
+  Nan::SetMethod(proto, "clientWaitSync", glCallWrap<ClientWaitSync>);
+  Nan::SetMethod(proto, "waitSync", glCallWrap<WaitSync>);
+  Nan::SetMethod(proto, "getSyncParameter", glCallWrap<GetSyncParameter>);
 
   Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
 
@@ -3702,6 +3708,59 @@ NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
     info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
 
   glBindVertexArray(vao);
+}
+
+NAN_METHOD(WebGLRenderingContext::FenceSync) {
+  GLenum condition = info[0]->Uint32Value();
+  GLbitfield flags = info[1]->Uint32Value();
+  
+  GLsync sync = (GLsync)glFenceSync(condition, flags);
+  Local<Array> syncArray = pointerToArray(sync);
+
+  Local<Object> syncObject = Nan::New<Object>();
+  syncObject->Set(JS_STR("id"), syncArray);
+  info.GetReturnValue().Set(syncObject);
+}
+
+NAN_METHOD(WebGLRenderingContext::DeleteSync) {
+  Local<Array> syncArray = Local<Array>::Cast(info[0]->ToObject()->Get(JS_STR("id")));
+  GLsync sync = (GLsync)arrayToPointer(syncArray);
+  
+  glDeleteSync(sync);
+}
+
+NAN_METHOD(WebGLRenderingContext::ClientWaitSync) {
+  Local<Array> syncArray = Local<Array>::Cast(info[0]->ToObject()->Get(JS_STR("id")));
+  GLsync sync = (GLsync)arrayToPointer(syncArray);
+  GLbitfield flags = info[1]->Uint32Value();
+  double timeoutValue = info[2]->NumberValue();
+  GLint64 timeout = *(GLint64 *)(&timeoutValue);
+  
+  GLenum ret = glClientWaitSync(sync, flags, timeout);
+  
+  info.GetReturnValue().Set(JS_INT(ret));
+}
+
+NAN_METHOD(WebGLRenderingContext::WaitSync) {
+  Local<Array> syncArray = Local<Array>::Cast(info[0]->ToObject()->Get(JS_STR("id")));
+  GLsync sync = (GLsync)arrayToPointer(syncArray);
+  GLbitfield flags = info[1]->Uint32Value();
+  double timeoutValue = info[2]->NumberValue();
+  GLint64 timeout = *(GLint64 *)(&timeoutValue);
+  
+  glWaitSync(sync, flags, timeout);
+}
+
+NAN_METHOD(WebGLRenderingContext::GetSyncParameter) {
+  Local<Array> syncArray = Local<Array>::Cast(info[0]->ToObject()->Get(JS_STR("id")));
+  GLsync sync = (GLsync)arrayToPointer(syncArray);
+  GLbitfield pname = info[1]->Uint32Value();
+
+  GLint result = 0;
+  GLsizei len;
+  glGetSynciv(sync, pname, 1, &len, &result);
+  
+  info.GetReturnValue().Set(JS_INT(result));
 }
 
 Nan::Persistent<FunctionTemplate> WebGLRenderingContext::s_ct;

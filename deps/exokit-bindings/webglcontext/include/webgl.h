@@ -233,6 +233,12 @@ public:
   static NAN_METHOD(CreateVertexArray);
   static NAN_METHOD(DeleteVertexArray);
   static NAN_METHOD(BindVertexArray);
+  
+  static NAN_METHOD(FenceSync);
+  static NAN_METHOD(DeleteSync);
+  static NAN_METHOD(ClientWaitSync);
+  static NAN_METHOD(WaitSync);
+  static NAN_METHOD(GetSyncParameter);
 
   static NAN_METHOD(FrontFace);
 
