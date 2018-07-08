@@ -686,6 +686,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "isRenderbuffer", glCallWrap<IsRenderbuffer>);
   Nan::SetMethod(proto, "isShader", glCallWrap<IsShader>);
   Nan::SetMethod(proto, "isTexture", glCallWrap<IsTexture>);
+  Nan::SetMethod(proto, "isVertexArray", glCallWrap<IsVertexArray>);
 
   Nan::SetMethod(proto, "renderbufferStorage", glCallWrap<RenderbufferStorage>);
   Nan::SetMethod(proto, "getShaderSource", glCallWrap<GetShaderSource>);
@@ -707,6 +708,10 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "getSupportedExtensions", glCallWrap<GetSupportedExtensions>);
   Nan::SetMethod(proto, "getExtension", glCallWrap<GetExtension>);
   Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
+  
+  Nan::SetMethod(proto, "createVertexArray", glCallWrap<CreateVertexArray>);
+  Nan::SetMethod(proto, "deleteVertexArray", glCallWrap<DeleteVertexArray>);
+  Nan::SetMethod(proto, "bindVertexArray", glCallWrap<BindVertexArray>);
 
   Nan::SetMethod(proto, "frontFace", glCallWrap<FrontFace>);
 
@@ -2793,6 +2798,17 @@ NAN_METHOD(WebGLRenderingContext::IsTexture) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::IsVertexArray) {
+  if (info[0]->IsObject()) {
+    GLint arg = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+    bool ret = glIsVertexArray(arg) != 0;
+
+    info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }
+}
+
 NAN_METHOD(WebGLRenderingContext::RenderbufferStorage) {
   GLenum target = info[0]->Int32Value();
   GLenum internalformat = info[1]->Int32Value();
@@ -3573,6 +3589,32 @@ NAN_METHOD(WebGLRenderingContext::CheckFramebufferStatus) {
   GLint ret = glCheckFramebufferStatus(target);
 
   info.GetReturnValue().Set(JS_INT(ret));
+}
+
+NAN_METHOD(WebGLRenderingContext::CreateVertexArray) {
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  
+  Local<Object> vaoObject = Nan::New<Object>();
+  vaoObject->Set(JS_STR("id"), JS_INT(vao));
+  info.GetReturnValue().Set(vaoObject);
+}
+
+NAN_METHOD(WebGLRenderingContext::DeleteVertexArray) {
+  GLuint vao = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+
+  glDeleteVertexArrays(1, &vao);
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
+  GLuint vao = info[0]->IsNull() ?
+    0
+  :
+    info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+
+  glBindVertexArray(vao);
 }
 
 Nan::Persistent<FunctionTemplate> WebGLRenderingContext::s_ct;
