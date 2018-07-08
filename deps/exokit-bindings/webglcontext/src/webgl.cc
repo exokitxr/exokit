@@ -1179,22 +1179,28 @@ NAN_METHOD(WebGLRenderingContext::GetError) {
 
 
 NAN_METHOD(WebGLRenderingContext::DrawArrays) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   int mode = info[0]->Int32Value();
   int first = info[1]->Int32Value();
   int count = info[2]->Int32Value();
 
   glDrawArrays(mode, first, count);
 
+  gl->dirty = true;
+
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::DrawArraysInstancedANGLE) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   int mode = info[0]->Int32Value();
   int first = info[1]->Int32Value();
   int count = info[2]->Int32Value();
   int primcount = info[3]->Int32Value();
 
   glDrawArraysInstanced(mode, first, count, primcount);
+
+  gl->dirty = true;
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -2183,6 +2189,7 @@ NAN_METHOD(WebGLRenderingContext::ActiveTexture) {
 
 
 NAN_METHOD(WebGLRenderingContext::DrawElements) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLenum mode = info[0]->Uint32Value();
   GLsizei count = info[1]->Int32Value();
   GLenum type = info[2]->Uint32Value();
@@ -2190,10 +2197,13 @@ NAN_METHOD(WebGLRenderingContext::DrawElements) {
 
   glDrawElements(mode, count, type, offset);
 
+  gl->dirty = true;
+
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::DrawElementsInstancedANGLE) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLenum mode = info[0]->Uint32Value();
   GLsizei count = info[1]->Int32Value();
   GLenum type = info[2]->Uint32Value();
@@ -2201,6 +2211,8 @@ NAN_METHOD(WebGLRenderingContext::DrawElementsInstancedANGLE) {
   GLsizei primcount = info[4]->Int32Value();
 
   glDrawElementsInstanced(mode, count, type, offset, primcount);
+
+  gl->dirty = true;
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
