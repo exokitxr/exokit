@@ -1821,7 +1821,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       !levelNumber.IsEmpty() && !internalformat.IsEmpty() &&
       !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
       !formatNumber.IsEmpty() && !typeNumber.IsEmpty() &&
-      (pixels->IsNull() || pixels->IsArrayBufferView() || pixels->IsNumber())
+      (pixels->IsNull() || pixels->IsObject() || pixels->IsNumber())
     ) {
       // nothing
     } else {
@@ -1843,14 +1843,14 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
       !formatNumber.IsEmpty() && !typeNumber.IsEmpty()
     ) {
-      if (pixels->IsNull()) {
-        // nothing
-      } else if (pixels->IsObject() && !srcOffsetNumber.IsEmpty()) {
+      if (pixels->IsArrayBufferView() && !srcOffsetNumber.IsEmpty()) {
         Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(pixels);
         size_t srcOffsetInt = srcOffset->Uint32Value();
         size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
         size_t extraOffset = srcOffsetInt * elementSize;
         pixels = Uint8Array::New(arrayBufferView->Buffer(), arrayBufferView->ByteOffset() + extraOffset, arrayBufferView->ByteLength() - extraOffset);
+      } else if (pixels->IsNull() || pixels->IsObject()) {
+        // nothing
       } else {
         Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView srcData, number srcOffset)");
         return;
