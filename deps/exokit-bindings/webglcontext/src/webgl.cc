@@ -2896,10 +2896,22 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
   GLenum formatV = info[6]->Int32Value();
   GLenum typeV = info[7]->Int32Value();
   Local<Value> pixels = info[8];
+  Local<Value> srcOffset = info[9];
+  
+  if (pixels->IsArrayBufferView() && srcOffset->IsNumber()) {
+    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(pixels);
+    size_t srcOffsetInt = srcOffset->Uint32Value();
+    size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
+    size_t extraOffset = srcOffsetInt * elementSize;
+    pixels = Uint8Array::New(arrayBufferView->Buffer(), arrayBufferView->ByteOffset() + extraOffset, arrayBufferView->ByteLength() - extraOffset);
+  }
 
   char *pixelsV;
   if (pixels->IsNull()) {
     glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, nullptr);
+  } else if (pixels->IsNumber()) {
+    GLintptr offsetV = pixels->Uint32Value();
+    glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, (void *)offsetV);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     size_t formatSize = getFormatSize(formatV);
     size_t typeSize = getTypeSize(typeV);
