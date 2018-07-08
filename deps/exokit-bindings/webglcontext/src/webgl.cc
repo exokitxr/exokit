@@ -1741,6 +1741,18 @@ int getImageFormat(Local<Value> arg) {
   }
 }
 
+size_t getArrayBufferViewElementSize(Local<ArrayBufferView> arrayBufferView) {
+  if (arrayBufferView->IsFloat64Array()) {
+    return 8;
+  } else if (arrayBufferView->IsFloat32Array() || arrayBufferView->IsUint32Array() || arrayBufferView->IsInt32Array()) {
+    return 4;
+  } else if (arrayBufferView->IsUint16Array() || arrayBufferView->IsInt16Array()) {
+    return 2;
+  } else {
+    return 0;
+  }
+}
+
 NAN_METHOD(WebGLRenderingContext::TexImage2D) {
   Isolate *isolate = Isolate::GetCurrent();
 
@@ -1753,6 +1765,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
   Local<Value> format = info[6];
   Local<Value> type = info[7];
   Local<Value> pixels = info[8];
+  Local<Value> srcOffset = info[9];
 
   Local<String> widthString = String::NewFromUtf8(isolate, "width", NewStringType::kInternalized).ToLocalChecked();
   Local<String> heightString = String::NewFromUtf8(isolate, "height", NewStringType::kInternalized).ToLocalChecked();
@@ -1808,14 +1821,42 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       !levelNumber.IsEmpty() && !internalformat.IsEmpty() &&
       !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
       !formatNumber.IsEmpty() && !typeNumber.IsEmpty() &&
-        (pixels->IsNull() || !Nan::To<Object>(pixels).IsEmpty())
+      (pixels->IsNull() || pixels->IsObject() || pixels->IsNumber())
     ) {
-      /* if (pixels) {
-        pixels = _getImageData(pixels);
-      } */
-      // return _texImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+      // nothing
     } else {
       Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView pixels)");
+      return;
+    }
+  } else if (info.Length() == 10) {
+    MaybeLocal<Number> targetNumber(Nan::To<Number>(target));
+    MaybeLocal<Number> levelNumber(Nan::To<Number>(level));
+    MaybeLocal<Number> internalformatNumber(Nan::To<Number>(internalformat));
+    MaybeLocal<Number> widthNumber(Nan::To<Number>(width));
+    MaybeLocal<Number> heightNumber(Nan::To<Number>(height));
+    MaybeLocal<Number> formatNumber(Nan::To<Number>(format));
+    MaybeLocal<Number> typeNumber(Nan::To<Number>(type));
+    MaybeLocal<Number> srcOffsetNumber(Nan::To<Number>(srcOffset));
+    if (
+      !targetNumber.IsEmpty() &&
+      !levelNumber.IsEmpty() && !internalformat.IsEmpty() &&
+      !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
+      !formatNumber.IsEmpty() && !typeNumber.IsEmpty()
+    ) {
+      if (pixels->IsArrayBufferView() && !srcOffsetNumber.IsEmpty()) {
+        Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(pixels);
+        size_t srcOffsetInt = srcOffset->Uint32Value();
+        size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
+        size_t extraOffset = srcOffsetInt * elementSize;
+        pixels = Uint8Array::New(arrayBufferView->Buffer(), arrayBufferView->ByteOffset() + extraOffset, arrayBufferView->ByteLength() - extraOffset);
+      } else if (pixels->IsNull() || pixels->IsObject()) {
+        // nothing
+      } else {
+        Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView srcData, number srcOffset)");
+        return;
+      }
+    } else {
+      Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView srcData, number srcOffset)");
       return;
     }
   } else {
@@ -1823,24 +1864,25 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     return;
   }
 
-  int targetV = target->Int32Value();
-  int levelV = level->Int32Value();
-  int internalformatV = internalformat->Int32Value();
-  int widthV = width->Int32Value();
-  int heightV = height->Int32Value();
-  int borderV = border->Int32Value();
-  int formatV = format->Int32Value();
-  int typeV = type->Int32Value();
+  GLenum targetV = target->Uint32Value();
+  GLenum levelV = level->Uint32Value();
+  GLenum internalformatV = internalformat->Uint32Value();
+  GLsizei widthV = width->Uint32Value();
+  GLsizei heightV = height->Uint32Value();
+  GLint borderV = border->Int32Value();
+  GLenum formatV = format->Uint32Value();
+  GLenum typeV = type->Uint32Value();
 
   internalformatV = normalizeInternalFormat(internalformatV, formatV, typeV);
 
-  // int num;
-  char *pixelsV;
-
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
+  char *pixelsV;
   if (pixels->IsNull()) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, nullptr);
+  } else if (pixels->IsNumber()) {
+    GLintptr offsetV = pixels->Uint32Value();
+    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, (void *)offsetV);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     size_t formatSize = getFormatSize(formatV);
     size_t typeSize = getTypeSize(typeV);
@@ -2854,12 +2896,22 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
   GLenum formatV = info[6]->Int32Value();
   GLenum typeV = info[7]->Int32Value();
   Local<Value> pixels = info[8];
+  Local<Value> srcOffset = info[9];
+  
+  if (pixels->IsArrayBufferView() && srcOffset->IsNumber()) {
+    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(pixels);
+    size_t srcOffsetInt = srcOffset->Uint32Value();
+    size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
+    size_t extraOffset = srcOffsetInt * elementSize;
+    pixels = Uint8Array::New(arrayBufferView->Buffer(), arrayBufferView->ByteOffset() + extraOffset, arrayBufferView->ByteLength() - extraOffset);
+  }
 
-  // int num;
   char *pixelsV;
-
   if (pixels->IsNull()) {
     glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, nullptr);
+  } else if (pixels->IsNumber()) {
+    GLintptr offsetV = pixels->Uint32Value();
+    glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, (void *)offsetV);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     size_t formatSize = getFormatSize(formatV);
     size_t typeSize = getTypeSize(typeV);
