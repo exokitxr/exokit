@@ -693,6 +693,8 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "validateProgram", glCallWrap<ValidateProgram>);
 
   Nan::SetMethod(proto, "texSubImage2D", glCallWrap<TexSubImage2D>);
+  Nan::SetMethod(proto, "texStorage2D", glCallWrap<TexStorage2D>);
+  
   Nan::SetMethod(proto, "readPixels", glCallWrap<ReadPixels>);
   Nan::SetMethod(proto, "getTexParameter", glCallWrap<GetTexParameter>);
   Nan::SetMethod(proto, "getActiveAttrib", glCallWrap<GetActiveAttrib>);
@@ -2890,6 +2892,17 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
       memcpy(&(texPixels[(height - 1 - y) * width * elementSize]), &pixels[y * width * elementSize], width * elementSize);
     }
   } */
+}
+
+NAN_METHOD(WebGLRenderingContext::TexStorage2D) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  GLenum target = info[0]->Uint32Value();
+  GLint levels = info[1]->Int32Value();
+  GLenum internalFormat = info[2]->Uint32Value();
+  GLsizei width = info[3]->Uint32Value();
+  GLsizei height = info[4]->Uint32Value();
+  
+  glTexStorage2D(target, levels, internalFormat, width, height);
 }
 
 NAN_METHOD(WebGLRenderingContext::ReadPixels) {
