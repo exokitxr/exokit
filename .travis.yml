@@ -20,7 +20,7 @@ matrix:
     deploy:
     - provider: releases
       api_key:
-        secure: OlejFsEjiEBzw44wFRlmQb3stF+PURu52AMogc1t4qu54x6YRxxk0NMlv3nzGlObo9JnOPMhAfISgDr8515jqvGEfFXcDzFOPIx42nyqVZe0I8UCA4cRbsV3EvvXtYfbwaXa9n65kk+RuEJEdtqEAWy9xYjiJGDhtkKv2khVDIVhrS6fbleHGanNcFlYsOzyf7ZWouFq4wIEX+ovNhe2hRZKRjzgKnFcPaKIzlG8qQF3WrdL0L4D2FE6xA4+lc56R2dKrpmvR9r32kRLS620apS0iFKOWwttgNiIf580RElmUGa+mTEi9Bob9pods0pcmLpWhhqRddPyi5G2PVgZG1FCaXdymwmS7FsNNo1sqvAmISuhcQrHNUMqmdYbpl7vvBHHmzXPIQjfxPU9zaPFEctW+wqmZUf+WuWJeZmQInCbUxe/bRS9OFQtRMiyzcdFvYfOtZg/Sv8/YeaihGff+n0k36Im3TPygsDLEaMBpTM4EXUd6TRk+631nUVQy/Z8WSzWwKWM2cCjRtMbKqDVy7M2vYBYQ1F9WlZidGUD5nYu1uNKsV7rfqpNsvagt7dQL8aJRQN0JgAKgRe8sKXUzl299JXTo+TdTUgqmkr4DoAoH6972JcdcT1mRK8B1oMjLFkB8oef9SbfOoBRKT17V65dZHTJEMhgKLQHrCpcbHE=
+        secure: "$GH_TOKEN"
       file: exokit-linux.tar.gz
       body: Exokit git release
       on:
@@ -29,7 +29,7 @@ matrix:
       skip_cleanup: true
     - provider: releases
       api_key:
-        secure: OlejFsEjiEBzw44wFRlmQb3stF+PURu52AMogc1t4qu54x6YRxxk0NMlv3nzGlObo9JnOPMhAfISgDr8515jqvGEfFXcDzFOPIx42nyqVZe0I8UCA4cRbsV3EvvXtYfbwaXa9n65kk+RuEJEdtqEAWy9xYjiJGDhtkKv2khVDIVhrS6fbleHGanNcFlYsOzyf7ZWouFq4wIEX+ovNhe2hRZKRjzgKnFcPaKIzlG8qQF3WrdL0L4D2FE6xA4+lc56R2dKrpmvR9r32kRLS620apS0iFKOWwttgNiIf580RElmUGa+mTEi9Bob9pods0pcmLpWhhqRddPyi5G2PVgZG1FCaXdymwmS7FsNNo1sqvAmISuhcQrHNUMqmdYbpl7vvBHHmzXPIQjfxPU9zaPFEctW+wqmZUf+WuWJeZmQInCbUxe/bRS9OFQtRMiyzcdFvYfOtZg/Sv8/YeaihGff+n0k36Im3TPygsDLEaMBpTM4EXUd6TRk+631nUVQy/Z8WSzWwKWM2cCjRtMbKqDVy7M2vYBYQ1F9WlZidGUD5nYu1uNKsV7rfqpNsvagt7dQL8aJRQN0JgAKgRe8sKXUzl299JXTo+TdTUgqmkr4DoAoH6972JcdcT1mRK8B1oMjLFkB8oef9SbfOoBRKT17V65dZHTJEMhgKLQHrCpcbHE=
+        secure: "$GH_TOKEN"
       file: exokit-linux-bin.tar.gz
       body: Exokit git release
       on:
@@ -38,7 +38,7 @@ matrix:
       skip_cleanup: true
     - provider: releases
       api_key:
-        secure: OlejFsEjiEBzw44wFRlmQb3stF+PURu52AMogc1t4qu54x6YRxxk0NMlv3nzGlObo9JnOPMhAfISgDr8515jqvGEfFXcDzFOPIx42nyqVZe0I8UCA4cRbsV3EvvXtYfbwaXa9n65kk+RuEJEdtqEAWy9xYjiJGDhtkKv2khVDIVhrS6fbleHGanNcFlYsOzyf7ZWouFq4wIEX+ovNhe2hRZKRjzgKnFcPaKIzlG8qQF3WrdL0L4D2FE6xA4+lc56R2dKrpmvR9r32kRLS620apS0iFKOWwttgNiIf580RElmUGa+mTEi9Bob9pods0pcmLpWhhqRddPyi5G2PVgZG1FCaXdymwmS7FsNNo1sqvAmISuhcQrHNUMqmdYbpl7vvBHHmzXPIQjfxPU9zaPFEctW+wqmZUf+WuWJeZmQInCbUxe/bRS9OFQtRMiyzcdFvYfOtZg/Sv8/YeaihGff+n0k36Im3TPygsDLEaMBpTM4EXUd6TRk+631nUVQy/Z8WSzWwKWM2cCjRtMbKqDVy7M2vYBYQ1F9WlZidGUD5nYu1uNKsV7rfqpNsvagt7dQL8aJRQN0JgAKgRe8sKXUzl299JXTo+TdTUgqmkr4DoAoH6972JcdcT1mRK8B1oMjLFkB8oef9SbfOoBRKT17V65dZHTJEMhgKLQHrCpcbHE=
+        secure: "$GH_TOKEN"
       file: exokit-linux-full.tar.gz
       body: Exokit git release
       on:
@@ -71,7 +71,7 @@ matrix:
     deploy:
     - provider: releases
       api_key:
-        secure: OlejFsEjiEBzw44wFRlmQb3stF+PURu52AMogc1t4qu54x6YRxxk0NMlv3nzGlObo9JnOPMhAfISgDr8515jqvGEfFXcDzFOPIx42nyqVZe0I8UCA4cRbsV3EvvXtYfbwaXa9n65kk+RuEJEdtqEAWy9xYjiJGDhtkKv2khVDIVhrS6fbleHGanNcFlYsOzyf7ZWouFq4wIEX+ovNhe2hRZKRjzgKnFcPaKIzlG8qQF3WrdL0L4D2FE6xA4+lc56R2dKrpmvR9r32kRLS620apS0iFKOWwttgNiIf580RElmUGa+mTEi9Bob9pods0pcmLpWhhqRddPyi5G2PVgZG1FCaXdymwmS7FsNNo1sqvAmISuhcQrHNUMqmdYbpl7vvBHHmzXPIQjfxPU9zaPFEctW+wqmZUf+WuWJeZmQInCbUxe/bRS9OFQtRMiyzcdFvYfOtZg/Sv8/YeaihGff+n0k36Im3TPygsDLEaMBpTM4EXUd6TRk+631nUVQy/Z8WSzWwKWM2cCjRtMbKqDVy7M2vYBYQ1F9WlZidGUD5nYu1uNKsV7rfqpNsvagt7dQL8aJRQN0JgAKgRe8sKXUzl299JXTo+TdTUgqmkr4DoAoH6972JcdcT1mRK8B1oMjLFkB8oef9SbfOoBRKT17V65dZHTJEMhgKLQHrCpcbHE=
+        secure: "$GH_TOKEN"
       file: exokit-macos.tar.gz
       body: Exokit git release
       on:
@@ -80,7 +80,7 @@ matrix:
       skip_cleanup: true
     - provider: releases
       api_key:
-        secure: OlejFsEjiEBzw44wFRlmQb3stF+PURu52AMogc1t4qu54x6YRxxk0NMlv3nzGlObo9JnOPMhAfISgDr8515jqvGEfFXcDzFOPIx42nyqVZe0I8UCA4cRbsV3EvvXtYfbwaXa9n65kk+RuEJEdtqEAWy9xYjiJGDhtkKv2khVDIVhrS6fbleHGanNcFlYsOzyf7ZWouFq4wIEX+ovNhe2hRZKRjzgKnFcPaKIzlG8qQF3WrdL0L4D2FE6xA4+lc56R2dKrpmvR9r32kRLS620apS0iFKOWwttgNiIf580RElmUGa+mTEi9Bob9pods0pcmLpWhhqRddPyi5G2PVgZG1FCaXdymwmS7FsNNo1sqvAmISuhcQrHNUMqmdYbpl7vvBHHmzXPIQjfxPU9zaPFEctW+wqmZUf+WuWJeZmQInCbUxe/bRS9OFQtRMiyzcdFvYfOtZg/Sv8/YeaihGff+n0k36Im3TPygsDLEaMBpTM4EXUd6TRk+631nUVQy/Z8WSzWwKWM2cCjRtMbKqDVy7M2vYBYQ1F9WlZidGUD5nYu1uNKsV7rfqpNsvagt7dQL8aJRQN0JgAKgRe8sKXUzl299JXTo+TdTUgqmkr4DoAoH6972JcdcT1mRK8B1oMjLFkB8oef9SbfOoBRKT17V65dZHTJEMhgKLQHrCpcbHE=
+        secure: "$GH_TOKEN"
       file: exokit-macos-full.tar.gz
       body: Exokit git release
       on:
@@ -89,7 +89,7 @@ matrix:
       skip_cleanup: true
     - provider: releases
       api_key:
-        secure: OlejFsEjiEBzw44wFRlmQb3stF+PURu52AMogc1t4qu54x6YRxxk0NMlv3nzGlObo9JnOPMhAfISgDr8515jqvGEfFXcDzFOPIx42nyqVZe0I8UCA4cRbsV3EvvXtYfbwaXa9n65kk+RuEJEdtqEAWy9xYjiJGDhtkKv2khVDIVhrS6fbleHGanNcFlYsOzyf7ZWouFq4wIEX+ovNhe2hRZKRjzgKnFcPaKIzlG8qQF3WrdL0L4D2FE6xA4+lc56R2dKrpmvR9r32kRLS620apS0iFKOWwttgNiIf580RElmUGa+mTEi9Bob9pods0pcmLpWhhqRddPyi5G2PVgZG1FCaXdymwmS7FsNNo1sqvAmISuhcQrHNUMqmdYbpl7vvBHHmzXPIQjfxPU9zaPFEctW+wqmZUf+WuWJeZmQInCbUxe/bRS9OFQtRMiyzcdFvYfOtZg/Sv8/YeaihGff+n0k36Im3TPygsDLEaMBpTM4EXUd6TRk+631nUVQy/Z8WSzWwKWM2cCjRtMbKqDVy7M2vYBYQ1F9WlZidGUD5nYu1uNKsV7rfqpNsvagt7dQL8aJRQN0JgAKgRe8sKXUzl299JXTo+TdTUgqmkr4DoAoH6972JcdcT1mRK8B1oMjLFkB8oef9SbfOoBRKT17V65dZHTJEMhgKLQHrCpcbHE=
+        secure: "$GH_TOKEN"
       file: exokit-macos-x64.dmg
       body: Exokit macOS release
       on:
