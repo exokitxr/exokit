@@ -205,6 +205,7 @@ public:
   static NAN_METHOD(IsShader);
   static NAN_METHOD(IsTexture);
   static NAN_METHOD(IsVertexArray);
+  static NAN_METHOD(IsSync);
 
   static NAN_METHOD(RenderbufferStorage);
   static NAN_METHOD(GetShaderSource);

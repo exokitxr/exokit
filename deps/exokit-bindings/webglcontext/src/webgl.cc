@@ -687,6 +687,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "isShader", glCallWrap<IsShader>);
   Nan::SetMethod(proto, "isTexture", glCallWrap<IsTexture>);
   Nan::SetMethod(proto, "isVertexArray", glCallWrap<IsVertexArray>);
+  Nan::SetMethod(proto, "isSync", glCallWrap<IsSync>);
 
   Nan::SetMethod(proto, "renderbufferStorage", glCallWrap<RenderbufferStorage>);
   Nan::SetMethod(proto, "getShaderSource", glCallWrap<GetShaderSource>);
@@ -2848,6 +2849,27 @@ NAN_METHOD(WebGLRenderingContext::IsVertexArray) {
     bool ret = glIsVertexArray(arg) != 0;
 
     info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::IsSync) {
+  if (info[0]->IsObject()) {
+    Local<Value> syncId = info[0]->ToObject()->Get(JS_STR("id"));
+    if (syncId->IsArray()) {
+      Local<Array> syncArray = Local<Array>::Cast(syncId);
+      if (syncArray->Get(0)->IsNumber() && syncArray->Get(1)->IsNumber()) {
+        GLsync sync = (GLsync)arrayToPointer(syncArray);
+        bool ret = glIsSync(sync) != 0;
+
+        info.GetReturnValue().Set(JS_BOOL(ret));
+      } else {
+        info.GetReturnValue().Set(Nan::New<Boolean>(false));
+      }
+    } else {
+      info.GetReturnValue().Set(Nan::New<Boolean>(false));
+    }
   } else {
     info.GetReturnValue().Set(Nan::New<Boolean>(false));
   }
