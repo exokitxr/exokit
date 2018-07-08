@@ -56,6 +56,7 @@
 #define CONTEXT_LOST_WEBGL 0x9242
 #define UNPACK_COLORSPACE_CONVERSION_WEBGL 0x9243
 #define BROWSER_DEFAULT_WEBGL 0x9244
+#define MAX_CLIENT_WAIT_TIMEOUT_WEBGL ((uint32_t)2e7)
 
 #include <defines.h>
 #include <glfw.h>
