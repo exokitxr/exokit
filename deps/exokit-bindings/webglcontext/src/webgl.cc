@@ -1821,12 +1821,9 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       !levelNumber.IsEmpty() && !internalformat.IsEmpty() &&
       !widthNumber.IsEmpty() && !heightNumber.IsEmpty() &&
       !formatNumber.IsEmpty() && !typeNumber.IsEmpty() &&
-      (pixels->IsNull() || pixels->isObject() || pixels->IsNumber())
+      (pixels->IsNull() || pixels->IsArrayBufferView() || pixels->IsNumber())
     ) {
-      /* if (pixels) {
-        pixels = _getImageData(pixels);
-      } */
-      // return _texImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+      // nothing
     } else {
       Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView pixels)");
       return;
@@ -2895,9 +2892,7 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
   GLenum typeV = info[7]->Int32Value();
   Local<Value> pixels = info[8];
 
-  // int num;
   char *pixelsV;
-
   if (pixels->IsNull()) {
     glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, nullptr);
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
