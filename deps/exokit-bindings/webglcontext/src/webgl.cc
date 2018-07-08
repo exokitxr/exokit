@@ -2063,7 +2063,7 @@ NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
     mask,
     filter
   );
-  
+
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
@@ -2099,7 +2099,7 @@ NAN_METHOD(WebGLRenderingContext::BufferSubData) {
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(obj);
     int size = arrayBufferView->ByteLength();
     char *data = (char *)arrayBufferView->Buffer()->GetContents().Data() + arrayBufferView->ByteOffset();
-    
+
     glBufferSubData(target, offset, size, data);
 
     // info.GetReturnValue().Set(Nan::Undefined());
@@ -2107,7 +2107,7 @@ NAN_METHOD(WebGLRenderingContext::BufferSubData) {
     Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(obj);
     int size = arrayBuffer->ByteLength();
     char *data = (char *)arrayBuffer->GetContents().Data();
-    
+
     glBufferSubData(target, offset, size, data);
 
     // info.GetReturnValue().Set(Nan::Undefined());
