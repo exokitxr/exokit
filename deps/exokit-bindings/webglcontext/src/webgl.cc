@@ -3701,9 +3701,13 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       GLint param;
       glGetIntegerv(name, &param);
 
-      Local<Object> object = Nan::New<Object>();
-      object->Set(JS_STR("id"), JS_INT(param));
-      info.GetReturnValue().Set(object);
+      if (param != 0) {
+        Local<Object> object = Nan::New<Object>();
+        object->Set(JS_STR("id"), JS_INT(param));
+        info.GetReturnValue().Set(object);
+      } else {
+        info.GetReturnValue().Set(Nan::Null());
+      }
       break;
     }
     case GL_COMPRESSED_TEXTURE_FORMATS:
