@@ -590,6 +590,10 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "uniform2i", glCallWrap<Uniform2i>);
   Nan::SetMethod(proto, "uniform3i", glCallWrap<Uniform3i>);
   Nan::SetMethod(proto, "uniform4i", glCallWrap<Uniform4i>);
+  Nan::SetMethod(proto, "uniform1ui", glCallWrap<Uniform1ui>);
+  Nan::SetMethod(proto, "uniform2ui", glCallWrap<Uniform2ui>);
+  Nan::SetMethod(proto, "uniform3ui", glCallWrap<Uniform3ui>);
+  Nan::SetMethod(proto, "uniform4ui", glCallWrap<Uniform4ui>);
   Nan::SetMethod(proto, "uniform1fv", glCallWrap<Uniform1fv>);
   Nan::SetMethod(proto, "uniform2fv", glCallWrap<Uniform2fv>);
   Nan::SetMethod(proto, "uniform3fv", glCallWrap<Uniform3fv>);
@@ -997,6 +1001,48 @@ NAN_METHOD(WebGLRenderingContext::Uniform4i) {
     GLint y = info[2]->Int32Value();
     GLint z = info[3]->Int32Value();
     GLint w = info[4]->Int32Value();
+
+    glUniform4i(location, x, y, z, w);
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::Uniform1ui) {
+  if (info[0]->IsObject()) {
+    GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+    GLuint x = info[1]->Int32Value();
+
+    glUniform1i(location, x);
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::Uniform2ui) {
+  if (info[0]->IsObject()) {
+    GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+    GLuint x = info[1]->Int32Value();
+    GLuint y = info[2]->Int32Value();
+
+    glUniform2i(location, x, y);
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::Uniform3ui) {
+  if (info[0]->IsObject()) {
+    GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+    GLuint x = info[1]->Int32Value();
+    GLuint y = info[2]->Int32Value();
+    GLuint z = info[3]->Int32Value();
+
+    glUniform3i(location, x, y, z);
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::Uniform4ui) {
+  if (info[0]->IsObject()) {
+    GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+    GLuint x = info[1]->Int32Value();
+    GLuint y = info[2]->Int32Value();
+    GLuint z = info[3]->Int32Value();
+    GLuint w = info[4]->Int32Value();
 
     glUniform4i(location, x, y, z, w);
   }

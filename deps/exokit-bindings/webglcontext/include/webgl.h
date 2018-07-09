@@ -88,6 +88,10 @@ public:
   static NAN_METHOD(Uniform2i);
   static NAN_METHOD(Uniform3i);
   static NAN_METHOD(Uniform4i);
+  static NAN_METHOD(Uniform1ui);
+  static NAN_METHOD(Uniform2ui);
+  static NAN_METHOD(Uniform3ui);
+  static NAN_METHOD(Uniform4ui);
   static NAN_METHOD(Uniform1fv);
   static NAN_METHOD(Uniform2fv);
   static NAN_METHOD(Uniform3fv);
