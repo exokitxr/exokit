@@ -3615,7 +3615,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     }
     case GL_VERSION:
     {
-      Local<Value> constructorName = info.This()->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
+      Local<Value> constructorName = info.This()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
       if (constructorName->StrictEquals(JS_STR("WebGL2RenderingContext"))) {
         info.GetReturnValue().Set(JS_STR("WebGL 2"));
       } else {
