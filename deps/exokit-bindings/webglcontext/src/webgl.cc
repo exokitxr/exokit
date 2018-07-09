@@ -963,7 +963,7 @@ NAN_METHOD(WebGLRenderingContext::Uniform4f) {
 NAN_METHOD(WebGLRenderingContext::Uniform1i) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int x = info[1]->Int32Value();
+    GLint x = info[1]->Int32Value();
 
     glUniform1i(location, x);
   }
@@ -972,8 +972,8 @@ NAN_METHOD(WebGLRenderingContext::Uniform1i) {
 NAN_METHOD(WebGLRenderingContext::Uniform2i) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int x = info[1]->Int32Value();
-    int y = info[2]->Int32Value();
+    GLint x = info[1]->Int32Value();
+    GLint y = info[2]->Int32Value();
 
     glUniform2i(location, x, y);
   }
@@ -982,9 +982,9 @@ NAN_METHOD(WebGLRenderingContext::Uniform2i) {
 NAN_METHOD(WebGLRenderingContext::Uniform3i) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int x = info[1]->Int32Value();
-    int y = info[2]->Int32Value();
-    int z = info[3]->Int32Value();
+    GLint x = info[1]->Int32Value();
+    GLint y = info[2]->Int32Value();
+    GLint z = info[3]->Int32Value();
 
     glUniform3i(location, x, y, z);
   }
@@ -993,10 +993,10 @@ NAN_METHOD(WebGLRenderingContext::Uniform3i) {
 NAN_METHOD(WebGLRenderingContext::Uniform4i) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int x = info[1]->Int32Value();
-    int y = info[2]->Int32Value();
-    int z = info[3]->Int32Value();
-    int w = info[4]->Int32Value();
+    GLint x = info[1]->Int32Value();
+    GLint y = info[2]->Int32Value();
+    GLint z = info[3]->Int32Value();
+    GLint w = info[4]->Int32Value();
 
     glUniform4i(location, x, y, z, w);
   }
