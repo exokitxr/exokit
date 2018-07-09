@@ -3615,8 +3615,12 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     }
     case GL_VERSION:
     {
-      info.GetReturnValue().Set(JS_STR("WebGL 1"));
-
+      Local<Value> constructorName = info.This()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
+      if (constructorName->StrictEquals(JS_STR("WebGL2RenderingContext"))) {
+        info.GetReturnValue().Set(JS_STR("WebGL 2"));
+      } else {
+        info.GetReturnValue().Set(JS_STR("WebGL 1"));
+      }
       break;
     }
     case GL_MAX_VIEWPORT_DIMS:
