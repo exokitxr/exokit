@@ -2487,8 +2487,6 @@ NAN_METHOD(WebGLRenderingContext::VertexAttribDivisor) {
   GLuint divisor = info[1]->Uint32Value();
 
   glVertexAttribDivisor(index, divisor);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::DrawBuffersWEBGL) {
