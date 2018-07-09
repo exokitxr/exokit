@@ -1325,8 +1325,6 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix3fv) {
 
   GLfloat *data;
   GLsizei count;
-  // GLfloat* data=getArrayData<GLfloat>(info[2],&count);
-
   if (info[2]->IsArray()) {
     Local<Array> array = Local<Array>::Cast(info[2]);
     unsigned int length = array->Length();
@@ -1344,8 +1342,6 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix3fv) {
   }else{
     count /= 9;
     glUniformMatrix3fv(location, count, transpose, data);
-
-    // info.GetReturnValue().Set(Nan::Undefined());
   }
 }
 
@@ -1355,8 +1351,6 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix4fv) {
 
   GLfloat *data;
   GLsizei count;
-  // GLfloat* data=getArrayData<GLfloat>(info[2],&count);
-
   if (info[2]->IsArray()) {
     Local<Array> array = Local<Array>::Cast(info[2]);
     unsigned int length = array->Length();
