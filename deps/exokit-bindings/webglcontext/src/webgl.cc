@@ -3697,12 +3697,14 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     }
     case GL_ARRAY_BUFFER_BINDING:
     case GL_ELEMENT_ARRAY_BUFFER_BINDING:
-    case GL_FRAMEBUFFER_BINDING:
+    case GL_FRAMEBUFFER_BINDING: // == GL_DRAW_FRAMEBUFFER_BINDING
+    case GL_READ_FRAMEBUFFER_BINDING:
     case GL_RENDERBUFFER_BINDING:
     case GL_TEXTURE_BINDING_2D:
     case GL_TEXTURE_BINDING_CUBE_MAP:
     case GL_ACTIVE_TEXTURE:
     case GL_CURRENT_PROGRAM:
+    case GL_VERTEX_ARRAY_BINDING:
     {
       GLint param;
       glGetIntegerv(name, &param);
