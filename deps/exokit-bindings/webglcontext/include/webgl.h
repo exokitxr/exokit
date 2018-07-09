@@ -147,6 +147,7 @@ public:
   static NAN_METHOD(ActiveTexture);
   static NAN_METHOD(DrawElements);
   static NAN_METHOD(DrawElementsInstanced);
+  static NAN_METHOD(DrawRangeElements);
   static NAN_METHOD(Flush);
   static NAN_METHOD(Finish);
 
