@@ -653,6 +653,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "activeTexture", glCallWrap<ActiveTexture>);
   Nan::SetMethod(proto, "drawElements", glCallWrap<DrawElements>);
   Nan::SetMethod(proto, "drawElementsInstanced", glCallWrap<DrawElementsInstanced>);
+  Nan::SetMethod(proto, "drawRangeElements", glCallWrap<DrawRangeElements>);
   Nan::SetMethod(proto, "flush", glCallWrap<Flush>);
   Nan::SetMethod(proto, "finish", glCallWrap<Finish>);
 
@@ -2297,6 +2298,19 @@ NAN_METHOD(WebGLRenderingContext::DrawElementsInstanced) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(WebGLRenderingContext::DrawRangeElements) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  GLenum mode = info[0]->Uint32Value();
+  GLuint start = info[1]->Uint32Value();
+  GLuint end = info[2]->Uint32Value();
+  GLsizei count = info[3]->Uint32Value();
+  GLenum type = info[4]->Uint32Value();
+  GLintptr offset = info[5]->Int32Value();
+
+  glDrawRangeElements(mode, start, end, count, type, (void *)offset);
+
+  gl->dirty = true;
+}
 
 NAN_METHOD(WebGLRenderingContext::Flush) {
   // Nan::HandleScope scope;
