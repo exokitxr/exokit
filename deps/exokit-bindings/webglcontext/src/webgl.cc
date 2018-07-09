@@ -2333,8 +2333,6 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib1f) {
   GLfloat x = info[1]->NumberValue();
 
   glVertexAttrib1f(indx, x);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib2f) {
@@ -2343,8 +2341,6 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib2f) {
   float y = (float)info[2]->NumberValue();
 
   glVertexAttrib2f(indx, x, y);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib3f) {
@@ -2354,8 +2350,6 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib3f) {
   float z = (float)info[3]->NumberValue();
 
   glVertexAttrib3f(indx, x, y, z);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib4f) {
@@ -2366,16 +2360,13 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib4f) {
   float w = (float)info[4]->NumberValue();
 
   glVertexAttrib4f(indx, x, y, z, w);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib1fv) {
   int indx = info[0]->Int32Value();
+  
   GLfloat *data;
   int num;
-  // GLfloat *data = getArrayData<GLfloat>(info[1]);
-
   if (info[1]->IsArray()) {
     Local<Array> array = Local<Array>::Cast(info[1]);
     unsigned int length = array->Length();
@@ -2389,16 +2380,13 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib1fv) {
   }
 
   glVertexAttrib1fv(indx, data);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib2fv) {
   int indx = info[0]->Int32Value();
+  
   GLfloat *data;
   int num;
-  // GLfloat *data = getArrayData<GLfloat>(info[1]);
-
   if (info[1]->IsArray()) {
     Local<Array> array = Local<Array>::Cast(info[1]);
     unsigned int length = array->Length();
@@ -2412,16 +2400,13 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib2fv) {
   }
 
   glVertexAttrib2fv(indx, data);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib3fv) {
   int indx = info[0]->Int32Value();
+  
   GLfloat *data;
   int num;
-  // GLfloat *data = getArrayData<GLfloat>(info[1]);
-
   if (info[1]->IsArray()) {
     Local<Array> array = Local<Array>::Cast(info[1]);
     unsigned int length = array->Length();
@@ -2435,16 +2420,13 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib3fv) {
   }
 
   glVertexAttrib3fv(indx, data);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib4fv) {
   int indx = info[0]->Int32Value();
+  
   GLfloat *data;
   int num;
-  // GLfloat *data = getArrayData<GLfloat>(info[1]);
-
   if (info[1]->IsArray()) {
     Local<Array> array = Local<Array>::Cast(info[1]);
     unsigned int length = array->Length();
@@ -2458,8 +2440,6 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib4fv) {
   }
 
   glVertexAttrib4fv(indx, data);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttribDivisor) {
