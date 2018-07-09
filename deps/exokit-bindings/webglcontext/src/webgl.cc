@@ -2592,7 +2592,7 @@ NAN_METHOD(WebGLRenderingContext::Hint) {
 }
 
 NAN_METHOD(WebGLRenderingContext::IsEnabled) {
-  GLenum cap = info[0]->Int32Value();
+  GLenum cap = info[0]->Uint32Value();
   bool ret = glIsEnabled(cap);
 
   info.GetReturnValue().Set(Nan::New<Boolean>(ret));
@@ -2806,7 +2806,7 @@ NAN_METHOD(WebGLRenderingContext::GetShaderPrecisionFormat) {
 
 NAN_METHOD(WebGLRenderingContext::IsBuffer) {
   if (info[0]->IsObject()) {
-    GLint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Int32Value() : 0;
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
     bool ret = glIsBuffer(arg);
 
     info.GetReturnValue().Set(Nan::New<Boolean>(ret));
@@ -2817,7 +2817,7 @@ NAN_METHOD(WebGLRenderingContext::IsBuffer) {
 
 NAN_METHOD(WebGLRenderingContext::IsFramebuffer) {
   if (info[0]->IsObject()) {
-    GLint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Int32Value() : 0;
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
     bool ret = glIsFramebuffer(arg);
 
     info.GetReturnValue().Set(JS_BOOL(ret));
@@ -2828,7 +2828,7 @@ NAN_METHOD(WebGLRenderingContext::IsFramebuffer) {
 
 NAN_METHOD(WebGLRenderingContext::IsProgram) {
   if (info[0]->IsObject()) {
-    GLint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Int32Value() : 0;
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
     bool ret = glIsProgram(arg);
 
     info.GetReturnValue().Set(JS_BOOL(ret));
@@ -2872,7 +2872,7 @@ NAN_METHOD(WebGLRenderingContext::IsTexture) {
 
 NAN_METHOD(WebGLRenderingContext::IsVertexArray) {
   if (info[0]->IsObject()) {
-    GLint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Int32Value() : 0;
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
     bool ret = glIsVertexArray(arg);
 
     info.GetReturnValue().Set(JS_BOOL(ret));
