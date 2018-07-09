@@ -602,7 +602,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "bindAttribLocation", glCallWrap<BindAttribLocation>);
   Nan::SetMethod(proto, "getError", glCallWrap<GetError>);
   Nan::SetMethod(proto, "drawArrays", glCallWrap<DrawArrays>);
-  Nan::SetMethod(proto, "drawArraysInstancedANGLE", glCallWrap<DrawArraysInstancedANGLE>);
+  Nan::SetMethod(proto, "drawArraysInstanced", glCallWrap<DrawArraysInstanced>);
   Nan::SetMethod(proto, "uniformMatrix2fv", glCallWrap<UniformMatrix2fv>);
   Nan::SetMethod(proto, "uniformMatrix3fv", glCallWrap<UniformMatrix3fv>);
   Nan::SetMethod(proto, "uniformMatrix4fv", glCallWrap<UniformMatrix4fv>);
@@ -652,7 +652,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "vertexAttribIPointer", glCallWrap<VertexAttribIPointer>);
   Nan::SetMethod(proto, "activeTexture", glCallWrap<ActiveTexture>);
   Nan::SetMethod(proto, "drawElements", glCallWrap<DrawElements>);
-  Nan::SetMethod(proto, "drawElementsInstancedANGLE", glCallWrap<DrawElementsInstancedANGLE>);
+  Nan::SetMethod(proto, "drawElementsInstanced", glCallWrap<DrawElementsInstanced>);
   Nan::SetMethod(proto, "flush", glCallWrap<Flush>);
   Nan::SetMethod(proto, "finish", glCallWrap<Finish>);
 
@@ -664,7 +664,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "vertexAttrib2fv", glCallWrap<VertexAttrib2fv>);
   Nan::SetMethod(proto, "vertexAttrib3fv", glCallWrap<VertexAttrib3fv>);
   Nan::SetMethod(proto, "vertexAttrib4fv", glCallWrap<VertexAttrib4fv>);
-  Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glCallWrap<VertexAttribDivisorANGLE>);
+  Nan::SetMethod(proto, "vertexAttribDivisor", glCallWrap<VertexAttribDivisor>);
 
   Nan::SetMethod(proto, "blendColor", BlendColor);
   Nan::SetMethod(proto, "blendEquationSeparate", BlendEquationSeparate);
@@ -1228,7 +1228,7 @@ NAN_METHOD(WebGLRenderingContext::DrawArrays) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(WebGLRenderingContext::DrawArraysInstancedANGLE) {
+NAN_METHOD(WebGLRenderingContext::DrawArraysInstanced) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   int mode = info[0]->Int32Value();
   int first = info[1]->Int32Value();
@@ -2282,7 +2282,7 @@ NAN_METHOD(WebGLRenderingContext::DrawElements) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(WebGLRenderingContext::DrawElementsInstancedANGLE) {
+NAN_METHOD(WebGLRenderingContext::DrawElementsInstanced) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLenum mode = info[0]->Uint32Value();
   GLsizei count = info[1]->Int32Value();
@@ -2448,7 +2448,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib4fv) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-NAN_METHOD(WebGLRenderingContext::VertexAttribDivisorANGLE) {
+NAN_METHOD(WebGLRenderingContext::VertexAttribDivisor) {
   unsigned int index = info[0]->Uint32Value();
   unsigned int divisor = info[1]->Uint32Value();
 
@@ -3646,9 +3646,9 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else if (strcmp(sname, "ANGLE_instanced_arrays") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
     result->Set(String::NewFromUtf8(Isolate::GetCurrent(), "GL_VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE"), Number::New(Isolate::GetCurrent(), GL_VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE));
-    Nan::SetMethod(result, "drawArraysInstancedANGLE", DrawArraysInstancedANGLE);
-    Nan::SetMethod(result, "drawElementsInstancedANGLE", DrawElementsInstancedANGLE);
-    Nan::SetMethod(result, "vertexAttribDivisorANGLE", VertexAttribDivisorANGLE);
+    Nan::SetMethod(result, "drawArraysInstancedANGLE", DrawArraysInstanced);
+    Nan::SetMethod(result, "drawElementsInstancedANGLE", DrawElementsInstanced);
+    Nan::SetMethod(result, "vertexAttribDivisorANGLE", VertexAttribDivisor);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "WEBGL_draw_buffers") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
