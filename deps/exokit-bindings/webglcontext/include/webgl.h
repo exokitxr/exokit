@@ -100,7 +100,7 @@ public:
   static NAN_METHOD(BindAttribLocation);
   static NAN_METHOD(GetError);
   static NAN_METHOD(DrawArrays);
-  static NAN_METHOD(DrawArraysInstancedANGLE);
+  static NAN_METHOD(DrawArraysInstanced);
   static NAN_METHOD(UniformMatrix2fv);
   static NAN_METHOD(UniformMatrix3fv);
   static NAN_METHOD(UniformMatrix4fv);
@@ -146,7 +146,7 @@ public:
   static NAN_METHOD(VertexAttribIPointer);
   static NAN_METHOD(ActiveTexture);
   static NAN_METHOD(DrawElements);
-  static NAN_METHOD(DrawElementsInstancedANGLE);
+  static NAN_METHOD(DrawElementsInstanced);
   static NAN_METHOD(Flush);
   static NAN_METHOD(Finish);
 
@@ -158,7 +158,7 @@ public:
   static NAN_METHOD(VertexAttrib2fv);
   static NAN_METHOD(VertexAttrib3fv);
   static NAN_METHOD(VertexAttrib4fv);
-  static NAN_METHOD(VertexAttribDivisorANGLE);
+  static NAN_METHOD(VertexAttribDivisor);
   static NAN_METHOD(DrawBuffersWEBGL);
 
   static NAN_METHOD(BlendColor);
