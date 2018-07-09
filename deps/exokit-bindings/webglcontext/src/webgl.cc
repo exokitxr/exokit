@@ -721,6 +721,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "vertexAttribI4uiv", glCallWrap<VertexAttribI4uiv>);
   
   Nan::SetMethod(proto, "vertexAttribDivisor", glCallWrap<VertexAttribDivisor>);
+  Nan::SetMethod(proto, "drawBuffers", glCallWrap<DrawBuffers>);
 
   Nan::SetMethod(proto, "blendColor", BlendColor);
   Nan::SetMethod(proto, "blendEquationSeparate", BlendEquationSeparate);
@@ -2866,7 +2867,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttribDivisor) {
   glVertexAttribDivisor(index, divisor);
 }
 
-NAN_METHOD(WebGLRenderingContext::DrawBuffersWEBGL) {
+NAN_METHOD(WebGLRenderingContext::DrawBuffers) {
   Local<Array> buffersArray = Local<Array>::Cast(info[0]);
   GLenum buffers[32];
   size_t numBuffers = std::min<size_t>(buffersArray->Length(), sizeof(buffers)/sizeof(buffers[0]));
@@ -4062,7 +4063,7 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else if (strcmp(sname, "WEBGL_draw_buffers") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
 
-    Nan::SetMethod(result, "drawBuffersWEBGL", DrawBuffersWEBGL);
+    Nan::SetMethod(result, "drawBuffersWEBGL", DrawBuffers);
 
     result->Set(JS_STR("COLOR_ATTACHMENT0_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT0));
     result->Set(JS_STR("COLOR_ATTACHMENT1_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT1));
