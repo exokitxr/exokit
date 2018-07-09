@@ -2593,7 +2593,7 @@ NAN_METHOD(WebGLRenderingContext::Hint) {
 
 NAN_METHOD(WebGLRenderingContext::IsEnabled) {
   GLenum cap = info[0]->Int32Value();
-  bool ret = glIsEnabled(cap) != 0;
+  bool ret = glIsEnabled(cap);
 
   info.GetReturnValue().Set(Nan::New<Boolean>(ret));
 }
