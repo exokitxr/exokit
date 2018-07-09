@@ -100,14 +100,26 @@ public:
   static NAN_METHOD(Uniform2iv);
   static NAN_METHOD(Uniform3iv);
   static NAN_METHOD(Uniform4iv);
+
+  static NAN_METHOD(Uniform1uiv);
+  static NAN_METHOD(Uniform2uiv);
+  static NAN_METHOD(Uniform3uiv);
+  static NAN_METHOD(Uniform4uiv);
+  static NAN_METHOD(UniformMatrix2fv);
+  static NAN_METHOD(UniformMatrix3fv);
+  static NAN_METHOD(UniformMatrix4fv);
+  static NAN_METHOD(UniformMatrix3x2fv);
+  static NAN_METHOD(UniformMatrix4x2fv);
+  static NAN_METHOD(UniformMatrix2x3fv);
+  static NAN_METHOD(UniformMatrix4x3fv);
+  static NAN_METHOD(UniformMatrix2x4fv);
+  static NAN_METHOD(UniformMatrix3x4fv);
+
   static NAN_METHOD(PixelStorei);
   static NAN_METHOD(BindAttribLocation);
   static NAN_METHOD(GetError);
   static NAN_METHOD(DrawArrays);
   static NAN_METHOD(DrawArraysInstanced);
-  static NAN_METHOD(UniformMatrix2fv);
-  static NAN_METHOD(UniformMatrix3fv);
-  static NAN_METHOD(UniformMatrix4fv);
   static NAN_METHOD(GenerateMipmap);
   static NAN_METHOD(GetAttribLocation);
   static NAN_METHOD(DepthFunc);
@@ -163,7 +175,14 @@ public:
   static NAN_METHOD(VertexAttrib2fv);
   static NAN_METHOD(VertexAttrib3fv);
   static NAN_METHOD(VertexAttrib4fv);
+  
+  static NAN_METHOD(VertexAttribI4i);
+  static NAN_METHOD(VertexAttribI4iv);
+  static NAN_METHOD(VertexAttribI4ui);
+  static NAN_METHOD(VertexAttribI4uiv);
+  
   static NAN_METHOD(VertexAttribDivisor);
+
   static NAN_METHOD(DrawBuffersWEBGL);
 
   static NAN_METHOD(BlendColor);
