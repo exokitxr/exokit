@@ -182,8 +182,7 @@ public:
   static NAN_METHOD(VertexAttribI4uiv);
   
   static NAN_METHOD(VertexAttribDivisor);
-
-  static NAN_METHOD(DrawBuffersWEBGL);
+  static NAN_METHOD(DrawBuffers);
 
   static NAN_METHOD(BlendColor);
   static NAN_METHOD(BlendEquationSeparate);
