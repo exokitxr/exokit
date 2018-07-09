@@ -2546,7 +2546,7 @@ NAN_METHOD(WebGLRenderingContext::BufferSubData) {
     if (info[3]->IsNumber()) {
       size_t srcOffset = info[3]->Uint32Value() * getArrayBufferViewElementSize(arrayBufferView);
       data += srcOffset;
-      size = info[4]->IsNumber() ? info[4]->NumberValue() : 0;
+      size = info[4]->IsNumber() ? info[4]->Uint32Value() : 0;
     } else {
       size = arrayBufferView->ByteLength();
     }
