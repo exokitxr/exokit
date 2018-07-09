@@ -2612,7 +2612,6 @@ NAN_METHOD(WebGLRenderingContext::VertexAttribIPointer) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
-
 NAN_METHOD(WebGLRenderingContext::ActiveTexture) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLenum activeTexture = info[0]->Uint32Value();
