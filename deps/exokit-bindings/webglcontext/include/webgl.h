@@ -88,6 +88,10 @@ public:
   static NAN_METHOD(Uniform2i);
   static NAN_METHOD(Uniform3i);
   static NAN_METHOD(Uniform4i);
+  static NAN_METHOD(Uniform1ui);
+  static NAN_METHOD(Uniform2ui);
+  static NAN_METHOD(Uniform3ui);
+  static NAN_METHOD(Uniform4ui);
   static NAN_METHOD(Uniform1fv);
   static NAN_METHOD(Uniform2fv);
   static NAN_METHOD(Uniform3fv);
@@ -96,14 +100,26 @@ public:
   static NAN_METHOD(Uniform2iv);
   static NAN_METHOD(Uniform3iv);
   static NAN_METHOD(Uniform4iv);
+
+  static NAN_METHOD(Uniform1uiv);
+  static NAN_METHOD(Uniform2uiv);
+  static NAN_METHOD(Uniform3uiv);
+  static NAN_METHOD(Uniform4uiv);
+  static NAN_METHOD(UniformMatrix2fv);
+  static NAN_METHOD(UniformMatrix3fv);
+  static NAN_METHOD(UniformMatrix4fv);
+  static NAN_METHOD(UniformMatrix3x2fv);
+  static NAN_METHOD(UniformMatrix4x2fv);
+  static NAN_METHOD(UniformMatrix2x3fv);
+  static NAN_METHOD(UniformMatrix4x3fv);
+  static NAN_METHOD(UniformMatrix2x4fv);
+  static NAN_METHOD(UniformMatrix3x4fv);
+
   static NAN_METHOD(PixelStorei);
   static NAN_METHOD(BindAttribLocation);
   static NAN_METHOD(GetError);
   static NAN_METHOD(DrawArrays);
   static NAN_METHOD(DrawArraysInstanced);
-  static NAN_METHOD(UniformMatrix2fv);
-  static NAN_METHOD(UniformMatrix3fv);
-  static NAN_METHOD(UniformMatrix4fv);
   static NAN_METHOD(GenerateMipmap);
   static NAN_METHOD(GetAttribLocation);
   static NAN_METHOD(DepthFunc);
@@ -159,7 +175,14 @@ public:
   static NAN_METHOD(VertexAttrib2fv);
   static NAN_METHOD(VertexAttrib3fv);
   static NAN_METHOD(VertexAttrib4fv);
+  
+  static NAN_METHOD(VertexAttribI4i);
+  static NAN_METHOD(VertexAttribI4iv);
+  static NAN_METHOD(VertexAttribI4ui);
+  static NAN_METHOD(VertexAttribI4uiv);
+  
   static NAN_METHOD(VertexAttribDivisor);
+
   static NAN_METHOD(DrawBuffersWEBGL);
 
   static NAN_METHOD(BlendColor);
@@ -215,7 +238,7 @@ public:
 
   static NAN_METHOD(TexSubImage2D);
   static NAN_METHOD(TexStorage2D);
-  
+
   static NAN_METHOD(ReadPixels);
   static NAN_METHOD(GetTexParameter);
   static NAN_METHOD(GetActiveAttrib);
@@ -235,7 +258,7 @@ public:
   static NAN_METHOD(CreateVertexArray);
   static NAN_METHOD(DeleteVertexArray);
   static NAN_METHOD(BindVertexArray);
-  
+
   static NAN_METHOD(FenceSync);
   static NAN_METHOD(DeleteSync);
   static NAN_METHOD(ClientWaitSync);
