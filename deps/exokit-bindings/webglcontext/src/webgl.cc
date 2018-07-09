@@ -2802,7 +2802,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttribI4ui) {
   GLuint v2 = info[3]->Uint32Value();
   GLuint v3 = info[4]->Uint32Value();
 
-  glVertexAttribI4i(index, v0, v1, v2, v3);
+  glVertexAttribI4ui(index, v0, v1, v2, v3);
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttribI4uiv) {
