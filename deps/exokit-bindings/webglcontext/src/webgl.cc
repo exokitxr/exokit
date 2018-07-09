@@ -2463,8 +2463,8 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib4fv) {
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttribDivisor) {
-  unsigned int index = info[0]->Uint32Value();
-  unsigned int divisor = info[1]->Uint32Value();
+  GLuint index = info[0]->Uint32Value();
+  GLuint divisor = info[1]->Uint32Value();
 
   glVertexAttribDivisor(index, divisor);
 
