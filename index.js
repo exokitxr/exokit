@@ -29,6 +29,8 @@ const dataPath = path.join(os.homedir() || __dirname, '.exokit');
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
+let _timeout = false;
+
 const args = (() => {
   if (require.main === module) {
     const minimistArgs = minimist(process.argv.slice(2), {
@@ -683,9 +685,38 @@ const _bindWindow = (window, newWindowCb) => {
             mlHasPose = false;
 
             nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
+
+          } else if (args.image && _timeout) {
+            const _flipImage = (width, height, stride, arrayBuffer) => {
+              const uint8Array = new Uint8Array(arrayBuffer);
+
+              const arrayBuffer2 = new ArrayBuffer(arrayBuffer.byteLength);
+              const uint8Array2 = new Uint8Array(arrayBuffer2);
+              for (let y = 0; y < height; y++) {
+                const yBottom = height - y - 1;
+                uint8Array2.set(uint8Array.slice(yBottom * width * stride, (yBottom + 1) * width * stride), y * width * stride);
+              }
+              console.log(uint8Array2[0], uint8Array2[1], uint8Array2[2], uint8Array2[3]);
+              return arrayBuffer2;
+            };
+            const gl = context;
+            const {canvas} = gl;
+            const {width, height} = canvas;
+
+            const arrayBuffer = new ArrayBuffer(width * height * 4);
+            const uint8Array = new Uint8Array(arrayBuffer);
+            gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
+            const result = Buffer.from(UPNG.encode([
+              _flipImage(width, height, 4, arrayBuffer),
+            ], width, height, 0));
+            console.dir({width, height, image: args.image, result: result.length});
+            fs.writeFileSync(args.image, result);
+            process.exit(0);
           }
 
+
           nativeWindow.swapBuffers(windowHandle);
+
 
           numDirtyFrames++;
           _checkDirtyFrameTimeout();
@@ -1246,36 +1277,13 @@ const _start = () => {
       dataPath,
     })
       .then(window => {
-        const _flipImage = (width, height, stride, arrayBuffer) => {
-          const uint8Array = new Uint8Array(arrayBuffer);
-
-          const arrayBuffer2 = new ArrayBuffer(arrayBuffer.byteLength);
-          const uint8Array2 = new Uint8Array(arrayBuffer2);
-          for (let y = 0; y < height; y++) {
-            const yBottom = height - y - 1;
-            uint8Array2.set(uint8Array.slice(yBottom * width * stride, (yBottom + 1) * width * stride), y * width * stride);
-          }
-          return arrayBuffer2;
-        };
-
         if (args.image) {
           window.setDirtyFrameTimeout({
             dirtyFrames: 100,
             timeout: 5000,
           }, (err, gl) => {
             if (!err) {
-              const {canvas} = gl;
-              const {width, height} = canvas;
-
-              const arrayBuffer = new ArrayBuffer(width * height * 4);
-              const uint8Array = new Uint8Array(arrayBuffer);
-              gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
-              const result = Buffer.from(UPNG.encode([
-                _flipImage(width, height, 4, arrayBuffer),
-              ], width, height, 0));
-              fs.writeFileSync(args.image, result);
-
-              process.exit(0);
+              _timeout = true;
             } else {
               throw err;
             }
