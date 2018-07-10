@@ -663,6 +663,33 @@ const _bindWindow = (window, newWindowCb) => {
     console.warn('got error', err);
   });
 
+  const _saveImage = (context, name) => {
+    const _flipImage = (width, height, stride, arrayBuffer) => {
+      const uint8Array = new Uint8Array(arrayBuffer);
+
+      const arrayBuffer2 = new ArrayBuffer(arrayBuffer.byteLength);
+      const uint8Array2 = new Uint8Array(arrayBuffer2);
+      for (let y = 0; y < height; y++) {
+        const yBottom = height - y - 1;
+        uint8Array2.set(uint8Array.slice(yBottom * width * stride, (yBottom + 1) * width * stride), y * width * stride);
+      }
+      console.log(uint8Array2[0], uint8Array2[1], uint8Array2[2], uint8Array2[3]);
+      return arrayBuffer2;
+    };
+
+    const gl = context;
+    const {canvas} = gl;
+    const {width, height} = canvas;
+
+    const arrayBuffer = new ArrayBuffer(width * height * 4);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
+    const result = Buffer.from(UPNG.encode([
+      _flipImage(width, height, 4, arrayBuffer),
+    ], width, height, 0));
+    console.dir({width, height, image: name, result: result.length});
+    fs.writeFileSync(name, result);
+  }
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -686,34 +713,7 @@ const _bindWindow = (window, newWindowCb) => {
 
             nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
 
-          } else if (args.image && _timeout) {
-            const _flipImage = (width, height, stride, arrayBuffer) => {
-              const uint8Array = new Uint8Array(arrayBuffer);
-
-              const arrayBuffer2 = new ArrayBuffer(arrayBuffer.byteLength);
-              const uint8Array2 = new Uint8Array(arrayBuffer2);
-              for (let y = 0; y < height; y++) {
-                const yBottom = height - y - 1;
-                uint8Array2.set(uint8Array.slice(yBottom * width * stride, (yBottom + 1) * width * stride), y * width * stride);
-              }
-              console.log(uint8Array2[0], uint8Array2[1], uint8Array2[2], uint8Array2[3]);
-              return arrayBuffer2;
-            };
-            const gl = context;
-            const {canvas} = gl;
-            const {width, height} = canvas;
-
-            const arrayBuffer = new ArrayBuffer(width * height * 4);
-            const uint8Array = new Uint8Array(arrayBuffer);
-            gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
-            const result = Buffer.from(UPNG.encode([
-              _flipImage(width, height, 4, arrayBuffer),
-            ], width, height, 0));
-            console.dir({width, height, image: args.image, result: result.length});
-            fs.writeFileSync(args.image, result);
-            process.exit(0);
           }
-
 
           nativeWindow.swapBuffers(windowHandle);
 
@@ -1154,6 +1154,10 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.user += diff;
       timestamps.total += diff;
       timestamps.last = now;
+    }
+    if (args.image && _timeout) {
+      _saveImage(contexts[contexts.length - 1], args.image);
+      process.exit(0);
     }
     _blit();
     if (args.performance) {
