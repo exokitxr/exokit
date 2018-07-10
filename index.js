@@ -712,11 +712,9 @@ const _bindWindow = (window, newWindowCb) => {
             mlHasPose = false;
 
             nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
-
           }
 
           nativeWindow.swapBuffers(windowHandle);
-
 
           numDirtyFrames++;
           _checkDirtyFrameTimeout();
