@@ -29,7 +29,7 @@ const dataPath = path.join(os.homedir() || __dirname, '.exokit');
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
-let _timeout = false;
+let _takeScreenshot = false;
 
 const args = (() => {
   if (require.main === module) {
@@ -1153,7 +1153,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    if (args.image && _timeout) {
+    if (args.image && _takeScreenshot) {
       _saveImage(contexts[contexts.length - 1], args.image);
       process.exit(0);
     }
@@ -1285,7 +1285,7 @@ const _start = () => {
             timeout: 5000,
           }, (err, gl) => {
             if (!err) {
-              _timeout = true;
+              _takeScreenshot = true;
             } else {
               throw err;
             }
