@@ -142,24 +142,6 @@ class MutationObserver {
   }
 
   handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
-    // Include recursive children in added and removed nodes list.
-    if (addedNodes) {
-      for (let i = 0; i < addedNodes.length; i++) {
-        addedNodes[i].traverse(node => {
-          if (node.nodeType !== Node.ELEMENT_NODE || addedNodes.includes(node)) { return; }
-          addedNodes.push(node);
-        });
-      }
-    }
-    if (removedNodes) {
-      for (let i = 0; i < removedNodes.length; i++) {
-        removedNodes[i].traverse(node => {
-          if (node.nodeType !== Node.ELEMENT_NODE || removedNodes.includes(node)) { return; }
-          removedNodes.push(node);
-        });
-      }
-    }
-
     this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes,
                                        previousSibling, nextSibling, null, null, null));
     setImmediate(() => { this.flush(); });

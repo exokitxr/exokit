@@ -131,18 +131,18 @@ describe('MutationObserver', () => {
       el.innerHTML = '<p id="childInnerHTML"></p>';
     });
 
-    it('calls back on multiple children added via innerHTML', done => {
+    it('does not call back on nested children added via innerHTML', done => {
       observerHelper(mutations => {
         const mutation = mutations[0];
         const ids = mutation.addedNodes.map(node => node.getAttribute('id'));
         assert.ok(ids.includes('childInner1'), 'Child 1');
         assert.ok(ids.includes('childInner2'), 'Child 2');
-        assert.ok(ids.includes('childInner3'), 'Child 3');
-        assert.equal(mutation.addedNodes.length, 3);
+        assert.notOk(ids.includes('childInner3'), 'Child 3');
+        assert.equal(mutation.addedNodes.length, 2);
         assert.equal(mutation.removedNodes.length, 0);
         done();
       });
-      el.innerHTML = '<p id="childInner1"></p><div id="childInner2"><p id="childInner3"></p> </div>';
+      el.innerHTML = '<p id="childInner1"></p><div id="childInner2"><p id="childInner3"></p></div>';
     });
 
     it('calls back on child added via document fragment', done => {
@@ -158,14 +158,14 @@ describe('MutationObserver', () => {
       el.appendChild(fragment);
     });
 
-    it('calls back on multiple children added via document fragment', done => {
+    it('does not call back on multiple children added via document fragment', done => {
       observerHelper(mutations => {
         const mutation = mutations[0];
         const ids = mutation.addedNodes.map(node => node.id);
         assert.ok(ids.includes('child1'), 'Child 1');
         assert.ok(ids.includes('child2'), 'Child 2');
-        assert.ok(ids.includes('child3'), 'Child 3');
-        assert.equal(mutation.addedNodes.length, 3);
+        assert.notOk(ids.includes('child3'), 'Child 3');
+        assert.equal(mutation.addedNodes.length, 2);
         done();
       });
       const fragment = document.createDocumentFragment();
