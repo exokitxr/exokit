@@ -1436,7 +1436,7 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix3fv) {
 
     if (count < 9) {
       Nan::ThrowError("Not enough data for UniformMatrix3fv");
-    }else{
+    } else {
       count /= 9;
       glUniformMatrix3fv(location, count, transpose, data);
     }
