@@ -1,3 +1,4 @@
+/* global assert, describe, it */
 const fs = require('fs');
 const path = require('path');
 const {Response} = require('window-fetch');

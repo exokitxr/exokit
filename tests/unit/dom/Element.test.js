@@ -1,4 +1,4 @@
-/* global assert, beforeEach, describe */
+/* global assert, beforeEach, describe, it */
 const exokit = require('../../../index');
 
 describe('Element', () => {

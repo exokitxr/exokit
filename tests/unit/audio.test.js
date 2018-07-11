@@ -1,4 +1,4 @@
-/* global assert, describe, it */
+/* global assert, it */
 const fs = require('fs');
 const path = require('path');
 const helpers = require('./helpers');
