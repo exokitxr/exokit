@@ -77,6 +77,7 @@ public:
   static NAN_METHOD(Destroy);
   static NAN_METHOD(GetWindowHandle);
   static NAN_METHOD(SetWindowHandle);
+  static NAN_METHOD(SetDefaultVao);
   static NAN_METHOD(IsDirty);
   static NAN_METHOD(ClearDirty);
 
@@ -307,6 +308,7 @@ public:
 
   bool live;
   GLFWwindow *windowHandle;
+  GLuint defaultVao;
   bool dirty;
   GLuint defaultFramebuffer;
   bool flipY;

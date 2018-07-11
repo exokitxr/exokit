@@ -615,6 +615,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "destroy", Destroy);
   Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
   Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
+  Nan::SetMethod(proto, "setDefaultVao", SetDefaultVao);
   Nan::SetMethod(proto, "isDirty", IsDirty);
   Nan::SetMethod(proto, "clearDirty", ClearDirty);
 
@@ -823,7 +824,18 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), defaultFramebuffer(0), flipY(true), premultiplyAlpha(true), packAlignment(4), unpackAlignment(4), activeTexture(GL_TEXTURE0) {}
+WebGLRenderingContext::WebGLRenderingContext() :
+  live(true),
+  windowHandle(nullptr),
+  defaultVao(0),
+  dirty(false),
+  defaultFramebuffer(0),
+  flipY(true),
+  premultiplyAlpha(true),
+  packAlignment(4),
+  unpackAlignment(4),
+  activeTexture(GL_TEXTURE0)
+  {}
 
 WebGLRenderingContext::~WebGLRenderingContext() {}
 
@@ -856,6 +868,11 @@ NAN_METHOD(WebGLRenderingContext::SetWindowHandle) {
   } else {
     gl->windowHandle = nullptr;
   }
+}
+
+NAN_METHOD(WebGLRenderingContext::SetDefaultVao) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  gl->defaultVao = info[0]->Uint32Value();
 }
 
 NAN_METHOD(WebGLRenderingContext::IsDirty) {
@@ -4145,7 +4162,8 @@ NAN_METHOD(WebGLRenderingContext::DeleteVertexArray) {
 }
 
 NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
-  GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : gl->defaultVao;
 
   glBindVertexArray(vao);
 }

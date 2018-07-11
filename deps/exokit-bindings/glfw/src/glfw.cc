@@ -1346,14 +1346,15 @@ NAN_METHOD(Create) {
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
 
-      Local<Array> result = Nan::New<Array>(7);
+      Local<Array> result = Nan::New<Array>(8);
       result->Set(0, pointerToArray(windowHandle));
-      result->Set(1, JS_NUM(framebuffers[0]));
-      result->Set(2, JS_NUM(framebufferTextures[0]));
-      result->Set(3, JS_NUM(framebufferTextures[1]));
-      result->Set(4, JS_NUM(framebuffers[1]));
-      result->Set(5, JS_NUM(framebufferTextures[2]));
-      result->Set(6, JS_NUM(framebufferTextures[3]));
+      result->Set(1, JS_INT(framebuffers[0]));
+      result->Set(2, JS_INT(framebufferTextures[0]));
+      result->Set(3, JS_INT(framebufferTextures[1]));
+      result->Set(4, JS_INT(framebuffers[1]));
+      result->Set(5, JS_INT(framebufferTextures[2]));
+      result->Set(6, JS_INT(framebufferTextures[3]));
+      result->Set(7, JS_INT(vao));
       info.GetReturnValue().Set(result);
     } else {
       /* Problem: glewInit failed, something is seriously wrong. */
