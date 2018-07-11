@@ -4162,7 +4162,8 @@ NAN_METHOD(WebGLRenderingContext::DeleteVertexArray) {
 }
 
 NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
-  GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : gl->defaultVao;
 
   glBindVertexArray(vao);
 }
