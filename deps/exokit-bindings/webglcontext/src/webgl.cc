@@ -1281,7 +1281,7 @@ NAN_METHOD(WebGLRenderingContext::Uniform1uiv) {
     Local<Value> dataValue = info[1];
 
     GLuint *data;
-    GLsizei count;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1304,7 +1304,7 @@ NAN_METHOD(WebGLRenderingContext::Uniform2uiv) {
     Local<Value> dataValue = info[1];
 
     GLuint *data;
-    GLsizei count;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1327,7 +1327,7 @@ NAN_METHOD(WebGLRenderingContext::Uniform3uiv) {
     Local<Value> dataValue = info[1];
 
     GLuint *data;
-    GLsizei count;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1350,7 +1350,7 @@ NAN_METHOD(WebGLRenderingContext::Uniform4uiv) {
     Local<Value> dataValue = info[1];
 
     GLuint *data;
-    GLsizei count;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1368,84 +1368,115 @@ NAN_METHOD(WebGLRenderingContext::Uniform4uiv) {
 }
 
 NAN_METHOD(WebGLRenderingContext::UniformMatrix2fv) {
-  GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-  GLboolean transpose = info[1]->BooleanValue();
+  if (info[0]->IsObject()) {
+    GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+    GLboolean transpose = info[1]->BooleanValue();
 
-  GLfloat *data;
-  GLsizei count;
-  // GLfloat* data=getArrayData<GLfloat>(info[2],&count);
-
-  if (info[2]->IsArray()) {
-    Local<Array> array = Local<Array>::Cast(info[2]);
-    unsigned int length = array->Length();
-    Local<Float32Array> float32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), length * 4), 0, length);
-    for (unsigned int i = 0; i < length; i++) {
-      float32Array->Set(i, array->Get(i));
+    GLfloat *data;
+    int count;
+    if (info[2]->IsArray()) {
+      Local<Array> array = Local<Array>::Cast(info[2]);
+      unsigned int length = array->Length();
+      Local<Float32Array> float32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), length * 4), 0, length);
+      for (unsigned int i = 0; i < length; i++) {
+        float32Array->Set(i, array->Get(i));
+      }
+      data = getArrayData<GLfloat>(float32Array, &count);
+    } else {
+      data = getArrayData<GLfloat>(info[2], &count);
     }
-    data = getArrayData<GLfloat>(float32Array, &count);
-  } else {
-    data = getArrayData<GLfloat>(info[2], &count);
-  }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
 
-  if (count < 4) {
-    Nan::ThrowError("Not enough data for UniformMatrix2fv");
-  } else {
-    count /= 4;
-    glUniformMatrix2fv(location, count, transpose, data);
+    if (count < 4) {
+      Nan::ThrowError("Not enough data for UniformMatrix2fv");
+    } else {
+      count /= 4;
+      glUniformMatrix2fv(location, count, transpose, data);
 
-    // info.GetReturnValue().Set(Nan::Undefined());
+      // info.GetReturnValue().Set(Nan::Undefined());
+    }
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::UniformMatrix3fv) {
-  GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-  GLboolean transpose = info[1]->BooleanValue();
+  if (info[0]->IsObject()) {
+    GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+    GLboolean transpose = info[1]->BooleanValue();
 
-  GLfloat *data;
-  GLsizei count;
-  if (info[2]->IsArray()) {
-    Local<Array> array = Local<Array>::Cast(info[2]);
-    unsigned int length = array->Length();
-    Local<Float32Array> float32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), length * 4), 0, length);
-    for (unsigned int i = 0; i < length; i++) {
-      float32Array->Set(i, array->Get(i));
+    GLfloat *data;
+    int count;
+    if (info[2]->IsArray()) {
+      Local<Array> array = Local<Array>::Cast(info[2]);
+      unsigned int length = array->Length();
+      Local<Float32Array> float32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), length * 4), 0, length);
+      for (unsigned int i = 0; i < length; i++) {
+        float32Array->Set(i, array->Get(i));
+      }
+      data = getArrayData<GLfloat>(float32Array, &count);
+    } else {
+      data = getArrayData<GLfloat>(info[2], &count);
     }
-    data = getArrayData<GLfloat>(float32Array, &count);
-  } else {
-    data = getArrayData<GLfloat>(info[2], &count);
-  }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
 
-  if (count < 9) {
-    Nan::ThrowError("Not enough data for UniformMatrix3fv");
-  }else{
-    count /= 9;
-    glUniformMatrix3fv(location, count, transpose, data);
+    if (count < 9) {
+      Nan::ThrowError("Not enough data for UniformMatrix3fv");
+    }else{
+      count /= 9;
+      glUniformMatrix3fv(location, count, transpose, data);
+    }
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::UniformMatrix4fv) {
-  GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-  GLboolean transpose = info[1]->BooleanValue();
+  if (info[0]->IsObject()) {
+    GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+    GLboolean transpose = info[1]->BooleanValue();
 
-  GLfloat *data;
-  GLsizei count;
-  if (info[2]->IsArray()) {
-    Local<Array> array = Local<Array>::Cast(info[2]);
-    unsigned int length = array->Length();
-    Local<Float32Array> float32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), length * 4), 0, length);
-    for (unsigned int i = 0; i < length; i++) {
-      float32Array->Set(i, array->Get(i));
+    GLfloat *data;
+    int count;
+    if (info[2]->IsArray()) {
+      Local<Array> array = Local<Array>::Cast(info[2]);
+      unsigned int length = array->Length();
+      Local<Float32Array> float32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), length * 4), 0, length);
+      for (unsigned int i = 0; i < length; i++) {
+        float32Array->Set(i, array->Get(i));
+      }
+      data = getArrayData<GLfloat>(float32Array, &count);
+    } else {
+      data = getArrayData<GLfloat>(info[2], &count);
     }
-    data = getArrayData<GLfloat>(float32Array, &count);
-  } else {
-    data = getArrayData<GLfloat>(info[2], &count);
-  }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
 
-  if (count < 16) {
-    Nan::ThrowError("Not enough data for UniformMatrix4fv");
-  } else {
-    count /= 16;
-    glUniformMatrix4fv(location, count, transpose, data);
+    if (count < 16) {
+      Nan::ThrowError("Not enough data for UniformMatrix4fv");
+    } else {
+      count /= 16;
+      glUniformMatrix4fv(location, count, transpose, data);
+    }
   }
 }
 
@@ -1455,8 +1486,8 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix3x2fv) {
     bool transpose = info[1]->BooleanValue();
     Local<Value> dataValue = info[2];
 
-    GLfloat  *data;
-    GLsizei count;
+    GLfloat *data;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1467,6 +1498,15 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix3x2fv) {
       data = getArrayData<GLfloat>(float32Array, &count);
     } else {
       data = getArrayData<GLfloat>(dataValue, &count);
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
     }
 
     if (count < 6) {
@@ -1484,8 +1524,8 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix4x2fv) {
     bool transpose = info[1]->BooleanValue();
     Local<Value> dataValue = info[2];
 
-    GLfloat  *data;
-    GLsizei count;
+    GLfloat *data;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1496,6 +1536,15 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix4x2fv) {
       data = getArrayData<GLfloat>(float32Array, &count);
     } else {
       data = getArrayData<GLfloat>(dataValue, &count);
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
     }
 
     if (count < 8) {
@@ -1513,8 +1562,8 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix2x3fv) {
     bool transpose = info[1]->BooleanValue();
     Local<Value> dataValue = info[2];
 
-    GLfloat  *data;
-    GLsizei count;
+    GLfloat *data;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1525,6 +1574,15 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix2x3fv) {
       data = getArrayData<GLfloat>(float32Array, &count);
     } else {
       data = getArrayData<GLfloat>(dataValue, &count);
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
     }
 
     if (count < 6) {
@@ -1542,8 +1600,8 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix4x3fv) {
     bool transpose = info[1]->BooleanValue();
     Local<Value> dataValue = info[2];
 
-    GLfloat  *data;
-    GLsizei count;
+    GLfloat *data;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1554,6 +1612,15 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix4x3fv) {
       data = getArrayData<GLfloat>(float32Array, &count);
     } else {
       data = getArrayData<GLfloat>(dataValue, &count);
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
     }
 
     if (count < 12) {
@@ -1571,8 +1638,8 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix2x4fv) {
     bool transpose = info[1]->BooleanValue();
     Local<Value> dataValue = info[2];
 
-    GLfloat  *data;
-    GLsizei count;
+    GLfloat *data;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1583,6 +1650,15 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix2x4fv) {
       data = getArrayData<GLfloat>(float32Array, &count);
     } else {
       data = getArrayData<GLfloat>(dataValue, &count);
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
     }
 
     if (count < 8) {
@@ -1600,8 +1676,8 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix3x4fv) {
     bool transpose = info[1]->BooleanValue();
     Local<Value> dataValue = info[2];
 
-    GLfloat  *data;
-    GLsizei count;
+    GLfloat *data;
+    int count;
     if (dataValue->IsArray()) {
       Local<Array> array = Local<Array>::Cast(dataValue);
       unsigned int length = array->Length();
@@ -1612,6 +1688,15 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix3x4fv) {
       data = getArrayData<GLfloat>(float32Array, &count);
     } else {
       data = getArrayData<GLfloat>(dataValue, &count);
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[4]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
     }
 
     if (count < 12) {
