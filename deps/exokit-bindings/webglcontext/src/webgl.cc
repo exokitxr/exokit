@@ -823,7 +823,17 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-WebGLRenderingContext::WebGLRenderingContext() : live(true), windowHandle(nullptr), dirty(false), defaultFramebuffer(0), flipY(true), premultiplyAlpha(true), packAlignment(4), unpackAlignment(4), activeTexture(GL_TEXTURE0) {}
+WebGLRenderingContext::WebGLRenderingContext() :
+  live(true),
+  windowHandle(nullptr),
+  dirty(false),
+  defaultFramebuffer(0),
+  flipY(true),
+  premultiplyAlpha(true),
+  packAlignment(4),
+  unpackAlignment(4),
+  activeTexture(GL_TEXTURE0)
+  {}
 
 WebGLRenderingContext::~WebGLRenderingContext() {}
 
