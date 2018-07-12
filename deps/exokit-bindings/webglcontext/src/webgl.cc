@@ -2657,7 +2657,7 @@ NAN_METHOD(WebGLRenderingContext::BufferSubData) {
     data = (char *)arrayBuffer->GetContents().Data();
     size = arrayBuffer->ByteLength();
   } else {
-    Nan::ThrowError("Invalid texture argument");
+    Nan::ThrowError("bufferSubData: invalid arguments");
     return;
   }
 
