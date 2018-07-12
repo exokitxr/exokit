@@ -2613,24 +2613,38 @@ NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
 
 NAN_METHOD(WebGLRenderingContext::BufferData) {
   GLenum target = info[0]->Uint32Value();
-  if (info[1]->IsObject()) {
-    Local<Object> obj = Local<Object>::Cast(info[1]);
-    GLenum usage = info[2]->Int32Value();
+  Local<Object> obj = Local<Object>::Cast(info[1]);
 
-    int element_size = 1;
-    Local<ArrayBufferView> arr = Local<ArrayBufferView>::Cast(obj);
-    int size = arr->ByteLength() * element_size;
-    char *data = (char *)arr->Buffer()->GetContents().Data() + arr->ByteOffset();
-
-    glBufferData(target, size, data, usage);
-  } else if(info[1]->IsNumber()) {
-    GLsizeiptr size = info[1]->Uint32Value();
-    GLenum usage = info[2]->Int32Value();
-
-    glBufferData(target, size, NULL, usage);
+  char *data;
+  GLuint size;
+  GLenum usage;
+  if (obj->IsArrayBufferView()) {
+    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(obj);
+    data = (char *)arrayBufferView->Buffer()->GetContents().Data() + arrayBufferView->ByteOffset();
+    usage = info[2]->Uint32Value();
+    
+    if (info[3]->IsNumber()) {
+      size_t srcOffset = info[3]->Uint32Value() * getArrayBufferViewElementSize(arrayBufferView);
+      data += srcOffset;
+      size = info[4]->IsNumber() ? info[4]->Uint32Value() : 0;
+    } else {
+      size = arrayBufferView->ByteLength();
+    }
+  } else if (obj->IsArrayBuffer()) {
+    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(obj);
+    data = (char *)arrayBuffer->GetContents().Data();
+    size = arrayBuffer->ByteLength();
+    usage = info[2]->Int32Value();
+  } else if(obj->IsNumber()) {
+    data = nullptr;
+    size = info[1]->Uint32Value();
+    usage = info[2]->Int32Value();
+  } else {
+    Nan::ThrowError("bufferData: invalid arguments");
+    return;
   }
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glBufferData(target, size, data, usage);
 }
 
 
