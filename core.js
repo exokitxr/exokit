@@ -656,32 +656,24 @@ function tickAnimationFrame() {
   if (rafCbs.length > 0) {
     tickAnimationFrame.window = this;
 
-    const localRafCbs = rafCbs.slice();
     const performanceNow = performance.now();
 
-    const _handleRaf = localRafCb => {
-      if (rafCbs.includes(localRafCb)) {
-        localRafCb(performanceNow);
-
-        const index = rafCbs.indexOf(localRafCb);
-        if (index !== -1) {
-          rafCbs.splice(index, 1);
-        }
-      }
-    };
-
     // hidden rafs
-    for (let i = 0; i < localRafCbs.length; i++) {
-      const localRafCb = localRafCbs[i];
-      if (localRafCb[symbols.windowSymbol].document.hidden) {
-        _handleRaf(localRafCb);
+    for (let i = 0; i < rafCbs.length; i++) {
+      const rafCb = rafCbs[i];
+      if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
+        rafCb(performanceNow);
+
+        rafCbs[i] = null;
       }
     }
     // visible rafs
-    for (let i = 0; i < localRafCbs.length; i++) {
-      const localRafCb = localRafCbs[i];
-      if (!localRafCb[symbols.windowSymbol].document.hidden) {
-        _handleRaf(localRafCb);
+    for (let i = 0; i < rafCbs.length; i++) {
+      const rafCb = rafCbs[i];
+      if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
+        rafCb(performanceNow);
+
+        rafCbs[i] = null;
       }
     }
 
@@ -690,40 +682,47 @@ function tickAnimationFrame() {
 
   if (timeouts.length > 0) {
     const dateNow = Date.now();
-    const removedTimeoutIndexes = {};
 
     for (let i = 0; i < timeouts.length; i++) {
       const timeout = timeouts[i];
-      const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
-      if (dateNow >= endTime) {
-        timeout();
+      if (timeout) {
+        const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
+        if (dateNow >= endTime) {
+          timeout();
 
-        removedTimeoutIndexes[i] = true;
+          timeouts[i] = null;
+        }
       }
     }
-
-    timeouts = timeouts.filter((t, i) => !removedTimeoutIndexes[i]);
   }
 
   if (intervals.length > 0) {
     const dateNow = Date.now();
-    const removedIntervalIndexes = {};
 
     for (let i = 0; i < intervals.length; i++) {
       const interval = intervals[i];
-      const endTime = interval[symbols.startTimeSymbol] + timeout[symbols.intervalSymbol];
-      if (dateNow >= endTime) {
-        interval();
+      if (interval) {
+        const endTime = interval[symbols.startTimeSymbol] + timeout[symbols.intervalSymbol];
+        if (dateNow >= endTime) {
+          interval();
 
-        interval[symbols.startTimeSymbol] = dateNow;
-        removedIntervalIndexes[i] = true;
+          interval[symbols.startTimeSymbol] = dateNow;
+          intervals[i] = null;
+        }
       }
     }
-
-    intervals = intervals.filter((t, i) => !removedIntervalIndexes[i]);
   }
 }
 tickAnimationFrame.window = null;
+const _findFreeSlot = a => {
+  let i;
+  for (i = 0; i < a.length; i++) {
+    if (a[i] === null) {
+      break;
+    }
+  }
+  return i;
+};
 const _makeRequestAnimationFrame = window => (fn, priority) => {
   if (priority === undefined) {
     priority = 0;
@@ -732,7 +731,7 @@ const _makeRequestAnimationFrame = window => (fn, priority) => {
   fn[symbols.prioritySymbol] = priority;
   const id = ++rafIndex;
   fn[symbols.idSymbol] = id;
-  rafCbs.push(fn);
+  rafCbs[_findFreeSlot(rafCbs)] = fn;
   rafCbs.sort((a, b) => b[symbols.prioritySymbol] - a[symbols.prioritySymbol]);
   return id;
 };
@@ -939,13 +938,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     fn[symbols.timeoutSymbol] = timeout;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
-    timeouts.push(fn);
+    timeouts[_findFreeSlot(timeouts)] = fn;
     return id;
   };
   window.clearTimeout = id => {
-    const index = timeouts.findIndex(t => t[symbols.idSymbol] === id);
+    const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
     if (index !== -1) {
-      timeouts.splice(index, 1);
+      timeouts[index] = null;
     }
   };
   window.setInterval = (fn, interval, args) => {
@@ -957,13 +956,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     fn[symbols.intervalSymbol] = interval;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
-    intervals.push(fn);
+    intervals[_findFreeSlot(intervals)] = null;
     return id;
   };
   window.clearInterval = id => {
-    const index = intervals.findIndex(i => i[symbols.idSymbol] === id);
+    const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
     if (index !== -1) {
-      intervals.splice(index, 1);
+      intervals[index] = null;
     }
   };
   window.fetch = (url, options) => {
@@ -1395,7 +1394,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.cancelAnimationFrame = id => {
     const index = rafCbs.find(r => r[symbols.idSymbol] === id);
     if (index !== -1) {
-      rafCbs.splice(index, 1);
+      rafCbs[index] = null;
     }
   };
   window.postMessage = function(data) {
@@ -1472,9 +1471,23 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
-    rafCbs = rafCbs.filter(fn => fn[symbols.windowSymbol] !== destroyedWindow);
-    timeouts = timeouts.filter(fn => fn[symbols.windowSymbol] !== destroyedWindow);
-    intervals = intervals.filter(fn => fn[symbols.windowSymbol] !== destroyedWindow);
+
+    const _pred = fn => fn[symbols.windowSymbol] !== destroyedWindow;
+    for (let i = 0; i < rafCbs.length; i++) {
+      if (!_pred(rafCbs[i])) {
+        rafCbs[i] = null;
+      }
+    }
+    for (let i = 0; i < timeouts.length; i++) {
+      if (!_pred(timeouts[i])) {
+        timeouts[i] = null;
+      }
+    }
+    for (let i = 0; i < intervals.length; i++) {
+      if (!_pred(intervals[i])) {
+        intervals[i] = null;
+      }
+    }
   });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
@@ -1492,9 +1505,22 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          rafCbs = rafCbs.filter(fn => fn[symbols.windowSymbol] !== window);
-          timeouts = timeouts.filter(fn => fn[symbols.windowSymbol] !== window);
-          intervals = intervals.filter(fn => fn[symbols.windowSymbol] !== window);
+          const _pred = fn => fn[symbols.windowSymbol] !== window;
+          for (let i = 0; i < rafCbs.length; i++) {
+            if (!_pred(rafCbs[i])) {
+              rafCbs[i] = null;
+            }
+          }
+          for (let i = 0; i < timeouts.length; i++) {
+            if (!_pred(timeouts[i])) {
+              timeouts[i] = null;
+            }
+          }
+          for (let i = 0; i < intervals.length; i++) {
+            if (!_pred(intervals[i])) {
+              intervals[i] = null;
+            }
+          }
         })
         .catch(err => {
           loading = false;
