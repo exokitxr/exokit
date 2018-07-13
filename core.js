@@ -654,10 +654,11 @@ function tickAnimationFrame() {
     tickAnimationFrame.window = this;
 
     const localRafCbs = rafCbs.slice();
+    const performanceNow = performance.now();
 
     const _handleRaf = localRafCb => {
       if (rafCbs.includes(localRafCb)) {
-        localRafCb(now);
+        localRafCb(performanceNow);
 
         const index = rafCbs.indexOf(localRafCb);
         if (index !== -1) {
@@ -666,7 +667,6 @@ function tickAnimationFrame() {
       }
     };
 
-    const now = performance.now();
     // hidden rafs
     for (let i = 0; i < localRafCbs.length; i++) {
       const localRafCb = localRafCbs[i];
