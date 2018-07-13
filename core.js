@@ -649,6 +649,8 @@ const _runHtml = (element, window) => {
 GlobalContext._runHtml = _runHtml;
 
 let rafCbs = [];
+let timeouts = [];
+let intervals = [];
 let rafIndex = 0;
 function tickAnimationFrame() {
   if (rafCbs.length > 0) {
@@ -684,6 +686,41 @@ function tickAnimationFrame() {
     }
 
     tickAnimationFrame.window = null;
+  }
+
+  if (timeouts.length > 0) {
+    const dateNow = Date.now();
+    const removedTimeoutIndexes = {};
+
+    for (let i = 0; i < timeouts.length; i++) {
+      const timeout = timeouts[i];
+      const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
+      if (dateNow >= endTime) {
+        timeout();
+
+        removedTimeoutIndexes[i] = true;
+      }
+    }
+
+    timeouts = timeouts.filter((t, i) => !removedTimeoutIndexes[i]);
+  }
+
+  if (intervals.length > 0) {
+    const dateNow = Date.now();
+    const removedIntervalIndexes = {};
+
+    for (let i = 0; i < intervals.length; i++) {
+      const interval = intervals[i];
+      const endTime = interval[symbols.startTimeSymbol] + timeout[symbols.intervalSymbol];
+      if (dateNow >= endTime) {
+        interval();
+
+        interval[symbols.startTimeSymbol] = dateNow;
+        removedIntervalIndexes[i] = true;
+      }
+    }
+
+    intervals = intervals.filter((t, i) => !removedIntervalIndexes[i]);
   }
 }
 tickAnimationFrame.window = null;
@@ -893,10 +930,42 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.URL = URL;
   window.console = console;
-  window.setTimeout = setTimeout;
-  window.clearTimeout = clearTimeout;
-  window.setInterval = setInterval;
-  window.clearInterval = clearInterval;
+  window.setTimeout = (fn, timeout, args) => {
+    if (args) {
+      fn = fn.bind.apply(fn, [window].concat(args));
+    }
+    fn[symbols.windowSymbol] = window;
+    fn[symbols.startTimeSymbol] = Date.now();
+    fn[symbols.timeoutSymbol] = timeout;
+    const id = ++rafIndex;
+    fn[symbols.idSymbol] = id;
+    timeouts.push(fn);
+    return id;
+  };
+  window.clearTimeout = id => {
+    const index = timeouts.findIndex(t => t[symbols.idSymbol] === id);
+    if (index !== -1) {
+      timeouts.splice(index, 1);
+    }
+  };
+  window.setInterval = (fn, interval, args) => {
+    if (args) {
+      fn = fn.bind.apply(fn, [window].concat(args));
+    }
+    fn[symbols.windowSymbol] = window;
+    fn[symbols.startTimeSymbol] = Date.now();
+    fn[symbols.intervalSymbol] = interval;
+    const id = ++rafIndex;
+    fn[symbols.idSymbol] = id;
+    intervals.push(fn);
+    return id;
+  };
+  window.clearInterval = id => {
+    const index = intervals.findIndex(i => i[symbols.idSymbol] === id);
+    if (index !== -1) {
+      intervals.splice(index, 1);
+    }
+  };
   window.fetch = (url, options) => {
     const _boundFetch = (url, options) => fetch(url, options)
       .then(res => {
