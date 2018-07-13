@@ -651,8 +651,6 @@ GlobalContext._runHtml = _runHtml;
 let rafCbs = [];
 function tickAnimationFrame() {
   if (rafCbs.length > 0) {
-    // console.log('tick rafs', rafCbs.length)
-
     tickAnimationFrame.window = this;
 
     const localRafCbs = rafCbs.slice();
