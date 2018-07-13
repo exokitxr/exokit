@@ -51,10 +51,10 @@ matrix:
     - brew install glfw glew
     install:
     - npm install -g appdmg
-    - curl "https://nodejs.org/dist/v10.4.1/node-v10.4.1-darwin-x64.tar.gz" >node.tar.gz
+    - curl "https://nodejs.org/dist/v10.6.0/node-v10.6.0-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
-    - mv node-v10.4.1-darwin-x64 node
+    - mv node-v10.6.0-darwin-x64 node
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - "./node/bin/npm install"
