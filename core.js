@@ -1473,6 +1473,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
     rafCbs = rafCbs.filter(fn => fn[symbols.windowSymbol] !== destroyedWindow);
+    timeouts = timeouts.filter(fn => fn[symbols.windowSymbol] !== destroyedWindow);
+    intervals = intervals.filter(fn => fn[symbols.windowSymbol] !== destroyedWindow);
   });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
@@ -1491,6 +1493,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('navigate', newWindow);
 
           rafCbs = rafCbs.filter(fn => fn[symbols.windowSymbol] !== window);
+          timeouts = timeouts.filter(fn => fn[symbols.windowSymbol] !== window);
+          intervals = intervals.filter(fn => fn[symbols.windowSymbol] !== window);
         })
         .catch(err => {
           loading = false;
