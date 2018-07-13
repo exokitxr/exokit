@@ -1,4 +1,5 @@
 module.exports.windowSymbol = Symbol();
+module.exports.idSymbol = Symbol();
 module.exports.computedStyleSymbol = Symbol();
 module.exports.disabledEventsSymbol = Symbol();
 module.exports.elementSymbol = Symbol();

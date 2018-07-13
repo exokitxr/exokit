@@ -649,6 +649,7 @@ const _runHtml = (element, window) => {
 GlobalContext._runHtml = _runHtml;
 
 let rafCbs = [];
+let rafIndex = 0;
 function tickAnimationFrame() {
   if (rafCbs.length > 0) {
     tickAnimationFrame.window = this;
@@ -692,9 +693,11 @@ const _makeRequestAnimationFrame = window => (fn, priority) => {
   }
   fn[symbols.windowSymbol] = window;
   fn[symbols.prioritySymbol] = priority;
+  const id = ++rafIndex;
+  fn[symbols.idSymbol] = id;
   rafCbs.push(fn);
   rafCbs.sort((a, b) => b[symbols.prioritySymbol] - a[symbols.prioritySymbol]);
-  return fn;
+  return id;
 };
 const _getFakeVrDisplay = window => {
   const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1320,8 +1323,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
-  window.cancelAnimationFrame = fn => {
-    const index = rafCbs.indexOf(fn);
+  window.cancelAnimationFrame = id => {
+    const index = rafCbs.find(r => r[symbols.idSymbol] === id);
     if (index !== -1) {
       rafCbs.splice(index, 1);
     }
