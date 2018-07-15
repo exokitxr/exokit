@@ -649,54 +649,91 @@ const _runHtml = (element, window) => {
 GlobalContext._runHtml = _runHtml;
 
 let rafCbs = [];
+let timeouts = [];
+let intervals = [];
+let rafIndex = 0;
 function tickAnimationFrame() {
   if (rafCbs.length > 0) {
-    // console.log('tick rafs', rafCbs.length)
-
     tickAnimationFrame.window = this;
 
-    const localRafCbs = rafCbs.slice();
+    const performanceNow = performance.now();
 
-    const _handleRaf = localRafCb => {
-      if (rafCbs.includes(localRafCb)) {
-        localRafCb(now);
-
-        const index = rafCbs.indexOf(localRafCb);
-        if (index !== -1) {
-          rafCbs.splice(index, 1);
-        }
-      }
-    };
-
-    const now = performance.now();
     // hidden rafs
-    for (let i = 0; i < localRafCbs.length; i++) {
-      const localRafCb = localRafCbs[i];
-      if (localRafCb[symbols.windowSymbol].document.hidden) {
-        _handleRaf(localRafCb);
+    for (let i = 0; i < rafCbs.length; i++) {
+      const rafCb = rafCbs[i];
+      if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
+        rafCb(performanceNow);
+
+        rafCbs[i] = null;
       }
     }
     // visible rafs
-    for (let i = 0; i < localRafCbs.length; i++) {
-      const localRafCb = localRafCbs[i];
-      if (!localRafCb[symbols.windowSymbol].document.hidden) {
-        _handleRaf(localRafCb);
+    for (let i = 0; i < rafCbs.length; i++) {
+      const rafCb = rafCbs[i];
+      if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
+        rafCb(performanceNow);
+
+        rafCbs[i] = null;
       }
     }
 
     tickAnimationFrame.window = null;
   }
+
+  if (timeouts.length > 0) {
+    const dateNow = Date.now();
+
+    for (let i = 0; i < timeouts.length; i++) {
+      const timeout = timeouts[i];
+      if (timeout) {
+        const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
+        if (dateNow >= endTime) {
+          timeout();
+
+          timeouts[i] = null;
+        }
+      }
+    }
+  }
+
+  if (intervals.length > 0) {
+    const dateNow = Date.now();
+
+    for (let i = 0; i < intervals.length; i++) {
+      const interval = intervals[i];
+      if (interval) {
+        const endTime = interval[symbols.startTimeSymbol] + timeout[symbols.intervalSymbol];
+        if (dateNow >= endTime) {
+          interval();
+
+          interval[symbols.startTimeSymbol] = dateNow;
+          intervals[i] = null;
+        }
+      }
+    }
+  }
 }
 tickAnimationFrame.window = null;
+const _findFreeSlot = a => {
+  let i;
+  for (i = 0; i < a.length; i++) {
+    if (a[i] === null) {
+      break;
+    }
+  }
+  return i;
+};
 const _makeRequestAnimationFrame = window => (fn, priority) => {
   if (priority === undefined) {
     priority = 0;
   }
   fn[symbols.windowSymbol] = window;
   fn[symbols.prioritySymbol] = priority;
-  rafCbs.push(fn);
+  const id = ++rafIndex;
+  fn[symbols.idSymbol] = id;
+  rafCbs[_findFreeSlot(rafCbs)] = fn;
   rafCbs.sort((a, b) => b[symbols.prioritySymbol] - a[symbols.prioritySymbol]);
-  return fn;
+  return id;
 };
 const _getFakeVrDisplay = window => {
   const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
@@ -896,10 +933,42 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.URL = URL;
   window.console = console;
-  window.setTimeout = setTimeout;
-  window.clearTimeout = clearTimeout;
-  window.setInterval = setInterval;
-  window.clearInterval = clearInterval;
+  window.setTimeout = (fn, timeout, args) => {
+    if (args) {
+      fn = fn.bind.apply(fn, [window].concat(args));
+    }
+    fn[symbols.windowSymbol] = window;
+    fn[symbols.startTimeSymbol] = Date.now();
+    fn[symbols.timeoutSymbol] = timeout;
+    const id = ++rafIndex;
+    fn[symbols.idSymbol] = id;
+    timeouts[_findFreeSlot(timeouts)] = fn;
+    return id;
+  };
+  window.clearTimeout = id => {
+    const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
+    if (index !== -1) {
+      timeouts[index] = null;
+    }
+  };
+  window.setInterval = (fn, interval, args) => {
+    if (args) {
+      fn = fn.bind.apply(fn, [window].concat(args));
+    }
+    fn[symbols.windowSymbol] = window;
+    fn[symbols.startTimeSymbol] = Date.now();
+    fn[symbols.intervalSymbol] = interval;
+    const id = ++rafIndex;
+    fn[symbols.idSymbol] = id;
+    intervals[_findFreeSlot(intervals)] = null;
+    return id;
+  };
+  window.clearInterval = id => {
+    const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
+    if (index !== -1) {
+      intervals[index] = null;
+    }
+  };
   window.fetch = (url, options) => {
     const _boundFetch = (url, options) => fetch(url, options)
       .then(res => {
@@ -1326,10 +1395,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
-  window.cancelAnimationFrame = fn => {
-    const index = rafCbs.indexOf(fn);
+  window.cancelAnimationFrame = id => {
+    const index = rafCbs.find(r => r[symbols.idSymbol] === id);
     if (index !== -1) {
-      rafCbs.splice(index, 1);
+      rafCbs[index] = null;
     }
   };
   window.postMessage = function(data) {
@@ -1406,7 +1475,23 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
-    rafCbs = rafCbs.filter(fn => fn[symbols.windowSymbol] !== destroyedWindow);
+
+    const _pred = fn => fn[symbols.windowSymbol] !== destroyedWindow;
+    for (let i = 0; i < rafCbs.length; i++) {
+      if (!_pred(rafCbs[i])) {
+        rafCbs[i] = null;
+      }
+    }
+    for (let i = 0; i < timeouts.length; i++) {
+      if (!_pred(timeouts[i])) {
+        timeouts[i] = null;
+      }
+    }
+    for (let i = 0; i < intervals.length; i++) {
+      if (!_pred(intervals[i])) {
+        intervals[i] = null;
+      }
+    }
   });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
@@ -1424,7 +1509,22 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          rafCbs = rafCbs.filter(fn => fn[symbols.windowSymbol] !== window);
+          const _pred = fn => fn[symbols.windowSymbol] !== window;
+          for (let i = 0; i < rafCbs.length; i++) {
+            if (!_pred(rafCbs[i])) {
+              rafCbs[i] = null;
+            }
+          }
+          for (let i = 0; i < timeouts.length; i++) {
+            if (!_pred(timeouts[i])) {
+              timeouts[i] = null;
+            }
+          }
+          for (let i = 0; i < intervals.length; i++) {
+            if (!_pred(intervals[i])) {
+              intervals[i] = null;
+            }
+          }
         })
         .catch(err => {
           loading = false;
