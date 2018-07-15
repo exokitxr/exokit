@@ -1402,7 +1402,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.postMessage = function(data) {
-    this._emit('message', new MessageEvent(data));
+    setImmediate(() => {
+      window._emit('message', new MessageEvent(data));
+    });
   };
   /*
     Treat function onload() as a special case that disables automatic event attach for onload, because this is how browsers work. E.g.
