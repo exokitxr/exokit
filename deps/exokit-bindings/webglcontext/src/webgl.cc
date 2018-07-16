@@ -1123,7 +1123,9 @@ NAN_METHOD(WebGLRenderingContext::Uniform4ui) {
 NAN_METHOD(WebGLRenderingContext::Uniform1fv) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int num;
+
+    GLfloat *data;
+    int count;
     if (info[1]->IsArray()) {
       Local<Array> array = Local<Array>::Cast(info[1]);
       unsigned int length = array->Length();
@@ -1131,19 +1133,30 @@ NAN_METHOD(WebGLRenderingContext::Uniform1fv) {
       for (unsigned int i = 0; i < length; i++) {
         float32Array->Set(i, array->Get(i));
       }
-      GLfloat *ptr = getArrayData<GLfloat>(float32Array, &num);
-      glUniform1fv(location, num, ptr);
+      data = getArrayData<GLfloat>(float32Array, &count);
     } else {
-      GLfloat *ptr = getArrayData<GLfloat>(info[1], &num);
-      glUniform1fv(location, num, ptr);
+      data = getArrayData<GLfloat>(info[1], &count);
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
+
+    glUniform1fv(location, count, data);
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::Uniform2fv) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int num;
+
+    GLfloat *data;
+    int count;
     if (info[1]->IsArray()) {
       Local<Array> array = Local<Array>::Cast(info[1]);
       unsigned int length = array->Length();
@@ -1151,21 +1164,32 @@ NAN_METHOD(WebGLRenderingContext::Uniform2fv) {
       for (unsigned int i = 0; i < length; i++) {
         float32Array->Set(i, array->Get(i));
       }
-      GLfloat *ptr = getArrayData<GLfloat>(float32Array, &num);
-      num /= 2;
-      glUniform2fv(location, num, ptr);
+      data = getArrayData<GLfloat>(float32Array, &count);
+      count /= 2;
     } else {
-      GLfloat *ptr = getArrayData<GLfloat>(info[1], &num);
-      num /= 2;
-      glUniform2fv(location, num, ptr);
+      data = getArrayData<GLfloat>(info[1], &count);
+      count /= 2;
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
+
+    glUniform2fv(location, count, data);
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::Uniform3fv) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int num;
+
+    GLfloat *data;
+    int count;
     if (info[1]->IsArray()) {
       Local<Array> array = Local<Array>::Cast(info[1]);
       unsigned int length = array->Length();
@@ -1173,21 +1197,32 @@ NAN_METHOD(WebGLRenderingContext::Uniform3fv) {
       for (unsigned int i = 0; i < length; i++) {
         float32Array->Set(i, array->Get(i));
       }
-      GLfloat *ptr = getArrayData<GLfloat>(float32Array, &num);
-      num /= 3;
-      glUniform3fv(location, num, ptr);
+      data = getArrayData<GLfloat>(float32Array, &count);
+      count /= 3;
     } else {
-      GLfloat *ptr = getArrayData<GLfloat>(info[1], &num);
-      num /= 3;
-      glUniform3fv(location, num, ptr);
+      data = getArrayData<GLfloat>(info[1], &count);
+      count /= 3;
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
+
+    glUniform3fv(location, count, data);
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::Uniform4fv) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int num;
+
+    GLfloat *data;
+    int count;
     if (info[1]->IsArray()) {
       Local<Array> array = Local<Array>::Cast(info[1]);
       unsigned int length = array->Length();
@@ -1195,21 +1230,32 @@ NAN_METHOD(WebGLRenderingContext::Uniform4fv) {
       for (unsigned int i = 0; i < length; i++) {
         float32Array->Set(i, array->Get(i));
       }
-      GLfloat *ptr=getArrayData<GLfloat>(float32Array, &num);
-      num /= 4;
-      glUniform4fv(location, num, ptr);
+      data = getArrayData<GLfloat>(float32Array, &count);
+      count /= 4;
     } else {
-      GLfloat *ptr=getArrayData<GLfloat>(info[1], &num);
-      num /= 4;
-      glUniform4fv(location, num, ptr);
+      data = getArrayData<GLfloat>(info[1], &count);
+      count /= 4;
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
+
+    glUniform4fv(location, count, data);
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::Uniform1iv) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int num;
+
+    GLint *data;
+    int count;
     if (info[1]->IsArray()) {
       Local<Array> array = Local<Array>::Cast(info[1]);
       unsigned int length = array->Length();
@@ -1217,19 +1263,30 @@ NAN_METHOD(WebGLRenderingContext::Uniform1iv) {
       for (unsigned int i = 0; i < length; i++) {
         int32Array->Set(i, array->Get(i));
       }
-      GLint *ptr = getArrayData<GLint>(int32Array, &num);
-      glUniform1iv(location, num, ptr);
+      data = getArrayData<GLint>(int32Array, &count);
     } else {
-      GLint *ptr = getArrayData<GLint>(info[1], &num);
-      glUniform1iv(location, num, ptr);
+      data = getArrayData<GLint>(info[1], &count);
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
+
+    glUniform1iv(location, count, data);
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::Uniform2iv) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int num;
+
+    GLint *data;
+    int count;
     if (info[1]->IsArray()) {
       Local<Array> array = Local<Array>::Cast(info[1]);
       unsigned int length = array->Length();
@@ -1237,21 +1294,32 @@ NAN_METHOD(WebGLRenderingContext::Uniform2iv) {
       for (unsigned int i = 0; i < length; i++) {
         int32Array->Set(i, array->Get(i));
       }
-      GLint *ptr = getArrayData<GLint>(int32Array, &num);
-      num /= 2;
-      glUniform2iv(location, num, ptr);
+      data = getArrayData<GLint>(int32Array, &count);
+      count /= 2;
     } else {
-      GLint *ptr = getArrayData<GLint>(info[1], &num);
-      num /= 2;
-      glUniform2iv(location, num, ptr);
+      data = getArrayData<GLint>(info[1], &count);
+      count /= 2;
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
+
+    glUniform2iv(location, count, data);
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::Uniform3iv) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int num;
+
+    GLint *data;
+    int count;
     if (info[1]->IsArray()) {
       Local<Array> array = Local<Array>::Cast(info[1]);
       unsigned int length = array->Length();
@@ -1259,21 +1327,32 @@ NAN_METHOD(WebGLRenderingContext::Uniform3iv) {
       for (unsigned int i = 0; i < length; i++) {
         int32Array->Set(i, array->Get(i));
       }
-      GLint *ptr = getArrayData<GLint>(int32Array, &num);
-      num /= 3;
-      glUniform3iv(location, num, ptr);
+      data = getArrayData<GLint>(int32Array, &count);
+      count /= 3;
     } else {
-      GLint *ptr=getArrayData<GLint>(info[1], &num);
-      num /= 3;
-      glUniform3iv(location, num, ptr);
+      data = getArrayData<GLint>(info[1], &count);
+      count /= 3;
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
+
+    glUniform3iv(location, count, data);
   }
 }
 
 NAN_METHOD(WebGLRenderingContext::Uniform4iv) {
   if (info[0]->IsObject()) {
     GLuint location = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-    int num;
+
+    GLint *data;
+    int count;
     if (info[1]->IsArray()) {
       Local<Array> array = Local<Array>::Cast(info[1]);
       unsigned int length = array->Length();
@@ -1281,14 +1360,23 @@ NAN_METHOD(WebGLRenderingContext::Uniform4iv) {
       for (unsigned int i = 0; i < length; i++) {
         int32Array->Set(i, array->Get(i));
       }
-      GLint *ptr = getArrayData<GLint>(int32Array, &num);
-      num /= 4;
-      glUniform4iv(location, num, ptr);
+      data = getArrayData<GLint>(int32Array, &count);
+      count /= 4;
     } else {
-      GLint *ptr = getArrayData<GLint>(info[1], &num);
-      num /= 4;
-      glUniform4iv(location, num, ptr);
+      data = getArrayData<GLint>(info[1], &count);
+      count /= 4;
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
+
+    glUniform4iv(location, count, data);
   }
 }
 
@@ -1309,6 +1397,15 @@ NAN_METHOD(WebGLRenderingContext::Uniform1uiv) {
       data = getArrayData<GLuint>(uint32Array, &count);
     } else {
       data = getArrayData<GLuint>(dataValue, &count);
+    }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
     }
 
     glUniform1uiv(location, count, data);
@@ -1333,6 +1430,15 @@ NAN_METHOD(WebGLRenderingContext::Uniform2uiv) {
     } else {
       data = getArrayData<GLuint>(dataValue, &count);
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
 
     glUniform2uiv(location, count, data);
   }
@@ -1356,6 +1462,15 @@ NAN_METHOD(WebGLRenderingContext::Uniform3uiv) {
     } else {
       data = getArrayData<GLuint>(dataValue, &count);
     }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
+    }
 
     glUniform3uiv(location, count, data);
   }
@@ -1378,6 +1493,15 @@ NAN_METHOD(WebGLRenderingContext::Uniform4uiv) {
       data = getArrayData<GLuint>(uint32Array, &count);
     } else {
       data = getArrayData<GLuint>(dataValue, &count);
+    }
+    if (info[2]->IsNumber()) {
+      GLsizei srcOffset = info[3]->Uint32Value();
+      data += srcOffset;
+      count -= srcOffset;
+    }
+    if (info[3]->IsNumber()) {
+      GLsizei srcLength = info[4]->Uint32Value();
+      count = std::min<GLsizei>(srcLength, count);
     }
 
     glUniform4uiv(location, count, data);
