@@ -723,7 +723,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "vertexAttribI4iv", glCallWrap<VertexAttribI4iv>);
   Nan::SetMethod(proto, "vertexAttribI4ui", glCallWrap<VertexAttribI4ui>);
   Nan::SetMethod(proto, "vertexAttribI4uiv", glCallWrap<VertexAttribI4uiv>);
-  
+
   Nan::SetMethod(proto, "vertexAttribDivisor", glCallWrap<VertexAttribDivisor>);
   Nan::SetMethod(proto, "drawBuffers", glCallWrap<DrawBuffers>);
 
@@ -2622,7 +2622,7 @@ NAN_METHOD(WebGLRenderingContext::BufferData) {
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(obj);
     data = (char *)arrayBufferView->Buffer()->GetContents().Data() + arrayBufferView->ByteOffset();
     usage = info[2]->Uint32Value();
-    
+
     if (info[3]->IsNumber()) {
       size_t srcOffset = info[3]->Uint32Value() * getArrayBufferViewElementSize(arrayBufferView);
       data += srcOffset;
@@ -2838,7 +2838,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib4f) {
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib1fv) {
   int indx = info[0]->Int32Value();
-  
+
   GLfloat *data;
   int num;
   if (info[1]->IsArray()) {
@@ -2858,7 +2858,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib1fv) {
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib2fv) {
   int indx = info[0]->Int32Value();
-  
+
   GLfloat *data;
   int num;
   if (info[1]->IsArray()) {
@@ -2878,7 +2878,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib2fv) {
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib3fv) {
   int indx = info[0]->Int32Value();
-  
+
   GLfloat *data;
   int num;
   if (info[1]->IsArray()) {
@@ -2898,7 +2898,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib3fv) {
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib4fv) {
   int indx = info[0]->Int32Value();
-  
+
   GLfloat *data;
   int num;
   if (info[1]->IsArray()) {
