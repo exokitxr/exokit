@@ -1505,7 +1505,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      exokit.load(href)
+      exokit.load(href, {
+        dataPath: options.dataPath,
+      })
         .then(newWindow => {
           window._emit('beforeunload');
           window._emit('unload');
