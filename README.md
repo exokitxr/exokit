@@ -130,4 +130,5 @@ The core is Javascript and is platform-agnostic. Porting work is restricted to t
 - [Avaer K](//github.com/modulesio)
 - [Nick L](//github.com/Fierent)
 - [Chris Eddy](//github.com/ChrisEddy)
+- [Chris La Torres](https://github.com/chrislatorres)
 - [Noah A S](//github.com/NoahSchiffman)
