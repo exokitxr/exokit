@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/webmixedreality/exokit-windows.git"
+    "url": "git+https://github.com/webmixedreality/exokit.git"
   },
   "keywords": [
     "browser",
@@ -36,11 +36,11 @@
     "magic leap"
   ],
   "author": "Avaer Kazmer <a@modules.io>",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/webmixedreality/exokit-windows/issues"
+    "url": "https://github.com/webmixedreality/exokit/issues"
   },
-  "homepage": "https://github.com/webmixedreality/exokit-windows#readme",
+  "homepage": "https://github.com/webmixedreality/exokit#readme",
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
     "bugsnag": "^2.4.3",
