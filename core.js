@@ -732,7 +732,7 @@ const _makeRequestAnimationFrame = window => (fn, priority) => {
   const id = ++rafIndex;
   fn[symbols.idSymbol] = id;
   rafCbs[_findFreeSlot(rafCbs)] = fn;
-  rafCbs.sort((a, b) => b[symbols.prioritySymbol] - a[symbols.prioritySymbol]);
+  rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
 };
 const _getFakeVrDisplay = window => {
