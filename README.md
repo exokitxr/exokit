@@ -122,7 +122,7 @@ The core is Javascript and is platform-agnostic. Porting work is restricted to t
 ## Community
 
 - [Slack](https://communityinviter.com/apps/exokit/exokit) for development
-- [Discord](https://discord.gg/cf5tfTV) for hanging out
+- [Discord](https://discord.gg/Apk6cZN) for hanging out
 - [Twitter](https://twitter.com/webmixedreality) for silliness
 
 ## Contributors
