@@ -652,15 +652,31 @@ let rafCbs = [];
 let timeouts = [];
 let intervals = [];
 let rafIndex = 0;
+const localCbs = [];
+const _cacheLocalCbs = cbs => {
+  for (let i = 0; i < cbs.length; i++) {
+    localCbs[i] = cbs[i];
+  }
+  for (let i = cbs.length; i < localCbs.length; i++) {
+    localCbs[i] = null;
+  }
+};
+const _clearLocalCbs = () => {
+  for (let i = 0; i < localCbs.length; i++) {
+    localCbs[i] = null;
+  }
+};
 function tickAnimationFrame() {
   if (rafCbs.length > 0) {
+    _cacheLocalCbs(rafCbs);
+
     tickAnimationFrame.window = this;
 
     const performanceNow = performance.now();
 
     // hidden rafs
-    for (let i = 0; i < rafCbs.length; i++) {
-      const rafCb = rafCbs[i];
+    for (let i = 0; i < localCbs.length; i++) {
+      const rafCb = localCbs[i];
       if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
         rafCb(performanceNow);
 
@@ -668,8 +684,8 @@ function tickAnimationFrame() {
       }
     }
     // visible rafs
-    for (let i = 0; i < rafCbs.length; i++) {
-      const rafCb = rafCbs[i];
+    for (let i = 0; i < localCbs.length; i++) {
+      const rafCb = localCbs[i];
       if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
         rafCb(performanceNow);
 
@@ -681,10 +697,11 @@ function tickAnimationFrame() {
   }
 
   if (timeouts.length > 0) {
+    _cacheLocalCbs(timeouts);
     const dateNow = Date.now();
 
-    for (let i = 0; i < timeouts.length; i++) {
-      const timeout = timeouts[i];
+    for (let i = 0; i < localCbs.length; i++) {
+      const timeout = localCbs[i];
       if (timeout) {
         const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
         if (dateNow >= endTime) {
@@ -697,10 +714,11 @@ function tickAnimationFrame() {
   }
 
   if (intervals.length > 0) {
+    _cacheLocalCbs(intervals);
     const dateNow = Date.now();
 
-    for (let i = 0; i < intervals.length; i++) {
-      const interval = intervals[i];
+    for (let i = 0; i < localCbs.length; i++) {
+      const interval = localCbs[i];
       if (interval) {
         const endTime = interval[symbols.startTimeSymbol] + timeout[symbols.intervalSymbol];
         if (dateNow >= endTime) {
@@ -712,6 +730,8 @@ function tickAnimationFrame() {
       }
     }
   }
+  
+  _clearLocalCbs();
 }
 tickAnimationFrame.window = null;
 const _findFreeSlot = a => {
