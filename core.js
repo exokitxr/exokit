@@ -680,7 +680,10 @@ function tickAnimationFrame() {
       if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
         rafCb(performanceNow);
 
-        rafCbs[i] = null;
+        const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+        if (index !== -1) {
+          rafCbs[index] = null;
+        }
       }
     }
     // visible rafs
@@ -689,7 +692,10 @@ function tickAnimationFrame() {
       if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
         rafCb(performanceNow);
 
-        rafCbs[i] = null;
+        const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+        if (index !== -1) {
+          rafCbs[index] = null;
+        }
       }
     }
 
