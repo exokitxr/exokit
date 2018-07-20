@@ -731,7 +731,7 @@ function tickAnimationFrame() {
     }
   }
   
-  _clearLocalCbs();
+  _clearLocalCbs(); // release garbage
 }
 tickAnimationFrame.window = null;
 const _findFreeSlot = a => {
