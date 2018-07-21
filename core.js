@@ -1390,7 +1390,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.createImageBitmap = createImageBitmap;
   window.Worker =  class Worker extends nativeWorker {
     constructor(src, workerOptions = {}) {
-      workerOptions.baseUrl = options.baseUrl;
       if (nativeBindings) {
         workerOptions.startScript = `
           ${windowStartScript}
