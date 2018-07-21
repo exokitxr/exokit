@@ -1843,10 +1843,16 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
       if (this._context === null) {
-        if (contextType === 'webgl') {
-          this._context = new WebGLRenderingContext(this);
+        if (GlobalContext.args.webgl === '1') {
+          if (contextType === 'webgl' || contextType === 'xrpresent') {
+            this._context = new WebGLRenderingContext(this);
+          }
         } else {
-          this._context = new WebGL2RenderingContext(this);
+          if (contextType === 'webgl') {
+            this._context = new WebGLRenderingContext(this);
+          } else {
+            this._context = new WebGL2RenderingContext(this);
+          }
         }
       }
     } else {

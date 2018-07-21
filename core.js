@@ -1337,7 +1337,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.CanvasGradient = CanvasGradient;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
   window.WebGLRenderingContext = WebGLRenderingContext;
-  window.WebGL2RenderingContext = WebGL2RenderingContext;
+  if (GlobalContext.args.webgl !== '1') {
+    window.WebGL2RenderingContext = WebGL2RenderingContext;
+  }
   window.Audio = HTMLAudioElementBound;
   window.MediaRecorder = MediaRecorder;
   window.Document = Document;
