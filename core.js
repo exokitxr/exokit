@@ -749,10 +749,8 @@ const _findFreeSlot = a => {
   }
   return i;
 };
-const _makeRequestAnimationFrame = window => (fn, priority) => {
-  if (priority === undefined) {
-    priority = 0;
-  }
+const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
+  fn = fn.bind(window);
   fn[symbols.windowSymbol] = window;
   fn[symbols.prioritySymbol] = priority;
   const id = ++rafIndex;
