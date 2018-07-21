@@ -517,7 +517,9 @@ class FileReader extends EventTarget {
     this.result = file.buffer.buffer.slice(file.buffer.byteOffset, file.buffer.byteOffset + file.buffer.byteLength);
 
     process.nextTick(() => {
-      this.emit('load');
+      this.dispatchEvent(new Event('load', {
+        target: this,
+      }));
     });
   }
 
@@ -525,7 +527,9 @@ class FileReader extends EventTarget {
     this.result = 'data:' + file.type + ';base64,' + file.buffer.toString('base64');
 
     process.nextTick(() => {
-      this.emit('load');
+      this.dispatchEvent(new Event('load', {
+        target: this,
+      }));
     });
   }
 }
