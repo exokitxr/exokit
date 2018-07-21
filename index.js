@@ -47,6 +47,7 @@ const args = (() => {
       ],
       string: [
         'tab',
+        'webgl',
         'xr',
         'size',
         'image',
@@ -55,6 +56,7 @@ const args = (() => {
         v: 'version',
         h: 'home',
         t: 'tab',
+        w: 'webgl',
         x: 'xr',
         p: 'performance',
         perf: 'performance',
@@ -72,6 +74,7 @@ const args = (() => {
       url: minimistArgs._[0] || '',
       home: minimistArgs.home || !!minimistArgs.tab,
       tab: minimistArgs.tab,
+      webgl: minimistArgs.webgl || '2',
       xr: minimistArgs.xr || 'all',
       performance: !!minimistArgs.performance,
       size: minimistArgs.size,
