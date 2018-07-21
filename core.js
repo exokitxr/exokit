@@ -957,10 +957,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.URL = URL;
   window.console = console;
-  window.setTimeout = (fn, timeout, args) => {
-    if (args) {
-      fn = fn.bind.apply(fn, [window].concat(args));
-    }
+  window.setTimeout = (fn, timeout = 0, args = []) => {
+    fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
     fn[symbols.startTimeSymbol] = Date.now();
     fn[symbols.timeoutSymbol] = timeout;
