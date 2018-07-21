@@ -206,9 +206,7 @@ class CustomElementRegistry {
 }
 
 let nativeVm = GlobalContext.nativeVm = null;
-class nativeWorker {
-  terminate() {}
-}
+let nativeWorker = null;
 
 class Screen {
   constructor(window) {
@@ -1392,19 +1390,20 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.createImageBitmap = createImageBitmap;
   window.Worker =  class Worker extends nativeWorker {
     constructor(src, workerOptions = {}) {
-      workerOptions.baseUrl = options.baseUrl;
       if (nativeBindings) {
         workerOptions.startScript = `
-          ${windowStartScript}
+          (() => {
+            ${windowStartScript}
 
-          const bindings = requireNative("nativeBindings");
-          const smiggles = require("smiggles");
+            const bindings = requireNative("nativeBindings");
+            const smiggles = require("smiggles");
 
-          smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
+            smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
 
-          global.Image = bindings.nativeImage;
-          global.ImageBitmap = bindings.nativeImageBitmap;
-          global.createImageBitmap = ${createImageBitmap.toString()};
+            global.Image = bindings.nativeImage;
+            global.ImageBitmap = bindings.nativeImageBitmap;
+            global.createImageBitmap = ${createImageBitmap.toString()};
+          })();
         `;
       }
 
