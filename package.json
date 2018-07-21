@@ -18,7 +18,7 @@
     "test:ci": "TEST_ENV=ci npm run test:command -- --exit",
     "test:command": "mocha tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
     "test:watch": "npm run test:command -- --watch",
-    "serve": "live-server examples"
+    "serve": "serve examples"
   },
   "repository": {
     "type": "git",
@@ -84,8 +84,8 @@
     "chai": "^4.1.2",
     "eslint": "^5.2.0",
     "express": "^4.16.3",
-    "live-server": "^1.2.0",
     "mocha": "^5.2.0",
+    "serve": "^9.3.0",
     "shx": "^0.3.2",
     "sinon": "^6.1.4"
   }
