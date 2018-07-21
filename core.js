@@ -1392,16 +1392,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     constructor(src, workerOptions = {}) {
       if (nativeBindings) {
         workerOptions.startScript = `
-          ${windowStartScript}
+          (() => {
+            ${windowStartScript}
 
-          const bindings = requireNative("nativeBindings");
-          const smiggles = require("smiggles");
+            const bindings = requireNative("nativeBindings");
+            const smiggles = require("smiggles");
 
-          smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
+            smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
 
-          global.Image = bindings.nativeImage;
-          global.ImageBitmap = bindings.nativeImageBitmap;
-          global.createImageBitmap = ${createImageBitmap.toString()};
+            global.Image = bindings.nativeImage;
+            global.ImageBitmap = bindings.nativeImageBitmap;
+            global.createImageBitmap = ${createImageBitmap.toString()};
+          })();
         `;
       }
 
