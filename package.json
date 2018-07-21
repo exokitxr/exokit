@@ -78,7 +78,7 @@
     "window-text-encoding": "0.0.2",
     "window-worker": "0.0.70",
     "window-xhr": "0.0.19",
-    "ws": "^5.2.2"
+    "ws": "^6.0.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",
