@@ -973,10 +973,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       timeouts[index] = null;
     }
   };
-  window.setInterval = (fn, interval, args) => {
-    if (args) {
-      fn = fn.bind.apply(fn, [window].concat(args));
+  window.setInterval = (fn, interval = 10, args = []) => {
+    if (interval < 10) {
+      interval = 10;
     }
+    fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
     fn[symbols.startTimeSymbol] = Date.now();
     fn[symbols.intervalSymbol] = interval;
