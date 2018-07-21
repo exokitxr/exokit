@@ -41,6 +41,9 @@ const GlobalContext = require('./src/GlobalContext');
 const symbols = require('./src/symbols');
 const {urls} = require('./src/urls');
 
+GlobalContext.args = {};
+GlobalContext.version = '';
+
 // Class imports.
 const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType,
        DOMImplementation, initDocument} = require('./src/Document');
