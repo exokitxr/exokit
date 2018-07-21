@@ -206,9 +206,7 @@ class CustomElementRegistry {
 }
 
 let nativeVm = GlobalContext.nativeVm = null;
-class nativeWorker {
-  terminate() {}
-}
+let nativeWorker = null;
 
 class Screen {
   constructor(window) {
