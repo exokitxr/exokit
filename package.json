@@ -76,7 +76,7 @@
     "window-fetch": "0.0.9",
     "window-selector": "0.0.5",
     "window-text-encoding": "0.0.2",
-    "window-worker": "0.0.69",
+    "window-worker": "0.0.70",
     "window-xhr": "0.0.19",
     "ws": "^5.2.2"
   },
