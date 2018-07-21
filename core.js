@@ -41,6 +41,9 @@ const GlobalContext = require('./src/GlobalContext');
 const symbols = require('./src/symbols');
 const {urls} = require('./src/urls');
 
+GlobalContext.args = {};
+GlobalContext.version = '';
+
 // Class imports.
 const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType,
        DOMImplementation, initDocument} = require('./src/Document');
@@ -64,8 +67,6 @@ const _requestBrowser = async () => {
 };
 
 let nativeBindings = false;
-let args = {};
-let version = '';
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
@@ -838,7 +839,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.vm = vmo;
 
   const windowStartScript = `(() => {
-    ${!args.require ? 'global.require = undefined;' : ''}
+    ${!GlobalContext.args.require ? 'global.require = undefined;' : ''}
 
     const _logStack = err => {
       console.warn(err);
@@ -876,7 +877,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   });
   window.history = new History(location.href);
   window.navigator = {
-    userAgent: `MixedReality (Exokit ${version})`,
+    userAgent: `MixedReality (Exokit ${GlobalContext.version})`,
     platform: os.platform(),
     appCodeName: 'Mozilla',
     appName: 'Netscape',
@@ -941,14 +942,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
 
   // WebVR enabled.
-  if (['all', 'webvr'].includes(args.xr)) {
+  if (['all', 'webvr'].includes(GlobalContext.args.xr)) {
     window.navigator.getVRDisplays = function() {
       return Promise.resolve(this.getVRDisplaysSync());
     }
   }
 
   // WebXR enabled.
-  if (['all', 'webxr'].includes(args.xr)) {
+  if (['all', 'webxr'].includes(GlobalContext.args.xr)) {
     window.navigator.xr = new XR.XR(window);
   }
 
@@ -1339,7 +1340,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.CanvasGradient = CanvasGradient;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
   window.WebGLRenderingContext = WebGLRenderingContext;
-  window.WebGL2RenderingContext = WebGL2RenderingContext;
+  if (GlobalContext.args.webgl !== '1') {
+    window.WebGL2RenderingContext = WebGL2RenderingContext;
+  }
   window.Audio = HTMLAudioElementBound;
   window.MediaRecorder = MediaRecorder;
   window.Document = Document;
@@ -1719,10 +1722,10 @@ exokit.load = (src, options = {}) => {
 exokit.getAllGamepads = getAllGamepads;
 exokit.THREE = THREE;
 exokit.setArgs = newArgs => {
-  args = newArgs;
+  GlobalContext.args = newArgs;
 };
 exokit.setVersion = newVersion => {
-  version = newVersion;
+  GlobalContext.version = newVersion;
 };
 
 /**
@@ -1756,16 +1759,16 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
   WebGLRenderingContext = GlobalContext.WebGLRenderingContext = bindings.nativeGl;
   WebGL2RenderingContext = GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
-  if (args.frame || args.minimalFrame) {
+  if (GlobalContext.args.frame || GlobalContext.args.minimalFrame) {
     WebGLRenderingContext = GlobalContext.WebGLRenderingContext = (OldWebGLRenderingContext => {
       function WebGLRenderingContext() {
         const result = Reflect.construct(bindings.nativeGl, arguments);
         for (const k in result) {
           if (typeof result[k] === 'function') {
             result[k] = (old => function() {
-              if (args.frame) {
+              if (GlobalContext.args.frame) {
                 console.log(k, arguments);
-              } else if (args.minimalFrame) {
+              } else if (GlobalContext.args.minimalFrame) {
                 console.log(k);
               }
               return old.apply(this, arguments);
