@@ -3665,15 +3665,29 @@ NAN_METHOD(WebGLRenderingContext::ReadPixels) {
   GLsizei height = info[3]->Uint32Value();
   GLenum format = info[4]->Uint32Value();
   GLenum type = info[5]->Uint32Value();
-  char *pixels = (char *)getImageData(info[6]);
 
-  if (pixels != nullptr) {
-    glReadPixels(x, y, width, height, format, type, pixels);
+  char *pixels;
+  if (info[6]->IsNumber()) {
+    GLintptr offset = info[6]->Uint32Value();
+    pixels = (char *)offset;
+  } else if (info[6]->IsArrayBufferView()) {
+    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[6]);
+    pixels = (char *)getImageData(arrayBufferView);
+
+    if (pixels != nullptr) {
+      if (info[7]->IsNumber()) {
+        GLuint dstOffset = info[7]->Uint32Value();
+        GLuint elementSize = getArrayBufferViewElementSize(arrayBufferView);
+        pixels += dstOffset * elementSize;
+      }
+    } else {
+      return Nan::ThrowError("ReadPixels: Invalid data argument");
+    }
   } else {
-    Nan::ThrowError("Invalid texture argument");
+    return Nan::ThrowError("ReadPixels: Invalid arguments");
   }
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glReadPixels(x, y, width, height, format, type, pixels);
 }
 
 NAN_METHOD(WebGLRenderingContext::GetTexParameter) {
