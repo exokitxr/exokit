@@ -14,4 +14,4 @@ if [ -x "$DIR/node/bin/node" ]; then
 fi
 
 cd "$DIR"
-exec "$NODE_BIN" "$DIR/index.js" "${@:--h}"
+exec "$NODE_BIN" "$DIR/index.js" "${@:--h -l}"
