@@ -729,7 +729,7 @@ function tickAnimationFrame() {
     for (let i = 0; i < localCbs.length; i++) {
       const interval = localCbs[i];
       if (interval) {
-        const endTime = interval[symbols.startTimeSymbol] + timeout[symbols.intervalSymbol];
+        const endTime = interval[symbols.startTimeSymbol] + interval[symbols.intervalSymbol];
         if (dateNow >= endTime) {
           interval();
 
