@@ -986,7 +986,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     fn[symbols.intervalSymbol] = interval;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
-    intervals[_findFreeSlot(intervals)] = null;
+    intervals[_findFreeSlot(intervals)] = fn;
     return id;
   };
   window.clearInterval = id => {
