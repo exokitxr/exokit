@@ -734,7 +734,6 @@ function tickAnimationFrame() {
           interval();
 
           interval[symbols.startTimeSymbol] = dateNow;
-          intervals[i] = null;
         }
       }
     }
