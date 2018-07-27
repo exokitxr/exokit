@@ -665,6 +665,7 @@ const _bindWindow = (window, newWindowCb) => {
         context.destroy();
       }
     }
+    clearTimeout(timeout);
   });
   window.addEventListener('error', err => {
     console.warn('got error', err);
@@ -1182,7 +1183,7 @@ const _bindWindow = (window, newWindowCb) => {
     timeout = setTimeout(_recurse, Math.min(Math.max(FRAME_TIME_MAX - ~~(now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX));
     lastFrameTime = now;
   };
-  process.nextTick(_recurse);
+  timeout = setTimeout(_recurse);
 };
 const _bindDirectWindow = newWindow => {
   _bindWindow(newWindow, _bindDirectWindow);

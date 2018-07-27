@@ -729,12 +729,11 @@ function tickAnimationFrame() {
     for (let i = 0; i < localCbs.length; i++) {
       const interval = localCbs[i];
       if (interval) {
-        const endTime = interval[symbols.startTimeSymbol] + timeout[symbols.intervalSymbol];
+        const endTime = interval[symbols.startTimeSymbol] + interval[symbols.intervalSymbol];
         if (dateNow >= endTime) {
           interval();
 
           interval[symbols.startTimeSymbol] = dateNow;
-          intervals[i] = null;
         }
       }
     }
@@ -986,7 +985,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     fn[symbols.intervalSymbol] = interval;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
-    intervals[_findFreeSlot(intervals)] = null;
+    intervals[_findFreeSlot(intervals)] = fn;
     return id;
   };
   window.clearInterval = id => {
@@ -1425,7 +1424,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
   window.cancelAnimationFrame = id => {
-    const index = rafCbs.find(r => r[symbols.idSymbol] === id);
+    const index = rafCbs.findIndex(r => r[symbols.idSymbol] === id);
     if (index !== -1) {
       rafCbs[index] = null;
     }
@@ -1507,7 +1506,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
 
-    const _pred = fn => fn[symbols.windowSymbol] !== destroyedWindow;
+    const _pred = fn => fn && fn[symbols.windowSymbol] !== destroyedWindow;
     for (let i = 0; i < rafCbs.length; i++) {
       if (!_pred(rafCbs[i])) {
         rafCbs[i] = null;
@@ -1542,7 +1541,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          const _pred = fn => fn[symbols.windowSymbol] !== window;
+          const _pred = fn => fn && fn[symbols.windowSymbol] !== window;
           for (let i = 0; i < rafCbs.length; i++) {
             if (!_pred(rafCbs[i])) {
               rafCbs[i] = null;
