@@ -4,8 +4,12 @@ const exokit = require('../../../index');
 describe('requestAnimationFrame', () => {
   var window;
 
-  beforeEach(() => {
-    window = exokit().window;
+  beforeEach(cb => {
+    exokit.load('data:text/html,<html></html>')
+      .then(o => {
+        window = o.window;
+        cb();
+      });
   });
 
   it('raf', cb => {

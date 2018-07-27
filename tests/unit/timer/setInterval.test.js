@@ -4,8 +4,12 @@ const exokit = require('../../../index');
 describe('setInterval', () => {
   var window;
 
-  beforeEach(() => {
-    window = exokit().window;
+  beforeEach(cb => {
+    exokit.load('data:text/html,<html></html>')
+      .then(o => {
+        window = o.window;
+        cb();
+      });
   });
 
   it('interval 0', cb => {
