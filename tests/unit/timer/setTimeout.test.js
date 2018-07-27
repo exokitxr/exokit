@@ -40,7 +40,7 @@ describe('setTimeout', () => {
       timedout = true;
     }, 0);
 
-    assert.equal(typeof timedout, 'number');
+    assert.equal(typeof timeout, 'number');
     assert.equal(timedout, false);
 
     window.clearTimeout(timeout);

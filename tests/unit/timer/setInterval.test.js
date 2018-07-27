@@ -42,11 +42,11 @@ describe('setInterval', () => {
 
   it('clear interval', cb => {
     let intervals = 0;
-    const interval = window.setTimeout(() => {
+    const interval = window.setInterval(() => {
       intervals++;
     }, 0);
 
-    assert.equal(typeof iterval, 'number');
+    assert.equal(typeof interval, 'number');
     assert.equal(intervals, 0);
 
     window.clearInterval(interval);
