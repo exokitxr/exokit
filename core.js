@@ -1506,7 +1506,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
 
-    const _pred = fn => fn[symbols.windowSymbol] !== destroyedWindow;
+    const _pred = fn => fn && fn[symbols.windowSymbol] !== destroyedWindow;
     for (let i = 0; i < rafCbs.length; i++) {
       if (!_pred(rafCbs[i])) {
         rafCbs[i] = null;
@@ -1541,7 +1541,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          const _pred = fn => fn[symbols.windowSymbol] !== window;
+          const _pred = fn => fn && fn[symbols.windowSymbol] !== window;
           for (let i = 0; i < rafCbs.length; i++) {
             if (!_pred(rafCbs[i])) {
               rafCbs[i] = null;
