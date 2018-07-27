@@ -14,7 +14,7 @@ describe('requestAnimationFrame', () => {
       rafed = true;
 
       cb();
-    }, 0);
+    });
 
     assert.equal(rafed, false);
   });
@@ -23,7 +23,7 @@ describe('requestAnimationFrame', () => {
     let rafed = false;
     const raf = window.requestAnimationFrame(() => {
       rafed = true;
-    }, 0);
+    });
 
     assert.equal(rafed, false);
 
