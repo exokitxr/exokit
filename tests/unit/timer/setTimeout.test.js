@@ -12,6 +12,10 @@ describe('setTimeout', () => {
       });
   });
 
+  afterEach(() => {
+    window.destroy();
+  });
+
   it('timeout 0', cb => {
     let timedout = false;
     window.setTimeout(() => {

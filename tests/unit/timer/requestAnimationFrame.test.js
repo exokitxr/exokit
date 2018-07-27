@@ -12,6 +12,10 @@ describe('requestAnimationFrame', () => {
       });
   });
 
+  afterEach(() => {
+    window.destroy();
+  });
+
   it('raf', cb => {
     let rafed = false;
     window.requestAnimationFrame(() => {

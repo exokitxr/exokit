@@ -12,6 +12,10 @@ describe('setInterval', () => {
       });
   });
 
+  afterEach(() => {
+    window.destroy();
+  });
+
   it('interval 0', cb => {
     let intervals = 0;
     const interval = window.setInterval(() => {
