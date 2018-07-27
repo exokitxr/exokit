@@ -1696,7 +1696,7 @@ const exokit = (s = '', options = {}) => {
   return _makeWindowWithDocument(s, options);
 };
 exokit.load = (src, options = {}) => {
-  if (src.indexOf('://') === -1) {
+  if (!url.parse(src).protocol) {
     src = 'http://' + src;
   }
   return fetch(src)
