@@ -665,6 +665,7 @@ const _bindWindow = (window, newWindowCb) => {
         context.destroy();
       }
     }
+    clearTimeout(timeout);
   });
   window.addEventListener('error', err => {
     console.warn('got error', err);
