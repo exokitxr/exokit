@@ -1318,7 +1318,9 @@ const _start = () => {
 
       let result, err = null, match;
 
-      if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
+      if (/^https?:\/\//.test(cmd)) {
+        window.location.href = url;
+      } else if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
         const e = window.document.createElement('div');
         e.innerHTML = cmd;
         if (e.childNodes.length === 0) {
