@@ -1318,7 +1318,9 @@ const _start = () => {
 
       let result, err = null, match;
 
-      if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
+      if (/^[a-z]+:\/\//.test(cmd)) {
+        window.location.href = cmd;
+      } else if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
         const e = window.document.createElement('div');
         e.innerHTML = cmd;
         if (e.childNodes.length === 0) {
@@ -1368,14 +1370,6 @@ const _start = () => {
     const r = repl.start({
       prompt,
       eval: replEval,
-    });
-    r.defineCommand('go', {
-      help: 'Navigate to <url>',
-      action(url) {
-        window.location.href = url;
-        this.clearBufferedCommand();
-        this.displayPrompt();
-      }
     });
     replHistory(r, path.join(dataPath, '.repl_history'));
     r.on('exit', () => {
