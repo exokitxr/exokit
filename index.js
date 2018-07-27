@@ -1371,14 +1371,6 @@ const _start = () => {
       prompt,
       eval: replEval,
     });
-    r.defineCommand('go', {
-      help: 'Navigate to <url>',
-      action(url) {
-        window.location.href = url;
-        this.clearBufferedCommand();
-        this.displayPrompt();
-      }
-    });
     replHistory(r, path.join(dataPath, '.repl_history'));
     r.on('exit', () => {
       process.exit();
