@@ -1424,7 +1424,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
   window.cancelAnimationFrame = id => {
-    const index = rafCbs.find(r => r[symbols.idSymbol] === id);
+    const index = rafCbs.findIndex(r => r[symbols.idSymbol] === id);
     if (index !== -1) {
       rafCbs[index] = null;
     }
