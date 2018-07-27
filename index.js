@@ -1318,7 +1318,7 @@ const _start = () => {
 
       let result, err = null, match;
 
-      if (/^https?:\/\//.test(cmd)) {
+      if (/^[a-z]+:\/\//.test(cmd)) {
         window.location.href = cmd;
       } else if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
         const e = window.document.createElement('div');
