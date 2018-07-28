@@ -44,6 +44,7 @@ const args = (() => {
         'minimalFrame',
         'quit',
         'blit',
+        'uncapped',
         'require',
       ],
       string: [
@@ -67,6 +68,7 @@ const args = (() => {
         m: 'minimalFrame',
         q: 'quit',
         b: 'blit',
+        u: 'uncapped',
         i: 'image',
         r: 'require',
       },
@@ -85,6 +87,7 @@ const args = (() => {
       minimalFrame: minimistArgs.minimalFrame,
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
+      uncapped: minimistArgs.uncapped,
       image: minimistArgs.image,
       require: minimistArgs.require,
     };
@@ -1180,7 +1183,13 @@ const _bindWindow = (window, newWindowCb) => {
 
     // wait for next frame
     const now = Date.now();
-    timeout = setTimeout(_recurse, Math.min(Math.max(FRAME_TIME_MAX - ~~(now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX));
+    timeout = setTimeout(
+      _recurse,
+      args.uncapped ?
+        0
+      :
+        Math.min(Math.max(FRAME_TIME_MAX - ~~(now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX)
+    );
     lastFrameTime = now;
   };
   timeout = setTimeout(_recurse);
