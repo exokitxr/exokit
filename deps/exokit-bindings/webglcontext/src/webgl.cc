@@ -4371,7 +4371,8 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "WEBGL_debug_renderer_info") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
-    result->Set(JS_STR("UNMASKED_RENDERER_WEBGL"), JS_INT(GL_VENDOR));
+    result->Set(JS_STR("UNMASKED_RENDERER_WEBGL"), JS_INT(GL_RENDERER));
+    result->Set(JS_STR("UNMASKED_VENDOR_WEBGL"), JS_INT(GL_VENDOR));
     info.GetReturnValue().Set(result);
   } else {
     info.GetReturnValue().Set(Null(Isolate::GetCurrent()));
