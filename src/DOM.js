@@ -1385,7 +1385,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
     return this.getAttribute('rel') || '';
   }
   set rel(rel) {
-    rel = href + '';
+    rel = rel + '';
     this.setAttribute('rel', rel);
   }
 
