@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <script src="lol.js"></script>
+    <script>
+      window.Lol3 = class Lol3 {};
+    </script>
+  </head>
+  <body>
+    <script src="lol2.js"></script>
+    <script>
+      window.Lol4 = class Lol4 {};
+    </script>
+    <script>
+      console.log('got class 1', new window.Lol1());
+      console.log('got class 2', new window.Lol2());
+      console.log('got class 3', new window.Lol3());
+    </script>
+  </body>
+</html>
