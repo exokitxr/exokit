@@ -10,6 +10,3 @@ module.exports.mrDisplaysSymbol = Symbol();
 module.exports.optionsSymbol = Symbol();
 module.exports.pointerLockElementSymbol = Symbol();
 module.exports.prioritySymbol = Symbol();
-module.exports.startTimeSymbol = Symbol();
-module.exports.timeoutSymbol = Symbol();
-module.exports.intervalSymbol = Symbol();

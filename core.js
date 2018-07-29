@@ -672,6 +672,7 @@ const _clearLocalCbs = () => {
 function tickAnimationFrame() {
   if (rafCbs.length > 0) {
     _cacheLocalCbs(rafCbs);
+    const dateNow = Date.now();
 
     tickAnimationFrame.window = this;
 
@@ -703,42 +704,34 @@ function tickAnimationFrame() {
     }
 
     tickAnimationFrame.window = null;
-  }
-
-  if (timeouts.length > 0) {
-    _cacheLocalCbs(timeouts);
-    const dateNow = Date.now();
-
-    for (let i = 0; i < localCbs.length; i++) {
-      const timeout = localCbs[i];
-      if (timeout) {
-        const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
-        if (dateNow >= endTime) {
-          timeout();
-
-          timeouts[i] = null;
+    if (timeouts.length > 0) {
+      _cacheLocalCbs(timeouts);
+      for (let i = 0; i < localCbs.length; i++) {
+        const timeout = localCbs[i];
+        if (timeout) {
+          const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
+          if (dateNow >= endTime) {
+            timeout();
+            timeouts[i] = null;
+          }
+        }
+      }
+    }
+    if (intervals.length > 0) {
+      _cacheLocalCbs(intervals);
+      for (let i = 0; i < localCbs.length; i++) {
+        const interval = localCbs[i];
+        if (interval) {
+          const endTime = interval[symbols.startTimeSymbol] + interval[symbols.intervalSymbol];
+          if (dateNow >= endTime) {
+            interval();
+            interval[symbols.startTimeSymbol] = dateNow;
+          }
         }
       }
     }
   }
 
-  if (intervals.length > 0) {
-    _cacheLocalCbs(intervals);
-    const dateNow = Date.now();
-
-    for (let i = 0; i < localCbs.length; i++) {
-      const interval = localCbs[i];
-      if (interval) {
-        const endTime = interval[symbols.startTimeSymbol] + interval[symbols.intervalSymbol];
-        if (dateNow >= endTime) {
-          interval();
-
-          interval[symbols.startTimeSymbol] = dateNow;
-        }
-      }
-    }
-  }
-  
   _clearLocalCbs(); // release garbage
 }
 tickAnimationFrame.window = null;
@@ -959,41 +952,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.URL = URL;
   window.console = console;
-  window.setTimeout = (fn, timeout = 0, args = []) => {
-    fn = fn.bind.apply(fn, [window].concat(args));
-    fn[symbols.windowSymbol] = window;
-    fn[symbols.startTimeSymbol] = Date.now();
-    fn[symbols.timeoutSymbol] = timeout;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
-    timeouts[_findFreeSlot(timeouts)] = fn;
-    return id;
-  };
-  window.clearTimeout = id => {
-    const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
-    if (index !== -1) {
-      timeouts[index] = null;
-    }
-  };
-  window.setInterval = (fn, interval = 10, args = []) => {
-    if (interval < 10) {
-      interval = 10;
-    }
-    fn = fn.bind.apply(fn, [window].concat(args));
-    fn[symbols.windowSymbol] = window;
-    fn[symbols.startTimeSymbol] = Date.now();
-    fn[symbols.intervalSymbol] = interval;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
-    intervals[_findFreeSlot(intervals)] = fn;
-    return id;
-  };
-  window.clearInterval = id => {
-    const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
-    if (index !== -1) {
-      intervals[index] = null;
-    }
-  };
+  window.setTimeout = setTimeout;
+  window.clearTimeout = clearTimeout;
+  window.setInterval = setInterval;
+  window.clearInterval = clearInterval;
   window.fetch = (url, options) => {
     const _boundFetch = (url, options) => fetch(url, options)
       .then(res => {
