@@ -1,1 +1,1 @@
-window.Lol1 = class Lol1 {};
+window.Lol2 = class Lol2 {};
