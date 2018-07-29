@@ -2125,9 +2125,13 @@ NAN_METHOD(WebGLRenderingContext::GetUniformLocation) {
 
   GLint location = glGetUniformLocation(programId, *name);
 
-  Local<Object> locationObject = Nan::New<Object>();
-  locationObject->Set(JS_STR("id"), JS_INT(location));
-  info.GetReturnValue().Set(locationObject);
+  if (location != -1) {
+    Local<Object> locationObject = Nan::New<Object>();
+    locationObject->Set(JS_STR("id"), JS_INT(location));
+    info.GetReturnValue().Set(locationObject);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 
