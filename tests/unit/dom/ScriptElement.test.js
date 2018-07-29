@@ -8,7 +8,10 @@ describe('ScriptElement', () => {
     exokit.load(`${TEST_URL}/scripts.html`)
       .then(o => {
         window = o.window;
-        cb();
+
+        window.onload = () => {
+          cb();
+        };
       });
   });
 
