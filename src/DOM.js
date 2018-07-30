@@ -1502,6 +1502,15 @@ class HTMLScriptElement extends HTMLLoadableElement {
     type = type + '';
     this.setAttribute('type', type);
   }
+  
+  get async() {
+    const async = this.getAttribute('async');
+    return async === null || async !== 'false';
+  }
+  set async(async) {
+    async = async + '';
+    this.setAttribute('async', async);
+  }
 
   get text() {
     let result = '';
