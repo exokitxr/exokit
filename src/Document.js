@@ -99,6 +99,30 @@ function initDocument (document, window) {
   };
   document[symbols.pointerLockElementSymbol] = null;
   document[symbols.fullscreenElementSymbol] = null;
+  
+  let runningEl = false;
+  const runElQueue = [];
+  const _addRun = fn => {
+    (async () => {
+      if (!runningEl) {
+        runningEl = true;
+        
+        try {
+          await fn();
+        } catch(err) {
+          console.warn(err.stack);
+        }
+        
+        runningEl = false;
+        if (runElQueue.length > 0) {
+          _addRun(runElQueue.shift());
+        }
+      } else {
+        runElQueue.push(fn);
+      }
+    })();
+  };
+  document[symbols.addRunSymbol] = _addRun;
 
   if (window.top === window) {
     document.addEventListener('pointerlockchange', () => {
