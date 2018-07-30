@@ -499,6 +499,14 @@ class Element extends Node {
         this._classList.reset(value);
       }
     });
+    this.on('children', (addedNodes, removedNodes, previousSibling, nextSiblings) => {
+      for (let i = 0; i < addedNodes.length; i++) {
+        addedNodes[i].emit('attached');
+      }
+      for (let i = 0; i < removedNodes.length; i++) {
+        removedNodes[i].emit('removed');
+      }
+    });
   }
 
   get nodeType() {
