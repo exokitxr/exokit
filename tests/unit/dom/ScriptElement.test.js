@@ -33,9 +33,11 @@ describe('ScriptElement', () => {
       let count = 0;
       let err = null;
       window.check = i => {
-        if (i !== count++) {
+        if (i !== count) {
           err = err || new Error('failed check ' + i + ' ' + count);
         }
+        
+        count++;
         
         if (count === 2) {
           cb(err);
