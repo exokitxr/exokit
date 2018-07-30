@@ -1,0 +1,74 @@
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/94/three.js"></script>
+  </head>
+  <body>
+    <script>
+      const ctx = THREE.AudioContext.getContext();
+      const buffers = [];
+      let numLoads = 0;
+      let booted = false;
+      const numBuffers = 3;
+      const _load = () => {
+        numLoads++;
+        new THREE.AudioLoader().load('talknerdytome.ogg', buffer => {
+          buffers.push(buffer);
+          while (buffers.length > numBuffers) {
+            buffers.splice(Math.floor(Math.random() * buffers.length), 1);
+          }
+
+          numLoads--;
+
+          if (buffers.length >= numBuffers && !booted) {
+            _boot();
+            booted = true;
+          }
+        });
+      };
+      for (let i = 0; i < numBuffers; i++) {
+        _load();
+      }
+
+      const _boot = () => {
+        for (let i = 0; i < 4; i++) {
+          _recurse();
+        }
+      };
+      let ids = 0;
+      const _recurse = () => {
+        const id = ids++;
+
+        const absn = ctx.createBufferSource();
+        absn.buffer = buffers[Math.floor(Math.random() * buffers.length)];
+        absn.connect(ctx.destination);
+        absn.start();
+        console.log('started ' + id);
+        absn.onended = () => {
+          console.log('onended ' + id);
+        };
+
+        const _timeout = fn => {
+          setTimeout(fn, Math.floor(Math.random() * 2000));
+        };
+        _timeout(() => {
+          _timeout(() => {
+            absn.stop();
+            _timeout(() => {
+              absn.disconnect();
+            });
+          });
+
+          if (numLoads < numBuffers) {
+            _load();
+          }
+
+          _recurse();
+        });
+      };
+
+      /* setInterval(() => {
+        while (Math.random() >= 0.000001) {}
+      }); */
+    </script>
+  </body>
+</html>
