@@ -22,7 +22,7 @@ describe('ScriptElement', () => {
   });
 
   describe('<script>', () => {
-    it('HMTL tags', () => {
+    it('HTML tags', () => {
       assert.equal(window.lol1 instanceof window.Lol1, true);
       assert.equal(window.lol2 instanceof window.Lol2, true);
       assert.equal(window.lol3 instanceof window.Lol3, true);
