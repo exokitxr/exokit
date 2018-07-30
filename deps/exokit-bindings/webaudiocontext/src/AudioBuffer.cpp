@@ -165,7 +165,6 @@ NAN_METHOD(AudioBuffer::CopyToChannel) {
 
 AudioBufferSourceNode::AudioBufferSourceNode() {
   audioNode.reset(new lab::FinishableSourceNode([this](lab::ContextRenderLock &r){
-    QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
   }));
 }
 AudioBufferSourceNode::~AudioBufferSourceNode() {}
