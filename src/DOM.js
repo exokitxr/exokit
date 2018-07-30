@@ -1437,36 +1437,59 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
     this.readyState = null;
 
+    const _isAttached = () => {
+      for (let el = this; el; el = el.parentNode) {
+        if (el === el.ownerDocument) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const _run = () => {
+      this.readyState = 'loading';
+
+      if (!this.async) {
+        this.ownerDocument[symbols.addRunSymbol](_runInternal);
+      } else {
+        _runInternal();
+      }
+    };
+    const _runInternal = () => {
+      const resource = this.ownerDocument.resources.addResource();
+      
+      const url = this.src;
+      return this.ownerDocument.defaultView.fetch(url)
+        .then(res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.text();
+          } else {
+            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
+          }
+        })
+        .then(s => {
+          utils._runJavascript(s, this.ownerDocument.defaultView, url);
+
+          this.readyState = 'complete';
+
+          this.dispatchEvent(new Event('load', {target: this}));
+        })
+        .catch(err => {
+          this.readyState = 'complete';
+
+          this.dispatchEvent(new Event('error', {target: this}));
+        })
+        .finally(() => {
+          resource.setProgress(1);
+        });
+    };
     this.on('attribute', (name, value) => {
-      if (name === 'src' && this.isRunnable()) {
-        this.readyState = null;
-
-        const resource = this.ownerDocument.resources.addResource();
-
-        const url = value;
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(s => {
-            utils._runJavascript(s, this.ownerDocument.defaultView, url);
-
-            this.readyState = 'complete';
-
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            this.readyState = 'complete';
-
-            this.dispatchEvent(new Event('error', {target: this}));
-          })
-          .finally(() => {
-            resource.setProgress(1);
-          });
+      if (name === 'src' && value && this.isRunnable() && _isAttached() && this.readyState === null) {
+        _run();
+      }
+    });
+    this.on('attached', () => {
+      if (this.src && this.isRunnable() && _isAttached() && this.readyState === null) {
+        _run();
       }
     });
     this.on('innerHTML', innerHTML => {
