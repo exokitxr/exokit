@@ -61,6 +61,7 @@ protected:
   static NAN_SETTER(OnEndedSetter);
   static void ProcessInMainThread(AudioBufferSourceNode *self);
 
+  Nan::Persistent<Object> self;
   Nan::Persistent<Object> buffer;
   Nan::Persistent<Function> onended;
 };

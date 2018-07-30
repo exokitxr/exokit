@@ -202,6 +202,7 @@ NAN_METHOD(AudioBufferSourceNode::New) {
     AudioBufferSourceNode *audioBufferSourceNode = new AudioBufferSourceNode();
     Local<Object> audioBufferSourceNodeObj = info.This();
     audioBufferSourceNode->Wrap(audioBufferSourceNodeObj);
+    audioBufferSourceNode->self.Reset(audioBufferSourceNodeObj);
 
     audioBufferSourceNode->context.Reset(audioContextObj);
 
