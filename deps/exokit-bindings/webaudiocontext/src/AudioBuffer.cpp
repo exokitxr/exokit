@@ -165,6 +165,7 @@ NAN_METHOD(AudioBuffer::CopyToChannel) {
 
 AudioBufferSourceNode::AudioBufferSourceNode() {
   audioNode.reset(new lab::FinishableSourceNode([this](lab::ContextRenderLock &r){
+    QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
   }));
 }
 AudioBufferSourceNode::~AudioBufferSourceNode() {}
@@ -201,6 +202,7 @@ NAN_METHOD(AudioBufferSourceNode::New) {
     AudioBufferSourceNode *audioBufferSourceNode = new AudioBufferSourceNode();
     Local<Object> audioBufferSourceNodeObj = info.This();
     audioBufferSourceNode->Wrap(audioBufferSourceNodeObj);
+    audioBufferSourceNode->self.Reset(audioBufferSourceNodeObj);
 
     audioBufferSourceNode->context.Reset(audioContextObj);
 
