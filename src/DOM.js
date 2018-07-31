@@ -499,6 +499,14 @@ class Element extends Node {
         this._classList.reset(value);
       }
     });
+    this.on('children', (addedNodes, removedNodes, previousSibling, nextSiblings) => {
+      for (let i = 0; i < addedNodes.length; i++) {
+        addedNodes[i].emit('attached');
+      }
+      for (let i = 0; i < removedNodes.length; i++) {
+        removedNodes[i].emit('removed');
+      }
+    });
   }
 
   get nodeType() {
@@ -1429,40 +1437,65 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
     this.readyState = null;
 
+    const _isAttached = () => {
+      for (let el = this; el; el = el.parentNode) {
+        if (el === el.ownerDocument) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const _loadRun = async => {
+      this.readyState = 'loading';
+
+      if (!async) {
+        this.ownerDocument[symbols.addRunSymbol](_loadRunNow);
+      } else {
+        _loadRunNow();
+      }
+    };
+    const _loadRunNow = () => {
+      const resource = this.ownerDocument.resources.addResource();
+
+      const url = this.src;
+      return this.ownerDocument.defaultView.fetch(url)
+        .then(res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.text();
+          } else {
+            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
+          }
+        })
+        .then(s => {
+          utils._runJavascript(s, this.ownerDocument.defaultView, url);
+
+          this.readyState = 'complete';
+
+          this.dispatchEvent(new Event('load', {target: this}));
+        })
+        .catch(err => {
+          this.readyState = 'complete';
+
+          this.dispatchEvent(new Event('error', {target: this}));
+        })
+        .finally(() => {
+          resource.setProgress(1);
+        });
+    };
     this.on('attribute', (name, value) => {
-      if (name === 'src' && this.isRunnable()) {
-        this.readyState = null;
-
-        const resource = this.ownerDocument.resources.addResource();
-
-        const url = value;
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(s => {
-            utils._runJavascript(s, this.ownerDocument.defaultView, url);
-
-            this.readyState = 'complete';
-
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            this.readyState = 'complete';
-
-            this.dispatchEvent(new Event('error', {target: this}));
-          })
-          .finally(() => {
-            resource.setProgress(1);
-          });
+      if (name === 'src' && value && this.isRunnable() && _isAttached() && this.readyState === null) {
+        const async = this.getAttribute('async');
+        _loadRun(async !== null ? async !== 'false' : false);
+      }
+    });
+    this.on('attached', () => {
+      if (this.src && this.isRunnable() && _isAttached() && this.readyState === null) {
+        const async = this.getAttribute('async');
+        _loadRun(async !== null ? async !== 'false' : true);
       }
     });
     this.on('innerHTML', innerHTML => {
-      if (this.isRunnable()) {
+      if (this.isRunnable() && _isAttached() && this.readyState === null) {
         const window = this.ownerDocument.defaultView;
         utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
 
@@ -1493,6 +1526,15 @@ class HTMLScriptElement extends HTMLLoadableElement {
   set type(type) {
     type = type + '';
     this.setAttribute('type', type);
+  }
+
+  get async() {
+    const async = this.getAttribute('async');
+    return async === null || async !== 'false';
+  }
+  set async(async) {
+    async = async + '';
+    this.setAttribute('async', async);
   }
 
   get text() {
@@ -1537,9 +1579,9 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     }
     if (running) {
-      const asyncAttr = this.attributes.async;
-      if (asyncAttr && asyncAttr.value) {
-        return 'asyncLoad';
+      const async = this.getAttribute('async');
+      if (async !== null) {
+        return async !== 'false' ? 'asyncLoad' : 'syncLoad';
       } else {
         return 'syncLoad';
       }
