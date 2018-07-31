@@ -1445,16 +1445,16 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
       return false;
     };
-    const _run = async => {
+    const _loadRun = async => {
       this.readyState = 'loading';
 
       if (!async) {
-        this.ownerDocument[symbols.addRunSymbol](_runInternal);
+        this.ownerDocument[symbols.addRunSymbol](_loadRunNow);
       } else {
-        _runInternal();
+        _loadRunNow();
       }
     };
-    const _runInternal = () => {
+    const _loadRunNow = () => {
       const resource = this.ownerDocument.resources.addResource();
 
       const url = this.src;
@@ -1485,13 +1485,13 @@ class HTMLScriptElement extends HTMLLoadableElement {
     this.on('attribute', (name, value) => {
       if (name === 'src' && value && this.isRunnable() && _isAttached() && this.readyState === null) {
         const async = this.getAttribute('async');
-        _run(async !== null ? async !== 'false' : false);
+        _loadRun(async !== null ? async !== 'false' : false);
       }
     });
     this.on('attached', () => {
       if (this.src && this.isRunnable() && _isAttached() && this.readyState === null) {
         const async = this.getAttribute('async');
-        _run(async !== null ? async !== 'false' : true);
+        _loadRun(async !== null ? async !== 'false' : true);
       }
     });
     this.on('innerHTML', innerHTML => {
