@@ -1,7 +1,11 @@
 #include <AudioContext.h>
 
+
 namespace webaudio {
 
+static const int TIMER_INTERVAL = 100;
+uv_timer_t timer_req;
+bool threadInitialized = false;
 unique_ptr<lab::AudioContext> _defaultAudioContext = nullptr;
 
 lab::AudioContext *getDefaultAudioContext(float sampleRate) {
@@ -13,6 +17,11 @@ lab::AudioContext *getDefaultAudioContext(float sampleRate) {
     });
   }
   return _defaultAudioContext.get();
+}
+
+void runInMainThread(uv_timer_t *handle) {
+  lab::AudioContext* ctx = getDefaultAudioContext(lab::DefaultSampleRate);
+  ctx->runInMainThread();
 }
 
 AudioContext::AudioContext(float sampleRate) {
@@ -227,18 +236,6 @@ void AudioContext::Resume() {
 }
 
 NAN_METHOD(AudioContext::New) {
-  if (!threadInitialized) {
-    uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
-    uv_sem_init(&threadSemaphore, 0);
-
-    atexit([]{
-      uv_close((uv_handle_t *)&threadAsync, nullptr);
-      uv_sem_destroy(&threadSemaphore);
-    });
-
-    threadInitialized = true;
-  }
-
   Local<Object> options = info[0]->IsObject() ? Local<Object>::Cast(info[0]) : Nan::New<Object>();
   Local<Value> sampleRateValue = options->Get(JS_STR("sampleRate"));
   float sampleRate = sampleRateValue->IsNumber() ? sampleRateValue->NumberValue() : lab::DefaultSampleRate;
@@ -246,6 +243,17 @@ NAN_METHOD(AudioContext::New) {
   Local<Object> audioContextObj = info.This();
   AudioContext *audioContext = new AudioContext(sampleRate);
   audioContext->Wrap(audioContextObj);
+
+  if (!threadInitialized) {
+    uv_timer_init(uv_default_loop(), &timer_req);
+    uv_timer_start(&timer_req, runInMainThread, 0, TIMER_INTERVAL);
+
+    atexit([]{
+      uv_timer_stop(&timer_req);
+    });
+
+    threadInitialized = true;
+  }
 
   Local<Function> audioDestinationNodeConstructor = Local<Function>::Cast(audioContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioDestinationNode")));
   Local<Value> argv1[] = {
@@ -475,24 +483,13 @@ NAN_GETTER(AudioContext::SampleRateGetter) {
   info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->sampleRate()));
 }
 
-function<void()> threadFn;
-uv_async_t threadAsync;
-uv_sem_t threadSemaphore;
-bool threadInitialized = false;
 void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn) {
-  threadFn = std::move(newThreadFn);
-
   {
-    lab::ContextRenderUnlock contextUnlock(r.context());
-    uv_async_send(&threadAsync);
-    uv_sem_wait(&threadSemaphore);
+    if (_defaultAudioContext) {
+      lab::AudioContext* ctx = _defaultAudioContext.get();
+      ctx->queueInMainThread(std::move(newThreadFn));
+    }
   }
-
-  threadFn = function<void()>();
-}
-void RunInMainThread(uv_async_t *handle) {
-  threadFn();
-  uv_sem_post(&threadSemaphore);
 }
 
 }

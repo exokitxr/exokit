@@ -93,7 +93,6 @@ extern uv_async_t threadAsync;
 extern uv_sem_t threadSemaphore;
 extern bool threadInitialized;
 void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
-void RunInMainThread(uv_async_t *handle);
 
 }
 
