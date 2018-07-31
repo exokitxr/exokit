@@ -995,12 +995,45 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.fetch = (url, options) => {
-    const _boundFetch = (url, options) => fetch(url, options)
+    const _boundFetch = (url, options) => utils._normalizeBuffer(
+      fetch(url, options),
+      window
+    )
       .then(res => {
-        res.arrayBuffer = (arrayBuffer => function() {
-          return arrayBuffer.apply(this, arguments)
+        res.arrayBuffer = (fn => function() {
+          return utils._normalizeBuffer(
+            fn.apply(this, arguments),
+            window
+          );
+        })(res.arrayBuffer);
+        res.blob = (fn => function() {
+          return utils._normalizeBuffer(
+            fn.apply(this, arguments),
+            window
+          );
+        })(res.blob);
+        res.json = (fn => function() {
+          return utils._normalizeBuffer(
+            fn.apply(this, arguments),
+            window
+          );
+        })(res.json);
+        res.text = (fn => function() {
+          return utils._normalizeBuffer(
+            fn.apply(this, arguments),
+            window
+          );
+        })(res.text);
+        
+        res.arrayBuffer = (fn => function() {
+          return fn.apply(this, arguments)
             .then(ab => utils._normalizeBuffer(ab, window));
         })(res.arrayBuffer);
+        res.blob = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(b => utils._normalizeBuffer(b, window));
+        })(res.blob);
+        
         return res;
       });
 
