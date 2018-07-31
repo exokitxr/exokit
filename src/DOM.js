@@ -1495,7 +1495,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     });
     this.on('innerHTML', innerHTML => {
-      if (this.isRunnable()) {
+      if (this.isRunnable() && _isAttached() && this.readyState === null) {
         const window = this.ownerDocument.defaultView;
         utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
 
