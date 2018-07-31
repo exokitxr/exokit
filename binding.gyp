@@ -93,6 +93,7 @@
           ],
           'defines': [
             'NOMINMAX',
+	    'OPENVR=1',
           ],
           'conditions': [
             ['"<!(echo %MAGICLEAP%)" != "%MAGICLEAP%"', {
@@ -293,6 +294,7 @@
               ],
               'defines': [
                 'NOMINMAX',
+		'OPENVR=1',
               ],
             }],
             ['"<!(node -e \"console.log(process.arch)\")"=="arm64"', {
@@ -308,7 +310,6 @@
                 '<!@(ls -1 deps/exokit-bindings/videocontext/src/*.cpp)',
                 '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
                 '<!@(ls -1 deps/exokit-bindings/glfw/src/*.cc)',
-                '<!@(ls -1 deps/openvr/src/*.cpp)',
               ],
               'include_dirs': [
                 "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/include')\")",
@@ -318,7 +319,6 @@
                 "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/effects')\")",
                 "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
-                "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/headers')\")",
                 '<(module_root_dir)/deps/exokit-bindings',
                 '<(module_root_dir)/deps/exokit-bindings/utf8',
                 '<(module_root_dir)/deps/exokit-bindings/node',
@@ -332,22 +332,20 @@
                 '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
                 '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
                 '<(module_root_dir)/deps/exokit-bindings/glfw/include',
-                '<(module_root_dir)/deps/openvr/include',
               ],
               'library_dirs': [
-                "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib/linux/glew')\")",
-                "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib/linux/glfw')\")",
-                "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/lib/linux')\")",
-                "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib/linux')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux/libavformat')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux/libavcodec')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux/libavutil')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux/libavdevice')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux/libavfilter')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux/libswscale')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux/libswresample')\")",
-                "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/lib/linux64')\")",
+                "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib2/arm64/glew')\")",
+                "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib2/arm64/glfw')\")",
+                "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/lib2/arm64')\")",
+                "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib2/arm64')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64/libavformat')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64/libavcodec')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64/libavutil')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64/libavdevice')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64/libavfilter')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64/libswscale')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64/libswresample')\")",
               ],
               'libraries': [
                 '-lGL',
@@ -359,6 +357,7 @@
                 '-lfreetype',
                 '-lpng16',
                 '-lskia',
+		'-lc++_static',
                 '-lLabSound',
                 '-lavformat',
                 '-lavcodec',
@@ -366,7 +365,6 @@
                 '-lavdevice',
                 '-lswscale',
                 '-lswresample',
-                '-lopenvr_api',
                 '-luuid',
                 '-lXcursor',
                 '-lXinerama',
@@ -380,18 +378,17 @@
                 '-Wl,-Bsymbolic', # required for ffmpeg asm linkage
                 '-Wl,--no-as-needed', # required to prevent elision of shared object linkage
 
-                "-Wl,-rpath,./node_modules/native-graphics-deps/lib/linux/glew",
-                "-Wl,-rpath,./node_modules/native-graphics-deps/lib/linux/glfw",
-                "-Wl,-rpath,./node_modules/native-canvas-deps/lib/linux",
-                "-Wl,-rpath,./node_modules/native-audio-deps/lib/linux",
-                "-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavformat",
-                "-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavcodec",
-                "-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavutil",
-                "-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavdevice",
-                "-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libavfilter",
-                "-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libswscale",
-                "-Wl,-rpath,./node_modules/native-video-deps/lib/linux/libswresample",
-                "-Wl,-rpath,./node_modules/native-openvr-deps/bin/linux64",
+                "-Wl,-rpath,./node_modules/native-graphics-deps/lib2/arm64/glew",
+                "-Wl,-rpath,./node_modules/native-graphics-deps/lib2/arm64/glfw",
+                "-Wl,-rpath,./node_modules/native-canvas-deps/lib2/arm64",
+                "-Wl,-rpath,./node_modules/native-audio-deps/lib2/arm64",
+                "-Wl,-rpath,./node_modules/native-video-deps/lib2/arm64/libavformat",
+                "-Wl,-rpath,./node_modules/native-video-deps/lib2/arm64/libavcodec",
+                "-Wl,-rpath,./node_modules/native-video-deps/lib2/arm64/libavutil",
+                "-Wl,-rpath,./node_modules/native-video-deps/lib2/arm64/libavdevice",
+                "-Wl,-rpath,./node_modules/native-video-deps/lib2/arm64/libavfilter",
+                "-Wl,-rpath,./node_modules/native-video-deps/lib2/arm64/libswscale",
+                "-Wl,-rpath,./node_modules/native-video-deps/lib2/arm64/libswresample",
               ],
               'defines': [
                 'NOMINMAX',
@@ -490,6 +487,9 @@
               ]
             }
           ],
+	  'defines': [
+             'OPENVR=1',
+           ],
         }],
       ],
     },
