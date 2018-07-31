@@ -1579,7 +1579,12 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     }
     if (running) {
-      return this.async ? 'asyncLoad' : 'syncLoad';
+      const async = this.getAttribute('async');
+      if (async !== null) {
+        return async !== 'false' ? 'asyncLoad' : 'syncLoad';
+      } else {
+        return 'syncLoad';
+      }
     } else {
       return null;
     }
