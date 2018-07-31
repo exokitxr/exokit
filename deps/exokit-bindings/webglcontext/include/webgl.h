@@ -135,6 +135,7 @@ public:
   static NAN_METHOD(LinkProgram);
   static NAN_METHOD(GetProgramParameter);
   static NAN_METHOD(GetUniformLocation);
+  static NAN_METHOD(GetUniformBlockIndex);
   static NAN_METHOD(ClearColor);
   static NAN_METHOD(ClearDepth);
   static NAN_METHOD(Disable);
