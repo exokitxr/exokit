@@ -675,6 +675,8 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "linkProgram", glCallWrap<LinkProgram>);
   Nan::SetMethod(proto, "getProgramParameter", glCallWrap<GetProgramParameter>);
   Nan::SetMethod(proto, "getUniformLocation", glCallWrap<GetUniformLocation>);
+  Nan::SetMethod(proto, "getUniformBlockIndex", glCallWrap<GetUniformBlockIndex>);
+  Nan::SetMethod(proto, "uniformBlockBinding", glCallWrap<UniformBlockBinding>);
   Nan::SetMethod(proto, "getUniform", glCallWrap<GetUniform>);
   Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
   Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
@@ -2135,6 +2137,22 @@ NAN_METHOD(WebGLRenderingContext::GetUniformLocation) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::GetUniformBlockIndex) {
+  GLint programId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  v8::String::Utf8Value uniformBlockName(info[1]);
+
+  GLint blockIndex = glGetUniformBlockIndex(programId, *uniformBlockName);
+
+  info.GetReturnValue().Set(JS_INT(blockIndex));
+}
+
+NAN_METHOD(WebGLRenderingContext::UniformBlockBinding) {
+  GLint programId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLuint uniformBlockIndex = info[1]->Uint32Value();
+  GLuint uniformBlockBinding = info[2]->Uint32Value();
+
+  glUniformBlockBinding(programId, uniformBlockIndex, uniformBlockBinding);
+}
 
 NAN_METHOD(WebGLRenderingContext::ClearColor) {
   float red = (float)info[0]->NumberValue();
