@@ -1456,7 +1456,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     };
     const _runInternal = () => {
       const resource = this.ownerDocument.resources.addResource();
-      
+
       const url = this.src;
       return this.ownerDocument.defaultView.fetch(url)
         .then(res => {
@@ -1525,7 +1525,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     type = type + '';
     this.setAttribute('type', type);
   }
-  
+
   get async() {
     const async = this.getAttribute('async');
     return async === null || async !== 'false';
