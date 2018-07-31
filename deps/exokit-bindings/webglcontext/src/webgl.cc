@@ -2669,8 +2669,8 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   } else if (!info[0]->IsNumber()) {
     Nan::ThrowError("First argument to BindBuffer must be a number");
   } else if (info[1]->IsObject() && info[1]->ToObject()->Get(JS_STR("id"))->IsNumber()) {
-    GLint target = info[0]->Int32Value();
-    GLint buffer = info[1]->ToObject()->Get(JS_STR("id"))->Int32Value();
+    GLenum target = info[0]->Uint32Value();
+    GLuint buffer = info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
     glBindBuffer(target, buffer);
   } else if (info[1]->IsNull()) {
     GLint target = info[0]->Int32Value();
