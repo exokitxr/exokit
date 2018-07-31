@@ -995,7 +995,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.fetch = (url, options) => {
-    const _boundFetch = (url, options) => fetch(url, options)
+    const _boundFetch = (url, options) => utils._normalizeBuffer(
+      fetch(url, options),
+      window
+    )
       .then(res => {
         res.arrayBuffer = (arrayBuffer => function() {
           return arrayBuffer.apply(this, arguments)
