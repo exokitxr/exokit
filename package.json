@@ -1,0 +1,23 @@
+{
+  "name": "exoc",
+  "version": "0.0.1",
+  "description": "Exokit compiler",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "assemblyscript": "github:AssemblyScript/assemblyscript"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webmixedreality/exoc.git"
+  },
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/webmixedreality/exoc/issues"
+  },
+  "homepage": "https://github.com/webmixedreality/exoc#readme"
+}
