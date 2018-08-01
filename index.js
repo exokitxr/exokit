@@ -152,8 +152,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         },
       });
     } else {
-      gl.resize = (width, height) => {
-        console.log('resize canvas', width, height, sharedFramebuffer);      
+      gl.resize = (width, height) => {    
         nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
     }
