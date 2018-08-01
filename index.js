@@ -375,7 +375,7 @@ nativeVr.exitPresent = function() {
     const context = vrPresentState.glContext;
     nativeWindow.setCurrentWindowContext(context.getWindowHandle());
     context.setDefaultFramebuffer(0);
-    
+
     for (let i = 0; i < vrPresentState.cleanups.length; i++) {
       vrPresentState.cleanups[i]();
     }
