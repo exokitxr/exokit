@@ -697,6 +697,7 @@ function tickAnimationFrame() {
       if (timeout) {
         const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
         if (dateNow >= endTime) {
+          console.log('!!!!!!!!!!!!!!!!!!!!!!!!!time out');
           timeout();
 
           timeouts[i] = null;
@@ -942,14 +943,15 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.URL = URL;
   window.console = console;
-  window.setTimeout = (fn, timeout = 0, args = []) => {
+  /* window.setTimeout = (fn, timeout = 0, args = []) => {
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
     fn[symbols.startTimeSymbol] = Date.now();
     fn[symbols.timeoutSymbol] = timeout;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
-    timeouts[_findFreeSlot(timeouts)] = fn;
+    const slot = _findFreeSlot(timeouts);
+    timeouts[slot] = fn;
     return id;
   };
   window.clearTimeout = id => {
@@ -957,7 +959,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     if (index !== -1) {
       timeouts[index] = null;
     }
-  };
+  }; */
   window.setInterval = (fn, interval = 10, args = []) => {
     if (interval < 10) {
       interval = 10;

@@ -1,6 +1,8 @@
 #include <AudioBuffer.h>
 #include <AudioContext.h>
 
+#include <iostream>
+
 namespace webaudio {
 
 AudioBuffer::AudioBuffer(uint32_t sampleRate, Local<Array> buffers) : sampleRate(sampleRate), buffers(buffers) {}
@@ -164,11 +166,15 @@ NAN_METHOD(AudioBuffer::CopyToChannel) {
 }
 
 AudioBufferSourceNode::AudioBufferSourceNode() {
+  std::cout << "absn construct" << "\n";
+
   audioNode.reset(new lab::FinishableSourceNode([this](lab::ContextRenderLock &r){
     QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
   }));
 }
-AudioBufferSourceNode::~AudioBufferSourceNode() {}
+AudioBufferSourceNode::~AudioBufferSourceNode() {
+  std::cout << "absn destroy" << "\n";
+}
 Handle<Object> AudioBufferSourceNode::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
@@ -187,8 +193,8 @@ Handle<Object> AudioBufferSourceNode::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 void AudioBufferSourceNode::InitializePrototype(Local<ObjectTemplate> proto) {
-  Nan::SetAccessor(proto, JS_STR("buffer"), BufferGetter, BufferSetter);
-  Nan::SetAccessor(proto, JS_STR("onended"), OnEndedGetter, OnEndedSetter);
+  /* Nan::SetAccessor(proto, JS_STR("buffer"), BufferGetter, BufferSetter);
+  Nan::SetAccessor(proto, JS_STR("onended"), OnEndedGetter, OnEndedSetter); */
   Nan::SetMethod(proto, "start", Start);
   Nan::SetMethod(proto, "stop", Stop);
 }
@@ -222,7 +228,7 @@ NAN_METHOD(AudioBufferSourceNode::Stop) {
   AudioBufferSourceNode *audioBufferSourceNode = ObjectWrap::Unwrap<AudioBufferSourceNode>(info.This());
   ((lab::FinishableSourceNode *)audioBufferSourceNode->audioNode.get())->stop(0);
 }
-NAN_GETTER(AudioBufferSourceNode::BufferGetter) {
+/* NAN_GETTER(AudioBufferSourceNode::BufferGetter) {
   // Nan::HandleScope scope;
 
   AudioBufferSourceNode *audioBufferSourceNode = ObjectWrap::Unwrap<AudioBufferSourceNode>(info.This());
@@ -245,16 +251,19 @@ NAN_SETTER(AudioBufferSourceNode::BufferSetter) {
     Local<Array> buffers = Nan::New(audioBuffer->buffers);
     size_t numChannels = buffers->Length();
     size_t numFrames = numChannels > 0 ? Local<Float32Array>::Cast(buffers->Get(0))->Length() : 0;
+    shared_ptr<lab::AudioBus> audioBus;
 
-    unique_ptr<float *[]> frames(new float*[numChannels]);
-    for (size_t i = 0; i < numChannels; i++) {
-      Local<Float32Array> bufferFramesFloat32Array = Local<Float32Array>::Cast(buffers->Get(i));
-      size_t numBufferFrames = bufferFramesFloat32Array->Length();
-      Local<ArrayBuffer> bufferFramesArrayBuffer = bufferFramesFloat32Array->Buffer();
-      frames[i] = (float *)((unsigned char *)bufferFramesArrayBuffer->GetContents().Data() + bufferFramesFloat32Array->ByteOffset());
+    {
+        unique_ptr<float *[]> frames(new float*[numChannels]);
+        for (size_t i = 0; i < numChannels; i++) {
+          Local<Float32Array> bufferFramesFloat32Array = Local<Float32Array>::Cast(buffers->Get(i));
+          size_t numBufferFrames = bufferFramesFloat32Array->Length();
+          Local<ArrayBuffer> bufferFramesArrayBuffer = bufferFramesFloat32Array->Buffer();
+          frames[i] = (float *)((unsigned char *)bufferFramesArrayBuffer->GetContents().Data() + bufferFramesFloat32Array->ByteOffset());
+        }
+
+        audioBus.reset(lab::MakeBusFromRawBuffer(audioContext->audioContext->sampleRate(), numChannels, numFrames, frames.get(), false).release());
     }
-
-    shared_ptr<lab::AudioBus> audioBus(lab::MakeBusFromRawBuffer(audioContext->audioContext->sampleRate(), numChannels, numFrames, frames.get(), false).release());
 
     {
       lab::ContextRenderLock lock(audioContext->audioContext, "AudioBufferSourceNode::buffer");
@@ -289,10 +298,11 @@ NAN_SETTER(AudioBufferSourceNode::OnEndedSetter) {
   } else {
     audioBufferSourceNode->onended.Reset();
   }
-}
+} */
 void AudioBufferSourceNode::ProcessInMainThread(AudioBufferSourceNode *self) {
   Nan::HandleScope scope;
 
+  Local<Value> onended = 
   if (!self->onended.IsEmpty()) {
     Local<Function> onended = Nan::New(self->onended);
     onended->Call(Nan::Null(), 0, nullptr);

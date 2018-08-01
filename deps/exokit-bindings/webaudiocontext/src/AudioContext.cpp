@@ -229,11 +229,9 @@ void AudioContext::Resume() {
 NAN_METHOD(AudioContext::New) {
   if (!threadInitialized) {
     uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
-    uv_sem_init(&threadSemaphore, 0);
 
     atexit([]{
       uv_close((uv_handle_t *)&threadAsync, nullptr);
-      uv_sem_destroy(&threadSemaphore);
     });
 
     threadInitialized = true;
@@ -475,24 +473,24 @@ NAN_GETTER(AudioContext::SampleRateGetter) {
   info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->sampleRate()));
 }
 
-function<void()> threadFn;
+#include "LabSound/core/ConcurrentQueue.h"
+struct msg_t {
+    function<void()> threadFn;
+};
+lab::concurrent_queue<msg_t> queue;
 uv_async_t threadAsync;
-uv_sem_t threadSemaphore;
 bool threadInitialized = false;
 void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn) {
-  threadFn = std::move(newThreadFn);
-
-  {
-    lab::ContextRenderUnlock contextUnlock(r.context());
-    uv_async_send(&threadAsync);
-    uv_sem_wait(&threadSemaphore);
-  }
-
-  threadFn = function<void()>();
+  msg_t msg;
+  msg.threadFn = std::move(newThreadFn);
+  queue.push(msg);
+  uv_async_send(&threadAsync);
 }
 void RunInMainThread(uv_async_t *handle) {
-  threadFn();
-  uv_sem_post(&threadSemaphore);
+  msg_t msg;
+  while (queue.try_pop(msg)) {
+      msg.threadFn();
+  }
 }
 
 }

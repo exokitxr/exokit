@@ -55,14 +55,14 @@ protected:
   static NAN_METHOD(New);
   static NAN_METHOD(Start);
   static NAN_METHOD(Stop);
-  static NAN_GETTER(BufferGetter);
+  /* static NAN_GETTER(BufferGetter);
   static NAN_SETTER(BufferSetter);
   static NAN_GETTER(OnEndedGetter);
-  static NAN_SETTER(OnEndedSetter);
+  static NAN_SETTER(OnEndedSetter); */
   static void ProcessInMainThread(AudioBufferSourceNode *self);
 
-  Nan::Persistent<Object> buffer;
-  Nan::Persistent<Function> onended;
+  /* Nan::Persistent<Object> buffer;
+  Nan::Persistent<Function> onended; */
 };
 
 }

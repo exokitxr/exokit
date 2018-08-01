@@ -120,9 +120,7 @@ NAN_METHOD(AudioNode::Disconnect) {
     } */
 
     Local<Array> outputAudioNodes = Nan::New(srcAudioNode->outputAudioNodes);
-    Local<Array> inputAudioNodes = Nan::New(srcAudioNode->inputAudioNodes);
     size_t numOutputAudioNodes = outputAudioNodes->Length();
-    size_t numInputAudioNodes = inputAudioNodes->Length();
     for (size_t i = 0; i < numOutputAudioNodes; i++) {
       Local<Value> outputAudioNode = outputAudioNodes->Get(i);
 
@@ -130,6 +128,8 @@ NAN_METHOD(AudioNode::Disconnect) {
         Local<Object> outputAudioNodeObj = Local<Object>::Cast(outputAudioNode);
         AudioNode *outputAudioNode = ObjectWrap::Unwrap<AudioNode>(outputAudioNodeObj);
 
+        Local<Array> inputAudioNodes = Nan::New(outputAudioNode->inputAudioNodes);
+        size_t numInputAudioNodes = inputAudioNodes->Length();
         for (size_t j = 0; j < numInputAudioNodes; j++) {
           Local<Value> inputAudioNode = inputAudioNodes->Get(j);
 
@@ -179,9 +179,7 @@ NAN_METHOD(AudioNode::Disconnect) {
         } */
 
         Local<Array> outputAudioNodes = Nan::New(srcAudioNode->outputAudioNodes);
-        Local<Array> inputAudioNodes = Nan::New(srcAudioNode->inputAudioNodes);
         size_t numOutputAudioNodes = outputAudioNodes->Length();
-        size_t numInputAudioNodes = inputAudioNodes->Length();
         for (size_t i = 0; i < numOutputAudioNodes; i++) {
           Local<Value> outputAudioNode = outputAudioNodes->Get(i);
 
@@ -190,6 +188,8 @@ NAN_METHOD(AudioNode::Disconnect) {
             AudioNode *outputAudioNode = ObjectWrap::Unwrap<AudioNode>(outputAudioNodeObj);
 
             if (outputAudioNode == dstAudioNode) {
+              Local<Array> inputAudioNodes = Nan::New(outputAudioNode->inputAudioNodes);
+              size_t numInputAudioNodes = inputAudioNodes->Length();
               for (size_t j = 0; j < numInputAudioNodes; j++) {
                 Local<Value> inputAudioNode = inputAudioNodes->Get(j);
 
