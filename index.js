@@ -273,6 +273,7 @@ const vrPresentState = {
   msTex: null,
   fbo: null,
   tex: null,
+  cleanups: null,
   hasPose: false,
   lmContext: null,
 };
@@ -304,6 +305,8 @@ nativeVr.requestPresent = function(layers) {
       renderWidth = halfWidth;
       renderHeight = height;
 
+      const cleanups = [];
+
       const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
       context.setDefaultFramebuffer(msFbo);
@@ -317,6 +320,7 @@ nativeVr.requestPresent = function(layers) {
       vrPresentState.msTex = msTex;
       vrPresentState.fbo = fbo;
       vrPresentState.tex = tex;
+      vrPresentState.cleanups = cleanups;
 
       vrPresentState.lmContext = lmContext;
 
@@ -355,6 +359,10 @@ nativeVr.exitPresent = function() {
     const context = vrPresentState.glContext;
     nativeWindow.setCurrentWindowContext(context.getWindowHandle());
     context.setDefaultFramebuffer(0);
+    
+    for (let i = 0; i < vrPresentState.cleanups.length; i++) {
+      vrPresentState.cleanups[i]();
+    }
 
     vrPresentState.isPresenting = false;
     vrPresentState.system = null;
@@ -364,6 +372,7 @@ nativeVr.exitPresent = function() {
     vrPresentState.msTex = null;
     vrPresentState.fbo = null;
     vrPresentState.tex = null;
+    vrPresentState.cleanups = null;
   }
 
   return Promise.resolve();
