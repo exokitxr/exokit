@@ -331,6 +331,16 @@ nativeVr.requestPresent = function(layers) {
 
       vrPresentState.lmContext = lmContext;
 
+      const _attribute = (name, value) => {
+        if (name === 'width' || name === 'height') {
+          nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+        }
+      };
+      canvas.on('attribute', _attribute);
+      cleanups.push(() => {
+        canvas.removeListener('attribute', _attribute);
+      });
+
       window.top.updateVrFrame({
         renderWidth,
         renderHeight,
