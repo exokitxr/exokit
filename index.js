@@ -135,17 +135,11 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       gl.setDefaultFramebuffer(msFramebuffer);
 
-      const _attribute = (name, value) => {
-        if (name === 'width' || name === 'height') {
-          nativeWindow.setCurrentWindowContext(windowHandle);
+      gl.resize = (width, height) => {
+        nativeWindow.setCurrentWindowContext(windowHandle);
 
-          nativeWindow.resizeRenderTarget(gl, canvas.width, canvas.height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
-        }
+        nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
       };
-      canvas.on('attribute', _attribute);
-      cleanups.push(() => {
-        canvas.removeListener('attribute', _attribute);
-      });
 
       document._emit('framebuffer', {
         framebuffer,
@@ -159,7 +153,23 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
           nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
         },
       });
+    } else {
+      gl.resize = (width, height) => {
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
+        nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
+      };
     }
+    Object.defineProperty(gl, 'drawingBufferWidth', {
+      get() {
+        return canvas.width;
+      },
+    });
+    Object.defineProperty(gl, 'drawingBufferHeight', {
+      get() {
+        return canvas.height;
+      },
+    });
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
@@ -273,6 +283,7 @@ const vrPresentState = {
   msTex: null,
   fbo: null,
   tex: null,
+  cleanups: null,
   hasPose: false,
   lmContext: null,
 };
@@ -291,7 +302,8 @@ nativeVr.requestPresent = function(layers) {
       }
       const window = canvas.ownerDocument.defaultView;
 
-      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      const windowHandle = context.getWindowHandle();
+      nativeWindow.setCurrentWindowContext(windowHandle);
 
       const vrContext = vrPresentState.vrContext || nativeVr.getContext();
       const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
@@ -303,6 +315,8 @@ nativeVr.requestPresent = function(layers) {
       const width = halfWidth * 2;
       renderWidth = halfWidth;
       renderHeight = height;
+
+      const cleanups = [];
 
       const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
@@ -317,8 +331,21 @@ nativeVr.requestPresent = function(layers) {
       vrPresentState.msTex = msTex;
       vrPresentState.fbo = fbo;
       vrPresentState.tex = tex;
+      vrPresentState.cleanups = cleanups;
 
       vrPresentState.lmContext = lmContext;
+
+      const _attribute = (name, value) => {
+        if (name === 'width' || name === 'height') {
+          nativeWindow.setCurrentWindowContext(windowHandle);
+          
+          nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+        }
+      };
+      canvas.on('attribute', _attribute);
+      cleanups.push(() => {
+        canvas.removeListener('attribute', _attribute);
+      });
 
       window.top.updateVrFrame({
         renderWidth,
@@ -356,6 +383,10 @@ nativeVr.exitPresent = function() {
     nativeWindow.setCurrentWindowContext(context.getWindowHandle());
     context.setDefaultFramebuffer(0);
 
+    for (let i = 0; i < vrPresentState.cleanups.length; i++) {
+      vrPresentState.cleanups[i]();
+    }
+
     vrPresentState.isPresenting = false;
     vrPresentState.system = null;
     vrPresentState.compositor = null;
@@ -364,6 +395,7 @@ nativeVr.exitPresent = function() {
     vrPresentState.msTex = null;
     vrPresentState.fbo = null;
     vrPresentState.tex = null;
+    vrPresentState.cleanups = null;
   }
 
   return Promise.resolve();
@@ -712,12 +744,12 @@ const _bindWindow = (window, newWindowCb) => {
 
         if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
 
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
             vrPresentState.hasPose = false;
 
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (mlGlContext === context && mlHasPose) {
             mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
             mlHasPose = false;
