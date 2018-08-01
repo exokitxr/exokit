@@ -136,6 +136,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       gl.setDefaultFramebuffer(msFramebuffer);
 
       gl.resize = (width, height) => {
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
         nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
       };
 
@@ -152,7 +154,9 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         },
       });
     } else {
-      gl.resize = (width, height) => {    
+      gl.resize = (width, height) => {
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
         nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
     }
@@ -298,7 +302,8 @@ nativeVr.requestPresent = function(layers) {
       }
       const window = canvas.ownerDocument.defaultView;
 
-      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      const windowHandle = context.getWindowHandle();
+      nativeWindow.setCurrentWindowContext(windowHandle);
 
       const vrContext = vrPresentState.vrContext || nativeVr.getContext();
       const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
@@ -332,6 +337,8 @@ nativeVr.requestPresent = function(layers) {
 
       const _attribute = (name, value) => {
         if (name === 'width' || name === 'height') {
+          nativeWindow.setCurrentWindowContext(windowHandle);
+          
           nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
         }
       };
