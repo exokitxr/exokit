@@ -728,12 +728,12 @@ const _bindWindow = (window, newWindowCb) => {
 
         if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, renderWidth * 2, renderHeight, renderWidth * 2, renderHeight, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
 
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
             vrPresentState.hasPose = false;
 
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, renderWidth * (args.blit ? 1 : 2), renderHeight, window.innerWidth, window.innerHeight, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (mlGlContext === context && mlHasPose) {
             mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
             mlHasPose = false;
