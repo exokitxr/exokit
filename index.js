@@ -160,6 +160,16 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         },
       });
     }
+    Object.defineProperty(gl, 'drawingBufferWidth', {
+      get() {
+        return canvas.width;
+      },
+    });
+    Object.defineProperty(gl, 'drawingBufferHeight', {
+      get() {
+        return canvas.height;
+      },
+    });
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
