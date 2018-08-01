@@ -8,7 +8,10 @@
     "assemblyscript": "github:AssemblyScript/assemblyscript"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "asbuild:untouched": "asc assembly/index.ts -b build/untouched.wasm -t build/untouched.wat --sourceMap --validate",
+    "asbuild:optimized": "asc assembly/index.ts -b build/optimized.wasm -t build/optimized.wat --sourceMap --validate --optimize --noDebug",
+    "asbuild": "npm run asbuild:untouched && npm run asbuild:optimized"
   },
   "repository": {
     "type": "git",
