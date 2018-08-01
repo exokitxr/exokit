@@ -141,6 +141,17 @@ class XRSession extends EventTarget {
       this.depthFar = depthFar;
     }
     if (renderWidth !== undefined && renderHeight !== undefined) {
+      if (this.baseLayer) {
+        const {context} = this.baseLayer;
+
+        if (context.drawingBufferWidth !== renderWidth * 2) {
+          context.canvas.width = renderWidth * 2;
+        }
+        if (context.drawingBufferHeight !== renderHeight) {
+          context.canvas.height = renderHeight;
+        }
+      }
+
       for (let i = 0; i < this._frame.views.length; i++) {
         this._frame.views[i]._viewport.set(i * renderWidth, 0, renderWidth, renderHeight);
       }
