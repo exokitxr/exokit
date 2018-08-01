@@ -135,17 +135,9 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       gl.setDefaultFramebuffer(msFramebuffer);
 
-      const _attribute = (name, value) => {
-        if (name === 'width' || name === 'height') {
-          nativeWindow.setCurrentWindowContext(windowHandle);
-
-          nativeWindow.resizeRenderTarget(gl, canvas.width, canvas.height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
-        }
+      gl.resize = (width, height) => {
+        nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
       };
-      canvas.on('attribute', _attribute);
-      cleanups.push(() => {
-        canvas.removeListener('attribute', _attribute);
-      });
 
       document._emit('framebuffer', {
         framebuffer,
@@ -159,6 +151,11 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
           nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
         },
       });
+    } else {
+      gl.resize = (width, height) => {
+        console.log('resize canvas', width, height, sharedFramebuffer);      
+        nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
+      };
     }
     Object.defineProperty(gl, 'drawingBufferWidth', {
       get() {
