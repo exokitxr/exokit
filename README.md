@@ -27,24 +27,20 @@ Run a WebGL/WebXR site:
 exokit https://emukit.webmr.io/ # start Emukit in Exokit
 ```
 
-<p align="center">
-  <img src="http://via.placeholder.com/800x400"/>
-</p>
-
 ## Introduction
 
 <p align="center">
    <a href="https://google.com/">
-    <img src="http://via.placeholder.com/200x200" alt="Architecture diagram"/>
+    <img src="http://via.placeholder.com/218x218" alt="Architecture diagram"/>
   </a>
 <a href="https://google.com/">
-    <img src="http://via.placeholder.com/200x200" alt="Exokit flips the browser inside-out in order to be fast"/>
+    <img src="http://via.placeholder.com/218x218" alt="Exokit flips the browser inside-out in order to be fast"/>
   </a>
   <a href="https://google.com/">
-    <img src="http://via.placeholder.com/200x200" alt="In most browsers 3D is a footnote to 2D, but not in Exokit"/>
+    <img src="http://via.placeholder.com/218x218" alt="In most browsers 3D is a footnote to 2D, but not in Exokit"/>
   </a>
   <a href="https://google.com/">
-    <img src="http://via.placeholder.com/200x200" alt="Not a fork of Chrome/Firefox"/>
+    <img src="http://via.placeholder.com/218x218" alt="Not a fork of Chrome/Firefox"/>
   </a>
 </p>
 
