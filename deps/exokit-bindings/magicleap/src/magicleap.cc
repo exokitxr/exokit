@@ -356,8 +356,8 @@ NAN_METHOD(MLContext::Present) {
 
   std::thread([mlContext]() {
     MLMeshingSettings meshingSettings;
-    /* meshingSettings.bounds_center = mlContext->position;
-    meshingSettings.bounds_rotation = mlContext->rotation; */
+    // meshingSettings.bounds_center = mlContext->position;
+    // meshingSettings.bounds_rotation = mlContext->rotation;
     meshingSettings.bounds_center.x = 0;
     meshingSettings.bounds_center.y = 0;
     meshingSettings.bounds_center.z = 0;
@@ -406,9 +406,6 @@ NAN_METHOD(MLContext::Present) {
       if (meshingUpdateResult != MLResult_Ok) {
         ML_LOG(Error, "MLMeshingUpdate failed: %s", application_name);
       }
-      /* if (!MLMeshingRefresh(mlContext->meshTracker)) {
-        ML_LOG(Error, "MLMeshingRefresh failed: %s", application_name);
-      }  */
 
       MLResult meshingStaticDataResult = MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData);
       if (meshingStaticDataResult == MLResult_Ok) {
