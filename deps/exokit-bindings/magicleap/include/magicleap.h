@@ -20,6 +20,8 @@
 #include <ml_head_tracking.h>
 #include <ml_perception.h>
 #include <ml_planes.h>
+#include <ml_privilege_ids.h>
+#include <ml_privilege_functions.h>
 #include <ml_meshing.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
