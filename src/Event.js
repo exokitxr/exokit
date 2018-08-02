@@ -233,6 +233,13 @@ class MessageEvent extends Event {
 }
 module.exports.MessageEvent = MessageEvent;
 
+class ErrorEvent extends Event {
+  constructor(type, init = {}) {
+    super(type, init);
+  }
+}
+module.exports.ErrorEvent = ErrorEvent;
+
 class CustomEvent extends Event {
   constructor(type, init = {}) {
     super(type, init);
