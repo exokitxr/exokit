@@ -888,7 +888,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       if (nativeMl && nativeMl.IsPresent()) {
         result.push(_getMlDisplay(window));
       }
-      if (nativeVr.VR_IsHmdPresent()) {
+      if (typeof nativeVr != 'undefined' && nativeVr.VR_IsHmdPresent()) {
         result.push(_getVrDisplay(window));
       }
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);

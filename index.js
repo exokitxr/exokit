@@ -302,119 +302,121 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
-nativeVr.requestPresent = function(layers) {
-  if (!vrPresentState.glContext) {
-    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
-    if (layer) {
-      const canvas = layer.source;
-      let context = canvas._context;
-      if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
-        context = canvas.getContext('webgl');
-      }
-      const window = canvas.ownerDocument.defaultView;
-
-      const windowHandle = context.getWindowHandle();
-      nativeWindow.setCurrentWindowContext(windowHandle);
-
-      const vrContext = vrPresentState.vrContext || nativeVr.getContext();
-      const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
-      const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
-
-      const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
-
-      const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-      const width = halfWidth * 2;
-      renderWidth = halfWidth;
-      renderHeight = height;
-
-      const cleanups = [];
-
-      const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
-
-      context.setDefaultFramebuffer(msFbo);
-
-      vrPresentState.isPresenting = true;
-      vrPresentState.vrContext = vrContext;
-      vrPresentState.system = system;
-      vrPresentState.compositor = compositor;
-      vrPresentState.glContext = context;
-      vrPresentState.msFbo = msFbo;
-      vrPresentState.msTex = msTex;
-      vrPresentState.msDepthTex = msDepthStencilTex;
-      vrPresentState.fbo = fbo;
-      vrPresentState.tex = tex;
-      vrPresentState.depthTex = depthStencilTex;
-      vrPresentState.cleanups = cleanups;
-
-      vrPresentState.lmContext = lmContext;
-
-      const _attribute = (name, value) => {
-        if (name === 'width' || name === 'height') {
-          nativeWindow.setCurrentWindowContext(windowHandle);
-
-          nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+if (nativeVr) {
+  nativeVr.requestPresent = function(layers) {
+    if (!vrPresentState.glContext) {
+      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+      if (layer) {
+        const canvas = layer.source;
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
         }
-      };
-      canvas.on('attribute', _attribute);
-      cleanups.push(() => {
-        canvas.removeListener('attribute', _attribute);
-      });
+        const window = canvas.ownerDocument.defaultView;
 
-      window.top.updateVrFrame({
-        renderWidth,
-        renderHeight,
-        force: true,
-      });
+        const windowHandle = context.getWindowHandle();
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
+        const vrContext = vrPresentState.vrContext || nativeVr.getContext();
+        const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+        const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
+
+        const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
+
+        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        const width = halfWidth * 2;
+        renderWidth = halfWidth;
+        renderHeight = height;
+
+        const cleanups = [];
+
+        const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+
+        context.setDefaultFramebuffer(msFbo);
+
+        vrPresentState.isPresenting = true;
+        vrPresentState.vrContext = vrContext;
+        vrPresentState.system = system;
+        vrPresentState.compositor = compositor;
+        vrPresentState.glContext = context;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.msDepthTex = msDepthStencilTex;
+        vrPresentState.fbo = fbo;
+        vrPresentState.tex = tex;
+        vrPresentState.depthTex = depthStencilTex;
+        vrPresentState.cleanups = cleanups;
+
+        vrPresentState.lmContext = lmContext;
+
+        const _attribute = (name, value) => {
+          if (name === 'width' || name === 'height') {
+            nativeWindow.setCurrentWindowContext(windowHandle);
+
+            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+          }
+        };
+        canvas.on('attribute', _attribute);
+        cleanups.push(() => {
+          canvas.removeListener('attribute', _attribute);
+        });
+
+        window.top.updateVrFrame({
+          renderWidth,
+          renderHeight,
+          force: true,
+        });
+
+        return {
+          width,
+          height,
+          framebuffer: msFbo,
+        };
+      } else {
+        throw new Error('no HTMLCanvasElement source provided');
+      }
+    } else {
+      const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2;
 
       return {
         width,
         height,
-        framebuffer: msFbo,
+        framebuffer: vrPresentState.msFbo,
       };
-    } else {
-      throw new Error('no HTMLCanvasElement source provided');
     }
-  } else {
-    const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
-    const width = halfWidth * 2;
+  };
+  nativeVr.exitPresent = function() {
+    if (vrPresentState.isPresenting) {
+      nativeVr.VR_Shutdown();
 
-    return {
-      width,
-      height,
-      framebuffer: vrPresentState.msFbo,
-    };
-  }
-};
-nativeVr.exitPresent = function() {
-  if (vrPresentState.isPresenting) {
-    nativeVr.VR_Shutdown();
+      nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
+      nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
 
-    nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
-    nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
+      const context = vrPresentState.glContext;
+      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      context.setDefaultFramebuffer(0);
 
-    const context = vrPresentState.glContext;
-    nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-    context.setDefaultFramebuffer(0);
+      for (let i = 0; i < vrPresentState.cleanups.length; i++) {
+        vrPresentState.cleanups[i]();
+      }
 
-    for (let i = 0; i < vrPresentState.cleanups.length; i++) {
-      vrPresentState.cleanups[i]();
+      vrPresentState.isPresenting = false;
+      vrPresentState.system = null;
+      vrPresentState.compositor = null;
+      vrPresentState.glContext = null;
+      vrPresentState.msFbo = null;
+      vrPresentState.msTex = null;
+      vrPresentState.msDepthTex = null;
+      vrPresentState.fbo = null;
+      vrPresentState.tex = null;
+      vrPresentState.depthTex = null;
+      vrPresentState.cleanups = null;
     }
 
-    vrPresentState.isPresenting = false;
-    vrPresentState.system = null;
-    vrPresentState.compositor = null;
-    vrPresentState.glContext = null;
-    vrPresentState.msFbo = null;
-    vrPresentState.msTex = null;
-    vrPresentState.msDepthTex = null;
-    vrPresentState.fbo = null;
-    vrPresentState.tex = null;
-    vrPresentState.depthTex = null;
-    vrPresentState.cleanups = null;
-  }
-
-  return Promise.resolve();
-};
+    return Promise.resolve();
+  };
+}
 let mlContext = null;
 let mlFbo = null;
 let mlTex = null;
