@@ -3,13 +3,13 @@
 const cwd = process.cwd();
 process.chdir(__dirname); // needed for global bin to find libraries
 
-const path = require('path');
-const fs = require('fs');
 const events = require('events');
 const {EventEmitter} = events;
-const os = require('os');
+const path = require('path');
+const fs = require('fs');
 const url = require('url');
 const child_process = require('child_process');
+const os = require('os');
 const repl = require('repl');
 
 const core = require('./core.js');
