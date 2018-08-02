@@ -33,7 +33,11 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
   </a>
 </p>
 
-[Exokit Browser](https://exokit.webmr.io) is a post-screen web engine. It doesn't do 2D -- it's for WebGL(2), WebXR, and immersive AR/VR. It's fast, extensible and embeddable. It can open multiple WebXR sites at a time and blend them with Reality Tabs.
+> [Exokit Browser](https://exokit.webmr.io) is a post-screen web engine. It doesn't do 2D.
+>
+> It's for WebGL, WebGL2, WebXR, and immersive AR/VR. It's fast, extensible and embeddable.
+>
+> It can open multiple WebXR sites at a time and blend them with reality tabs.
 
 Exokit engine loads regular HTML5 pages using standards like WebGL, WebXR, WebAudio. It works with your favorite engines and frameworks, like [THREE.js](https://github.com/mrdoob/three.js/), [A-Frame](https://aframe.io/), [Babylon.js](https://github.com/BabylonJS/Babylon.js), and even Web builds of [Unity](https://unity3d.com).
 
