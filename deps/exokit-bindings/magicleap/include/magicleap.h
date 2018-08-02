@@ -23,7 +23,6 @@
 #include <ml_meshing.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
-#include <ml_occlusion.h>
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
 
