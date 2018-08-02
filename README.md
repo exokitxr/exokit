@@ -12,7 +12,7 @@
 
 #### [Download for current OS](https://get.webmr.io)
 
-#### Or build your own
+#### Build your own
 
 ```
 git clone https://github.com/webmixedreality/exokit.git
@@ -44,13 +44,21 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
   </a>
 </p>
 
-**Exokit is a post-screen web engine.**
+### Exokit is a post-screen web engine.
 
-_It's for WebGL, WebGL2, WebXR, and immersive AR/VR. It's fast, extensible and embeddable. It doesn't do 2D._
+It loads regular HTML5 pages using standards like:
+- WebGL
+- WebXR
+- WebAudio
+- Etc.
 
-_It can open multiple WebXR sites at a time and blend them with reality tabs._
+It's designed for WebGL, WebGL2, WebXR, and immersive AR/VR. It's faster than Chrome, extensible and embeddable into other environments.
 
-Exokit engine loads regular HTML5 pages using standards like WebGL, WebXR, WebAudio. It works with your favorite engines and frameworks, like [THREE.js](https://github.com/mrdoob/three.js/), [A-Frame](https://aframe.io/), [Babylon.js](https://github.com/BabylonJS/Babylon.js), and even web builds of [Unity](https://unity3d.com).
+The catch? _It doesn't do 2D. (But it comes with a build of Chromium, which does.)_
+
+It can open blend multiple WebXR sites at a time with "reality tabs".
+
+Exokit is agnostic about how you write your code. It works with frameworks like [THREE.js](https://github.com/mrdoob/three.js/), [A-Frame](https://aframe.io/), [Babylon.js](https://github.com/BabylonJS/Babylon.js), and web builds of [Unity](https://unity3d.com).
 
 ## Architecture
 
