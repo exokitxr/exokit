@@ -250,7 +250,6 @@
               ],
               'libraries': [
                 '-lGL',
-                '-lEGL',
                 '-lGLU',
                 '-lX11',
                 '-lGLEW',
@@ -259,7 +258,6 @@
                 '-lfreetype',
                 '-lpng16',
                 '-lskia',
-		'-lc++_static',
                 '-lLabSound',
                 '-lavformat',
                 '-lavcodec',
