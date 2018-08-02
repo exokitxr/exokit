@@ -23,13 +23,13 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
 
 <p align="center">
    <a href="https://google.com/">
-    <img src="http://via.placeholder.com/300x300" alt="Architecture diagram"/>
+    <img src="http://via.placeholder.com/250x250" alt="Architecture diagram"/>
   </a>
   <a href="https://google.com/">
-    <img src="http://via.placeholder.com/300x300" alt="In most browsers 3D is a footnote to 2D"/>
+    <img src="http://via.placeholder.com/250x250" alt="In most browsers 3D is a footnote to 2D"/>
   </a>
   <a href="https://google.com/">
-    <img src="http://via.placeholder.com/300x300" alt="Not a fork of Chrome/Firefox"/>
+    <img src="http://via.placeholder.com/250x250" alt="Not a fork of Chrome/Firefox"/>
   </a>
 </p>
 
