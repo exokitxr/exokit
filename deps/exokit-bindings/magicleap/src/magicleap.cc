@@ -282,7 +282,14 @@ NAN_METHOD(MLContext::Present) {
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   if (lifecycle_status != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to initialize lifecycle.", application_name);
+    ML_LOG(Error, "%s: Lifecycle not initialized.", application_name);
+    info.GetReturnValue().Set(JS_BOOL(false));
+    return;
+  }
+
+  MLResult privilege_init_status = MLPrivilegesStartup();
+  if (privilege_init_status != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to initialize privilege system.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
   }
