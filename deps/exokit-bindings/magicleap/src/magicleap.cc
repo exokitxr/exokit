@@ -11,24 +11,11 @@ namespace ml {
 const char application_name[] = "com.exokit.app";
 application_context_t application_context;
 MLLifecycleCallbacks lifecycle_callbacks = {};
-MLResult lifecycle_status;
-std::thread *initThread;
-uv_async_t async;
-bool initialized = false;
+MLResult lifecycle_status = MLResult_Pending;
 Nan::Persistent<Function> initCb;
 
 bool isPresent() {
-  return initialized && lifecycle_status == MLResult_Ok;
-}
-
-void asyncCb(uv_async_t *handle) {
-  Nan::HandleScope scope;
-
-  Local<Function> initCbFn = Nan::New(initCb);
-  Local<Value> args[] = {
-    JS_BOOL(isPresent()),
-  };
-  initCbFn->Call(Nan::Null(), sizeof(args)/sizeof(args[0]), args);
+  return lifecycle_status == MLResult_Ok;
 }
 
 void makePlanesQueryer(MLHandle &planesHandle) {
@@ -249,20 +236,6 @@ NAN_METHOD(MLContext::New) {
   };
   Local<Object> stageGeometryObj = stageGeometryCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
   mlContextObj->Set(JS_STR("stageGeometry"), stageGeometryObj);
-
-  if (!initThread) {
-    uv_async_init(uv_default_loop(), &async, asyncCb);
-
-    initThread = new std::thread(LifecycleInit);
-
-    std::atexit([]() {
-      initThread->join();
-      delete initThread;
-      initThread = nullptr;
-
-      quick_exit(0);
-    });
-  }
 
   info.GetReturnValue().Set(mlContextObj);
 }
@@ -683,20 +656,6 @@ NAN_METHOD(MLContext::OnPresentChange) {
   } else {
     Nan::ThrowError("not implemented");
   }
-}
-
-void MLContext::LifecycleInit() {
-  application_context.dummy_value = 2;
-
-  lifecycle_callbacks.on_stop = onStop;
-  lifecycle_callbacks.on_pause = onPause;
-  lifecycle_callbacks.on_resume = onResume;
-
-  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
-
-  initialized = true;
-
-  uv_async_send(&async);
 }
 
 }
