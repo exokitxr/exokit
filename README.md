@@ -21,7 +21,8 @@ npm install
 node . # or node -h for home
 ```
 
-#### Run a WebGL/WebXR site:
+Run a WebGL/WebXR site:
+
 ```
 exokit https://emukit.webmr.io/ # start Emukit in Exokit
 ```
