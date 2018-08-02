@@ -10,9 +10,9 @@
 
 # Quickstart
 
-[Download for current OS](https://get.webmr.io)
+#### [Download for current OS](https://get.webmr.io)
 
-Or build your own:
+#### Or build your own
 
 ```
 git clone https://github.com/webmixedreality/exokit.git
@@ -21,7 +21,7 @@ npm install
 node . # or node -h for home
 ```
 
-Run a WebGL/WebXR site:
+#### Run a WebGL/WebXR site
 
 ```
 exokit https://emukit.webmr.io/ # start Emukit in Exokit
