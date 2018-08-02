@@ -1073,7 +1073,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.total += diff;
         timestamps.last = now;
       }
-    } else if (isMlPresenting && mlGlContext && mlGlContext.canvas.ownerDocument === window) {
+    } else if (isMlPresenting && mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
       mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
       mlHasPose = true;
       if (args.performance) {
