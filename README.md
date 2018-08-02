@@ -12,7 +12,17 @@
 
 [Download for current OS](https://get.webmr.io)
 
-Then either:
+```
+exokit https://emukit.webmr.io/ # run a site in Exokit
+```
+
+<img src="http://via.placeholder.com/600x400"/>
+
+_Opening a site with Exokit_
+
+# Why?
+
+<img src="http://via.placeholder.com/300x200"/>
 
 #### Open the app to the home environment.
 
