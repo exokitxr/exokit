@@ -702,11 +702,8 @@ void MLContext::LifecycleInit() {
 }
 
 Handle<Object> makeMl() {
-  Isolate *isolate = Isolate::GetCurrent();
-
   Nan::EscapableHandleScope scope;
-
-  return scope.Escape(ml::MLContext::Initialize(isolate));
+  return scope.Escape(ml::MLContext::Initialize(Isolate::GetCurrent()));
 }
 
 #endif
