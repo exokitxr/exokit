@@ -42,9 +42,15 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
 >
 > It can open multiple WebXR sites at a time and blend them with reality tabs.
 
-Exokit engine loads regular HTML5 pages using standards like WebGL, WebXR, WebAudio. It works with your favorite engines and frameworks, like [THREE.js](https://github.com/mrdoob/three.js/), [A-Frame](https://aframe.io/), [Babylon.js](https://github.com/BabylonJS/Babylon.js), and even Web builds of [Unity](https://unity3d.com).
+Exokit engine loads regular HTML5 pages using standards like WebGL, WebXR, WebAudio. It works with your favorite engines and frameworks, like [THREE.js](https://github.com/mrdoob/three.js/), [A-Frame](https://aframe.io/), [Babylon.js](https://github.com/BabylonJS/Babylon.js), and even web builds of [Unity](https://unity3d.com).
 
-In terms of architecture, Exokit is a Javascript Node module. Simple C++ bindings hook into WebGL, WebXR, Magic Leap, Leap Motion, and various other device APIs. It's also extensible and embeddable -- you can add your own things to the browser core, and `require('exokit')` to get an immersive browser in another project.
+#### Architecture
+
+Exokit is a Javascript [Node.js](https://nodejs.org) module.
+
+Lightweight C++ bindings hook into WebGL, WebXR, Magic Leap, Leap Motion, and various other device APIs.
+
+It's also extensible and embeddable -- you can add your own things to the browser core, and `const {window} = require('exokit')()` to get an immersive browser in another project.
 
 Exokit runs on Windows, macOS, Linux (x64), and Linux (ARM64).
 
