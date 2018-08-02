@@ -367,9 +367,8 @@ NAN_METHOD(MLContext::Present) {
     meshingSettings.fill_hole_length = 0.1;
     meshingSettings.fill_holes = false;
     meshingSettings.index_order_ccw = false;
-    meshingSettings.mesh_type = MLMeshingType_Full;
     // meshingSettings.mesh_type = MLMeshingType_PointCloud;
-    // meshingSettings.mesh_type = MLMeshingType_Blocks;
+    meshingSettings.mesh_type = MLMeshingType_Blocks;
     // meshingSettings.meshing_poll_time = 1e9;
     meshingSettings.meshing_poll_time = 0;
     meshingSettings.planarize = false;
