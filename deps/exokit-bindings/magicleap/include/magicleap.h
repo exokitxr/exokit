@@ -66,7 +66,8 @@ protected:
   ~MLContext();
 
   static NAN_METHOD(New);
-  static NAN_METHOD(Init);
+  static NAN_METHOD(InitLifecycle);
+  static NAN_METHOD(Present);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);

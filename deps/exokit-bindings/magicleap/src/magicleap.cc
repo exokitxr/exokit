@@ -8,6 +8,12 @@ using namespace std;
 
 namespace ml {
 
+enum DummyValue {
+  STOPPED = 0,
+  RUNNING,
+  PAUSED,
+};
+
 const char application_name[] = "com.exokit.app";
 application_context_t application_context;
 MLLifecycleCallbacks lifecycle_callbacks = {};
@@ -106,19 +112,32 @@ int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
   }
 }
 
+static void onNewInitArg(void* application_context) {
+  MLLifecycleInitArgList *args;
+  MLLifecycleGetInitArgList(&args);
+
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
+  ML_LOG(Info, "%s: On new init arg called %x.", application_name, args);
+}
+
 static void onStop(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = 0;
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On stop called.", application_name);
 }
 
 static void onPause(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = 1;
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
   ML_LOG(Info, "%s: On pause called.", application_name);
 }
 
 static void onResume(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = 2;
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On resume called.", application_name);
+}
+
+static void onUnloadResources(void* application_context) {
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
+  ML_LOG(Info, "%s: On unload resources called.", application_name);
 }
 
 MLStageGeometry::MLStageGeometry(MLContext *mlContext) : mlContext(mlContext) {}
@@ -207,13 +226,10 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
-  ctor->SetClassName(JS_STR("MLContext"));
-  Nan::SetMethod(ctor, "IsPresent", IsPresent);
-  Nan::SetMethod(ctor, "OnPresentChange", OnPresentChange);
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "Init", Init);
+  Nan::SetMethod(proto, "Present", Present);
   Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
@@ -221,6 +237,10 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
 
   Local<Object> stageGeometryCons = MLStageGeometry::Initialize(isolate);
   ctorFn->Set(JS_STR("MLStageGeometry"), stageGeometryCons);
+
+  Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
+  Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
+  Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
 
   return scope.Escape(ctorFn);
 }
@@ -240,7 +260,23 @@ NAN_METHOD(MLContext::New) {
   info.GetReturnValue().Set(mlContextObj);
 }
 
-NAN_METHOD(MLContext::Init) {
+NAN_METHOD(MLContext::InitLifecycle) {
+  lifecycle_callbacks.on_new_initarg = onNewInitArg;
+  lifecycle_callbacks.on_stop = onStop;
+  lifecycle_callbacks.on_pause = onPause;
+  lifecycle_callbacks.on_resume = onResume;
+  lifecycle_callbacks.on_unload_resources = onUnloadResources;
+  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+
+  // HACK: prevent exit hang
+  std::atexit([]() {
+    quick_exit(0);
+  });
+
+  application_context.dummy_value = DummyValue::STOPPED;
+}
+
+NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
@@ -279,6 +315,9 @@ NAN_METHOD(MLContext::Init) {
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
   }
+
+  // HACK: force the app to be "running"
+  application_context.dummy_value = DummyValue::RUNNING;
 
   if (MLHeadTrackingCreate(&mlContext->head_tracker) == MLResult_Ok) {
     if (MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data) != MLResult_Ok) {
@@ -388,7 +427,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
   if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array() && info[6]->IsFloat32Array() && info[7]->IsFloat32Array()) {
-    if (application_context.dummy_value) {
+    if (application_context.dummy_value == DummyValue::RUNNING) {
       Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
       Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[2]);
@@ -587,6 +626,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       if (result != MLResult_Ok) {
         ML_LOG(Error, "MLOcclusionPopulateDepth outer failed: %d", result);
       } */
+    } else if (application_context.dummy_value == DummyValue::RUNNING) {
+      Nan::ThrowError("MLContext::WaitGetPoses called for paused app");
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
     }
