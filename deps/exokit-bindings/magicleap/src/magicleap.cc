@@ -8,7 +8,7 @@ using namespace std;
 
 namespace ml {
 
-const char application_name[] = "com.magicleap.simpleglapp";
+const char application_name[] = "com.exokit.app";
 application_context_t application_context;
 MLLifecycleCallbacks lifecycle_callbacks = {};
 MLResult lifecycle_status;
