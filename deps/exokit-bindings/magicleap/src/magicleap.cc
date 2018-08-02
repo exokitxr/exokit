@@ -382,8 +382,6 @@ NAN_METHOD(MLContext::Present) {
     meshingSettings.remove_disconnected_components = false;
     meshingSettings.remove_mesh_skirt = false;
     meshingSettings.request_vertex_confidence = false;
-    meshingSettings.target_number_triangles = 0;
-    // meshingSettings.target_number_triangles = 10000;
     meshingSettings.target_number_triangles_per_block = 0;
     if (MLMeshingCreate(&meshingSettings, &mlContext->meshTracker) != MLResult_Ok) {
       ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
