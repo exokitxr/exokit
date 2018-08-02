@@ -17,7 +17,7 @@
 exokit https://emukit.webmr.io/ # start Emukit in Exokit
 ```
 
-<img src="http://via.placeholder.com/600x400"/>
+<img src="http://via.placeholder.com/800x400"/>
 
 ## Introduction
 
