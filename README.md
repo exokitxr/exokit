@@ -44,7 +44,7 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
 
 Exokit engine loads regular HTML5 pages using standards like WebGL, WebXR, WebAudio. It works with your favorite engines and frameworks, like [THREE.js](https://github.com/mrdoob/three.js/), [A-Frame](https://aframe.io/), [Babylon.js](https://github.com/BabylonJS/Babylon.js), and even web builds of [Unity](https://unity3d.com).
 
-#### Architecture
+## Architecture
 
 Exokit is a Javascript [Node.js](https://nodejs.org) module.
 
