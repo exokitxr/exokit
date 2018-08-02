@@ -84,7 +84,7 @@ class Event {
     this.cancelable = cancelable;
   }
 }
-module.exports.Event= Event;
+module.exports.Event = Event;
 
 class KeyboardEvent extends Event {
   constructor(type, init = {}) {
