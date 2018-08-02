@@ -193,7 +193,7 @@ NAN_METHOD(MLStageGeometry::GetGeometry) {
       memcpy((uint8_t *)positionsArray->Buffer()->GetContents().Data() + positionsArray->ByteOffset(), mlContext->positions.data(), mlContext->positions.size());
       memcpy((uint8_t *)normalsArray->Buffer()->GetContents().Data() + normalsArray->ByteOffset(), mlContext->normals.data(), mlContext->normals.size());
       memcpy((uint8_t *)trianglesArray->Buffer()->GetContents().Data() + trianglesArray->ByteOffset(), mlContext->triangles.data(), mlContext->triangles.size());
-      
+
       Local<Array> metrics = Local<Array>::Cast(info[3]);
       metrics->Set(0, JS_INT((unsigned int)(mlContext->positions.size() / sizeof(float))));
       metrics->Set(1, JS_INT((unsigned int)(mlContext->normals.size() / sizeof(float))));
