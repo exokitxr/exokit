@@ -354,7 +354,7 @@ NAN_METHOD(MLContext::Present) {
     ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
   }
 
-  std::thread([mlContext]() {
+  /* std::thread([mlContext]() {
     MLMeshingSettings meshingSettings;
     // meshingSettings.bounds_center = mlContext->position;
     // meshingSettings.bounds_rotation = mlContext->rotation;
@@ -415,7 +415,7 @@ NAN_METHOD(MLContext::Present) {
         ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
       }
     }
-  });
+  }); */
 
   /* if (MLOcclusionCreateClient(&mlContext->occlusionTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create occlusion tracker.", application_name);
