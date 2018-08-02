@@ -58,7 +58,7 @@
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "native-audio-deps": "0.0.36",
-    "native-canvas-deps": "0.0.34",
+    "native-canvas-deps": "0.0.35",
     "native-graphics-deps": "0.0.20",
     "native-openvr-deps": "0.0.16",
     "native-video-deps": "0.0.26",
