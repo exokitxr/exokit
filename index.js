@@ -8,6 +8,7 @@ const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
+const net = require('net');
 const child_process = require('child_process');
 const os = require('os');
 const repl = require('repl');
@@ -25,6 +26,7 @@ const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow} = nativeBindings;
 
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');
+const MLSDK_PORT = 17955;
 
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
@@ -422,7 +424,7 @@ if (nativeMl) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
 
-        const initResult = mlContext.Init(windowHandle);
+        const initResult = mlContext.Present(windowHandle);
         if (initResult) {
           isMlPresenting = true;
 
@@ -465,6 +467,16 @@ if (nativeMl) {
   nativeMl.exitPresent = function() {
     throw new Error('not implemented'); // XXX
   };
+
+  // try to connect to MLSDK
+  (() => {
+    const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
+      s.destroy();
+      
+      nativeMl.InitLifecycle();
+    });
+    s.on('error', () => {});
+  })();
 }
 
 nativeWindow.setEventHandler((type, data) => {
