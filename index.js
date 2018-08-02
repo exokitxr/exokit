@@ -338,7 +338,7 @@ nativeVr.requestPresent = function(layers) {
       const _attribute = (name, value) => {
         if (name === 'width' || name === 'height') {
           nativeWindow.setCurrentWindowContext(windowHandle);
-          
+
           nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
         }
       };
