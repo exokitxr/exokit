@@ -9,7 +9,7 @@ const util = require('util');
 
 const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
-const {Event, EventTarget, MouseEvent} = require('./Event');
+const {Event, EventTarget, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const urls = require('./urls').urls;
@@ -1322,7 +1322,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
           this.dispatchEvent(new Event('load', {target: this}));
         })
         .catch(err => {
-          const e = new Event('error', {target: this});
+          const e = new ErrorEvent('error', {target: this});
           e.message = err.message;
           e.stack = err.stack;
           this.dispatchEvent(e);
@@ -1386,7 +1386,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .catch(err => {
-            const e = new Event('error', {target: this});
+            const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
             this.dispatchEvent(e);
@@ -1482,7 +1482,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
         .catch(err => {
           this.readyState = 'complete';
 
-          const e = new Event('error', {target: this});
+          const e = new ErrorEvent('error', {target: this});
           e.message = err.message;
           e.stack = err.stack;
           this.dispatchEvent(e);
@@ -2105,7 +2105,7 @@ class HTMLImageElement extends HTMLSrcableElement {
           .catch(err => {
             console.warn('failed to load image:', src);
 
-            const e = new Event('error', {target: this});
+            const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
             this.dispatchEvent(e);
@@ -2203,7 +2203,7 @@ class HTMLAudioElement extends HTMLMediaElement {
           .catch(err => {
             console.warn('failed to load audio:', src);
 
-            const e = new Event('error', {target: this});
+            const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
             this.dispatchEvent(e);

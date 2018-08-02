@@ -49,8 +49,7 @@ const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentTy
        DOMImplementation, initDocument} = require('./src/Document');
 const DOM = require('./src/DOM');
 const {DOMRect, Node, NodeList} = require('./src/DOM');
-const {CustomEvent, DragEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent,
-       WheelEvent} = require('./src/Event');
+const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent} = require('./src/Event');
 const {History} = require('./src/History');
 const {Location} = require('./src/Location');
 const {XMLHttpRequest} = require('./src/Network');
@@ -1594,7 +1593,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         .catch(err => {
           loading = false;
 
-          const e = new Event('error', {target: this});
+          const e = new ErrorEvent('error', {target: this});
           e.message = err.message;
           e.stack = err.stack;
           this.dispatchEvent(e);
