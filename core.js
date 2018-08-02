@@ -1593,9 +1593,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         })
         .catch(err => {
           loading = false;
-          window._emit('error', {
-            error: err,
-          });
+
+          const e = new Event('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
         });
       loading = true;
     }
