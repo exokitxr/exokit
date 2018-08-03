@@ -7,6 +7,7 @@ const symbols = require('./symbols');
 const {_elementGetter, _elementSetter} = require('./utils');
 
 const _getXrDisplay = window => window[symbols.mrDisplaysSymbol].xrDisplay;
+const _getXmDisplay = window => window[symbols.mrDisplaysSymbol].xmDisplay;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -22,6 +23,8 @@ class XR extends EventEmitter {
   requestDevice(name = 'VR') {
     if (name === 'VR' && GlobalContext.nativeVr.VR_IsHmdPresent()) {
       return Promise.resolve(_getXrDisplay(this._window));
+    } else if (name === 'AR' && GlobalContext.nativeMl.IsPresent()) {
+      return Promise.resolve(_getXmDisplay(this._window));
     } else {
       return Promise.resolve(null);
     }

@@ -1644,11 +1644,29 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
+    
+    const xmDisplay = new XR.XRDevice('AR');
+    xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    xmDisplay.onexitpresent = () => nativeMl.exitPresent();
+    xmDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    xmDisplay.oncancelanimationframe = window.cancelAnimationFrame;
+    xmDisplay.requestSession = (requestSession => function() {
+      return requestSession.apply(this, arguments)
+        .then(session => {
+          mlDisplay.isPresenting = true;
+          session.once('end', () => {
+            mlDisplay.isPresenting = false;
+          });
+          return session;
+        });
+    })(xmDisplay.requestSession);
+    
     window[symbols.mrDisplaysSymbol] = {
       fakeVrDisplay,
       vrDisplay,
       xrDisplay,
       mlDisplay,
+      xmDisplay,
     };
 
     const _updateGamepads = newGamepads => {
