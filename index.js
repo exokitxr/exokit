@@ -480,8 +480,6 @@ if (nativeMl) {
 }
 
 nativeWindow.setEventHandler((type, data) => {
-  // console.log(type, data);
-
   const {windowHandle} = data;
   const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), windowHandle));
   const {canvas} = context;
