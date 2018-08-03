@@ -9,7 +9,7 @@ const util = require('util');
 
 const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
-const {Event, EventTarget, MouseEvent} = require('./Event');
+const {Event, EventTarget, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const urls = require('./urls').urls;
@@ -1322,7 +1322,10 @@ class HTMLStyleElement extends HTMLLoadableElement {
           this.dispatchEvent(new Event('load', {target: this}));
         })
         .catch(err => {
-          this.dispatchEvent(new Event('error', {target: this}));
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
         });
     });
   }
@@ -1383,7 +1386,10 @@ class HTMLLinkElement extends HTMLLoadableElement {
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .catch(err => {
-            this.dispatchEvent(new Event('error', {target: this}));
+            const e = new ErrorEvent('error', {target: this});
+            e.message = err.message;
+            e.stack = err.stack;
+            this.dispatchEvent(e);
           });
       }
     });
@@ -1476,7 +1482,10 @@ class HTMLScriptElement extends HTMLLoadableElement {
         .catch(err => {
           this.readyState = 'complete';
 
-          this.dispatchEvent(new Event('error', {target: this}));
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
         })
         .finally(() => {
           resource.setProgress(1);
@@ -2095,7 +2104,11 @@ class HTMLImageElement extends HTMLSrcableElement {
           })
           .catch(err => {
             console.warn('failed to load image:', src);
-            this.dispatchEvent(new Event('error', {target: this}));
+
+            const e = new ErrorEvent('error', {target: this});
+            e.message = err.message;
+            e.stack = err.stack;
+            this.dispatchEvent(e);
           })
           .finally(() => {
             resource.setProgress(1);
@@ -2189,7 +2202,11 @@ class HTMLAudioElement extends HTMLMediaElement {
           })
           .catch(err => {
             console.warn('failed to load audio:', src);
-            this.dispatchEvent(new Event('error', {target: this}));
+
+            const e = new ErrorEvent('error', {target: this});
+            e.message = err.message;
+            e.stack = err.stack;
+            this.dispatchEvent(e);
           })
           .finally(() => {
             resource.setProgress(1);
