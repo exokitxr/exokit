@@ -746,7 +746,7 @@ const _bindWindow = (window, newWindowCb) => {
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-
+      
       if (context.isDirty()) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
