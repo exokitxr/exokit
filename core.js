@@ -1615,13 +1615,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         });
       };
     };
+    
     const fakeVrDisplay = new FakeVRDisplay();
     fakeVrDisplay.isActive = false;
+    
     const vrDisplay = new VRDisplay();
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    const xrDisplay = new XR.XRDevice();
+    
+    const xrDisplay = new XR.XRDevice('VR');
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
     xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
@@ -1636,6 +1639,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xrDisplay.requestSession);
+    
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
