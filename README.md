@@ -1,5 +1,7 @@
-# Exokit Engine
+# Exokit
 ### Post-screen web engine for AR/VR, written in Javascript 🦖
+
+<img src="https://github.com/webmixedreality/exokit/blob/master/icon.png" width=100/>
 
 [![Slack](https://exoslack.now.sh/badge.svg)](https://exoslack.now.sh)
 [![Github releases](https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg)](https://github.com/webmixedreality/exokit/releases )
