@@ -31,16 +31,16 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
 
 <p align="center">
    <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Architecture diagram"/>
+    <img src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/architecturediagram.jpg" alt="Architecture diagram"/>
   </a>
 <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Exokit flips the browser inside-out in order to be fast"/>
+    <img src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/chrome%20breaking.gif" alt="Exokit flips the browser inside-out in order to be fast"/>
   </a>
   <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="In most browsers 3D is a footnote to 2D, but not in Exokit"/>
+    <img src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/3dfootnoteto2d.gif" alt="In most browsers 3D is a footnote to 2D, but not in Exokit"/>
   </a>
   <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Not a fork of Chrome/Firefox"/>
+    <img src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/exokitisntafork.jpg" alt="Not a fork of Chrome/Firefox"/>
   </a>
 </p>
 
