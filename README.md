@@ -1,5 +1,5 @@
 # Exokit
-### Post-screen web engine for AR/VR, written in Javascript 🦖
+### Javascript post-screen AR/VR/WebXR engine  🦖
 
 <img src="https://github.com/webmixedreality/exokit/blob/master/icon.png" width=100/>
 
