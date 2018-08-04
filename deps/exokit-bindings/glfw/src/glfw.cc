@@ -975,14 +975,16 @@ NAN_METHOD(ResizeRenderTarget) {
 }
 
 NAN_METHOD(DestroyRenderTarget) {
-  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     GLuint fbo = info[0]->Uint32Value();
     GLuint tex = info[1]->Uint32Value();
+    GLuint depthTex = info[2]->Uint32Value();
 
     glDeleteFramebuffers(1, &fbo);
     glDeleteTextures(1, &tex);
+    glDeleteTextures(1, &depthTex);
   } else {
-    Nan::ThrowError("invalid arguments");
+    Nan::ThrowError("DestroyRenderTarget: invalid arguments");
   }
 }
 
