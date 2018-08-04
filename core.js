@@ -416,7 +416,7 @@ class MLDisplay extends MRDisplay {
       stageParameters,
       handsArray,
     } = update;
-    
+
     if (depthNear !== undefined) {
       this.depthNear = depthNear;
     }
