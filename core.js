@@ -389,6 +389,8 @@ class MLDisplay extends MRDisplay {
     if (this.onvrdisplaypresentchange) {
       this.onvrdisplaypresentchange();
     }
+
+    return Promise.resolve();
   }
 
   exitPresent() {
