@@ -215,6 +215,10 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       contexts.splice(contexts.indexOf(gl), 1);
+
+      if (!contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // no more windows
+        process.exit();
+      }
     });
 
     gl.destroy = (destroy => function() {
