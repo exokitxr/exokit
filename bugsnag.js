@@ -7,6 +7,8 @@ const os = require('os');
 const packageJson = require('./package.json');
 const bugsnag = require('bugsnag');
 
+const GlobalContext = require('./src/GlobalContext');
+
 const bugsnagApiKey = (() => {
   try {
     return fs.readFileSync(path.join(__dirname, 'bugsnag.txt'), 'utf8').match(/^(\S*)/)[1];
@@ -20,6 +22,8 @@ const bugsnagApiKey = (() => {
 if (bugsnagApiKey) {
   bugsnag.register(bugsnagApiKey, {
     metaData: {
+      argv: process.argv,
+      command: GlobalContext.commands,
       packageJson,
       arch: os.arch(),
       cpus: os.cpus(),
