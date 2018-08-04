@@ -7,6 +7,7 @@ const symbols = require('./symbols');
 const {_elementGetter, _elementSetter} = require('./utils');
 
 const _getXrDisplay = window => window[symbols.mrDisplaysSymbol].xrDisplay;
+const _getXmDisplay = window => window[symbols.mrDisplaysSymbol].xmDisplay;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -19,9 +20,11 @@ class XR extends EventEmitter {
 
     this._window = window;
   }
-  requestDevice() {
-    if (GlobalContext.nativeVr.VR_IsHmdPresent()) {
+  requestDevice(name = 'VR') {
+    if (name === 'VR' && GlobalContext.nativeVr.VR_IsHmdPresent()) {
       return Promise.resolve(_getXrDisplay(this._window));
+    } else if (name === 'AR' && GlobalContext.nativeMl.IsPresent()) {
+      return Promise.resolve(_getXmDisplay(this._window));
     } else {
       return Promise.resolve(null);
     }
@@ -36,7 +39,8 @@ class XR extends EventEmitter {
 module.exports.XR = XR;
 
 class XRDevice {
-  constructor() {
+  constructor(name = 'VR') {
+    this.name = name; // non-standard
     this.session = null; // non-standard
   }
   supportsSession({exclusive = false, outputContext = null} = {}) {
@@ -141,6 +145,17 @@ class XRSession extends EventTarget {
       this.depthFar = depthFar;
     }
     if (renderWidth !== undefined && renderHeight !== undefined) {
+      if (this.baseLayer) {
+        const {context} = this.baseLayer;
+
+        if (context.drawingBufferWidth !== renderWidth * 2) {
+          context.canvas.width = renderWidth * 2;
+        }
+        if (context.drawingBufferHeight !== renderHeight) {
+          context.canvas.height = renderHeight;
+        }
+      }
+
       for (let i = 0; i < this._frame.views.length; i++) {
         this._frame.views[i]._viewport.set(i * renderWidth, 0, renderWidth, renderHeight);
       }

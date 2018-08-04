@@ -675,6 +675,8 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "linkProgram", glCallWrap<LinkProgram>);
   Nan::SetMethod(proto, "getProgramParameter", glCallWrap<GetProgramParameter>);
   Nan::SetMethod(proto, "getUniformLocation", glCallWrap<GetUniformLocation>);
+  Nan::SetMethod(proto, "getUniformBlockIndex", glCallWrap<GetUniformBlockIndex>);
+  Nan::SetMethod(proto, "uniformBlockBinding", glCallWrap<UniformBlockBinding>);
   Nan::SetMethod(proto, "getUniform", glCallWrap<GetUniform>);
   Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
   Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
@@ -695,6 +697,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "blitFramebuffer", glCallWrap<BlitFramebuffer>);
   Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
   Nan::SetMethod(proto, "bindBuffer", glCallWrap<BindBuffer>);
+  Nan::SetMethod(proto, "bindBufferBase", glCallWrap<BindBufferBase>);
   Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
   Nan::SetMethod(proto, "bufferSubData", glCallWrap<BufferSubData>);
   Nan::SetMethod(proto, "enable", glCallWrap<Enable>);
@@ -2134,6 +2137,22 @@ NAN_METHOD(WebGLRenderingContext::GetUniformLocation) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::GetUniformBlockIndex) {
+  GLint programId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  v8::String::Utf8Value uniformBlockName(info[1]);
+
+  GLint blockIndex = glGetUniformBlockIndex(programId, *uniformBlockName);
+
+  info.GetReturnValue().Set(JS_INT(blockIndex));
+}
+
+NAN_METHOD(WebGLRenderingContext::UniformBlockBinding) {
+  GLint programId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLuint uniformBlockIndex = info[1]->Uint32Value();
+  GLuint uniformBlockBinding = info[2]->Uint32Value();
+
+  glUniformBlockBinding(programId, uniformBlockIndex, uniformBlockBinding);
+}
 
 NAN_METHOD(WebGLRenderingContext::ClearColor) {
   float red = (float)info[0]->NumberValue();
@@ -2669,8 +2688,8 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   } else if (!info[0]->IsNumber()) {
     Nan::ThrowError("First argument to BindBuffer must be a number");
   } else if (info[1]->IsObject() && info[1]->ToObject()->Get(JS_STR("id"))->IsNumber()) {
-    GLint target = info[0]->Int32Value();
-    GLint buffer = info[1]->ToObject()->Get(JS_STR("id"))->Int32Value();
+    GLenum target = info[0]->Uint32Value();
+    GLuint buffer = info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
     glBindBuffer(target, buffer);
   } else if (info[1]->IsNull()) {
     GLint target = info[0]->Int32Value();
@@ -2680,6 +2699,13 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::BindBufferBase) {
+  GLenum target = info[0]->Uint32Value();
+  GLuint index = info[1]->Uint32Value();
+  GLuint buffer = info[2]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  
+  glBindBufferBase(target, index, buffer);
+}
 
 NAN_METHOD(WebGLRenderingContext::CreateFramebuffer) {
   GLuint framebuffer;

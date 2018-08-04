@@ -85,7 +85,8 @@ const _normalizeBuffer = (b, target) => {
     case 'Int32Array':
     case 'Float32Array':
     case 'Float64Array':
-    case 'DataView': {
+    case 'DataView':
+    case 'Promise': {
       if (!(b instanceof target[name])) {
         GlobalContext.nativeVm.setPrototype(b, target[name].prototype);
       }

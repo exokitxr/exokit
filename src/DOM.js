@@ -9,7 +9,7 @@ const util = require('util');
 
 const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
-const {Event, EventTarget, MouseEvent} = require('./Event');
+const {Event, EventTarget, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const urls = require('./urls').urls;
@@ -497,6 +497,14 @@ class Element extends Node {
         }
       } else if (name === 'class' && this._classList) {
         this._classList.reset(value);
+      }
+    });
+    this.on('children', (addedNodes, removedNodes, previousSibling, nextSiblings) => {
+      for (let i = 0; i < addedNodes.length; i++) {
+        addedNodes[i].emit('attached');
+      }
+      for (let i = 0; i < removedNodes.length; i++) {
+        removedNodes[i].emit('removed');
       }
     });
   }
@@ -1314,7 +1322,10 @@ class HTMLStyleElement extends HTMLLoadableElement {
           this.dispatchEvent(new Event('load', {target: this}));
         })
         .catch(err => {
-          this.dispatchEvent(new Event('error', {target: this}));
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
         });
     });
   }
@@ -1375,7 +1386,10 @@ class HTMLLinkElement extends HTMLLoadableElement {
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .catch(err => {
-            this.dispatchEvent(new Event('error', {target: this}));
+            const e = new ErrorEvent('error', {target: this});
+            e.message = err.message;
+            e.stack = err.stack;
+            this.dispatchEvent(e);
           });
       }
     });
@@ -1429,40 +1443,68 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
     this.readyState = null;
 
+    const _isAttached = () => {
+      for (let el = this; el; el = el.parentNode) {
+        if (el === el.ownerDocument) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const _loadRun = async => {
+      this.readyState = 'loading';
+
+      if (!async) {
+        this.ownerDocument[symbols.addRunSymbol](_loadRunNow);
+      } else {
+        _loadRunNow();
+      }
+    };
+    const _loadRunNow = () => {
+      const resource = this.ownerDocument.resources.addResource();
+
+      const url = this.src;
+      return this.ownerDocument.defaultView.fetch(url)
+        .then(res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.text();
+          } else {
+            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
+          }
+        })
+        .then(s => {
+          utils._runJavascript(s, this.ownerDocument.defaultView, url);
+
+          this.readyState = 'complete';
+
+          this.dispatchEvent(new Event('load', {target: this}));
+        })
+        .catch(err => {
+          this.readyState = 'complete';
+
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
+        })
+        .finally(() => {
+          resource.setProgress(1);
+        });
+    };
     this.on('attribute', (name, value) => {
-      if (name === 'src' && this.isRunnable()) {
-        this.readyState = null;
-
-        const resource = this.ownerDocument.resources.addResource();
-
-        const url = value;
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(s => {
-            utils._runJavascript(s, this.ownerDocument.defaultView, url);
-
-            this.readyState = 'complete';
-
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            this.readyState = 'complete';
-
-            this.dispatchEvent(new Event('error', {target: this}));
-          })
-          .finally(() => {
-            resource.setProgress(1);
-          });
+      if (name === 'src' && value && this.isRunnable() && _isAttached() && this.readyState === null) {
+        const async = this.getAttribute('async');
+        _loadRun(async !== null ? async !== 'false' : false);
+      }
+    });
+    this.on('attached', () => {
+      if (this.src && this.isRunnable() && _isAttached() && this.readyState === null) {
+        const async = this.getAttribute('async');
+        _loadRun(async !== null ? async !== 'false' : true);
       }
     });
     this.on('innerHTML', innerHTML => {
-      if (this.isRunnable()) {
+      if (this.isRunnable() && _isAttached() && this.readyState === null) {
         const window = this.ownerDocument.defaultView;
         utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
 
@@ -1493,6 +1535,15 @@ class HTMLScriptElement extends HTMLLoadableElement {
   set type(type) {
     type = type + '';
     this.setAttribute('type', type);
+  }
+
+  get async() {
+    const async = this.getAttribute('async');
+    return async === null || async !== 'false';
+  }
+  set async(async) {
+    async = async + '';
+    this.setAttribute('async', async);
   }
 
   get text() {
@@ -1537,9 +1588,9 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     }
     if (running) {
-      const asyncAttr = this.attributes.async;
-      if (asyncAttr && asyncAttr.value) {
-        return 'asyncLoad';
+      const async = this.getAttribute('async');
+      if (async !== null) {
+        return async !== 'false' ? 'asyncLoad' : 'syncLoad';
       } else {
         return 'syncLoad';
       }
@@ -1838,7 +1889,7 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = new GlobalContext.CanvasRenderingContext2D(this.width, this.height);
       }
     } else if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'xrpresent') {
-      if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext' && name !== 'WebGL2RenderingContext') {
+      if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext' && this._context.constructor.name !== 'WebGL2RenderingContext') {
         this._context.destroy();
         this._context = null;
       }
@@ -2053,7 +2104,11 @@ class HTMLImageElement extends HTMLSrcableElement {
           })
           .catch(err => {
             console.warn('failed to load image:', src);
-            this.dispatchEvent(new Event('error', {target: this}));
+
+            const e = new ErrorEvent('error', {target: this});
+            e.message = err.message;
+            e.stack = err.stack;
+            this.dispatchEvent(e);
           })
           .finally(() => {
             resource.setProgress(1);
@@ -2147,7 +2202,11 @@ class HTMLAudioElement extends HTMLMediaElement {
           })
           .catch(err => {
             console.warn('failed to load audio:', src);
-            this.dispatchEvent(new Event('error', {target: this}));
+
+            const e = new ErrorEvent('error', {target: this});
+            e.message = err.message;
+            e.stack = err.stack;
+            this.dispatchEvent(e);
           })
           .finally(() => {
             resource.setProgress(1);

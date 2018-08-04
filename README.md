@@ -1,5 +1,7 @@
-# Exokit Browser
-### Javascript AR/VR web browser 🦖
+# Exokit
+### Javascript post-screen AR/VR/WebXR engine  🦖
+
+<img src="https://github.com/webmixedreality/exokit/blob/master/icon.png" width=100/>
 
 [![Slack](https://exoslack.now.sh/badge.svg)](https://exoslack.now.sh)
 [![Github releases](https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg)](https://github.com/webmixedreality/exokit/releases )
@@ -10,110 +12,107 @@
 
 # Quickstart
 
-[Download for current OS](https://get.webmr.io)
+#### [Download for current OS](https://get.webmr.io)
 
-Then either:
-
-#### Open the app to the home environment.
-
-This gets you reality tabs (multiple sites at once), multiplayer, keyboard emulation, and other goodies.
-
-Or...
-
-#### Run a standalone WebGL/WebXR site by passing the URL as an argument:
+#### Build your own
 
 ```
-exokit https://emukit.webmr.io/
+git clone https://github.com/webmixedreality/exokit.git
+cd exokit
+npm install
+node . # or node -h for home
 ```
-This is the same experience as any other browser.
 
-# Introduction
+#### Run a WebGL/WebXR site
 
-[Exokit Browser](https://exokit.webmr.io) is a brand new post-screen web browser written in JavaScript as a Node module. It supports WebGL, WebVR, Magic Leap and other mixed reality hardware, and also supports vintage keyboard and mouse. And it's faster and lower latency than Chrome and Firefox in many cases, since it does less (Exokit doesn't render HTML).
+```
+exokit https://emukit.webmr.io/ # start Emukit in Exokit
+```
 
-The core is Javascript, so changing the browser is just like changing a site. The rest is native OpenGL and the usual libraries.
+## Introduction
 
-Exokit runs on Windows, macOS, and Linux.
+<p align="center">
+   <a href="https://google.com/">
+    <img src="http://via.placeholder.com/218x218" alt="Architecture diagram"/>
+  </a>
+<a href="https://google.com/">
+    <img src="http://via.placeholder.com/218x218" alt="Exokit flips the browser inside-out in order to be fast"/>
+  </a>
+  <a href="https://google.com/">
+    <img src="http://via.placeholder.com/218x218" alt="In most browsers 3D is a footnote to 2D, but not in Exokit"/>
+  </a>
+  <a href="https://google.com/">
+    <img src="http://via.placeholder.com/218x218" alt="Not a fork of Chrome/Firefox"/>
+  </a>
+</p>
 
-## About Exokit Browser
+### Exokit is a post-screen web engine.
 
-Exokit can't render HTML, but it _can_ draw Canvas and WebGL -- natively, and fast -- as well as take keyboard/mouse/mixed reality input with the regular APIs. It's a browser for the post-(2D) world.
-
-Think JSDOM, except it _actually runs_ the DOM in a `window`. Or think Electron, except 300k and no compile step. Or, think an emulator for running web sites.
-
-The multimedia parts (e.g. WebGL) are pluggable native modules. Everything else is Javascript. It's pretty easy to experiment and add new Web APIs.
-
-Exokit runs on Windows, Linux, and macOS.
-
-## Examples
-
-What Exokit *can* do:
-
-- Load any `https:` site
-- Parse a programmatic DOM
-- Run any `<script>`
-- Load `<image>`, `<video>`, `<audio>`
-- Web Workers
-- Canvas 2D
+It loads regular HTML5 pages using standards like:
 - WebGL
-- WebVR
-- Gamepad input
-- Iframe isolation
-- Embed anywhere with `node`
-- Run on Android/iOS
-- Run tests
-- Power a web bot
+- WebXR
+- WebAudio
+- Etc.
 
-What Exokit *cannot* do:
+It's designed for WebGL, WebGL2, WebXR, and immersive AR/VR. It's faster than Chrome, extensible and embeddable into other environments.
 
-- Render a web page
-- CSS
-- Interactive HTML forms
-- Legacy APIs
+The catch? _It doesn't do 2D. (But it comes with a build of Chromium, which does.)_
 
-## FAQ
+It can open blend multiple WebXR sites at a time with "reality tabs".
 
-#### Why?
+Exokit is agnostic about how you write your code. It works with frameworks like [THREE.js](https://github.com/mrdoob/three.js/), [A-Frame](https://aframe.io/), [Babylon.js](https://github.com/BabylonJS/Babylon.js), and web builds of [Unity](https://unity3d.com).
 
-The web is important. The most important part of the web is that it's open. The web is not open if you need to be a genius to build a web browser.
+## Architecture
 
-Despite modern browsers being nominally open source, their code is impenetrable. You've probably never compiled a web browser, and almost certainly never added things. Despite the amount of time you spend in a browser.
+Exokit is a Javascript [Node.js](https://nodejs.org) module.
 
-With Exokit, anyone can write some Javascript to control their experience of the web.
+Lightweight C++ bindings hook into WebGL, WebXR, Magic Leap, Leap Motion, and various other device APIs.
 
-#### Platform support?
+It's also extensible and embeddable -- you can add your own things to the browser core, and `const {window} = require('exokit')()` to get an immersive browser in another project.
 
-Works:
+Exokit runs on Windows, macOS, Linux (x64), and Linux (ARM64).
 
-- Windows
-- macOS
-- Linux
+## Web API support
 
-Planned:
-
-- Electron
-- Android
-- iOS
-
-The core is Javascript and is platform-agnostic. Porting work is restricted to the native graphics APIs.
-
-#### Web API support?
-
-- HTTP(S)
+- HTTP/S
 - HTML5
-- ES7 (whatever Node.js you use)
+- `<script>`
 - DOM
-- CanvasRenderingContext2D
-- Image tag
-- Audio tag
-- Video tag
-- Keyboard/Mouse events
 - WebGL
-- WebVR
+- WebXL
+- Canvas2D
+- WebSocket
+- Web Workers
+- `<img>`, `<audio>`, `<video>`
+- WebAudio
+- Keyboard/Mouse events
 - Gamepad API
+- `<iframe>`
 - **No** HTML layout
 - **No** HTML rendering
 - **No** CSS
+- **No** Legacy APIs
+
+## Hardware bindings
+
+- OpenGL
+- OpenVR (Steam VR)
+- Magic Leap
+- Leap Motion
+
+## Why Exokit?
+
+- You want your WebGL/WebXR to run fast.
+- You want the hot new web APIs.
+- You want to add your own integrations -- including native -- into a browser environment.
+- You want a lightweight browser as a hackable node module.
+- You want to combine the web with a 3D engine like Unity.
+
+## Why not Exokit?
+
+- You're looking for a "web browser".
+- You don't care about 3D or mixed reality.
+- You're looking for strict and/or legacy standards support.
 
 ## Keyboard
 ![Keyboard](https://raw.githubusercontent.com/webmixedreality/exokit/master/assets/keyboard.png)

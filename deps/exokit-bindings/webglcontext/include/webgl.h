@@ -135,6 +135,8 @@ public:
   static NAN_METHOD(LinkProgram);
   static NAN_METHOD(GetProgramParameter);
   static NAN_METHOD(GetUniformLocation);
+  static NAN_METHOD(GetUniformBlockIndex);
+  static NAN_METHOD(UniformBlockBinding);
   static NAN_METHOD(ClearColor);
   static NAN_METHOD(ClearDepth);
   static NAN_METHOD(Disable);
@@ -150,6 +152,7 @@ public:
   static NAN_METHOD(UseProgram);
   static NAN_METHOD(CreateBuffer);
   static NAN_METHOD(BindBuffer);
+  static NAN_METHOD(BindBufferBase);
   static NAN_METHOD(CreateFramebuffer);
   static NAN_METHOD(BindFramebuffer);
   static NAN_METHOD(FramebufferTexture2D);
