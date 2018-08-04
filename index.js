@@ -216,7 +216,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       contexts.splice(contexts.indexOf(gl), 1);
 
-      if (!contexts.some(context => !nativeWindow.isVisible(context.getWindowHandle()))) { // no more windows
+      if (!contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // no more windows
         process.exit();
       }
     });
