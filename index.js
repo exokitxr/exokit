@@ -283,8 +283,10 @@ const vrPresentState = {
   glContext: null,
   msFbo: null,
   msTex: null,
+  msDepthTex: null,
   fbo: null,
   tex: null,
+  depthTex: null,
   cleanups: null,
   hasPose: false,
   lmContext: null,
@@ -331,8 +333,10 @@ nativeVr.requestPresent = function(layers) {
       vrPresentState.glContext = context;
       vrPresentState.msFbo = msFbo;
       vrPresentState.msTex = msTex;
+      vrPresentState.msDepthTex = msDepthStencilTex;
       vrPresentState.fbo = fbo;
       vrPresentState.tex = tex;
+      vrPresentState.depthTex = depthStencilTex;
       vrPresentState.cleanups = cleanups;
 
       vrPresentState.lmContext = lmContext;
@@ -378,8 +382,8 @@ nativeVr.exitPresent = function() {
   if (vrPresentState.isPresenting) {
     nativeVr.VR_Shutdown();
 
-    nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex);
-    nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex);
+    nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
+    nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
 
     const context = vrPresentState.glContext;
     nativeWindow.setCurrentWindowContext(context.getWindowHandle());
@@ -395,8 +399,10 @@ nativeVr.exitPresent = function() {
     vrPresentState.glContext = null;
     vrPresentState.msFbo = null;
     vrPresentState.msTex = null;
+    vrPresentState.msDepthTex = null;
     vrPresentState.fbo = null;
     vrPresentState.tex = null;
+    vrPresentState.depthTex = null;
     vrPresentState.cleanups = null;
   }
 
