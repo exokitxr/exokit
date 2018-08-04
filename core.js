@@ -636,7 +636,7 @@ const _runHtml = (element, window) => {
       });
       if (document[symbols.runningSymbol]) {
         document.once('flush', () => {
-          accept()
+          accept();
         });
       } else {
         accept();
