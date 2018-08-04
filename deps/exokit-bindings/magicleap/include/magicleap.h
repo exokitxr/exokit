@@ -20,10 +20,11 @@
 #include <ml_head_tracking.h>
 #include <ml_perception.h>
 #include <ml_planes.h>
+#include <ml_privilege_ids.h>
+#include <ml_privilege_functions.h>
 #include <ml_meshing.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
-#include <ml_occlusion.h>
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
 
@@ -65,12 +66,12 @@ protected:
   ~MLContext();
 
   static NAN_METHOD(New);
-  static NAN_METHOD(Init);
+  static NAN_METHOD(InitLifecycle);
+  static NAN_METHOD(Present);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(OnPresentChange);
-  static void LifecycleInit();
 
 protected:
   // tracking

@@ -8,27 +8,20 @@ using namespace std;
 
 namespace ml {
 
-const char application_name[] = "com.magicleap.simpleglapp";
+enum DummyValue {
+  STOPPED = 0,
+  RUNNING,
+  PAUSED,
+};
+
+const char application_name[] = "com.exokit.app";
 application_context_t application_context;
 MLLifecycleCallbacks lifecycle_callbacks = {};
-MLResult lifecycle_status;
-std::thread *initThread;
-uv_async_t async;
-bool initialized = false;
+MLResult lifecycle_status = MLResult_Pending;
 Nan::Persistent<Function> initCb;
 
 bool isPresent() {
-  return initialized && lifecycle_status == MLResult_Ok;
-}
-
-void asyncCb(uv_async_t *handle) {
-  Nan::HandleScope scope;
-
-  Local<Function> initCbFn = Nan::New(initCb);
-  Local<Value> args[] = {
-    JS_BOOL(isPresent()),
-  };
-  initCbFn->Call(Nan::Null(), sizeof(args)/sizeof(args[0]), args);
+  return lifecycle_status == MLResult_Ok;
 }
 
 void makePlanesQueryer(MLHandle &planesHandle) {
@@ -119,19 +112,32 @@ int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
   }
 }
 
+static void onNewInitArg(void* application_context) {
+  MLLifecycleInitArgList *args;
+  MLLifecycleGetInitArgList(&args);
+
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
+  ML_LOG(Info, "%s: On new init arg called %x.", application_name, args);
+}
+
 static void onStop(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = 0;
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On stop called.", application_name);
 }
 
 static void onPause(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = 1;
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
   ML_LOG(Info, "%s: On pause called.", application_name);
 }
 
 static void onResume(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = 2;
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On resume called.", application_name);
+}
+
+static void onUnloadResources(void* application_context) {
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
+  ML_LOG(Info, "%s: On unload resources called.", application_name);
 }
 
 MLStageGeometry::MLStageGeometry(MLContext *mlContext) : mlContext(mlContext) {}
@@ -187,7 +193,7 @@ NAN_METHOD(MLStageGeometry::GetGeometry) {
       memcpy((uint8_t *)positionsArray->Buffer()->GetContents().Data() + positionsArray->ByteOffset(), mlContext->positions.data(), mlContext->positions.size());
       memcpy((uint8_t *)normalsArray->Buffer()->GetContents().Data() + normalsArray->ByteOffset(), mlContext->normals.data(), mlContext->normals.size());
       memcpy((uint8_t *)trianglesArray->Buffer()->GetContents().Data() + trianglesArray->ByteOffset(), mlContext->triangles.data(), mlContext->triangles.size());
-      
+
       Local<Array> metrics = Local<Array>::Cast(info[3]);
       metrics->Set(0, JS_INT((unsigned int)(mlContext->positions.size() / sizeof(float))));
       metrics->Set(1, JS_INT((unsigned int)(mlContext->normals.size() / sizeof(float))));
@@ -220,13 +226,10 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
-  ctor->SetClassName(JS_STR("MLContext"));
-  Nan::SetMethod(ctor, "IsPresent", IsPresent);
-  Nan::SetMethod(ctor, "OnPresentChange", OnPresentChange);
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "Init", Init);
+  Nan::SetMethod(proto, "Present", Present);
   Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
@@ -234,6 +237,10 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
 
   Local<Object> stageGeometryCons = MLStageGeometry::Initialize(isolate);
   ctorFn->Set(JS_STR("MLStageGeometry"), stageGeometryCons);
+
+  Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
+  Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
+  Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
 
   return scope.Escape(ctorFn);
 }
@@ -250,30 +257,39 @@ NAN_METHOD(MLContext::New) {
   Local<Object> stageGeometryObj = stageGeometryCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
   mlContextObj->Set(JS_STR("stageGeometry"), stageGeometryObj);
 
-  if (!initThread) {
-    uv_async_init(uv_default_loop(), &async, asyncCb);
-
-    initThread = new std::thread(LifecycleInit);
-
-    std::atexit([]() {
-      initThread->join();
-      delete initThread;
-      initThread = nullptr;
-
-      quick_exit(0);
-    });
-  }
-
   info.GetReturnValue().Set(mlContextObj);
 }
 
-NAN_METHOD(MLContext::Init) {
+NAN_METHOD(MLContext::InitLifecycle) {
+  lifecycle_callbacks.on_new_initarg = onNewInitArg;
+  lifecycle_callbacks.on_stop = onStop;
+  lifecycle_callbacks.on_pause = onPause;
+  lifecycle_callbacks.on_resume = onResume;
+  lifecycle_callbacks.on_unload_resources = onUnloadResources;
+  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+
+  // HACK: prevent exit hang
+  std::atexit([]() {
+    quick_exit(0);
+  });
+
+  application_context.dummy_value = DummyValue::STOPPED;
+}
+
+NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
   GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   if (lifecycle_status != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to initialize lifecycle.", application_name);
+    ML_LOG(Error, "%s: Lifecycle not initialized.", application_name);
+    info.GetReturnValue().Set(JS_BOOL(false));
+    return;
+  }
+
+  MLResult privilege_init_status = MLPrivilegesStartup();
+  if (privilege_init_status != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to initialize privilege system.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
   }
@@ -307,6 +323,9 @@ NAN_METHOD(MLContext::Init) {
     return;
   }
 
+  // HACK: force the app to be "running"
+  application_context.dummy_value = DummyValue::RUNNING;
+
   if (MLHeadTrackingCreate(&mlContext->head_tracker) == MLResult_Ok) {
     if (MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data) != MLResult_Ok) {
       ML_LOG(Error, "%s: Failed to get head tracker static data.", application_name);
@@ -335,10 +354,10 @@ NAN_METHOD(MLContext::Init) {
     ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
   }
 
-  std::thread([mlContext]() {
+  /* std::thread([mlContext]() {
     MLMeshingSettings meshingSettings;
-    /* meshingSettings.bounds_center = mlContext->position;
-    meshingSettings.bounds_rotation = mlContext->rotation; */
+    // meshingSettings.bounds_center = mlContext->position;
+    // meshingSettings.bounds_rotation = mlContext->rotation;
     meshingSettings.bounds_center.x = 0;
     meshingSettings.bounds_center.y = 0;
     meshingSettings.bounds_center.z = 0;
@@ -355,17 +374,14 @@ NAN_METHOD(MLContext::Init) {
     meshingSettings.fill_hole_length = 0.1;
     meshingSettings.fill_holes = false;
     meshingSettings.index_order_ccw = false;
-    meshingSettings.mesh_type = MLMeshingType_Full;
     // meshingSettings.mesh_type = MLMeshingType_PointCloud;
-    // meshingSettings.mesh_type = MLMeshingType_Blocks;
+    meshingSettings.mesh_type = MLMeshingType_Blocks;
     // meshingSettings.meshing_poll_time = 1e9;
     meshingSettings.meshing_poll_time = 0;
     meshingSettings.planarize = false;
     meshingSettings.remove_disconnected_components = false;
     meshingSettings.remove_mesh_skirt = false;
     meshingSettings.request_vertex_confidence = false;
-    meshingSettings.target_number_triangles = 0;
-    // meshingSettings.target_number_triangles = 10000;
     meshingSettings.target_number_triangles_per_block = 0;
     if (MLMeshingCreate(&meshingSettings, &mlContext->meshTracker) != MLResult_Ok) {
       ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
@@ -390,9 +406,6 @@ NAN_METHOD(MLContext::Init) {
       if (meshingUpdateResult != MLResult_Ok) {
         ML_LOG(Error, "MLMeshingUpdate failed: %s", application_name);
       }
-      /* if (!MLMeshingRefresh(mlContext->meshTracker)) {
-        ML_LOG(Error, "MLMeshingRefresh failed: %s", application_name);
-      }  */
 
       MLResult meshingStaticDataResult = MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData);
       if (meshingStaticDataResult == MLResult_Ok) {
@@ -402,7 +415,7 @@ NAN_METHOD(MLContext::Init) {
         ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
       }
     }
-  });
+  }); */
 
   /* if (MLOcclusionCreateClient(&mlContext->occlusionTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create occlusion tracker.", application_name);
@@ -415,7 +428,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
   if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array() && info[6]->IsFloat32Array() && info[7]->IsFloat32Array()) {
-    if (application_context.dummy_value) {
+    if (application_context.dummy_value == DummyValue::RUNNING) {
       Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
       Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[2]);
@@ -432,7 +445,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       }
       frame_params.surface_scale = 1.0f;
       frame_params.projection_type = MLGraphicsProjectionType_Default;
-      frame_params.near_clip = 1.0f;
+      frame_params.near_clip = 0.1f;
+      frame_params.far_clip = 100.0f;
       frame_params.focus_distance = 1.0f;
 
       result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
@@ -614,6 +628,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       if (result != MLResult_Ok) {
         ML_LOG(Error, "MLOcclusionPopulateDepth outer failed: %d", result);
       } */
+    } else if (application_context.dummy_value == DummyValue::RUNNING) {
+      Nan::ThrowError("MLContext::WaitGetPoses called for paused app");
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
     }
@@ -633,8 +649,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
   const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
 
   for (int i = 0; i < 2; i++) {
-    MLGraphicsVirtualCameraInfo
- &camera = mlContext->virtual_camera_array.virtual_cameras[i];
+    MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
 
     glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
@@ -664,12 +679,12 @@ NAN_METHOD(MLContext::SubmitFrame) {
   }
 
   // planes
-  beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor));
+  /* beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor));
   beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesWallHandle, mlContext->planesWallQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Wall));
   beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Ceiling));
 
   // meshing
-  mlContext->mesherCv.notify_one();
+  mlContext->mesherCv.notify_one(); */
 }
 
 NAN_METHOD(MLContext::IsPresent) {
@@ -685,28 +700,11 @@ NAN_METHOD(MLContext::OnPresentChange) {
   }
 }
 
-void MLContext::LifecycleInit() {
-  application_context.dummy_value = 2;
-
-  lifecycle_callbacks.on_stop = onStop;
-  lifecycle_callbacks.on_pause = onPause;
-  lifecycle_callbacks.on_resume = onResume;
-
-  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
-
-  initialized = true;
-
-  uv_async_send(&async);
-}
-
 }
 
 Handle<Object> makeMl() {
-  Isolate *isolate = Isolate::GetCurrent();
-
   Nan::EscapableHandleScope scope;
-
-  return scope.Escape(ml::MLContext::Initialize(isolate));
+  return scope.Escape(ml::MLContext::Initialize(Isolate::GetCurrent()));
 }
 
 #endif

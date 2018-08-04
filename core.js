@@ -349,32 +349,9 @@ class MLDisplay extends MRDisplay {
   constructor() {
     super('ML');
 
-    new THREE.Matrix4().compose(
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Quaternion(),
-      new THREE.Vector3(1, 1, 1)
-    ).toArray(this.stageParameters.sittingToStandingTransform);
-
-    this._transformArray = Float32Array.from([
-      0, 0, 0,
-      0, 0, 0, 1,
-      0, 0, 0,
-      0, 0, 0, 1,
-    ]);
-    this._projectionArray = Float32Array.from([
-      2.1445069205095586, 0, 0, 0,
-      0, 2.1445069205095586, 0, 0,
-      0, 0, -1.00010000500025, -1,
-      0, 0, -0.200010000500025, 0,
-      2.1445069205095586, 0, 0, 0,
-      0, 2.1445069205095586, 0, 0,
-      0, 0, -1.00010000500025, -1,
-      0, 0, -0.200010000500025, 0,
-    ]);
-    // this._viewportArray = new Float32Array(4);
+    this._frameData = new VRFrameData();
     this._planesArray = new Float32Array(maxNumPlanes * planeEntrySize);
     this._numPlanes = 0;
-
     this._context = null;
   }
 
@@ -388,6 +365,8 @@ class MLDisplay extends MRDisplay {
     if (this.onvrdisplaypresentchange) {
       this.onvrdisplaypresentchange();
     }
+
+    return Promise.resolve();
   }
 
   exitPresent() {
@@ -407,22 +386,7 @@ class MLDisplay extends MRDisplay {
   }
 
   getFrameData(frameData) {
-    localVector.set(this._transformArray[0], this._transformArray[1], this._transformArray[2]);
-    localQuaternion.set(this._transformArray[3], this._transformArray[4], this._transformArray[5], this._transformArray[6]);
-    localVector2.set(1, 1, 1);
-    localMatrix.getInverse(localMatrix.compose(localVector, localQuaternion, localVector2));
-
-    frameData.pose.set(localVector, localQuaternion);
-    localMatrix.toArray(frameData.leftViewMatrix);
-
-    localVector.set(this._transformArray[7], this._transformArray[8], this._transformArray[9]);
-    localQuaternion.set(this._transformArray[10], this._transformArray[11], this._transformArray[12], this._transformArray[13]);
-    localVector2.set(1, 1, 1);
-    localMatrix.getInverse(localMatrix.compose(localVector, localQuaternion, localVector2));
-    localMatrix.toArray(frameData.rightViewMatrix);
-
-    frameData.leftProjectionMatrix.set(this._projectionArray.slice(0, 16));
-    frameData.rightProjectionMatrix.set(this._projectionArray.slice(16, 32));
+    frameData.copy(this._frameData);
 
     if (frameData.planes) {
       frameData.planes.set(this._planesArray);
@@ -439,16 +403,56 @@ class MLDisplay extends MRDisplay {
   }
 
   update(update) {
-    this._transformArray.set(update.transformArray);
-    this._projectionArray.set(update.projectionArray);
-    // this._viewportArray.set(update.viewportArray);
-    this._planesArray.set(update.planesArray);
-    this._numPlanes = update.numPlanes;
-
-    this._width = update.viewportArray[2] / 2;
-    this._height = update.viewportArray[3];
-
-    this._context = update.context;
+    const {
+      depthNear,
+      depthFar,
+      renderWidth,
+      renderHeight,
+      leftOffset,
+      leftFov,
+      rightOffset,
+      rightFov,
+      frameData,
+      stageParameters,
+      handsArray,
+    } = update;
+    
+    if (depthNear !== undefined) {
+      this.depthNear = depthNear;
+    }
+    if (depthFar !== undefined) {
+      this.depthFar = depthFar;
+    }
+    if (renderWidth !== undefined) {
+      this._width = renderWidth;
+    }
+    if (renderHeight !== undefined) {
+      this._height = renderHeight;
+    }
+    if (leftOffset !== undefined) {
+      this._leftOffset.set(leftOffset);
+    }
+    if (leftFov !== undefined) {
+      this._leftFov.set(leftFov);
+    }
+    if (rightOffset !== undefined) {
+      this._rightOffset.set(rightOffset);
+    }
+    if (rightFov !== undefined) {
+      this._rightFov.set(rightFov);
+    }
+    if (frameData !== undefined) {
+      this._frameData.copy(frameData);
+    }
+    if (update.planesArray !== undefined) {
+      this._planesArray.set(update.planesArray);
+    }
+    if (update.numPlanes !== undefined) {
+      this._numPlanes = update.numPlanes;
+    }
+    if (update.context !== undefined) {
+      this._context = update.context;
+    }
   }
 }
 
@@ -737,7 +741,7 @@ function tickAnimationFrame() {
       }
     }
   }
-  
+
   _clearLocalCbs(); // release garbage
 }
 tickAnimationFrame.window = null;
@@ -1023,7 +1027,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
             window
           );
         })(res.text);
-        
+
         res.arrayBuffer = (fn => function() {
           return fn.apply(this, arguments)
             .then(ab => utils._normalizeBuffer(ab, window));
@@ -1032,7 +1036,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return fn.apply(this, arguments)
             .then(b => utils._normalizeBuffer(b, window));
         })(res.blob);
-        
+
         return res;
       });
 
@@ -1616,13 +1620,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         });
       };
     };
+
     const fakeVrDisplay = new FakeVRDisplay();
     fakeVrDisplay.isActive = false;
+
     const vrDisplay = new VRDisplay();
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    const xrDisplay = new XR.XRDevice();
+
+    const xrDisplay = new XR.XRDevice('VR');
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
     xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
@@ -1637,15 +1644,34 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xrDisplay.requestSession);
+
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
+
+    const xmDisplay = new XR.XRDevice('AR');
+    xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    xmDisplay.onexitpresent = () => nativeMl.exitPresent();
+    xmDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    xmDisplay.oncancelanimationframe = window.cancelAnimationFrame;
+    xmDisplay.requestSession = (requestSession => function() {
+      return requestSession.apply(this, arguments)
+        .then(session => {
+          mlDisplay.isPresenting = true;
+          session.once('end', () => {
+            mlDisplay.isPresenting = false;
+          });
+          return session;
+        });
+    })(xmDisplay.requestSession);
+
     window[symbols.mrDisplaysSymbol] = {
       fakeVrDisplay,
       vrDisplay,
       xrDisplay,
       mlDisplay,
+      xmDisplay,
     };
 
     const _updateGamepads = newGamepads => {
@@ -1677,6 +1703,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         xrDisplay.update(update);
         updatedHmd = true;
       }
+      if (mlDisplay.isPresenting || update.force) {
+        mlDisplay.update(update);
+        updatedHmd = true;
+      }
+      if (xmDisplay.session || update.force) {
+        xmDisplay.update(update);
+        updatedHmd = true;
+      }
       if (updatedHmd) {
         _updateGamepads(update.gamepads);
       }
@@ -1684,10 +1718,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     /* window.updateArFrame = (viewMatrix, projectionMatrix) => {
       arDisplay.update(viewMatrix, projectionMatrix);
     }; */
-    window.updateMlFrame = update => {
-      mlDisplay.update(update);
-      _updateGamepads(update.gamepads);
-    };
 
     if (nativeMl) {
       let lastPresent = nativeMl.IsPresent();
