@@ -25,6 +25,9 @@ const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow} = nativeBindings;
 
+const GlobalContext = require('./src/GlobalContext');
+GlobalContext.commands = [];
+
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');
 const MLSDK_PORT = 17955;
 
@@ -1488,6 +1491,9 @@ const _start = () => {
           err = new repl.Recoverable(err);
         }
       }
+
+      GlobalContext.commands.push(cmd);
+
       callback(err, result);
     };
     if (args.quit) {
