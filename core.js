@@ -616,36 +616,30 @@ const _loadPromise = el => new Promise((accept, reject) => {
 // Each candidate element exposes a method on runSymbol which returns whether to await the element load or not.
 const _runHtml = (element, window) => {
   if (element instanceof DOM.HTMLElement) {
-    return element.traverseAsync(async el => {
-      const {id} = el;
-      if (id) {
-        el._emit('attribute', 'id', id);
-      }
+    return new Promise((accept, reject) => {
+      element.traverse(el => {
+        const {id} = el;
+        if (id) {
+          el._emit('attribute', 'id', id);
+        }
 
-      if (el[symbols.runSymbol]) {
-        const runResult = el[symbols.runSymbol]();
-        if (runResult === 'syncLoad') {
-          try {
-            await _loadPromise(el)
-              .catch(err => {
-                console.warn(err);
-              });
-          } catch(err) {
-            console.warn(err);
+        if (el[symbols.runSymbol]) {
+          document[symbols.addRunSymbol](el[symbols.runSymbol].bind(el));
+        }
+
+        if (/\-/.test(el.tagName)) {
+          const constructor = window.customElements.get(el.tagName);
+          if (constructor) {
+            window.customElements.upgrade(el, constructor);
           }
-        } else if (runResult === 'asyncLoad') {
-          _loadPromise(el)
-            .catch(err => {
-              console.warn(err);
-            });
         }
-      }
-
-      if (/\-/.test(el.tagName)) {
-        const constructor = window.customElements.get(el.tagName);
-        if (constructor) {
-          window.customElements.upgrade(el, constructor);
-        }
+      });
+      if (document[symbols.runningSymbol]) {
+        document.once('flush', () => {
+          accept()
+        });
+      } else {
+        accept();
       }
     });
   } else {
