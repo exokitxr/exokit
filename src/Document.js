@@ -115,6 +115,8 @@ function initDocument (document, window) {
         document[symbols.runningSymbol] = false;
         if (runElQueue.length > 0) {
           _addRun(runElQueue.shift());
+        } else {
+          document.emit('flush');
         }
       } else {
         runElQueue.push(fn);
