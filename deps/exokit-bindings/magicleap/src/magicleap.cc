@@ -649,8 +649,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
   const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
 
   for (int i = 0; i < 2; i++) {
-    MLGraphicsVirtualCameraInfo
- &camera = mlContext->virtual_camera_array.virtual_cameras[i];
+    MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
 
     glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
