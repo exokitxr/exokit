@@ -416,7 +416,7 @@ class MLDisplay extends MRDisplay {
       stageParameters,
       handsArray,
     } = update;
-    
+
     if (depthNear !== undefined) {
       this.depthNear = depthNear;
     }
@@ -595,57 +595,37 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   }
 };
 GlobalContext._fromAST = _fromAST;
-const _loadPromise = el => new Promise((accept, reject) => {
-  const load = () => {
-    _cleanup();
-    accept();
-  };
-  const error = err => {
-    _cleanup();
-    reject(err);
-  };
-  const _cleanup = () => {
-    el.removeListener('load', load);
-    el.removeListener('error', error);
-  };
-  el.on('load', load);
-  el.on('error', error);
-});
 
 // To "run" the HTML means to walk it and execute behavior on the elements such as <script src="...">.
 // Each candidate element exposes a method on runSymbol which returns whether to await the element load or not.
 const _runHtml = (element, window) => {
   if (element instanceof DOM.HTMLElement) {
-    return element.traverseAsync(async el => {
-      const {id} = el;
-      if (id) {
-        el._emit('attribute', 'id', id);
-      }
+    return new Promise((accept, reject) => {
+      const {document} = window;
 
-      if (el[symbols.runSymbol]) {
-        const runResult = el[symbols.runSymbol]();
-        if (runResult === 'syncLoad') {
-          try {
-            await _loadPromise(el)
-              .catch(err => {
-                console.warn(err);
-              });
-          } catch(err) {
-            console.warn(err);
+      element.traverse(el => {
+        const {id} = el;
+        if (id) {
+          el._emit('attribute', 'id', id);
+        }
+
+        if (el[symbols.runSymbol]) {
+          document[symbols.addRunSymbol](el[symbols.runSymbol].bind(el));
+        }
+
+        if (/\-/.test(el.tagName)) {
+          const constructor = window.customElements.get(el.tagName);
+          if (constructor) {
+            window.customElements.upgrade(el, constructor);
           }
-        } else if (runResult === 'asyncLoad') {
-          _loadPromise(el)
-            .catch(err => {
-              console.warn(err);
-            });
         }
-      }
-
-      if (/\-/.test(el.tagName)) {
-        const constructor = window.customElements.get(el.tagName);
-        if (constructor) {
-          window.customElements.upgrade(el, constructor);
-        }
+      });
+      if (document[symbols.runningSymbol]) {
+        document.once('flush', () => {
+          accept();
+        });
+      } else {
+        accept();
       }
     });
   } else {
