@@ -23,6 +23,23 @@ const _promiseSerial = async promiseFns => {
     await promiseFns[i]();
   }
 };
+const _loadPromise = el => new Promise((accept, reject) => {
+  console.log('load promise', el.tagName);
+  const load = () => {
+    _cleanup();
+    accept();
+  };
+  const error = err => {
+    _cleanup();
+    reject(err);
+  };
+  const _cleanup = () => {
+    el.removeListener('load', load);
+    el.removeListener('error', error);
+  };
+  el.on('load', load);
+  el.on('error', error);
+});
 
 const EMPTY_ARRAY = [];
 

@@ -595,22 +595,6 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   }
 };
 GlobalContext._fromAST = _fromAST;
-const _loadPromise = el => new Promise((accept, reject) => {
-  const load = () => {
-    _cleanup();
-    accept();
-  };
-  const error = err => {
-    _cleanup();
-    reject(err);
-  };
-  const _cleanup = () => {
-    el.removeListener('load', load);
-    el.removeListener('error', error);
-  };
-  el.on('load', load);
-  el.on('error', error);
-});
 
 // To "run" the HTML means to walk it and execute behavior on the elements such as <script src="...">.
 // Each candidate element exposes a method on runSymbol which returns whether to await the element load or not.
