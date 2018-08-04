@@ -738,7 +738,7 @@ function tickAnimationFrame() {
       }
     }
   }
-  
+
   _clearLocalCbs(); // release garbage
 }
 tickAnimationFrame.window = null;
@@ -1024,7 +1024,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
             window
           );
         })(res.text);
-        
+
         res.arrayBuffer = (fn => function() {
           return fn.apply(this, arguments)
             .then(ab => utils._normalizeBuffer(ab, window));
@@ -1033,7 +1033,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return fn.apply(this, arguments)
             .then(b => utils._normalizeBuffer(b, window));
         })(res.blob);
-        
+
         return res;
       });
 
@@ -1615,15 +1615,15 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         });
       };
     };
-    
+
     const fakeVrDisplay = new FakeVRDisplay();
     fakeVrDisplay.isActive = false;
-    
+
     const vrDisplay = new VRDisplay();
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    
+
     const xrDisplay = new XR.XRDevice('VR');
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
@@ -1639,12 +1639,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xrDisplay.requestSession);
-    
+
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
-    
+
     const xmDisplay = new XR.XRDevice('AR');
     xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     xmDisplay.onexitpresent = () => nativeMl.exitPresent();
@@ -1660,7 +1660,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xmDisplay.requestSession);
-    
+
     window[symbols.mrDisplaysSymbol] = {
       fakeVrDisplay,
       vrDisplay,
