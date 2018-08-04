@@ -445,7 +445,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       }
       frame_params.surface_scale = 1.0f;
       frame_params.projection_type = MLGraphicsProjectionType_Default;
-      frame_params.near_clip = 1.0f;
+      frame_params.near_clip = 0.1f;
+      frame_params.far_clip = 100.0f;
       frame_params.focus_distance = 1.0f;
 
       result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
