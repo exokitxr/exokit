@@ -100,12 +100,11 @@ function initDocument (document, window) {
   document[symbols.pointerLockElementSymbol] = null;
   document[symbols.fullscreenElementSymbol] = null;
   
-  let runningEl = false;
   const runElQueue = [];
   const _addRun = fn => {
     (async () => {
-      if (!runningEl) {
-        runningEl = true;
+      if (!document[symbols.runningSymbol]) {
+        document[symbols.runningSymbol] = true;
         
         try {
           await fn();
@@ -113,7 +112,7 @@ function initDocument (document, window) {
           console.warn(err.stack);
         }
         
-        runningEl = false;
+        document[symbols.runningSymbol] = false;
         if (runElQueue.length > 0) {
           _addRun(runElQueue.shift());
         }
@@ -122,6 +121,7 @@ function initDocument (document, window) {
       }
     })();
   };
+  document[symbols.runningSymbol] = false;
   document[symbols.addRunSymbol] = _addRun;
 
   if (window.top === window) {
