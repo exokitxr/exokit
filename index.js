@@ -1524,7 +1524,9 @@ if (require.main === module) {
   });
   if (args.log) {
     const RedirectOutput = require('redirect-output').default;
-    new RedirectOutput().write(path.join(dataPath, 'log.txt'));
+    new RedirectOutput({
+      flags: 'a',
+    }).write(path.join(dataPath, 'log.txt'));
   }
 
   const _logStack = err => {
