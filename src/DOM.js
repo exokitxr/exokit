@@ -22,7 +22,6 @@ const _promiseSerial = async promiseFns => {
   for (let i = 0; i < promiseFns.length; i++) {
     await promiseFns[i]();
   }
-
 };
 
 const EMPTY_ARRAY = [];
