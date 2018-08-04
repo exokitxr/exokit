@@ -521,7 +521,7 @@ if (nativeMl) {
   (() => {
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
-      
+
       nativeMl.InitLifecycle();
     });
     s.on('error', () => {});
@@ -795,7 +795,7 @@ const _bindWindow = (window, newWindowCb) => {
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-      
+
       if (context.isDirty()) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
