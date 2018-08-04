@@ -409,7 +409,6 @@ nativeVr.exitPresent = function() {
   return Promise.resolve();
 };
 let mlContext = null;
-let isMlPresenting = false;
 let mlFbo = null;
 let mlTex = null;
 let mlGlContext = null;
@@ -432,8 +431,6 @@ if (nativeMl) {
 
         const initResult = mlContext.Present(windowHandle);
         if (initResult) {
-          isMlPresenting = true;
-
           const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 0, 0, 0, 0);
           mlFbo = fbo;
           mlTex = tex;
@@ -1089,7 +1086,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.total += diff;
         timestamps.last = now;
       }
-    } else if (isMlPresenting && mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
+    } else if (mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
       mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
       mlHasPose = true;
       if (args.performance) {
