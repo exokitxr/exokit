@@ -496,7 +496,25 @@ if (nativeMl) {
     }
   };
   nativeMl.exitPresent = function() {
-    throw new Error('not implemented'); // XXX
+    nativeWindow.destroyRenderTarget(mlMsFbo, mlMsTex, mlMsDepthTex);
+    nativeWindow.destroyRenderTarget(mlFbo, mlTex, mlDepthTex);
+
+    nativeWindow.setCurrentWindowContext(mlGlContext.getWindowHandle());
+    mlGlContext.setDefaultFramebuffer(0);
+
+    for (let i = 0; i < mlCleanups.length; i++) {
+      mlCleanups[i]();
+    }
+
+    mlFbo = null;
+    mlTex = null;
+    mlDepthTex = null;
+    mlMsFbo = null;
+    mlMsTex = null;
+    mlMsDepthTex = null;
+    mlGlContext = null;
+    mlCleanups = null;
+    mlHasPose = false;
   };
 
   // try to connect to MLSDK
