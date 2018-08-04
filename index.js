@@ -411,7 +411,12 @@ nativeVr.exitPresent = function() {
 let mlContext = null;
 let mlFbo = null;
 let mlTex = null;
+let mlDepthTex = null;
+let mlMsFbo = null;
+let mlMsTex = null;
+let mlMsDepthTex = null;
 let mlGlContext = null;
+let mlCleanups = null;
 let mlHasPose = false;
 if (nativeMl) {
   mlContext = new nativeMl();
@@ -431,9 +436,13 @@ if (nativeMl) {
 
         const initResult = mlContext.Present(windowHandle);
         if (initResult) {
-          const [fbo, tex, depthStencilTex] = nativeWindow.createRenderTarget(context, window.innerWidth, window.innerHeight, 0, 0, 0, 0);
+          const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, canvas.width, canvas.height, 0, 0, 0, 0);
           mlFbo = fbo;
           mlTex = tex;
+          mlDepthTex = depthStencilTex;
+          mlMsFbo = msFbo;
+          mlMsTex = msTex;
+          mlMsDepthTex = msDepthStencilTex;
 
           mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
 
@@ -441,22 +450,37 @@ if (nativeMl) {
             nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
           } */
 
-          window.top.updateMlFrame({
-            transformArray,
-            projectionArray,
-            viewportArray,
-            planesArray,
-            numPlanes: numPlanesArray[0],
-            gamepads: [null, null],
-            context: mlContext,
-          });
-          mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
+          const cleanups = [];
+          mlCleanups = cleanups;
 
-          context.setDefaultFramebuffer(mlFbo);
+          const _attribute = (name, value) => {
+            if (name === 'width' || name === 'height') {
+              nativeWindow.setCurrentWindowContext(windowHandle);
+
+              nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+            }
+          };
+          canvas.on('attribute', _attribute);
+          cleanups.push(() => {
+            canvas.removeListener('attribute', _attribute);
+          });
+
+          window.top.updateVrFrame({
+            renderWidth: viewportArray[2] / 2,
+            renderHeight: viewportArray[3],
+            force: true,
+          });
+          mlContext.SubmitFrame(mlFbo, canvas.width, canvas.height);
+
+          context.setDefaultFramebuffer(mlMsFbo);
 
           mlGlContext = context;
 
-          return {};
+          return {
+            width: canvas.width,
+            height: canvas.height,
+            framebuffer: mlMsFbo,
+          };
         } else {
           throw new Error('simulator not attached');
         }
@@ -464,7 +488,11 @@ if (nativeMl) {
         throw new Error('no HTMLCanvasElement source provided');
       }
     } else {
-      return {};
+      return {
+        width: mlGlContext.canvas.width,
+        height: mlGlContext.canvas.height,
+        framebuffer: mlMsFbo,
+      };
     }
   };
   nativeMl.exitPresent = function() {
@@ -764,10 +792,12 @@ const _bindWindow = (window, newWindowCb) => {
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (mlGlContext === context && mlHasPose) {
-            mlContext.SubmitFrame(mlFbo, window.innerWidth, window.innerHeight);
+            nativeWindow.blitFrameBuffer(context, mlMsFbo, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
+
+            mlContext.SubmitFrame(mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
             mlHasPose = false;
 
-            nativeWindow.blitFrameBuffer(context, mlFbo, 0, window.innerWidth, window.innerHeight, window.innerWidth, window.innerHeight, true, false, false);
+            nativeWindow.blitFrameBuffer(context, mlFbo, 0, mlGlContext.canvas.width, mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           }
 
           nativeWindow.swapBuffers(windowHandle);
@@ -1097,6 +1127,24 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
 
+      const depthNear = 0.1;
+      const depthFar = 100;
+
+      localVector.fromArray(transformArray, 0);
+      localQuaternion.fromArray(transformArray, 3);
+      localVector2.set(1, 1, 1);
+      localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
+      frameData.pose.set(localVector, localQuaternion);
+      localMatrix.toArray(frameData.leftViewMatrix);
+      frameData.leftProjectionMatrix.set(projectionArray.slice(0, 16));
+
+      localVector.fromArray(transformArray, 3 + 4);
+      localQuaternion.fromArray(transformArray, 3 + 4 + 3);
+      // localVector2.set(1, 1, 1);
+      localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
+      localMatrix.toArray(frameData.rightViewMatrix);
+      frameData.rightProjectionMatrix.set(projectionArray.slice(16, 32));
+
       let controllersArrayIndex = 0;
       leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
       controllersArrayIndex += 3;
@@ -1135,10 +1183,12 @@ const _bindWindow = (window, newWindowCb) => {
 
       gamepads[1] = rightGamepad;
 
-      window.top.updateMlFrame({
-        transformArray,
-        projectionArray,
-        viewportArray,
+      // update ml frame
+      window.top.updateVrFrame({
+        depthNear,
+        depthFar,
+        frameData,
+        stageParameters,
         planesArray,
         numPlanes: numPlanesArray[0],
         gamepads,
