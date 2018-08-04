@@ -617,6 +617,8 @@ const _loadPromise = el => new Promise((accept, reject) => {
 const _runHtml = (element, window) => {
   if (element instanceof DOM.HTMLElement) {
     return new Promise((accept, reject) => {
+      const {document} = window;
+
       element.traverse(el => {
         const {id} = el;
         if (id) {
