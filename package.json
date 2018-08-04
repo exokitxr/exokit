@@ -47,7 +47,7 @@
     "bugsnag": "^2.4.3",
     "cross-env": "^5.2.0",
     "css": "^2.2.3",
-    "exokit-home": "0.0.69",
+    "exokit-home": "0.0.70",
     "fake-indexeddb": "^2.0.4",
     "fault-zone": "0.0.13",
     "he": "^1.1.1",
