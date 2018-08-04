@@ -1373,7 +1373,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
       this.innerHTML = this.childNodes[0].value;
       running = true;
     }
-    return running ? 'syncLoad' : null;
+    return running ? _loadPromise(this) : Promise.resolve();
   }
 }
 module.exports.HTMLStyleElement = HTMLStyleElement;
@@ -1448,7 +1448,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
         running = true;
       }
     }
-    return running ? 'syncLoad' : null;
+    return running ? _loadPromise(this) : Promise.resolve();
   }
 }
 module.exports.HTMLLinkElement = HTMLLinkElement;
@@ -1471,41 +1471,10 @@ class HTMLScriptElement extends HTMLLoadableElement {
       this.readyState = 'loading';
 
       if (!async) {
-        this.ownerDocument[symbols.addRunSymbol](_loadRunNow);
+        this.ownerDocument[symbols.addRunSymbol](this.loadRunNow.bind(this));
       } else {
-        _loadRunNow();
+        this.loadRunNow();
       }
-    };
-    const _loadRunNow = () => {
-      const resource = this.ownerDocument.resources.addResource();
-
-      const url = this.src;
-      return this.ownerDocument.defaultView.fetch(url)
-        .then(res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.text();
-          } else {
-            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-          }
-        })
-        .then(s => {
-          utils._runJavascript(s, this.ownerDocument.defaultView, url);
-
-          this.readyState = 'complete';
-
-          this.dispatchEvent(new Event('load', {target: this}));
-        })
-        .catch(err => {
-          this.readyState = 'complete';
-
-          const e = new ErrorEvent('error', {target: this});
-          e.message = err.message;
-          e.stack = err.stack;
-          this.dispatchEvent(e);
-        })
-        .finally(() => {
-          resource.setProgress(1);
-        });
     };
     this.on('attribute', (name, value) => {
       if (name === 'src' && value && this.isRunnable() && _isAttached() && this.readyState === null) {
@@ -1521,18 +1490,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     });
     this.on('innerHTML', innerHTML => {
       if (this.isRunnable() && _isAttached() && this.readyState === null) {
-        const window = this.ownerDocument.defaultView;
-        utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
-
-        this.readyState = 'complete';
-
-        const resource = this.ownerDocument.resources.addResource();
-
-        process.nextTick(() => {
-          this.dispatchEvent(new Event('load', {target: this}));
-
-          resource.setProgress(1);
-        });
+        this.runNow();
       }
     });
   }
@@ -1589,30 +1547,65 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const {type} = this;
     return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
   }
+  
+  loadRunNow() {
+    const resource = this.ownerDocument.resources.addResource();
+
+    const url = this.src;
+    return this.ownerDocument.defaultView.fetch(url)
+      .then(res => {
+        if (res.status >= 200 && res.status < 300) {
+          return res.text();
+        } else {
+          return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
+        }
+      })
+      .then(s => {
+        utils._runJavascript(s, this.ownerDocument.defaultView, url);
+
+        this.readyState = 'complete';
+
+        this.dispatchEvent(new Event('load', {target: this}));
+      })
+      .catch(err => {
+        this.readyState = 'complete';
+
+        const e = new ErrorEvent('error', {target: this});
+        e.message = err.message;
+        e.stack = err.stack;
+        this.dispatchEvent(e);
+      })
+      .finally(() => {
+        resource.setProgress(1);
+      });
+  }
+  
+  runNow() {
+    const innerHTML = this.childNodes[0].value;
+    const window = this.ownerDocument.defaultView;
+    utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
+
+    this.readyState = 'complete';
+
+    const resource = this.ownerDocument.resources.addResource();
+
+    process.nextTick(() => {
+      this.dispatchEvent(new Event('load', {target: this}));
+
+      resource.setProgress(1);
+    });
+  }
 
   [symbols.runSymbol]() {
-    let running = false;
     if (this.isRunnable()) {
       const srcAttr = this.attributes.src;
       if (srcAttr) {
-        this._emit('attribute', 'src', srcAttr.value);
-        running = true;
-      }
-      if (this.childNodes.length > 0) {
-        this.innerHTML = this.childNodes[0].value;
-        running = true;
+        return this.loadRunNow();
+      } else if (this.childNodes.length > 0) {
+        return this.runNow();
       }
     }
-    if (running) {
-      const async = this.getAttribute('async');
-      if (async !== null) {
-        return async !== 'false' ? 'asyncLoad' : 'syncLoad';
-      } else {
-        return 'syncLoad';
-      }
-    } else {
-      return null;
-    }
+    return Promise.resolve();
   }
 }
 module.exports.HTMLScriptElement = HTMLScriptElement;
@@ -1633,10 +1626,8 @@ class HTMLSrcableElement extends HTMLLoadableElement {
     const srcAttr = this.attributes.src;
     if (srcAttr) {
       this._emit('attribute', 'src', srcAttr.value);
-      return 'asyncLoad';
-    } else {
-      return null;
     }
+    return Promise.resolve();
   }
 }
 module.exports.HTMLSrcableElement = HTMLSrcableElement;
