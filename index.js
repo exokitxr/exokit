@@ -25,6 +25,9 @@ const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow} = nativeBindings;
 
+const GlobalContext = require('./src/GlobalContext');
+GlobalContext.commands = [];
+
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');
 const MLSDK_PORT = 17955;
 
@@ -215,6 +218,10 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       contexts.splice(contexts.indexOf(gl), 1);
+
+      if (!contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // no more windows
+        process.exit();
+      }
     });
 
     gl.destroy = (destroy => function() {
@@ -1484,6 +1491,9 @@ const _start = () => {
           err = new repl.Recoverable(err);
         }
       }
+
+      GlobalContext.commands.push(cmd);
+
       callback(err, result);
     };
     if (args.quit) {
@@ -1514,7 +1524,9 @@ if (require.main === module) {
   });
   if (args.log) {
     const RedirectOutput = require('redirect-output').default;
-    new RedirectOutput().write(path.join(dataPath, 'log.txt'));
+    new RedirectOutput({
+      flags: 'a',
+    }).write(path.join(dataPath, 'log.txt'));
   }
 
   const _logStack = err => {

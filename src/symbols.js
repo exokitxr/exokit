@@ -13,4 +13,5 @@ module.exports.prioritySymbol = Symbol();
 module.exports.startTimeSymbol = Symbol();
 module.exports.timeoutSymbol = Symbol();
 module.exports.intervalSymbol = Symbol();
+module.exports.runningSymbol = Symbol();
 module.exports.addRunSymbol = Symbol();

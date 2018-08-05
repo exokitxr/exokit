@@ -31,20 +31,7 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
 
 ## Introduction
 
-<p align="center">
-   <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Architecture diagram"/>
-  </a>
-<a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Exokit flips the browser inside-out in order to be fast"/>
-  </a>
-  <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="In most browsers 3D is a footnote to 2D, but not in Exokit"/>
-  </a>
-  <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Not a fork of Chrome/Firefox"/>
-  </a>
-</p>
+<img src="assets/screenshots.gif" alt="Screenshots"/>
 
 ### Exokit is a post-screen web engine.
 
