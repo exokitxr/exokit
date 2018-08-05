@@ -177,27 +177,47 @@ function initDocument (document, window) {
       document.dispatchEvent(new Event('load', {target: document}));
       window.dispatchEvent(new Event('load', {target: window}));
 
-      const _emitDisplays = () => {
+      const _initDisplays = () => {
         const displays = window.navigator.getVRDisplaysSync();
         const presentingDisplay = displays.find(display => display.isPresenting);
         if (presentingDisplay) {
-          const e = new window.Event('vrdisplayactivate');
-          e.display = presentingDisplay;
-          window.dispatchEvent(e);
+          _emitOneDisplay(presentingDisplay);
         } else {
-          for (let i = 0; i < displays.length; i++) {
-            const e = new window.Event('vrdisplayactivate');
-            e.display = displays[i];
-            window.dispatchEvent(e);
-          }
+          _emitAllDisplays(displays);
+          
+          _delayFrames(() => {
+            const displays = window.navigator.getVRDisplaysSync();
+            if (!displays.find(display => display.isPresenting)) {
+              _emitAllDisplays(displays);
+            }
+          }, 100);
+        }
+      };
+      const _emitOneDisplay = display => {
+        const e = new window.Event('vrdisplayactivate');
+        e.display = display;
+        window.dispatchEvent(e);
+      };
+      const _emitAllDisplays = displays => {
+        for (let i = 0; i < displays.length; i++) {
+          const e = new window.Event('vrdisplayactivate');
+          e.display = displays[i];
+          window.dispatchEvent(e);
+        }
+      };
+      const _delayFrames = (fn, n = 1) => {
+        if (n === 0) {
+          fn();
+        } else {
+          window.requestAnimationFrame(fn, n - 1);
         }
       };
       if (document.resources.resources.length === 0) {
-        _emitDisplays();
+        _initDisplays();
       } else {
         const _update = () => {
           if (document.resources.resources.length === 0) {
-            _emitDisplays();
+            _initDisplays();
             document.resources.removeEventListener('update', _update);
           }
         };
