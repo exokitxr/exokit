@@ -21,8 +21,8 @@
 #include <magicleap.h>
 #endif
 
-Local<Object> makeGl();
-Local<Object> makeGl2();
+std::pair<Local<Object>, Local<FunctionTemplate>> makeGl();
+std::pair<Local<Object>, Local<FunctionTemplate>> makeGl2(Local<FunctionTemplate> baseCtor);
 Local<Object> makeImage();
 Local<Object> makeImageData();
 Local<Object> makeImageBitmap();
