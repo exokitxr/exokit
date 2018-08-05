@@ -24,7 +24,6 @@ const _promiseSerial = async promiseFns => {
   }
 };
 const _loadPromise = el => new Promise((accept, reject) => {
-  console.log('load promise', el.tagName);
   const load = () => {
     _cleanup();
     accept();
@@ -1576,7 +1575,9 @@ class HTMLScriptElement extends HTMLLoadableElement {
         this.dispatchEvent(e);
       })
       .finally(() => {
-        resource.setProgress(1);
+        setImmediate(() => {
+          resource.setProgress(1);
+        });
       });
   }
   
@@ -1589,7 +1590,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
     const resource = this.ownerDocument.resources.addResource();
 
-    process.nextTick(() => {
+    setImmediate(() => {
       this.dispatchEvent(new Event('load', {target: this}));
 
       resource.setProgress(1);
@@ -1803,7 +1804,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .finally(() => {
-            resource.setProgress(1);
+            setImmediate(() => {
+              resource.setProgress(1);
+            });
           });
       } else if (name === 'hidden') {
         if (this.contentDocument) {
@@ -2118,7 +2121,9 @@ class HTMLImageElement extends HTMLSrcableElement {
             this.dispatchEvent(e);
           })
           .finally(() => {
-            resource.setProgress(1);
+            setImmediate(() => {
+              resource.setProgress(1);
+            });
           });
       }
     });
@@ -2216,7 +2221,9 @@ class HTMLAudioElement extends HTMLMediaElement {
             this.dispatchEvent(e);
           })
           .finally(() => {
-            resource.setProgress(1);
+            setImmediate(() => {
+              resource.setProgress(1);
+            });
           });
       }
     });
@@ -2269,7 +2276,7 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         const resource = this.ownerDocument.resources.addResource();
 
-        process.nextTick(() => {
+        setImmediate(() => {
           this.dispatchEvent(new Event('canplay', {target: this}));
           this.dispatchEvent(new Event('canplaythrough', {target: this}));
 
