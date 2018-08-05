@@ -24,7 +24,6 @@ const _promiseSerial = async promiseFns => {
   }
 };
 const _loadPromise = el => new Promise((accept, reject) => {
-  console.log('load promise', el.tagName);
   const load = () => {
     _cleanup();
     accept();
