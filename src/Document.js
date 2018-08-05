@@ -178,32 +178,29 @@ function initDocument (document, window) {
       window.dispatchEvent(new Event('load', {target: window}));
 
       const _initDisplays = () => {
+        if (!_tryEmitDisplay()) {
+          _delayFrames(() => {
+            _tryEmitDisplay();
+          }, 100);
+        }
+      };
+      const _tryEmitDisplay = () => {
         const displays = window.navigator.getVRDisplaysSync();
         const presentingDisplay = displays.find(display => display.isPresenting);
         if (presentingDisplay) {
-          _emitOneDisplay(presentingDisplay);
+          if (presentingDisplay.constructor.name === 'FakeVRDisplay') {
+            _emitOneDisplay(presentingDisplay);
+          }
+          return true;
         } else {
-          _emitAllDisplays(displays);
-          
-          _delayFrames(() => {
-            const displays = window.navigator.getVRDisplaysSync();
-            if (!displays.find(display => display.isPresenting)) {
-              _emitAllDisplays(displays);
-            }
-          }, 100);
+          _emitOneDisplay(displays[0]);
+          return false;
         }
       };
       const _emitOneDisplay = display => {
         const e = new window.Event('vrdisplayactivate');
         e.display = display;
         window.dispatchEvent(e);
-      };
-      const _emitAllDisplays = displays => {
-        for (let i = 0; i < displays.length; i++) {
-          const e = new window.Event('vrdisplayactivate');
-          e.display = displays[i];
-          window.dispatchEvent(e);
-        }
       };
       const _delayFrames = (fn, n = 1) => {
         if (n === 0) {
