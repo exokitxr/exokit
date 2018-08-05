@@ -12,6 +12,7 @@ const net = require('net');
 const child_process = require('child_process');
 const os = require('os');
 const repl = require('repl');
+const processTopLevelAwait = require('process-top-level-await');
 
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
@@ -1442,7 +1443,7 @@ const _start = () => {
     const prompt = '[x] ';
 
     let lastUnderscore = window._;
-    const replEval = (cmd, context, filename, callback) => {
+    const replEval = async (cmd, context, filename, callback) => {
       cmd = cmd.slice(0, -1); // remove trailing \n
 
       let result, err = null, match;
@@ -1472,7 +1473,12 @@ const _start = () => {
         window[match[1]] = result;
       } else {
         try {
-          result = window.vm.run(cmd, filename);
+          const acmd = processTopLevelAwait(cmd);
+          if (acmd != null) {
+            result = await window.vm.run(acmd, filename);
+          } else {
+            result = window.vm.run(cmd, filename);
+          }
         } catch(e) {
           err = e;
         }
