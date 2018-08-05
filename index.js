@@ -855,7 +855,6 @@ const _bindWindow = (window, newWindowCb) => {
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
   let timeout = null;
-  let numFrames = 0;
   let numDirtyFrames = 0;
   const dirtyFrameContexts = [];
   const _checkDirtyFrameTimeout = () => {
@@ -1261,21 +1260,6 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
-    if (window.document.readyState === 'complete' && (numFrames % FPS) === 0) {
-      const displays = window.navigator.getVRDisplaysSync();
-      const presentingDisplay = displays.find(display => display.isPresenting);
-      if (presentingDisplay) {
-        const e = new window.Event('vrdisplaycheck');
-        e.display = presentingDisplay;
-        window.dispatchEvent(e);
-      } else {
-        for (let i = 0; i < displays.length; i++) {
-          const e = new window.Event('vrdisplayactivate');
-          e.display = displays[i];
-          window.dispatchEvent(e);
-        }
-      }
-    }
     window.tickAnimationFrame();
     if (args.performance) {
       const now = Date.now();
@@ -1299,7 +1283,6 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'end frame');
     }
-    numFrames++;
 
     // wait for next frame
     const now = Date.now();
