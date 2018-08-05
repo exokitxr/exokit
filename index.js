@@ -557,7 +557,7 @@ nativeWindow.setEventHandler((type, data) => {
 
         window.innerWidth = innerWidth;
         window.innerHeight = innerHeight;
-        canvas.dispatchEvent(new window.Event('resize'));
+        window.dispatchEvent(new window.Event('resize'));
         break;
       }
       case 'keydown': {
