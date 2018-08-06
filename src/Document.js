@@ -99,19 +99,19 @@ function initDocument (document, window) {
   };
   document[symbols.pointerLockElementSymbol] = null;
   document[symbols.fullscreenElementSymbol] = null;
-  
+
   const runElQueue = [];
   const _addRun = fn => {
     (async () => {
       if (!document[symbols.runningSymbol]) {
         document[symbols.runningSymbol] = true;
-        
+
         try {
           await fn();
         } catch(err) {
           console.warn(err.stack);
         }
-        
+
         document[symbols.runningSymbol] = false;
         if (runElQueue.length > 0) {
           _addRun(runElQueue.shift());
