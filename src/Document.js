@@ -183,7 +183,7 @@ function initDocument (document, window) {
           if (!_tryEmitDisplay()) {
             _delayFrames(() => {
               _tryEmitDisplay();
-            }, 100);
+            }, 1);
           }
         };
         const _tryEmitDisplay = () => {
