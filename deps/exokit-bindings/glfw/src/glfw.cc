@@ -854,7 +854,7 @@ NAN_METHOD(CreateRenderTarget) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
   }
   {
-    if (!sharedMsFbo) {
+    if (!sharedFbo) {
       glGenFramebuffers(1, &fbo);
       glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     } else {
