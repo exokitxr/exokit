@@ -134,36 +134,36 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const cleanups = [];
 
+    const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
+    gl.shared = {
+      fbo,
+      tex,
+      depthStencilTex,
+      msFbo,
+      msTex,
+      msDepthStencilTex,
+    };
+    gl.resize = (width, height) => {
+      nativeWindow.setCurrentWindowContext(windowHandle);
+      nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+    };
+
     const {hidden} = document;
     if (hidden) {
-      const [framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
-
-      gl.setDefaultFramebuffer(msFramebuffer);
-
-      gl.resize = (width, height) => {
-        nativeWindow.setCurrentWindowContext(windowHandle);
-
-        nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
-      };
+      gl.setDefaultFramebuffer(msFbo);
 
       document._emit('framebuffer', {
-        framebuffer,
-        colorTexture,
-        depthStencilTexture,
+        fbo,
+        tex,
+        depthStencilTex,
         render() {
           nativeWindow.setCurrentWindowContext(windowHandle);
 
           // color blit is linear, depth/stencil is nearest
-          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, true, false, false);
-          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
+          nativeWindow.blitFrameBuffer(gl, msFbo, fbo, canvas.width, canvas.height, canvas.width, canvas.height, true, false, false);
+          nativeWindow.blitFrameBuffer(gl, msFbo, fbo, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
         },
       });
-    } else {
-      gl.resize = (width, height) => {
-        nativeWindow.setCurrentWindowContext(windowHandle);
-
-        nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
-      };
     }
     Object.defineProperty(gl, 'drawingBufferWidth', {
       get() {
@@ -330,7 +330,17 @@ nativeVr.requestPresent = function(layers, display) {
 
       const cleanups = [];
 
-      const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+      const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = (display.session && display.session.outputContext) ?
+        (() => {
+          const {fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex} = display.session.outputContext.shared;
+          const result = nativeWindow.createRenderTarget(context, width, height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+          console.log('nativeVr create render target', display.session.outputContext.id, {
+            fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex
+          }, result);
+          return result;
+        })()
+          :
+        nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0, 0, 0);
 
       context.setDefaultFramebuffer(msFbo);
 
@@ -446,7 +456,14 @@ if (nativeMl) {
 
         const initResult = mlContext.Present(windowHandle);
         if (initResult) {
-          const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, canvas.width, canvas.height, 0, 0, 0, 0);
+          const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = (display.session && display.session.outputContext) ?
+            (() => {
+              const {fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex} = display.session.outputContext.shared;
+              return nativeWindow.createRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+            })()
+          :
+            nativeWindow.createRenderTarget(context, canvas.width, canvas.height, 0, 0, 0, 0, 0, 0);
+
           mlFbo = fbo;
           mlTex = tex;
           mlDepthTex = depthStencilTex;
@@ -818,14 +835,17 @@ const _bindWindow = (window, newWindowCb) => {
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
             vrPresentState.hasPose = false;
 
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
-
-            if (vrPresentState.display.session && vrPresentState.display.session.outputContext) {
-              nativeWindow.setCurrentWindowContext(vrPresentState.display.session.outputContext.getWindowHandle());
+            if (vrPresentState.display.session && vrPresentState.display.session.outputContext && vrPresentState.display.session.outputContext !== context) {
+              const outputContextWindowHandle = vrPresentState.display.session.outputContext.getWindowHandle();
+              nativeWindow.setCurrentWindowContext(outputContextWindowHandle);
 
               nativeWindow.blitFrameBuffer(vrPresentState.display.session.outputContext, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, vrPresentState.display.session.outputContext.canvas.width, vrPresentState.display.session.outputContext.canvas.height, true, false, false);
 
+              nativeWindow.swapBuffers(outputContextWindowHandle);
+
               nativeWindow.setCurrentWindowContext(windowHandle);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
             }
           } else if (mlGlContext === context && mlHasPose) {
             nativeWindow.blitFrameBuffer(context, mlMsFbo, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
