@@ -287,6 +287,7 @@ const vrPresentState = {
   isPresenting: false,
   system: null,
   compositor: null,
+  display: null,
   glContext: null,
   msFbo: null,
   msTex: null,
@@ -302,7 +303,7 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
-nativeVr.requestPresent = function(layers) {
+nativeVr.requestPresent = function(layers, display) {
   if (!vrPresentState.glContext) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
@@ -337,6 +338,7 @@ nativeVr.requestPresent = function(layers) {
       vrPresentState.vrContext = vrContext;
       vrPresentState.system = system;
       vrPresentState.compositor = compositor;
+      vrPresentState.display = display;
       vrPresentState.glContext = context;
       vrPresentState.msFbo = msFbo;
       vrPresentState.msTex = msTex;
@@ -403,6 +405,7 @@ nativeVr.exitPresent = function() {
     vrPresentState.isPresenting = false;
     vrPresentState.system = null;
     vrPresentState.compositor = null;
+    vrPresentState.display = null;
     vrPresentState.glContext = null;
     vrPresentState.msFbo = null;
     vrPresentState.msTex = null;
@@ -427,7 +430,7 @@ let mlCleanups = null;
 let mlHasPose = false;
 if (nativeMl) {
   mlContext = new nativeMl();
-  nativeMl.requestPresent = function(layers) {
+  nativeMl.requestPresent = function(layers, display) {
     if (!mlGlContext) {
       const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
       if (layer) {

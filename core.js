@@ -1606,11 +1606,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
     const vrDisplay = new VRDisplay();
     _bindMRDisplay(vrDisplay);
-    vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
+    vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers, vrDisplay);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
 
     const xrDisplay = new XR.XRDevice('VR');
-    xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
+    xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers, xrDisplay);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
     xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
@@ -1627,11 +1627,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
-    mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers, mlDisplay);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
 
     const xmDisplay = new XR.XRDevice('AR');
-    xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers, xmDisplay);
     xmDisplay.onexitpresent = () => nativeMl.exitPresent();
     xmDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xmDisplay.oncancelanimationframe = window.cancelAnimationFrame;
