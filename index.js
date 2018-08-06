@@ -819,6 +819,14 @@ const _bindWindow = (window, newWindowCb) => {
             vrPresentState.hasPose = false;
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
+
+            if (vrPresentState.display.session && vrPresentState.display.session.outputContext) {
+              nativeWindow.setCurrentWindowContext(vrPresentState.display.session.outputContext.getWindowHandle());
+
+              nativeWindow.blitFrameBuffer(vrPresentState.display.session.outputContext, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, vrPresentState.display.session.outputContext.canvas.width, vrPresentState.display.session.outputContext.canvas.height, true, false, false);
+
+              nativeWindow.setCurrentWindowContext(windowHandle);
+            }
           } else if (mlGlContext === context && mlHasPose) {
             nativeWindow.blitFrameBuffer(context, mlMsFbo, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
 
