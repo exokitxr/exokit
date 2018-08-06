@@ -47,6 +47,12 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 [Files]
 Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "\dist"
 
+[Registry]
+Root: HKCR; Subkey: "ctp"; ValueType: "string"; ValueData: "URL:Exokit Protocol"; Flags: uninsdeletekey
+Root: HKCR; Subkey: "ctp"; ValueType: "string"; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCR; Subkey: "ctp\DefaultIcon"; ValueType: "string"; ValueData: "{app}\{#MyAppExeName},0"
+Root: HKCR; Subkey: "ctp\shell\open\command"; ValueType: "string"; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+
 [Icons]
 Name: "{group}\{#MyAppName}"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-h -l"; IconFilename: "{app}\{#MyIcon}"
 Name: "{group}\{#MyAppShortName} Engine CLI"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-l"; IconFilename: "{app}\{#MyIcon}"
