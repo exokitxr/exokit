@@ -206,7 +206,9 @@ function initDocument (document, window) {
         if (n === 0) {
           fn();
         } else {
-          window.requestAnimationFrame(fn, n - 1);
+          window.requestAnimationFrame(() => {
+            _delayFrames(fn, n - 1);
+          });
         }
       };
       if (document.resources.resources.length === 0) {
