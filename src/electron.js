@@ -37,7 +37,7 @@ const electron = () => new Promise((accept, reject) => {
           const cbEmitter = new EventEmitter();
           const messageEmitter = new EventEmitter();
           let buffer = null;
-          localChannel.on('data', data => {            
+          localChannel.on('data', data => {
             if (oldData) {
               data = Buffer.concat([oldData, data]);
               oldData = null;
