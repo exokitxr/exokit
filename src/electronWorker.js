@@ -191,6 +191,10 @@ ipc.serve(function() {
         browserWindow.destroy();
         break;
       }
+      default: {
+        console.warn('unknown electron api method:', method);
+        break;
+      }
     }
   });
 });
