@@ -13,9 +13,6 @@ const _flipImage = (width, height, stride, buffer) => {
     const yBottom = height - y - 1;
     buffer2.set(buffer.slice(yBottom * width * stride, (yBottom + 1) * width * stride), y * width * stride);
   }
-  /* for (let i = 0; i < width * height * 4; i++) {
-    buffer2[i] *= buffer2 * 2;
-  } */
   return buffer2;
 };
 
