@@ -15,8 +15,8 @@
     "lint": "eslint core.js index.js native-bindings.js src tests",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "start": "node .",
-    "test:ci": "TEST_ENV=ci npm run test:command -- --exit",
-    "test:command": "mocha tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
+    "test:ci": "TEST_ENV=ci npm run test:command -- --full-trace --exit",
+    "test:command": "mocha --full-trace tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
     "test:watch": "npm run test:command -- --watch",
     "serve": "serve examples"
   },

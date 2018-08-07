@@ -10,6 +10,8 @@ describe('ScriptElement', () => {
       .then(o => {
         window = o.window;
         document = o.document;
+        
+        window.navigator.getVRDisplaysSync = () => [];
 
         window.onload = () => {
           cb();

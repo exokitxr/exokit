@@ -1782,18 +1782,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               contentDocument.on('framebuffer', framebuffer => {
                 this._emit('framebuffer', framebuffer);
               });
-              const _vrdisplaycheck = e => {
-                if (contentDocument.readyState === 'complete') {
-                  const newEvent = new Event('vrdisplayactivate');
-                  newEvent.display = e.display;
-                  contentWindow.dispatchEvent(newEvent);
-                }
-              };
-              parentWindow.top.on('vrdisplaycheck', _vrdisplaycheck);
               contentWindow.on('destroy', e => {
                 parentWindow.emit('destroy', e);
-
-                parentWindow.top.removeListener('vrdisplaycheck', _vrdisplaycheck);
               });
 
               this.dispatchEvent(new Event('load', {target: this}));

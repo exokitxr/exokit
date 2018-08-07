@@ -99,19 +99,19 @@ function initDocument (document, window) {
   };
   document[symbols.pointerLockElementSymbol] = null;
   document[symbols.fullscreenElementSymbol] = null;
-  
+
   const runElQueue = [];
   const _addRun = fn => {
     (async () => {
       if (!document[symbols.runningSymbol]) {
         document[symbols.runningSymbol] = true;
-        
+
         try {
           await fn();
         } catch(err) {
           console.warn(err.stack);
         }
-        
+
         document[symbols.runningSymbol] = false;
         if (runElQueue.length > 0) {
           _addRun(runElQueue.shift());
@@ -177,37 +177,58 @@ function initDocument (document, window) {
       document.dispatchEvent(new Event('load', {target: document}));
       window.dispatchEvent(new Event('load', {target: window}));
 
-      const _emitDisplays = () => {
-        const displays = window.navigator.getVRDisplaysSync();
-        const presentingDisplay = displays.find(display => display.isPresenting);
-        if (presentingDisplay) {
-          const e = new window.Event('vrdisplayactivate');
-          e.display = presentingDisplay;
-          window.dispatchEvent(e);
-        } else {
-          for (let i = 0; i < displays.length; i++) {
-            const e = new window.Event('vrdisplayactivate');
-            e.display = displays[i];
-            window.dispatchEvent(e);
-          }
-        }
-      };
-      if (document.resources.resources.length === 0) {
-        _emitDisplays();
-      } else {
-        const _update = () => {
-          if (document.resources.resources.length === 0) {
-            _emitDisplays();
-            document.resources.removeEventListener('update', _update);
+      const displays = window.navigator.getVRDisplaysSync();
+      if (displays.length > 0) {
+        const _initDisplays = () => {
+          if (!_tryEmitDisplay()) {
+            _delayFrames(() => {
+              _tryEmitDisplay();
+            }, 1);
           }
         };
-        document.resources.addEventListener('update', _update);
-      }
-    } else {
-      try {
+        const _tryEmitDisplay = () => {
+          const presentingDisplay = displays.find(display => display.isPresenting);
+          if (presentingDisplay) {
+            if (presentingDisplay.constructor.name === 'FakeVRDisplay') {
+              _emitOneDisplay(presentingDisplay);
+            }
+            return true;
+          } else {
+            _emitOneDisplay(displays[0]);
+            return false;
+          }
+        };
+        const _emitOneDisplay = display => {
+          const e = new window.Event('vrdisplayactivate');
+          e.display = display;
+          window.dispatchEvent(e);
+        };
+        const _delayFrames = (fn, n = 1) => {
+          if (n === 0) {
+            fn();
+          } else {
+            try {
+            window.requestAnimationFrame(() => {
+              _delayFrames(fn, n - 1);
+            });
+            } catch(err) {
+              console.log(err.stack);
+            }
+          }
+        };
+        if (document.resources.resources.length === 0) {
+          _initDisplays();
+        } else {
+          const _update = () => {
+            if (document.resources.resources.length === 0) {
+              _initDisplays();
+              document.resources.removeEventListener('update', _update);
+            }
+          };
+          document.resources.addEventListener('update', _update);
+        }
+      } else {
         await GlobalContext._runHtml(document, window);
-      } catch(err) {
-        console.warn(err);
       }
     }
   });
