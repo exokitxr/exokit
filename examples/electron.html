@@ -5,8 +5,8 @@
     <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
     <script>
     
-      const width = 1280;
-      const height = 1024;
+      const width = 2048;
+      const height = 2048;
 
 			var camera, scene, renderer;
 
@@ -21,18 +21,19 @@
 				scene = new THREE.Scene();
         scene.background = new THREE.Color(0x7E57C2);
 
-        const data = new Uint8Array(width * height * 4);
-				const texture = new THREE.DataTexture(
-          data,
-          width,
-          height,
-          THREE.RGBAFormat,
-          THREE.UnsignedByteType,
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+				const texture = new THREE.Texture(
+          canvas,
           THREE.UVMapping,
           THREE.ClampToEdgeWrapping,
           THREE.ClampToEdgeWrapping,
           THREE.NearestFilter,
           THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
           1
         );
 
@@ -67,10 +68,15 @@
               transparent: true,
             },
           });
+          canvas.width = browserWindow.width;
+          canvas.height = browserWindow.width;
+          const offset = (browserWindow.width - browserWindow.height)/2;
           browserWindow.on('paint', o => {
             // console.log('paint', o.data.length);
 
-            data.set(o.data);
+            // console.log('got bytelength', o.data.byteLength, o.width, o.height, o.width * o.height * 4);
+            // console.log('paint', o.data);
+            ctx.putImageData(new ImageData(o.data, o.width, o.height), o.x, o.y + offset);
             texture.needsUpdate = true;
           });
           browserWindow.loadURL('https://google.com');
