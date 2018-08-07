@@ -117,8 +117,14 @@ const electron = () => new Promise((accept, reject) => {
                           args,
                         }));
 
-                        _waitForResponse(id, () => {
+                        _waitForResponse(id, ({width, height}) => {
                           class BrowserWindow extends EventEmitter {
+                            constructor(width, height) {
+                              super();
+
+                              this.width = width;
+                              this.height = height;
+                            }
                             loadURL(u) {
                               return new Promise((accept, reject) => {
                                 const id = ids++;
@@ -172,7 +178,7 @@ const electron = () => new Promise((accept, reject) => {
                               });
                             }
                           }
-                          const browserWindow = new BrowserWindow();
+                          const browserWindow = new BrowserWindow(width, height);
                           messageEmitter.on('message', m => {
                             const {method} = m;
                             if (['did-start-loading', 'did-stop-loading', 'did-fail-load', 'did-navigate', 'dom-ready'].includes(method)) {

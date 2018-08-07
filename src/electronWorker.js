@@ -33,9 +33,14 @@ ipc.serve(
                   console.log('create window', args);
                   browserWindow = new BrowserWindow(args);
 
+                  const [width, height] = browserWindow.getSize();
                   const b = Buffer.from(JSON.stringify({
                     method: 'response',
                     id,
+                    args: {
+                      width,
+                      height,
+                    },
                   }), 'utf8');
                   const typeB = Buffer.allocUnsafe(Uint8Array.BYTES_PER_ELEMENT);
                   typeB[0] = 0;
