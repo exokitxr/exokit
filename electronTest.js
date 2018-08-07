@@ -12,10 +12,27 @@ const electron = require('./electron');
       transparent: true,
     },
   });
-  await browserWindow.loadURL('https://google.com');
-  await browserWindow.setFrameRate(15);
-  console.log('got');
+  browserWindow.on('dom-ready', () => {
+    console.log('dom ready');
+  });
   browserWindow.on('paint', buffer => {
     console.log('paint', buffer.length);
   });
+  await browserWindow.loadURL('https://google.com');
+  await browserWindow.setFrameRate(15);
+  await browserWindow.insertCSS(`
+    ::-webkit-scrollbar {
+      height: 30px;
+      width: 30px;
+      background: #e0e0e0;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #4db6ac;
+    }
+    
+    ::-webkit-scrollbar-corner {
+      background: #cfcfcf;
+    }
+  `);
 })();

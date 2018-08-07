@@ -82,6 +82,18 @@ ipc.serve(
                     ipc.server.emit(socket, b);
                     break;
                   }
+                  case 'insertCSS': {
+                    browserWindow.webContents.insertCSS(args);
+                    const b = Buffer.from(JSON.stringify({
+                      method: 'response',
+                      id,
+                    }), 'utf8');
+                    const lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
+                    new Uint32Array(lengthB.buffer, lengthB.byteOffset, 1)[0] = b.length;
+                    ipc.server.emit(socket, lengthB);
+                    ipc.server.emit(socket, b);
+                    break;
+                  }
                 }
               } else {
                 // XXX
