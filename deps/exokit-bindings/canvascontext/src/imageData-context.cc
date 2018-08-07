@@ -38,7 +38,7 @@ unsigned int ImageData::GetNumChannels() {
 } */
 
 NAN_METHOD(ImageData::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> imageDataObj = info.This();
 
