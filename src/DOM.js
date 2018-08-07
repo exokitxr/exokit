@@ -1896,7 +1896,7 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
       if (this._context === null) {
-        this._context = new GlobalContext.CanvasRenderingContext2D(this.width, this.height);
+        this._context = new GlobalContext.CanvasRenderingContext2D(this);
       }
     } else if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'xrpresent') {
       if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext' && this._context.constructor.name !== 'WebGL2RenderingContext') {
