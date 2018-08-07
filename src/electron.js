@@ -182,7 +182,7 @@ const electron = () => new Promise((accept, reject) => {
                           }
                           const browserWindow = new BrowserWindow(width, height);
                           messageEmitter.on('message', m => {
-                            const {method} = m;
+                            const {method, args} = m;
                             if (['did-start-loading', 'did-stop-loading', 'did-fail-load', 'did-navigate', 'dom-ready'].includes(method)) {
                               browserWindow.emit(method);
                             } else if (method === 'paint') {
