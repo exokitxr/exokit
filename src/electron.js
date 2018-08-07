@@ -10,7 +10,7 @@ const electronWorkerPath = path.join(__dirname, 'electronWorker.js');
 ipc.config.id = 'hello';
 // ipc.config.retry=1500;
 ipc.config.rawBuffer=true;
-ipc.config.encoding='ascii';
+// ipc.config.encoding='ascii';
 ipc.config.silent=true;
 
 let ids = 0;
@@ -37,32 +37,53 @@ const electron = () => new Promise((accept, reject) => {
           const cbEmitter = new EventEmitter();
           const messageEmitter = new EventEmitter();
           let buffer = null;
-          localChannel.on('data', data => {
+          localChannel.on('data', data => {            
             if (oldData) {
               data = Buffer.concat([oldData, data]);
               oldData = null;
             }
+            // console.log('got data', data.slice(0, 256));
             const datas = [];
             let i;
             for (i = 0; i < data.length;) {
-              const length = data.readUInt32LE(i);
-              const begin = i + Uint32Array.BYTES_PER_ELEMENT;
-              const end = begin + length;
-              if (end <= data.length) {
-                datas.push(data.slice(begin, end));
-                i = end;
+              if ((data.length - i) >= (Uint8Array.BYTES_PER_ELEMENT+Uint32Array.BYTES_PER_ELEMENT*2)) {
+                const type = data.readUInt8(i);
+                const length = Buffer.from(
+                  data.slice(i+Uint8Array.BYTES_PER_ELEMENT, i+Uint8Array.BYTES_PER_ELEMENT+Uint32Array.BYTES_PER_ELEMENT*2).toString('ascii'),
+                  'hex'
+                ).readUInt32LE(0);
+                const begin = i + Uint8Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT*2;
+                const end = begin + length;
+                if (end <= data.length) {
+                  let d = data.slice(begin, end);
+                  if (type === 0) {
+                    d = JSON.parse(d.toString('utf8'));
+                  } else if (type === 1) {
+                    d = Buffer.from(d.toString('ascii'), 'hex');
+                  } else {
+                    console.warn('invalid message type', type);
+                  }
+                  datas.push(d);
+                  i = end;
+                } else {
+                  break;
+                }
               } else {
                 break;
               }
             }
-            if (i < data.length) {
-              oldData = data.slice(i);
+            const tailLength = data.length - i;
+            if (tailLength > 0) {
+              oldData = Buffer.allocUnsafe(tailLength);
+              data.copy(oldData, 0, i, data.length);
             }
 
             for (let i = 0; i < datas.length; i++) {
               let data = datas[i];
-              if (data[0] === 0x7b) {
-                data = JSON.parse(data);
+              if (data instanceof Buffer) {
+                buffer = data;
+              } else {
+                // data = JSON.parse(data);
                 const {method, args} = data;
                 if (method === 'response') {
                   const {id} = data;
@@ -76,8 +97,6 @@ const electron = () => new Promise((accept, reject) => {
                     args,
                   });
                 }
-              } else {
-                buffer = data;
               }
             }
           });
@@ -164,7 +183,14 @@ const electron = () => new Promise((accept, reject) => {
                             if (['did-start-loading', 'did-stop-loading', 'did-fail-load', 'did-navigate', 'dom-ready'].includes(method)) {
                               browserWindow.emit(method);
                             } else if (method === 'paint') {
-                              browserWindow.emit('paint', buffer);
+                              const {x, y, width, height} = args;
+                              browserWindow.emit('paint', {
+                                x,
+                                y,
+                                width,
+                                height,
+                                data: new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+                              });
                             }
                           });
                           accept(browserWindow);
