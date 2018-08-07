@@ -194,6 +194,20 @@ const electron = () =>
                         });
                       });
                     }
+                    close() {
+                      localChannel.emit(
+                        JSON.stringify({
+                          method: 'close',
+                        })
+                      );
+                    }
+                    destroy() {
+                      localChannel.emit(
+                        JSON.stringify({
+                          method: 'destroy',
+                        })
+                      );
+                    }
                   }
                   const browserWindow = new BrowserWindow(width, height);
                   messageEmitter.on('message', m => {

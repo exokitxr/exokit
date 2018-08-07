@@ -183,6 +183,14 @@ ipc.serve(function() {
         ipc.server.emit(socket, b);
         break;
       }
+      case 'close': {
+        browserWindow.close();
+        break;
+      }
+      case 'destroy': {
+        browserWindow.destroy();
+        break;
+      }
     }
   });
 });
