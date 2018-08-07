@@ -14,20 +14,20 @@ ipc.config.encoding = 'binary';
 ipc.config.silent = true;
 
 let ids = 0;
-const electron = () =>
-  new Promise((accept, reject) => {
-    const id = String('client-' + ids++);
-    const cp = child_process.fork(electronPath, [electronWorkerPath, id], {
-      stdio: 'pipe'
-    });
-    // cp.stdin.end();
-    cp.stdout.pipe(process.stdout);
-    cp.stderr.pipe(process.stderr);
-    cp.on('exit', () => {
-      console.log('exit');
-    });
+const electron = {
+  createElectron() {
+    return new Promise((accept, reject) => {
+      const id = String('client-' + ids++);
+      const cp = child_process.fork(electronPath, [electronWorkerPath, id], {
+        stdio: 'pipe'
+      });
+      // cp.stdin.end();
+      cp.stdout.pipe(process.stdout);
+      cp.stderr.pipe(process.stderr);
+      cp.on('exit', () => {
+        console.log('exit');
+      });
 
-    // setTimeout(() => {
       ipc.connectTo(id, function() {
         const localChannel = ipc.of[id];
 
@@ -249,7 +249,8 @@ const electron = () =>
           accept(elctrn);
         });
       });
-    // }, 1000);
-  });
+    });
+  }
+};
 
 module.exports = electron;
