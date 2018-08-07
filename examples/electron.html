@@ -99,6 +99,12 @@
             `); */
             // await browserWindow.sendInputEvent({type: 'mouseMove', x: 10, y: 10});
             console.log('loaded');
+            
+            setTimeout(async () => {
+              browserWindow.destroy();
+              elctrn.destroy();
+              console.log('exited');
+            }, 2000);
           });
         })();
 
