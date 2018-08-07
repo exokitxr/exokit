@@ -5,7 +5,7 @@ describe('Element', () => {
   var window;
   var document;
   var el;
-  
+
   beforeEach(() => {
     const o = exokit();
     window = o.window;
@@ -13,7 +13,7 @@ describe('Element', () => {
     document = o.document;
     el = document.createElement('a');
   });
-  
+
   afterEach(() => {
     window.destroy();
   });
