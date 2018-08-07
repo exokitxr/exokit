@@ -149,6 +149,7 @@ protected:
   static NAN_METHOD(Destroy);
 
   static bool isImageType(Local<Value> arg);
+  static sk_sp<SkImage> getImageFromContext(CanvasRenderingContext2D *ctx);
   static sk_sp<SkImage> getImage(Local<Value> arg);
 
   CanvasRenderingContext2D(unsigned int width, unsigned int height);

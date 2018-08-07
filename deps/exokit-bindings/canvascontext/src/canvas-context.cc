@@ -1273,6 +1273,18 @@ bool CanvasRenderingContext2D::isImageType(Local<Value> arg) {
     stringValue == "HTMLCanvasElement";
 }
 
+sk_sp<SkImage> CanvasRenderingContext2D::getImageFromContext(CanvasRenderingContext2D *ctx) {
+  SkCanvas *canvas = ctx->surface->getCanvas();
+  SkBitmap bitmap;
+  bool ok = bitmap.tryAllocPixels(canvas->imageInfo()) && canvas->readPixels(bitmap, 0, 0);
+  if (ok) {
+    bitmap.setImmutable();
+    return SkImage::MakeFromBitmap(bitmap);
+  } else {
+    return nullptr;
+  }
+}
+
 sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
     Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(arg->ToObject()->Get(JS_STR("image"))));
@@ -1293,16 +1305,7 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
     Local<Value> otherContextObj = arg->ToObject()->Get(JS_STR("_context"));
     if (otherContextObj->IsObject() && otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"))) {
       CanvasRenderingContext2D *otherContext = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(otherContextObj));
-
-      SkCanvas *canvas = otherContext->surface->getCanvas();
-      SkBitmap bitmap;
-      bool ok = bitmap.tryAllocPixels(canvas->imageInfo()) && canvas->readPixels(bitmap, 0, 0);
-      if (ok) {
-        bitmap.setImmutable();
-        return SkImage::MakeFromBitmap(bitmap);
-      } else {
-        return nullptr;
-      }
+      return getImageFromContext(otherContext);
     } else if (otherContextObj->IsObject() && (
       otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) ||
       otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGL2RenderingContext"))
