@@ -64,6 +64,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"drawImage", DrawImage);
   Nan::SetMethod(proto,"save", Save);
   Nan::SetMethod(proto,"restore", Restore);
+  Nan::SetMethod(proto,"toDataURL", ToDataURL);
   Nan::SetMethod(proto,"createImageData", CreateImageData);
   Nan::SetMethod(proto,"getImageData", GetImageData);
   Nan::SetMethod(proto,"putImageData", PutImageData);
@@ -290,14 +291,14 @@ void CanvasRenderingContext2D::Restore() {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsObject() && Local<Object>::Cast(info[0])->Get(JS_STR("constructor"))->IsObject() && Local<Object>::Cast(Local<Object>::Cast(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
     Local<Object> canvasObj = Local<Object>::Cast(info[0]);
     unsigned int width = canvasObj->Get(JS_STR("width"))->Uint32Value();
     unsigned int height = canvasObj->Get(JS_STR("height"))->Uint32Value();
     CanvasRenderingContext2D *context = new CanvasRenderingContext2D(width, height);
-    
+
     if (context->isValid()) {
       Local<Object> ctxObj = info.This();
       context->Wrap(ctxObj);
@@ -323,7 +324,7 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
       info.GetReturnValue().Set(ctxObj);
     } else {
       delete context;
-      
+
       Nan::ThrowError("CanvasRenderingContext2D: failed to create");
     }
   } else {
@@ -332,21 +333,21 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::WidthGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   info.GetReturnValue().Set(JS_INT(context->GetWidth()));
 }
 
 NAN_GETTER(CanvasRenderingContext2D::HeightGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   info.GetReturnValue().Set(JS_INT(context->GetHeight()));
 }
 
 NAN_GETTER(CanvasRenderingContext2D::DataGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
@@ -370,14 +371,14 @@ NAN_GETTER(CanvasRenderingContext2D::DataGetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::LineWidthGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   info.GetReturnValue().Set(JS_FLOAT(context->strokePaint.getStrokeWidth()));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::LineWidthSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsNumber()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -396,7 +397,7 @@ NAN_GETTER(CanvasRenderingContext2D::StrokeStyleGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -427,7 +428,7 @@ NAN_GETTER(CanvasRenderingContext2D::FillStyleGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -458,7 +459,7 @@ NAN_GETTER(CanvasRenderingContext2D::FontGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     Local<Object> contextObj = info.This();
@@ -484,7 +485,7 @@ NAN_GETTER(CanvasRenderingContext2D::FontFamilyGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontFamilySetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -506,7 +507,7 @@ NAN_GETTER(CanvasRenderingContext2D::FontSizeGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontSizeSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsNumber() || value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -525,7 +526,7 @@ NAN_GETTER(CanvasRenderingContext2D::FontWeightGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsNumber() || value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -566,7 +567,7 @@ NAN_GETTER(CanvasRenderingContext2D::LineHeightGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::LineHeightSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsNumber() || value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -584,7 +585,7 @@ NAN_GETTER(CanvasRenderingContext2D::FontStyleGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontStyleSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -626,7 +627,7 @@ NAN_GETTER(CanvasRenderingContext2D::FontVariantGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontVariantSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     // TODO
@@ -640,7 +641,7 @@ NAN_GETTER(CanvasRenderingContext2D::TextAlignGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::TextAlignSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -685,7 +686,7 @@ NAN_GETTER(CanvasRenderingContext2D::TextBaselineGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::TextBaselineSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -715,7 +716,7 @@ NAN_GETTER(CanvasRenderingContext2D::DirectionGetter) {
 }
 
 NAN_SETTER(CanvasRenderingContext2D::DirectionSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
@@ -735,7 +736,7 @@ NAN_SETTER(CanvasRenderingContext2D::DirectionSetter) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Scale) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -744,7 +745,7 @@ NAN_METHOD(CanvasRenderingContext2D::Scale) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Rotate) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double angle = info[0]->NumberValue();
@@ -752,7 +753,7 @@ NAN_METHOD(CanvasRenderingContext2D::Rotate) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Translate) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -761,7 +762,7 @@ NAN_METHOD(CanvasRenderingContext2D::Translate) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Transform) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double a = info[0]->NumberValue();
@@ -774,7 +775,7 @@ NAN_METHOD(CanvasRenderingContext2D::Transform) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::SetTransform) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double a = info[0]->NumberValue();
@@ -787,14 +788,14 @@ NAN_METHOD(CanvasRenderingContext2D::SetTransform) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::ResetTransform) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   context->ResetTransform();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::MeasureText) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   v8::String::Utf8Value textUtf8(info[0]);
@@ -807,21 +808,21 @@ NAN_METHOD(CanvasRenderingContext2D::MeasureText) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::BeginPath) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   context->BeginPath();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::ClosePath) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   context->ClosePath();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Clip) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
@@ -829,7 +830,7 @@ NAN_METHOD(CanvasRenderingContext2D::Clip) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Stroke) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
@@ -844,7 +845,7 @@ NAN_METHOD(CanvasRenderingContext2D::Stroke) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Fill) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
@@ -859,7 +860,7 @@ NAN_METHOD(CanvasRenderingContext2D::Fill) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::MoveTo) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -869,7 +870,7 @@ NAN_METHOD(CanvasRenderingContext2D::MoveTo) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::LineTo) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -881,7 +882,7 @@ NAN_METHOD(CanvasRenderingContext2D::LineTo) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Arc) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -897,7 +898,7 @@ NAN_METHOD(CanvasRenderingContext2D::Arc) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x1 = info[0]->NumberValue();
@@ -912,7 +913,7 @@ NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::QuadraticCurveTo) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x1 = info[0]->NumberValue();
@@ -926,7 +927,7 @@ NAN_METHOD(CanvasRenderingContext2D::QuadraticCurveTo) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::BezierCurveTo) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x1 = info[0]->NumberValue();
@@ -942,7 +943,7 @@ NAN_METHOD(CanvasRenderingContext2D::BezierCurveTo) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Rect) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -958,7 +959,7 @@ NAN_METHOD(CanvasRenderingContext2D::Rect) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::FillRect) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -974,7 +975,7 @@ NAN_METHOD(CanvasRenderingContext2D::FillRect) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::StrokeRect) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -990,7 +991,7 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeRect) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::ClearRect) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   double x = info[0]->NumberValue();
@@ -1006,7 +1007,7 @@ NAN_METHOD(CanvasRenderingContext2D::ClearRect) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::FillText) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   v8::String::Utf8Value text(info[0]);
@@ -1022,7 +1023,7 @@ NAN_METHOD(CanvasRenderingContext2D::FillText) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::StrokeText) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   v8::String::Utf8Value text(info[0]);
@@ -1095,7 +1096,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreatePattern) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Resize) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   unsigned int w = info[0]->Uint32Value();
@@ -1111,7 +1112,7 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (isImageType(info[0])) {
     sk_sp<SkImage> image = getImage(info[0]);
@@ -1156,7 +1157,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::CreateImageData) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
   double w = info[0]->NumberValue();
@@ -1175,7 +1176,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreateImageData) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::GetImageData) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
   int x = info[0]->Int32Value();
@@ -1202,7 +1203,7 @@ NAN_METHOD(CanvasRenderingContext2D::GetImageData) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
 
@@ -1242,17 +1243,62 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Save) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   context->Save();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Restore) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   context->Restore();
+}
+
+#define DATA_URL_PREFIX "data:"
+#define DATA_URL_SUFFIX ";base64,"
+NAN_METHOD(CanvasRenderingContext2D::ToDataURL) {
+  // Nan::HandleScope scope;
+
+  std::string type;
+  if (info[0]->IsString()) {
+    String::Utf8Value utf8Value(Local<String>::Cast(info[0]));
+    type = *utf8Value;
+  }
+  SkEncodedImageFormat format;
+  if (type == "image/png") {
+    format = SkEncodedImageFormat::kPNG;
+  } else if (type == "image/jpeg") {
+    format = SkEncodedImageFormat::kJPEG;
+  } else {
+    type = "image/png";
+    format = SkEncodedImageFormat::kPNG;
+  }
+  
+  int quality = 90;
+  if (info[1]->IsNumber()) {
+    double d = std::min<double>(std::max<double>(info[1]->NumberValue(), 0), 1);
+    quality = static_cast<int>(d * 100);
+  }
+
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  sk_sp<SkImage> image = getImageFromContext(context);
+  sk_sp<SkData> data = image->encodeToData(format, quality);
+
+  std::vector<char> s(sizeof(DATA_URL_PREFIX)-1 + type.size() + sizeof(DATA_URL_SUFFIX)-1 + data->size());
+  int i = 0;
+  memcpy(s.data() + i, (void *)DATA_URL_PREFIX, sizeof(DATA_URL_PREFIX)-1);
+  i += sizeof(DATA_URL_PREFIX)-1;
+  memcpy(s.data() + i, type.data(), type.size());
+  i += type.size();
+  memcpy(s.data() + i, (void *)DATA_URL_SUFFIX, sizeof(DATA_URL_SUFFIX)-1);
+  i += sizeof(DATA_URL_SUFFIX)-1;
+  memcpy(s.data() + i, data->data(), data->size());
+  i += data->size();
+  
+  Local<String> result = Nan::New<String>(s.data(), s.size()).ToLocalChecked();
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Destroy) {
@@ -1271,6 +1317,18 @@ bool CanvasRenderingContext2D::isImageType(Local<Value> arg) {
     stringValue == "ImageData" ||
     stringValue == "ImageBitmap" ||
     stringValue == "HTMLCanvasElement";
+}
+
+sk_sp<SkImage> CanvasRenderingContext2D::getImageFromContext(CanvasRenderingContext2D *ctx) {
+  SkCanvas *canvas = ctx->surface->getCanvas();
+  SkBitmap bitmap;
+  bool ok = bitmap.tryAllocPixels(canvas->imageInfo()) && canvas->readPixels(bitmap, 0, 0);
+  if (ok) {
+    bitmap.setImmutable();
+    return SkImage::MakeFromBitmap(bitmap);
+  } else {
+    return nullptr;
+  }
 }
 
 sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
@@ -1293,16 +1351,7 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
     Local<Value> otherContextObj = arg->ToObject()->Get(JS_STR("_context"));
     if (otherContextObj->IsObject() && otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"))) {
       CanvasRenderingContext2D *otherContext = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(otherContextObj));
-
-      SkCanvas *canvas = otherContext->surface->getCanvas();
-      SkBitmap bitmap;
-      bool ok = bitmap.tryAllocPixels(canvas->imageInfo()) && canvas->readPixels(bitmap, 0, 0);
-      if (ok) {
-        bitmap.setImmutable();
-        return SkImage::MakeFromBitmap(bitmap);
-      } else {
-        return nullptr;
-      }
+      return getImageFromContext(otherContext);
     } else if (otherContextObj->IsObject() && (
       otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) ||
       otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGL2RenderingContext"))
