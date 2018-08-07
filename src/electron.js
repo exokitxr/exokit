@@ -114,7 +114,7 @@ const electron = () =>
         };
 
         localChannel.on('connect', function() {
-          accept({
+          class Electron {
             createBrowserWindow(args) {
               return new Promise((accept, reject) => {
                 const id = ids++;
@@ -241,7 +241,12 @@ const electron = () =>
                 });
               });
             }
-          });
+            destroy() {
+              cp.kill();
+            }
+          }
+          const elctrn = new Electron();
+          accept(elctrn);
         });
       });
     // }, 1000);
