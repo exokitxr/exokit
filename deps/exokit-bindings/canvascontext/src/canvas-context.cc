@@ -297,7 +297,7 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
     unsigned int width = canvasObj->Get(JS_STR("width"))->Uint32Value();
     unsigned int height = canvasObj->Get(JS_STR("height"))->Uint32Value();
     CanvasRenderingContext2D *context = new CanvasRenderingContext2D(width, height);
-    
+
     if (context->isValid()) {
       Local<Object> ctxObj = info.This();
       context->Wrap(ctxObj);
@@ -323,7 +323,7 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
       info.GetReturnValue().Set(ctxObj);
     } else {
       delete context;
-      
+
       Nan::ThrowError("CanvasRenderingContext2D: failed to create");
     }
   } else {
