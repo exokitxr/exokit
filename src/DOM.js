@@ -1924,6 +1924,13 @@ class HTMLCanvasElement extends HTMLElement {
     }
     return this._context;
   }
+  
+  toDataURL() {
+    if (!this._context) {
+      this.getContext('2d');
+    }
+    return this._context.toDataURL();
+  }
 
   captureStream(frameRate) {
     return {}; // XXX
