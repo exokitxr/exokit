@@ -27,7 +27,7 @@ const electron = () =>
       console.log('exit');
     });
 
-    setTimeout(() => {
+    // setTimeout(() => {
       ipc.connectTo(id, function() {
         const localChannel = ipc.of[id];
 
@@ -230,7 +230,7 @@ const electron = () =>
           });
         });
       });
-    }, 1000);
+    // }, 1000);
   });
 
 module.exports = electron;
