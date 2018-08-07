@@ -99,6 +99,8 @@ const electron = () => new Promise((accept, reject) => {
             const _response = res => {
               if (res.id === id) {
                 cb(res.args);
+
+                cbEmitter.removeListener('response', _response);
               }
             };
             cbEmitter.on('response', _response);
