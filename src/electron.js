@@ -192,7 +192,7 @@ const electron = () => new Promise((accept, reject) => {
                                 y,
                                 width,
                                 height,
-                                data: new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+                                data: new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength),
                               });
                             }
                           });
