@@ -30,7 +30,6 @@ ipc.serve(
               const {method, id, args} = data;
               switch (method) {
                 case 'createBrowserWindow': {
-                  console.log('create window', args);
                   browserWindow = new BrowserWindow(args);
 
                   const [width, height] = browserWindow.getSize();
