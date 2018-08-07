@@ -32,6 +32,7 @@ const {
   getGamepads,
   getAllGamepads,
 } = require('vr-display')(THREE);
+const electron = require('./src/electron');
 
 const BindingsModule = require('./src/bindings');
 const {defaultCanvasSize} = require('./src/constants');
@@ -1159,6 +1160,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       el[symbols.computedStyleSymbol] = styleSpec;
     }
     return styleSpec.style;
+  };
+  window.browser = {
+    electron,
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
