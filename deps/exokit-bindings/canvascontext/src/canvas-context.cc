@@ -64,6 +64,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"drawImage", DrawImage);
   Nan::SetMethod(proto,"save", Save);
   Nan::SetMethod(proto,"restore", Restore);
+  Nan::SetMethod(proto,"toDataURL", ToDataURL);
   Nan::SetMethod(proto,"createImageData", CreateImageData);
   Nan::SetMethod(proto,"getImageData", GetImageData);
   Nan::SetMethod(proto,"putImageData", PutImageData);
@@ -1253,6 +1254,51 @@ NAN_METHOD(CanvasRenderingContext2D::Restore) {
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   context->Restore();
+}
+
+#define DATA_URL_PREFIX "data:"
+#define DATA_URL_SUFFIX ";base64,"
+NAN_METHOD(CanvasRenderingContext2D::ToDataURL) {
+  // Nan::HandleScope scope;
+
+  std::string type;
+  if (info[0]->IsString()) {
+    String::Utf8Value utf8Value(Local<String>::Cast(info[0]));
+    type = *utf8Value;
+  }
+  SkEncodedImageFormat format;
+  if (type == "image/png") {
+    format = SkEncodedImageFormat::kPNG;
+  } else if (type == "image/jpeg") {
+    format = SkEncodedImageFormat::kJPEG;
+  } else {
+    type = "image/png";
+    format = SkEncodedImageFormat::kPNG;
+  }
+  
+  int quality = 90;
+  if (info[1]->IsNumber()) {
+    double d = std::min<double>(std::max<double>(info[1]->NumberValue(), 0), 1);
+    quality = static_cast<int>(d * 100);
+  }
+
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  sk_sp<SkImage> image = getImageFromContext(context);
+  sk_sp<SkData> data = image->encodeToData(format, quality);
+
+  std::vector<char> s(sizeof(DATA_URL_PREFIX)-1 + type.size() + sizeof(DATA_URL_SUFFIX)-1 + data->size());
+  int i = 0;
+  memcpy(s.data() + i, (void *)DATA_URL_PREFIX, sizeof(DATA_URL_PREFIX)-1);
+  i += sizeof(DATA_URL_PREFIX)-1;
+  memcpy(s.data() + i, type.data(), type.size());
+  i += type.size();
+  memcpy(s.data() + i, (void *)DATA_URL_SUFFIX, sizeof(DATA_URL_SUFFIX)-1);
+  i += sizeof(DATA_URL_SUFFIX)-1;
+  memcpy(s.data() + i, data->data(), data->size());
+  i += data->size();
+  
+  Local<String> result = Nan::New<String>(s.data(), s.size()).ToLocalChecked();
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Destroy) {

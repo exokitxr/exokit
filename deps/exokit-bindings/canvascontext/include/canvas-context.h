@@ -146,6 +146,7 @@ protected:
   static NAN_METHOD(PutImageData);
   static NAN_METHOD(Save);
   static NAN_METHOD(Restore);
+  static NAN_METHOD(ToDataURL);
   static NAN_METHOD(Destroy);
 
   static bool isImageType(Local<Value> arg);
