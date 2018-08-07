@@ -49,6 +49,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto,"lineTo", LineTo);
   Nan::SetMethod(proto,"arc", Arc);
   Nan::SetMethod(proto,"arcTo", ArcTo);
+  Nan::SetMethod(proto,"quadraticCurveTo", QuadraticCurveTo);
   Nan::SetMethod(proto,"bezierCurveTo", BezierCurveTo);
   Nan::SetMethod(proto,"rect", Rect);
   Nan::SetMethod(proto,"fillRect", FillRect);
@@ -176,6 +177,10 @@ void CanvasRenderingContext2D::Arc(float x, float y, float radius, float startAn
 
 void CanvasRenderingContext2D::ArcTo(float x1, float y1, float x2, float y2, float radius) {
   path.arcTo(x1, y1, x2 - x1, y2 - y1, radius);
+}
+
+void CanvasRenderingContext2D::QuadraticCurveTo(float cpx, float cpy, float x, float y) {
+  path.quadTo(cpx, cpy, x, y);
 }
 
 void CanvasRenderingContext2D::BezierCurveTo(float cp1x, float cp1y, float cp2x, float cp2y, float x, float y) {
@@ -902,6 +907,20 @@ NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
   double radius = info[4]->NumberValue();
 
   context->ArcTo(x1, y1, x2, y2, radius);
+
+  context->dataArray.Reset();
+}
+
+NAN_METHOD(CanvasRenderingContext2D::QuadraticCurveTo) {
+  Nan::HandleScope scope;
+
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  double x1 = info[0]->NumberValue();
+  double y1 = info[1]->NumberValue();
+  double x2 = info[2]->NumberValue();
+  double y2 = info[3]->NumberValue();
+
+  context->QuadraticCurveTo(x1, y1, x2, y2);
 
   context->dataArray.Reset();
 }
