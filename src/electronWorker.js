@@ -52,8 +52,8 @@ ipc.serve(
 
                   browserWindow.webContents.on('paint', (event, dirty, image) => {
                     // message 1
-                    let b = image.getBitmap();
-                    // let b = image.toBitmap();
+                    let b = image.crop(dirty).getBitmap();
+                    // let b = image.crop(dirty).toBitmap();
                     const {width, height} = dirty;
                     b = _flipImage(width, height, 4, b);
                     // b = Buffer.from(b.toString('hex'), 'ascii');
