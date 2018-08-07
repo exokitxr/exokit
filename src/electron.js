@@ -10,7 +10,7 @@ const electronWorkerPath = path.join(__dirname, 'electronWorker.js');
 ipc.config.id = 'hello';
 // ipc.config.retry=1500;
 ipc.config.rawBuffer=true;
-// ipc.config.encoding='ascii';
+ipc.config.encoding='binary';
 ipc.config.silent=true;
 
 let ids = 0;
@@ -46,20 +46,17 @@ const electron = () => new Promise((accept, reject) => {
             const datas = [];
             let i;
             for (i = 0; i < data.length;) {
-              if ((data.length - i) >= (Uint8Array.BYTES_PER_ELEMENT+Uint32Array.BYTES_PER_ELEMENT*2)) {
+              if ((data.length - i) >= (Uint8Array.BYTES_PER_ELEMENT+Uint32Array.BYTES_PER_ELEMENT)) {
                 const type = data.readUInt8(i);
-                const length = Buffer.from(
-                  data.slice(i+Uint8Array.BYTES_PER_ELEMENT, i+Uint8Array.BYTES_PER_ELEMENT+Uint32Array.BYTES_PER_ELEMENT*2).toString('ascii'),
-                  'hex'
-                ).readUInt32LE(0);
-                const begin = i + Uint8Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT*2;
+                const length = data.readUInt32LE(i+Uint8Array.BYTES_PER_ELEMENT);
+                const begin = i + Uint8Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT;
                 const end = begin + length;
                 if (end <= data.length) {
                   let d = data.slice(begin, end);
                   if (type === 0) {
                     d = JSON.parse(d.toString('utf8'));
                   } else if (type === 1) {
-                    d = Buffer.from(d.toString('ascii'), 'hex');
+                    // d = Buffer.from(d.toString('ascii'), 'hex');
                   } else {
                     console.warn('invalid message type', type);
                   }
@@ -72,10 +69,8 @@ const electron = () => new Promise((accept, reject) => {
                 break;
               }
             }
-            const tailLength = data.length - i;
-            if (tailLength > 0) {
-              oldData = Buffer.allocUnsafe(tailLength);
-              data.copy(oldData, 0, i, data.length);
+            if (i < data.length) {
+              oldData = data.slice(i);
             }
 
             for (let i = 0; i < datas.length; i++) {

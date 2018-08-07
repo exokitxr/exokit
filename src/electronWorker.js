@@ -4,7 +4,7 @@ const ipc = require('node-ipc');
 ipc.config.id = process.argv[2];
 // ipc.config.retry=1500;
 ipc.config.rawBuffer=true;
-// ipc.config.encoding='ascii';
+ipc.config.encoding='binary';
 ipc.config.silent=true;
 
 const _flipImage = (width, height, stride, buffer) => {
@@ -41,7 +41,6 @@ ipc.serve(
                   typeB[0] = 0;
                   let lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
                   lengthB.writeUInt32LE(b.length, 0);
-                  lengthB = Buffer.from(lengthB.toString('hex'), 'ascii');
                   ipc.server.emit(socket, typeB);
                   ipc.server.emit(socket, lengthB);
                   ipc.server.emit(socket, b);
@@ -52,14 +51,13 @@ ipc.serve(
                     // let b = image.toBitmap();
                     const {width, height} = dirty;
                     b = _flipImage(width, height, 4, b);
-                    b = Buffer.from(b.toString('hex'), 'ascii');
+                    // b = Buffer.from(b.toString('hex'), 'ascii');
 
                     let typeB = Buffer.allocUnsafe(Uint8Array.BYTES_PER_ELEMENT);
                     typeB[0] = 1;
 
                     let lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
                     lengthB.writeUInt32LE(b.length, 0);
-                    lengthB = Buffer.from(lengthB.toString('hex'), 'ascii');
 
                     ipc.server.emit(socket, typeB);
                     ipc.server.emit(socket, lengthB);
@@ -76,7 +74,6 @@ ipc.serve(
 
                     lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
                     lengthB.writeUInt32LE(b.length, 0);
-                    lengthB = Buffer.from(lengthB.toString('hex'), 'ascii');
 
                     ipc.server.emit(socket, typeB);
                     ipc.server.emit(socket, lengthB);
@@ -91,7 +88,6 @@ ipc.serve(
                       typeB[0] = 0;
                       let lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
                       lengthB.writeUInt32LE(b.length, 0);
-                      lengthB = Buffer.from(lengthB.toString('hex'), 'ascii');
                       ipc.server.emit(socket, typeB);
                       ipc.server.emit(socket, lengthB);
                       ipc.server.emit(socket, b);
@@ -109,7 +105,6 @@ ipc.serve(
                   typeB[0] = 0;
                   let lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
                   lengthB.writeUInt32LE(b.length, 0);
-                  lengthB = Buffer.from(lengthB.toString('hex'), 'ascii');
                   ipc.server.emit(socket, typeB);
                   ipc.server.emit(socket, lengthB);
                   ipc.server.emit(socket, b);
@@ -125,7 +120,6 @@ ipc.serve(
                   typeB[0] = 0;
                   let lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
                   lengthB.writeUInt32LE(b.length, 0);
-                  lengthB = Buffer.from(lengthB.toString('hex'), 'ascii');
                   ipc.server.emit(socket, typeB);
                   ipc.server.emit(socket, lengthB);
                   ipc.server.emit(socket, b);
@@ -141,7 +135,6 @@ ipc.serve(
                   typeB[0] = 0;
                   let lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
                   lengthB.writeUInt32LE(b.length, 0);
-                  lengthB = Buffer.from(lengthB.toString('hex'), 'ascii');
                   ipc.server.emit(socket, typeB);
                   ipc.server.emit(socket, lengthB);
                   ipc.server.emit(socket, b);
@@ -157,7 +150,6 @@ ipc.serve(
                   typeB[0] = 0;
                   let lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
                   lengthB.writeUInt32LE(b.length, 0);
-                  lengthB = Buffer.from(lengthB.toString('hex'), 'ascii');
                   ipc.server.emit(socket, typeB);
                   ipc.server.emit(socket, lengthB);
                   ipc.server.emit(socket, b);
