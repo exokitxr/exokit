@@ -57,7 +57,7 @@
 				window.addEventListener( 'resize', onWindowResize, false );
 
 				(async () => {
-          const elctrn = await browser.electron();
+          const elctrn = await browser.electron.createElectron();
           const browserWindow = await elctrn.createBrowserWindow({
             width,
             height,
