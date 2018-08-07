@@ -110,6 +110,7 @@ const electron = () => new Promise((accept, reject) => {
                                 const id = ids++;
                                 localChannel.emit(JSON.stringify({
                                   method: 'loadURL',
+                                  id,
                                   args: u,
                                 }));
                                 _waitForResponse(id, () => {
@@ -122,7 +123,34 @@ const electron = () => new Promise((accept, reject) => {
                                 const id = ids++;
                                 localChannel.emit(JSON.stringify({
                                   method: 'setFrameRate',
+                                  id,
                                   args: frameRate,
+                                }));
+                                _waitForResponse(id, () => {
+                                  accept();
+                                });
+                              });
+                            }
+                            insertCSS(css) {
+                              return new Promise((accept, reject) => {
+                                const id = ids++;
+                                localChannel.emit(JSON.stringify({
+                                  method: 'insertCSS',
+                                  id,
+                                  args: css,
+                                }));
+                                _waitForResponse(id, () => {
+                                  accept();
+                                });
+                              });
+                            }
+                            sendInputEvent(event) {
+                              return new Promise((accept, reject) => {
+                                const id = ids++;
+                                localChannel.emit(JSON.stringify({
+                                  method: 'sendInputEvent',
+                                  id,
+                                  args: event,
                                 }));
                                 _waitForResponse(id, () => {
                                   accept();
