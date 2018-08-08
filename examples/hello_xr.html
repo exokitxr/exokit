@@ -1,4 +1,11 @@
 <html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
   <body>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.js"></script>
   <script>
@@ -11,7 +18,36 @@
       camera.lookAt(new THREE.Vector3());
 
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x3B3961);
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xE91E63,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 0.5;
+        mesh.frustumCuled = false;
+        scene.add(mesh);
+      })();
+      (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x4CAF50,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 1 + 0.1;
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+      })();
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
@@ -27,8 +63,11 @@
 
     init();
 
-    window.addEventListener('vrdisplayactivate', async e => {
-      const {display} = e;
+    console.log('listening');
+    (async () => {
+      console.log('get device');
+      const display = await navigator.xr.requestDevice();
+      console.log('got activate', !!display);
       const session = await display.requestSession({
         exclusive: true,
       });
@@ -50,7 +89,8 @@
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
-    });
+      });
+    })();
   </script>
   </body>
 </html>
