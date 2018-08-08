@@ -49,8 +49,10 @@ ipc.serve(function() {
         break;
       }
     }
-    if (i < data.length) {
-      oldData = data;
+    const tailLength = data.length - i;
+    if (tailLength > 0) {
+      oldData = Buffer.allocUnsafe(tailLength);
+      data.copy(oldData, 0, i, data.length);
     }
 
     for (let i = 0; i < datas.length; i++) {
