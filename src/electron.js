@@ -118,13 +118,15 @@ const electron = {
             createBrowserWindow(args) {
               return new Promise((accept, reject) => {
                 const id = ids++;
-                localChannel.emit(
-                  JSON.stringify({
-                    method: 'createBrowserWindow',
-                    id,
-                    args
-                  })
-                );
+                const b = Buffer.from(JSON.stringify({
+                  method: 'createBrowserWindow',
+                  id,
+                  args
+                }), 'utf8');
+                const lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
+                lengthB.writeUInt32LE(b.length, 0);
+                localChannel.emit(lengthB);
+                localChannel.emit(b);
 
                 _waitForResponse(id, ({width, height}) => {
                   class BrowserWindow extends EventEmitter {
@@ -137,13 +139,16 @@ const electron = {
                     loadURL(u) {
                       return new Promise((accept, reject) => {
                         const id = ids++;
-                        localChannel.emit(
-                          JSON.stringify({
-                            method: 'loadURL',
-                            id,
-                            args: u
-                          })
-                        );
+                        const b = Buffer.from(JSON.stringify({
+                          method: 'loadURL',
+                          id,
+                          args: u
+                        }), 'utf8');
+                        const lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
+                        lengthB.writeUInt32LE(b.length, 0);
+                        localChannel.emit(lengthB);
+                        localChannel.emit(b);
+
                         _waitForResponse(id, () => {
                           accept();
                         });
@@ -152,13 +157,16 @@ const electron = {
                     setFrameRate(frameRate) {
                       return new Promise((accept, reject) => {
                         const id = ids++;
-                        localChannel.emit(
-                          JSON.stringify({
-                            method: 'setFrameRate',
-                            id,
-                            args: frameRate
-                          })
-                        );
+                        const b = Buffer.from(JSON.stringify({
+                          method: 'setFrameRate',
+                          id,
+                          args: frameRate
+                        }), 'utf8');
+                        const lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
+                        lengthB.writeUInt32LE(b.length, 0);
+                        localChannel.emit(lengthB);
+                        localChannel.emit(b);
+
                         _waitForResponse(id, () => {
                           accept();
                         });
@@ -167,13 +175,16 @@ const electron = {
                     insertCSS(css) {
                       return new Promise((accept, reject) => {
                         const id = ids++;
-                        localChannel.emit(
-                          JSON.stringify({
-                            method: 'insertCSS',
-                            id,
-                            args: css
-                          })
-                        );
+                        const b = Buffer.from(JSON.stringify({
+                          method: 'insertCSS',
+                          id,
+                          args: css
+                        }), 'utf8');
+                        const lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
+                        lengthB.writeUInt32LE(b.length, 0);
+                        localChannel.emit(lengthB);
+                        localChannel.emit(b);
+
                         _waitForResponse(id, () => {
                           accept();
                         });
@@ -182,31 +193,40 @@ const electron = {
                     sendInputEvent(event) {
                       return new Promise((accept, reject) => {
                         const id = ids++;
-                        localChannel.emit(
-                          JSON.stringify({
-                            method: 'sendInputEvent',
-                            id,
-                            args: event
-                          })
-                        );
+                        const b = Buffer.from(JSON.stringify({
+                          method: 'sendInputEvent',
+                          id,
+                          args: event
+                        }), 'utf8');
+                        const lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
+                        lengthB.writeUInt32LE(b.length, 0);
+                        localChannel.emit(lengthB);
+                        localChannel.emit(b);
+
                         _waitForResponse(id, () => {
                           accept();
                         });
                       });
                     }
                     close() {
-                      localChannel.emit(
-                        JSON.stringify({
-                          method: 'close',
-                        })
-                      );
+                      const id = ids++;
+                      const b = Buffer.from(JSON.stringify({
+                        method: 'close',
+                      }), 'utf8');
+                      const lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
+                      lengthB.writeUInt32LE(b.length, 0);
+                      localChannel.emit(lengthB);
+                      localChannel.emit(b);
                     }
                     destroy() {
-                      localChannel.emit(
-                        JSON.stringify({
-                          method: 'destroy',
-                        })
-                      );
+                      const id = ids++;
+                      const b = Buffer.from(JSON.stringify({
+                        method: 'destroy',
+                      }), 'utf8');
+                      const lengthB = Buffer.allocUnsafe(Uint32Array.BYTES_PER_ELEMENT);
+                      lengthB.writeUInt32LE(b.length, 0);
+                      localChannel.emit(lengthB);
+                      localChannel.emit(b);
                     }
                   }
                   const browserWindow = new BrowserWindow(width, height);

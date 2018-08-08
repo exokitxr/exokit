@@ -1,3 +1,5 @@
+const events = require('events');
+const {EventEmitter} = events;
 const {BrowserWindow} = require('electron');
 const ipc = require('node-ipc');
 
@@ -22,9 +24,42 @@ const _flipImage = (width, height, stride, buffer) => {
 ipc.serve(function() {
   let browserWindow = null;
 
+  let oldData = null;
+  const messageEmitter = new EventEmitter();
   ipc.server.on('data', function(data, socket) {
-    data = JSON.parse(data.toString('utf8'));
-    const {method, id, args} = data;
+    if (oldData) {
+      data = Buffer.concat([oldData, data]);
+      oldData = null;
+    }
+    const datas = [];
+    let i;
+    for (i = 0; i < data.length; ) {
+      if (data.length >= Uint8Array.BYTES_PER_ELEMENT) {
+        const length = data.readUInt32LE(i);
+        const begin = i + Uint32Array.BYTES_PER_ELEMENT;
+        const end = begin + length;
+        if (end <= data.length) {
+          const d = JSON.parse(data.slice(begin, end).toString('utf8'));
+          datas.push(d);
+          i = end;
+        } else {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+    if (i < data.length) {
+      oldData = data;
+    }
+
+    for (let i = 0; i < datas.length; i++) {
+      messageEmitter.emit('message', datas[i], socket);
+    }
+  });
+
+  messageEmitter.on('message', (m, socket) => {
+    const {method, id, args} = m;
     switch (method) {
       case 'createBrowserWindow': {
         browserWindow = new BrowserWindow(args);
