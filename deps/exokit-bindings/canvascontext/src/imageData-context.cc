@@ -48,7 +48,7 @@ NAN_METHOD(ImageData::New) {
     unsigned int width = info[1]->Uint32Value();
     unsigned int height = info[2]->Uint32Value();
 
-    if (array->ByteLength() == (width * height * 4)) {
+    if (array->ByteLength() >= (width * height * 4)) {
       Local<ArrayBuffer> arrayBuffer = array->Buffer();
       const char *data = (const char *)arrayBuffer->GetContents().Data() + array->ByteOffset();
       imageData = new ImageData(data, width, height);

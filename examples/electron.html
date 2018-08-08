@@ -4,7 +4,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.js"></script>
     <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
     <script>
-    
+
       const width = 2048;
       const height = 2048;
 
@@ -71,40 +71,48 @@
           canvas.width = browserWindow.width;
           canvas.height = browserWindow.width;
           const offset = (browserWindow.width - browserWindow.height)/2;
+
+          browserWindow.loadURL('http://lol.com');
+          browserWindow.setFrameRate(15);
+
           browserWindow.on('paint', o => {
             // console.log('paint', o.data.length);
 
-            // console.log('got bytelength', o.data.byteLength, o.width, o.height, o.width * o.height * 4);
+            // console.log('paint', o.data.byteLength, o.width, o.height, o.width * o.height * 4);
             // console.log('paint', o.data);
             ctx.putImageData(new ImageData(o.data, o.width, o.height), o.x, o.y + offset);
             texture.needsUpdate = true;
           });
-          browserWindow.loadURL('https://google.com');
           browserWindow.on('dom-ready', async () => {
-            await browserWindow.setFrameRate(15);
             /* await browserWindow.insertCSS(`
               ::-webkit-scrollbar {
                 height: 30px;
                 width: 30px;
                 background: #e0e0e0;
               }
-              
+
               ::-webkit-scrollbar-thumb {
                 background: #4db6ac;
               }
-              
+
               ::-webkit-scrollbar-corner {
                 background: #cfcfcf;
               }
             `); */
             // await browserWindow.sendInputEvent({type: 'mouseMove', x: 10, y: 10});
             console.log('loaded');
-            
+
             setTimeout(async () => {
               browserWindow.destroy();
               elctrn.destroy();
               console.log('exited');
             }, 2000);
+          });
+          browserWindow.on('did-fail-load', () => {
+            console.log('failed to load!');
+
+            browserWindow.destroy();
+            elctrn.destroy();
           });
         })();
 
