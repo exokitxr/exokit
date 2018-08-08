@@ -63,6 +63,9 @@ const electron = {
                 if (type === 0) {
                   d = JSON.parse(d.toString('utf8'));
                 } else if (type === 1) {
+                  const dCopy = Buffer.allocUnsafe(d.length);
+                  d.copy(dCopy);
+                  d = dCopy;
                   // d = Buffer.from(d.toString('ascii'), 'hex');
                 } else {
                   console.warn('invalid message type', type);
