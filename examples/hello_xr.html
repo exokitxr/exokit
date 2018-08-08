@@ -48,6 +48,17 @@
         mesh.frustumCulled = false;
         scene.add(mesh);
       })();
+      (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x29B6F6,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 0.1;
+        mesh.position.z = -0.5;
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+      })();
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
@@ -63,16 +74,16 @@
 
     init();
 
-    console.log('listening');
     (async () => {
-      console.log('get device');
+      console.log('request device');
       const display = await navigator.xr.requestDevice();
-      console.log('got activate', !!display);
+      console.log('request session');
       const session = await display.requestSession({
         exclusive: true,
       });
       display.session = session;
 
+      console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
         renderer.vr.setSession(session, {
           frameOfReferenceType: 'stage',
@@ -89,6 +100,8 @@
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
       });
     })();
   </script>
