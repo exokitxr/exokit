@@ -103,11 +103,9 @@ ipc.serve(function() {
         browserWindow.webContents.on('paint', (event, dirty, image) => {
           // message 1
           // image = image.crop(dirty);
-          const bitmap = image.toBitmap();
+          let b = image.getBitmap();
           const bitmapSize = image.getSize();
           // console.log('crop image', image.getSize(), dirty);
-          let b = Buffer.allocUnsafe(bitmap.length);
-          bitmap.copy(b);
           b = _cropImage(bitmapSize.width, bitmapSize.height, dirty.x, dirty.y, dirty.width, dirty.height, 4, b);
           // b = _flipImage(dirty.width, dirty.height, 4, b);
           // b = Buffer.from(b.toString('hex'), 'ascii');
