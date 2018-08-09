@@ -1226,6 +1226,8 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
 
     context->surface->getCanvas()->restore();
+    
+    context->dataArray.Reset();
   } else {
     unsigned int sw = imageData->GetWidth();
     unsigned int sh = imageData->GetHeight();
@@ -1239,6 +1241,8 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     context->DrawImage(image.get(), 0, 0, sw, sh, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
 
     context->surface->getCanvas()->restore();
+    
+    context->dataArray.Reset();
   }
 }
 
