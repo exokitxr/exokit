@@ -5,8 +5,29 @@
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
 <script>
 
-  const width = 2048;
-  const height = 2048;
+  const width = 1024;
+  const height = 513;
+
+  let currentMin,currentMag,currentRes;
+
+  const resolutions = [
+    {x:1024,y:512},
+    {x:1024,y:513},
+  ];
+
+  const textureMagFilters = [
+    THREE.LinearFilter,
+    THREE.NearestFilter
+  ];
+
+  const textureMinFilters = [
+    THREE.NearestFilter,
+    THREE.NearestMipMapNearestFilter,
+    THREE.NearestMipMapLinearFilter,
+    THREE.LinearFilter,
+    THREE.LinearMipMapNearestFilter,
+    THREE.LinearMipMapLinearFilter
+  ];
 
   let camera, scene, renderer, controls, browserPlane,
     canvas, ctx, texture, browserWindow,
@@ -23,7 +44,68 @@
       .then(()=>{
         setupBrowserPlane();
         setupListeners();
+        return setupFilterTests();
       });
+  }
+  async function setupFilterTests(browserWindow){
+    // loop through all filter options to see it update.
+    for(let i = 0;i<resolutions.length; i++) {
+
+      for (let j = 0; j < textureMagFilters.length; j++) {
+
+        for (let k = 0; k < textureMinFilters.length; k++) {
+
+          let timeout = i * j * k * 1000;
+
+          await new Promise(resolve => setTimeout(() => {
+            canvas.width = resolutions[i].x;
+            canvas.height = resolutions[i].y;
+            texture.magFilter = textureMagFilters[j];
+            texture.minFilter = textureMinFilters[k];
+
+            console.log('Desired resolution:',canvas.width,'X',canvas.height);
+            console.log('Max available resolution:',browserWindow.width,'X',browserWindow.height);
+            let minFilter,magFilter;
+
+            switch(texture.magFilter){
+              case THREE.NearestFilter:
+                magFilter = "NearestFilter";
+                break;
+              case THREE.LinearFilter:
+                magFilter = "LinearFilter";
+                break;
+            }
+            switch(texture.minFilter){
+              case THREE.NearestFilter:
+                minFilter = "NearestFilter";
+                break;
+              case THREE.NearestMipMapNearestFilter:
+                minFilter = "NearestMipMapNearestFilter";
+                break;
+              case THREE.NearestMipMapLinearFilter:
+                minFilter = "NearestMipMapLinearFilter";
+                break;
+              case THREE.LinearFilter:
+                minFilter = "LinearFilter";
+                break;
+              case THREE.LinearMipMapNearestFilter:
+                minFilter = "LinearMipMapNearestFilter";
+                break;
+              case THREE.LinearMipMapLinearFilter:
+                minFilter = "LinearMipMapLinearFilter";
+                break;
+            }
+
+            console.log('Magnification Filter:',magFilter);
+            console.log('Minification Filter:',minFilter);
+            console.log('Timeout:',timeout);
+            resolve();
+
+          }, timeout));
+        }
+      }
+    }
+
   }
 
   async function setupElectron(){
@@ -42,7 +124,7 @@
     canvas.height = browserWindow.height;
 
     browserWindow.loadURL('http://github.com');
-    browserWindow.setFrameRate(60);
+    browserWindow.setFrameRate(15);
 
     browserWindow.on('paint', o => {
       ctx.putImageData(new ImageData(o.data, o.width, o.height), o.x, o.y );
@@ -52,26 +134,23 @@
       console.log('dom-ready');
       await browserWindow.insertCSS(`
                 ::-webkit-scrollbar {
-                  height: 30px;
-                  width: 30px;
-                  background: #e0e0e0;
+                    height: 30px;
+                    width: 30px;
+                    background: #e0e0e0;
                 }
 
                 ::-webkit-scrollbar-thumb {
-                  background: #4db6ac;
+                    background: #4db6ac;
                 }
 
                 ::-webkit-scrollbar-corner {
-                  background: #cfcfcf;
+                    background: #cfcfcf;
                 }
-              `);
-      //texture.needsUpdate = true;
+            `);
     });
+
     browserWindow.on('did-fail-load', () => {
       console.log('failed to load!');
-
-      // browserWindow.destroy();
-      // elctrn.destroy();
     });
   }
 
@@ -118,15 +197,15 @@
     canvas.height = height;
     ctx = canvas.getContext('2d');
     texture = new THREE.Texture(
-      canvas/*,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.LinearMipMapNearestFilter,
-            THREE.LinearMipMapNearestFilter,
-            THREE.RGBAFormat,
-            THREE.UnsignedByteType,
-            1*/
+      canvas,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      textureMagFilters[0],
+      textureMagFilters[0],
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType,
+      1
     );
   }
 
