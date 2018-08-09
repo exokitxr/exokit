@@ -11,8 +11,7 @@
   console.warn = function(){
     hasWarned = true;
   };
-
-  let currentMin,currentMag,currentRes;
+  let currentKeyup;
 
   const resolutions = [
     {x:1024,y:513},
@@ -48,9 +47,69 @@
       .then(()=>{
         setupBrowserPlane();
         setupListeners();
-        return setupFilterTests();
       });
   }
+  function keyupEvent(i,j,k,resolve){
+
+    canvas.width = resolutions[i].x;
+    canvas.height = resolutions[i].y;
+
+    texture.magFilter = textureMagFilters[j];
+    texture.minFilter = textureMinFilters[k];
+
+    if(hasStartedTests){
+      if(hasWarned){
+        console.log("\x1b[32m - PASSED \x1b[37m ");
+        hasWarned = false;
+      }else{
+        console.log("\x1b[31m - FAILED \x1b[37m ");
+      }
+      console.log('-----\n\n\n');
+    }else{
+      hasStartedTests = true;
+    }
+
+    console.log('\n-----');
+    console.log('Test resolution:',canvas.width,'X',canvas.height);
+    console.log('Achieved available resolution '+i+':',browserWindow?browserWindow.width:0,'X',browserWindow?browserWindow.height:0);
+
+    let minFilter,magFilter;
+
+    switch(texture.magFilter){
+      case THREE.NearestFilter:
+        magFilter = "NearestFilter";
+        break;
+      case THREE.LinearFilter:
+        magFilter = "LinearFilter";
+        break;
+    }
+    switch(texture.minFilter){
+      case THREE.NearestFilter:
+        minFilter = "NearestFilter";
+        break;
+      case THREE.NearestMipMapNearestFilter:
+        minFilter = "NearestMipMapNearestFilter";
+        break;
+      case THREE.NearestMipMapLinearFilter:
+        minFilter = "NearestMipMapLinearFilter";
+        break;
+      case THREE.LinearFilter:
+        minFilter = "LinearFilter";
+        break;
+      case THREE.LinearMipMapNearestFilter:
+        minFilter = "LinearMipMapNearestFilter";
+        break;
+      case THREE.LinearMipMapLinearFilter:
+        minFilter = "LinearMipMapLinearFilter";
+        break;
+    }
+
+    console.log('Magnification Filter '+j+':',magFilter);
+    console.log('Minification Filter '+k+':',minFilter);
+    console.log('Time:',JSON.stringify(new Date()));
+    resolve();
+
+  };
   async function setupFilterTests(){
     // loop through all filter options to see it update.
 
@@ -64,69 +123,15 @@
 
           let testCount = (i+1) * (j+1) * (k+3);
 
-          await new Promise(resolve =>
-            document.addEventListener( 'keyup', () => {
-
-              canvas.width = resolutions[i].x;
-              canvas.height = resolutions[i].y;
-
-              texture.magFilter = textureMagFilters[j];
-              texture.minFilter = textureMinFilters[k];
-
-              if(hasStartedTests){
-                if(hasWarned){
-                  console.log("\x1b[32m - PASSED \x1b[37m ");
-                  hasWarned = false;
-                }else{
-                  console.log("\x1b[31m - FAILED \x1b[37m ");
-                }
-                console.log('-----\n\n\n');
-              }else{
-                hasStartedTests = true;
-              }
-
-              console.log('\n-----');
-              console.log('Test resolution:',canvas.width,'X',canvas.height);
-              console.log('Achieved available resolution '+i+':',browserWindow?browserWindow.width:0,'X',browserWindow?browserWindow.height:0);
-
-              let minFilter,magFilter;
-
-              switch(texture.magFilter){
-                case THREE.NearestFilter:
-                  magFilter = "NearestFilter";
-                  break;
-                case THREE.LinearFilter:
-                  magFilter = "LinearFilter";
-                  break;
-              }
-              switch(texture.minFilter){
-                case THREE.NearestFilter:
-                  minFilter = "NearestFilter";
-                  break;
-                case THREE.NearestMipMapNearestFilter:
-                  minFilter = "NearestMipMapNearestFilter";
-                  break;
-                case THREE.NearestMipMapLinearFilter:
-                  minFilter = "NearestMipMapLinearFilter";
-                  break;
-                case THREE.LinearFilter:
-                  minFilter = "LinearFilter";
-                  break;
-                case THREE.LinearMipMapNearestFilter:
-                  minFilter = "LinearMipMapNearestFilter";
-                  break;
-                case THREE.LinearMipMapLinearFilter:
-                  minFilter = "LinearMipMapLinearFilter";
-                  break;
-              }
-
-              console.log('Magnification Filter '+j+':',magFilter);
-              console.log('Minification Filter '+k+':',minFilter);
-              console.log('Time:',JSON.stringify(new Date()));
-              resolve();
-
-            }, false));
-
+          await new Promise(resolve =>{
+            if(currentKeyup){
+              document.removeEventListener('keyup',currentKeyup);
+            }
+            currentKeyup = ()=>{
+              keyupEvent(i,j,k,resolve);
+            };
+            document.addEventListener('keyup',currentKeyup);
+          });
           let event = {
             type:'mousedown',
             x:browserWindow.width-10,
@@ -185,6 +190,7 @@
                     background: #cfcfcf;
                 }
             `);
+      await setupFilterTests();
     });
 
     browserWindow.on('did-fail-load', () => {
