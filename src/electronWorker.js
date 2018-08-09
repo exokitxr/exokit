@@ -9,8 +9,22 @@ ipc.config.rawBuffer = true;
 ipc.config.encoding = 'binary';
 ipc.config.silent = true;
 
-const _flipImage = (width, height, stride, buffer) => {
-  const buffer2 = new Buffer(buffer.length);
+const _cropImage = (fullWidth, fullHeight, x, y, width, height, stride, buffer) => {
+  const buffer2 = Buffer.allocUnsafe(width * height * stride);
+  const ax = x;
+  for (let dy = 0; dy < height; dy++) {
+    const ay = fullHeight - (y + dy);
+    const srcStart = (ay * fullWidth * stride) + (ax * stride);
+    const srcEnd = srcStart + (width * stride);
+    buffer2.set(
+      buffer.slice(srcStart, srcEnd),
+      dy * width * stride
+    );
+  }
+  return buffer2;
+};
+/* const _flipImage = (width, height, stride, buffer) => {
+  const buffer2 = Buffer.allocUnsafe(buffer.length);
   for (let y = 0; y < height; y++) {
     const yBottom = height - y - 1;
     buffer2.set(
@@ -19,7 +33,7 @@ const _flipImage = (width, height, stride, buffer) => {
     );
   }
   return buffer2;
-};
+}; */
 
 ipc.serve(function() {
   let browserWindow = null;
@@ -88,10 +102,14 @@ ipc.serve(function() {
 
         browserWindow.webContents.on('paint', (event, dirty, image) => {
           // message 1
-          let b = image.crop(dirty).getBitmap();
-          // let b = image.crop(dirty).toBitmap();
-          const {width, height} = dirty;
-          b = _flipImage(width, height, 4, b);
+          // image = image.crop(dirty);
+          const bitmap = image.toBitmap();
+          const bitmapSize = image.getSize();
+          // console.log('crop image', image.getSize(), dirty);
+          let b = Buffer.allocUnsafe(bitmap.length);
+          bitmap.copy(b);
+          b = _cropImage(bitmapSize.width, bitmapSize.height, dirty.x, dirty.y, dirty.width, dirty.height, 4, b);
+          // b = _flipImage(dirty.width, dirty.height, 4, b);
           // b = Buffer.from(b.toString('hex'), 'ascii');
 
           let typeB = Buffer.allocUnsafe(Uint8Array.BYTES_PER_ELEMENT);
