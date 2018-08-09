@@ -5,14 +5,18 @@
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
 <script>
 
-  const width = 1024;
-  const height = 513;
+  const width = 2048;
+  const height = 2048;
+  let hasWarned,hasStartedTests;
+  console.warn = function(){
+    hasWarned = true;
+  };
 
   let currentMin,currentMag,currentRes;
 
   const resolutions = [
-    {x:1024,y:512},
     {x:1024,y:513},
+    {x:1024,y:512},
   ];
 
   const textureMagFilters = [
@@ -47,24 +51,47 @@
         return setupFilterTests();
       });
   }
-  async function setupFilterTests(browserWindow){
+  async function setupFilterTests(){
     // loop through all filter options to see it update.
+
+    let totalTests = resolutions.length * textureMinFilters.length * textureMagFilters.length;
+
     for(let i = 0;i<resolutions.length; i++) {
 
       for (let j = 0; j < textureMagFilters.length; j++) {
 
         for (let k = 0; k < textureMinFilters.length; k++) {
 
-          let timeout = i * j * k * 1000;
+
+
+          let testCount = (i+1) * (j+1) * (k+3);
+
+          let timeout = testCount * 300;
 
           await new Promise(resolve => setTimeout(() => {
+
             canvas.width = resolutions[i].x;
             canvas.height = resolutions[i].y;
+
             texture.magFilter = textureMagFilters[j];
             texture.minFilter = textureMinFilters[k];
 
-            console.log('Desired resolution:',canvas.width,'X',canvas.height);
-            console.log('Max available resolution:',browserWindow.width,'X',browserWindow.height);
+            if(hasStartedTests){
+              if(hasWarned){
+                console.log("\x1b[32m - PASSED \x1b[37m ");
+                hasWarned = false;
+              }else{
+                console.log("\x1b[31m - FAILED \x1b[37m ");
+              }
+              console.log('-----\n\n\n');
+            }else{
+              hasStartedTests = true;
+            }
+
+            console.log('\n-----');
+            console.log('Test resolution:',canvas.width,'X',canvas.height);
+            console.log('Achieved available resolution '+i+':',browserWindow?browserWindow.width:0,'X',browserWindow?browserWindow.height:0);
+
             let minFilter,magFilter;
 
             switch(texture.magFilter){
@@ -96,12 +123,26 @@
                 break;
             }
 
-            console.log('Magnification Filter:',magFilter);
-            console.log('Minification Filter:',minFilter);
-            console.log('Timeout:',timeout);
+            console.log('Magnification Filter '+j+':',magFilter);
+            console.log('Minification Filter '+k+':',minFilter);
+            console.log('Time:',JSON.stringify(new Date()));
             resolve();
 
           }, timeout));
+
+          let event = {
+            type:'mousedown',
+            x:browserWindow.width-10,
+            y:browserWindow.height * (testCount/totalTests),
+            button:'left',
+            globalX:browserWindow.width-10,
+            globalY:browserWindow.width-10,
+            movementX:0,
+            movementY:0,
+            clickCount:1
+          };
+          await browserWindow.sendInputEvent(event);
+
         }
       }
     }
