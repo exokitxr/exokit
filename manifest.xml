@@ -10,7 +10,7 @@
 		<component
 			ml:name=".fullscreen"
 			ml:visible_name="Exokit"
-			ml:binary_name="bin/program.exe"
+			ml:binary_name="bin/program-windows.exe"
 			ml:type="Fullscreen">
 		</component>
 	</application>
