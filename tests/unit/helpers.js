@@ -1,10 +1,6 @@
 /* global describe */
 const exokit = require('../../index');
 
-module.exports.createWindow = function () {
-  return exokit().window;
-};
-
 /**
  * Test that is only run locally and is skipped on CI.
  */

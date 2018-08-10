@@ -68,6 +68,7 @@ public:
   void LineTo(float x, float y);
   void Arc(float x, float y, float radius, float startAngle, float endAngle, float anticlockwise);
   void ArcTo(float x1, float y1, float x2, float y2, float radius);
+  void QuadraticCurveTo(float cpx, float cpy, float x, float y);
   void BezierCurveTo(float cp1x, float cp1y, float cp2x, float cp2y, float x, float y);
   void Rect(float x, float y, float w, float h);
   void FillRect(float x, float y, float w, float h);
@@ -127,6 +128,7 @@ protected:
   static NAN_METHOD(LineTo);
   static NAN_METHOD(Arc);
   static NAN_METHOD(ArcTo);
+  static NAN_METHOD(QuadraticCurveTo);
   static NAN_METHOD(BezierCurveTo);
   static NAN_METHOD(Rect);
   static NAN_METHOD(FillRect);
@@ -144,9 +146,11 @@ protected:
   static NAN_METHOD(PutImageData);
   static NAN_METHOD(Save);
   static NAN_METHOD(Restore);
+  static NAN_METHOD(ToDataURL);
   static NAN_METHOD(Destroy);
 
   static bool isImageType(Local<Value> arg);
+  static sk_sp<SkImage> getImageFromContext(CanvasRenderingContext2D *ctx);
   static sk_sp<SkImage> getImage(Local<Value> arg);
 
   CanvasRenderingContext2D(unsigned int width, unsigned int height);

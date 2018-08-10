@@ -1,13 +1,24 @@
 /* global assert, beforeEach, describe, it */
-const helpers = require('./helpers');
+const exokit = require('../../index');
 
 describe('MutationObserver', () => {
   var childEl;
   var el;
+  var window;
+  var document;
+  var MutationObserver;
 
-  const window = helpers.createWindow();
-  const document = window.document;
-  const MutationObserver = window.MutationObserver;
+  before(() => {
+    const o = exokit();
+    window = o.window;
+    window.navigator.getVRDisplaysSync = () => [];
+    document = o.document;
+    MutationObserver = window.MutationObserver;
+  });
+  
+  after(() => {
+    window.destroy();
+  });
 
   beforeEach(() => {
     el = document.createElement('div');

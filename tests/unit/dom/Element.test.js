@@ -2,12 +2,20 @@
 const exokit = require('../../../index');
 
 describe('Element', () => {
+  var window;
   var document;
   var el;
 
   beforeEach(() => {
-    document = exokit().document;
+    const o = exokit();
+    window = o.window;
+    window.navigator.getVRDisplaysSync = () => [];
+    document = o.document;
     el = document.createElement('a');
+  });
+
+  afterEach(() => {
+    window.destroy();
   });
 
   describe('cloneNode', () => {

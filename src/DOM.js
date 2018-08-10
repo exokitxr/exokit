@@ -1782,18 +1782,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               contentDocument.on('framebuffer', framebuffer => {
                 this._emit('framebuffer', framebuffer);
               });
-              const _vrdisplaycheck = e => {
-                if (contentDocument.readyState === 'complete') {
-                  const newEvent = new Event('vrdisplayactivate');
-                  newEvent.display = e.display;
-                  contentWindow.dispatchEvent(newEvent);
-                }
-              };
-              parentWindow.top.on('vrdisplaycheck', _vrdisplaycheck);
               contentWindow.on('destroy', e => {
                 parentWindow.emit('destroy', e);
-
-                parentWindow.top.removeListener('vrdisplaycheck', _vrdisplaycheck);
               });
 
               this.dispatchEvent(new Event('load', {target: this}));
@@ -1896,7 +1886,7 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
       if (this._context === null) {
-        this._context = new GlobalContext.CanvasRenderingContext2D(this.width, this.height);
+        this._context = new GlobalContext.CanvasRenderingContext2D(this);
       }
     } else if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'xrpresent') {
       if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext' && this._context.constructor.name !== 'WebGL2RenderingContext') {
@@ -1923,6 +1913,13 @@ class HTMLCanvasElement extends HTMLElement {
       }
     }
     return this._context;
+  }
+  
+  toDataURL() {
+    if (!this._context) {
+      this.getContext('2d');
+    }
+    return this._context.toDataURL();
   }
 
   captureStream(frameRate) {
