@@ -9,7 +9,10 @@
 #include <v8.h>
 #include <bindings.h>
 #include <glfw.h>
+
+#ifdef OPENVR
 #include <openvr-bindings.h>
+#endif
 
 using namespace v8;
 
@@ -179,8 +182,10 @@ void InitExports(Handle<Object> exports) {
   Local<Value> window = makeWindow();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
 
+#ifdef OPENVR
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
+#endif
 
 #if _WIN32
   Local<Value> lm = makeLm();
