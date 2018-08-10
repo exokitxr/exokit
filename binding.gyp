@@ -5,7 +5,7 @@
       'conditions': [
         ['OS=="win"', {
           'sources': [
-            'main.cpp',
+            'exokit.cpp',
             'deps/exokit-bindings/bindings/src/*.cc',
             'deps/exokit-bindings/util/src/*.cc',
             'deps/exokit-bindings/canvas/src/*.cpp',
@@ -193,7 +193,7 @@
         }],
         ['OS=="linux"', {
           'sources': [
-            'main.cpp',
+            'exokit.cpp',
             '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
@@ -295,7 +295,7 @@
         }],
         ['OS=="mac"', {
           'sources': [
-            'main.cpp',
+            'exokit.cpp',
             '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
