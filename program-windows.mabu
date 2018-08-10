@@ -64,10 +64,7 @@ SRCS = main.cpp \
   .\deps\exokit-bindings\webaudiocontext\src\PannerNode.cpp \
   .\deps\exokit-bindings\webaudiocontext\src\ScriptProcessorNode.cpp \
   .\deps\exokit-bindings\webaudiocontext\src\StereoPannerNode.cpp \
-  .\deps\exokit-bindings\webglcontext\src\webgl.cc \
-  .\deps\openvr\src\ivrcompositor.cpp \
-  .\deps\openvr\src\ivrsystem.cpp \
-  .\deps\openvr\src\openvr-bindings.cpp
+  .\deps\exokit-bindings\webglcontext\src\webgl.cc
 
 # path/to/source.c \
 #   another_source.cpp \
@@ -85,7 +82,6 @@ INCS = C:\Users\avaer\.node-gyp\10.6.0\include\node \
   node_modules\native-canvas-deps\include\effects \
   node_modules\native-audio-deps\include \
   node_modules\native-video-deps\include \
-  node_modules\native-openvr-deps\headers \
   node_modules\leapmotion\include \
   deps\exokit-bindings \
   deps\exokit-bindings\utf8 \
@@ -99,8 +95,7 @@ INCS = C:\Users\avaer\.node-gyp\10.6.0\include\node \
   deps\exokit-bindings\webaudiocontext\include \
   deps\exokit-bindings\videocontext\include \
   deps\exokit-bindings\glfw\include \
-  deps\exokit-bindings\leapmotion\include \
-  deps\openvr\include
+  deps\exokit-bindings\leapmotion\include
 
 # Macro definitions for any language are specified here.
 #
@@ -241,7 +236,6 @@ STLIBS = node \
   avdevice \
   swscale \
   swresample \
-  openvr_api \
   Leap
 
 # shared libs to link in
@@ -256,7 +250,6 @@ LIBPATHS = C:\Users\avaer\.node-gyp\10.6.0\x64 \
   node_modules\native-canvas-deps\lib\windows \
   node_modules\native-audio-deps\lib\windows \
   node_modules\native-video-deps\lib\win \
-  node_modules\native-openvr-deps\bin\win64 \
   node_modules\leapmotion\lib\win \
   node_modules\magicleap\lib\win64
 
