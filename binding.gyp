@@ -93,7 +93,7 @@
           ],
           'defines': [
             'NOMINMAX',
-            'OPENVR=1',
+            'OPENVR',
           ],
           'conditions': [
             ['"<!(echo %MAGICLEAP%)" != "%MAGICLEAP%"', {
@@ -287,7 +287,7 @@
               ],
               'defines': [
                 'NOMINMAX',
-                'OPENVR=1',
+                'OPENVR',
               ],
             }],
             ['"<!(node -e \"console.log(process.arch)\")"=="arm64"', {
@@ -475,7 +475,7 @@
             }
           ],
           'defines': [
-            'OPENVR=1',
+            'OPENVR',
           ],
         }],
       ],
