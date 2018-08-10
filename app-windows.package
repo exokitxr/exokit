@@ -64,7 +64,7 @@
 #
 # This resolves to 'program.mabu'
 #
-REFS = program
+REFS = program-windows
 
 # References needn't be in the same directory as this project.
 #
@@ -87,7 +87,7 @@ USES = ml_sdk OpenGL
 # For packages, this changes the staging area for assets, and
 # the location of the package *.mpk file for device builds.
 #
-OUT = app
+OUT = build\magicleap\app-windows
 
 # Package building is driven by this low-level flag list,
 # but it's preferable to look for "pkg/.../" options (mabu --print-options)
