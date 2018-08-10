@@ -344,7 +344,7 @@
                 '-lfreetype',
                 '-lpng16',
                 '-lskia',
-		'-lc++_static',
+		            '-lc++_static',
                 '-lLabSound',
                 '-lavformat',
                 '-lavcodec',
