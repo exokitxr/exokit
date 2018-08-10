@@ -15,7 +15,60 @@ KIND = program
 # mabu determines the source type by the file extension
 # and invokes the C/C++ compiler or assembler as appropriate.
 #
-SRCS = main.c wasm-rt-impl.c
+SRCS = main.cpp \
+   exokit.cpp \
+  .\deps\exokit-bindings\bindings\src\bindings.cc \
+  .\deps\exokit-bindings\canvascontext\src\canvas-context.cc \
+  .\deps\exokit-bindings\canvascontext\src\canvas-gradient.cc \
+  .\deps\exokit-bindings\canvascontext\src\canvas-pattern.cc \
+  .\deps\exokit-bindings\canvascontext\src\imageBitmap-context.cc \
+  .\deps\exokit-bindings\canvascontext\src\image-context.cc \
+  .\deps\exokit-bindings\canvascontext\src\imageData-context.cc \
+  .\deps\exokit-bindings\canvascontext\src\path2d-context.cc \
+  .\deps\exokit-bindings\canvas\src\Color.cpp \
+  .\deps\exokit-bindings\canvas\src\csscolorparser.cpp \
+  .\deps\exokit-bindings\canvas\src\dxt.cpp \
+  .\deps\exokit-bindings\canvas\src\FloydSteinberg.cpp \
+  .\deps\exokit-bindings\canvas\src\Image.cpp \
+  .\deps\exokit-bindings\canvas\src\ImageData.cpp \
+  .\deps\exokit-bindings\canvas\src\PackedImageData.cpp \
+  .\deps\exokit-bindings\canvas\src\Path2D.cpp \
+  .\deps\exokit-bindings\canvas\src\Resource.cpp \
+  .\deps\exokit-bindings\canvas\src\rg_etc1.cpp \
+  .\deps\exokit-bindings\canvas\src\web_color.cpp \
+  .\deps\exokit-bindings\canvas\src\web_font.cpp \
+  .\deps\exokit-bindings\canvas\src\web_string.cpp \
+  .\deps\exokit-bindings\glfw\src\glfw.cc \
+  .\deps\exokit-bindings\leapmotion\src\leapmotion.cc \
+  .\deps\exokit-bindings\magicleap\src\magicleap.cc \
+  .\deps\exokit-bindings\nanosvg\src\nanosvg.cpp \
+  .\deps\exokit-bindings\util\src\defines.cc \
+  .\deps\exokit-bindings\videocontext\src\VideoCamera.cpp \
+  .\deps\exokit-bindings\videocontext\src\Video.cpp \
+  .\deps\exokit-bindings\videocontext\src\VideoMode.cpp \
+  .\deps\exokit-bindings\videocontext\src\win\VideoMode_win.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\AnalyserNode.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\AudioBuffer.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\AudioContext.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\Audio.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\AudioDestinationNode.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\AudioListener.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\AudioNode.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\AudioParam.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\AudioSourceNode.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\FakeAudioParam.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\GainNode.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\MediaStreamTrack.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\MicrophoneMediaStream.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\OscillatorNode.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\PannerNode.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\ScriptProcessorNode.cpp \
+  .\deps\exokit-bindings\webaudiocontext\src\StereoPannerNode.cpp \
+  .\deps\exokit-bindings\webglcontext\src\webgl.cc \
+  .\deps\openvr\src\ivrcompositor.cpp \
+  .\deps\openvr\src\ivrsystem.cpp \
+  .\deps\openvr\src\openvr-bindings.cpp
+
 # path/to/source.c \
 #   another_source.cpp \
 #   yet_another.asm \
@@ -23,23 +76,41 @@ SRCS = main.c wasm-rt-impl.c
 
 # Include paths for any language are specified here.
 #
-# INCS = incs \
-#   . \
-#   $(MLSDK)\this\example\shows\syntax \
-#   $(MLSDK)/but/normally/USES/adds/MLSDK/includes...
+INCS = C:\Users\avaer\.node-gyp\10.6.0\include\node \
+  node_modules \
+  node_modules\native-graphics-deps\include \
+  node_modules\native-canvas-deps\include\core \
+  node_modules\native-canvas-deps\include\config \
+  node_modules\native-canvas-deps\include\gpu \
+  node_modules\native-canvas-deps\include\effects \
+  node_modules\native-audio-deps\include \
+  node_modules\native-video-deps\include \
+  node_modules\native-openvr-deps\headers \
+  node_modules\leapmotion\include \
+  deps\exokit-bindings \
+  deps\exokit-bindings\utf8 \
+  deps\exokit-bindings\native_app_glue \
+  deps\exokit-bindings\util\include \
+  deps\exokit-bindings\bindings\include \
+  deps\exokit-bindings\canvas\include \
+  deps\exokit-bindings\nanosvg\include \
+  deps\exokit-bindings\canvascontext\include \
+  deps\exokit-bindings\webglcontext\include \
+  deps\exokit-bindings\webaudiocontext\include \
+  deps\exokit-bindings\videocontext\include \
+  deps\exokit-bindings\glfw\include \
+  deps\exokit-bindings\leapmotion\include \
+  deps\openvr\include
 
 # Macro definitions for any language are specified here.
 #
-# DEFS = \
-#   MYFLAG \
-#   STRING="string" \
-#   FOO=bar()
+DEFS = NOMINMAX
 
 # Specify build options -- these are generic ways to specify flags
 # that are common between toolchains but not always textually
 # compatible.  Use 'mabu --print-options' to see the ones available.
 #
-OPTIONS = standard-c++/11 optimize/high debug/off
+OPTIONS = standard-c++/17
 
 # Specify link references to other mabu projects, meaning mabu builds them
 # first, then links against their outputs.  Additionally, if
@@ -129,7 +200,7 @@ USES = OpenGL
 # Note that the build output will always appear in
 # a subdirectory of this one, named after the build target.
 #
-OUT = program
+OUT = build\magicleap\program-windows
 
 # You may rename the output program this way (rather than
 # by renaming your *.mabu file).
@@ -157,7 +228,21 @@ OUT = program
 
 # static libs to link in
 #
-# STLIBS = mylib path/to/another
+STLIBS = node \
+  opengl32 \
+  glew32 \
+  glfw3dll  \
+  gdiplus \
+  skia \
+  LabSound \
+  avformat \
+  avcodec \
+  avutil \
+  avdevice \
+  swscale \
+  swresample \
+  openvr_api \
+  Leap
 
 # shared libs to link in
 #
@@ -165,7 +250,15 @@ OUT = program
 
 # paths for finding libraries above
 #
-# LIBPATHS = $(MLSDK)/lib local_libs/
+LIBPATHS = C:\Users\avaer\.node-gyp\10.6.0\x64 \
+  node_modules\native-graphics-deps\lib\windows\glew \
+  node_modules\native-graphics-deps\lib\windows\glfw \
+  node_modules\native-canvas-deps\lib\windows \
+  node_modules\native-audio-deps\lib\windows \
+  node_modules\native-video-deps\lib\win \
+  node_modules\native-openvr-deps\bin\win64 \
+  node_modules\leapmotion\lib\win \
+  node_modules\magicleap\lib\win64
 
 # flags for C/C++/assembly preprocessing
 #
@@ -178,6 +271,7 @@ CFLAGS.gcc,clang = -ffast-math
 # flags for C++ compilers
 #
 CXXFLAGS.gcc,clang = -fvisibility-ms-compat
+CXXFLAGS.msvc = /MT /std:c++latest
 
 # flags for assemblers
 #
