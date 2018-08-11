@@ -9,6 +9,16 @@ const bugsnag = require('bugsnag');
 
 const GlobalContext = require('./src/GlobalContext');
 
+const IgnoredErrors = {
+  ['Failed to set local answer sdp: Called in wrong state: STATE_INPROGRESS']: true,
+  ['Failed to set local offer sdp: Called in wrong state: STATE_INPROGRESS']: true,
+  ['Failed to set remote answer sdp: Called in wrong state: STATE_INPROGRESS']: true,
+}
+
+const IgnoredPatterns = [
+  'Failed to set local offer sdp: Failed to push down transport description: Local fingerprint does not match identity.',
+];
+
 const bugsnagApiKey = (() => {
   try {
     return fs.readFileSync(path.join(__dirname, 'bugsnag.txt'), 'utf8').match(/^(\S*)/)[1];
@@ -21,7 +31,6 @@ const bugsnagApiKey = (() => {
 })();
 if (bugsnagApiKey) {
   bugsnag.register(bugsnagApiKey, {
-    autoNotifyUnhandledRejection: false,
     metaData: {
       argv: process.argv,
       command: GlobalContext.commands,
@@ -42,6 +51,33 @@ if (bugsnagApiKey) {
       uptime: os.uptime(),
       userInfo: os.userInfo(),
     },
+  });
+
+  const Configuration = require('bugsnag/lib/configuration');
+
+  function shouldIgnoreError(err) {
+    if (IgnoredErrors[err.message]) {
+      return true;
+    }
+    for (const pattern of IgnoredPatterns) {
+      if (err.message.indexOf(pattern) >= 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Configuration.beforeNotifyCallbacks.push(function (report) {
+    for (const evt of report.events) {
+      for (const err of evt.exceptions) {
+        if (shouldIgnoreError(err)) {
+          console.warn('Bugsnag ignored error: ');
+          console.warn(err);
+          report.ignore();
+          return false;
+        }
+      }
+    }
   });
 }
 
