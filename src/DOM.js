@@ -884,7 +884,7 @@ class Element extends Node {
           return true;
         }
 			});
-      return result;
+      return result / this.ownerDocument.defaultView.devicePixelRatio;
     }
   }
   set clientWidth(clientWidth) {}
@@ -901,7 +901,7 @@ class Element extends Node {
       }
     };
     _recurse(this);
-    return result;
+    return result / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientHeight(clientHeight) {}
 
@@ -1546,7 +1546,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const {type} = this;
     return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
   }
-  
+
   loadRunNow() {
     const resource = this.ownerDocument.resources.addResource();
 
@@ -1580,7 +1580,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
         });
       });
   }
-  
+
   runNow() {
     const innerHTML = this.childNodes[0].value;
     const window = this.ownerDocument.defaultView;
@@ -1862,11 +1862,11 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get clientWidth() {
-    return this.width;
+    return this.width / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    return this.height;
+    return this.height / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientHeight(clientHeight) {}
 
@@ -1914,7 +1914,7 @@ class HTMLCanvasElement extends HTMLElement {
     }
     return this._context;
   }
-  
+
   toDataURL() {
     if (!this._context) {
       this.getContext('2d');
