@@ -227,8 +227,12 @@ function initDocument (document, window) {
           };
           document.resources.addEventListener('update', _update);
         }
-      } else {
+      }
+    } else {
+      try {
         await GlobalContext._runHtml(document, window);
+      } catch(err) {
+        console.warn(err);
       }
     }
   });
