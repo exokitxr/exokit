@@ -19,5 +19,6 @@ describe('_parseDocument', () => {
     assert.ok(document.head);
     assert.ok(document.body);
     assert.equal(document.querySelector('a').getAttribute('href'), 'test.html');
+    assert.equal(document.getElementById('area51').value, 'https://i.imgur.com/nCHWXvw.png');
   });
 });

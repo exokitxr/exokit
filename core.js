@@ -590,6 +590,9 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
         )
       );
     }
+    if (element.nodeName === 'TEXTAREA') {
+      element.value = element.innerText;
+    }
     return element;
   }
 };
