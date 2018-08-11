@@ -9,13 +9,10 @@ const bugsnag = require('bugsnag');
 
 const GlobalContext = require('./src/GlobalContext');
 
-const IgnoredErrors = {
-  ['Failed to set local answer sdp: Called in wrong state: STATE_INPROGRESS']: true,
-  ['Failed to set local offer sdp: Called in wrong state: STATE_INPROGRESS']: true,
-  ['Failed to set remote answer sdp: Called in wrong state: STATE_INPROGRESS']: true,
-}
-
-const IgnoredPatterns = [
+const IgnoredStrings = [
+  'Failed to set local answer sdp: Called in wrong state: STATE_INPROGRESS',
+  'Failed to set local offer sdp: Called in wrong state: STATE_INPROGRESS',
+  'Failed to set remote answer sdp: Called in wrong state: STATE_INPROGRESS',
   'Failed to set local offer sdp: Failed to push down transport description: Local fingerprint does not match identity.',
 ];
 
@@ -56,10 +53,7 @@ if (bugsnagApiKey) {
   const Configuration = require('bugsnag/lib/configuration');
 
   function shouldIgnoreError(err) {
-    if (IgnoredErrors[err.message]) {
-      return true;
-    }
-    for (const pattern of IgnoredPatterns) {
+    for (const pattern of IgnoredStrings) {
       if (err.message.indexOf(pattern) >= 0) {
         return true;
       }
