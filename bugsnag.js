@@ -21,6 +21,7 @@ const bugsnagApiKey = (() => {
 })();
 if (bugsnagApiKey) {
   bugsnag.register(bugsnagApiKey, {
+    autoNotifyUnhandledRejection: false,
     metaData: {
       argv: process.argv,
       command: GlobalContext.commands,

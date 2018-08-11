@@ -15,6 +15,17 @@ const {Request, Response, Headers, Blob} = fetch;
 
 const WebSocket = require('ws/lib/websocket');
 
+const {
+  RTCDataChannel,
+  RTCDataChannelEvent,
+  RTCIceCandidate,
+  RTCPeerConnection,
+  RTCPeerConnectionIceEvent,
+  RTCRtpReceiver,
+  RTCRtpSender,
+  RTCSessionDescription,
+} = require('wrtc');
+
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
 const {TextEncoder, TextDecoder} = require('window-text-encoding');
@@ -1274,6 +1285,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.PannerNode = PannerNode;
   window.StereoPannerNode = StereoPannerNode;
   window.createImageBitmap = createImageBitmap;
+  window.RTCDataChannel = RTCDataChannel;
+  window.RTCDataChannelEvent = RTCDataChannelEvent;
+  window.RTCIceCandidate = RTCIceCandidate;
+  window.RTCPeerConnection = RTCPeerConnection;
+  window.RTCPeerConnectionIceEvent = RTCPeerConnectionIceEvent;
+  window.RTCRtpReceiver = RTCRtpReceiver;
+  window.RTCRtpSender = RTCRtpSender;
+  window.RTCSessionDescription = RTCSessionDescription;
   window.Worker =  class Worker extends nativeWorker {
     constructor(src, workerOptions = {}) {
       if (nativeBindings) {
