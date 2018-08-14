@@ -104,6 +104,7 @@ const args = (() => {
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
+
   const windowSpec = (() => {
     try {
       const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
@@ -116,6 +117,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       return null;
     }
   })();
+
   if (windowSpec) {
     const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture, vao] = windowSpec;
 
@@ -126,10 +128,19 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const document = canvas.ownerDocument;
     const window = document.defaultView;
-    const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
-    window.devicePixelRatio = framebufferWidth / canvasWidth;
 
-    const title = `Exokit ${version}`
+    const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
+    const nativeWindowHeight = nativeWindowSize.height;
+    const nativeWindowWidth = nativeWindowSize.width;
+
+    // Calculate devicePixelRatio.
+    window.devicePixelRatio = nativeWindowWidth / canvasWidth;
+
+    // Tell DOM how large the window is.
+    canvas.height = window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
+    canvas.width = window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
+
+    const title = `Exokit ${version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
 
     const cleanups = [];
@@ -557,8 +568,8 @@ nativeWindow.setEventHandler((type, data) => {
         innerWidth = width;
         innerHeight = height;
 
-        window.innerWidth = innerWidth;
-        window.innerHeight = innerHeight;
+        window.innerWidth = innerWidth / window.devicePixelRatio;
+        window.innerHeight = innerHeight / window.devicePixelRatio;
         window.dispatchEvent(new window.Event('resize'));
         break;
       }
