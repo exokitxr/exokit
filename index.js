@@ -137,8 +137,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     window.devicePixelRatio = nativeWindowWidth / canvasWidth;
 
     // Tell DOM how large the window is.
-    canvas.height = window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
-    canvas.width = window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
+    window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
+    window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
 
     const title = `Exokit ${version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
