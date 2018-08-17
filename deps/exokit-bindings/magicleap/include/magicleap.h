@@ -15,7 +15,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <glfw.h>
+#include <webgl.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
 #include <ml_perception.h>
