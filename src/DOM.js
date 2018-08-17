@@ -995,6 +995,10 @@ class Element extends Node {
     _elementSetter(this, 'mouseup', onmouseup);
   }
 
+  get outerHTML() {
+    return this[util.inspect.custom]();
+  }
+
   requestPointerLock() {
     const topDocument = this.ownerDocument.defaultView.top.document;
 
