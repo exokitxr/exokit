@@ -279,7 +279,7 @@ NAN_METHOD(MLContext::InitLifecycle) {
 NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   if (lifecycle_status != MLResult_Ok) {
     ML_LOG(Error, "%s: Lifecycle not initialized.", application_name);
