@@ -1,0 +1,30 @@
+<manifest
+	xmlns:ml="magicleap"
+	ml:package="com.webmr.exokit"
+	ml:version_code="1"
+	ml:version_name="1.0">
+	<application
+		ml:visible_name="Exokit"
+		ml:sdk_version="1.0">
+      <uses-privilege ml:name="LowLatencyLightwear" />
+      <uses-privilege ml:name="Internet" />
+      <uses-privilege ml:name="LocalAreaNetwork" />
+      <uses-privilege ml:name="NormalNotificationsUsage" />
+      <uses-privilege ml:name="WorldReconstruction" />
+      <uses-privilege ml:name="Occlusion" />
+      <uses-privilege ml:name="ControllerPose" />
+      <uses-privilege ml:name="GesturesSubscribe" />
+      <uses-privilege ml:name="GesturesConfig" />
+      <uses-privilege ml:name="AudioRecognizer" />
+      <uses-privilege ml:name="CameraCapture" />
+      <uses-privilege ml:name="AudioCaptureMic" />
+      <uses-privilege ml:name="VoiceInput" />
+      <uses-privilege ml:name="PwFoundObjRead" />
+		<component
+			ml:name=".fullscreen"
+			ml:visible_name="Exokit"
+			ml:binary_name="bin/program-device"
+			ml:type="Fullscreen">
+		</component>
+	</application>
+</manifest>

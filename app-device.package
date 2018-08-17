@@ -1,0 +1,97 @@
+#
+# Example package project.
+#
+# Settings are presented in the order of likelihood in real projects.
+# Only the ones marked (required) are needed for useful projects.
+#
+
+# The primary purpose of package projects is to define what files
+# go into the application layout.
+#
+# Note that executables built by mabu are implicitly added to the package
+# through REFS, below.  Alternately, a package can be constructed
+# entirely from DATAS.
+#
+# Files are denoted as <path> to copy a path relative to this
+# project into the same path in the package,
+# or, as <source> ':' <target> to copy a path relative to this
+# project into a different path in the package.
+#
+# The lone <path> or the <target> tells how to access the file at runtime.
+#
+# The <source> may include wildcards or point to a directory.
+#
+# Wildcards support "*", "?", and "[...]" as in "glob".
+# An entry "**" may be included to recursively search for matches inside directories.
+#
+# When using wildcard sources, the prefix of the source that does not contain
+# wildcards is stripped out when constructing the full <target> path.
+# E.g. "root/above/**/*.png" does not append "root/above/" to the target paths.
+#
+# When using directory sources, the entire <source> path is omitted from
+# the full <target> path.  E.g. "/path/to/files/ : data/" does not append
+# "/path/to/files/" to the target paths.
+#
+# The <target> must end in a slash when paired with wildcard or directory
+# sources, and cannot include wildcards.
+#
+# DATAS = local_file.txt : path/at/runtime.txt \
+#   path/to/local/and/runtime.png \
+#   path/to/local.obj : path/at/runtime.obj \
+#   images/*.png : target/path/ \
+#   images/**/*.png : target/path/ \
+#   directory/of/goodies/ : target/contents/ \
+
+# Packages may use OPTIONS, but they only apply to this
+# package, so only items relevant to packages will be
+# incorporated (e.g. DATAS, PKGFLAGS).
+#
+OPTIONS = debug/on package/debuggable/on package/validateManifest/on
+
+#
+# Instead of passing "-s <file>.cert" to mabu, you may instead define it
+# in this .package file.
+#
+# A certificate file has a paired *.privkey file.  See the `certgen`
+# script for generating both of these.
+#
+# MLCERT = path/to/my.cert
+
+# Specify references to other mabu projects, meaning mabu builds them
+# first, then packages their build outputs.  Additionally, if
+# any settings are "export"'ed from those projects, they are combined
+# with this project.
+#
+# This resolves to 'program.mabu'
+#
+REFS = program-device
+
+# References needn't be in the same directory as this project.
+#
+# This resolves to 'path/to/program.mabu'
+#
+# REFS = path/to/program
+
+# Packages may use existing prebuilt components.
+#
+# Components are mainly used by MLSDK, but may also be used to bundle
+# together reusable code and settings (INCS, DEFS, LIBPATHS, OPTIONS)
+# or data files and assets.  See *.comp files for examples.
+# Use 'mabu --print-components' to see the ones available.
+#
+# USES = ml_sdk OpenGL
+
+# You may change the output directory for a package
+# this way (rather than passing -o|--out on the command line).
+#
+# For packages, this changes the staging area for assets, and
+# the location of the package *.mpk file for device builds.
+#
+OUT = build\magicleap\app-device
+
+# Package building is driven by this low-level flag list,
+# but it's preferable to look for "pkg/.../" options (mabu --print-options)
+# since these are not guaranteed to be stable over time.
+#
+# PKGFLAGS = debuggable=1
+
