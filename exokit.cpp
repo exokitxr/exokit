@@ -8,7 +8,6 @@
 
 #include <v8.h>
 #include <bindings.h>
-#include <glfw.h>
 
 #ifdef OPENVR
 #include <openvr-bindings.h>
