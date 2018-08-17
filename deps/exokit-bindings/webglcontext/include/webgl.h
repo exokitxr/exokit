@@ -10,13 +10,12 @@
 
 #include <nan/nan.h>
 
-#if _WIN32
+#if defined(_WIN32)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
-#endif
 
-#if __APPLE__
+#elif defined(__APPLE__)
 #if TARGET_OS_IPHONE
 #include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>
@@ -38,15 +37,13 @@
 #else
 #error "Unknown Apple platform"
 #endif
-#endif
 
-#if __linux__
+#elif defined(__linux__)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
-#endif
 
-#if __ANDROID__
+#elif defined(__ANDROID__)
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 #endif
