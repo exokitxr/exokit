@@ -186,7 +186,7 @@ void InitExports(Handle<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
 #endif
 
-#if _WIN32
+#if LEAPMOTION
   Local<Value> lm = makeLm();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeLm"), lm);
 #endif
