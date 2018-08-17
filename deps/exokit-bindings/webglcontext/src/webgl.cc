@@ -39,6 +39,7 @@ void unregisterGLObj(GLuint obj); */
 template<NAN_METHOD(F)>
 NAN_METHOD(glCallWrap) {
   Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
@@ -52,7 +53,7 @@ NAN_METHOD(glCallWrap) {
 }
 template<NAN_METHOD(F)>
 NAN_METHOD(glSwitchCallWrap) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
