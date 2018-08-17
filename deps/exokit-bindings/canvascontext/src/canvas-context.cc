@@ -1363,14 +1363,15 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(otherContextObj));
 
       int w, h;
-      glfwGetWindowSize(gl->windowHandle, &w, &h);
+      windowsystem::GetWindowSize(gl->windowHandle, &w, &h);
 
       SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
       SkBitmap bitmap;
       bool ok = bitmap.tryAllocPixels(info);
       if (ok) {
+        windowsystem::SetCurrentWindowContext(gl->windowHandle);
+
         unique_ptr<char[]> pixels(new char[w * h * 4]);
-        glfw::SetCurrentWindowContext(gl->windowHandle);
         glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
 
         flipImageData((char *)bitmap.getPixels(), pixels.get(), w, h, 4);
