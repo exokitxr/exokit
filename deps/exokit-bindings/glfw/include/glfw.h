@@ -15,12 +15,16 @@
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
 
-#include <webgl.h>
+// #include <webgl.h>
 
 using namespace v8;
 
+typedef GLFWwindow NATIVEwindow;
+#define windowsystem glfw
+
 namespace glfw {
-  void SetCurrentWindowContext(GLFWwindow *window);
+  void GetWindowSize(NATIVEwindow *window, int *width, int *height);
+  void SetCurrentWindowContext(NATIVEwindow *window);
 }
 
 // Local<Object> makeGlfw();
