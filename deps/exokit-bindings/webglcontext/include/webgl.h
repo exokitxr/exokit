@@ -70,7 +70,12 @@
 #define MAX_CLIENT_WAIT_TIMEOUT_WEBGL ((uint32_t)2e7)
 
 #include <defines.h>
-#include <glfw.h>
+
+#ifndef LUMIN
+#include <glfw/include/glfw.h>
+#else
+#include <egl/include/egl.h>
+#endif
 
 using namespace v8;
 using namespace node;
