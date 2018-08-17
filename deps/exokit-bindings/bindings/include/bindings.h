@@ -10,7 +10,6 @@
 #include <path2d-context.h>
 #include <canvas-gradient.h>
 #include <canvas-pattern.h>
-#include <glfw.h>
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
