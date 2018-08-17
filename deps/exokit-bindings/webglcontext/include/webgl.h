@@ -324,7 +324,7 @@ public:
   }
 
   bool live;
-  GLFWwindow *windowHandle;
+  NATIVEwindow *windowHandle;
   GLuint defaultVao;
   bool dirty;
   GLuint defaultFramebuffer;

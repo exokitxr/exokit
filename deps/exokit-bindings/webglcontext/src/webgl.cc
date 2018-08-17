@@ -44,7 +44,7 @@ NAN_METHOD(glCallWrap) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->live) {
     if (gl->windowHandle) {
-      glfw::SetCurrentWindowContext(gl->windowHandle);
+      windowsystem::SetCurrentWindowContext(gl->windowHandle);
     }
 
     F(info);
@@ -58,7 +58,7 @@ NAN_METHOD(glSwitchCallWrap) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->live) {
     if (gl->windowHandle) {
-      glfw::SetCurrentWindowContext(gl->windowHandle);
+      windowsystem::SetCurrentWindowContext(gl->windowHandle);
     }
 
     F(info);
@@ -865,7 +865,7 @@ NAN_METHOD(WebGLRenderingContext::GetWindowHandle) {
 NAN_METHOD(WebGLRenderingContext::SetWindowHandle) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   if (info[0]->IsArray()) {
-    gl->windowHandle = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+    gl->windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   } else {
     gl->windowHandle = nullptr;
   }
@@ -2004,7 +2004,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
   int width, height;
-  glfwGetWindowSize(gl->windowHandle, &width, &height);
+  windowsystem::GetWindowSize(gl->windowHandle, &width, &height);
 
   info.GetReturnValue().Set(JS_INT(width));
 }
@@ -2016,7 +2016,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
   int width, height;
-  glfwGetWindowSize(gl->windowHandle, &width, &height);
+  windowsystem::GetWindowSize(gl->windowHandle, &width, &height);
 
   info.GetReturnValue().Set(JS_INT(height));
 }
