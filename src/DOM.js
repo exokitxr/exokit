@@ -1862,11 +1862,11 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get clientWidth() {
-    return this.width / this.ownerDocument.defaultView.devicePixelRatio;
+    return this.ownerDocument.defaultView.innerWidth;
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    return this.height / this.ownerDocument.defaultView.devicePixelRatio;
+    return this.ownerDocument.defaultView.innerHeight;
   }
   set clientHeight(clientHeight) {}
 
