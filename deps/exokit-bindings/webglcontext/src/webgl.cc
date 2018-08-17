@@ -4102,14 +4102,14 @@ NAN_METHOD(WebGLRenderingContext::GetUniform) {
     GLfloat fData[16];
     GLint iData[16];
     GLuint uiData[16];
-    GLdouble dData[16];
+    // GLdouble dData[16];
     switch(type) {
-      case GL_DOUBLE:
+      /* case GL_DOUBLE:
       case GL_DOUBLE_VEC2:
       case GL_DOUBLE_VEC3:
       case GL_DOUBLE_VEC4:
         glGetUniformdv(program, location, dData);
-        break;
+        break; */
       case GL_FLOAT:
       case GL_FLOAT_VEC2:
       case GL_FLOAT_VEC3:
