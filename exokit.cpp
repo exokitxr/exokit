@@ -196,6 +196,13 @@ void InitExports(Handle<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 #endif
 
+#ifndef LUMIN
+#define NATIVE_ANALYTICS true
+#else
+#define NATIVE_ANALYTICS false
+#endif
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAnalytics"), JS_BOOL(NATIVE_ANALYTICS));
+
   uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
   initFunctionAddressArray->Set(0, Nan::New<Integer>((uint32_t)(initFunctionAddress >> 32)));
