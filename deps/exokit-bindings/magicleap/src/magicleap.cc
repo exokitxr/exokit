@@ -291,8 +291,8 @@ NAN_METHOD(MLContext::Present) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   if (lifecycle_status != MLResult_Ok) {
-    ML_LOG(Error, "%s: Lifecycle not initialized.", application_name);
-    info.GetReturnValue().Set(JS_BOOL(false));
+    ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
     return;
   }
 
