@@ -29,5 +29,6 @@ find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs mllib/l
 
 # unhack
 
+rm -Rf build/magicleap
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin program-device.mabu
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m manifest-device.xml -s cert/app.privkey -p --create-package --allow-unsigned app-device.package
