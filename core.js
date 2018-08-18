@@ -687,40 +687,6 @@ function tickAnimationFrame() {
     tickAnimationFrame.window = null;
   }
 
-  if (timeouts.length > 0) {
-    _cacheLocalCbs(timeouts);
-    const dateNow = Date.now();
-
-    for (let i = 0; i < localCbs.length; i++) {
-      const timeout = localCbs[i];
-      if (timeout) {
-        const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
-        if (dateNow >= endTime) {
-          timeout();
-
-          timeouts[i] = null;
-        }
-      }
-    }
-  }
-
-  if (intervals.length > 0) {
-    _cacheLocalCbs(intervals);
-    const dateNow = Date.now();
-
-    for (let i = 0; i < localCbs.length; i++) {
-      const interval = localCbs[i];
-      if (interval) {
-        const endTime = interval[symbols.startTimeSymbol] + interval[symbols.intervalSymbol];
-        if (dateNow >= endTime) {
-          interval();
-
-          interval[symbols.startTimeSymbol] = dateNow;
-        }
-      }
-    }
-  }
-
   _clearLocalCbs(); // release garbage
 }
 tickAnimationFrame.window = null;
