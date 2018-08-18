@@ -21,6 +21,8 @@ class XR extends EventEmitter {
     this._window = window;
   }
   requestDevice(name = null) {
+    console.log('request device', name, !!GlobalContext.nativeMl, !!GlobalContext.nativeMl.IsPresent());
+
     if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
       return Promise.resolve(_getXrDisplay(this._window));
     } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
