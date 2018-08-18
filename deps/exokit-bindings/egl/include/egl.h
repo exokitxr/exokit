@@ -28,6 +28,8 @@ class NATIVEwindow {
 public:
   EGLDisplay display;
   EGLContext context;
+  unsigned int width;
+  unsigned int height;
 };
 #define windowsystem egl
 

@@ -251,8 +251,8 @@ NAN_METHOD(SetWindowTitle) {
 }
 
 void GetWindowSize(NATIVEwindow *window, int *width, int *height) {
-  *width = 0;
-  *height = 0;
+  *width = window->width;
+  *height = window->height;
 }
 
 NAN_METHOD(GetWindowSize) {
@@ -268,7 +268,9 @@ NAN_METHOD(GetWindowSize) {
 }
 
 NAN_METHOD(SetWindowSize) {
-  // nothing
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  window->width = info[1]->Uint32Value();
+  window->height = info[2]->Uint32Value();
 }
 
 NAN_METHOD(SetWindowPos) {
@@ -284,11 +286,10 @@ NAN_METHOD(GetWindowPos) {
 
 NAN_METHOD(GetFramebufferSize) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  EGLint width, height;
 
   Local<Object> result = Nan::New<Object>();
-  result->Set(JS_STR("width"),JS_INT(0));
-  result->Set(JS_STR("height"),JS_INT(0));
+  result->Set(JS_STR("width"),JS_INT(window->width));
+  result->Set(JS_STR("height"),JS_INT(window->height));
   info.GetReturnValue().Set(result);
 }
 
@@ -361,7 +362,7 @@ NAN_METHOD(Create) {
 
   eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context);
 
-  NATIVEwindow *windowHandle = new NATIVEwindow{display, context};
+  NATIVEwindow *windowHandle = new NATIVEwindow{display, context, width, height};
 
   GLuint framebuffers[] = {0, 0};
   GLuint framebufferTextures[] = {0, 0, 0, 0};
