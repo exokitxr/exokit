@@ -92,6 +92,7 @@ DATAS = package.json : / \
   *.js : / \
   src/ : /src/ \
   lib/ : /lib/ \
+  build/Release/exokit.node : /build/Release/exokit.node \
   node_modules/ : /node_modules/ \
   examples/ : /examples/ \
 
@@ -162,7 +163,8 @@ STLIBS = node \
   avdevice \
   swscale \
   swresample \
-  opus
+  opus \
+  exokit
 
 # shared libs to link in
 #
