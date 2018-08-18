@@ -11,6 +11,7 @@ export MLSDK_WIN='C:\Users\avaer\MagicLeap\mlsdk\v0.16.0'
 export CC="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang"
 export CXX="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang++"
 export LINK="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang++"
+export AR="$MLSDK/tools/toolchains/bin/aarch64-linux-android-ar"
 
 # pass down to child builds
 EXTRA_FLAGS="-I/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0/lumin/stl/libc++/include -I/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0/lumin/usr/include"
