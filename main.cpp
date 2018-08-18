@@ -146,20 +146,31 @@ int main() {
     close(stderrfds[1]);
 
     std::thread stdoutThread([]() -> void {
-      // ML_LOG(Info, "start stdout thread");
-      char buf[128];
+      int fd = stdoutfds[0];
+
+      char buf[STDIO_BUF_SIZE + 1];
       ssize_t i = 0;
+      ssize_t lineStart = 0;
       for (;;) {
-        ssize_t size = read(stdoutfds[0], buf + i, sizeof(buf - i - 1));
-        // ML_LOG(Info, "=============read result %x %x %x", stdoutfds[0], size, errno);
+        ssize_t size = read(fd, buf + i, STDIO_BUF_SIZE - i);
+        // ML_LOG(Info, "=============read result %x %x %x", fd, size, errno);
         if (size > 0) {
+          for (ssize_t j = i; j < i + size; j++) {
+            if (buf[j] == '\n') {
+              buf[j] = 0;
+              ML_LOG_TAG(Info, LOG_TAG, "%s", buf + lineStart);
+
+              lineStart = j + 1;
+            }
+          }
+
           i += size;
 
-          if (i >= (sizeof(buf) - 1)) {
-            buf[i] = 0;
-            ML_LOG_TAG(Info, LOG_TAG, "%s", buf);
-
-            i = 0;
+          if (i >= STDIO_BUF_SIZE) {
+            ssize_t lineLength = i - lineStart;
+            memcpy(buf, buf + lineStart, lineLength);
+            i = lineLength;
+            lineStart = 0;
           }
         } else {
           if (i > 0) {
@@ -171,25 +182,36 @@ int main() {
       }
     });
     std::thread stderrThread([]() -> void {
-      // ML_LOG(Info, "start stderr thread");
-      char buf[128];
+      int fd = stderrfds[0];
+
+      char buf[STDIO_BUF_SIZE + 1];
       ssize_t i = 0;
+      ssize_t lineStart = 0;
       for (;;) {
-        ssize_t size = read(stderrfds[0], buf + i, sizeof(buf - i - 1));
-        // ML_LOG(Info, "=============read result %x %x %x", stdoutfds[0], size, errno);
+        ssize_t size = read(fd, buf + i, STDIO_BUF_SIZE - i);
+        // ML_LOG(Info, "=============read result %x %x %x", fd, size, errno);
         if (size > 0) {
+          for (ssize_t j = i; j < i + size; j++) {
+            if (buf[j] == '\n') {
+              buf[j] = 0;
+              ML_LOG_TAG(Info, LOG_TAG, "%s", buf + lineStart);
+
+              lineStart = j + 1;
+            }
+          }
+
           i += size;
 
-          if (i >= (sizeof(buf) - 1)) {
-            buf[i] = 0;
-            ML_LOG_TAG(Warning, LOG_TAG, "%s", buf);
-
-            i = 0;
+          if (i >= STDIO_BUF_SIZE) {
+            ssize_t lineLength = i - lineStart;
+            memcpy(buf, buf + lineStart, lineLength);
+            i = lineLength;
+            lineStart = 0;
           }
         } else {
           if (i > 0) {
             buf[i] = 0;
-            ML_LOG_TAG(Warning, LOG_TAG, "%s", buf);
+            ML_LOG_TAG(Info, LOG_TAG, "%s", buf);
           }
           break;
         }
