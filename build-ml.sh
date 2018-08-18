@@ -18,9 +18,11 @@ EXTRA_FLAGS="-I/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0/lumin/stl/libc++/inclu
 export CFLAGS="$CFLAGS $EXTRA_FLAGS"
 export CXXFLAGS="$CXXFLAGS $EXTRA_FLAGS"
 
+export LUMIN=1
+
 export npm_config_arch=arm64
 
-npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64 --LUMIN=true
+npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
 
 # unhack
 
