@@ -910,14 +910,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.setTimeout = (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
-    fn[symbols.idSymbol] = setTimeout(fn, timeout, args);
+    const id = ++rafIndex;
+    fn[symbols.idSymbol] = id;
     timeouts[_findFreeSlot(timeouts)] = fn;
-    return fn[symbols.idSymbol];
+    fn[symbols.timeoutSymbol] = setTimeout(fn, timeout, args);
+    return id;
   };
   window.clearTimeout = id => {
     const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
     if (index !== -1) {
-      clearTimeout(timeouts[index].id);
+      clearTimeout(timeouts[index][symbols.timeoutSymbol]);
       timeouts[index] = null;
     }
   };
@@ -927,14 +929,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
-    fn[symbols.idSymbol] = setInterval(fn, interval, args);
+    const id = ++rafIndex;
+    fn[symbols.idSymbol] = id;
     intervals[_findFreeSlot(intervals)] = fn;
-    return fn[symbols.idSymbol];
+    fn[symbols.timeoutSymbol] = setInterval(fn, interval, args);
+    return id;
   };
   window.clearInterval = id => {
     const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
     if (index !== -1) {
-      clearInterval(intervals[index].id);
+      clearInterval(intervals[index][symbols.timeoutSymbol]);
       intervals[index] = null;
     }
   };
@@ -1359,13 +1363,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     for (let i = 0; i < timeouts.length; i++) {
       if (!_pred(timeouts[i])) {
-        clearTimeout(timeouts[i].id);
+        clearTimeout(timeout[symbols.timeoutSymbol]);
         timeouts[i] = null;
       }
     }
     for (let i = 0; i < intervals.length; i++) {
       if (!_pred(intervals[i])) {
-        clearInterval(intervals[i].id);
+        clearInterval(interval[symbols.timeoutSymbol]);
         intervals[i] = null;
       }
     }
@@ -1396,13 +1400,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           }
           for (let i = 0; i < timeouts.length; i++) {
             if (!_pred(timeouts[i])) {
-              clearTimeout(timeouts[i].id);
+              clearTimeout(timeout[symbols.timeoutSymbol]);
               timeouts[i] = null;
             }
           }
           for (let i = 0; i < intervals.length; i++) {
             if (!_pred(intervals[i])) {
-              clearInterval(intervals[i].id);
+              clearInterval(interval[symbols.timeoutSymbol]);
               intervals[i] = null;
             }
           }
