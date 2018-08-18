@@ -20,10 +20,10 @@ class XR extends EventEmitter {
 
     this._window = window;
   }
-  requestDevice(name = 'VR') {
-    if (name === 'VR' && GlobalContext.nativeVr.VR_IsHmdPresent()) {
+  requestDevice(name = null) {
+    if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
       return Promise.resolve(_getXrDisplay(this._window));
-    } else if (name === 'AR' && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
+    } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
       return Promise.resolve(_getXmDisplay(this._window));
     } else {
       return Promise.resolve(null);
