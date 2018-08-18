@@ -169,6 +169,7 @@ STLIBS = node \
 # shared libs to link in
 #
 # SHLIBS.win = ole32 winmm
+SHLIBS = ml_privileges
 
 # paths for finding libraries above
 #
