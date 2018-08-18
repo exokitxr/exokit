@@ -910,16 +910,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.setTimeout = (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
-    fn[symbols.startTimeSymbol] = Date.now();
-    fn[symbols.timeoutSymbol] = timeout;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
+    fn[symbols.idSymbol] = setTimeout(fn, timeout, args);
     timeouts[_findFreeSlot(timeouts)] = fn;
-    return id;
+    return fn[symbols.idSymbol];
   };
   window.clearTimeout = id => {
     const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
     if (index !== -1) {
+      clearTimeout(timeouts[index].id);
       timeouts[index] = null;
     }
   };
@@ -1363,6 +1361,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     for (let i = 0; i < timeouts.length; i++) {
       if (!_pred(timeouts[i])) {
+        clearTimeout(timeouts[i].id);
         timeouts[i] = null;
       }
     }
@@ -1398,6 +1397,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           }
           for (let i = 0; i < timeouts.length; i++) {
             if (!_pred(timeouts[i])) {
+              clearTimeout(timeouts[i].id);
               timeouts[i] = null;
             }
           }
