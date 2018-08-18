@@ -502,7 +502,7 @@ if (nativeMl) {
             framebuffer: mlMsFbo,
           };
         } else {
-          throw new Error('simulator not attached');
+          throw new Error('failed to present ml context');
         }
       } else {
         throw new Error('no HTMLCanvasElement source provided');
