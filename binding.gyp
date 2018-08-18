@@ -3,7 +3,7 @@
     {
       'target_name': 'exokit',
       'conditions': [
-        ['LUMIN!="true"', {
+        ['"<!(echo $LUMIN)"!="1"', {
           'conditions': [
             ['OS=="win"', {
               'sources': [
@@ -483,7 +483,7 @@
             }],
           ],
         }],
-        ['LUMIN=="true"', {
+        ['"<!(echo $LUMIN)"=="1"', {
           'sources': [
             'exokit.cpp',
             '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
