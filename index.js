@@ -456,7 +456,12 @@ if (nativeMl) {
 
         const initResult = mlContext.Present(windowHandle);
         if (initResult) {
-          const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, canvas.width, canvas.height, 0, 0, 0, 0);
+          const {width: halfWidth, height} = initResult;
+          const width = halfWidth * 2;
+          renderWidth = halfWidth;
+          renderHeight = height;
+          
+          const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
           mlFbo = fbo;
           mlTex = tex;
           mlDepthTex = depthStencilTex;
@@ -464,7 +469,7 @@ if (nativeMl) {
           mlMsTex = msTex;
           mlMsDepthTex = msDepthStencilTex;
 
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
+          // mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
 
           /* for (let i = 0; i < 2; i++) {
             nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
@@ -486,19 +491,21 @@ if (nativeMl) {
           });
 
           window.top.updateVrFrame({
-            renderWidth: viewportArray[2] / 2,
-            renderHeight: viewportArray[3],
+            /* renderWidth: viewportArray[2] / 2,
+            renderHeight: viewportArray[3], */
+            renderWidth,
+            renderHeight,
             force: true,
           });
-          mlContext.SubmitFrame(mlFbo, canvas.width, canvas.height);
+          // mlContext.SubmitFrame(mlFbo, canvas.width, canvas.height);
 
           context.setDefaultFramebuffer(mlMsFbo);
 
           mlGlContext = context;
 
           return {
-            width: canvas.width,
-            height: canvas.height,
+            width,
+            height,
             framebuffer: mlMsFbo,
           };
         } else {
@@ -509,8 +516,10 @@ if (nativeMl) {
       }
     } else {
       return {
-        width: mlGlContext.canvas.width,
-        height: mlGlContext.canvas.height,
+        /* width: mlGlContext.canvas.width,
+        height: mlGlContext.canvas.height, */
+        width: renderWidth * 2,
+        height: renderHeight,
         framebuffer: mlMsFbo,
       };
     }
@@ -1156,8 +1165,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
     } else if (mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
-      mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
-      mlHasPose = true;
+      mlHasPose = mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -1166,73 +1174,75 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
 
-      const depthNear = 0.1;
-      const depthFar = 100;
+      if (mlHasPose) {
+        const depthNear = 0.1;
+        const depthFar = 100;
 
-      localVector.fromArray(transformArray, 0);
-      localQuaternion.fromArray(transformArray, 3);
-      localVector2.set(1, 1, 1);
-      localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-      frameData.pose.set(localVector, localQuaternion);
-      localMatrix.toArray(frameData.leftViewMatrix);
-      frameData.leftProjectionMatrix.set(projectionArray.slice(0, 16));
+        localVector.fromArray(transformArray, 0);
+        localQuaternion.fromArray(transformArray, 3);
+        localVector2.set(1, 1, 1);
+        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
+        frameData.pose.set(localVector, localQuaternion);
+        localMatrix.toArray(frameData.leftViewMatrix);
+        frameData.leftProjectionMatrix.set(projectionArray.slice(0, 16));
 
-      localVector.fromArray(transformArray, 3 + 4);
-      localQuaternion.fromArray(transformArray, 3 + 4 + 3);
-      // localVector2.set(1, 1, 1);
-      localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-      localMatrix.toArray(frameData.rightViewMatrix);
-      frameData.rightProjectionMatrix.set(projectionArray.slice(16, 32));
+        localVector.fromArray(transformArray, 3 + 4);
+        localQuaternion.fromArray(transformArray, 3 + 4 + 3);
+        // localVector2.set(1, 1, 1);
+        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
+        localMatrix.toArray(frameData.rightViewMatrix);
+        frameData.rightProjectionMatrix.set(projectionArray.slice(16, 32));
 
-      let controllersArrayIndex = 0;
-      leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
-      controllersArrayIndex += 3;
-      leftGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
-      controllersArrayIndex += 4;
-      const leftTriggerValue = controllersArray[controllersArrayIndex];
-      leftGamepad.buttons[1].value = leftTriggerValue;
-      const leftTriggerPushed = leftTriggerValue > 0.5;
-      leftGamepad.buttons[1].touched = leftTriggerPushed;
-      leftGamepad.buttons[1].pressed = leftTriggerPushed;
-      controllersArrayIndex++;
+        let controllersArrayIndex = 0;
+        leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
+        controllersArrayIndex += 3;
+        leftGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
+        controllersArrayIndex += 4;
+        const leftTriggerValue = controllersArray[controllersArrayIndex];
+        leftGamepad.buttons[1].value = leftTriggerValue;
+        const leftTriggerPushed = leftTriggerValue > 0.5;
+        leftGamepad.buttons[1].touched = leftTriggerPushed;
+        leftGamepad.buttons[1].pressed = leftTriggerPushed;
+        controllersArrayIndex++;
 
-      let gesturesArrayIndex = 0;
-      leftGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
-      gesturesArrayIndex += 3;
-      leftGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
-      gesturesArrayIndex++;
+        let gesturesArrayIndex = 0;
+        leftGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
+        gesturesArrayIndex += 3;
+        leftGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
+        gesturesArrayIndex++;
 
-      gamepads[0] = leftGamepad;
+        gamepads[0] = leftGamepad;
 
-      rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
-      controllersArrayIndex += 3;
-      rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
-      controllersArrayIndex += 4;
-      const rightTriggerValue = controllersArray[controllersArrayIndex];
-      rightGamepad.buttons[1].value = leftTriggerValue;
-      const rightTriggerPushed = rightTriggerValue > 0.5;
-      rightGamepad.buttons[1].touched = rightTriggerPushed;
-      rightGamepad.buttons[1].pressed = rightTriggerPushed;
-      controllersArrayIndex++;
+        rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
+        controllersArrayIndex += 3;
+        rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
+        controllersArrayIndex += 4;
+        const rightTriggerValue = controllersArray[controllersArrayIndex];
+        rightGamepad.buttons[1].value = leftTriggerValue;
+        const rightTriggerPushed = rightTriggerValue > 0.5;
+        rightGamepad.buttons[1].touched = rightTriggerPushed;
+        rightGamepad.buttons[1].pressed = rightTriggerPushed;
+        controllersArrayIndex++;
 
-      rightGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
-      gesturesArrayIndex += 3;
-      rightGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
-      gesturesArrayIndex++;
+        rightGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
+        gesturesArrayIndex += 3;
+        rightGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
+        gesturesArrayIndex++;
 
-      gamepads[1] = rightGamepad;
+        gamepads[1] = rightGamepad;
 
-      // update ml frame
-      window.top.updateVrFrame({
-        depthNear,
-        depthFar,
-        frameData,
-        stageParameters,
-        planesArray,
-        numPlanes: numPlanesArray[0],
-        gamepads,
-        context: mlContext,
-      });
+        // update ml frame
+        window.top.updateVrFrame({
+          depthNear,
+          depthFar,
+          frameData,
+          stageParameters,
+          planesArray,
+          numPlanes: numPlanesArray[0],
+          gamepads,
+          context: mlContext,
+        });
+      }
 
       if (args.performance) {
         const now = Date.now();
