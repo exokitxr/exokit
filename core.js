@@ -1355,20 +1355,23 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.on('destroy', e => {
     const {window: destroyedWindow} = e;
 
-    const _pred = fn => fn && fn[symbols.windowSymbol] !== destroyedWindow;
+    const _pred = fn => fn[symbols.windowSymbol] === window;
     for (let i = 0; i < rafCbs.length; i++) {
-      if (!_pred(rafCbs[i])) {
+      const rafCb = rafCbs[i];
+      if (rafCb && _pred(rafCb)) {
         rafCbs[i] = null;
       }
     }
     for (let i = 0; i < timeouts.length; i++) {
-      if (!_pred(timeouts[i])) {
+      const timeout = timeouts[i];
+      if (timeout && _pred(timeout)) {
         clearTimeout(timeout[symbols.timeoutSymbol]);
         timeouts[i] = null;
       }
     }
     for (let i = 0; i < intervals.length; i++) {
-      if (!_pred(intervals[i])) {
+      const interval = intervals[i];
+      if (interval && _pred(interval)) {
         clearInterval(interval[symbols.timeoutSymbol]);
         intervals[i] = null;
       }
@@ -1392,14 +1395,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          const _pred = fn => fn && fn[symbols.windowSymbol] !== window;
+          const _pred = fn => fn[symbols.windowSymbol] === window;
           for (let i = 0; i < rafCbs.length; i++) {
-            if (!_pred(rafCbs[i])) {
+            const rafCb = rafCbs[i];
+            if (rafCb && _pred(rafCb)) {
               rafCbs[i] = null;
             }
           }
           for (let i = 0; i < timeouts.length; i++) {
-            if (!_pred(timeouts[i])) {
+            const timeout = timeouts[i];
+            if (timeout && _pred(timeout)) {
               clearTimeout(timeout[symbols.timeoutSymbol]);
               timeouts[i] = null;
             }
