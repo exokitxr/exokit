@@ -1351,10 +1351,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   });
 
   vmo.run(windowStartScript, 'window-start-script.js');
-
-  window.on('destroy', e => {
-    const {window: destroyedWindow} = e;
-
+  
+  const _destroyTimeouts = window => {
     const _pred = fn => fn[symbols.windowSymbol] === window;
     for (let i = 0; i < rafCbs.length; i++) {
       const rafCb = rafCbs[i];
@@ -1376,6 +1374,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         intervals[i] = null;
       }
     }
+  };
+
+  window.on('destroy', e => {
+    _destroyTimeouts(e.window);
   });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
@@ -1395,26 +1397,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          const _pred = fn => fn[symbols.windowSymbol] === window;
-          for (let i = 0; i < rafCbs.length; i++) {
-            const rafCb = rafCbs[i];
-            if (rafCb && _pred(rafCb)) {
-              rafCbs[i] = null;
-            }
-          }
-          for (let i = 0; i < timeouts.length; i++) {
-            const timeout = timeouts[i];
-            if (timeout && _pred(timeout)) {
-              clearTimeout(timeout[symbols.timeoutSymbol]);
-              timeouts[i] = null;
-            }
-          }
-          for (let i = 0; i < intervals.length; i++) {
-            if (!_pred(intervals[i])) {
-              clearInterval(interval[symbols.timeoutSymbol]);
-              intervals[i] = null;
-            }
-          }
+          _destroyTimeouts(window);
         })
         .catch(err => {
           loading = false;
