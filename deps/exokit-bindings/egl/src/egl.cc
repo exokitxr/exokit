@@ -354,7 +354,7 @@ NAN_METHOD(Create) {
 
   EGLint context_attribs[] = {
     EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
-    EGL_CONTEXT_MINOR_VERSION_KHR, 0,
+    EGL_CONTEXT_MINOR_VERSION_KHR, 2,
     EGL_NONE
   };
   EGLContext context = eglCreateContext(display, egl_config, EGL_NO_CONTEXT, context_attribs);
