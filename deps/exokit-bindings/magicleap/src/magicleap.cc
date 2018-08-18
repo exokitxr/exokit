@@ -16,7 +16,6 @@ enum DummyValue {
 
 const char application_name[] = "com.exokit.app";
 application_context_t application_context;
-MLLifecycleCallbacks lifecycle_callbacks = {};
 MLResult lifecycle_status = MLResult_Pending;
 Nan::Persistent<Function> initCb;
 
@@ -270,12 +269,13 @@ NAN_METHOD(MLContext::New) {
 }
 
 NAN_METHOD(MLContext::InitLifecycle) {
+  MLLifecycleCallbacks lifecycle_callbacks;
   lifecycle_callbacks.on_new_initarg = onNewInitArg;
   lifecycle_callbacks.on_stop = onStop;
   lifecycle_callbacks.on_pause = onPause;
   lifecycle_callbacks.on_resume = onResume;
   lifecycle_callbacks.on_unload_resources = onUnloadResources;
-  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void *)(&application_context));
 
   // HACK: prevent exit hang
   std::atexit([]() {
