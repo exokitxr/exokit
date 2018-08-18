@@ -5,12 +5,18 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <sstream>
+#include <string>
+#include <map>
 #include <thread>
+#include <v8.h>
 #include <ml_logging.h>
 #include <ml_lifecycle.h>
+#include <ml_privileges.h>
 
 #define LOG_TAG "exokit"
 #define application_name LOG_TAG
+
+using namespace v8;
 
 /* struct application_context_t {
   int dummy_value;
@@ -50,32 +56,65 @@ static void onUnloadResources(void* application_context) {
 } */
 
 namespace node {
+  extern std::map<std::string, void *> dlibs;
   int Start(int argc, char* argv[]);
 }
 
 int stdoutfds[2];
 int stderrfds[2];
 
+extern "C" {
+  void node_register_module_exokit(Local<Object> exports, Local<Value> module, Local<Context> context);
+  void node_register_module_vm_one(Local<Object> exports, Local<Value> module, Local<Context> context);
+  void node_register_module_raw_buffer(Local<Object> exports, Local<Value> module, Local<Context> context);
+  void node_register_module_child_process_thread(Local<Object> exports, Local<Value> module, Local<Context> context);
+}
+
+inline void registerDlibs(std::map<std::string, void *> &dlibs) {
+  dlibs["/package/build/Release/exokit.node"] = (void *)&node_register_module_exokit;
+  dlibs["/package/node_modules/vm-one/build/Release/vmOne.node"] = (void *)&node_register_module_vm_one;
+  dlibs["/package/node_modules/raw-buffer/build/Release/raw_buffer.node"] = (void *)&node_register_module_raw_buffer;
+  dlibs["/package/node_modules/child-process-thread/build/Release/child_process_thread.node"] = (void *)&node_register_module_child_process_thread;
+}
+
+const size_t STDIO_BUF_SIZE = 4096;
+const MLPrivilegeID privileges[] = {
+  MLPrivilegeID_LowLatencyLightwear,
+  MLPrivilegeID_WorldReconstruction,
+  MLPrivilegeID_Occlusion,
+  MLPrivilegeID_ControllerPose,
+  MLPrivilegeID_Internet,
+  MLPrivilegeID_LocalAreaNetwork,
+  MLPrivilegeID_BackgroundDownload,
+  MLPrivilegeID_BackgroundUpload,
+  MLPrivilegeID_PwFoundObjRead,
+  MLPrivilegeID_NormalNotificationsUsage,
+};
+
 int main() {
-  pipe(stdoutfds);
-  pipe(stderrfds);
-  
-  ML_LOG(Info, "start main 1");
+  registerDlibs(node::dlibs);
 
-  void *handle = dlopen(NULL, RTLD_LAZY);
-  void *address1 = dlsym(handle, "_ZN4node10StreamBase15CreateWriteWrapEN2v85LocalINS1_6ObjectEEE");
-  void *address2 = dlsym(handle, "_ZN14SkImage_RasterD0Ev");
-  void *address3 = dlsym(handle, "_Z10makeWindowv");
-  
-  ML_LOG(Info, "start main 2 %x %x %x %x", handle, address1, address2, address3);
+  MLResult result = MLPrivilegesStartup();
+  if (result != MLResult_Ok) {
+    ML_LOG(Info, "failed to start privilege system %x", result);
+  }
+  const size_t numPrivileges = sizeof(privileges) / sizeof(privileges[0]);
+  for (size_t i = 0; i < numPrivileges; i++) {
+    const MLPrivilegeID &privilege = privileges[i];
+    MLResult result = MLPrivilegesCheckPrivilege(privilege);
+    if (result != MLPrivilegesResult_Granted) {
+      const char *s = MLPrivilegesGetResultString(result);
+      ML_LOG(Info, "did not have privilege %u: %u %s", privilege, result, s);
 
-  int pid = fork();
-  if (pid == 0) {
-    dup2(stdoutfds[1], 1);
-    close(stdoutfds[0]);
-    dup2(stderrfds[1], 2);
-    close(stderrfds[0]);
+      MLResult result = MLPrivilegesRequestPrivilege(privilege);
+      if (result != MLPrivilegesResult_Granted) {
+        const char *s = MLPrivilegesGetResultString(result);
+        ML_LOG(Info, "failed to get privilege %u: %u %s", privilege, result, s);
+      }
+    }
+  }
 
+  /* {
     MLLifecycleCallbacks lifecycle_callbacks = {};
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
     lifecycle_callbacks.on_stop = onStop;
@@ -85,29 +124,69 @@ int main() {
     application_context_t application_context;
     MLResult lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
 
-    // ML_LOG(Info, "start main 2");
+    MLResult result = MLLifecycleSetReadyIndication();
+    if (result == MLResult_Ok) {
+      ML_LOG(Info, "lifecycle ready!");
+    } else {
+      ML_LOG(Error, "failed to indicate lifecycle ready: %u", result);
+    }
+  }
+  
+  {
+    ML_LOG(Info, "------------------------------test query");
+    
+    const char *host = "google.com";
+    struct addrinfo hints, *res;
+    int errcode;
+    char addrstr[100];
+    void *ptr;
 
-    /* char cwd[PATH_MAX];
-    getcwd(cwd, sizeof(cwd));
-    ML_LOG(Info, "start main 2.1 %s", cwd); */
+    memset (&hints, 0, sizeof (hints));
+    // hints.ai_flags = AI_DEFAULT;
+    // hints.ai_family = PF_UNSPEC;
+    // hints.ai_socktype = SOCK_STREAM;
+    // hints.ai_flags |= AI_CANONNAME;
 
+    errcode = getaddrinfo(host, NULL, &hints, &res);
+    ML_LOG (Info, "Host: %s %x %s\n", host, errcode, gai_strerror(errcode));
+    if (errcode == 0) {
+      while (res)
+        {
+          inet_ntop (res->ai_family, res->ai_addr->sa_data, addrstr, 100);
 
-    // dup2(stdoutfds[1], 2);
+          switch (res->ai_family)
+            {
+            case AF_INET:
+              ptr = &((struct sockaddr_in *) res->ai_addr)->sin_addr;
+              break;
+            case AF_INET6:
+              ptr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
+              break;
+            }
+          inet_ntop (res->ai_family, ptr, addrstr, 100);
+          ML_LOG(Info, "IPv%d address: %s (%s)", res->ai_family == PF_INET6 ? 6 : 4, addrstr, res->ai_canonname);
+          res = res->ai_next;
+        }
+    } else {
+      ML_LOG(Info, "failed to getaddrinfo %x", errcode);
+    }
+  }
+  
+  ML_LOG(Info, "sleeping 1");
+  
+  sleep(1000);
+  
+  ML_LOG(Info, "sleeping 2"); */
 
-    /* stdoutfd = open("/tmp/stdout.txt", O_RDWR | O_TRUNC | O_CREAT);
-    ML_LOG(Info, "start main 3 %x %x", stdoutfd, errno);
-    dup2(stdoutfd, 1);
+  pipe(stdoutfds);
+  pipe(stderrfds);
 
-    ML_LOG(Info, "start main 4");
-
-    stderrfd = open("/tmp/stderr.txt", O_RDWR | O_TRUNC | O_CREAT);
-    ML_LOG(Info, "start main 5 %x", stdoutfd);
-    dup2(stderrfd, 2); */
-
-    // printf("lol\n");
-    /* dprintf(stdoutfds[1], "lol 1\n");
-    dprintf(1, "lol 2\n");
-    printf("lol 3\n"); */
+  int pid = fork();
+  if (pid != 0) { // parent
+    dup2(stdoutfds[1], 1);
+    close(stdoutfds[0]);
+    dup2(stderrfds[1], 2);
+    close(stderrfds[0]);
 
     std::atexit([]() -> void {
       close(stdoutfds[1]);
@@ -137,11 +216,9 @@ int main() {
       size_t argc = sizeof(argv) / sizeof(argv[0]);
       node::Start(argc, argv);
     }
+  } else { // child
+    ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit start 1");
 
-    // ML_LOG(Info, "start main 7");
-  } else {
-    ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit start");
-    
     close(stdoutfds[1]);
     close(stderrfds[1]);
 
