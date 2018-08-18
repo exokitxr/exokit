@@ -71,6 +71,7 @@ protected:
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);
+  static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
 
 protected:

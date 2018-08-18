@@ -24,6 +24,14 @@ bool isPresent() {
   return lifecycle_status == MLResult_Ok;
 }
 
+bool isSimulated() {
+#ifdef LUMIN
+  return false;
+#else
+  return true;
+#endif
+}
+
 void makePlanesQueryer(MLHandle &planesHandle) {
   if (MLPlanesCreate(&planesHandle) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
@@ -240,6 +248,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
 
   Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
+  Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
 
   return scope.Escape(ctorFn);
