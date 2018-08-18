@@ -1,4 +1,4 @@
-/* global assert, beforeEach, describe, it */
+/* global afterEach, assert, beforeEach, describe, it */
 const exokit = require('../../../index');
 
 describe('Element', () => {
@@ -21,7 +21,7 @@ describe('Element', () => {
   describe('cloneNode', () => {
     it('clones node', () => {
       el.setAttribute('id', 'foo');
-      let clone = el.cloneNode();
+      const clone = el.cloneNode();
       assert.notEqual(clone, el);
       assert.equal(clone.getAttribute('id'), 'foo');
       assert.equal(clone.tagName, 'A');
@@ -30,11 +30,11 @@ describe('Element', () => {
 
     it('clones recursively', () => {
       // Create child.
-      let child = document.createElement('p');
+      const child = document.createElement('p');
       child.setAttribute('id', 'bar');
 
       // Create grandchild.
-      let child2 = document.createElement('span');
+      const child2 = document.createElement('span');
       child2.setAttribute('id', 'qux');
 
       // Append
@@ -57,6 +57,33 @@ describe('Element', () => {
       assert.equal(clone.childNodes[0].childNodes[0].getAttribute('id'), 'qux');
       assert.equal(clone.childNodes[0].childNodes[0].tagName, 'SPAN');
       assert.notEqual(clone.childNodes[0].childNodes[0], child2);
+    });
+  });
+
+  describe('innerHTML', () => {
+    it('serializes innerHTML', () => {
+      el.setAttribute('id', 'foo');
+
+      const child = document.createElement('p');
+      child.dataset.bar = 'bar';
+      el.appendChild(child);
+
+      assert.equal(el.innerHTML, '<P data-bar="bar"></P>');
+      assert.equal(child.innerHTML, '');
+    });
+  });
+
+  describe('outerHTML', () => {
+    it('serializes outerHTML', () => {
+      el.setAttribute('id', 'foo');
+
+      const child = document.createElement('p');
+      child.dataset.bar = 'bar';
+      el.appendChild(child);
+
+      assert.ok(el.outerHTML.startsWith('<a id="foo">'));
+      assert.ok(el.outerHTML.toLowerCase().indexOf(el.innerHTML.toLowerCase()) !== -1);
+      assert.ok(el.outerHTML.endsWith('</a>'));
     });
   });
 });

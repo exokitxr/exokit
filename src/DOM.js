@@ -995,31 +995,10 @@ class Element extends Node {
     _elementSetter(this, 'mouseup', onmouseup);
   }
 
-  requestPointerLock() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.pointerLockElementSymbol] === null) {
-      topDocument[symbols.pointerLockElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
-      });
-    }
-  }
-  requestFullscreen() {
-    return; // XXX
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.fullscreenElementSymbol] === null) {
-      topDocument[symbols.fullscreenElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
-      });
-    }
-  }
-
-  [util.inspect.custom]() {
+  /**
+   * Also the output when logging to console or debugger.
+   */
+  get outerHTML() {
     const _getIndent = depth => Array(depth*2 + 1).join(' ');
     const _recurse = (el, depth = 0) => {
       let result = '';
@@ -1074,6 +1053,38 @@ class Element extends Node {
       return result;
     };
     return _recurse(this);
+  }
+
+  requestPointerLock() {
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[symbols.pointerLockElementSymbol] === null) {
+      topDocument[symbols.pointerLockElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('pointerlockchange');
+      });
+    }
+  }
+
+  requestFullscreen() {
+    return; // XXX
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[symbols.fullscreenElementSymbol] === null) {
+      topDocument[symbols.fullscreenElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('fullscreenchange');
+      });
+    }
+  }
+
+  /**
+   * For logging to console or debugger.
+   */
+  [util.inspect.custom]() {
+    return this.outerHTML;
   }
 
   traverse(fn) {
