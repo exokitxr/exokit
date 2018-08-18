@@ -9,6 +9,8 @@
       <uses-privilege ml:name="LowLatencyLightwear" />
       <uses-privilege ml:name="Internet" />
       <uses-privilege ml:name="LocalAreaNetwork" />
+      <uses-privilege ml:name="BackgroundDownload" />
+      <uses-privilege ml:name="BackgroundUpload" />
       <uses-privilege ml:name="NormalNotificationsUsage" />
       <uses-privilege ml:name="WorldReconstruction" />
       <uses-privilege ml:name="Occlusion" />
@@ -20,6 +22,7 @@
       <uses-privilege ml:name="AudioCaptureMic" />
       <uses-privilege ml:name="VoiceInput" />
       <uses-privilege ml:name="PwFoundObjRead" />
+      <uses-privilege ml:name="NormalNotificationsUsage" />
 		<component
 			ml:name=".fullscreen"
 			ml:visible_name="Exokit"
