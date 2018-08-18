@@ -927,16 +927,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
-    fn[symbols.startTimeSymbol] = Date.now();
-    fn[symbols.intervalSymbol] = interval;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
+    fn[symbols.idSymbol] = setInterval(fn, interval, args);
     intervals[_findFreeSlot(intervals)] = fn;
-    return id;
+    return fn[symbols.idSymbol];
   };
   window.clearInterval = id => {
     const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
     if (index !== -1) {
+      clearInterval(intervals[index].id);
       intervals[index] = null;
     }
   };
@@ -1367,6 +1365,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     for (let i = 0; i < intervals.length; i++) {
       if (!_pred(intervals[i])) {
+        clearInterval(intervals[i].id);
         intervals[i] = null;
       }
     }
@@ -1403,6 +1402,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           }
           for (let i = 0; i < intervals.length; i++) {
             if (!_pred(intervals[i])) {
+              clearInterval(intervals[i].id);
               intervals[i] = null;
             }
           }
