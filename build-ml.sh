@@ -24,6 +24,9 @@ export npm_config_arch=arm64
 
 npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
 
+rm -Rf mllib/libexokit.a
+find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs mllib/libexokit.a
+
 # unhack
 
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin program-device.mabu
