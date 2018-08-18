@@ -292,6 +292,10 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
+void *GetGLContext(NATIVEwindow *window) {
+  return window->context;
+}
+
 NAN_METHOD(IconifyWindow) {
   // nothing
 }

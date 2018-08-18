@@ -1109,6 +1109,10 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
+void *GetGLContext(NATIVEwindow *window) {
+  return window;
+}
+
 NAN_METHOD(IconifyWindow) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   glfwIconifyWindow(window);

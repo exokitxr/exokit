@@ -24,6 +24,7 @@ typedef GLFWwindow NATIVEwindow;
 
 namespace glfw {
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
+  void *GetGLContext(NATIVEwindow *window);
   void SetCurrentWindowContext(NATIVEwindow *window);
 }
 
