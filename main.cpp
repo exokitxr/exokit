@@ -12,7 +12,7 @@
 #define LOG_TAG "exokit"
 #define application_name LOG_TAG
 
-struct application_context_t {
+/* struct application_context_t {
   int dummy_value;
 };
 enum DummyValue {
@@ -47,14 +47,11 @@ static void onResume(void* application_context) {
 static void onUnloadResources(void* application_context) {
   ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG_TAG(Info, LOG_TAG, "%s: On unload resources called.", application_name);
-}
+} */
 
 namespace node {
   int Start(int argc, char* argv[]);
 }
-
-/* int stdoutfd;
-int stderrfd; */
 
 int stdoutfds[2];
 int stderrfds[2];
@@ -113,33 +110,9 @@ int main() {
     printf("lol 3\n"); */
 
     std::atexit([]() -> void {
-      // sleep(1);
-
-      // ML_LOG(Info, "end main 1");
-
       close(stdoutfds[1]);
       close(stderrfds[1]);
-
-      /* fseek((FILE *)stdoutfd, 0, SEEK_END);
-      long stdoutsize = ftell((FILE *)stdoutfd);
-      fseek((FILE *)stdoutfd, 0, SEEK_SET);
-      char *stdoutString = (char *)malloc(stdoutsize + 1);
-      fread(stdoutString, stdoutsize, 1, (FILE *)stdoutfd);
-      stdoutString[stdoutsize] = 0;
-      ML_LOG(Info, "end main 1 %x %s", stdoutsize, stdoutString);
-      free(stdoutString);
-
-      fseek((FILE *)stderrfd, 0, SEEK_END);
-      long stderrsize = ftell((FILE *)stderrfd);
-      fseek((FILE *)stderrfd, 0, SEEK_SET);
-      char *stderrString = (char *)malloc(stderrsize + 1);
-      fread(stderrString, stderrsize, 1, (FILE *)stderrfd);
-      stderrString[stderrsize] = 0;
-      ML_LOG(Warning, "end main 2 %x %s", stderrsize, stderrString);
-      free(stderrString); */
     });
-
-    // ML_LOG(Info, "start main 6");
 
     {
       const char *nodeString = "node";
@@ -151,7 +124,7 @@ int main() {
       char *nodeArg = argsString + i;
       strncpy(nodeArg, nodeString, sizeof(argsString) - i);
       i += strlen(nodeString) + 1;
-      
+
       char *dotArg = argsString + i;
       strncpy(dotArg, dotString, sizeof(argsString) - i);
       i += strlen(dotString) + 1;
