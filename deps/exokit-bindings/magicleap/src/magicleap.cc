@@ -71,7 +71,7 @@ void endPlanesQuery(MLHandle &planesHandle, MLHandle &planesQueryHandle, MLPlane
   }
 }
 void readPlanesQuery(MLPlane *planes, uint32_t numPlanes, int planeType, Local<Float32Array> &planesArray, uint32_t *planesIndex) {
-  for (int i = 0; i < numPlanes; i++) {
+  for (uint32_t i = 0; i < numPlanes; i++) {
     const MLPlane &plane = planes[i];
     uint32_t baseIndex = (*planesIndex) * PLANE_ENTRY_SIZE;
     planesArray->Set(baseIndex + 0, JS_NUM(plane.position.x));
