@@ -884,7 +884,7 @@ class Element extends Node {
           return true;
         }
 			});
-      return result;
+      return result / this.ownerDocument.defaultView.devicePixelRatio;
     }
   }
   set clientWidth(clientWidth) {}
@@ -901,7 +901,7 @@ class Element extends Node {
       }
     };
     _recurse(this);
-    return result;
+    return result / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientHeight(clientHeight) {}
 
@@ -995,31 +995,10 @@ class Element extends Node {
     _elementSetter(this, 'mouseup', onmouseup);
   }
 
-  requestPointerLock() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.pointerLockElementSymbol] === null) {
-      topDocument[symbols.pointerLockElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
-      });
-    }
-  }
-  requestFullscreen() {
-    return; // XXX
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.fullscreenElementSymbol] === null) {
-      topDocument[symbols.fullscreenElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
-      });
-    }
-  }
-
-  [util.inspect.custom]() {
+  /**
+   * Also the output when logging to console or debugger.
+   */
+  get outerHTML() {
     const _getIndent = depth => Array(depth*2 + 1).join(' ');
     const _recurse = (el, depth = 0) => {
       let result = '';
@@ -1074,6 +1053,38 @@ class Element extends Node {
       return result;
     };
     return _recurse(this);
+  }
+
+  requestPointerLock() {
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[symbols.pointerLockElementSymbol] === null) {
+      topDocument[symbols.pointerLockElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('pointerlockchange');
+      });
+    }
+  }
+
+  requestFullscreen() {
+    return; // XXX
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[symbols.fullscreenElementSymbol] === null) {
+      topDocument[symbols.fullscreenElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('fullscreenchange');
+      });
+    }
+  }
+
+  /**
+   * For logging to console or debugger.
+   */
+  [util.inspect.custom]() {
+    return this.outerHTML;
   }
 
   traverse(fn) {
@@ -1546,7 +1557,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const {type} = this;
     return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
   }
-  
+
   loadRunNow() {
     const resource = this.ownerDocument.resources.addResource();
 
@@ -1580,7 +1591,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
         });
       });
   }
-  
+
   runNow() {
     const innerHTML = this.childNodes[0].value;
     const window = this.ownerDocument.defaultView;
@@ -1862,11 +1873,11 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get clientWidth() {
-    return this.width;
+    return this.width / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    return this.height;
+    return this.height / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientHeight(clientHeight) {}
 
@@ -1914,7 +1925,7 @@ class HTMLCanvasElement extends HTMLElement {
     }
     return this._context;
   }
-  
+
   toDataURL() {
     if (!this._context) {
       this.getContext('2d');

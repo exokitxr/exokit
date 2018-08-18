@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.435",
+  "version": "0.0.437",
   "description": "Javascript web browser for the post-screen world",
   "engines": {
     "node": ">=10.0.0"
@@ -10,15 +10,16 @@
   },
   "main": "index.js",
   "scripts": {
-    "install": "node ./preinstall.js && node-gyp rebuild",
     "build": "node-gyp build",
+    "debug": "ndb",
+    "install": "node ./preinstall.js && node-gyp rebuild",
     "lint": "eslint core.js index.js native-bindings.js src tests",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
+    "serve": "serve examples",
     "start": "node .",
     "test:ci": "TEST_ENV=ci npm run test:command -- --full-trace --exit",
     "test:command": "mocha --full-trace tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
-    "test:watch": "npm run test:command -- --watch",
-    "serve": "serve examples"
+    "test:watch": "npm run test:command -- --watch"
   },
   "repository": {
     "type": "git",
@@ -50,7 +51,7 @@
     "electron": "^2.0.6",
     "exokit-home": "0.0.70",
     "fake-indexeddb": "^2.0.4",
-    "fault-zone": "0.0.13",
+    "fault-zone": "0.0.16",
     "he": "^1.1.1",
     "history": "^4.7.2",
     "isolator": "0.0.9",
@@ -87,6 +88,7 @@
     "eslint": "^5.2.0",
     "express": "^4.16.3",
     "mocha": "^5.2.0",
+    "ndb": "^1.0.23",
     "serve": "^9.4.0",
     "shx": "^0.3.2",
     "sinon": "^6.1.4"

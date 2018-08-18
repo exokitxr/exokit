@@ -167,68 +167,74 @@ function initDocument (document, window) {
       } catch(err) {
         console.warn(err);
       }
+    } else {
+      try {
+        await GlobalContext._runHtml(document, window);
+      } catch(err) {
+        console.warn(err);
+      }
 
-      document.readyState = 'interactive';
-      document.dispatchEvent(new Event('readystatechange', {target: document}));
+      document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
+    }
 
-      document.readyState = 'complete';
-      document.dispatchEvent(new Event('readystatechange', {target: document}));
+    document.readyState = 'interactive';
+    document.dispatchEvent(new Event('readystatechange', {target: document}));
 
-      document.dispatchEvent(new Event('load', {target: document}));
-      window.dispatchEvent(new Event('load', {target: window}));
+    document.readyState = 'complete';
+    document.dispatchEvent(new Event('readystatechange', {target: document}));
 
-      const displays = window.navigator.getVRDisplaysSync();
-      if (displays.length > 0) {
-        const _initDisplays = () => {
-          if (!_tryEmitDisplay()) {
-            _delayFrames(() => {
-              _tryEmitDisplay();
-            }, 1);
+    document.dispatchEvent(new Event('load', {target: document}));
+    window.dispatchEvent(new Event('load', {target: window}));
+
+    const displays = window.navigator.getVRDisplaysSync();
+    if (displays.length > 0) {
+      const _initDisplays = () => {
+        if (!_tryEmitDisplay()) {
+          _delayFrames(() => {
+            _tryEmitDisplay();
+          }, 1);
+        }
+      };
+      const _tryEmitDisplay = () => {
+        const presentingDisplay = displays.find(display => display.isPresenting);
+        if (presentingDisplay) {
+          if (presentingDisplay.constructor.name === 'FakeVRDisplay') {
+            _emitOneDisplay(presentingDisplay);
           }
-        };
-        const _tryEmitDisplay = () => {
-          const presentingDisplay = displays.find(display => display.isPresenting);
-          if (presentingDisplay) {
-            if (presentingDisplay.constructor.name === 'FakeVRDisplay') {
-              _emitOneDisplay(presentingDisplay);
-            }
-            return true;
-          } else {
-            _emitOneDisplay(displays[0]);
-            return false;
-          }
-        };
-        const _emitOneDisplay = display => {
-          const e = new window.Event('vrdisplayactivate');
-          e.display = display;
-          window.dispatchEvent(e);
-        };
-        const _delayFrames = (fn, n = 1) => {
-          if (n === 0) {
-            fn();
-          } else {
-            try {
+          return true;
+        } else {
+          _emitOneDisplay(displays[0]);
+          return false;
+        }
+      };
+      const _emitOneDisplay = display => {
+        const e = new window.Event('vrdisplayactivate');
+        e.display = display;
+        window.dispatchEvent(e);
+      };
+      const _delayFrames = (fn, n = 1) => {
+        if (n === 0) {
+          fn();
+        } else {
+          try {
             window.requestAnimationFrame(() => {
               _delayFrames(fn, n - 1);
             });
-            } catch(err) {
-              console.log(err.stack);
-            }
+          } catch(err) {
+            console.log(err.stack);
+          }
+        }
+      };
+      if (document.resources.resources.length === 0) {
+        _initDisplays();
+      } else {
+        const _update = () => {
+          if (document.resources.resources.length === 0) {
+            _initDisplays();
+            document.resources.removeEventListener('update', _update);
           }
         };
-        if (document.resources.resources.length === 0) {
-          _initDisplays();
-        } else {
-          const _update = () => {
-            if (document.resources.resources.length === 0) {
-              _initDisplays();
-              document.resources.removeEventListener('update', _update);
-            }
-          };
-          document.resources.addEventListener('update', _update);
-        }
-      } else {
-        await GlobalContext._runHtml(document, window);
+        document.resources.addEventListener('update', _update);
       }
     }
   });
