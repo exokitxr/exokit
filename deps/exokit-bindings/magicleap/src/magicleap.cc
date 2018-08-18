@@ -296,12 +296,12 @@ NAN_METHOD(MLContext::Present) {
     return;
   }
 
-  MLResult privilege_init_status = MLPrivilegesStartup();
+  /* MLResult privilege_init_status = MLPrivilegesStartup();
   if (privilege_init_status != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to initialize privilege system.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
-  }
+  } */
 
   // initialize perception system
   MLPerceptionSettings perception_settings;
