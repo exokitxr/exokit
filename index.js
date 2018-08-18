@@ -537,15 +537,17 @@ if (nativeMl) {
     mlHasPose = false;
   };
 
-  // try to connect to MLSDK
-  (() => {
+  if (!nativeMl.IsSimulated()) {
+    nativeMl.InitLifecycle();
+  } else {
+    // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
       nativeMl.InitLifecycle();
     });
     s.on('error', () => {});
-  })();
+  }
 }
 
 nativeWindow.setEventHandler((type, data) => {
