@@ -387,12 +387,12 @@ if (nativeVr) {
         throw new Error('no HTMLCanvasElement source provided');
       }
     } else {
-      const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
-      const width = halfWidth * 2;
+      /* const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2; */
 
       return {
-        width,
-        height,
+        width: renderWidth * 2,
+        height: renderHeight,
         framebuffer: vrPresentState.msFbo,
       };
     }
