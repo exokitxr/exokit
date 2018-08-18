@@ -700,6 +700,10 @@ NAN_METHOD(MLContext::IsPresent) {
   info.GetReturnValue().Set(JS_BOOL(isPresent()));
 }
 
+NAN_METHOD(MLContext::IsSimulated) {
+  info.GetReturnValue().Set(JS_BOOL(isSimulated()));
+}
+
 NAN_METHOD(MLContext::OnPresentChange) {
   if (info[0]->IsFunction()) {
     Local<Function> initCbFn = Local<Function>::Cast(info[0]);
