@@ -23,6 +23,7 @@
                 'deps/exokit-bindings/leapmotion/src/*.cc',
               ],
               'include_dirs': [
+                "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
                 "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/core')\")",
                 "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/config')\")",
@@ -213,6 +214,7 @@
                     '<!@(ls -1 deps/openvr/src/*.cpp)',
                   ],
                   'include_dirs': [
+                    "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
                     "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/include')\")",
                     "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/core')\")",
                     "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/config')\")",
@@ -308,6 +310,7 @@
                     '<!@(ls -1 deps/exokit-bindings/glfw/src/*.cc)',
                   ],
                   'include_dirs': [
+                    "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
                     "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/include')\")",
                     "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/core')\")",
                     "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/config')\")",
@@ -402,6 +405,7 @@
                 '<!@(ls -1 deps/openvr/src/*.cpp)',
               ],
               'include_dirs': [
+                "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
                 "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/core')\")",
                 "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/config')\")",
@@ -499,6 +503,7 @@
             '<!@(ls -1 deps/exokit-bindings/magicleap/src/*.cc)',
           ],
           'include_dirs': [
+            "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
             "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/core')\")",
             "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/config')\")",
             "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/gpu')\")",
