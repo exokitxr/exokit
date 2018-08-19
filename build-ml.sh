@@ -7,8 +7,6 @@
 export MLSDK='/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0'
 export MLSDK_WIN='C:\Users\avaer\MagicLeap\mlsdk\v0.16.0'
 
-../magicleap-js/hack-toolchain.js
-
 export CC="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang"
 export CXX="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang++"
 export LINK="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang++"
@@ -24,6 +22,8 @@ export LUMIN=1
 export npm_config_arch=arm64
 
 # npm install
+
+../magicleap-js/hack-toolchain.js
 
 rm -Rf node_modules
 npm cache clean --force
