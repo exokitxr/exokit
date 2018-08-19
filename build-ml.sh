@@ -26,6 +26,7 @@ npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
 
 rm -Rf mllib/libexokit.a
 find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs mllib/libexokit.a
+./gen-dlibs-h.js >dlibs.h
 
 # unhack
 
