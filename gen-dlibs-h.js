@@ -11,10 +11,16 @@ find.file(/\.node$/, __dirname, files => {
     if (!/obj\.target/.test(file)) {
       const match = file.match(/^(.+\/)([^\/]+)\.node$/);
       const relpath = match[1].slice(__dirname.length);
-      const name = match[2];
-      const registerName = `node_register_module_${name}`;
-      decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
-      registers += `  dlibs["/package${relpath}${name}.node"] = (void *)&${registerName};\n`;
+      const binName = match[2];
+      const npmName = (() => {
+        const match = relpath.match(/\/node_modules\/([^\/]+)/);
+        return match && match[1];
+      })();
+      if (!npmName || npmName.replace(/-/g, '_') === binName) { // ignore incompatible modules
+        const registerName = `node_register_module_${binName}`;
+        decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
+        registers += `  dlibs["/package${relpath}${binName}.node"] = (void *)&${registerName};\n`;
+      }
     }
   }
   
