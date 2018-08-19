@@ -50,10 +50,10 @@ public:
 protected:
   MLStageGeometry(MLContext *mlContext);
   ~MLStageGeometry();
-  
+
   static NAN_METHOD(New);
   static NAN_METHOD(GetGeometry);
-  
+
   MLContext *mlContext;
 };
 
