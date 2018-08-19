@@ -18,6 +18,15 @@
 
 using namespace v8;
 
+namespace node {
+  extern std::map<std::string, void *> dlibs;
+  int Start(int argc, char* argv[]);
+}
+int stdoutfds[2];
+int stderrfds[2];
+
+#include "dlibs.h"
+
 /* struct application_context_t {
   int dummy_value;
 };
@@ -55,15 +64,7 @@ static void onUnloadResources(void* application_context) {
   ML_LOG_TAG(Info, LOG_TAG, "%s: On unload resources called.", application_name);
 } */
 
-namespace node {
-  extern std::map<std::string, void *> dlibs;
-  int Start(int argc, char* argv[]);
-}
-
-int stdoutfds[2];
-int stderrfds[2];
-
-extern "C" {
+/* extern "C" {
   void node_register_module_exokit(Local<Object> exports, Local<Value> module, Local<Context> context);
   void node_register_module_vm_one(Local<Object> exports, Local<Value> module, Local<Context> context);
   void node_register_module_raw_buffer(Local<Object> exports, Local<Value> module, Local<Context> context);
@@ -75,7 +76,7 @@ inline void registerDlibs(std::map<std::string, void *> &dlibs) {
   dlibs["/package/node_modules/vm-one/build/Release/vmOne.node"] = (void *)&node_register_module_vm_one;
   dlibs["/package/node_modules/raw-buffer/build/Release/raw_buffer.node"] = (void *)&node_register_module_raw_buffer;
   dlibs["/package/node_modules/child-process-thread/build/Release/child_process_thread.node"] = (void *)&node_register_module_child_process_thread;
-}
+} */
 
 const size_t STDIO_BUF_SIZE = 4096;
 const MLPrivilegeID privileges[] = {
