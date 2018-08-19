@@ -12,6 +12,7 @@
 #include <node.h>
 #include <nan.h>
 #include <defines.h>
+#include <vector>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -22,7 +23,7 @@
 #include <ml_planes.h>
 #include <ml_privilege_ids.h>
 #include <ml_privilege_functions.h>
-#include <ml_meshing.h>
+#include <ml_meshing2.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
 #include <ml_lifecycle.h>
@@ -42,6 +43,18 @@ struct application_context_t {
 };
 
 class MLContext;
+
+class MeshRequest {
+public:
+  MeshRequest(MLHandle meshTracker, MLHandle requestHandle, Local<Function> cbFn);
+  bool Poll();
+
+protected:
+  MLHandle meshTracker;
+  MLMeshingMeshRequest request;
+  MLHandle requestHandle;
+  Nan::Persistent<Function> cbFn;
+};
 
 class MLStageGeometry : public ObjectWrap {
 public:
@@ -73,6 +86,8 @@ protected:
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
+  static NAN_METHOD(RequestMesh);
+  static NAN_METHOD(PollEvents);
 
 protected:
   // tracking
@@ -114,7 +129,8 @@ protected:
 
   // meshing
   MLHandle meshTracker;
-  std::condition_variable mesherCv;
+  std::vector<MeshRequest *> meshRequests;
+  /* std::condition_variable mesherCv;
   std::mutex mesherMutex;
 
   bool haveMeshStaticData;
@@ -122,7 +138,7 @@ protected:
   MLDataArray meshData;
   MLDataArrayDiff meshesDataDiff;
   MLDataArray meshData2;
-  MLDataArrayDiff meshesDataDiff2;
+  MLDataArrayDiff meshesDataDiff2; */
   std::vector<uint8_t> positions;
   std::vector<uint8_t> normals;
   std::vector<uint8_t> triangles;

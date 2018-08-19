@@ -147,6 +147,18 @@ static void onUnloadResources(void* application_context) {
   ML_LOG(Info, "%s: On unload resources called.", application_name);
 }
 
+// MeshRequest
+
+MeshRequest::MeshRequest(MLHandle meshTracker, MLHandle requestHandle, Local<Function> cbFn) : meshTracker(meshTracker), requestHandle(requestHandle), cbFn(cbFn) {
+  // XXX
+}
+
+bool MeshRequest::Poll() {
+  return false; // XXX
+}
+
+// MLStageGeometry
+
 MLStageGeometry::MLStageGeometry(MLContext *mlContext) : mlContext(mlContext) {}
 
 MLStageGeometry::~MLStageGeometry() {}
@@ -216,7 +228,7 @@ NAN_METHOD(MLStageGeometry::GetGeometry) {
 MLContext::MLContext() :
   position{0, 0, 0},
   rotation{0, 0, 0, 1},
-  haveMeshStaticData(false),
+  // haveMeshStaticData(false),
   planesFloorQueryHandle(ML_INVALID_HANDLE),
   planesWallQueryHandle(ML_INVALID_HANDLE),
   planesCeilingQueryHandle(ML_INVALID_HANDLE),
@@ -249,6 +261,8 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
+  Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
+  Nan::SetMethod(ctorFn, "PollEvents", PollEvents);
 
   return scope.Escape(ctorFn);
 }
@@ -371,6 +385,33 @@ NAN_METHOD(MLContext::Present) {
   if (MLGestureTrackingCreate(&mlContext->gestureTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
     info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  MLMeshingSettings meshingSettings;
+  /* meshingSettings.flags = MLMeshingFlags_ComputeNormals;
+  meshingSettings.bounds_center = mlContext->position;
+  meshingSettings.bounds_rotation = mlContext->rotation;
+  meshingSettings.bounds_extents.x = 3;
+  meshingSettings.bounds_extents.y = 3;
+  meshingSettings.bounds_extents.z = 3;
+  meshingSettings.compute_normals = true;
+  meshingSettings.disconnected_component_area = 0.1;
+  meshingSettings.enable_meshing = true;
+  meshingSettings.fill_hole_length = 0.1;
+  meshingSettings.fill_holes = false;
+  meshingSettings.index_order_ccw = false;
+  // meshingSettings.mesh_type = MLMeshingType_PointCloud;
+  meshingSettings.mesh_type = MLMeshingType_Blocks;
+  // meshingSettings.meshing_poll_time = 1e9;
+  meshingSettings.meshing_poll_time = 0;
+  meshingSettings.planarize = false;
+  meshingSettings.remove_disconnected_components = false;
+  meshingSettings.remove_mesh_skirt = false;
+  meshingSettings.request_vertex_confidence = false;
+  meshingSettings.target_number_triangles_per_block = 0; */
+  if (MLMeshingCreateClient(&mlContext->meshTracker, &meshingSettings) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
     return;
   }
 
@@ -747,8 +788,31 @@ NAN_METHOD(MLContext::OnPresentChange) {
     Local<Function> initCbFn = Local<Function>::Cast(info[0]);
     initCb.Reset(initCbFn);
   } else {
-    Nan::ThrowError("not implemented");
+    Nan::ThrowError("invalid arguments");
   }
+}
+
+NAN_METHOD(MLContext::RequestMesh) {
+  if (info[0]->IsFunction()) {
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+    
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+    
+    MLMeshingMeshRequest request;
+    MLHandle requestHandle;
+    MLMeshingRequestMesh(mlContext->meshTracker, &request, &requestHandle);
+    MeshRequest *meshRequest = new MeshRequest(mlContext->meshTracker, requestHandle, cbFn);
+    mlContext->meshRequests.push_back(meshRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::PollEvents) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+  std::remove_if(mlContext->meshRequests.begin(), mlContext->meshRequests.end(), [](MeshRequest *m) {
+    return m->Poll();
+  });
 }
 
 }
