@@ -25,6 +25,7 @@ SRCS = main.cpp
 # Include paths for any language are specified here.
 #
 INCS = .node-gyp/10.9.0/include/node \
+  node_modules/nan
 
 # Macro definitions for any language are specified here.
 #
