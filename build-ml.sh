@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /mnt/c/Users/avaer/Documents/GitHub/exokit
+# cd /mnt/c/Users/avaer/Documents/GitHub/exokit
 
 rm -Rf node_modules
 npm cache clean --force
