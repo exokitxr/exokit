@@ -72,7 +72,7 @@
     "repl.history": "^0.1.4",
     "rimraf": "^2.6.2",
     "upng-js": "^2.1.0",
-    "vm-one": "0.0.15",
+    "vm-one": "0.0.16",
     "vr-display": "0.0.26",
     "webgl-to-opengl": "0.0.9",
     "window-classlist": "0.0.4",
