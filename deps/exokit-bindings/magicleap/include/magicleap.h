@@ -10,7 +10,7 @@
 
 #include <v8.h>
 #include <node.h>
-#include <nan/nan.h>
+#include <nan.h>
 #include <defines.h>
 #include <thread>
 #include <mutex>

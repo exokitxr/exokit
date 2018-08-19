@@ -2,7 +2,7 @@
 #define _CANVASCONTEXT_CANVASPATTERN_H_
 
 #include <v8.h>
-#include <nan/nan.h>
+#include <nan.h>
 #include <defines.h>
 #include <SkRefCnt.h>
 #include <SkShader.h>

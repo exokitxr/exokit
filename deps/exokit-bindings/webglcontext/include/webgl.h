@@ -8,7 +8,7 @@
 #ifndef _WEBGLCONTEXT_WEBGL_H_
 #define _WEBGLCONTEXT_WEBGL_H_
 
-#include <nan/nan.h>
+#include <nan.h>
 
 #if defined(_WIN32)
 #include <GL/glew.h>

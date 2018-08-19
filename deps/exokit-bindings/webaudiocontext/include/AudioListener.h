@@ -3,7 +3,7 @@
 
 #include <v8.h>
 #include <node.h>
-#include <nan/nan.h>
+#include <nan.h>
 #include "LabSound/extended/LabSound.h"
 #include <defines.h>
 #include <AudioContext.h>

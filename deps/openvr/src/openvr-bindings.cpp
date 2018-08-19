@@ -2,7 +2,7 @@
 #include <ivrcompositor.h>
 #include <openvr-bindings.h>
 
-#include <nan/nan.h>
+#include <nan.h>
 
 #include <node.h>
 #include <openvr.h>

@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <limits>
-#include <nan/nan.h>
+#include <nan.h>
 #include <openvr.h>
 #include <v8.h>
 

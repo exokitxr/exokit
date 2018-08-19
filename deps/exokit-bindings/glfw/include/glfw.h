@@ -6,7 +6,7 @@
 #include <map>
 
 #include <v8.h>
-#include <nan/nan.h>
+#include <nan.h>
 #include <defines.h>
 
 #include <GL/glew.h>
