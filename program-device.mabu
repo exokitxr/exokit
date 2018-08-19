@@ -24,7 +24,7 @@ SRCS = main.cpp
 
 # Include paths for any language are specified here.
 #
-INCS = C:\Users\avaer\.node-gyp\10.6.0\include\node
+INCS = .node-gyp/10.9.0/include/node \
 
 # Macro definitions for any language are specified here.
 #
