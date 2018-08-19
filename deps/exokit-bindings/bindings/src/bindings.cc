@@ -7,12 +7,12 @@
 
 #include "bindings.h"
 
-Local<Object> makeGl() {
+std::pair<Local<Object>, Local<FunctionTemplate>> makeGl() {
   return WebGLRenderingContext::Initialize(Isolate::GetCurrent());
 }
 
-Local<Object> makeGl2() {
-  return WebGL2RenderingContext::Initialize(Isolate::GetCurrent());
+std::pair<Local<Object>, Local<FunctionTemplate>> makeGl2(Local<FunctionTemplate> baseCtor) {
+  return WebGL2RenderingContext::Initialize(Isolate::GetCurrent(), baseCtor);
 }
 
 Local<Object> makeImage() {

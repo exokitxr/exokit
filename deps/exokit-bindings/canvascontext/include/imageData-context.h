@@ -30,6 +30,7 @@ protected:
   static NAN_GETTER(DataGetter);
 
   ImageData(unsigned int width, unsigned int height);
+  ImageData(const char *data, unsigned int width, unsigned int height);
   virtual ~ImageData();
 
 private:

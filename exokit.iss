@@ -47,9 +47,15 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 [Files]
 Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "\dist"
 
+[Registry]
+Root: HKCR; Subkey: "Exokit"; ValueType: "string"; ValueData: "URL:Exokit Protocol"; Flags: uninsdeletekey
+Root: HKCR; Subkey: "Exokit"; ValueType: "string"; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCR; Subkey: "Exokit\DefaultIcon"; ValueType: "string"; ValueData: "{app}\{#MyAppExeName},0"
+Root: HKCR; Subkey: "Exokit\shell\open\command"; ValueType: "string"; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+
 [Icons]
 Name: "{group}\{#MyAppName}"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-h -l"; IconFilename: "{app}\{#MyIcon}"
-Name: "{group}\{#MyAppShortName} Engine CLI"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-l" IconFilename: "{app}\{#MyIcon}"
+Name: "{group}\{#MyAppShortName} Engine CLI"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-l"; IconFilename: "{app}\{#MyIcon}"
 Name: "{group}\Uninstall {#MyAppShortName}"; Filename: "{uninstallexe}"
 
 [Code]

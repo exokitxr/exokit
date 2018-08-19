@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <script>
+
+      const width = 2048;
+      const height = 2048;
+
+			var camera, scene, renderer;
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
+				camera.position.z = 1;
+
+				scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x7E57C2);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+				const texture = new THREE.Texture(
+          canvas,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+
+				var geometry = new THREE.PlaneBufferGeometry( 1, height/width );
+				var material = new THREE.MeshBasicMaterial( {
+          map: texture,
+          side: THREE.DoubleSide,
+        } );
+        var mesh = new THREE.Mesh( geometry, material );
+        scene.add( mesh );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				var controls = new THREE.OrbitControls( camera, renderer.domElement );
+				// controls.enableZoom = false;
+				// controls.enablePan = false;
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				(async () => {
+          const elctrn = await browser.electron.createElectron();
+          const browserWindow = await elctrn.createBrowserWindow({
+            width,
+            height,
+            show: false,
+            frame: false,
+            webPreferences: {
+              offscreen: true,
+              transparent: true,
+            },
+          });
+          canvas.width = browserWindow.width;
+          canvas.height = browserWindow.width;
+          const offset = (browserWindow.width - browserWindow.height)/2;
+
+          browserWindow.loadURL('http://lol.com');
+          browserWindow.setFrameRate(15);
+
+          browserWindow.on('paint', o => {
+            // console.log('paint', o.data.length);
+
+            // console.log('paint', o.data.byteLength, o.width, o.height, o.width * o.height * 4);
+            // console.log('paint', o.data);
+            ctx.putImageData(new ImageData(o.data, o.width, o.height), o.x, o.y + offset);
+            texture.needsUpdate = true;
+          });
+          browserWindow.on('dom-ready', async () => {
+            /* await browserWindow.insertCSS(`
+              ::-webkit-scrollbar {
+                height: 30px;
+                width: 30px;
+                background: #e0e0e0;
+              }
+
+              ::-webkit-scrollbar-thumb {
+                background: #4db6ac;
+              }
+
+              ::-webkit-scrollbar-corner {
+                background: #cfcfcf;
+              }
+            `); */
+            // await browserWindow.sendInputEvent({type: 'mouseMove', x: 10, y: 10});
+            console.log('loaded');
+
+            setTimeout(async () => {
+              browserWindow.destroy();
+              elctrn.destroy();
+              console.log('exited');
+            }, 2000);
+          });
+          browserWindow.on('did-fail-load', () => {
+            console.log('failed to load!');
+
+            browserWindow.destroy();
+            elctrn.destroy();
+          });
+        })();
+
+			 }
+
+			 function onWindowResize() {
+
+				 camera.aspect = window.innerWidth / window.innerHeight;
+				 camera.updateProjectionMatrix();
+
+				 renderer.setSize( window.innerWidth, window.innerHeight );
+
+			 }
+
+			 function animate() {
+
+				 requestAnimationFrame( animate );
+				 renderer.render( scene, camera );
+
+			 }
+    </script>
+  </body>
+</html>

@@ -177,16 +177,20 @@ NAN_GETTER(Image::DataGetter) {
 
   Image *image = ObjectWrap::Unwrap<Image>(info.This());
   if (image->dataArray.IsEmpty()) {
-    SkPixmap pixmap;
-    bool ok = image->image->peekPixels(&pixmap);
+    if (image->image) {
+      SkPixmap pixmap;
+      bool ok = image->image->peekPixels(&pixmap);
 
-    if (ok) {
-      unsigned int width = image->GetWidth();
-      unsigned int height = image->GetHeight();
-      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (void *)pixmap.addr(), width * height * 4); // XXX link lifetime
+      if (ok) {
+        unsigned int width = image->GetWidth();
+        unsigned int height = image->GetHeight();
+        Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (void *)pixmap.addr(), width * height * 4); // XXX link lifetime
 
-      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-      image->dataArray.Reset(uint8ClampedArray);
+        Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+        image->dataArray.Reset(uint8ClampedArray);
+      } else {
+        return info.GetReturnValue().Set(Nan::Null());
+      }
     } else {
       return info.GetReturnValue().Set(Nan::Null());
     }

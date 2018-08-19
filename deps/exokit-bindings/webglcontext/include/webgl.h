@@ -68,7 +68,7 @@ void flipImageData(char *dstData, char *srcData, size_t width, size_t height, si
 
 class WebGLRenderingContext : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static std::pair<Local<Object>, Local<FunctionTemplate>> Initialize(Isolate *isolate);
 
   WebGLRenderingContext();
   ~WebGLRenderingContext();
@@ -307,8 +307,6 @@ public:
     return textureBindings.find(std::make_pair(framebuffer, target)) != textureBindings.end();
   }
 
-  static Nan::Persistent<FunctionTemplate> s_ct;
-
   bool live;
   GLFWwindow *windowHandle;
   GLuint defaultVao;
@@ -329,11 +327,9 @@ public:
   WebGL2RenderingContext();
   ~WebGL2RenderingContext();
 
-  static Handle<Object> Initialize(Isolate *isolate);
+  static std::pair<Local<Object>, Local<FunctionTemplate>> Initialize(Isolate *isolate, Local<FunctionTemplate> baseCtor);
 
   static NAN_METHOD(New);
-
-  static Nan::Persistent<FunctionTemplate> s_ct;
 };
 
 #endif

@@ -138,19 +138,19 @@ class MutationObserver {
 
     this.queue.push(new MutationRecord('attributes', el, emptyNodeList, emptyNodeList,
                                        null, null, name, null, oldValue));
-    setImmediate(() => { this.flush(); });
+    process.nextTick(() => { this.flush(); });
   }
 
   handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
     this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes,
                                        previousSibling, nextSibling, null, null, null));
-    setImmediate(() => { this.flush(); });
+    process.nextTick(() => { this.flush(); });
   }
 
   handleValue(el) {
     this.queue.push(new MutationRecord('characterData', el, emptyNodeList, emptyNodeList,
                                        null, null, null, null, null));
-    setImmediate(() => { this.flush(); });
+    process.nextTick(() => { this.flush(); });
   }
 }
 module.exports.MutationObserver = MutationObserver;

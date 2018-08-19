@@ -9,7 +9,10 @@
 #include <v8.h>
 #include <bindings.h>
 #include <glfw.h>
+
+#ifdef OPENVR
 #include <openvr-bindings.h>
+#endif
 
 using namespace v8;
 
@@ -140,11 +143,11 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
 }
 
 void InitExports(Handle<Object> exports) {
-  Local<Value> gl = makeGl();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), gl);
+  std::pair<Local<Value>, Local<FunctionTemplate>> glResult = makeGl();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), glResult.first);
   
-  Local<Value> gl2 = makeGl2();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl2"), gl2);
+  std::pair<Local<Value>, Local<FunctionTemplate>> gl2Result = makeGl2(glResult.second);
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl2"), gl2Result.first);
 
   Local<Value> image = makeImage();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImage"), image);
@@ -179,8 +182,10 @@ void InitExports(Handle<Object> exports) {
   Local<Value> window = makeWindow();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
 
+#ifdef OPENVR
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
+#endif
 
 #if _WIN32
   Local<Value> lm = makeLm();

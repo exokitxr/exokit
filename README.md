@@ -31,20 +31,7 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
 
 ## Introduction
 
-<p align="center">
-   <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Architecture diagram"/>
-  </a>
-<a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Exokit flips the browser inside-out in order to be fast"/>
-  </a>
-  <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="In most browsers 3D is a footnote to 2D, but not in Exokit"/>
-  </a>
-  <a href="https://google.com/">
-    <img src="http://via.placeholder.com/218x218" alt="Not a fork of Chrome/Firefox"/>
-  </a>
-</p>
+<img src="assets/screenshots.gif" alt="Screenshots"/>
 
 ### Exokit is a post-screen web engine.
 
@@ -114,9 +101,26 @@ Exokit runs on Windows, macOS, Linux (x64), and Linux (ARM64).
 - You don't care about 3D or mixed reality.
 - You're looking for strict and/or legacy standards support.
 
-## Keyboard
-![Keyboard](https://raw.githubusercontent.com/webmixedreality/exokit/master/assets/keyboard.png)
+## Debugging
 
+Uses [ndb](https://github.com/GoogleChromeLabs/ndb).
+
+```js
+npm run debug
+```
+
+Then in the console, input:
+
+```
+let window = await require('./index').load(yourUrl);
+```
+
+Now you have a handle on the window object as you test your application, and
+you can set `debugger` breakpoints and such.
+
+## Keyboard
+
+![Keyboard](https://raw.githubusercontent.com/webmixedreality/exokit/master/assets/keyboard.png)
 
 ## Community
 

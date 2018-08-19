@@ -1,5 +1,5 @@
 const {EventEmitter} = require('events');
-const USKeyboardLayout = require('puppeteer/lib/USKeyboardLayout');
+const USKeyboardLayout = require('./USKeyboardLayout');
 const GlobalContext = require('./GlobalContext');
 
 class EventTarget extends EventEmitter {

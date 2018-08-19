@@ -21,16 +21,16 @@
 #include <magicleap.h>
 #endif
 
-v8::Local<v8::Object> makeGl();
-v8::Local<v8::Object> makeGl2();
-v8::Local<v8::Object> makeImage();
-v8::Local<v8::Object> makeImageData();
-v8::Local<v8::Object> makeImageBitmap();
-v8::Local<v8::Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons);
-v8::Local<v8::Object> makePath2D();
-v8::Local<v8::Object> makeCanvasGradient();
-v8::Local<v8::Object> makeCanvasPattern();
-v8::Local<v8::Object> makeAudio();
-v8::Local<v8::Object> makeVideo(Local<Value> imageDataCons);
+std::pair<Local<Object>, Local<FunctionTemplate>> makeGl();
+std::pair<Local<Object>, Local<FunctionTemplate>> makeGl2(Local<FunctionTemplate> baseCtor);
+Local<Object> makeImage();
+Local<Object> makeImageData();
+Local<Object> makeImageBitmap();
+Local<Object> makeCanvasRenderingContext2D(Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons);
+Local<Object> makePath2D();
+Local<Object> makeCanvasGradient();
+Local<Object> makeCanvasPattern();
+Local<Object> makeAudio();
+Local<Object> makeVideo(Local<Value> imageDataCons);
 
 #endif

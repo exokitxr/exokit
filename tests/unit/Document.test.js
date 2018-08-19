@@ -13,6 +13,8 @@ describe('_parseDocument', () => {
     // Stub fetch for script tag.
     window.fetch = () => Promise.resolve(new Response(''));
     const document = GlobalContext._parseDocument(dummyHtml, window);
+    window.document = document;
+    window.navigator.getVRDisplaysSync = () => [];
     assert.ok(document);
     assert.ok(document.head);
     assert.ok(document.body);
