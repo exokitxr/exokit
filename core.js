@@ -687,40 +687,6 @@ function tickAnimationFrame() {
     tickAnimationFrame.window = null;
   }
 
-  if (timeouts.length > 0) {
-    _cacheLocalCbs(timeouts);
-    const dateNow = Date.now();
-
-    for (let i = 0; i < localCbs.length; i++) {
-      const timeout = localCbs[i];
-      if (timeout) {
-        const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
-        if (dateNow >= endTime) {
-          timeout();
-
-          timeouts[i] = null;
-        }
-      }
-    }
-  }
-
-  if (intervals.length > 0) {
-    _cacheLocalCbs(intervals);
-    const dateNow = Date.now();
-
-    for (let i = 0; i < localCbs.length; i++) {
-      const interval = localCbs[i];
-      if (interval) {
-        const endTime = interval[symbols.startTimeSymbol] + interval[symbols.intervalSymbol];
-        if (dateNow >= endTime) {
-          interval();
-
-          interval[symbols.startTimeSymbol] = dateNow;
-        }
-      }
-    }
-  }
-
   _clearLocalCbs(); // release garbage
 }
 tickAnimationFrame.window = null;
@@ -941,38 +907,38 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.URL = URL;
   window.console = console;
-  window.setTimeout = (fn, timeout = 0, args = []) => {
+  window.setTimeout = (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
-    fn[symbols.startTimeSymbol] = Date.now();
-    fn[symbols.timeoutSymbol] = timeout;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
     timeouts[_findFreeSlot(timeouts)] = fn;
+    fn[symbols.timeoutSymbol] = setTimeout(fn, timeout, args);
     return id;
   };
   window.clearTimeout = id => {
     const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
     if (index !== -1) {
+      clearTimeout(timeouts[index][symbols.timeoutSymbol]);
       timeouts[index] = null;
     }
   };
-  window.setInterval = (fn, interval = 10, args = []) => {
+  window.setInterval = (fn, interval, args) => {
     if (interval < 10) {
       interval = 10;
     }
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
-    fn[symbols.startTimeSymbol] = Date.now();
-    fn[symbols.intervalSymbol] = interval;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
     intervals[_findFreeSlot(intervals)] = fn;
+    fn[symbols.timeoutSymbol] = setInterval(fn, interval, args);
     return id;
   };
   window.clearInterval = id => {
     const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
     if (index !== -1) {
+      clearInterval(intervals[index][symbols.timeoutSymbol]);
       intervals[index] = null;
     }
   };
@@ -1385,26 +1351,33 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   });
 
   vmo.run(windowStartScript, 'window-start-script.js');
-
-  window.on('destroy', e => {
-    const {window: destroyedWindow} = e;
-
-    const _pred = fn => fn && fn[symbols.windowSymbol] !== destroyedWindow;
+  
+  const _destroyTimeouts = window => {
+    const _pred = fn => fn[symbols.windowSymbol] === window;
     for (let i = 0; i < rafCbs.length; i++) {
-      if (!_pred(rafCbs[i])) {
+      const rafCb = rafCbs[i];
+      if (rafCb && _pred(rafCb)) {
         rafCbs[i] = null;
       }
     }
     for (let i = 0; i < timeouts.length; i++) {
-      if (!_pred(timeouts[i])) {
+      const timeout = timeouts[i];
+      if (timeout && _pred(timeout)) {
+        clearTimeout(timeout[symbols.timeoutSymbol]);
         timeouts[i] = null;
       }
     }
     for (let i = 0; i < intervals.length; i++) {
-      if (!_pred(intervals[i])) {
+      const interval = intervals[i];
+      if (interval && _pred(interval)) {
+        clearInterval(interval[symbols.timeoutSymbol]);
         intervals[i] = null;
       }
     }
+  };
+
+  window.on('destroy', e => {
+    _destroyTimeouts(e.window);
   });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
@@ -1424,22 +1397,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          const _pred = fn => fn && fn[symbols.windowSymbol] !== window;
-          for (let i = 0; i < rafCbs.length; i++) {
-            if (!_pred(rafCbs[i])) {
-              rafCbs[i] = null;
-            }
-          }
-          for (let i = 0; i < timeouts.length; i++) {
-            if (!_pred(timeouts[i])) {
-              timeouts[i] = null;
-            }
-          }
-          for (let i = 0; i < intervals.length; i++) {
-            if (!_pred(intervals[i])) {
-              intervals[i] = null;
-            }
-          }
+          _destroyTimeouts(window);
         })
         .catch(err => {
           loading = false;
