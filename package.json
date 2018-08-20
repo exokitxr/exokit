@@ -56,6 +56,7 @@
     "history": "^4.7.2",
     "isolator": "0.0.9",
     "leapmotion": "0.0.4",
+    "libnode.a": "0.0.1",
     "magicleap": "0.0.21",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
