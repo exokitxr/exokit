@@ -674,7 +674,7 @@ NAN_METHOD(testScene) {
 NAN_METHOD(WindowHint) {
   int target       = info[0]->Uint32Value();
   int hint         = info[1]->Uint32Value();
-  NATIVEwindowHint(target, hint);
+  glfwWindowHint(target, hint);
 }
 
 NAN_METHOD(DefaultWindowHints) {
@@ -1066,7 +1066,7 @@ NAN_METHOD(SetWindowTitle) {
 }
 
 void GetWindowSize(NATIVEwindow *window, int *width, int *height) {
-  glfwGetWindowSize(window, &width, &height);
+  glfwGetWindowSize(window, width, height);
 }
 
 NAN_METHOD(GetWindowSize) {
@@ -1269,18 +1269,18 @@ NAN_METHOD(Create) {
       glfwDefaultWindowHints();
 
       // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
-      NATIVEwindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-      NATIVEwindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-      NATIVEwindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-      NATIVEwindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-      NATIVEwindowHint(GLFW_RESIZABLE, 1);
-      NATIVEwindowHint(GLFW_VISIBLE, 1);
-      NATIVEwindowHint(GLFW_DECORATED, 1);
-      NATIVEwindowHint(GLFW_RED_BITS, 8);
-      NATIVEwindowHint(GLFW_GREEN_BITS, 8);
-      NATIVEwindowHint(GLFW_BLUE_BITS, 8);
-      NATIVEwindowHint(GLFW_DEPTH_BITS, 24);
-      NATIVEwindowHint(GLFW_REFRESH_RATE, 0);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+      glfwWindowHint(GLFW_RESIZABLE, 1);
+      glfwWindowHint(GLFW_VISIBLE, 1);
+      glfwWindowHint(GLFW_DECORATED, 1);
+      glfwWindowHint(GLFW_RED_BITS, 8);
+      glfwWindowHint(GLFW_GREEN_BITS, 8);
+      glfwWindowHint(GLFW_BLUE_BITS, 8);
+      glfwWindowHint(GLFW_DEPTH_BITS, 24);
+      glfwWindowHint(GLFW_REFRESH_RATE, 0);
 
       glfwSetErrorCallback([](int err, const char *errString) {
         fprintf(stderr, "%s", errString);
@@ -1299,7 +1299,7 @@ NAN_METHOD(Create) {
   NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
   WebGLRenderingContext *gl = info[5]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5])) : nullptr;
 
-  NATIVEwindowHint(GLFW_VISIBLE, initialVisible);
+  glfwWindowHint(GLFW_VISIBLE, initialVisible);
 
   GLuint framebuffers[] = {0, 0};
   GLuint framebufferTextures[] = {0, 0, 0, 0};
