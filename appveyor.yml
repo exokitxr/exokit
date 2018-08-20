@@ -1,6 +1,8 @@
 version: 0.0.{build}
 
 # Test against the latest version of this Node.js version
+image:
+  Visual Studio 2017
 environment:
   nodejs_version: "10"
   MAGICLEAP:
