@@ -54,7 +54,7 @@
                 "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib/windows/glfw')\")",
                 "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/lib/windows')\")",
                 "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib/windows')\")",
-                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/win')\")",
+                "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/windows')\")",
                 "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/lib/win64')\")",
                 "<!(node -e \"console.log(require.resolve('leapmotion').slice(0, -9) + '/lib/win')\")",
                 "<!(node -e \"console.log(require.resolve('magicleap').slice(0, -9) + '/lib/win64')\")",
