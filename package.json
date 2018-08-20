@@ -62,7 +62,7 @@
     "mkdirp": "^0.5.1",
     "nan": "^2.10.0",
     "native-audio-deps": "0.0.36",
-    "native-canvas-deps": "0.0.39",
+    "native-canvas-deps": "0.0.40",
     "native-graphics-deps": "0.0.20",
     "native-openvr-deps": "0.0.17",
     "native-video-deps": "0.0.26",
