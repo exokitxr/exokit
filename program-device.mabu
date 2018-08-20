@@ -177,6 +177,7 @@ SHLIBS = ml_privileges
 LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   $(MLSDK)/lumin/usr/lib \
   $(MLSDK)/lib/lumin \
+  node_modules/libnode.a \
   mllib
 
 # flags for C/C++/assembly preprocessing
