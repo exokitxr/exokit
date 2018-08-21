@@ -178,7 +178,9 @@ LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   $(MLSDK)/lumin/usr/lib \
   $(MLSDK)/lib/lumin \
   node_modules/libnode.a \
-  mllib
+  node_modules/native-canvas-deps\lib2\magicleap \
+  node_modules/native-audio-deps\lib2\magicleap \
+  node_modules/native-video-deps\lib2\magicleap
 
 # flags for C/C++/assembly preprocessing
 #
