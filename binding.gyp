@@ -532,7 +532,10 @@
             "<!(echo $MLSDK)/lumin/stl/libc++/lib",
             "<!(echo $MLSDK)/lumin/usr/lib",
             "<!(echo $MLSDK)/lib/lumin",
-            "<(module_root_dir)/mllib",
+            "<(module_root_dir)/libnode.a",
+            "<(module_root_dir)/node_modules/native-canvas-deps/lib2/magicleap",
+            "<(module_root_dir)/node_modules/native-audio-deps/lib2/magicleap",
+            "<(module_root_dir)/node_modules/native-video-deps/lib2/magicleap",
           ],
           'libraries': [
             '-lskia',
