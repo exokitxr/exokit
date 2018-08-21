@@ -156,6 +156,7 @@ OUT = build\magicleap\program-device
 # static libs to link in
 #
 STLIBS = node \
+  exokit \
   skia \
   LabSound \
   avformat \
@@ -164,8 +165,7 @@ STLIBS = node \
   avdevice \
   swscale \
   swresample \
-  opus \
-  exokit
+  opus
 
 # shared libs to link in
 #
