@@ -56,6 +56,15 @@ protected:
   Nan::Persistent<Function> cbFn;
 };
 
+class CameraRequest {
+public:
+  CameraRequest(ocal<Function> cbFn);
+  void Poll(const MLCameraOutput *output);
+
+protected:
+  Nan::Persistent<Function> cbFn;
+};
+
 class MLStageGeometry : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
@@ -130,6 +139,7 @@ protected:
   // meshing
   MLHandle meshTracker;
   std::vector<MeshRequest *> meshRequests;
+  std::vector<CameraRequest *> cameraRequests;
   /* std::condition_variable mesherCv;
   std::mutex mesherMutex;
 

@@ -149,9 +149,7 @@ static void onUnloadResources(void* application_context) {
 
 // MeshRequest
 
-MeshRequest::MeshRequest(MLHandle meshTracker, MLHandle requestHandle, Local<Function> cbFn) : meshTracker(meshTracker), requestHandle(requestHandle), cbFn(cbFn) {
-  // XXX
-}
+MeshRequest::MeshRequest(MLHandle meshTracker, MLHandle requestHandle, Local<Function> cbFn) : meshTracker(meshTracker), requestHandle(requestHandle), cbFn(cbFn) {}
 
 bool MeshRequest::Poll() {
   MLMeshingMesh mesh;
@@ -197,6 +195,84 @@ bool MeshRequest::Poll() {
   } else {
     return false;
   }
+}
+
+// camera device status callbacks
+
+void cameraOnDeviceAvailable(void *data) {
+  // XXX
+}
+void cameraOnDeviceUnavailable(void *data) {
+  // XXX
+}
+void cameraOnDeviceOpened(void *data) {
+  // XXX
+}
+void cameraOnDeviceClosed(void *data) {
+  // XXX
+}
+void cameraOnDeviceDisconnected(void *data) {
+  // XXX
+}
+void cameraOnDeviceError(MLCameraError error, void *data) {
+  // XXX
+}
+void cameraOnPreviewBufferAvailable(MLHandle output, void *data) {
+  // XXX
+}
+
+// camera capture callbacks
+
+void cameraOnCaptureStarted(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureFailed(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureBufferLost(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureProgressed(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
+  MLContext *mlContext = (MLContext *)data;
+  std::for_each(mlContext->cameraRequests.begin(), mlContext->meshRequests.end(), [](CameraRequest *c) {
+    c->Poll(output);
+  });
+}
+
+// CameraRequest
+
+CameraRequest::CameraRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+
+void CameraRequest::Poll(const MLCameraOutput *output) {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
+
+  MLCameraOutputFormat &format = output->format;
+  uint8_t planeCount = output->plane_count;
+  MLCameraPlaneInfo *planes = ouput->planes;
+
+  for (uint8_t i = 0; i < planeCount; i++) {
+    MLCameraPlaneInfo &plane = planes[i];
+
+    uint32_t bpp = plane.bytes_per_pixel;
+    uint8_t *data = plane.data;
+    uint32_t width = plane.width;
+    uint32_t height = plane.height;
+    uint32_t size = plane.size;
+    uint32_t stride = plane.stride;
+  }
+
+  Local<Function> cbFn = Nan::New(this->cbFn);
+  Local<Value> argv[] = {
+    result,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 // MLStageGeometry
@@ -454,6 +530,31 @@ NAN_METHOD(MLContext::Present) {
   meshingSettings.target_number_triangles_per_block = 0; */
   if (MLMeshingCreateClient(&mlContext->meshTracker, &meshingSettings) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
+    return;
+  }
+
+  MLCameraDeviceStatusCallbacks cameraDeviceStatusCallbacks;
+  cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
+  cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
+  cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
+  cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
+  cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
+  cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
+  cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
+  if (MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, this) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to set camera device status calbacks.", application_name);
+    return;
+  }
+
+  MLCameraCaptureCallbacks cameraCaptureCallbacks;
+  cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
+  cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
+  cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
+  cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
+  cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
+  cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
+  if (MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, this) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to set camera device status calbacks.", application_name);
     return;
   }
 
@@ -837,7 +938,6 @@ NAN_METHOD(MLContext::OnPresentChange) {
 NAN_METHOD(MLContext::RequestMesh) {
   if (info[0]->IsFunction()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
     MLMeshingMeshRequest request;
@@ -849,6 +949,25 @@ NAN_METHOD(MLContext::RequestMesh) {
     Nan::ThrowError("invalid arguments");
   }
 }
+
+NAN_METHOD(MLContext::RequestCamera) {
+  if (info[0]->IsFunction()) {
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    
+
+    MLMeshingMeshRequest request;
+    MLHandle requestHandle;
+    MLCameraConnect(mlContext->meshTracker, &request, &requestHandle);
+    MeshRequest *meshRequest = new CameraRequest(cbFn);
+    mlContext->meshRequests.push_back(meshRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+MLCameraConnect
 
 NAN_METHOD(MLContext::PollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
