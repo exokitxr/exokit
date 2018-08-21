@@ -240,7 +240,7 @@ void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtr
 }
 void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
   MLContext *mlContext = (MLContext *)data;
-  std::for_each(mlContext->cameraRequests.begin(), mlContext->meshRequests.end(), [](CameraRequest *c) {
+  std::for_each(mlContext->cameraRequests.begin(), mlContext->cameraRequests.end(), [&](CameraRequest *c) {
     c->Poll(output);
   });
 }
@@ -253,12 +253,13 @@ void CameraRequest::Poll(const MLCameraOutput *output) {
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
 
-  MLCameraOutputFormat &format = output->format;
+  const MLCameraOutputFormat &format = output->format;
   uint8_t planeCount = output->plane_count;
-  MLCameraPlaneInfo *planes = ouput->planes;
+  const MLCameraPlaneInfo *planes = output->planes;
 
+  Local<Array> result = Nan::New<Array>(planeCount);
   for (uint8_t i = 0; i < planeCount; i++) {
-    MLCameraPlaneInfo &plane = planes[i];
+    const MLCameraPlaneInfo &plane = planes[i];
 
     uint32_t bpp = plane.bytes_per_pixel;
     uint8_t *data = plane.data;
@@ -266,6 +267,14 @@ void CameraRequest::Poll(const MLCameraOutput *output) {
     uint32_t height = plane.height;
     uint32_t size = plane.size;
     uint32_t stride = plane.stride;
+
+    Local<Object> obj = Nan::New<Object>();
+    Local<Uint8Array> datas = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), data, size), 0, size);
+    obj->Set(JS_STR("data"), datas);
+
+    obj->Set(JS_STR("width"), JS_INT(width));
+    obj->Set(JS_STR("height"), JS_INT(height));
+    obj->Set(JS_STR("stride"), JS_INT(stride));
   }
 
   Local<Function> cbFn = Nan::New(this->cbFn);
@@ -380,6 +389,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
   Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
+  Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "PollEvents", PollEvents);
 
   return scope.Escape(ctorFn);
@@ -541,7 +551,7 @@ NAN_METHOD(MLContext::Present) {
   cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
   cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
   cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
-  if (MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, this) != MLResult_Ok) {
+  if (MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, mlContext) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to set camera device status calbacks.", application_name);
     return;
   }
@@ -553,7 +563,7 @@ NAN_METHOD(MLContext::Present) {
   cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
   cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
   cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
-  if (MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, this) != MLResult_Ok) {
+  if (MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, mlContext) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to set camera device status calbacks.", application_name);
     return;
   }
@@ -955,19 +965,12 @@ NAN_METHOD(MLContext::RequestCamera) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
-    
-
-    MLMeshingMeshRequest request;
-    MLHandle requestHandle;
-    MLCameraConnect(mlContext->meshTracker, &request, &requestHandle);
-    MeshRequest *meshRequest = new CameraRequest(cbFn);
-    mlContext->meshRequests.push_back(meshRequest);
+    CameraRequest *cameraRequest = new CameraRequest(cbFn);
+    mlContext->cameraRequests.push_back(cameraRequest);
   } else {
     Nan::ThrowError("invalid arguments");
   }
 }
-
-MLCameraConnect
 
 NAN_METHOD(MLContext::PollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());

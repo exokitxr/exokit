@@ -16,6 +16,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <algorithm>
 #include <webgl.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
@@ -24,6 +25,7 @@
 #include <ml_privilege_ids.h>
 #include <ml_privilege_functions.h>
 #include <ml_meshing2.h>
+#include <ml_camera.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
 #include <ml_lifecycle.h>
@@ -58,7 +60,7 @@ protected:
 
 class CameraRequest {
 public:
-  CameraRequest(ocal<Function> cbFn);
+  CameraRequest(Local<Function> cbFn);
   void Poll(const MLCameraOutput *output);
 
 protected:
@@ -83,7 +85,7 @@ class MLContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
 
-protected:
+// protected:
   MLContext();
   ~MLContext();
 
@@ -96,9 +98,10 @@ protected:
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
   static NAN_METHOD(RequestMesh);
+  static NAN_METHOD(RequestCamera);
   static NAN_METHOD(PollEvents);
 
-protected:
+// protected:
   // tracking
   MLHandle graphics_client;
   GLuint framebuffer_id;
@@ -155,8 +158,6 @@ protected:
 
   // occlusion
   // MLHandle occlusionTracker;
-
-  friend class MLStageGeometry;
 };
 
 }
