@@ -245,6 +245,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     contexts.push(gl);
     FPS = nativeWindow.getRefreshRate();
+    FRAME_TIME_MAX = ~~(1000 / FPS);
 
     canvas.ownerDocument.defaultView.on('unload', () => {
       gl.destroy();
@@ -689,7 +690,7 @@ core.setVersion(version);
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
 let FPS = 90;
-const FRAME_TIME_MAX = ~~(1000 / FPS);
+let FRAME_TIME_MAX = ~~(1000 / FPS);
 const FRAME_TIME_MIN = 0;
 
 const _bindWindow = (window, newWindowCb) => {
