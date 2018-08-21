@@ -330,6 +330,10 @@ if (nativeVr) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
 
+        //TODO: Set FPS based on a device API
+        FPS = 90;
+        FRAME_TIME_MAX = ~~(1000 / FPS);
+
         const vrContext = vrPresentState.vrContext || nativeVr.getContext();
         const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
         const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
@@ -455,6 +459,10 @@ if (nativeMl) {
 
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
+
+        //TODO: Set FPS based on a device API
+        FPS = 90;
+        FRAME_TIME_MAX = ~~(1000 / FPS);
 
         const initResult = mlContext.Present(windowHandle);
         if (initResult) {
