@@ -795,9 +795,8 @@ NAN_METHOD(MLContext::OnPresentChange) {
 NAN_METHOD(MLContext::RequestMesh) {
   if (info[0]->IsFunction()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-    
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
-    
+
     MLMeshingMeshRequest request;
     MLHandle requestHandle;
     MLMeshingRequestMesh(mlContext->meshTracker, &request, &requestHandle);
