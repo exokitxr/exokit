@@ -154,7 +154,49 @@ MeshRequest::MeshRequest(MLHandle meshTracker, MLHandle requestHandle, Local<Fun
 }
 
 bool MeshRequest::Poll() {
-  return false; // XXX
+  MLMeshingMesh mesh;
+  if (MLMeshingGetMeshResult(this->meshTracker, this->requestHandle, &mesh) == MLResult_Ok) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "meshRequest");
+
+    MLMeshingBlockMesh *blockMeshes = mesh.data;
+    uint32_t dataCount = mesh.data_count;
+
+    Local<Array> result = Nan::New<Array>(dataCount);
+    for (uint32_t i = 0; i < dataCount; i++) {
+      MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+
+      Local<Object> obj = Nan::New<Object>();
+
+      MLCoordinateFrameUID &id = blockMesh.id;
+      Local<Uint8Array> ids = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), id.data, sizeof(id.data)), 0, sizeof(id.data));
+      obj->Set(JS_STR("ids"), ids);
+
+      uint16_t *index = blockMesh.index;
+      uint16_t indexCount = blockMesh.index_count;
+      Local<Uint16Array> indices = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), index, indexCount * sizeof(uint16_t)), 0, indexCount);
+      obj->Set(JS_STR("indices"), indices);
+
+      MLVec3f *vertex = blockMesh.vertex;
+      uint32_t vertexCount = blockMesh.vertex_count;
+      Local<Float32Array> positions = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), vertex, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
+      obj->Set(JS_STR("positions"), positions);
+
+      MLVec3f *normal = blockMesh.vertex;
+      Local<Float32Array> normals = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normal, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
+      obj->Set(JS_STR("normals"), normals);
+    }
+
+    Local<Function> cbFn = Nan::New(this->cbFn);
+    Local<Value> argv[] = {
+      result,
+    };
+    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+
+    return true;
+  } else {
+    return false;
+  }
 }
 
 // MLStageGeometry
@@ -795,6 +837,7 @@ NAN_METHOD(MLContext::OnPresentChange) {
 NAN_METHOD(MLContext::RequestMesh) {
   if (info[0]->IsFunction()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
     MLMeshingMeshRequest request;
