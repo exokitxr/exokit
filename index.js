@@ -29,6 +29,9 @@ const GlobalContext = require('./src/GlobalContext');
 GlobalContext.commands = [];
 
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');
+const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
+const VR_FPS = 90;
+const ML_FPS = 60;
 const MLSDK_PORT = 17955;
 
 const contexts = [];
@@ -244,6 +247,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     })(gl.destroy);
 
     contexts.push(gl);
+    fps = nativeWindow.getRefreshRate();
 
     canvas.ownerDocument.defaultView.on('unload', () => {
       gl.destroy();
@@ -327,6 +331,8 @@ if (nativeVr) {
 
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
+
+        fps = VR_FPS;
 
         const vrContext = vrPresentState.vrContext || nativeVr.getContext();
         const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
@@ -453,6 +459,8 @@ if (nativeMl) {
 
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
+
+        fps = ML_FPS;
 
         const initResult = mlContext.Present(windowHandle);
         if (initResult) {
@@ -698,9 +706,9 @@ core.setVersion(version);
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
-const FPS = 90;
-const FRAME_TIME_MAX = ~~(1000 / FPS);
-const FRAME_TIME_MIN = 0;
+let fps = DEFAULT_FPS;
+const _getFrameTimeMax = () => ~~(1000 / fps);
+const _getFrameTimeMin = () => 0;
 
 const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
@@ -873,7 +881,7 @@ const _bindWindow = (window, newWindowCb) => {
     submit: 0,
     total: 0,
   };
-  const TIMESTAMP_FRAMES = 90;
+  const TIMESTAMP_FRAMES = DEFAULT_FPS;
   const [leftGamepad, rightGamepad] = core.getAllGamepads();
   const gamepads = [null, null];
   const frameData = new window.VRFrameData();
@@ -1311,13 +1319,16 @@ const _bindWindow = (window, newWindowCb) => {
 
     // wait for next frame
     const now = Date.now();
-    timeout = setTimeout(
-      _recurse,
-      args.uncapped ?
-        0
-      :
-        Math.min(Math.max(FRAME_TIME_MAX - ~~(now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX)
-    );
+    const timeoutDelay = (() => {
+      if (args.uncapped) {
+        return 0;
+      } else {
+        const frameTimeMax = _getFrameTimeMax();
+        const frameTimeMin = _getFrameTimeMin();
+        return Math.min(Math.max(frameTimeMax - ~~(now - lastFrameTime), frameTimeMin), frameTimeMax);
+      }
+    })();
+    timeout = setTimeout(_recurse, timeoutDelay);
     lastFrameTime = now;
   };
   timeout = setTimeout(_recurse);

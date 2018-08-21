@@ -1401,6 +1401,12 @@ NAN_METHOD(SwapBuffers) {
   glfwSwapBuffers(window);
 }
 
+NAN_METHOD(GetRefreshRate) {
+  const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  int refreshRate = mode->refreshRate;
+  info.GetReturnValue().Set(refreshRate);
+}
+
 NAN_METHOD(SetCursorMode) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   if (info[1]->BooleanValue()) {
@@ -1829,6 +1835,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
+  Nan::SetMethod(target, "getRefreshRate", glfw::GetRefreshRate);
   Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
   Nan::SetMethod(target, "getClipboard", glfw::GetClipboard);
