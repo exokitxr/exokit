@@ -28,6 +28,7 @@ export npm_config_arch=arm64
 rm -Rf node_modules
 npm cache clean --force
 npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
+find -name '\.bin' | xargs rm -R
 
 # npm install libification
 
