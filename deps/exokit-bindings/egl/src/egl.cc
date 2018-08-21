@@ -402,6 +402,10 @@ NAN_METHOD(SwapBuffers) {
   // buffer swapping is implicit on device (MLGraphicsEndFrame)
 }
 
+NAN_METHOD(GetRefreshRate) {
+  info.GetReturnValue().Set(JS_INT(60));
+}
+
 NAN_METHOD(SetCursorMode) {
   // nothing
 }
@@ -450,6 +454,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setEventHandler", egl::SetEventHandler);
   Nan::SetMethod(target, "pollEvents", egl::PollEvents);
   Nan::SetMethod(target, "swapBuffers", egl::SwapBuffers);
+  Nan::SetMethod(target, "getRefreshRate", egl::GetRefreshRate);
   Nan::SetMethod(target, "setCursorMode", egl::SetCursorMode);
   Nan::SetMethod(target, "setCursorPosition", egl::SetCursorPosition);
   Nan::SetMethod(target, "getClipboard", egl::GetClipboard);
