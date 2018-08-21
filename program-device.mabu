@@ -177,6 +177,7 @@ SHLIBS = ml_privileges
 LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   $(MLSDK)/lumin/usr/lib \
   $(MLSDK)/lib/lumin \
+  build/libexokit \
   node_modules/libnode.a \
   node_modules/native-canvas-deps\lib2\magicleap \
   node_modules/native-audio-deps\lib2\magicleap \

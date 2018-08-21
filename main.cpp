@@ -25,7 +25,7 @@ namespace node {
 int stdoutfds[2];
 int stderrfds[2];
 
-#include "dlibs.h"
+#include "build/libexokit/dlibs.h"
 
 /* struct application_context_t {
   int dummy_value;
