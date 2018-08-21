@@ -197,7 +197,7 @@ int main() {
     {
       const char *nodeString = "node";
       const char *dotString = ".";
-      const char *jsString = "examples/hello_xr.html";
+      const char *jsString = "examples/hello_ml.html";
       char argsString[4096];
       int i = 0;
 
