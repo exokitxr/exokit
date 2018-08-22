@@ -60,10 +60,11 @@ protected:
 
 class CameraRequest {
 public:
-  CameraRequest(Local<Function> cbFn);
+  CameraRequest(MLHandle request, Local<Function> cbFn);
   void Poll(const MLCameraOutput *output);
 
 protected:
+  MLHandle request;
   Nan::Persistent<Function> cbFn;
 };
 

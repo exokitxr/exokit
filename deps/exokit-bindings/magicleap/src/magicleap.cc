@@ -247,7 +247,7 @@ void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
 
 // CameraRequest
 
-CameraRequest::CameraRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+CameraRequest::CameraRequest(MLHandle request, Local<Function> cbFn) : request(request), cbFn(cbFn) {}
 
 void CameraRequest::Poll(const MLCameraOutput *output) {
   Local<Object> asyncObject = Nan::New<Object>();
@@ -960,15 +960,43 @@ NAN_METHOD(MLContext::RequestMesh) {
   }
 }
 
+bool cameraConnected = false;
 NAN_METHOD(MLContext::RequestCamera) {
   if (info[0]->IsFunction()) {
+    if (!cameraConnected) {
+      MLResult result = MLCameraConnect();
+      if (result == MLResult_Ok) {
+        cameraConnected = true;
+      } else {
+        ML_LOG(Error, "%s: Failed to set camera output format: %x", application_name, result);
+        Nan::ThrowError("failed to connect camera");
+        return;
+      }
+    }
+
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
-    CameraRequest *cameraRequest = new CameraRequest(cbFn);
-    mlContext->cameraRequests.push_back(cameraRequest);
+    MLResult result = MLCameraSetOutputFormat(MLCameraOutputFormat_JPEG);
+    if (result == MLResult_Ok) {
+      MLHandle captureHandle;
+      MLResult result = MLCameraPrepareCapture(MLCameraCaptureType_ImageRaw, &captureHandle);
+      if (result == MLResult_Ok) {
+        CameraRequest *cameraRequest = new CameraRequest(captureHandle, cbFn);
+        mlContext->cameraRequests.push_back(cameraRequest);
+      } else {
+        ML_LOG(Error, "%s: Failed to prepare camera capture: %x", application_name, result);
+        Nan::ThrowError("failed to prepare camera capture");
+        return;
+      }
+    } else {
+      ML_LOG(Error, "%s: Failed to set camera output format: %x", application_name, result);
+      Nan::ThrowError("failed to prepare camera capture");
+      return;
+    }
   } else {
     Nan::ThrowError("invalid arguments");
+    return;
   }
 }
 
