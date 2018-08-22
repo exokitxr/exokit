@@ -15,12 +15,12 @@
       <uses-privilege ml:name="WorldReconstruction" />
       <uses-privilege ml:name="Occlusion" />
       <uses-privilege ml:name="ControllerPose" />
+      <uses-privilege ml:name="CameraCapture" />
       <uses-privilege ml:name="GesturesSubscribe" />
       <uses-privilege ml:name="GesturesConfig" />
-      <uses-privilege ml:name="AudioRecognizer" />
-      <uses-privilege ml:name="CameraCapture" />
       <uses-privilege ml:name="AudioCaptureMic" />
       <uses-privilege ml:name="VoiceInput" />
+      <uses-privilege ml:name="AudioRecognizer" />
       <uses-privilege ml:name="PwFoundObjRead" />
       <uses-privilege ml:name="NormalNotificationsUsage" />
 		<component
