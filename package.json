@@ -51,7 +51,7 @@
     "electron": "^2.0.6",
     "exokit-home": "0.0.70",
     "fake-indexeddb": "^2.0.4",
-    "fault-zone": "0.0.18",
+    "fault-zone": "0.0.19",
     "he": "^1.1.1",
     "history": "^4.7.2",
     "isolator": "0.0.9",
