@@ -207,17 +207,12 @@ let nativeVm = GlobalContext.nativeVm = null;
 let nativeWorker = null;
 
 class MonitorManager {
-  constructor() {
-      const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
-      this.nativeWindow = require(nativeBindingsModulePath).nativeWindow;
-  }
-
   getList() {
-    return this.nativeWindow.getMonitors();
+    return nativeWindow.getMonitors();
   }
 
   select(index) {
-    this.nativeWindow.setMonitor(index);
+    nativeWindow.setMonitor(index);
   }
 }
 
@@ -278,6 +273,7 @@ class Screen {
 }
 let nativeVr = GlobalContext.nativeVr = null;
 let nativeMl = GlobalContext.nativeMl = null;
+let nativeWindow = GlobalContext.nativeWindow = null;
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -1728,6 +1724,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
   nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
+  nativeWindow = GlobalContext.nativeWindow = bindings.nativeWindow;
 };
 module.exports = exokit;
 
