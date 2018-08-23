@@ -206,6 +206,21 @@ class CustomElementRegistry {
 let nativeVm = GlobalContext.nativeVm = null;
 let nativeWorker = null;
 
+class MonitorManager {
+  constructor() {
+      const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
+      this.nativeWindow = require(nativeBindingsModulePath).nativeWindow;
+  }
+
+  getList() {
+    return this.nativeWindow.getMonitors();
+  }
+
+  select(index) {
+    this.nativeWindow.setMonitor(index);
+  }
+}
+
 class Screen {
   constructor(window) {
     this._window = window;
@@ -1129,6 +1144,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.browser = {
     electron,
+    monitors: new MonitorManager()
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
