@@ -122,9 +122,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   })();
 
   if (windowSpec) {
-      nativeWindow.setMonitor(1);
-
-      const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture, vao] = windowSpec;
+    const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture, vao] = windowSpec;
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
@@ -158,7 +156,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
-
         nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
       };
 
@@ -177,7 +174,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     } else {
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
-
         nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
     }
