@@ -122,7 +122,9 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   })();
 
   if (windowSpec) {
-    const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture, vao] = windowSpec;
+      nativeWindow.setMonitor(1);
+
+      const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture, vao] = windowSpec;
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
