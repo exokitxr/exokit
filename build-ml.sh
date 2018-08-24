@@ -25,8 +25,6 @@ export npm_config_arch=arm64
 
 ../magicleap-js/hack-toolchain.js
 
-rm -Rf node_modules
-npm cache clean --force
 npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
 find -name '\.bin' | xargs rm -Rf
 
@@ -41,6 +39,5 @@ find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/l
 
 ../magicleap-js/hack-toolchain.js -u
 
-rm -Rf build/magicleap
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin program-device.mabu
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m manifest-device.xml -s cert/app.privkey -p --create-package app-device.package
