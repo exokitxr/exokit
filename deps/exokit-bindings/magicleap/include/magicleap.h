@@ -51,7 +51,7 @@ public:
   MeshRequest(MLHandle meshTracker, MLHandle requestHandle, Local<Function> cbFn);
   bool Poll();
 
-protected:
+// protected:
   MLHandle meshTracker;
   MLMeshingMeshRequest request;
   MLHandle requestHandle;
@@ -63,7 +63,7 @@ public:
   CameraRequest(MLHandle request, Local<Function> cbFn);
   void Poll(const MLCameraOutput *output);
 
-protected:
+// protected:
   MLHandle request;
   Nan::Persistent<Function> cbFn;
 };
