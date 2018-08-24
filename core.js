@@ -1131,10 +1131,75 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     return styleSpec.style;
   };
   window.browser = {
-    http,
-    https,
+    http: (() => {
+      const httpProxy = {};
+      for (const k in http) {
+        httpProxy[k] = http[k];
+      }
+      httpProxy.createServer = (createServer => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(req, res) {
+            res.write = (write => function(d) {
+              if (typeof d === 'object') {
+                d = utils._normalizeBuffer(d, global);
+              }
+              return write.apply(this, arguments);
+            })(res.write);
+            res.end = (end => function(d) {
+              if (typeof d === 'object') {
+                d = utils._normalizeBuffer(d, global);
+              }
+              return end.apply(this, arguments);
+            })(res.end);
+            
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return createServer.apply(this, arguments);
+      })(httpProxy.createServer);
+      return httpProxy;
+    })(),
+    // https,
     ws,
+    /* ws: (() => {
+      const wsProxy = {};
+      for (const k in ws) {
+        wsProxy[k] = ws[k];
+      }
+      wsProxy.Server = (OldServer => function Server() {
+        const server = OldServer.apply(this, arguments);
+        server.on = (on => function(e, cb) {
+          if (e === 'message' && cb) {
+            cb = (cb => function(m) {
+              m.data = utils._normalizeBuffer(m.data, global);
+              return cb.apply(this, arguments);
+            })(cb);
+          }
+          return on.apply(this, arguments);
+        })(server.on);
+        return server;
+      })(wsProxy.Server);
+      return wsProxy;
+    })(), */
     electron,
+    nativeMl: (() => {
+      const nativeMlProxy = {};
+      for (const k in nativeMl) {
+        nativeMlProxy[k] = nativeMl[k];
+      }
+      nativeMlProxy.RequestCamera = (RequestCamera => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(datas) {
+            for (let i = 0; i < datas.length; i++) {
+              datas[i].data = utils._normalizeBuffer(datas[i].data, window);
+            }
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return RequestCamera.apply(this, arguments);
+      })(nativeMlProxy.RequestCamera);
+      return nativeMlProxy;
+    })(),
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
