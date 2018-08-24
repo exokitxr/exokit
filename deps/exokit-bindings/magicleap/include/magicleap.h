@@ -18,6 +18,7 @@
 #include <condition_variable>
 #include <algorithm>
 #include <webgl.h>
+#include <egl.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
 #include <ml_perception.h>
@@ -37,6 +38,7 @@ using namespace node;
 #define MAX_NUM_PLANES (32)
 #define PLANE_ENTRY_SIZE (3 + 4 + 2 + 1)
 #define CONTROLLER_ENTRY_SIZE (3 + 4 + 1)
+#define CAMERA_REQUEST_PLANE_BUFFER_SIZE (5 * 1024 * 1024)
 
 namespace ml {
 
@@ -58,14 +60,32 @@ public:
   Nan::Persistent<Function> cbFn;
 };
 
+class CameraRequestPlane {
+public:
+  CameraRequestPlane(uint32_t width, uint32_t height, uint8_t *data, uint32_t size, uint32_t bpp, uint32_t stride);
+  CameraRequestPlane(MLHandle output);
+  void set(uint32_t width, uint32_t height, uint8_t *data, uint32_t size, uint32_t bpp, uint32_t stride);
+  void set(MLHandle output);
+
+  uint32_t width;
+  uint32_t height;
+  uint8_t data[CAMERA_REQUEST_PLANE_BUFFER_SIZE];
+  uint32_t size;
+  uint32_t bpp;
+  uint32_t stride;
+};
+
 class CameraRequest {
 public:
   CameraRequest(MLHandle request, Local<Function> cbFn);
-  void Poll(const MLCameraOutput *output);
+  void Set(const MLCameraOutput *output);
+  void Set(MLHandle output);
+  void Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int width, unsigned int height);
 
 // protected:
   MLHandle request;
   Nan::Persistent<Function> cbFn;
+  std::vector<CameraRequestPlane *> planes;
 };
 
 class MLStageGeometry : public ObjectWrap {
@@ -100,7 +120,9 @@ public:
   static NAN_METHOD(OnPresentChange);
   static NAN_METHOD(RequestMesh);
   static NAN_METHOD(RequestCamera);
-  static NAN_METHOD(PollEvents);
+  static NAN_METHOD(CancelCamera);
+  static NAN_METHOD(PrePollEvents);
+  static NAN_METHOD(PostPollEvents);
 
 // protected:
   // tracking
@@ -140,10 +162,6 @@ public:
   uint32_t numWallPlanes;
   uint32_t numCeilingPlanes;
 
-  // meshing
-  MLHandle meshTracker;
-  std::vector<MeshRequest *> meshRequests;
-  std::vector<CameraRequest *> cameraRequests;
   /* std::condition_variable mesherCv;
   std::mutex mesherMutex;
 
