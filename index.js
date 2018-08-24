@@ -1281,6 +1281,10 @@ const _bindWindow = (window, newWindowCb) => {
 
     // update media frames
     nativeVideo.Video.updateAll();
+    // update magic leap pre state
+    if (nativeMl && mlGlContext) {
+      nativeMl.PrePollEvents();
+    }
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -1313,6 +1317,19 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
+    
+    // update magic leap post state
+    if (nativeMl && mlGlContext) {
+      nativeMl.PostPollEvents(mlGlContext, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
+    }
+    if (args.performance) {
+      const now = Date.now();
+      const diff = now - timestamps.last;
+      timestamps.media += diff;
+      timestamps.total += diff;
+      timestamps.last = now;
+    }
+
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'end frame');
     }
