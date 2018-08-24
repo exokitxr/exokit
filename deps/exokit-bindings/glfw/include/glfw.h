@@ -19,6 +19,8 @@
 
 using namespace v8;
 
+class WebGLRenderingContext;
+
 typedef GLFWwindow NATIVEwindow;
 #define windowsystem glfw
 
@@ -26,6 +28,7 @@ namespace glfw {
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   void *GetGLContext(NATIVEwindow *window);
   void SetCurrentWindowContext(NATIVEwindow *window);
+  void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data);
 }
 
 // Local<Object> makeGlfw();

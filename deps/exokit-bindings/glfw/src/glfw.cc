@@ -1045,6 +1045,17 @@ void SetCurrentWindowContext(NATIVEwindow *window) {
   }
 }
 
+void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data) {
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+  
+  if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+}
+
 NAN_METHOD(SetCurrentWindowContext) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   SetCurrentWindowContext(window);
