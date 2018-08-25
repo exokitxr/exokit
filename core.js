@@ -1198,6 +1198,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         }
         return RequestCamera.apply(this, arguments);
       })(nativeMlProxy.RequestCamera);
+      nativeMlProxy.RequestMeshing = (RequestMeshing => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(datas) {
+            for (let i = 0; i < datas.length; i++) {
+              datas[i].data = utils._normalizeBuffer(datas[i].data, window);
+            }
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return RequestMeshing.apply(this, arguments);
+      })(nativeMlProxy.RequestMeshing);
       return nativeMlProxy;
     })(),
   };
