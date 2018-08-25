@@ -27,6 +27,10 @@ std::mutex cameraRequestsMutex;
 std::vector<CameraRequest *> cameraRequests;
 bool cameraResponsePending = false;
 
+MLHandle handTracker;
+MLHandTrackingData handData;
+std::vector<HandRequest *> handRequests;
+
 MLHandle meshTracker;
 std::vector<MeshRequest *> meshRequests;
 MLMeshingExtents meshExtents;
@@ -122,7 +126,7 @@ void readPlanesQuery(MLPlane *planes, uint32_t numPlanes, int planeType, Local<F
    (*planesIndex)++;
   }
 } */
-int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
+inline int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
   if (gesture & MLGestureStaticHandState_NoHand) {
     return 0;
   } else if (gesture & MLGestureStaticHandState_Finger) {
@@ -143,6 +147,30 @@ int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
     return 8;
   } else {
     return -1;
+  }
+}
+inline const char *gestureCategoryToDescriptor(MLHandTrackingKeyPose keyPose) {
+  switch (keyPose) {
+    case MLGestureStaticHandState_NoHand:
+      return nullptr;
+    case MLGestureStaticHandState_Finger:
+      return "finger";
+    case MLGestureStaticHandState_Fist:
+      return "fist";
+    case MLGestureStaticHandState_Pinch:
+      return "punch";
+    case MLGestureStaticHandState_Thumb:
+      return "thumb";
+    case MLGestureStaticHandState_L:
+      return "l";
+    case MLGestureStaticHandState_OpenHandBack:
+      return "openHandBack";
+    case MLGestureStaticHandState_Ok:
+      return "ok";
+    case MLGestureStaticHandState_C:
+      return "c";
+    default:
+      return nullptr;
   }
 }
 
@@ -172,6 +200,74 @@ static void onResume(void* application_context) {
 static void onUnloadResources(void* application_context) {
   ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On unload resources called.", application_name);
+}
+
+// HandRequest
+
+HandRequest::HandRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+
+void HandRequest::Poll() {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "handRequest");
+
+  MLMeshingBlockMesh *blockMeshes = mesh.data;
+  uint32_t dataCount = mesh.data_count;
+
+  Local<Array> array = Nan::New<Array>();
+  uint32_t numResults = 0;
+  for (uint32_t i = 0; i < dataCount; i++) {
+    constexpr float HAND_CONFIDENCE = 0.5;
+
+    const MLHandTrackingHandState &leftHandState = handData.left_hand_state;
+    if (leftHandState.hand_confidence >= HAND_CONFIDENCE) {
+      const MLVec3f &center = leftHandState.hand_center_normalized;
+      const MLHandTrackingKeyPose &keypose = leftHandState.keypose;
+
+      Local<Object> obj = Nan::New<Object>();
+
+      obj->Set(JS_STR("hand"), JS_STR("left"));
+
+      Local<Float32Array> centerArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)center.values, 3 * sizeof(float)), 0, 3);
+      obj->Set(JS_STR("center"), centerArray);
+
+      const char *gesture = gestureCategoryToDescriptor(keypose);
+      if (gesture) {
+        obj->Set(JS_STR("gesture"), JS_STR(gesture));
+      } else {
+        obj->Set(JS_STR("gesture"), Nan::Null());
+      }
+
+      obj->Set(JS_INT(numResults++), obj);
+    }
+
+    const MLHandTrackingHandState &rightHandState = handData.right_hand_state;
+    if (rightHandState.hand_confidence >= HAND_CONFIDENCE) {
+      const MLVec3f &center = rightHandState.hand_center_normalized;
+      const MLHandTrackingKeyPose &keypose = rightHandState.keypose;
+
+      Local<Object> obj = Nan::New<Object>();
+
+      obj->Set(JS_STR("hand"), JS_STR("right"));
+
+      Local<Float32Array> centerArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)center.values, 3 * sizeof(float)), 0, 3);
+      obj->Set(JS_STR("center"), centerArray);
+
+      const char *gesture = gestureCategoryToDescriptor(keypose);
+      if (gesture) {
+        obj->Set(JS_STR("gesture"), JS_STR(gesture));
+      } else {
+        obj->Set(JS_STR("gesture"), Nan::Null());
+      }
+
+      obj->Set(JS_INT(numResults++), obj);
+    }
+  }
+
+  Local<Function> cbFn = Nan::New(this->cbFn);
+  Local<Value> argv[] = {
+    array,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 // MeshRequest
@@ -472,8 +568,8 @@ Handle<Object> MLStageGeometry::Initialize(Isolate *isolate) {
   ctor->SetClassName(JS_STR("MLStageGeometry"));
 
   // prototype
-  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "getGeometry", GetGeometry);
+  // Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  // Nan::SetMethod(proto, "getGeometry", GetGeometry);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
@@ -495,7 +591,7 @@ NAN_METHOD(MLStageGeometry::New) {
   }
 }
 
-NAN_METHOD(MLStageGeometry::GetGeometry) {
+/* NAN_METHOD(MLStageGeometry::GetGeometry) {
   if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsUint32Array() && info[3]->IsArray()) {
     MLStageGeometry *mlStageGeometry = ObjectWrap::Unwrap<MLStageGeometry>(info.This());
     MLContext *mlContext = mlStageGeometry->mlContext;
@@ -523,18 +619,18 @@ NAN_METHOD(MLStageGeometry::GetGeometry) {
   } else {
     Nan::ThrowError("MLStageGeometry::GetGeometry: invalid arguments");
   }
-}
+} */
 
 MLContext::MLContext() :
   position{0, 0, 0},
-  rotation{0, 0, 0, 1},
-  // haveMeshStaticData(false),
+  rotation{0, 0, 0, 1}/*,
+  haveMeshStaticData(false),
   planesFloorQueryHandle(ML_INVALID_HANDLE),
   planesWallQueryHandle(ML_INVALID_HANDLE),
   planesCeilingQueryHandle(ML_INVALID_HANDLE),
   numFloorPlanes(0),
   numWallPlanes(0),
-  numCeilingPlanes(0)
+  numCeilingPlanes(0) */
   {}
 
 MLContext::~MLContext() {}
@@ -561,6 +657,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
+  Nan::SetMethod(ctorFn, "RequestHand", RequestHand);
   Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
   Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
@@ -725,8 +822,14 @@ NAN_METHOD(MLContext::Present) {
     return;
   }
 
-  if (MLGestureTrackingCreate(&mlContext->gestureTracker) != MLResult_Ok) {
+  /* if (MLGestureTrackingCreate(&mlContext->gestureTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  } */
+
+  if (MLHandTrackingCreate(&handTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to create hand tracker.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
@@ -873,10 +976,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
       Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[2]);
       Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[3]);
-      // Local<Float32Array> planesArray = Local<Float32Array>::Cast(info[4]);
-      Local<Uint32Array> numPlanesArray = Local<Uint32Array>::Cast(info[5]);
-      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[6]);
-      Local<Float32Array> gesturesArray = Local<Float32Array>::Cast(info[7]);
+      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[4]);
 
       MLGraphicsFrameParams frame_params;
       MLResult result = MLGraphicsInitFrameParams(&frame_params);
@@ -934,11 +1034,11 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         endPlanesQuery(mlContext->planesWallHandle, mlContext->planesWallQueryHandle, mlContext->wallPlanes, &mlContext->numWallPlanes);
         endPlanesQuery(mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, mlContext->ceilingPlanes, &mlContext->numCeilingPlanes); */
 
-        uint32_t planesIndex = 0;
-        /* readPlanesQuery(mlContext->floorPlanes, mlContext->numFloorPlanes, 0, planesArray, &planesIndex);
+        /* uint32_t planesIndex = 0;
+        readPlanesQuery(mlContext->floorPlanes, mlContext->numFloorPlanes, 0, planesArray, &planesIndex);
         readPlanesQuery(mlContext->wallPlanes, mlContext->numWallPlanes, 1, planesArray, &planesIndex);
-        readPlanesQuery(mlContext->ceilingPlanes, mlContext->numCeilingPlanes, 2, planesArray, &planesIndex); */
-        numPlanesArray->Set(0, JS_INT((int)planesIndex));
+        readPlanesQuery(mlContext->ceilingPlanes, mlContext->numCeilingPlanes, 2, planesArray, &planesIndex);
+        numPlanesArray->Set(0, JS_INT((int)planesIndex)); */
 
         // controllers
         MLInputControllerState controllerStates[MLInput_MaxControllers];
@@ -963,7 +1063,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
         }
 
-        // gestures
+        /* // gestures
         MLGestureData gestureData;
         result = MLGestureGetData(mlContext->gestureTracker, &gestureData);
         if (result == MLResult_Ok) {
@@ -982,7 +1082,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           gesturesArray->Set(1*4 + 3, JS_NUM(gestureCategoryToIndex(rightHand.static_gesture_category)));
         } else {
           ML_LOG(Error, "MLGestureGetData failed: %s", application_name);
-        }
+        } */
 
         // meshing
         /* {
@@ -1147,6 +1247,17 @@ NAN_METHOD(MLContext::OnPresentChange) {
   }
 }
 
+NAN_METHOD(MLContext::RequestHand) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    HandRequest *handRequest = new HandRequest(cbFn);
+    handRequests.push_back(handRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 NAN_METHOD(MLContext::RequestMesh) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
@@ -1282,6 +1393,17 @@ NAN_METHOD(MLContext::CancelCamera) {
 
 NAN_METHOD(MLContext::PrePollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+
+  if (handRequests.size() > 0) {
+    MLResult result = MLHandTrackingGetData(handTracker, &handData);
+    if (result == MLResult_Ok) {
+      std::for_each(handRequests.begin(), handRequests.end(), [&](HandRequest *h) {
+        h->Poll();
+      });
+    } else {
+      ML_LOG(Error, "%s: Hand data get failed! %x", application_name, result);
+    }
+  }
 
   if (meshRequests.size() > 0 && !meshInfoRequestPending && !meshRequestPending) {
     std::cout << "request mesh info 1 " << mlContext->position.x << " " << mlContext->position.y << " " << mlContext->position.z << " " << mlContext->rotation.x << " " << mlContext->rotation.y << " " << mlContext->rotation.z << " " << mlContext->rotation.w << std::endl;

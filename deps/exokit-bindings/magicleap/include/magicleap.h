@@ -21,6 +21,7 @@
 #include <egl.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
+#include <ml_hand_tracking.h>
 #include <ml_perception.h>
 #include <ml_planes.h>
 #include <ml_privilege_ids.h>
@@ -48,6 +49,15 @@ struct application_context_t {
 };
 
 class MLContext;
+
+class HandRequest {
+public:
+  HandRequest(Local<Function> cbFn);
+  void Poll();
+
+// protected:
+  Nan::Persistent<Function> cbFn;
+};
 
 class MeshRequest {
 public:
@@ -104,7 +114,7 @@ protected:
   ~MLStageGeometry();
 
   static NAN_METHOD(New);
-  static NAN_METHOD(GetGeometry);
+  // static NAN_METHOD(GetGeometry);
 
   MLContext *mlContext;
 };
@@ -125,6 +135,7 @@ public:
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
+  static NAN_METHOD(RequestHand);
   static NAN_METHOD(RequestMesh);
   static NAN_METHOD(RequestPlanes);
   static NAN_METHOD(RequestCamera);
@@ -148,9 +159,9 @@ public:
 
   // input
   MLHandle inputTracker;
-  MLHandle gestureTracker;
+  // MLHandle gestureTracker;
 
-  // planes
+  /* // planes
   MLHandle planesFloorHandle;
   MLHandle planesWallHandle;
   MLHandle planesCeilingHandle;
@@ -170,7 +181,7 @@ public:
   uint32_t numWallPlanes;
   uint32_t numCeilingPlanes;
 
-  /* std::condition_variable mesherCv;
+  std::condition_variable mesherCv;
   std::mutex mesherMutex;
 
   bool haveMeshStaticData;
@@ -178,10 +189,10 @@ public:
   MLDataArray meshData;
   MLDataArrayDiff meshesDataDiff;
   MLDataArray meshData2;
-  MLDataArrayDiff meshesDataDiff2; */
+  MLDataArrayDiff meshesDataDiff2;
   std::vector<uint8_t> positions;
   std::vector<uint8_t> normals;
-  std::vector<uint8_t> triangles;
+  std::vector<uint8_t> triangles; */
 
   // occlusion
   // MLHandle occlusionTracker;

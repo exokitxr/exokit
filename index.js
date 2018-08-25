@@ -271,8 +271,6 @@ const localFovArray2 = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
-const maxNumPlanes = 32 * 3;
-const planeEntrySize = 3 + 4 + 2 + 1;
 const framebufferArray = new Uint32Array(2);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
@@ -281,10 +279,7 @@ const handsArray = [
   new Float32Array(handEntrySize),
   new Float32Array(handEntrySize),
 ];
-const planesArray = new Float32Array(planeEntrySize * maxNumPlanes);
-const numPlanesArray = new Uint32Array(1);
 const controllersArray = new Float32Array((3 + 4 + 1) * 2);
-const gesturesArray = new Float32Array(4 * 2);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -477,12 +472,6 @@ if (nativeMl) {
           mlMsTex = msTex;
           mlMsDepthTex = msDepthStencilTex;
 
-          // mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
-
-          /* for (let i = 0; i < 2; i++) {
-            nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
-          } */
-
           const cleanups = [];
           mlCleanups = cleanups;
 
@@ -499,13 +488,10 @@ if (nativeMl) {
           });
 
           window.top.updateVrFrame({
-            /* renderWidth: viewportArray[2] / 2,
-            renderHeight: viewportArray[3], */
             renderWidth,
             renderHeight,
             force: true,
           });
-          // mlContext.SubmitFrame(mlFbo, canvas.width, canvas.height);
 
           context.setDefaultFramebuffer(mlMsFbo);
 
@@ -524,8 +510,6 @@ if (nativeMl) {
       }
     } else {
       return {
-        /* width: mlGlContext.canvas.width,
-        height: mlGlContext.canvas.height, */
         width: renderWidth * 2,
         height: renderHeight,
         framebuffer: mlMsFbo,
@@ -1173,7 +1157,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
     } else if (mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
-      mlHasPose = mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
+      mlHasPose = mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, controllersArray);
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -1213,12 +1197,6 @@ const _bindWindow = (window, newWindowCb) => {
         leftGamepad.buttons[1].pressed = leftTriggerPushed;
         controllersArrayIndex++;
 
-        let gesturesArrayIndex = 0;
-        leftGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
-        gesturesArrayIndex += 3;
-        leftGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
-        gesturesArrayIndex++;
-
         gamepads[0] = leftGamepad;
 
         rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
@@ -1232,11 +1210,6 @@ const _bindWindow = (window, newWindowCb) => {
         rightGamepad.buttons[1].pressed = rightTriggerPushed;
         controllersArrayIndex++;
 
-        rightGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
-        gesturesArrayIndex += 3;
-        rightGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
-        gesturesArrayIndex++;
-
         gamepads[1] = rightGamepad;
 
         // update ml frame
@@ -1245,8 +1218,6 @@ const _bindWindow = (window, newWindowCb) => {
           depthFar,
           frameData,
           stageParameters,
-          planesArray,
-          numPlanes: numPlanesArray[0],
           gamepads,
           context: mlContext,
         });
