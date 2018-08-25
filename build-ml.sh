@@ -21,8 +21,6 @@ export LUMIN=1
 
 export npm_config_arch=arm64
 
-# npm install
-
 ../magicleap-js/hack-toolchain.js
 
 npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
