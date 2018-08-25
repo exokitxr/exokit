@@ -26,6 +26,7 @@
 #include <ml_privilege_ids.h>
 #include <ml_privilege_functions.h>
 #include <ml_meshing2.h>
+#include <ml_planes.h>
 #include <ml_camera.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
@@ -50,13 +51,19 @@ class MLContext;
 
 class MeshRequest {
 public:
-  MeshRequest(MLHandle meshTracker, MLHandle requestHandle, Local<Function> cbFn);
-  bool Poll();
+  MeshRequest(Local<Function> cbFn);
+  void Poll();
 
 // protected:
-  MLHandle meshTracker;
-  MLMeshingMeshRequest request;
-  MLHandle requestHandle;
+  Nan::Persistent<Function> cbFn;
+};
+
+class PlanesRequest {
+public:
+  PlanesRequest(Local<Function> cbFn);
+  void Poll();
+
+// protected:
   Nan::Persistent<Function> cbFn;
 };
 
@@ -119,6 +126,7 @@ public:
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
   static NAN_METHOD(RequestMesh);
+  static NAN_METHOD(RequestPlanes);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);

@@ -19,14 +19,28 @@ const char application_name[] = "com.exokit.app";
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
 Nan::Persistent<Function> initCb;
-MLHandle meshTracker;
-std::vector<MeshRequest *> meshRequests;
+
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
 std::condition_variable  cameraRequestConditionVariable;
 std::mutex cameraRequestsMutex;
 std::vector<CameraRequest *> cameraRequests;
 bool cameraResponsePending = false;
+
+MLHandle meshTracker;
+std::vector<MeshRequest *> meshRequests;
+MLMeshingMeshRequest meshRequest;
+MLHandle meshRequestHandle;
+MLMeshingMesh mesh;
+bool meshRequestPending = false;
+
+MLHandle planesTracker;
+std::vector<PlanesRequest *> planesRequests;
+MLPlanesQuery planesRequest;
+MLHandle planesRequestHandle;
+MLPlane planeResults[MAX_NUM_PLANES];
+uint32_t numPlanesResults;
+bool planesRequestPending = false;
 
 bool isPresent() {
   return lifecycle_status == MLResult_Ok;
@@ -40,7 +54,7 @@ bool isSimulated() {
 #endif
 }
 
-void makePlanesQueryer(MLHandle &planesHandle) {
+/* void makePlanesQueryer(MLHandle &planesHandle) {
   if (MLPlanesCreate(&planesHandle) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
   }
@@ -49,8 +63,8 @@ void beginPlanesQuery(const MLVec3f &position, const MLQuaternionf &rotation, ML
   if (!MLHandleIsValid(planesQueryHandle)) {
     MLPlanesQuery query;
     query.flags = flags;
-    /* query.bounds_center = position;
-    query.bounds_rotation = rotation; */
+    // query.bounds_center = position;
+    // query.bounds_rotation = rotation;
     query.bounds_center.x = 0;
     query.bounds_center.y = 0;
     query.bounds_center.z = 0;
@@ -103,7 +117,7 @@ void readPlanesQuery(MLPlane *planes, uint32_t numPlanes, int planeType, Local<F
 
    (*planesIndex)++;
   }
-}
+} */
 int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
   if (gesture & MLGestureStaticHandState_NoHand) {
     return 0;
@@ -158,52 +172,96 @@ static void onUnloadResources(void* application_context) {
 
 // MeshRequest
 
-MeshRequest::MeshRequest(MLHandle meshTracker, MLHandle requestHandle, Local<Function> cbFn) : meshTracker(meshTracker), requestHandle(requestHandle), cbFn(cbFn) {}
+MeshRequest::MeshRequest(Local<Function> cbFn) : cbFn(cbFn) {}
 
-bool MeshRequest::Poll() {
-  MLMeshingMesh mesh;
-  if (MLMeshingGetMeshResult(this->meshTracker, this->requestHandle, &mesh) == MLResult_Ok) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "meshRequest");
+void MeshRequest::Poll() {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "meshRequest");
 
-    MLMeshingBlockMesh *blockMeshes = mesh.data;
-    uint32_t dataCount = mesh.data_count;
+  MLMeshingBlockMesh *blockMeshes = mesh.data;
+  uint32_t dataCount = mesh.data_count;
 
-    Local<Array> result = Nan::New<Array>(dataCount);
-    for (uint32_t i = 0; i < dataCount; i++) {
-      MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+  Local<Array> result = Nan::New<Array>(dataCount);
+  for (uint32_t i = 0; i < dataCount; i++) {
+    MLMeshingBlockMesh &blockMesh = blockMeshes[i];
 
-      Local<Object> obj = Nan::New<Object>();
+    Local<Object> obj = Nan::New<Object>();
 
-      MLCoordinateFrameUID &id = blockMesh.id;
-      Local<Uint8Array> ids = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), id.data, sizeof(id.data)), 0, sizeof(id.data));
-      obj->Set(JS_STR("ids"), ids);
+    uint64_t id1 = blockMesh.id.data[0];
+    uint64_t id2 = blockMesh.id.data[1];
+    char s[16*2 + 1];
+    sprintf(s, "%llx%llx", id1, id2);
+    obj->Set(JS_STR("id"), JS_STR(s));
 
-      uint16_t *index = blockMesh.index;
-      uint16_t indexCount = blockMesh.index_count;
-      Local<Uint16Array> indices = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), index, indexCount * sizeof(uint16_t)), 0, indexCount);
-      obj->Set(JS_STR("indices"), indices);
+    uint16_t *index = blockMesh.index;
+    uint16_t indexCount = blockMesh.index_count;
+    Local<Uint16Array> indices = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), index, indexCount * sizeof(uint16_t)), 0, indexCount);
+    obj->Set(JS_STR("indices"), indices);
 
-      MLVec3f *vertex = blockMesh.vertex;
-      uint32_t vertexCount = blockMesh.vertex_count;
-      Local<Float32Array> positions = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), vertex, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
-      obj->Set(JS_STR("positions"), positions);
+    MLVec3f *vertex = blockMesh.vertex;
+    uint32_t vertexCount = blockMesh.vertex_count;
+    Local<Float32Array> positions = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), vertex, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
+    obj->Set(JS_STR("positions"), positions);
 
-      MLVec3f *normal = blockMesh.vertex;
-      Local<Float32Array> normals = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normal, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
-      obj->Set(JS_STR("normals"), normals);
-    }
-
-    Local<Function> cbFn = Nan::New(this->cbFn);
-    Local<Value> argv[] = {
-      result,
-    };
-    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-
-    return true;
-  } else {
-    return false;
+    MLVec3f *normal = blockMesh.vertex;
+    Local<Float32Array> normals = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normal, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
+    obj->Set(JS_STR("normals"), normals);
   }
+
+  Local<Function> cbFn = Nan::New(this->cbFn);
+  Local<Value> argv[] = {
+    result,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+}
+
+// PlanesRequest
+
+PlanesRequest::PlanesRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+
+void PlanesRequest::Poll() {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "planesRequest");
+
+  Local<Array> result = Nan::New<Array>(numPlanesResults);
+  for (uint32_t i = 0; i < numPlanesResults; i++) {
+    MLPlane &plane = planeResults[i];
+
+    Local<Object> obj = Nan::New<Object>();
+
+    uint64_t id = (uint64_t)plane.id;
+    // uint32_t flags = plane.flags;
+    float width = plane.width;
+    float height = plane.height;
+    MLVec3f &position = plane.position;
+    MLQuaternionf &rotation = plane.rotation;
+
+    char s[16 + 1];
+    sprintf(s, "%llx", id);
+    obj->Set(JS_STR("id"), JS_STR(s));
+
+    obj->Set(JS_STR("width"), JS_NUM(width));
+    obj->Set(JS_STR("height"), JS_NUM(height));
+
+    Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
+    positionArray->Set(0, JS_NUM(position.x));
+    positionArray->Set(1, JS_NUM(position.y));
+    positionArray->Set(2, JS_NUM(position.z));
+    obj->Set(JS_STR("position"), positionArray);
+
+    Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
+    rotationArray->Set(0, JS_NUM(rotation.x));
+    rotationArray->Set(1, JS_NUM(rotation.y));
+    rotationArray->Set(2, JS_NUM(rotation.z));
+    rotationArray->Set(3, JS_NUM(rotation.w));
+    obj->Set(JS_STR("rotation"), rotationArray);
+  }
+
+  Local<Function> cbFn = Nan::New(this->cbFn);
+  Local<Value> argv[] = {
+    result,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 // camera device status callbacks
@@ -361,15 +419,15 @@ void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int wid
   {
     uint8_t i = planeCount;
     Local<Object> obj = Nan::New<Object>();
-    size_t size = width * height * 4;
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), size);
+    unsigned int halfWidth = width / 2;
+    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), halfWidth * height * 4);
     unsigned char *data = (unsigned char *)arrayBuffer->GetContents().Data();
-    egl::ReadPixels(gl, fbo, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    egl::ReadPixels(gl, fbo, 0, 0, halfWidth, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
     obj->Set(JS_STR("data"), arrayBuffer);
-    obj->Set(JS_STR("width"), JS_INT(width));
+    obj->Set(JS_STR("width"), JS_INT(halfWidth));
     obj->Set(JS_STR("height"), JS_INT(height));
     obj->Set(JS_STR("bpp"), JS_INT(4));
-    obj->Set(JS_STR("stride"), JS_INT(width));
+    obj->Set(JS_STR("stride"), JS_INT(halfWidth));
     result->Set(i, obj);
   }
 
@@ -488,6 +546,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
   Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
+  Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
@@ -550,32 +609,44 @@ NAN_METHOD(MLContext::InitLifecycle) {
   meshingSettings.remove_mesh_skirt = false;
   meshingSettings.request_vertex_confidence = false;
   meshingSettings.target_number_triangles_per_block = 0; */
-  if (MLMeshingCreateClient(&meshTracker, &meshingSettings) != MLResult_Ok) {
-    Nan::ThrowError("MLContext::InitLifecycle failed to create mesh handle");
-    return;
+  {
+    MLResult result = MLMeshingCreateClient(&meshTracker, &meshingSettings);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to create mesh handle %x", application_name, result);
+      Nan::ThrowError("MLContext::InitLifecycle failed to create mesh handle");
+      return;
+    }
   }
 
-  cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
-  cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
-  cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
-  cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
-  cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
-  cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
-  cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
-  if (MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr) != MLResult_Ok) {
-    Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status calbacks");
-    return;
+  {
+    cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
+    cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
+    cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
+    cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
+    cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
+    cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
+    cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
+    MLResult result = MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+      Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+      return;
+    }
   }
 
-  cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
-  cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
-  cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
-  cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
-  cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
-  cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
-  if (MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr) != MLResult_Ok) {
-    Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status calbacks");
-    return;
+  {
+    cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
+    cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
+    cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
+    cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
+    cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
+    cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
+    MLResult result = MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+      Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+      return;
+    }
   }
 
   // HACK: prevent exit hang
@@ -675,6 +746,12 @@ NAN_METHOD(MLContext::Present) {
     return;
   }
 
+  if (MLPlanesCreate(&planesTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create planes handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
   // Now that graphics is connected, the app is ready to go
   if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
@@ -754,9 +831,9 @@ NAN_METHOD(MLContext::Present) {
         ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
       }
     }
-  }); */
+  });
 
-  /* if (MLOcclusionCreateClient(&mlContext->occlusionTracker) != MLResult_Ok) {
+  if (MLOcclusionCreateClient(&mlContext->occlusionTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create occlusion tracker.", application_name);
   } */
 
@@ -819,10 +896,9 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 
         // position
         {
-          std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
+          std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
           const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
-
           mlContext->position = leftCameraTransform.position;
           mlContext->rotation = leftCameraTransform.rotation;
         }
@@ -1054,14 +1130,21 @@ NAN_METHOD(MLContext::OnPresentChange) {
 
 NAN_METHOD(MLContext::RequestMesh) {
   if (info[0]->IsFunction()) {
-    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
-    MLMeshingMeshRequest request;
-    MLHandle requestHandle;
-    MLMeshingRequestMesh(meshTracker, &request, &requestHandle);
-    MeshRequest *meshRequest = new MeshRequest(meshTracker, requestHandle, cbFn);
+    MeshRequest *meshRequest = new MeshRequest(cbFn);
     meshRequests.push_back(meshRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::RequestPlanes) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    PlanesRequest *planesRequest = new PlanesRequest(cbFn);
+    planesRequests.push_back(planesRequest);
   } else {
     Nan::ThrowError("invalid arguments");
   }
@@ -1179,9 +1262,35 @@ NAN_METHOD(MLContext::CancelCamera) {
 }
 
 NAN_METHOD(MLContext::PrePollEvents) {
-  std::remove_if(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
-    return m->Poll();
-  });
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+
+  if (!meshRequestPending) {
+    MLResult result = MLMeshingRequestMesh(meshTracker, &meshRequest, &meshRequestHandle);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: Mesh request failed! %x", application_name, result);
+    }
+
+    meshRequestPending = true;
+  }
+
+  if (!planesRequestPending) {
+    planesRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All;
+    planesRequest.bounds_center = mlContext->position;
+    planesRequest.bounds_rotation = mlContext->rotation;
+    planesRequest.bounds_extents.x = 10;
+    planesRequest.bounds_extents.y = 10;
+    planesRequest.bounds_extents.z = 10;
+    planesRequest.min_hole_length = 0.5;
+    planesRequest.min_plane_area = 0.25;
+    planesRequest.max_results = MAX_NUM_PLANES;
+
+    MLResult result = MLPlanesQueryBegin(planesTracker, &planesRequest, &planesRequestHandle);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: Planes request failed! %x", application_name, result);
+    }
+
+    planesRequestPending = true;
+  }
 
   {
     std::unique_lock<std::mutex> lock(cameraRequestsMutex);
@@ -1192,18 +1301,54 @@ NAN_METHOD(MLContext::PrePollEvents) {
 }
 
 NAN_METHOD(MLContext::PostPollEvents) {
-  std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+  if (meshRequestPending) {
+    MLResult result = MLMeshingGetMeshResult(meshTracker, meshRequestHandle, &mesh);
+    if (result == MLResult_Ok) {
+      std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
+        m->Poll();
+      });
 
-  if (cameraRequests.size() > 0 && cameraResponsePending) {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint fbo = info[1]->Uint32Value();
-    unsigned int width = info[2]->Uint32Value();
-    unsigned int height = info[3]->Uint32Value();
+      meshRequestPending = false;
+    } else if (result == MLResult_Pending) {
+      // nothing
+    } else {
+      ML_LOG(Error, "%s: Mesh request failed! %x", application_name, result);
 
-    std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
-      c->Poll(gl, fbo, width, height);
-    });
-    cameraResponsePending = false;
+      meshRequestPending = false;
+    }
+  }
+
+  if (planesRequestPending) {
+    MLResult result = MLPlanesQueryGetResults(planesTracker, planesRequestHandle, planeResults, &numPlanesResults);
+    if (result == MLResult_Ok) {
+      std::for_each(planesRequests.begin(), planesRequests.end(), [&](PlanesRequest *p) {
+        p->Poll();
+      });
+
+      planesRequestPending = false;
+    } else if (result == MLResult_Pending) {
+      // nothing
+    } else {
+      ML_LOG(Error, "%s: Planes request failed! %x", application_name, result);
+
+      planesRequestPending = false;
+    }
+  }
+
+  {
+    std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+
+    if (cameraRequests.size() > 0 && cameraResponsePending) {
+      WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+      GLuint fbo = info[1]->Uint32Value();
+      unsigned int width = info[2]->Uint32Value();
+      unsigned int height = info[3]->Uint32Value();
+
+      std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
+        c->Poll(gl, fbo, width, height);
+      });
+      cameraResponsePending = false;
+    }
   }
 }
 

@@ -1283,7 +1283,7 @@ const _bindWindow = (window, newWindowCb) => {
     nativeVideo.Video.updateAll();
     // update magic leap pre state
     if (nativeMl && mlGlContext) {
-      nativeMl.PrePollEvents();
+      nativeMl.PrePollEvents(mlContext);
     }
     if (args.performance) {
       const now = Date.now();
