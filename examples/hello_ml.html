@@ -51,6 +51,97 @@
         scene.add(mesh);
       })();
 
+      const terrainMeshes = {};
+      const terrainMaterial = new THREE.ShaderMaterial({
+        vertexShader: `\
+          void main() {
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+            vec4 position = projectionMatrix * mvPosition;
+            gl_Position = position;
+          }
+        `,
+        fragmentShader: `\
+          void main() {
+            float originalZ = gl_FragCoord.z / gl_FragCoord.w;
+            float factor = max((3.0 - originalZ) / 3.0, 0.1);
+            /* float depthDangerFactor = 0.95;
+            if (factor > depthDangerFactor) {
+              gl_FragColor.rgba = vec4(1.0, 0.0, 0.0, 1.0);
+            } else { */
+              gl_FragColor.rgba = vec4(vec3(factor), 1.0);
+            // }
+          }
+        `,
+      });
+      const _getTerrainMesh = id => {
+        let terrainMesh = terrainMeshes[id];
+        if (!terrainMesh) {
+          terrainMesh = _makeTerrainMesh();
+          terrainMeshes[id] = terrainMesh;
+          scene.add(terrainMesh);
+        }
+        return terrainMesh;
+      };
+      const _makeTerrainMesh = () => {
+        const geometry = new THREE.BufferGeometry();
+        const positions = Float32Array.from([
+          0, 0, 0,
+          0, 1, 0,
+          1, 1, 0,
+        ]);
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const normals = Float32Array.from([
+          0, 0, 1,
+          0, 0, 1,
+          0, 0, 1,
+        ]);
+        geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        const indices = Uint32Array.from([
+          0, 1, 2,
+        ]);
+        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+        const material = terrainMaterial;
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      const _loadTerrainMesh = (terrainMesh, {positions, normals, indices}) => {
+        // let updated = false;
+        // if (positions && terrainMesh.geometry.attributes.position.array !== positions) {
+          // console.log('update positions', positions.length);
+          const newPositions = new Float32Array(positions.length);
+          newPositions.set(positions);
+          terrainMesh.geometry.addAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+          // updated = true;
+        // }
+        // if (normals && terrainMesh.geometry.attributes.normal.array !== normals) {
+          // console.log('update normals', normals.length, normals.slice(0, 9), normals instanceof Float32Array);
+          const newNormals = new Float32Array(normals.length);
+          newNormals.set(normals);
+          terrainMesh.geometry.addAttribute('normal', new THREE.BufferAttribute(newNormals, 3));
+          // updated = true;
+        // }
+        // if (indices && terrainMesh.geometry.index.array !== indices) {
+          // console.log('update indices', indices.length, indices.slice(0, 3), indices instanceof Uint32Array);
+          const newIndices = new Uint16Array(indices.length);
+          newIndices.set(indices);
+          terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
+          // updated = true;
+        // }
+        // return updated;
+      };
+      // const terrainMesh = _makeTerrainMesh();
+      // scene.add(terrainMesh);
+
+      const _onMesh = updates => {
+        for (let i = 0; i < updates.length; i++) {
+          const update = updates[i];
+          const terrainMesh = _getTerrainMesh(update.id);
+          _loadTerrainMesh(terrainMesh, update);
+        }
+      };
+      window.browser.nativeMl.RequestMesh(_onMesh);
+
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
@@ -102,10 +193,10 @@
 
     (() => {
       const framesData = [];
-    
+
       const server = window.browser.http.createServer((req, res) => {
         console.log('got request', req.url);
-        
+
         let match;
         if (req.url === '/') {
           res.setHeader('Content-Type', 'text/html');
@@ -138,7 +229,7 @@
   const _handleData = data => {
     if (!running) {
       running = true;
-      
+
       const datas = JSON.parse(data);
       Promise.all(datas.map(data =>
         fetch('/frame/' + data.index)
@@ -152,7 +243,7 @@
           const result = results[0];
           const {data, arrayBuffer} = result;
           const {width, height} = data;
-          
+
           const imageData = ctx.createImageData(width, height);
           imageData.data.set(new Uint8ClampedArray(arrayBuffer).slice(0, imageData.data.byteLength));
           ctx.putImageData(imageData, 0, 0);
@@ -163,7 +254,7 @@
         })
         .catch(err => {
           console.warn(err.stack);
-          
+
           running = false;
           _next();
         });
@@ -236,7 +327,7 @@
           console.log('close connection 3');
         });
       });
-      
+
       server.listen(7999, '0.0.0.0', () => {
         console.log('listening');
       });
