@@ -1191,7 +1191,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         if (typeof cb === 'function') {
           cb = (cb => function(datas) {
             for (let i = 0; i < datas.length; i++) {
-              datas[i].data = utils._normalizeBuffer(datas[i].data, window);
+              const data = datas[i];
+              data.data = utils._normalizeBuffer(data.data, window);
             }
             return cb.apply(this, arguments);
           })(cb);
@@ -1202,7 +1203,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         if (typeof cb === 'function') {
           cb = (cb => function(datas) {
             for (let i = 0; i < datas.length; i++) {
-              datas[i].data = utils._normalizeBuffer(datas[i].data, window);
+              const data = datas[i];
+              data.indices = utils._normalizeBuffer(data.indices, window);
+              data.positions = utils._normalizeBuffer(data.positions, window);
+              data.normals = utils._normalizeBuffer(data.normals, window);
             }
             return cb.apply(this, arguments);
           })(cb);
