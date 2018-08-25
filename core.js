@@ -1213,6 +1213,19 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         }
         return RequestMesh.apply(this, arguments);
       })(nativeMlProxy.RequestMesh);
+      nativeMlProxy.RequestPlanes = (RequestPlanes => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(datas) {
+            for (let i = 0; i < datas.length; i++) {
+              const data = datas[i];
+              data.position = utils._normalizeBuffer(data.position, window);
+              data.rotation = utils._normalizeBuffer(data.rotation, window);
+            }
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return RequestPlanes.apply(this, arguments);
+      })(nativeMlProxy.RequestPlanes);
       return nativeMlProxy;
     })(),
   };
