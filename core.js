@@ -839,6 +839,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.navigator = {
     userAgent: `MixedReality (Exokit ${GlobalContext.version})`,
     platform: os.platform(),
+    hardwareConcurrency: os.cpus().length,
     appCodeName: 'Mozilla',
     appName: 'Netscape',
     appVersion: '5.0',
@@ -1363,7 +1364,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   });
 
   vmo.run(windowStartScript, 'window-start-script.js');
-  
+
   const _destroyTimeouts = window => {
     const _pred = fn => fn[symbols.windowSymbol] === window;
     for (let i = 0; i < rafCbs.length; i++) {
