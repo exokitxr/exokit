@@ -39,4 +39,4 @@ find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/l
 
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin program-device.mabu
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m manifest-device.xml -s cert/app.privkey -p --create-package --allow-unsigned app-device.package
-ln -s app-device/app-device.mpk build/magicleap/exokit.mpk
+cp build/magicleap/app-device/app-device.mpk build/magicleap/exokit.mpk
