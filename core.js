@@ -1199,6 +1199,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         }
         return RequestCamera.apply(this, arguments);
       })(nativeMlProxy.RequestCamera);
+      nativeMlProxy.RequestHand = (RequestHand => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(datas) {
+            for (let i = 0; i < datas.length; i++) {
+              const data = datas[i];
+              data.center = utils._normalizeBuffer(data.center, window);
+            }
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return RequestHand.apply(this, arguments);
+      })(nativeMlProxy.RequestHand);
       nativeMlProxy.RequestMesh = (RequestMesh => function(cb) {
         if (typeof cb === 'function') {
           cb = (cb => function(datas) {
