@@ -136,6 +136,16 @@
       // const terrainMesh = _makeTerrainMesh();
       // scene.add(terrainMesh);
 
+      const _onHand = hands => {
+        for (let i = 0; i < hands.length; i++) {
+          const hand = hands[i];
+          if (hand) {
+            console.log('got hand', hand.hand, hand.center.join(','), hand.gesture);
+          }
+        }
+      };
+      window.browser.nativeMl.RequestHand(_onHand);
+
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
