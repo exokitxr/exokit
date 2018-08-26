@@ -52,7 +52,7 @@
       })();
 
       const terrainMeshes = {};
-      const terrainMaterial = new THREE.ShaderMaterial({
+      /* const terrainMaterial = new THREE.ShaderMaterial({
         vertexShader: `\
           void main() {
             vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
@@ -64,14 +64,17 @@
           void main() {
             float originalZ = gl_FragCoord.z / gl_FragCoord.w;
             float factor = max((3.0 - originalZ) / 3.0, 0.1);
-            /* float depthDangerFactor = 0.95;
-            if (factor > depthDangerFactor) {
-              gl_FragColor.rgba = vec4(1.0, 0.0, 0.0, 1.0);
-            } else { */
+            // float depthDangerFactor = 0.95;
+            // if (factor > depthDangerFactor) {
+              // gl_FragColor.rgba = vec4(1.0, 0.0, 0.0, 1.0);
+            // } else {
               gl_FragColor.rgba = vec4(vec3(factor), 1.0);
             // }
           }
         `,
+      }); */
+      const terrainMaterial = new THREE.MeshPhongMaterial({
+        color: 0x666666,
       });
       const _getTerrainMesh = id => {
         let terrainMesh = terrainMeshes[id];
