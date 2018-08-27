@@ -23,14 +23,14 @@ class MutationObserver {
     this.callback = callback;
 
     this.element = null;
-    this.options = null;
+    this.options = {};
     this.queue = [];
     this.bindings = new WeakMap();
   }
 
   observe(element, options) {
     this.element = element;
-    this.options = options;
+    this.options = options || {};
 
     this.bind(element);
   }
@@ -39,7 +39,7 @@ class MutationObserver {
     this.unbind(this.element);
 
     this.element = null;
-    this.options = null;
+    this.options = {};
   }
 
   takeRecords() {
