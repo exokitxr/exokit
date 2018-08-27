@@ -101,9 +101,26 @@ Exokit runs on Windows, macOS, Linux (x64), and Linux (ARM64).
 - You don't care about 3D or mixed reality.
 - You're looking for strict and/or legacy standards support.
 
-## Keyboard
-![Keyboard](https://raw.githubusercontent.com/webmixedreality/exokit/master/assets/keyboard.png)
+## Debugging
 
+Uses [ndb](https://github.com/GoogleChromeLabs/ndb).
+
+```js
+npm run debug
+```
+
+Then in the console, input:
+
+```
+let window = await require('./index').load(yourUrl);
+```
+
+Now you have a handle on the window object as you test your application, and
+you can set `debugger` breakpoints and such.
+
+## Keyboard
+
+![Keyboard](https://raw.githubusercontent.com/webmixedreality/exokit/master/assets/keyboard.png)
 
 ## Community
 

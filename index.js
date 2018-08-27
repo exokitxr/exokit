@@ -29,6 +29,9 @@ const GlobalContext = require('./src/GlobalContext');
 GlobalContext.commands = [];
 
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');
+const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
+const VR_FPS = 90;
+const ML_FPS = 60;
 const MLSDK_PORT = 17955;
 
 const contexts = [];
@@ -104,6 +107,7 @@ const args = (() => {
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
+
   const windowSpec = (() => {
     try {
       const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
@@ -116,6 +120,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       return null;
     }
   })();
+
   if (windowSpec) {
     const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture, vao] = windowSpec;
 
@@ -126,10 +131,19 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const document = canvas.ownerDocument;
     const window = document.defaultView;
-    const framebufferWidth = nativeWindow.getFramebufferSize(windowHandle).width;
-    window.devicePixelRatio = framebufferWidth / canvasWidth;
 
-    const title = `Exokit ${version}`
+    const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
+    const nativeWindowHeight = nativeWindowSize.height;
+    const nativeWindowWidth = nativeWindowSize.width;
+
+    // Calculate devicePixelRatio.
+    window.devicePixelRatio = nativeWindowWidth / canvasWidth;
+
+    // Tell DOM how large the window is.
+    window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
+    window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
+
+    const title = `Exokit ${version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
 
     const cleanups = [];
@@ -142,7 +156,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
-
         nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
       };
 
@@ -161,7 +174,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     } else {
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
-
         nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
     }
@@ -233,6 +245,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     })(gl.destroy);
 
     contexts.push(gl);
+    fps = nativeWindow.getRefreshRate();
 
     canvas.ownerDocument.defaultView.on('unload', () => {
       gl.destroy();
@@ -302,119 +315,123 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
-nativeVr.requestPresent = function(layers) {
-  if (!vrPresentState.glContext) {
-    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
-    if (layer) {
-      const canvas = layer.source;
-      let context = canvas._context;
-      if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
-        context = canvas.getContext('webgl');
-      }
-      const window = canvas.ownerDocument.defaultView;
-
-      const windowHandle = context.getWindowHandle();
-      nativeWindow.setCurrentWindowContext(windowHandle);
-
-      const vrContext = vrPresentState.vrContext || nativeVr.getContext();
-      const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
-      const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
-
-      const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
-
-      const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-      const width = halfWidth * 2;
-      renderWidth = halfWidth;
-      renderHeight = height;
-
-      const cleanups = [];
-
-      const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
-
-      context.setDefaultFramebuffer(msFbo);
-
-      vrPresentState.isPresenting = true;
-      vrPresentState.vrContext = vrContext;
-      vrPresentState.system = system;
-      vrPresentState.compositor = compositor;
-      vrPresentState.glContext = context;
-      vrPresentState.msFbo = msFbo;
-      vrPresentState.msTex = msTex;
-      vrPresentState.msDepthTex = msDepthStencilTex;
-      vrPresentState.fbo = fbo;
-      vrPresentState.tex = tex;
-      vrPresentState.depthTex = depthStencilTex;
-      vrPresentState.cleanups = cleanups;
-
-      vrPresentState.lmContext = lmContext;
-
-      const _attribute = (name, value) => {
-        if (name === 'width' || name === 'height') {
-          nativeWindow.setCurrentWindowContext(windowHandle);
-
-          nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+if (nativeVr) {
+  nativeVr.requestPresent = function(layers) {
+    if (!vrPresentState.glContext) {
+      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+      if (layer) {
+        const canvas = layer.source;
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
         }
-      };
-      canvas.on('attribute', _attribute);
-      cleanups.push(() => {
-        canvas.removeListener('attribute', _attribute);
-      });
+        const window = canvas.ownerDocument.defaultView;
 
-      window.top.updateVrFrame({
-        renderWidth,
-        renderHeight,
-        force: true,
-      });
+        const windowHandle = context.getWindowHandle();
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
+        fps = VR_FPS;
+
+        const vrContext = vrPresentState.vrContext || nativeVr.getContext();
+        const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+        const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
+
+        const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
+
+        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        const width = halfWidth * 2;
+        renderWidth = halfWidth;
+        renderHeight = height;
+
+        const cleanups = [];
+
+        const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+
+        context.setDefaultFramebuffer(msFbo);
+
+        vrPresentState.isPresenting = true;
+        vrPresentState.vrContext = vrContext;
+        vrPresentState.system = system;
+        vrPresentState.compositor = compositor;
+        vrPresentState.glContext = context;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.msDepthTex = msDepthStencilTex;
+        vrPresentState.fbo = fbo;
+        vrPresentState.tex = tex;
+        vrPresentState.depthTex = depthStencilTex;
+        vrPresentState.cleanups = cleanups;
+
+        vrPresentState.lmContext = lmContext;
+
+        const _attribute = (name, value) => {
+          if (name === 'width' || name === 'height') {
+            nativeWindow.setCurrentWindowContext(windowHandle);
+
+            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+          }
+        };
+        canvas.on('attribute', _attribute);
+        cleanups.push(() => {
+          canvas.removeListener('attribute', _attribute);
+        });
+
+        window.top.updateVrFrame({
+          renderWidth,
+          renderHeight,
+          force: true,
+        });
+
+        return {
+          width,
+          height,
+          framebuffer: msFbo,
+        };
+      } else {
+        throw new Error('no HTMLCanvasElement source provided');
+      }
+    } else {
+      const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2;
 
       return {
         width,
         height,
-        framebuffer: msFbo,
+        framebuffer: vrPresentState.msFbo,
       };
-    } else {
-      throw new Error('no HTMLCanvasElement source provided');
     }
-  } else {
-    const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
-    const width = halfWidth * 2;
+  };
+  nativeVr.exitPresent = function() {
+    if (vrPresentState.isPresenting) {
+      nativeVr.VR_Shutdown();
 
-    return {
-      width,
-      height,
-      framebuffer: vrPresentState.msFbo,
-    };
-  }
-};
-nativeVr.exitPresent = function() {
-  if (vrPresentState.isPresenting) {
-    nativeVr.VR_Shutdown();
+      nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
+      nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
 
-    nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
-    nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
+      const context = vrPresentState.glContext;
+      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      context.setDefaultFramebuffer(0);
 
-    const context = vrPresentState.glContext;
-    nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-    context.setDefaultFramebuffer(0);
+      for (let i = 0; i < vrPresentState.cleanups.length; i++) {
+        vrPresentState.cleanups[i]();
+      }
 
-    for (let i = 0; i < vrPresentState.cleanups.length; i++) {
-      vrPresentState.cleanups[i]();
+      vrPresentState.isPresenting = false;
+      vrPresentState.system = null;
+      vrPresentState.compositor = null;
+      vrPresentState.glContext = null;
+      vrPresentState.msFbo = null;
+      vrPresentState.msTex = null;
+      vrPresentState.msDepthTex = null;
+      vrPresentState.fbo = null;
+      vrPresentState.tex = null;
+      vrPresentState.depthTex = null;
+      vrPresentState.cleanups = null;
     }
 
-    vrPresentState.isPresenting = false;
-    vrPresentState.system = null;
-    vrPresentState.compositor = null;
-    vrPresentState.glContext = null;
-    vrPresentState.msFbo = null;
-    vrPresentState.msTex = null;
-    vrPresentState.msDepthTex = null;
-    vrPresentState.fbo = null;
-    vrPresentState.tex = null;
-    vrPresentState.depthTex = null;
-    vrPresentState.cleanups = null;
-  }
-
-  return Promise.resolve();
-};
+    return Promise.resolve();
+  };
+}
 let mlContext = null;
 let mlFbo = null;
 let mlTex = null;
@@ -440,6 +457,8 @@ if (nativeMl) {
 
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
+
+        fps = ML_FPS;
 
         const initResult = mlContext.Present(windowHandle);
         if (initResult) {
@@ -555,9 +574,9 @@ nativeWindow.setEventHandler((type, data) => {
         innerWidth = width;
         innerHeight = height;
 
-        window.innerWidth = innerWidth;
-        window.innerHeight = innerHeight;
-        canvas.dispatchEvent(new window.Event('resize'));
+        window.innerWidth = innerWidth / window.devicePixelRatio;
+        window.innerHeight = innerHeight / window.devicePixelRatio;
+        window.dispatchEvent(new window.Event('resize'));
         break;
       }
       case 'keydown': {
@@ -674,9 +693,9 @@ core.setVersion(version);
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
-const FPS = 90;
-const FRAME_TIME_MAX = ~~(1000 / FPS);
-const FRAME_TIME_MIN = 0;
+let fps = DEFAULT_FPS;
+const _getFrameTimeMax = () => ~~(1000 / fps);
+const _getFrameTimeMin = () => 0;
 
 const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
@@ -849,13 +868,12 @@ const _bindWindow = (window, newWindowCb) => {
     submit: 0,
     total: 0,
   };
-  const TIMESTAMP_FRAMES = 90;
+  const TIMESTAMP_FRAMES = DEFAULT_FPS;
   const [leftGamepad, rightGamepad] = core.getAllGamepads();
   const gamepads = [null, null];
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
   let timeout = null;
-  let numFrames = 0;
   let numDirtyFrames = 0;
   const dirtyFrameContexts = [];
   const _checkDirtyFrameTimeout = () => {
@@ -1261,21 +1279,6 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
-    if (window.document.readyState === 'complete' && (numFrames % FPS) === 0) {
-      const displays = window.navigator.getVRDisplaysSync();
-      const presentingDisplay = displays.find(display => display.isPresenting);
-      if (presentingDisplay) {
-        const e = new window.Event('vrdisplaycheck');
-        e.display = presentingDisplay;
-        window.dispatchEvent(e);
-      } else {
-        for (let i = 0; i < displays.length; i++) {
-          const e = new window.Event('vrdisplayactivate');
-          e.display = displays[i];
-          window.dispatchEvent(e);
-        }
-      }
-    }
     window.tickAnimationFrame();
     if (args.performance) {
       const now = Date.now();
@@ -1299,17 +1302,19 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'end frame');
     }
-    numFrames++;
 
     // wait for next frame
     const now = Date.now();
-    timeout = setTimeout(
-      _recurse,
-      args.uncapped ?
-        0
-      :
-        Math.min(Math.max(FRAME_TIME_MAX - ~~(now - lastFrameTime), FRAME_TIME_MIN), FRAME_TIME_MAX)
-    );
+    const timeoutDelay = (() => {
+      if (args.uncapped) {
+        return 0;
+      } else {
+        const frameTimeMax = _getFrameTimeMax();
+        const frameTimeMin = _getFrameTimeMin();
+        return Math.min(Math.max(frameTimeMax - ~~(now - lastFrameTime), frameTimeMin), frameTimeMax);
+      }
+    })();
+    timeout = setTimeout(_recurse, timeoutDelay);
     lastFrameTime = now;
   };
   timeout = setTimeout(_recurse);
@@ -1409,6 +1414,7 @@ const _start = () => {
     if (u === '.') {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
     }
+    u = u.replace(/^exokit:/, '');
     if (u && !url.parse(u).protocol) {
       u = 'file://' + path.resolve(cwd, u);
     }

@@ -24,7 +24,6 @@ const _promiseSerial = async promiseFns => {
   }
 };
 const _loadPromise = el => new Promise((accept, reject) => {
-  console.log('load promise', el.tagName);
   const load = () => {
     _cleanup();
     accept();
@@ -885,7 +884,7 @@ class Element extends Node {
           return true;
         }
 			});
-      return result;
+      return result / this.ownerDocument.defaultView.devicePixelRatio;
     }
   }
   set clientWidth(clientWidth) {}
@@ -902,7 +901,7 @@ class Element extends Node {
       }
     };
     _recurse(this);
-    return result;
+    return result / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientHeight(clientHeight) {}
 
@@ -996,31 +995,10 @@ class Element extends Node {
     _elementSetter(this, 'mouseup', onmouseup);
   }
 
-  requestPointerLock() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.pointerLockElementSymbol] === null) {
-      topDocument[symbols.pointerLockElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
-      });
-    }
-  }
-  requestFullscreen() {
-    return; // XXX
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.fullscreenElementSymbol] === null) {
-      topDocument[symbols.fullscreenElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
-      });
-    }
-  }
-
-  [util.inspect.custom]() {
+  /**
+   * Also the output when logging to console or debugger.
+   */
+  get outerHTML() {
     const _getIndent = depth => Array(depth*2 + 1).join(' ');
     const _recurse = (el, depth = 0) => {
       let result = '';
@@ -1075,6 +1053,37 @@ class Element extends Node {
       return result;
     };
     return _recurse(this);
+  }
+
+  requestPointerLock() {
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[symbols.pointerLockElementSymbol] === null) {
+      topDocument[symbols.pointerLockElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('pointerlockchange');
+      });
+    }
+  }
+
+  requestFullscreen() {
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[symbols.fullscreenElementSymbol] === null) {
+      topDocument[symbols.fullscreenElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('fullscreenchange');
+      });
+    }
+  }
+
+  /**
+   * For logging to console or debugger.
+   */
+  [util.inspect.custom]() {
+    return this.outerHTML;
   }
 
   traverse(fn) {
@@ -1547,7 +1556,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const {type} = this;
     return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
   }
-  
+
   loadRunNow() {
     const resource = this.ownerDocument.resources.addResource();
 
@@ -1576,10 +1585,12 @@ class HTMLScriptElement extends HTMLLoadableElement {
         this.dispatchEvent(e);
       })
       .finally(() => {
-        resource.setProgress(1);
+        setImmediate(() => {
+          resource.setProgress(1);
+        });
       });
   }
-  
+
   runNow() {
     const innerHTML = this.childNodes[0].value;
     const window = this.ownerDocument.defaultView;
@@ -1589,7 +1600,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
     const resource = this.ownerDocument.resources.addResource();
 
-    process.nextTick(() => {
+    setImmediate(() => {
       this.dispatchEvent(new Event('load', {target: this}));
 
       resource.setProgress(1);
@@ -1781,18 +1792,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               contentDocument.on('framebuffer', framebuffer => {
                 this._emit('framebuffer', framebuffer);
               });
-              const _vrdisplaycheck = e => {
-                if (contentDocument.readyState === 'complete') {
-                  const newEvent = new Event('vrdisplayactivate');
-                  newEvent.display = e.display;
-                  contentWindow.dispatchEvent(newEvent);
-                }
-              };
-              parentWindow.top.on('vrdisplaycheck', _vrdisplaycheck);
               contentWindow.on('destroy', e => {
                 parentWindow.emit('destroy', e);
-
-                parentWindow.top.removeListener('vrdisplaycheck', _vrdisplaycheck);
               });
 
               this.dispatchEvent(new Event('load', {target: this}));
@@ -1803,7 +1804,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .finally(() => {
-            resource.setProgress(1);
+            setImmediate(() => {
+              resource.setProgress(1);
+            });
           });
       } else if (name === 'hidden') {
         if (this.contentDocument) {
@@ -1869,11 +1872,11 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get clientWidth() {
-    return this.width;
+    return this.width / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    return this.height;
+    return this.height / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientHeight(clientHeight) {}
 
@@ -1893,7 +1896,7 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
       if (this._context === null) {
-        this._context = new GlobalContext.CanvasRenderingContext2D(this.width, this.height);
+        this._context = new GlobalContext.CanvasRenderingContext2D(this);
       }
     } else if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'xrpresent') {
       if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext' && this._context.constructor.name !== 'WebGL2RenderingContext') {
@@ -1920,6 +1923,13 @@ class HTMLCanvasElement extends HTMLElement {
       }
     }
     return this._context;
+  }
+
+  toDataURL() {
+    if (!this._context) {
+      this.getContext('2d');
+    }
+    return this._context.toDataURL();
   }
 
   captureStream(frameRate) {
@@ -2118,7 +2128,9 @@ class HTMLImageElement extends HTMLSrcableElement {
             this.dispatchEvent(e);
           })
           .finally(() => {
-            resource.setProgress(1);
+            setImmediate(() => {
+              resource.setProgress(1);
+            });
           });
       }
     });
@@ -2216,7 +2228,9 @@ class HTMLAudioElement extends HTMLMediaElement {
             this.dispatchEvent(e);
           })
           .finally(() => {
-            resource.setProgress(1);
+            setImmediate(() => {
+              resource.setProgress(1);
+            });
           });
       }
     });
@@ -2269,7 +2283,7 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         const resource = this.ownerDocument.resources.addResource();
 
-        process.nextTick(() => {
+        setImmediate(() => {
           this.dispatchEvent(new Event('canplay', {target: this}));
           this.dispatchEvent(new Event('canplaythrough', {target: this}));
 

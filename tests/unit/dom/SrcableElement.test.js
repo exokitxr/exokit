@@ -15,11 +15,19 @@ const videoData = fs.readFileSync(path.resolve(__dirname, '../data/test.mp4'), '
 const videoDataUri = `data:video/mp4;base64,${videoData}`;
 
 describe('HTMLSrcableElement', () => {
+  var window;
   var document;
   var el;
 
   beforeEach(() => {
-    document = exokit().document;
+    const o = exokit();
+    window = o.window;
+    window.navigator.getVRDisplaysSync = () => [];
+    document = o.document;
+  });
+  
+  afterEach(() => {
+    window.destroy();
   });
 
   describe('<img>', () => {

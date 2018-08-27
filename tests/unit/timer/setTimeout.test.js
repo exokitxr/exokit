@@ -8,6 +8,7 @@ describe('setTimeout', () => {
     exokit.load('data:text/html,<html></html>')
       .then(o => {
         window = o.window;
+        window.navigator.getVRDisplaysSync = () => [];
         cb();
       });
   });

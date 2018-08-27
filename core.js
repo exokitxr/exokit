@@ -32,8 +32,7 @@ const {
   getGamepads,
   getAllGamepads,
 } = require('vr-display')(THREE);
-
-const puppeteer = require('puppeteer');
+const electron = require('./src/electron');
 
 const BindingsModule = require('./src/bindings');
 const {defaultCanvasSize} = require('./src/constants');
@@ -207,6 +206,16 @@ class CustomElementRegistry {
 let nativeVm = GlobalContext.nativeVm = null;
 let nativeWorker = null;
 
+class MonitorManager {
+  getList() {
+    return nativeWindow.getMonitors();
+  }
+
+  select(index) {
+    nativeWindow.setMonitor(index);
+  }
+}
+
 class Screen {
   constructor(window) {
     this._window = window;
@@ -264,6 +273,7 @@ class Screen {
 }
 let nativeVr = GlobalContext.nativeVr = null;
 let nativeMl = GlobalContext.nativeMl = null;
+let nativeWindow = null;
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -688,40 +698,6 @@ function tickAnimationFrame() {
     tickAnimationFrame.window = null;
   }
 
-  if (timeouts.length > 0) {
-    _cacheLocalCbs(timeouts);
-    const dateNow = Date.now();
-
-    for (let i = 0; i < localCbs.length; i++) {
-      const timeout = localCbs[i];
-      if (timeout) {
-        const endTime = timeout[symbols.startTimeSymbol] + timeout[symbols.timeoutSymbol];
-        if (dateNow >= endTime) {
-          timeout();
-
-          timeouts[i] = null;
-        }
-      }
-    }
-  }
-
-  if (intervals.length > 0) {
-    _cacheLocalCbs(intervals);
-    const dateNow = Date.now();
-
-    for (let i = 0; i < localCbs.length; i++) {
-      const interval = localCbs[i];
-      if (interval) {
-        const endTime = interval[symbols.startTimeSymbol] + interval[symbols.intervalSymbol];
-        if (dateNow >= endTime) {
-          interval();
-
-          interval[symbols.startTimeSymbol] = dateNow;
-        }
-      }
-    }
-  }
-
   _clearLocalCbs(); // release garbage
 }
 tickAnimationFrame.window = null;
@@ -863,6 +839,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.navigator = {
     userAgent: `MixedReality (Exokit ${GlobalContext.version})`,
     platform: os.platform(),
+    hardwareConcurrency: os.cpus().length,
     appCodeName: 'Mozilla',
     appName: 'Netscape',
     appVersion: '5.0',
@@ -888,7 +865,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       if (nativeMl && nativeMl.IsPresent()) {
         result.push(_getMlDisplay(window));
       }
-      if (nativeVr.VR_IsHmdPresent()) {
+      if (nativeVr && nativeVr.VR_IsHmdPresent()) {
         result.push(_getVrDisplay(window));
       }
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
@@ -942,38 +919,38 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.URL = URL;
   window.console = console;
-  window.setTimeout = (fn, timeout = 0, args = []) => {
+  window.setTimeout = (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
-    fn[symbols.startTimeSymbol] = Date.now();
-    fn[symbols.timeoutSymbol] = timeout;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
     timeouts[_findFreeSlot(timeouts)] = fn;
+    fn[symbols.timeoutSymbol] = setTimeout(fn, timeout, args);
     return id;
   };
   window.clearTimeout = id => {
     const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
     if (index !== -1) {
+      clearTimeout(timeouts[index][symbols.timeoutSymbol]);
       timeouts[index] = null;
     }
   };
-  window.setInterval = (fn, interval = 10, args = []) => {
+  window.setInterval = (fn, interval, args) => {
     if (interval < 10) {
       interval = 10;
     }
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
-    fn[symbols.startTimeSymbol] = Date.now();
-    fn[symbols.intervalSymbol] = interval;
     const id = ++rafIndex;
     fn[symbols.idSymbol] = id;
     intervals[_findFreeSlot(intervals)] = fn;
+    fn[symbols.timeoutSymbol] = setInterval(fn, interval, args);
     return id;
   };
   window.clearInterval = id => {
     const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
     if (index !== -1) {
+      clearInterval(intervals[index][symbols.timeoutSymbol]);
       intervals[index] = null;
     }
   };
@@ -1162,140 +1139,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return styleSpec.style;
   };
-  window.requestPage = async (src, w = 1280, h = 1024) => {
-    const browser = await _requestBrowser();
-    const page = await browser.newPage();
-    await page.setViewport({
-      width: w,
-      height: h,
-    });
-    src = new URL(src, options.baseUrl).href;
-    await page.goto(src, {
-      waitUntil: 'load',
-    });
-    /* await page.evaluate(async () => {
-      const _eval = s => {
-        try {
-          eval(s);
-        } catch (err) {
-          console.warn(err);
-        }
-      };
-
-      const scripts = Array.from(document.querySelectorAll('script'));
-      await Promise.all(scripts.map(async script => {
-        if (script.src) {
-          const text = await fetch(script.src)
-            .then(res => {
-              if (res.ok) {
-                return res.text();
-              } else {
-                return Promise.reject(new Error('script src got invalid status code: ' + res.status));
-              }
-            });
-          _eval(text);
-        } else {
-          _eval(script.innerHTML);
-        }
-      }));
-    }); */
-
-    page.requestImage = async () => {
-      const b = await page.screenshot({
-        omitBackground: true,
-      });
-      const img = await new Promise((accept, reject) => {
-        const blob = new window.Blob([b], {
-          type: 'image/png',
-        });
-        const img = new window.Image();
-        const u = URL.createObjectURL(blob);
-        const _cleanup = () => {
-          URL.revokeObjectURL(u);
-        };
-        img.onload = () => {
-          _cleanup();
-
-          accept(img);
-        };
-        img.onerror = err => {
-          _cleanup();
-
-          reject(err);
-        };
-        img.src = u;
-      });
-      return img;
-    };
-
-    /* page.on('pagerror', err => {
-      console.warn(err);
-    });
-    page.on('error', err => {
-      console.warn(err);
-    });
-
-    let metrics = [];
-    const _log = args => {
-      console.log(args);
-    };
-    page.on('console', msg => {
-      const args = msg.args();
-      if (args.length > 0) {
-        const arg = args[0];
-        const o = arg._remoteObject;
-        if (o && o.type === 'string') {
-          const j = parseJson(o.value);
-          if (j !== null && j.metrics) {
-            metrics = j.metrics;
-          } else {
-            _log(args);
-          }
-        } else {
-          _log(args);
-        }
-      }
-    }); */
-
-    /* await page.addScriptTag({
-      content: `
-        function render() {
-          const metrics = [].slice.call(document.querySelectorAll('a, button, input')).map(function(a) {
-            const r = a.getBoundingClientRect();
-            return {
-              tagName: a.tagName || null,
-              className: a.className || null,
-              id: a.id || null,
-              href: a.getAttribute('href') || null,
-              click: a.getAttribute('click') || null,
-              left: r.left,
-              right: r.right,
-              top: r.top,
-              bottom: r.bottom,
-              width: r.width,
-              height: r.height
-            };
-          });
-          console.warn(JSON.stringify({
-            metrics,
-          }));
-        };
-        if (document.readyState === 'complete') {
-          render();
-        }
-        document.addEventListener('readystatechange', function() {
-          if (document.readyState === 'complete') {
-            render();
-          }
-        });
-      `,
-    }); */
-
-   /*  return {
-      img,
-      metrics,
-    }; */
-    return page;
+  window.browser = {
+    electron,
+    monitors: new MonitorManager()
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
@@ -1519,25 +1365,32 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   vmo.run(windowStartScript, 'window-start-script.js');
 
-  window.on('destroy', e => {
-    const {window: destroyedWindow} = e;
-
-    const _pred = fn => fn && fn[symbols.windowSymbol] !== destroyedWindow;
+  const _destroyTimeouts = window => {
+    const _pred = fn => fn[symbols.windowSymbol] === window;
     for (let i = 0; i < rafCbs.length; i++) {
-      if (!_pred(rafCbs[i])) {
+      const rafCb = rafCbs[i];
+      if (rafCb && _pred(rafCb)) {
         rafCbs[i] = null;
       }
     }
     for (let i = 0; i < timeouts.length; i++) {
-      if (!_pred(timeouts[i])) {
+      const timeout = timeouts[i];
+      if (timeout && _pred(timeout)) {
+        clearTimeout(timeout[symbols.timeoutSymbol]);
         timeouts[i] = null;
       }
     }
     for (let i = 0; i < intervals.length; i++) {
-      if (!_pred(intervals[i])) {
+      const interval = intervals[i];
+      if (interval && _pred(interval)) {
+        clearInterval(interval[symbols.timeoutSymbol]);
         intervals[i] = null;
       }
     }
+  };
+
+  window.on('destroy', e => {
+    _destroyTimeouts(e.window);
   });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
@@ -1557,22 +1410,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           window._emit('unload');
           window._emit('navigate', newWindow);
 
-          const _pred = fn => fn && fn[symbols.windowSymbol] !== window;
-          for (let i = 0; i < rafCbs.length; i++) {
-            if (!_pred(rafCbs[i])) {
-              rafCbs[i] = null;
-            }
-          }
-          for (let i = 0; i < timeouts.length; i++) {
-            if (!_pred(timeouts[i])) {
-              timeouts[i] = null;
-            }
-          }
-          for (let i = 0; i < intervals.length; i++) {
-            if (!_pred(intervals[i])) {
-              intervals[i] = null;
-            }
-          }
+          _destroyTimeouts(window);
         })
         .catch(err => {
           loading = false;
@@ -1887,6 +1725,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
   nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
+  nativeWindow = bindings.nativeWindow;
 };
 module.exports = exokit;
 

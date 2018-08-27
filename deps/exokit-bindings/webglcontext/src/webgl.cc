@@ -598,13 +598,11 @@ void setGlConstants(T &proto) {
   JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
 }
 
-Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
-  Nan::EscapableHandleScope scope;
+std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
+  // Nan::EscapableHandleScope scope;
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(WebGLRenderingContext::New);
-
-  s_ct.Reset(ctor);
 
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("WebGLRenderingContext"));
@@ -824,7 +822,7 @@ Handle<Object> WebGLRenderingContext::Initialize(Isolate *isolate) {
   Local<Function> ctorFn = ctor->GetFunction();
   setGlConstants(ctorFn);
 
-  return scope.Escape(ctorFn);
+  return std::pair<Local<Object>, Local<FunctionTemplate>>(ctorFn, ctor);
 }
 
 WebGLRenderingContext::WebGLRenderingContext() :
@@ -4494,29 +4492,25 @@ NAN_METHOD(WebGLRenderingContext::GetSyncParameter) {
   info.GetReturnValue().Set(JS_INT(result));
 }
 
-Nan::Persistent<FunctionTemplate> WebGLRenderingContext::s_ct;
-
 // WebGL2RenderingContext
 
 WebGL2RenderingContext::WebGL2RenderingContext() {}
 
 WebGL2RenderingContext::~WebGL2RenderingContext() {}
 
-Handle<Object> WebGL2RenderingContext::Initialize(Isolate *isolate) {
-  Nan::EscapableHandleScope scope;
+std::pair<Local<Object>, Local<FunctionTemplate>> WebGL2RenderingContext::Initialize(Isolate *isolate, Local<FunctionTemplate> baseCtor) {
+  // Nan::EscapableHandleScope scope;
 
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(WebGL2RenderingContext::New);
 
-  s_ct.Reset(ctor);
-  Local<FunctionTemplate> baseSCT = Nan::New(WebGLRenderingContext::s_ct);
-  ctor->Inherit(baseSCT);
+  ctor->Inherit(baseCtor);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("WebGL2RenderingContext"));
 
   Local<Function> ctorFn = ctor->GetFunction();
   setGlConstants(ctorFn);
 
-  return scope.Escape(ctorFn);
+  return std::pair<Local<Object>, Local<FunctionTemplate>>(ctorFn, ctor);
 }
 
 NAN_METHOD(WebGL2RenderingContext::New) {
@@ -4526,8 +4520,6 @@ NAN_METHOD(WebGL2RenderingContext::New) {
 
   info.GetReturnValue().Set(gl2Obj);
 }
-
-Nan::Persistent<FunctionTemplate> WebGL2RenderingContext::s_ct;
 
 /* struct GLObj {
   GLObjectType type;

@@ -1,0 +1,325 @@
+<!doctype html>
+<html>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script>
+
+  const width = 2048;
+  const height = 2048;
+
+  let camera, scene, renderer, controls, browserPlane,
+    canvas, ctx, texture, browserWindow,
+    mouse = new THREE.Vector2(),
+    raycaster = new THREE.Raycaster();
+
+  init();
+  animate();
+
+  function init() {
+    setupScene();
+    setupCanvasAndTexture();
+    setupElectron()
+      .then(()=>{
+        setupBrowserPlane();
+        setupListeners();
+      });
+  }
+
+  async function setupElectron(){
+    const elctrn = await browser.electron.createElectron();
+    browserWindow = await elctrn.createBrowserWindow({
+      width,
+      height,
+      show: false,
+      frame: false,
+      webPreferences: {
+        offscreen: true,
+        transparent: true,
+      },
+    });
+    canvas.width = browserWindow.width;
+    canvas.height = browserWindow.height;
+
+    browserWindow.loadURL('http://github.com');
+    browserWindow.setFrameRate(60);
+
+    browserWindow.on('paint', o => {
+      ctx.putImageData(new ImageData(o.data, o.width, o.height), o.x, o.y );
+      texture.needsUpdate = true;
+    });
+    browserWindow.on('dom-ready', async () => {
+      console.log('dom-ready');
+      await browserWindow.insertCSS(`
+                ::-webkit-scrollbar {
+                  height: 30px;
+                  width: 30px;
+                  background: #e0e0e0;
+                }
+
+                ::-webkit-scrollbar-thumb {
+                  background: #4db6ac;
+                }
+
+                ::-webkit-scrollbar-corner {
+                  background: #cfcfcf;
+                }
+              `);
+      //texture.needsUpdate = true;
+    });
+    browserWindow.on('did-fail-load', () => {
+      console.log('failed to load!');
+
+      // browserWindow.destroy();
+      // elctrn.destroy();
+    });
+  }
+
+  function setupBrowserPlane(){
+
+    // Setup plane mesh to display canvas
+    let geometry = new THREE.PlaneBufferGeometry( 1, browserWindow.height/browserWindow.width );
+    let material = new THREE.MeshBasicMaterial( {
+      map: texture,
+      side: THREE.DoubleSide,
+    } );
+    browserPlane = new THREE.Mesh( geometry, material );
+    scene.add( browserPlane );
+  }
+
+  function setupScene(){
+
+    // Setup Camera
+    camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
+    camera.position.z = 1;
+
+    // Setup Scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x7E57C2);
+
+    // Setup Renderer
+    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+
+    // Setup mouse controls.
+    //controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+    // Register resize events to handle renderer and camera update
+    window.addEventListener( 'resize', onWindowResize, false );
+  }
+
+  function setupCanvasAndTexture(){
+
+    // Setup canvas and texture
+    canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    ctx = canvas.getContext('2d');
+    texture = new THREE.Texture(
+      canvas/*,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.LinearMipMapNearestFilter,
+            THREE.LinearMipMapNearestFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            1*/
+    );
+  }
+
+  function mouseEvent(type,e){
+    if(type==="mousewheel"){
+      let localMouse = {
+        x:0,
+        y:0,
+
+      };
+
+      // Store the delta for mousewheel events.
+      localMouse.deltaY = e.deltaY;
+      localMouse.deltaX = e.deltaX;
+      return sendMouseEvent(type,e,localMouse);
+    }
+
+    // Get normalised mouse coordinates
+    mouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
+    raycaster.setFromCamera( mouse, camera );
+
+    let intersects = raycaster.intersectObjects( scene.children );
+    let localMouse;
+    if(intersects.length&&intersects[0].object === browserPlane){
+
+      // Convert the intersection point from world to local coordinates.
+      let localPoint = browserPlane.worldToLocal(intersects[0].point);
+      let planeHeight = browserWindow.height/browserWindow.width;
+      localMouse = {
+        x:((localPoint.x+0.5)/1)*browserWindow.width,
+        // Invert the Y coordinate for top down orientation of the browser coordinates.
+        y:browserWindow.height-(((planeHeight/2+localPoint.y)/planeHeight)*browserWindow.height)
+      };
+
+      //Pause the orbit controls for mousemove events in betweenmousedown and mouseup
+      if(type==='mousedown'){
+        //controls.enabled = false;
+      }
+      if(type==='mouseup'){
+        //controls.enabled = true;
+      }
+      sendMouseEvent(type,e,localMouse);
+    }
+  }
+
+  function sendMouseEvent(type,e,mouse){
+    let _event;
+    let _button;
+    if(e.detail){
+      // Convert the mouse button value to a string for electron webcontents.
+      switch(e.detail.button){
+        case 0:
+          _button = 'left';
+          break;
+        case 1:
+          _button = 'middle';
+          break;
+        case 2:
+          _button = 'right';
+          break;
+      }
+    }
+    switch(type){
+      case 'mousemove':
+      case 'mouseup':
+      case 'mousedown':
+        // Set minimum options for mouse events.
+        _event = {
+          type:type,
+          x:mouse.x,
+          y:mouse.y,
+          button:_button||'left',
+          globalX:mouse.x,
+          globalY:mouse.y,
+          movementX:0,
+          movementY:0,
+          clickCount:1
+        };
+        break;
+      case 'mousewheel':
+        // Set minimum options for mousewheel events.
+        _event = {
+          type:type,
+          x:mouse.x,
+          y:mouse.y,
+          button:3,
+          globalX:mouse.x,
+          globalY:mouse.y,
+          movementX:0,
+          movementY:0,
+          clickCount:1,
+          deltaX:-mouse.deltaX,
+          deltaY:-mouse.deltaY,
+          wheelTicksX:0,
+          wheelTicksY:0,
+          accelerationRatioX:1,
+          accelerationRatioY:1,
+          hasPreciseScrollingDeltas:true,
+          canScroll:true
+        };
+        break;
+    }
+    if(_event){
+      // Send the event to electron over IPC.
+      browserWindow.sendInputEvent(_event);
+    }
+  }
+
+  function mousemove(e){
+    mouseEvent('mousemove',e);
+  }
+
+  function mousedown(e){
+    mouseEvent('mousedown',e);
+  }
+
+  function mouseup(e){
+    mouseEvent('mouseup',e);
+  }
+
+  function mousewheel(e){
+    mouseEvent('mousewheel',e);
+  }
+
+  function keyup(e){
+    keyEvent('keyup',e);
+  }
+
+  function keydown(e){
+    keyEvent('keyup',e);
+  }
+
+  function keyEvent(type,e){
+    // Setup modifiers array and populate form the key events.
+    let modifiers = [];
+    if(e.ctrlKey){
+      modifiers.push('control');
+    }
+    if(e.altKey){
+      modifiers.push('alt');
+    }
+    if(e.metaKey){
+      modifiers.push('meta');
+    }
+    if(e.shiftKey){
+      modifiers.push('shift');
+    }
+    if(e.repeat){
+      modifiers.push('isAutoRepeat');
+    }
+    browserWindow.sendInputEvent({
+      type:type,
+      keyCode:e.key,
+      modifiers:modifiers
+    });
+    // If is an alphanumeric key then send the char event also to get the text to show up in the input fields
+    // Do not send if this is a modified keypress i.e. Ctrl+A, Ctrl+V
+    if (e.which <= 90 && e.which >= 48&&type==="keyup"&&!modifiers.length){
+      browserWindow.sendInputEvent({
+        type:'char',
+        keyCode:e.key
+      });
+    }
+  }
+
+  function setupListeners(){
+
+    // Register keyboard and mouse event listeners
+    document.addEventListener( 'mousemove', mousemove, false );
+    document.addEventListener( 'mousedown', mousedown, false );
+    document.addEventListener( 'mouseup', mouseup, false );
+    document.addEventListener( 'wheel', mousewheel, false);
+    document.addEventListener( 'keyup', keyup, false);
+    document.addEventListener( 'keydown', keydown, false);
+  }
+
+  function onWindowResize() {
+
+    // Update camera an renderer aspect and size
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+  }
+
+  function animate() {
+
+    // Render loop.
+    requestAnimationFrame( animate );
+    renderer.render( scene, camera );
+
+  }
+
+</script>
+</body>
+</html>

@@ -6,3 +6,4 @@ CMakeCache.txt
 .idea
 .exokit_history
 .localStorage
+package-lock.json
