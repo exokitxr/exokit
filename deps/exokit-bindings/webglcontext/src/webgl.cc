@@ -578,6 +578,35 @@ void setGlConstants(T &proto) {
   double GL_TIMEOUT_IGNORED_TEMP_DOUBLE = *(double *)(&GL_TIMEOUT_IGNORED_TEMP_64);
   proto->Set(JS_STR("TIMEOUT_IGNORED"), Nan::New<v8::Number>(GL_TIMEOUT_IGNORED_TEMP_DOUBLE));
 
+  /* Floating Point Textures */
+  JS_GL_CONSTANT(HALF_FLOAT);
+  JS_GL_CONSTANT(FLOAT);
+  JS_GL_CONSTANT(R8);
+  JS_GL_CONSTANT(R16F);
+  JS_GL_CONSTANT(R32F);
+  JS_GL_CONSTANT(R8UI);
+  JS_GL_CONSTANT(RG8);
+  JS_GL_CONSTANT(RG16F);
+  JS_GL_CONSTANT(RG32F);
+  JS_GL_CONSTANT(RG8UI);
+  JS_GL_CONSTANT(RG16UI);
+  JS_GL_CONSTANT(RG32UI);
+  JS_GL_CONSTANT(RGB8);
+  JS_GL_CONSTANT(SRGB8);
+  JS_GL_CONSTANT(RGB565);
+  JS_GL_CONSTANT(R11F_G11F_B10F);
+  JS_GL_CONSTANT(RGB9_E5);
+  JS_GL_CONSTANT(RGB16F);
+  JS_GL_CONSTANT(RGB32F);
+  JS_GL_CONSTANT(RGB8UI);
+  JS_GL_CONSTANT(RGBA8);
+  JS_GL_CONSTANT(RGB5_A1);
+  JS_GL_CONSTANT(RGB10_A2);
+  JS_GL_CONSTANT(RGBA4);
+  JS_GL_CONSTANT(RGBA16F);
+  JS_GL_CONSTANT(RGBA32F);
+  JS_GL_CONSTANT(RGBA8UI);
+
   /* WebGL-specific enums */
   JS_GL_SET_CONSTANT("UNPACK_FLIP_Y_WEBGL", UNPACK_FLIP_Y_WEBGL);
   JS_GL_SET_CONSTANT("UNPACK_PREMULTIPLY_ALPHA_WEBGL", UNPACK_PREMULTIPLY_ALPHA_WEBGL);
@@ -4402,6 +4431,9 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
     result->Set(JS_STR("UNMASKED_RENDERER_WEBGL"), JS_INT(GL_RENDERER));
     result->Set(JS_STR("UNMASKED_VENDOR_WEBGL"), JS_INT(GL_VENDOR));
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "EXT_color_buffer_float") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
     info.GetReturnValue().Set(result);
   } else {
     info.GetReturnValue().Set(Null(Isolate::GetCurrent()));
