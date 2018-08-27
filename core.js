@@ -209,6 +209,16 @@ class CustomElementRegistry {
 let nativeVm = GlobalContext.nativeVm = null;
 let nativeWorker = null;
 
+class MonitorManager {
+  getList() {
+    return nativeWindow.getMonitors();
+  }
+
+  select(index) {
+    nativeWindow.setMonitor(index);
+  }
+}
+
 class Screen {
   constructor(window) {
     this._window = window;
@@ -266,6 +276,7 @@ class Screen {
 }
 let nativeVr = GlobalContext.nativeVr = null;
 let nativeMl = GlobalContext.nativeMl = null;
+let nativeWindow = null;
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -831,6 +842,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.navigator = {
     userAgent: `MixedReality (Exokit ${GlobalContext.version})`,
     platform: os.platform(),
+    hardwareConcurrency: os.cpus().length,
     appCodeName: 'Mozilla',
     appName: 'Netscape',
     appVersion: '5.0',
@@ -1240,6 +1252,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       })(nativeMlProxy.RequestPlanes);
       return nativeMlProxy;
     })(),
+    monitors: new MonitorManager(),
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
@@ -1462,7 +1475,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   });
 
   vmo.run(windowStartScript, 'window-start-script.js');
-  
+
   const _destroyTimeouts = window => {
     const _pred = fn => fn[symbols.windowSymbol] === window;
     for (let i = 0; i < rafCbs.length; i++) {
@@ -1823,6 +1836,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
   nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
+  nativeWindow = bindings.nativeWindow;
 };
 module.exports = exokit;
 

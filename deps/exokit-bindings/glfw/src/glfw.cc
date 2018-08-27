@@ -3,6 +3,12 @@
 
 namespace glfw {
 
+GLFWmonitor* _activeMonitor;
+GLFWmonitor* getMonitor() {
+    if (_activeMonitor) return _activeMonitor;
+    else return glfwGetPrimaryMonitor();
+}
+
 /* NAN_METHOD(GetVersion) {
   int major, minor, rev;
   glfwGetVersion(&major,&minor,&rev);
@@ -81,7 +87,14 @@ NAN_METHOD(GetMonitors) {
   info.GetReturnValue().Set(js_monitors);
 } */
 
-// @Module: Window handling
+NAN_METHOD(SetMonitor) {
+  int index = info[0]->Int32Value();
+  int monitor_count;
+  GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
+  _activeMonitor = monitors[index];
+}
+
+/* @Module: Window handling */
 NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
 std::unique_ptr<Nan::Persistent<Function>> eventHandler;
@@ -1167,7 +1180,7 @@ const GLFWvidmode *getBestVidMode(NATIVEwindow *window, GLFWmonitor *monitor) {
 
 NAN_METHOD(SetFullscreen) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  GLFWmonitor *monitor = getMonitor();
 
   const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
   if (vidMode != nullptr) {
@@ -1181,7 +1194,7 @@ NAN_METHOD(SetFullscreen) {
 
 NAN_METHOD(ExitFullscreen) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  GLFWmonitor *monitor = getMonitor();
 
   const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
   glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
@@ -1368,6 +1381,10 @@ NAN_METHOD(Create) {
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
 
+#ifdef GL_VERTEX_PROGRAM_POINT_SIZE
+      glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+#endif
+
       Local<Array> result = Nan::New<Array>(8);
       result->Set(0, pointerToArray(windowHandle));
       result->Set(1, JS_INT(framebuffers[0]));
@@ -1413,7 +1430,7 @@ NAN_METHOD(SwapBuffers) {
 }
 
 NAN_METHOD(GetRefreshRate) {
-  const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  const GLFWvidmode* mode = glfwGetVideoMode(getMonitor());
   int refreshRate = mode->refreshRate;
   info.GetReturnValue().Set(refreshRate);
 }
@@ -1834,6 +1851,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "hide", glfw::Hide);
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
   Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
+  Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
+  Nan::SetMethod(target, "getMonitors", glfw::GetMonitors);
   Nan::SetMethod(target, "exitFullscreen", glfw::ExitFullscreen);
   Nan::SetMethod(target, "setWindowTitle", glfw::SetWindowTitle);
   Nan::SetMethod(target, "getWindowSize", glfw::GetWindowSize);
