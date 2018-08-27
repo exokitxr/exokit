@@ -1361,9 +1361,9 @@ NAN_METHOD(Create) {
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
 
-      #ifdef GL_VERTEX_PROGRAM_POINT_SIZE
+#ifdef GL_VERTEX_PROGRAM_POINT_SIZE
       glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-      #endif
+#endif
 
       Local<Array> result = Nan::New<Array>(8);
       result->Set(0, pointerToArray(windowHandle));
