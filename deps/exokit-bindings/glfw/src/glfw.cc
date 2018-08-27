@@ -33,11 +33,7 @@ NAN_METHOD(GetTime) {
 NAN_METHOD(SetTime) {
   double time = info[0]->NumberValue();
   glfwSetTime(time);
-}
-
-// @Module: monitor handling
-
-// TODO: Monitor configuration change callback
+} */
 
 NAN_METHOD(GetMonitors) {
   int monitor_count, mode_count, xpos, ypos, width, height;
@@ -85,7 +81,7 @@ NAN_METHOD(GetMonitors) {
   }
 
   info.GetReturnValue().Set(js_monitors);
-} */
+}
 
 NAN_METHOD(SetMonitor) {
   int index = info[0]->Int32Value();
