@@ -1,5 +1,7 @@
 # Exokit
 
+## Native VR and AR engine for JavaScript 🦖
+
 <img src="https://github.com/webmixedreality/exokit/blob/master/icon.png" width=100/>
 
 [![Slack](https://exoslack.now.sh/badge.svg)](https://communityinviter.com/apps/exokit/exokit)
@@ -10,8 +12,6 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/webmixedreality.svg?style=social)](https://twitter.com/webmixedreality)
 
 ### Subscribe to our Email list to be notified when we launch! http://eepurl.com/dFiLMz
-
-## Exokit is a native VR and AR engine for JavaScript.
 
 This project enables developers to build XR experiences using the same code that runs on the web. Exokit engine is written on top of Node and emulates a web browser, providing native hooks for WebGL, WebXR, WebAudio, and other APIs used in immersive experiences.
 
@@ -26,10 +26,9 @@ Since Exokit supports anything that runs on the web, it powers experiences built
 * Unity
 * Pixi.js
 * Babylon.js
-* AFrame
+* A-Frame
 * Custom WebGL frameworks
-* WebAssembly, TypeScript, and any language that transpiles to JavaScript.
-
+* WebAssembly, TypeScript, and any language that transpiles to JavaScript
 
 # Quickstart
 
@@ -50,35 +49,27 @@ node . # or node -h for home
 exokit https://emukit.webmr.io/ # start Emukit in Exokit
 ```
 
-## Introduction
+## Manifesto
 
 <img src="assets/screenshots.gif" alt="Screenshots"/>
 
-### Exokit is a post-screen web engine.
-
-It loads regular HTML5 pages using standards like:
-- WebGL
-- WebXR
-- WebAudio
-- Etc.
-
-It's designed for WebGL, WebGL2, WebXR, and immersive AR/VR. It's faster than Chrome, extensible and embeddable into other environments.
-
-The catch? _It doesn't do 2D. (But it comes with a build of Chromium, which does.)_
-
-It can open blend multiple WebXR sites at a time with "reality tabs".
-
-Exokit is agnostic about how you write your code. It works with frameworks like [THREE.js](https://github.com/mrdoob/three.js/), [A-Frame](https://aframe.io/), [Babylon.js](https://github.com/BabylonJS/Babylon.js), and web builds of [Unity](https://unity3d.com).
+- The future is immersive. The web is the best application platform. Javascript is the best ecosystem.
+- Content should be hardware agnostic. Tomorrow will have different hardware. VR and AR should be compatible.
+- It's not possible to do both 2D and 3D well. We don't do 2D. We can call a 2D browser.
+- Use your favorite game engine. Exokit is not a game engine.
+- Legacy browser design choices don't make sense in XR.
+- Exokit empowers and connect apps, even (especially) if they aren't designed to cooperate.
+- Apps should run in "reality tabs", layers of reality that blend together.
 
 ## Architecture
 
 Exokit is a Javascript [Node.js](https://nodejs.org) module.
 
-Lightweight C++ bindings hook into WebGL, WebXR, Magic Leap, Leap Motion, and various other device APIs.
+C++ bindings hook into WebGL, WebXR, Magic Leap, Leap Motion, and various other device APIs.
 
-It's also extensible and embeddable -- you can add your own things to the browser core, and `const {window} = require('exokit')()` to get an immersive browser in another project.
+`const {window} = require('exokit')()` to get an immersive browser in another project.
 
-Exokit runs on Windows, macOS, Linux (x64), and Linux (ARM64).
+Exokit runs on Windows, macOS, Linux (x64), Linux (ARM64), and Magic Leap (ARM64).
 
 ## Web API support
 
