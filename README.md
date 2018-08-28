@@ -29,6 +29,8 @@ node . # or node -h for home
 exokit https://emukit.webmr.io/ # start Emukit in Exokit
 ```
 
+Subscribe to our Email list to be notified when we launch! http://eepurl.com/dFiLMz
+
 ## Introduction
 
 <img src="assets/screenshots.gif" alt="Screenshots"/>
