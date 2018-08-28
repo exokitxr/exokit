@@ -3,7 +3,6 @@ const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
-const child_process = require('child_process');
 const os = require('os');
 const util = require('util');
 const {URL} = url;
