@@ -1,4 +1,4 @@
-/* global assert, beforeEach, describe, it */
+/* global afterEach, assert, beforeEach, describe, it */
 const exokit = require('../../index');
 
 describe('MutationObserver', () => {
@@ -8,24 +8,25 @@ describe('MutationObserver', () => {
   var document;
   var MutationObserver;
 
-  before(() => {
+  beforeEach(done => {
     const o = exokit();
     window = o.window;
     window.navigator.getVRDisplaysSync = () => [];
     document = o.document;
     MutationObserver = window.MutationObserver;
-  });
-  
-  after(() => {
-    window.destroy();
-  });
 
-  beforeEach(() => {
     el = document.createElement('div');
     el.id = 'parent';
     el.setAttribute('foo', 'foo');
     childEl = document.createElement('p');
     childEl.id = 'child';
+
+    document.body.appendChild(el);
+    setTimeout(() => { done(); });
+  });
+
+  afterEach(() => {
+    window.destroy();
   });
 
   describe('attributes', () => {
@@ -263,8 +264,6 @@ describe('MutationObserver', () => {
   });
 
   it('can observe document', done => {
-    document.body.appendChild(el);
-
     const observerHelper = cb => {
       const observer = new MutationObserver(cb);
       observer.observe(document, {attributes: false, childList: true, subtree: true});
@@ -281,5 +280,21 @@ describe('MutationObserver', () => {
     });
 
     el.appendChild(childEl);
+  });
+
+  it('does not trigger mutation observer on non-attached elements', done => {
+    document.body.removeChild(el);
+
+    const observer = new MutationObserver(() => {
+      assert.equal(1, 0, 'Should not have triggered');
+    });
+    observer.observe(el, {attributes: false, childList: true, subtree: true});
+
+    // el is not part of document.
+    el.appendChild(childEl);
+    el.setAttribute('data-foo', 'foo');
+    childEl.setAttribute('data-bar', 'bar');
+
+    done();
   });
 });
