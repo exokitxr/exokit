@@ -10,6 +10,8 @@
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true)](https://ci.appveyor.com/project/modulesio/exokit-windows)
 [![Twitter Follow](https://img.shields.io/twitter/follow/webmixedreality.svg?style=social)](https://twitter.com/webmixedreality)
 
+### Subscribe to our Email list to be notified when we launch! http://eepurl.com/dFiLMz
+
 # Quickstart
 
 #### [Download for current OS](https://get.webmr.io)
