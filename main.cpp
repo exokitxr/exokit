@@ -136,10 +136,10 @@ int main() {
       ML_LOG(Error, "failed to indicate lifecycle ready: %u", result);
     }
   }
-  
+
   {
     ML_LOG(Info, "------------------------------test query");
-    
+
     const char *host = "google.com";
     struct addrinfo hints, *res;
     int errcode;
@@ -176,11 +176,11 @@ int main() {
       ML_LOG(Info, "failed to getaddrinfo %x", errcode);
     }
   }
-  
+
   ML_LOG(Info, "sleeping 1");
-  
+
   sleep(1000);
-  
+
   ML_LOG(Info, "sleeping 2"); */
 
   pipe(stdoutfds);
@@ -302,7 +302,7 @@ int main() {
 
     stdoutThread.join();
     stderrThread.join();
-    
+
     ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit end");
   }
 
