@@ -1049,6 +1049,9 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             MLVec3f &position = controllerState.position;
             MLQuaternionf &orientation = controllerState.orientation;
             float trigger = controllerState.trigger_normalized;
+            MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
+            
+            std::cout << "got trigger " << i << " " << trigger << std::endl;
 
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 1, JS_NUM(position.y));
@@ -1058,6 +1061,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 5, JS_NUM(orientation.z));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 6, JS_NUM(orientation.w));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 7, JS_NUM(trigger));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 8, JS_NUM(touchPosAndForce.x));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 9, JS_NUM(touchPosAndForce.y));
           }
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);

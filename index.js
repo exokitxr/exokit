@@ -277,7 +277,7 @@ const handsArray = [
   new Float32Array(handEntrySize),
   new Float32Array(handEntrySize),
 ];
-const controllersArray = new Float32Array((3 + 4 + 1) * 2);
+const controllersArray = new Float32Array((3 + 4 + 3) * 2);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -1193,7 +1193,11 @@ const _bindWindow = (window, newWindowCb) => {
         const leftTriggerPushed = leftTriggerValue > 0.5;
         leftGamepad.buttons[1].touched = leftTriggerPushed;
         leftGamepad.buttons[1].pressed = leftTriggerPushed;
+        leftGamepad.axes[2] = leftTriggerValue;
         controllersArrayIndex++;
+        leftGamepad.axes[0] = controllersArray[controllersArrayIndex];
+        leftGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
+        controllersArrayIndex += 2;
 
         gamepads[0] = leftGamepad;
 
@@ -1206,7 +1210,11 @@ const _bindWindow = (window, newWindowCb) => {
         const rightTriggerPushed = rightTriggerValue > 0.5;
         rightGamepad.buttons[1].touched = rightTriggerPushed;
         rightGamepad.buttons[1].pressed = rightTriggerPushed;
+        rightGamepad.axes[2] = rightTriggerValue;
         controllersArrayIndex++;
+        rightGamepad.axes[0] = controllersArray[controllersArrayIndex];
+        rightGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
+        controllersArrayIndex += 2;
 
         gamepads[1] = rightGamepad;
 
