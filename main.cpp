@@ -96,7 +96,11 @@ const MLPrivilegeID privileges[] = {
   MLPrivilegeID_NormalNotificationsUsage,
 };
 
-int main() {
+int main(int argc, char **argv) {
+  if (argc > 1) {
+    return node::Start(argc, argv);
+  }
+
   registerDlibs(node::dlibs);
 
   MLResult result = MLPrivilegesStartup();
