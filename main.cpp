@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <cstdlib>
+#include <cstring>
 #include <dlfcn.h>
 #include <errno.h>
 #include <sstream>
@@ -202,7 +203,54 @@ int main(int argc, char **argv) {
       close(stderrfds[1]);
     });
 
-    {
+    const char *argsEnv = getenv("ARGS");
+    if (argsEnv) {
+      
+      char args[4096];
+      strncpy(args, argsEnv, sizeof(args));
+
+      char *argv[64];
+      size_t argc = 0;
+
+      const char *nodeString = "node";
+      const char *dotString = ".";
+      const char *jsString = "examples/hello_ml.html";
+      char argsString[4096];
+      int i = 0;
+
+      char *nodeArg = argsString + i;
+      strncpy(nodeArg, nodeString, sizeof(argsString) - i);
+      i += strlen(nodeString) + 1;
+
+      char *dotArg = argsString + i;
+      strncpy(dotArg, dotString, sizeof(argsString) - i);
+      i += strlen(dotString) + 1;
+
+      char *jsArg = argsString + i;
+      strncpy(jsArg, jsString, sizeof(argsString) - i);
+      i += strlen(jsString) + 1;
+
+
+      int argStartIndex = 0;
+      for (int i = 0;; i++) {
+        const char c = args[i];
+        if (c == ' ') {
+          args[i] = '\0';
+          argv[argc] = args + argStartIndex;
+          argc++;
+          argStartIndex = i + 1;
+          continue;
+        } else if (c == '\0') {
+          argv[argc] = args + argStartIndex;
+          argc++;
+          break;
+        } else {
+          continue;
+        }
+      }
+
+      return node::Start(argc, argv);
+    } else {
       const char *nodeString = "node";
       const char *dotString = ".";
       const char *jsString = "examples/hello_ml.html";
@@ -223,7 +271,8 @@ int main(int argc, char **argv) {
 
       char *argv[] = {nodeArg, dotArg, jsArg};
       size_t argc = sizeof(argv) / sizeof(argv[0]);
-      node::Start(argc, argv);
+
+      return node::Start(argc, argv);
     }
   } else { // child
     ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit start 1");
@@ -308,7 +357,7 @@ int main(int argc, char **argv) {
     stderrThread.join();
 
     ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit end");
-  }
 
-  return 0;
+      return 0;
+  }
 }
