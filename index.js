@@ -1202,7 +1202,7 @@ const _bindWindow = (window, newWindowCb) => {
         rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
         controllersArrayIndex += 4;
         const rightTriggerValue = controllersArray[controllersArrayIndex];
-        rightGamepad.buttons[1].value = leftTriggerValue;
+        rightGamepad.buttons[1].value = rightTriggerValue;
         const rightTriggerPushed = rightTriggerValue > 0.5;
         rightGamepad.buttons[1].touched = rightTriggerPushed;
         rightGamepad.buttons[1].pressed = rightTriggerPushed;
