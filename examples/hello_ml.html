@@ -9,6 +9,23 @@
   <body>
   <script src="three.js"></script>
   <script>
+    let container, scene, camera, display, controllerMeshes;
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 0) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrixWorld(true);
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+
     function init() {
       container = document.createElement('div');
       document.body.appendChild(container);
@@ -50,6 +67,14 @@
         mesh.frustumCulled = false;
         scene.add(mesh);
       })();
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
 
       const terrainMeshes = {};
       /* const terrainMaterial = new THREE.ShaderMaterial({
@@ -166,21 +191,45 @@
       renderer.setAnimationLoop(animate);
     }
 
-    function animate() {
+    function animate(time, frame) {
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.updateMatrixWorld(true);
+        }
+      }
+
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 
     init();
 
-    // renderer.setAnimationLoop(animate);
     (async () => {
       console.log('request device');
-      const display = await navigator.xr.requestDevice();
+      display = await navigator.xr.requestDevice();
       console.log('request session');
       const session = await display.requestSession({
         exclusive: true,
       });
       display.session = session;
+
+      session.onselect = e => {
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+        const objectMesh = _makeControllerMesh(
+          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+        );
+        scene.add(objectMesh);
+      };
 
       console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
