@@ -3,6 +3,9 @@ const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
+const http = require('http');
+const https = require('https');
+const ws = require('ws');
 const os = require('os');
 const util = require('util');
 const {URL} = url;
@@ -1139,8 +1142,116 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     return styleSpec.style;
   };
   window.browser = {
+    http: (() => {
+      const httpProxy = {};
+      for (const k in http) {
+        httpProxy[k] = http[k];
+      }
+      httpProxy.createServer = (createServer => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(req, res) {
+            res.write = (write => function(d) {
+              if (typeof d === 'object') {
+                d = utils._normalizeBuffer(d, global);
+              }
+              return write.apply(this, arguments);
+            })(res.write);
+            res.end = (end => function(d) {
+              if (typeof d === 'object') {
+                d = utils._normalizeBuffer(d, global);
+              }
+              return end.apply(this, arguments);
+            })(res.end);
+            
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return createServer.apply(this, arguments);
+      })(httpProxy.createServer);
+      return httpProxy;
+    })(),
+    // https,
+    ws,
+    /* ws: (() => {
+      const wsProxy = {};
+      for (const k in ws) {
+        wsProxy[k] = ws[k];
+      }
+      wsProxy.Server = (OldServer => function Server() {
+        const server = OldServer.apply(this, arguments);
+        server.on = (on => function(e, cb) {
+          if (e === 'message' && cb) {
+            cb = (cb => function(m) {
+              m.data = utils._normalizeBuffer(m.data, global);
+              return cb.apply(this, arguments);
+            })(cb);
+          }
+          return on.apply(this, arguments);
+        })(server.on);
+        return server;
+      })(wsProxy.Server);
+      return wsProxy;
+    })(), */
     electron,
-    monitors: new MonitorManager()
+    nativeMl: (() => {
+      const nativeMlProxy = {};
+      for (const k in nativeMl) {
+        nativeMlProxy[k] = nativeMl[k];
+      }
+      nativeMlProxy.RequestCamera = (RequestCamera => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(datas) {
+            for (let i = 0; i < datas.length; i++) {
+              const data = datas[i];
+              data.data = utils._normalizeBuffer(data.data, window);
+            }
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return RequestCamera.apply(this, arguments);
+      })(nativeMlProxy.RequestCamera);
+      nativeMlProxy.RequestHand = (RequestHand => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(datas) {
+            for (let i = 0; i < datas.length; i++) {
+              const data = datas[i];
+              data.center = utils._normalizeBuffer(data.center, window);
+            }
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return RequestHand.apply(this, arguments);
+      })(nativeMlProxy.RequestHand);
+      nativeMlProxy.RequestMesh = (RequestMesh => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(datas) {
+            for (let i = 0; i < datas.length; i++) {
+              const data = datas[i];
+              data.indices = utils._normalizeBuffer(data.indices, window);
+              data.positions = utils._normalizeBuffer(data.positions, window);
+              data.normals = utils._normalizeBuffer(data.normals, window);
+            }
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return RequestMesh.apply(this, arguments);
+      })(nativeMlProxy.RequestMesh);
+      nativeMlProxy.RequestPlanes = (RequestPlanes => function(cb) {
+        if (typeof cb === 'function') {
+          cb = (cb => function(datas) {
+            for (let i = 0; i < datas.length; i++) {
+              const data = datas[i];
+              data.position = utils._normalizeBuffer(data.position, window);
+              data.rotation = utils._normalizeBuffer(data.rotation, window);
+            }
+            return cb.apply(this, arguments);
+          })(cb);
+        }
+        return RequestPlanes.apply(this, arguments);
+      })(nativeMlProxy.RequestPlanes);
+      return nativeMlProxy;
+    })(),
+    monitors: new MonitorManager(),
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {

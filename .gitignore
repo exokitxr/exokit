@@ -1,9 +1,10 @@
 node_modules
 build
+package-lock.json
 CMakeFiles
 CMakeCache.txt
 .DS_Store
 .idea
 .exokit_history
 .localStorage
-package-lock.json
+.node-gyp

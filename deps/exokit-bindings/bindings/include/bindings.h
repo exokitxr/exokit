@@ -10,14 +10,13 @@
 #include <path2d-context.h>
 #include <canvas-gradient.h>
 #include <canvas-pattern.h>
-#include <glfw.h>
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
 #if _WIN32
 #include <leapmotion.h>
 #endif
-#ifdef MAGICLEAP
+#if defined(MAGICLEAP) || defined(LUMIN)
 #include <magicleap.h>
 #endif
 

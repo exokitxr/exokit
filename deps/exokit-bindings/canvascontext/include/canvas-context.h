@@ -2,8 +2,9 @@
 #define _CANVASCONTEXT_CANVAS_H_
 
 #include <v8.h>
-#include <nan/nan.h>
+#include <nan.h>
 #define _USE_MATH_DEFINES
+#undef max
 #include <cmath>
 #include <defines.h>
 #include <canvas/include/Context.h>

@@ -1,215 +1,363 @@
-#include <string.h>
-#include <cstring>
-#include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <cstdlib>
+#include <cstring>
+#include <dlfcn.h>
+#include <errno.h>
 #include <sstream>
+#include <string>
+#include <map>
 #include <thread>
-#include <functional>
-
 #include <v8.h>
-#include <bindings.h>
-#include <glfw.h>
+#include <ml_logging.h>
+#include <ml_lifecycle.h>
+#include <ml_privileges.h>
 
-#ifdef OPENVR
-#include <openvr-bindings.h>
-#endif
+#define LOG_TAG "exokit"
+#define application_name LOG_TAG
 
 using namespace v8;
 
-namespace exokit {
+namespace node {
+  extern std::map<std::string, void *> dlibs;
+  int Start(int argc, char* argv[]);
+}
+int stdoutfds[2];
+int stderrfds[2];
 
-// NOTE: must already be in context
-void callFunction(const char *funcname, const int argc, Local<Value> argv[]) {
-  // init
-  Isolate *isolate = Isolate::GetCurrent();
-  Local<Context> localContext = isolate->GetCurrentContext();
-  Local<Object> global = localContext->Global();
+#include "build/libexokit/dlibs.h"
 
-  // get function
-  Local<String> jsfunc_name = String::NewFromUtf8(isolate,funcname);
-  Local<Value> jsfunc_val = global->Get(jsfunc_name);
-  if (!jsfunc_val->IsFunction()) return;
-  Local<Function> jsfunc = Local<Function>::Cast(jsfunc_val);
+/* struct application_context_t {
+  int dummy_value;
+};
+enum DummyValue {
+  STOPPED = 0,
+  RUNNING,
+  PAUSED,
+};
 
-  // call function, 'this' points to global object
-  TryCatch try_catch(Isolate::GetCurrent());
-  Local<Value> result = jsfunc->Call(global, argc, argv);
+static void onNewInitArg(void* application_context) {
+  MLLifecycleInitArgList *args;
+  MLLifecycleGetInitArgList(&args);
 
-  if (result.IsEmpty()) {
-    String::Utf8Value error(try_catch.Exception());
-    String::Utf8Value stacktrace(try_catch.StackTrace());
-    // LOGI("Error calling %s: %s:\n%s",funcname,*error,*stacktrace);
-  } else {
-    // LOGI("%s called",funcname);
-  }
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
+  ML_LOG_TAG(Info, LOG_TAG, "%s: On new init arg called %x.", application_name, args);
 }
 
-void Java_com_mafintosh_nodeonandroid_NodeService_onResize
-() {
-// (JNIEnv *env, jclass clas, jint width, jint height) {
-	// LOGI("JNI onResize %d %d", width, height);
+static void onStop(void* application_context) {
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
+  ML_LOG_TAG(Info, LOG_TAG, "%s: On stop called.", application_name);
+}
+
+static void onPause(void* application_context) {
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
+  ML_LOG_TAG(Info, LOG_TAG, "%s: On pause called.", application_name);
+}
+
+static void onResume(void* application_context) {
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
+  ML_LOG_TAG(Info, LOG_TAG, "%s: On resume called.", application_name);
+}
+
+static void onUnloadResources(void* application_context) {
+  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
+  ML_LOG_TAG(Info, LOG_TAG, "%s: On unload resources called.", application_name);
+} */
+
+/* extern "C" {
+  void node_register_module_exokit(Local<Object> exports, Local<Value> module, Local<Context> context);
+  void node_register_module_vm_one(Local<Object> exports, Local<Value> module, Local<Context> context);
+  void node_register_module_raw_buffer(Local<Object> exports, Local<Value> module, Local<Context> context);
+  void node_register_module_child_process_thread(Local<Object> exports, Local<Value> module, Local<Context> context);
+}
+
+inline void registerDlibs(std::map<std::string, void *> &dlibs) {
+  dlibs["/package/build/Release/exokit.node"] = (void *)&node_register_module_exokit;
+  dlibs["/package/node_modules/vm-one/build/Release/vmOne.node"] = (void *)&node_register_module_vm_one;
+  dlibs["/package/node_modules/raw-buffer/build/Release/raw_buffer.node"] = (void *)&node_register_module_raw_buffer;
+  dlibs["/package/node_modules/child-process-thread/build/Release/child_process_thread.node"] = (void *)&node_register_module_child_process_thread;
+} */
+
+const size_t STDIO_BUF_SIZE = 4096;
+const MLPrivilegeID privileges[] = {
+  MLPrivilegeID_LowLatencyLightwear,
+  MLPrivilegeID_WorldReconstruction,
+  MLPrivilegeID_Occlusion,
+  MLPrivilegeID_ControllerPose,
+  MLPrivilegeID_CameraCapture,
+  MLPrivilegeID_AudioCaptureMic,
+  MLPrivilegeID_VoiceInput,
+  MLPrivilegeID_AudioRecognizer,
+  MLPrivilegeID_Internet,
+  MLPrivilegeID_LocalAreaNetwork,
+  MLPrivilegeID_BackgroundDownload,
+  MLPrivilegeID_BackgroundUpload,
+  MLPrivilegeID_PwFoundObjRead,
+  MLPrivilegeID_NormalNotificationsUsage,
+};
+
+int main(int argc, char **argv) {
+  if (argc > 1) {
+    return node::Start(argc, argv);
+  }
+
+  registerDlibs(node::dlibs);
+
+  MLResult result = MLPrivilegesStartup();
+  if (result != MLResult_Ok) {
+    ML_LOG(Info, "failed to start privilege system %x", result);
+  }
+  const size_t numPrivileges = sizeof(privileges) / sizeof(privileges[0]);
+  for (size_t i = 0; i < numPrivileges; i++) {
+    const MLPrivilegeID &privilege = privileges[i];
+    MLResult result = MLPrivilegesCheckPrivilege(privilege);
+    if (result != MLPrivilegesResult_Granted) {
+      const char *s = MLPrivilegesGetResultString(result);
+      ML_LOG(Info, "did not have privilege %u: %u %s", privilege, result, s);
+
+      MLResult result = MLPrivilegesRequestPrivilege(privilege);
+      if (result != MLPrivilegesResult_Granted) {
+        const char *s = MLPrivilegesGetResultString(result);
+        ML_LOG(Info, "failed to get privilege %u: %u %s", privilege, result, s);
+      }
+    }
+  }
+
+  /* {
+    MLLifecycleCallbacks lifecycle_callbacks = {};
+    lifecycle_callbacks.on_new_initarg = onNewInitArg;
+    lifecycle_callbacks.on_stop = onStop;
+    lifecycle_callbacks.on_pause = onPause;
+    lifecycle_callbacks.on_resume = onResume;
+    lifecycle_callbacks.on_unload_resources = onUnloadResources;
+    application_context_t application_context;
+    MLResult lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+
+    MLResult result = MLLifecycleSetReadyIndication();
+    if (result == MLResult_Ok) {
+      ML_LOG(Info, "lifecycle ready!");
+    } else {
+      ML_LOG(Error, "failed to indicate lifecycle ready: %u", result);
+    }
+  }
 
   {
-    HandleScope handle_scope(Isolate::GetCurrent());
+    ML_LOG(Info, "------------------------------test query");
 
-    unsigned int width = 1;
-    unsigned int height = 1;
+    const char *host = "google.com";
+    struct addrinfo hints, *res;
+    int errcode;
+    char addrstr[100];
+    void *ptr;
 
-    Handle<Number> js_width = v8::Integer::New(Isolate::GetCurrent(), width);
-    Handle<Number> js_height = v8::Integer::New(Isolate::GetCurrent(), height);
+    memset (&hints, 0, sizeof (hints));
+    // hints.ai_flags = AI_DEFAULT;
+    // hints.ai_family = PF_UNSPEC;
+    // hints.ai_socktype = SOCK_STREAM;
+    // hints.ai_flags |= AI_CANONNAME;
 
-    Local<Value> argv[] = {js_width, js_height};
-    callFunction("onResize", sizeof(argv)/sizeof(argv[0]), argv);
+    errcode = getaddrinfo(host, NULL, &hints, &res);
+    ML_LOG (Info, "Host: %s %x %s\n", host, errcode, gai_strerror(errcode));
+    if (errcode == 0) {
+      while (res)
+        {
+          inet_ntop (res->ai_family, res->ai_addr->sa_data, addrstr, 100);
+
+          switch (res->ai_family)
+            {
+            case AF_INET:
+              ptr = &((struct sockaddr_in *) res->ai_addr)->sin_addr;
+              break;
+            case AF_INET6:
+              ptr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
+              break;
+            }
+          inet_ntop (res->ai_family, ptr, addrstr, 100);
+          ML_LOG(Info, "IPv%d address: %s (%s)", res->ai_family == PF_INET6 ? 6 : 4, addrstr, res->ai_canonname);
+          res = res->ai_next;
+        }
+    } else {
+      ML_LOG(Info, "failed to getaddrinfo %x", errcode);
+    }
   }
-}
+
+  ML_LOG(Info, "sleeping 1");
+
+  sleep(1000);
+
+  ML_LOG(Info, "sleeping 2"); */
+
+  pipe(stdoutfds);
+  pipe(stderrfds);
+
+  int pid = fork();
+  if (pid != 0) { // parent
+    dup2(stdoutfds[1], 1);
+    close(stdoutfds[0]);
+    dup2(stderrfds[1], 2);
+    close(stderrfds[0]);
+
+    std::atexit([]() -> void {
+      close(stdoutfds[1]);
+      close(stderrfds[1]);
+    });
+
+    const char *argsEnv = getenv("ARGS");
+    if (argsEnv) {
+      
+      char args[4096];
+      strncpy(args, argsEnv, sizeof(args));
+
+      char *argv[64];
+      size_t argc = 0;
+
+      const char *nodeString = "node";
+      const char *dotString = ".";
+      const char *jsString = "examples/hello_ml.html";
+      char argsString[4096];
+      int i = 0;
+
+      char *nodeArg = argsString + i;
+      strncpy(nodeArg, nodeString, sizeof(argsString) - i);
+      i += strlen(nodeString) + 1;
+
+      char *dotArg = argsString + i;
+      strncpy(dotArg, dotString, sizeof(argsString) - i);
+      i += strlen(dotString) + 1;
+
+      char *jsArg = argsString + i;
+      strncpy(jsArg, jsString, sizeof(argsString) - i);
+      i += strlen(jsString) + 1;
 
 
-void Java_com_mafintosh_nodeonandroid_NodeService_onNewFrame
-() {
-// (JNIEnv *env, jclass clas, jfloatArray headViewMatrix, jfloatArray headQuaternion, jfloatArray centerArray) {
-  float headViewMatrixElements[] = {0};
-  float headQuaternionElements[] = {0};
-  float centerArrayElements[] = {0};
+      int argStartIndex = 0;
+      for (int i = 0;; i++) {
+        const char c = args[i];
+        if (c == ' ') {
+          args[i] = '\0';
+          argv[argc] = args + argStartIndex;
+          argc++;
+          argStartIndex = i + 1;
+          continue;
+        } else if (c == '\0') {
+          argv[argc] = args + argStartIndex;
+          argc++;
+          break;
+        } else {
+          continue;
+        }
+      }
 
-  {
-    HandleScope handle_scope(Isolate::GetCurrent());
+      return node::Start(argc, argv);
+    } else {
+      const char *nodeString = "node";
+      const char *dotString = ".";
+      const char *jsString = "examples/hello_ml.html";
+      char argsString[4096];
+      int i = 0;
 
-    Local<Float32Array> headMatrixFloat32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 16 * 4), 0, 16);
-    for (int i = 0; i < 16; i++) {
-      headMatrixFloat32Array->Set(i, Number::New(Isolate::GetCurrent(), headViewMatrixElements[i]));
+      char *nodeArg = argsString + i;
+      strncpy(nodeArg, nodeString, sizeof(argsString) - i);
+      i += strlen(nodeString) + 1;
+
+      char *dotArg = argsString + i;
+      strncpy(dotArg, dotString, sizeof(argsString) - i);
+      i += strlen(dotString) + 1;
+
+      char *jsArg = argsString + i;
+      strncpy(jsArg, jsString, sizeof(argsString) - i);
+      i += strlen(jsString) + 1;
+
+      char *argv[] = {nodeArg, dotArg, jsArg};
+      size_t argc = sizeof(argv) / sizeof(argv[0]);
+
+      return node::Start(argc, argv);
     }
-    Local<Float32Array> headQuaternionFloat32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * 4), 0, 4);
-    for (int i = 0; i < 4; i++) {
-      headQuaternionFloat32Array->Set(i, Number::New(Isolate::GetCurrent(), headQuaternionElements[i]));
-    }
-    Local<Float32Array> centerFloat32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * 4), 0, 3);
-    for (int i = 0; i < 3; i++) {
-      centerFloat32Array->Set(i, Number::New(Isolate::GetCurrent(), centerArrayElements[i]));
-    }
-    Local<Value> argv[] = {headMatrixFloat32Array, headQuaternionFloat32Array, centerFloat32Array};
-    callFunction("onNewFrame", sizeof(argv)/sizeof(argv[0]), argv);
+  } else { // child
+    ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit start 1");
+
+    close(stdoutfds[1]);
+    close(stderrfds[1]);
+
+    std::thread stdoutThread([]() -> void {
+      int fd = stdoutfds[0];
+
+      char buf[STDIO_BUF_SIZE + 1];
+      ssize_t i = 0;
+      ssize_t lineStart = 0;
+      for (;;) {
+        ssize_t size = read(fd, buf + i, STDIO_BUF_SIZE - i);
+        // ML_LOG(Info, "=============read result %x %x %x", fd, size, errno);
+        if (size > 0) {
+          for (ssize_t j = i; j < i + size; j++) {
+            if (buf[j] == '\n') {
+              buf[j] = 0;
+              ML_LOG_TAG(Info, LOG_TAG, "%s", buf + lineStart);
+
+              lineStart = j + 1;
+            }
+          }
+
+          i += size;
+
+          if (i >= STDIO_BUF_SIZE) {
+            ssize_t lineLength = i - lineStart;
+            memcpy(buf, buf + lineStart, lineLength);
+            i = lineLength;
+            lineStart = 0;
+          }
+        } else {
+          if (i > 0) {
+            buf[i] = 0;
+            ML_LOG_TAG(Info, LOG_TAG, "%s", buf);
+          }
+          break;
+        }
+      }
+    });
+    std::thread stderrThread([]() -> void {
+      int fd = stderrfds[0];
+
+      char buf[STDIO_BUF_SIZE + 1];
+      ssize_t i = 0;
+      ssize_t lineStart = 0;
+      for (;;) {
+        ssize_t size = read(fd, buf + i, STDIO_BUF_SIZE - i);
+        // ML_LOG(Info, "=============read result %x %x %x", fd, size, errno);
+        if (size > 0) {
+          for (ssize_t j = i; j < i + size; j++) {
+            if (buf[j] == '\n') {
+              buf[j] = 0;
+              ML_LOG_TAG(Info, LOG_TAG, "%s", buf + lineStart);
+
+              lineStart = j + 1;
+            }
+          }
+
+          i += size;
+
+          if (i >= STDIO_BUF_SIZE) {
+            ssize_t lineLength = i - lineStart;
+            memcpy(buf, buf + lineStart, lineLength);
+            i = lineLength;
+            lineStart = 0;
+          }
+        } else {
+          if (i > 0) {
+            buf[i] = 0;
+            ML_LOG_TAG(Info, LOG_TAG, "%s", buf);
+          }
+          break;
+        }
+      }
+    });
+
+    stdoutThread.join();
+    stderrThread.join();
+
+    ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit end");
+
+      return 0;
   }
-}
-
-
-void Java_com_mafintosh_nodeonandroid_NodeService_onDrawEye
-() {
-// (JNIEnv *env, jclass clasj, jfloatArray eyeViewMatrix, jfloatArray eyePerspectiveMatrix) {
-  float eyeViewMatrixElements[] = {0};
-  float eyePerspectiveMatrixElements[] = {0};
-
-  {
-    HandleScope handle_scope(Isolate::GetCurrent());
-
-    Local<Float32Array> eyeViewMatrixFloat32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 16 * 4), 0, 16);
-    for (int i = 0; i < 16; i++) {
-      eyeViewMatrixFloat32Array->Set(i, Number::New(Isolate::GetCurrent(), eyeViewMatrixElements[i]));
-    }
-    Local<Float32Array> eyePerspectiveMatrixFloat32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * 4), 0, 4);
-    for (int i = 0; i < 4; i++) {
-      eyePerspectiveMatrixFloat32Array->Set(i, Number::New(Isolate::GetCurrent(), eyePerspectiveMatrixElements[i]));
-    }
-    Local<Value> argv[] = {eyeViewMatrixFloat32Array, eyePerspectiveMatrixFloat32Array};
-    callFunction("onDrawEye", sizeof(argv)/sizeof(argv[0]), argv);
-  }
-}
-
-
-void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
-() {
-// (JNIEnv *env, jclass clas, jfloatArray viewMatrix, jfloatArray projectionMatrix, jfloatArray centerArray) {
-  float viewMatrixElements[] = {0};
-  float projectionMatrixElements[] = {0};
-  float centerArrayElements[] = {0};
-
-  {
-    HandleScope handle_scope(Isolate::GetCurrent());
-
-    Local<Float32Array> viewFloat32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 16 * 4), 0, 16);
-    for (int i = 0; i < 16; i++) {
-      viewFloat32Array->Set(i, Number::New(Isolate::GetCurrent(), viewMatrixElements[i]));
-    }
-    Local<Float32Array> projectionFloat32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 16 * 4), 0, 16);
-    for (int i = 0; i < 16; i++) {
-      projectionFloat32Array->Set(i, Number::New(Isolate::GetCurrent(), projectionMatrixElements[i]));
-    }
-    Local<Float32Array> centerFloat32Array = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * 4), 0, 3);
-    for (int i = 0; i < 3; i++) {
-      centerFloat32Array->Set(i, Number::New(Isolate::GetCurrent(), centerArrayElements[i]));
-    }
-    Local<Value> argv[] = {viewFloat32Array, projectionFloat32Array, centerFloat32Array};
-    callFunction("onDrawFrame", sizeof(argv)/sizeof(argv[0]), argv);
-  }
-}
-
-void InitExports(Handle<Object> exports) {
-  std::pair<Local<Value>, Local<FunctionTemplate>> glResult = makeGl();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), glResult.first);
-  
-  std::pair<Local<Value>, Local<FunctionTemplate>> gl2Result = makeGl2(glResult.second);
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl2"), gl2Result.first);
-
-  Local<Value> image = makeImage();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImage"), image);
-
-  Local<Value> imageData = makeImageData();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageData"), imageData);
-
-  Local<Value> imageBitmap = makeImageBitmap();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageBitmap"), imageBitmap);
-
-  Local<Value> path2d = makePath2D();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
-
-  Local<Value> canvasGradient = makeCanvasGradient();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasGradient"), canvasGradient);
-
-  Local<Value> canvasPattern = makeCanvasPattern();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasPattern"), canvasPattern);
-
-  Local<Value> canvas = makeCanvasRenderingContext2D(imageData, canvasGradient, canvasPattern);
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasRenderingContext2D"), canvas);
-
-  Local<Value> audio = makeAudio();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
-
-  Local<Value> video = makeVideo(imageData);
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVideo"), video);
-
-  /* Local<Value> glfw = makeGlfw();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
-
-  Local<Value> window = makeWindow();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
-
-#ifdef OPENVR
-  Local<Value> vr = makeVr();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
-#endif
-
-#if _WIN32
-  Local<Value> lm = makeLm();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeLm"), lm);
-#endif
-
-#ifdef MAGICLEAP
-  Local<Value> ml = makeMl();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
-#endif
-
-  uintptr_t initFunctionAddress = (uintptr_t)InitExports;
-  Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
-  initFunctionAddressArray->Set(0, Nan::New<Integer>((uint32_t)(initFunctionAddress >> 32)));
-  initFunctionAddressArray->Set(1, Nan::New<Integer>((uint32_t)(initFunctionAddress & 0xFFFFFFFF)));
-  exports->Set(JS_STR("initFunctionAddress"), initFunctionAddressArray);
-}
-
-void Init(Handle<Object> exports) {
-  canvas::ImageData::setFlip(true);
-
-  InitExports(exports);
-}
-
-NODE_MODULE(NODE_GYP_MODULE_NAME, Init)
-
 }

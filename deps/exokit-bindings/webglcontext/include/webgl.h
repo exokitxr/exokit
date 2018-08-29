@@ -8,15 +8,14 @@
 #ifndef _WEBGLCONTEXT_WEBGL_H_
 #define _WEBGLCONTEXT_WEBGL_H_
 
-#include <nan/nan.h>
+#include <nan.h>
 
-#if _WIN32
+#if defined(_WIN32)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
-#endif
 
-#if __APPLE__
+#elif defined(__APPLE__)
 #if TARGET_OS_IPHONE
 #include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>
@@ -38,15 +37,27 @@
 #else
 #error "Unknown Apple platform"
 #endif
-#endif
 
-#if __linux__
+#elif defined(LUMIN)
+#include <GLES3/gl32.h>
+#include <GLES2/gl2ext.h>
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#define GL_COMPRESSED_SRGB_S3TC_DXT1_EXT 0x8C4C
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 0x8C4D
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 0x8C4E
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
+#define GL_ETC1_RGB8_OES 0x8D64
+#define GL_VERTEX_PROGRAM_POINT_SIZE 0x8642
+
+#elif defined(__linux__)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
-#endif
 
-#if __ANDROID__
+#elif defined(__ANDROID__)
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 #endif
@@ -59,7 +70,12 @@
 #define MAX_CLIENT_WAIT_TIMEOUT_WEBGL ((uint32_t)2e7)
 
 #include <defines.h>
-#include <glfw.h>
+
+#ifndef LUMIN
+#include <glfw/include/glfw.h>
+#else
+#include <egl/include/egl.h>
+#endif
 
 using namespace v8;
 using namespace node;
@@ -308,7 +324,7 @@ public:
   }
 
   bool live;
-  GLFWwindow *windowHandle;
+  NATIVEwindow *windowHandle;
   GLuint defaultVao;
   bool dirty;
   GLuint defaultFramebuffer;

@@ -1,7 +1,7 @@
 #ifndef _OPENVR_IVRSYSTEM_H_
 #define _OPENVR_IVRSYSTEM_H_
 
-#include <nan/nan.h>
+#include <nan.h>
 #include <v8.h>
 
 // Forward declaration of OpenVR class.

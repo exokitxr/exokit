@@ -23,7 +23,7 @@ const {version} = require('./package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
-const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow} = nativeBindings;
+const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 
 const GlobalContext = require('./src/GlobalContext');
 GlobalContext.commands = [];
@@ -269,8 +269,6 @@ const localFovArray2 = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
-const maxNumPlanes = 32 * 3;
-const planeEntrySize = 3 + 4 + 2 + 1;
 const framebufferArray = new Uint32Array(2);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
@@ -279,10 +277,7 @@ const handsArray = [
   new Float32Array(handEntrySize),
   new Float32Array(handEntrySize),
 ];
-const planesArray = new Float32Array(planeEntrySize * maxNumPlanes);
-const numPlanesArray = new Uint32Array(1);
-const controllersArray = new Float32Array((3 + 4 + 1) * 2);
-const gesturesArray = new Float32Array(4 * 2);
+const controllersArray = new Float32Array((3 + 4 + 3) * 2);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -391,12 +386,12 @@ if (nativeVr) {
         throw new Error('no HTMLCanvasElement source provided');
       }
     } else {
-      const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
-      const width = halfWidth * 2;
+      /* const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2; */
 
       return {
-        width,
-        height,
+        width: renderWidth * 2,
+        height: renderHeight,
         framebuffer: vrPresentState.msFbo,
       };
     }
@@ -462,19 +457,18 @@ if (nativeMl) {
 
         const initResult = mlContext.Present(windowHandle);
         if (initResult) {
-          const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, canvas.width, canvas.height, 0, 0, 0, 0);
+          const {width: halfWidth, height} = initResult;
+          const width = halfWidth * 2;
+          renderWidth = halfWidth;
+          renderHeight = height;
+          
+          const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
           mlFbo = fbo;
           mlTex = tex;
           mlDepthTex = depthStencilTex;
           mlMsFbo = msFbo;
           mlMsTex = msTex;
           mlMsDepthTex = msDepthStencilTex;
-
-          mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
-
-          /* for (let i = 0; i < 2; i++) {
-            nativeWindow.framebufferTextureLayer(framebufferArray[0], framebufferArray[1], i);
-          } */
 
           const cleanups = [];
           mlCleanups = cleanups;
@@ -492,31 +486,30 @@ if (nativeMl) {
           });
 
           window.top.updateVrFrame({
-            renderWidth: viewportArray[2] / 2,
-            renderHeight: viewportArray[3],
+            renderWidth,
+            renderHeight,
             force: true,
           });
-          mlContext.SubmitFrame(mlFbo, canvas.width, canvas.height);
 
           context.setDefaultFramebuffer(mlMsFbo);
 
           mlGlContext = context;
 
           return {
-            width: canvas.width,
-            height: canvas.height,
+            width,
+            height,
             framebuffer: mlMsFbo,
           };
         } else {
-          throw new Error('simulator not attached');
+          throw new Error('failed to present ml context');
         }
       } else {
         throw new Error('no HTMLCanvasElement source provided');
       }
     } else {
       return {
-        width: mlGlContext.canvas.width,
-        height: mlGlContext.canvas.height,
+        width: renderWidth * 2,
+        height: renderHeight,
         framebuffer: mlMsFbo,
       };
     }
@@ -543,15 +536,17 @@ if (nativeMl) {
     mlHasPose = false;
   };
 
-  // try to connect to MLSDK
-  (() => {
+  if (!nativeMl.IsSimulated()) {
+    nativeMl.InitLifecycle();
+  } else {
+    // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
       nativeMl.InitLifecycle();
     });
     s.on('error', () => {});
-  })();
+  }
 }
 
 nativeWindow.setEventHandler((type, data) => {
@@ -1160,8 +1155,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
     } else if (mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
-      mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, planesArray, numPlanesArray, controllersArray, gesturesArray);
-      mlHasPose = true;
+      mlHasPose = mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, controllersArray);
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -1170,73 +1164,70 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
 
-      const depthNear = 0.1;
-      const depthFar = 100;
+      if (mlHasPose) {
+        const depthNear = 0.1;
+        const depthFar = 100;
 
-      localVector.fromArray(transformArray, 0);
-      localQuaternion.fromArray(transformArray, 3);
-      localVector2.set(1, 1, 1);
-      localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-      frameData.pose.set(localVector, localQuaternion);
-      localMatrix.toArray(frameData.leftViewMatrix);
-      frameData.leftProjectionMatrix.set(projectionArray.slice(0, 16));
+        localVector.fromArray(transformArray, 0);
+        localQuaternion.fromArray(transformArray, 3);
+        localVector2.set(1, 1, 1);
+        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
+        frameData.pose.set(localVector, localQuaternion);
+        localMatrix.toArray(frameData.leftViewMatrix);
+        frameData.leftProjectionMatrix.set(projectionArray.slice(0, 16));
 
-      localVector.fromArray(transformArray, 3 + 4);
-      localQuaternion.fromArray(transformArray, 3 + 4 + 3);
-      // localVector2.set(1, 1, 1);
-      localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-      localMatrix.toArray(frameData.rightViewMatrix);
-      frameData.rightProjectionMatrix.set(projectionArray.slice(16, 32));
+        localVector.fromArray(transformArray, 3 + 4);
+        localQuaternion.fromArray(transformArray, 3 + 4 + 3);
+        // localVector2.set(1, 1, 1);
+        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
+        localMatrix.toArray(frameData.rightViewMatrix);
+        frameData.rightProjectionMatrix.set(projectionArray.slice(16, 32));
 
-      let controllersArrayIndex = 0;
-      leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
-      controllersArrayIndex += 3;
-      leftGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
-      controllersArrayIndex += 4;
-      const leftTriggerValue = controllersArray[controllersArrayIndex];
-      leftGamepad.buttons[1].value = leftTriggerValue;
-      const leftTriggerPushed = leftTriggerValue > 0.5;
-      leftGamepad.buttons[1].touched = leftTriggerPushed;
-      leftGamepad.buttons[1].pressed = leftTriggerPushed;
-      controllersArrayIndex++;
+        let controllersArrayIndex = 0;
+        leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
+        controllersArrayIndex += 3;
+        leftGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
+        controllersArrayIndex += 4;
+        const leftTriggerValue = controllersArray[controllersArrayIndex];
+        leftGamepad.buttons[1].value = leftTriggerValue;
+        const leftTriggerPushed = leftTriggerValue > 0.5;
+        leftGamepad.buttons[1].touched = leftTriggerPushed;
+        leftGamepad.buttons[1].pressed = leftTriggerPushed;
+        leftGamepad.axes[2] = leftTriggerValue;
+        controllersArrayIndex++;
+        leftGamepad.axes[0] = controllersArray[controllersArrayIndex];
+        leftGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
+        controllersArrayIndex += 2;
 
-      let gesturesArrayIndex = 0;
-      leftGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
-      gesturesArrayIndex += 3;
-      leftGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
-      gesturesArrayIndex++;
+        gamepads[0] = leftGamepad;
 
-      gamepads[0] = leftGamepad;
+        rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
+        controllersArrayIndex += 3;
+        rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
+        controllersArrayIndex += 4;
+        const rightTriggerValue = controllersArray[controllersArrayIndex];
+        rightGamepad.buttons[1].value = rightTriggerValue;
+        const rightTriggerPushed = rightTriggerValue > 0.5;
+        rightGamepad.buttons[1].touched = rightTriggerPushed;
+        rightGamepad.buttons[1].pressed = rightTriggerPushed;
+        rightGamepad.axes[2] = rightTriggerValue;
+        controllersArrayIndex++;
+        rightGamepad.axes[0] = controllersArray[controllersArrayIndex];
+        rightGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
+        controllersArrayIndex += 2;
 
-      rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
-      controllersArrayIndex += 3;
-      rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
-      controllersArrayIndex += 4;
-      const rightTriggerValue = controllersArray[controllersArrayIndex];
-      rightGamepad.buttons[1].value = leftTriggerValue;
-      const rightTriggerPushed = rightTriggerValue > 0.5;
-      rightGamepad.buttons[1].touched = rightTriggerPushed;
-      rightGamepad.buttons[1].pressed = rightTriggerPushed;
-      controllersArrayIndex++;
+        gamepads[1] = rightGamepad;
 
-      rightGamepad.gesture.position.set(gesturesArray.slice(gesturesArrayIndex, gesturesArrayIndex + 3));
-      gesturesArrayIndex += 3;
-      rightGamepad.gesture.gesture = gesturesArray[gesturesArrayIndex];
-      gesturesArrayIndex++;
-
-      gamepads[1] = rightGamepad;
-
-      // update ml frame
-      window.top.updateVrFrame({
-        depthNear,
-        depthFar,
-        frameData,
-        stageParameters,
-        planesArray,
-        numPlanes: numPlanesArray[0],
-        gamepads,
-        context: mlContext,
-      });
+        // update ml frame
+        window.top.updateVrFrame({
+          depthNear,
+          depthFar,
+          frameData,
+          stageParameters,
+          gamepads,
+          context: mlContext,
+        });
+      }
 
       if (args.performance) {
         const now = Date.now();
@@ -1267,6 +1258,10 @@ const _bindWindow = (window, newWindowCb) => {
 
     // update media frames
     nativeVideo.Video.updateAll();
+    // update magic leap pre state
+    if (nativeMl && mlGlContext) {
+      nativeMl.PrePollEvents(mlContext);
+    }
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -1299,6 +1294,19 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
+    
+    // update magic leap post state
+    if (nativeMl && mlGlContext) {
+      nativeMl.PostPollEvents(mlGlContext, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
+    }
+    if (args.performance) {
+      const now = Date.now();
+      const diff = now - timestamps.last;
+      timestamps.media += diff;
+      timestamps.total += diff;
+      timestamps.last = now;
+    }
+
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'end frame');
     }
@@ -1517,17 +1525,19 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  require(path.join(__dirname, 'bugsnag'));
-  require('fault-zone').registerHandler((stack, stackLen) => {
-    const message = new Buffer(stack, 0, stackLen).toString('utf8');
-    console.warn(message);
-    child_process.execFileSync(process.argv[0], [
-      path.join(__dirname, 'bugsnag.js'),
-    ], {
-      input: message,
+  if (nativeAnalytics) {
+    require(path.join(__dirname, 'bugsnag'));
+    require('fault-zone').registerHandler((stack, stackLen) => {
+      const message = new Buffer(stack, 0, stackLen).toString('utf8');
+      console.warn(message);
+      child_process.execFileSync(process.argv[0], [
+        path.join(__dirname, 'bugsnag.js'),
+      ], {
+        input: message,
+      });
+      process.exit(1);
     });
-    process.exit(1);
-  });
+  }
   if (args.log) {
     const RedirectOutput = require('redirect-output').default;
     new RedirectOutput({
