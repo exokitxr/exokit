@@ -970,7 +970,7 @@ NAN_METHOD(MLContext::Present) {
 NAN_METHOD(MLContext::WaitGetPoses) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array() && info[6]->IsFloat32Array() && info[7]->IsFloat32Array()) {
+  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array()) {
     if (application_context.dummy_value == DummyValue::RUNNING) {
       Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
