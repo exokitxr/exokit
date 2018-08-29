@@ -23,14 +23,14 @@ class MutationObserver {
     this.callback = callback;
 
     this.element = null;
-    this.options = null;
+    this.options = {};
     this.queue = [];
     this.bindings = new WeakMap();
   }
 
   observe(element, options) {
     this.element = element;
-    this.options = options;
+    this.options = options || {};
 
     this.bind(element);
   }
@@ -39,7 +39,7 @@ class MutationObserver {
     this.unbind(this.element);
 
     this.element = null;
-    this.options = null;
+    this.options = {};
   }
 
   takeRecords() {
@@ -131,6 +131,9 @@ class MutationObserver {
   }
 
   handleAttribute(el, name, value, oldValue) {
+    // Only queue mutations if element is part of the DOM (#361).
+    if (!el.ownerDocument.contains(el)) { return; }
+
     // Respect attribute filter.
     if (this.options.attributeFilter && !this.options.attributeFilter.includes(name)) {
       return;
@@ -142,12 +145,18 @@ class MutationObserver {
   }
 
   handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
+    // Only queue mutations if element is part of the DOM (#361).
+    if (!el.ownerDocument.contains(el)) { return; }
+
     this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes,
                                        previousSibling, nextSibling, null, null, null));
     process.nextTick(() => { this.flush(); });
   }
 
   handleValue(el) {
+    // Only queue mutations if element is part of the DOM (#361).
+    if (!el.ownerDocument.contains(el)) { return; }
+
     this.queue.push(new MutationRecord('characterData', el, emptyNodeList, emptyNodeList,
                                        null, null, null, null, null));
     process.nextTick(() => { this.flush(); });

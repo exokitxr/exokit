@@ -6,7 +6,6 @@ const url = require('url');
 const http = require('http');
 const https = require('https');
 const ws = require('ws');
-const child_process = require('child_process');
 const os = require('os');
 const util = require('util');
 const {URL} = url;
