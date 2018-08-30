@@ -36,11 +36,17 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 **Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 10 for Windows, Visual studio 2017, Python 2, Python 3
 
 ### Procedure (signed)
-1. get developer certificate from creator.magicleap.com
-1. place developer certificate in `cert/{app.cert,app.privkey}`
+1. download Magic Leap Package Manager from https://creator.magicleap.com
+1. install Magic Leap Lumin SDK
+1. download developer certificate and private key from creator.magicleap.com
+1. place certificate/private key in `cert/{app.cert,app.privkey}`
 1. open **Ubuntu Bash on Windows**
+1. `export MLSDK=/mnt/c/your_mlsdk_path_goes_here # fill this in`
 1. run `build-ml.sh --signed`
 
 ### Procedure (unsigned)
+1. download Magic Leap Package Manager from https://creator.magicleap.com
+1. install Magic Leap Lumin SDK
 1. open **Ubuntu Bash on Windows**
-1. run `build-ml.sh --unsigned`
+1. `export MLSDK=/mnt/c/your_mlsdk_path_goes_here # fill this in`
+1. `build-ml.sh --unsigned`
