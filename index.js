@@ -586,6 +586,16 @@ nativeWindow.setEventHandler((type, data) => {
             handled = true;
           }
         }
+        //122 is F11 key
+        if (data.keyCode === 122){
+          if (window.top.document.fullscreenElement) {
+            window.top.document.exitFullscreen();
+            handled = true;
+          } else {
+            window.top.document.requestFullscreen();
+            handled = true;
+          }
+        }
 
         if (!handled) {
           canvas.dispatchEvent(new window.KeyboardEvent(type, data));
