@@ -4,8 +4,8 @@
 
 # preface
 
-export MLSDK='/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0'
-export MLSDK_WIN='C:\Users\avaer\MagicLeap\mlsdk\v0.16.0'
+export MLSDK=${MLSDK:-/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0}
+export MLSDK_WIN=$(echo "$MLSDK" | sed 's/^\/mnt\/c\//C:\\/' | sed 's/\//\\/g')
 
 export CC="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang"
 export CXX="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang++"
@@ -13,7 +13,7 @@ export LINK="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang++"
 export AR="$MLSDK/tools/toolchains/bin/aarch64-linux-android-ar"
 
 # pass down to child builds
-EXTRA_FLAGS="-I/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0/lumin/stl/libc++/include -I/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0/lumin/usr/include"
+EXTRA_FLAGS="-I$MLSDK/lumin/stl/libc++/include -I$MLSDK/lumin/usr/include"
 export CFLAGS="$CFLAGS $EXTRA_FLAGS"
 export CXXFLAGS="$CXXFLAGS $EXTRA_FLAGS"
 
