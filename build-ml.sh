@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# cd /mnt/c/Users/avaer/Documents/GitHub/exokit
+set -e
 
 # preface
 
