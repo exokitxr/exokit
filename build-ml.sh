@@ -21,7 +21,15 @@ export LUMIN=1
 
 export npm_config_arch=arm64
 
-../magicleap-js/hack-toolchain.js
+if [ ! -d magicleap-js ]; then
+  git clone https://github.com/webmixedreality/magicleap-js
+else
+  pushd magicleap-js
+  git pull --rebase
+  popd
+fi
+
+./magicleap-js/hack-toolchain.js
 
 npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
 find -name '\.bin' | xargs rm -Rf
@@ -35,7 +43,7 @@ find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/l
 
 # build mpk
 
-../magicleap-js/hack-toolchain.js -u
+./magicleap-js/hack-toolchain.js -u
 
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin program-device.mabu
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m manifest-device.xml -p --create-package -s cert/app.cert app-device.package
