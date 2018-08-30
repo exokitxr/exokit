@@ -5,7 +5,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 ## Windows
 
 **Requirements**: Node.js 10, Python 2, Visual Studio 2015 or 2017
-**Alternative requirements**: Node.js 10, `npm i -g windows-build-tools`
+**Alternative requirements**: Node.js 10, as administrator: `npm install -g windows-build-tools`
 
 ### Procedure
 1. open **Node.js command prompt**
