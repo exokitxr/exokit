@@ -134,32 +134,18 @@
         return mesh;
       };
       const _loadTerrainMesh = (terrainMesh, {positions, normals, indices}) => {
-        // let updated = false;
-        // if (positions && terrainMesh.geometry.attributes.position.array !== positions) {
-          // console.log('update positions', positions.length);
-          const newPositions = new Float32Array(positions.length);
-          newPositions.set(positions);
-          terrainMesh.geometry.addAttribute('position', new THREE.BufferAttribute(newPositions, 3));
-          // updated = true;
-        // }
-        // if (normals && terrainMesh.geometry.attributes.normal.array !== normals) {
-          // console.log('update normals', normals.length, normals.slice(0, 9), normals instanceof Float32Array);
-          const newNormals = new Float32Array(normals.length);
-          newNormals.set(normals);
-          terrainMesh.geometry.addAttribute('normal', new THREE.BufferAttribute(newNormals, 3));
-          // updated = true;
-        // }
-        // if (indices && terrainMesh.geometry.index.array !== indices) {
-          // console.log('update indices', indices.length, indices.slice(0, 3), indices instanceof Uint32Array);
-          const newIndices = new Uint16Array(indices.length);
-          newIndices.set(indices);
-          terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
-          // updated = true;
-        // }
-        // return updated;
+        const newPositions = new Float32Array(positions.length);
+        newPositions.set(positions);
+        terrainMesh.geometry.addAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+
+        const newNormals = new Float32Array(normals.length);
+        newNormals.set(normals);
+        terrainMesh.geometry.addAttribute('normal', new THREE.BufferAttribute(newNormals, 3));
+
+        const newIndices = new Uint16Array(indices.length);
+        newIndices.set(indices);
+        terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
       };
-      // const terrainMesh = _makeTerrainMesh();
-      // scene.add(terrainMesh);
 
       const _onHand = hands => {
         for (let i = 0; i < hands.length; i++) {
