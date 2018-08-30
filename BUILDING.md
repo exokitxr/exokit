@@ -35,8 +35,12 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 **Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 10 for Windows, Visual studio 2017, Python 2, Python 3
 
-### Procedure
+### Procedure (signed)
 1. get developer certificate from creator.magicleap.com
 1. place developer certificate in `cert/{app.cert,app.privkey}`
 1. open **Ubuntu Bash on Windows**
-1. run `build-ml.sh`
+1. run `build-ml.sh --signed`
+
+### Procedure (unsigned)
+1. open **Ubuntu Bash on Windows**
+1. run `build-ml.sh --unsigned`
