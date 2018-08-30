@@ -581,8 +581,15 @@ nativeWindow.setEventHandler((type, data) => {
             window.top.document.exitPointerLock();
             handled = true;
           }
-          if (window.top.document.fullscreenElement) {
+          if (window.top.document.fullscreenElement || nativeWindow.isVisible(windowHandle)) {
             window.top.document.exitFullscreen();
+            nativeWindow.exitFullscreen(windowHandle);
+            handled = true;
+          }
+        }
+        if (data.keyCode === 122){
+          if (window.top.document.fullscreenElement == null) {
+	    nativeWindow.setFullscreen(windowHandle);
             handled = true;
           }
         }
