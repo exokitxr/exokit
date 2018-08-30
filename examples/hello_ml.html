@@ -147,11 +147,21 @@
         terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
       };
 
+      const handMeshes = [
+        _makeControllerMesh(),
+        _makeControllerMesh(),
+      ];
       const _onHand = hands => {
+        console.log('got hand', hands.length, hands.map(hand => !!hand)); // XXX
+
         for (let i = 0; i < hands.length; i++) {
           const hand = hands[i];
+          const handMesh = handMeshes[i];
           if (hand) {
-            console.log('got hand', hand.hand, hand.center.join(','), hand.gesture);
+            handMesh.visible = true;
+            console.log('got hand', hand.hand, hand.center.join(','), hand.gesture); // XXX
+          } else {
+            handMesh.visible = false;
           }
         }
       };
