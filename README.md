@@ -34,7 +34,7 @@ Since Exokit supports anything that runs on the web, it powers experiences built
 
 #### [Download for current OS](https://get.webmr.io)
 
-#### Build your own
+#### Build your own (desktop)
 
 ```
 git clone https://github.com/webmixedreality/exokit.git
@@ -43,10 +43,27 @@ npm install
 node . # or node -h for home
 ```
 
-#### Run a WebGL/WebXR site
+#### Run a WebXR site (desktop)
 
 ```
 exokit https://emukit.webmr.io/ # start Emukit in Exokit
+```
+
+#### [Download for Magic Leap](https://get.webmr.io/magicleap)
+
+#### Run (Magic Leap device)
+
+```
+mldb connect 192.168.0.10:1131 # mldb needs to be connected; see MLDB documentation
+mldb install -u exokit.mpk # downloaded or built package
+mldb launch com.webmr.exokit -v "ARGS=node . http://url-or-file-to-load"
+mldb log exokit:*
+```
+
+#### Debug (Magic Leap device)
+
+```
+"$MLSDK/tools/debug/debug.py" --deploy-mpk exokit.mpk build/magicleap/program-device/release_lumin_clang-3.8_aarch64/program-device --env "ARGS=node . http://url-or-file-to-load" # this will attach GDB
 ```
 
 ## Manifesto
