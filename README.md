@@ -56,14 +56,14 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
 ```
 mldb connect 192.168.0.10:1131 # mldb needs to be connected; see MLDB documentation
 mldb install -u exokit.mpk # downloaded or built package
-mldb launch com.webmr.exokit -v "ARGS=node . http://url-or-file-to-load"
+mldb launch com.webmr.exokit -v "ARGS=node . examples/hello_ml.html" # or URL to load
 mldb log exokit:*
 ```
 
 #### Debug (Magic Leap device)
 
 ```
-"$MLSDK/tools/debug/debug.py" --deploy-mpk exokit.mpk build/magicleap/program-device/release_lumin_clang-3.8_aarch64/program-device --env "ARGS=node . http://url-or-file-to-load" # this will attach GDB
+"$MLSDK/tools/debug/debug.py" --deploy-mpk exokit.mpk build/magicleap/program-device/release_lumin_clang-3.8_aarch64/program-device --env "ARGS=node . examples/hello_ml.html" # or URL to load
 ```
 
 ## Manifesto
