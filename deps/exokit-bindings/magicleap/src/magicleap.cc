@@ -427,8 +427,6 @@ void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtr
   // XXX
 }
 void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
-  std::cout << "camera image buffer available " << cameraRequests.size() << " " << cameraResponsePending << std::endl;
-
   if (!cameraResponsePending) {
     {
       std::unique_lock<std::mutex> lock(cameraRequestsMutex);
@@ -1050,8 +1048,6 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             MLQuaternionf &orientation = controllerState.orientation;
             float trigger = controllerState.trigger_normalized;
             MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
-            
-            std::cout << "got trigger " << i << " " << trigger << std::endl;
 
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 1, JS_NUM(position.y));
@@ -1287,19 +1283,10 @@ NAN_METHOD(MLContext::RequestPlanes) {
 
 bool cameraConnected = false;
 NAN_METHOD(MLContext::RequestCamera) {
-  std::cout << "camera request 1" << std::endl;
-
   if (info[0]->IsFunction()) {
-    std::cout << "camera request 2" << std::endl;
-
     if (!cameraConnected) {
-      std::cout << "camera request 3.1" << std::endl;
-
       MLResult result = MLCameraConnect();
-      std::cout << "camera request 3.2 " << result << std::endl;
       if (result == MLResult_Ok) {
-        std::cout << "camera request 4" << std::endl;
-
         cameraRequestThread = std::thread([&]() -> void {
           for (;;) {
             std::unique_lock<std::mutex> lock(cameraRequestMutex);
@@ -1323,21 +1310,13 @@ NAN_METHOD(MLContext::RequestCamera) {
       }
     }
 
-    std::cout << "camera request 5" << std::endl;
-
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    std::cout << "camera request 6" << std::endl;
 
     MLResult result = MLCameraSetOutputFormat(MLCameraOutputFormat_YUV_420_888);
     if (result == MLResult_Ok) {
-      std::cout << "camera request 7" << std::endl;
-
       MLHandle captureHandle;
       MLResult result = MLCameraPrepareCapture(MLCameraCaptureType_ImageRaw, &captureHandle);
       if (result == MLResult_Ok) {
-        std::cout << "camera request 8" << std::endl;
-
         {
           std::unique_lock<std::mutex> lock(cameraRequestsMutex);
           CameraRequest *cameraRequest = new CameraRequest(captureHandle, cbFn);
@@ -1346,9 +1325,7 @@ NAN_METHOD(MLContext::RequestCamera) {
 
         /* MLResult result = MLCameraCaptureImageRaw();
         if (result == MLResult_Ok) {
-
-
-          std::cout << "camera request 9" << std::endl;
+          // XXX
         } else {
           ML_LOG(Error, "%s: Failed to capture image: %x", application_name, result);
           Nan::ThrowError("failed to capture image");
@@ -1374,11 +1351,8 @@ NAN_METHOD(MLContext::CancelCamera) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
-    std::cout << "cancel camera 1" << std::endl;
     {
-      std::cout << "cancel camera 2" << std::endl;
       std::unique_lock<std::mutex> lock(cameraRequestsMutex);
-      std::cout << "cancel camera 3" << std::endl;
       cameraRequests.erase(std::remove_if(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) -> bool {
         Local<Function> localCbFn = Nan::New(c->cbFn);
         if (localCbFn->StrictEquals(cbFn)) {
@@ -1388,9 +1362,7 @@ NAN_METHOD(MLContext::CancelCamera) {
           return true;
         }
       }));
-      std::cout << "cancel camera 4" << std::endl;
     }
-    std::cout << "cancel camera 5" << std::endl;
   } else {
     Nan::ThrowError("invalid arguments");
   }
@@ -1411,7 +1383,6 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 
   if (meshRequests.size() > 0 && !meshInfoRequestPending && !meshRequestPending) {
-    std::cout << "request mesh info 1 " << mlContext->position.x << " " << mlContext->position.y << " " << mlContext->position.z << " " << mlContext->rotation.x << " " << mlContext->rotation.y << " " << mlContext->rotation.z << " " << mlContext->rotation.w << std::endl;
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
@@ -1422,9 +1393,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
     meshExtents.extents.y = 3;
     meshExtents.extents.z = 3;
 
-    std::cout << "request mesh info 2" << std::endl;
     MLResult result = MLMeshingRequestMeshInfo(meshTracker, &meshExtents, &meshInfoRequestHandle);
-    std::cout << "request mesh info 3" << std::endl;
     if (result == MLResult_Ok) {
       meshInfoRequestPending = true;
     } else {
@@ -1433,11 +1402,8 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 
   if (planesRequests.size() > 0 && !planesRequestPending) {
-    std::cout << "request mesh 1" << std::endl;
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
-
-      std::cout << "request mesh 2" << std::endl;
 
       planesRequest.bounds_center = mlContext->position;
       planesRequest.bounds_rotation = mlContext->rotation;
@@ -1450,9 +1416,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
     planesRequest.min_plane_area = 0.25;
     planesRequest.max_results = MAX_NUM_PLANES;
 
-    std::cout << "request mesh 2" << std::endl;
     MLResult result = MLPlanesQueryBegin(planesTracker, &planesRequest, &planesRequestHandle);
-    std::cout << "request mesh 3" << std::endl;
     if (result == MLResult_Ok) {
       planesRequestPending = true;
     } else {
@@ -1470,13 +1434,10 @@ NAN_METHOD(MLContext::PrePollEvents) {
 
 NAN_METHOD(MLContext::PostPollEvents) {
   if (meshInfoRequestPending) {
-    std::cout << "get mesh info 1" << std::endl;
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
-    std::cout << "get mesh info 2" << std::endl;
     if (result == MLResult_Ok) {
       meshInfoRequestPending = false;
 
-      std::cout << "get mesh info 3 " << meshInfo.data_count << std::endl;
       uint32_t dataCount = meshInfo.data_count;
       if (meshRequest.data != nullptr) {
         delete[] meshRequest.data;
@@ -1506,9 +1467,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
       }
       meshRequest.request_count = requestCount;
 
-      std::cout << "get mesh info 4" << std::endl;
       MLResult result = MLMeshingRequestMesh(meshTracker, &meshRequest, &meshRequestHandle);
-      std::cout << "get mesh info 5" << std::endl;
       if (result == MLResult_Ok) {
         meshRequestPending = true;
       } else {
@@ -1526,19 +1485,13 @@ NAN_METHOD(MLContext::PostPollEvents) {
     }
   }
   if (meshRequestPending) {
-    std::cout << "get mesh 1" << std::endl;
     MLResult result = MLMeshingGetMeshResult(meshTracker, meshRequestHandle, &mesh);
-    std::cout << "get mesh 2 " << result << std::endl;
     if (result == MLResult_Ok) {
-      std::cout << "get mesh 3" << std::endl;
-
       const MLMeshingResult &result = mesh.result;
       if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
-        std::cout << "get mesh 4 " << result << std::endl;
         std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
           m->Poll();
         });
-        std::cout << "get mesh 5" << std::endl;
       } else if (result == MLMeshingResult_Pending) {
         // nothing
       } else {
