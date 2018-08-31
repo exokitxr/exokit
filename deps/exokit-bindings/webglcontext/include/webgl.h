@@ -52,13 +52,17 @@
 #define GL_ETC1_RGB8_OES 0x8D64
 #define GL_VERTEX_PROGRAM_POINT_SIZE 0x8642
 
+#elif defined(LUMIN)
+#include <GLES3/gl32.h>
+#include <GLES2/gl2ext.h>
+
 #elif defined(__linux__)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
 
 #elif defined(__ANDROID__)
-#include <GLES3/gl3.h>
+#include <GLES3/gl32.h>
 #include <GLES2/gl2ext.h>
 #endif
 
