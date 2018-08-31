@@ -20,6 +20,7 @@
       mesh.position.set(x, y, z);
       mesh.quaternion.set(qx, qy, qz, qw);
       // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
       mesh.updateMatrixWorld();
       // mesh.matrixAutoUpdate = false;
       mesh.frustumCulled = false;
@@ -148,51 +149,52 @@
         terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
       };
 
-      const handMeshes = [
-        _makeControllerMesh(),
-        _makeControllerMesh(),
-      ];
-      const handRaycaster = new THREE.Raycaster();
-      const handMouse = new THREE.Vector2();
-      const handPlaneMesh = (() => {
-        const geometry = new THREE.PlaneBufferGeometry(1000, 1000);
-        const material = new THREE.MeshBasicMaterial({
-          color: 0x333333,
+      const _makeHandMesh = () => {
+        const geometry = new THREE.CubeBufferGeometry(0.05, 0.05, 0.05);
+        const material =  new THREE.MeshPhongMaterial({
+          color: 0xFF0000,
+          // side: THREE.DoubleSide,
         });
-        const mesh = new THREE.Mesh(geometry, matrial);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
         return mesh;
-      })();
-      const handPlayMeshVector = new THREE.Vector3();
-      const handRaycasterResult = [];
+      };
+      const handMeshes = [
+        _makeHandMesh(),
+        _makeHandMesh(),
+      ];
+      handMeshes.forEach(handMesh => {
+        scene.add(handMesh);
+      });
+      const handMeshVector = new THREE.Vector3();
       const _onHand = hands => {
-        // console.log('got hand', hands.length, hands.map(hand => !!hand)); // XXX
-
         const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
+        const vrCameras = vrCamera.isArrayCamera ? vrCamera.cameras : [camera];
+        for (let i = 0; i < handMeshes.length; i++) {
+          handMeshes[i].visible = false;
+        }
         for (let i = 0; i < hands.length; i++) {
           const hand = hands[i];
-          const handMesh = handMeshes[i];
           if (hand) {
-            raycaster.setFromCamera(handMouse.fromArray(hand.center), vrCamera);
-            handRaycasterResult.length = 0;
-            vrCamera.matrixWorld.decompose(handPlaneMesh.position, handPlaneMesh.quaternion, handPlaneMesh.scale);
-            handPlaneMesh.position.add(
-              handPlayMeshVector.set(0, 0, -hand.center[2])
-                .applyQuaternion(handPlaneMesh.quaternion)
-            );
-            handPlaneMesh.updateMatrixWorld();
-            const intersections = raycaster.intersectsObject(handPlaneMesh, true, handRaycasterResult);
-            if (intersections.length > 0) {
-              const intersection = intersections[0];
-              const {point} = intersection;
-              handMesh.position.copy(point);
-              handMesh.updateMatrixWorld();
-              handMesh.visible = true;
-            } else {
-              handMesh.visible = false;
-            }
-            // console.log('got hand', hand.hand, hand.center.join(','), hand.gesture); // XXX
-          } else {
-            handMesh.visible = false;
+            const handMesh = handMeshes[i];
+            vrCameras[0].matrixWorld.decompose(handMesh.position, handMesh.quaternion, handMesh.scale);
+            vrCameras[1].matrixWorld.decompose(handMeshVector, handMesh.quaternion, handMesh.scale);
+            handMesh.position
+              .add(handMeshVector)
+              .divideScalar(2);
+            const zOffset = (hand.center[2] - 1) / 2;
+            const near = -0.1;
+            const far = -0.625;
+            const zFactor = near + (-zOffset * (far - near))
+            console.log('z factor', hand.center[2], zOffset);
+            handMesh.position
+              .add(
+                handMeshVector.set(hand.center[0]/2*0.6, hand.center[1]/2*0.6, zFactor)
+                  .applyQuaternion(handMesh.quaternion)
+              );
+            handMesh.updateMatrix();
+            handMesh.updateMatrixWorld();
+            handMesh.visible = true;
           }
         }
       };
