@@ -306,7 +306,7 @@ void MeshRequest::Poll() {
       Local<Float32Array> positions = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), vertex, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
       obj->Set(JS_STR("positions"), positions);
 
-      MLVec3f *normal = blockMesh.vertex;
+      MLVec3f *normal = blockMesh.normal;
       Local<Float32Array> normals = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normal, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
       obj->Set(JS_STR("normals"), normals);
 
