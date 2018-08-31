@@ -46,11 +46,11 @@ find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/l
 ./magicleap-js/hack-toolchain.js -u
 
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin program-device.mabu
-if [ $1 = "--signed" ] || [ $1 = "--all" ]; then
+if [ "$1" = "--signed" ] || [ "$1" = "--all" ]; then
   cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m manifest-device.xml -p --create-package -s cert/app.cert app-device.package
   cp build/magicleap/app-device/app-device.mpk build/magicleap/exokit.mpk
 fi
-if [ $1 = "--unsigned" ] || [ $1 = "--all" ]; then
+if [ "$1" = "--unsigned" ] || [ "$1" = "--all" ]; then
   cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m manifest-device.xml -p --create-package --allow-unsigned app-device.package
   cp build/magicleap/app-device/app-device.mpk build/magicleap/exokit-unsigned.mpk
 fi
