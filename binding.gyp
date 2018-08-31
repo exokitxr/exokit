@@ -3,6 +3,7 @@
     {
       'target_name': 'exokit',
       'conditions': [
+       ['"<!(echo $ANDROID)"!="1"', {
         ['"<!(echo $LUMIN)"!="1"', {
           'conditions': [
             ['OS=="win"', {
@@ -389,6 +390,7 @@
               ],
             }],
           ],
+         }],
         }],
         ['"<!(echo $LUMIN)"=="1"', {
           'sources': [
@@ -456,6 +458,67 @@
           'defines': [
             'NOMINMAX',
             'LUMIN',
+          ],
+        }],
+        ['"<!(echo $ANDROID)"=="1"', {
+          'sources': [
+            'exokit.cpp',
+            '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/nanosvg/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/canvascontext/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/webglcontext/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/webaudiocontext/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/videocontext/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/egl/src/*.cc)',
+          ],
+          'include_dirs': [
+            "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/core')\")",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/config')\")",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/gpu')\")",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/effects')\")",
+            "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/include')\")",
+            "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
+            '<(module_root_dir)/deps/exokit-bindings',
+            '<(module_root_dir)/deps/exokit-bindings/utf8',
+            '<(module_root_dir)/deps/exokit-bindings/node',
+            '<(module_root_dir)/deps/exokit-bindings/native_app_glue',
+            '<(module_root_dir)/deps/exokit-bindings/util/include',
+            '<(module_root_dir)/deps/exokit-bindings/bindings/include',
+            '<(module_root_dir)/deps/exokit-bindings/canvas/include',
+            '<(module_root_dir)/deps/exokit-bindings/nanosvg/include',
+            '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/egl/include',
+            "<!(echo $ANDROIDNDK)/sysroot/usr/include",
+          ],
+          'library_dirs': [
+            "<!(echo $ANDROIDNDK)/sysroot/usr/lib",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/lib2/arm64')\")",
+            "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib2/arm64')\")",
+            "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib2/arm64')\")",
+          ],
+          'libraries': [
+            '-lskia',
+            '-lGLESv3',
+            '-lLabSound',
+            '-lavformat',
+            '-lavcodec',
+            '-lavutil',
+            '-lavdevice',
+            '-lswscale',
+            '-lswresample',
+          ],
+          'ldflags': [
+          ],
+          'defines': [
+            'NOMINMAX',
+            'ANDROID',
           ],
         }],
       ],
