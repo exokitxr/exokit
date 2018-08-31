@@ -22,7 +22,7 @@
       // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
       mesh.updateMatrix();
       mesh.updateMatrixWorld();
-      // mesh.matrixAutoUpdate = false;
+      mesh.matrixAutoUpdate = false;
       mesh.frustumCulled = false;
       return mesh;
     };
@@ -230,7 +230,7 @@
 
           const controllerMesh = controllerMeshes[i];
           controllerMesh.matrix.fromArray(pose.pointerMatrix);
-          controllerMesh.updateMatrixWorld();
+          controllerMesh.updateMatrixWorld(true);
         }
       }
 
