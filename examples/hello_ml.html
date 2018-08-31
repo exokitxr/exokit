@@ -262,7 +262,7 @@
         let match;
         if (req.url === '/') {
           res.statusCode = 302;
-          res.setHeader('Location', '/camera_client.html');
+          res.setHeader('Location', '/examples/camera_client.html');
           res.end();
         } else if (match = req.url.match(/\.(html|js)$/)) {
           fetch(req.url)
