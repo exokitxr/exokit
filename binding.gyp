@@ -3,9 +3,10 @@
     {
       'target_name': 'exokit',
       'conditions': [
-       ['"<!(echo $ANDROID)"!="1"', {
-        ['"<!(echo $LUMIN)"!="1"', {
-          'conditions': [
+       ['"<!(echo $LUMIN)"!="1"', {
+        'conditions': [
+          ['"<!(echo $ANDROID)"!="1"', {
+           'conditions': [
             ['OS=="win"', {
               'sources': [
                 'exokit.cpp',
@@ -486,8 +487,9 @@
                 'OPENVR',
               ],
             }],
-          ],
-         }],
+           ],
+          }],
+         ],
         }],
         ['"<!(echo $LUMIN)"=="1"', {
           'sources': [
