@@ -8,7 +8,7 @@ URL.createObjectURL = blob => {
   urls.set(url, utils._normalizeBuffer(blob, global));
   return url;
 };
-URL.revokeObjectURL = blob => {
+URL.revokeObjectURL = url => {
   urls.delete(url);
 };
 
