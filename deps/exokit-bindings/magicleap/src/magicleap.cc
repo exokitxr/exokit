@@ -257,7 +257,7 @@ void HandRequest::Poll() {
 
     array->Set(JS_INT(numResults++), obj);
   }
-  
+
 std::cout << "hand confidence " << leftHandState.hand_center_normalized.x << " " << leftHandState.hand_center_normalized.y << " " << leftHandState.hand_center_normalized.z << " " << leftHandState.hand_confidence << " : " << rightHandState.hand_center_normalized.x << " " << rightHandState.hand_center_normalized.y << " " << rightHandState.hand_center_normalized.z << " " << rightHandState.hand_confidence << std::endl;
 
   Local<Function> cbFn = Nan::New(this->cbFn);
@@ -1444,39 +1444,57 @@ NAN_METHOD(MLContext::PrePollEvents) {
 }
 
 NAN_METHOD(MLContext::PostPollEvents) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+  GLuint fbo = info[2]->Uint32Value();
+  unsigned int width = info[3]->Uint32Value();
+  unsigned int height = info[4]->Uint32Value();
+
   if (meshInfoRequestPending) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
     if (result == MLResult_Ok) {
       meshInfoRequestPending = false;
 
       uint32_t dataCount = meshInfo.data_count;
+      std::vector<MLMeshingBlockInfo *> meshInfoData(dataCount);
+      for (decltype(dataCount) i = 0; i < dataCount; i++) {
+        meshInfoData[i] = &meshInfo.data[i];
+      }
+      std::sort(meshInfoData.begin(), meshInfoData.end(), [&](MLMeshingBlockInfo *a, MLMeshingBlockInfo *b) -> bool {
+        const MLMeshingExtents &aExtents = a->extents;
+        float aDistance = std::pow(aExtents.center.x - mlContext->position.x, 2) + std::pow(aExtents.center.y - mlContext->position.y, 2) + std::pow(aExtents.center.z - mlContext->position.z, 2);
+
+        const MLMeshingExtents &bExtents = b->extents;
+        float bDistance = std::pow(bExtents.center.x - mlContext->position.x, 2) + std::pow(bExtents.center.y - mlContext->position.y, 2) + std::pow(bExtents.center.z - mlContext->position.z, 2);
+        
+        return aDistance > bDistance;
+      });
+      dataCount = std::min<decltype(dataCount)>(dataCount, 30);
+
       if (meshRequest.data != nullptr) {
         delete[] meshRequest.data;
         meshRequest.data = nullptr;
       }
       meshRequest.data = new MLMeshingBlockRequest[dataCount];
-      uint32_t requestCount = 0;
+
       for (uint32_t i = 0; i < dataCount; i++) {
-        const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
+        const MLMeshingBlockInfo &meshBlockInfo = *(meshInfoData[i]);
         const MLMeshingMeshState &state = meshBlockInfo.state;
         if (state == MLMeshingMeshState_New || state == MLMeshingMeshState_Updated) {
-          MLMeshingBlockRequest &meshBlockRequest = meshRequest.data[requestCount];
+          MLMeshingBlockRequest &meshBlockRequest = meshRequest.data[i];
           meshBlockRequest.id = meshBlockInfo.id;
-          meshBlockRequest.level = MLMeshingLOD_Medium;
-          // meshBlockRequest.level = MLMeshingLOD_Maximum;
-
-          requestCount++;
+          if (i < 10) {
+            meshBlockRequest.level = MLMeshingLOD_Maximum;
+          } else if (i < 20) {
+            meshBlockRequest.level = MLMeshingLOD_Medium;
+          } else {
+            meshBlockRequest.level = MLMeshingLOD_Minimum;
+          }
         } else if (state == MLMeshingMeshState_Deleted) {
           // XXX
         }
       }
-      if (requestCount > 16) { // XXX
-        /* std::sort(std::begin(meshRequest.data), std::begin(meshRequest.data) + requestCount, [&](MLMeshingBlockRequest *a, MLMeshingBlockRequest *b) -> bool {
-
-        })); */
-        requestCount = 16;
-      }
-      meshRequest.request_count = requestCount;
+      meshRequest.request_count = dataCount;
 
       MLResult result = MLMeshingRequestMesh(meshTracker, &meshRequest, &meshRequestHandle);
       if (result == MLResult_Ok) {
@@ -1541,11 +1559,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
     std::unique_lock<std::mutex> lock(cameraRequestsMutex);
 
     if (cameraRequests.size() > 0 && cameraResponsePending) {
-      WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-      GLuint fbo = info[1]->Uint32Value();
-      unsigned int width = info[2]->Uint32Value();
-      unsigned int height = info[3]->Uint32Value();
-
       std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
         c->Poll(gl, fbo, width, height);
       });
