@@ -261,84 +261,38 @@
 
         let match;
         if (req.url === '/') {
-          res.setHeader('Content-Type', 'text/html');
-          const lt = String.fromCodePoint(60);
-          const gt = String.fromCodePoint(62);
-          res.end(`\
-            ${lt}!doctype html${gt}
-            ${lt}html${gt}
-              ${lt}head${gt}${lt}/head${gt}
-              ${lt}body${gt}
-                ${lt}canvas id=canvas /${gt}
-                ${lt}pre${gt}${lt}code${gt}
-(() => {
-  const width = 1280;
-  const height = 1024;
+          res.statusCode = 302;
+          res.setHeader('Location', '/camera_client.html');
+          res.end();
+        } else if (match = req.url.match(/\.(html|js)$/)) {
+          fetch(req.url)
+            .then(proxyRes => {
+              if (proxyRes.ok) {
+                return proxyRes.arrayBuffer()
+                  .then(arrayBuffer => {
+                    const type = (() => {
+                      switch (match[1]) {
+                        case 'html': return 'text/html';
+                        case 'js': return 'application/javascript';
+                        default: return 'text/plain';
+                      }
+                    })();
+                    res.setHeader('Content-Type', type);
 
-  const canvas = document.getElementById('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-
-  const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
-  ws.binaryType = 'arraybuffer';
-  ws.onopen = () => {
-    console.log('connected');
-  };
-
-  let running = false;
-  let pendingData = null;
-  const _handleData = data => {
-    if (!running) {
-      running = true;
-
-      const datas = JSON.parse(data);
-      Promise.all(datas.map(data =>
-        fetch('/frame/' + data.index)
-          .then(res => res.arrayBuffer())
-          .then(arrayBuffer => ({
-            data,
-            arrayBuffer,
-          }))
-      ))
-        .then(results => {
-          const result = results[0];
-          const {data, arrayBuffer} = result;
-          const {width, height} = data;
-
-          const imageData = ctx.createImageData(width, height);
-          imageData.data.set(new Uint8ClampedArray(arrayBuffer).slice(0, imageData.data.byteLength));
-          ctx.putImageData(imageData, 0, 0);
-        })
-        .then(() => {
-          running = false;
-          _next();
-        })
-        .catch(err => {
-          console.warn(err.stack);
-
-          running = false;
-          _next();
-        });
-    } else {
-      pendingData = data;
-    }
-  };
-  const _next = () => {
-    if (pendingData) {
-      const localPendingData = pendingData;
-      pendingData = null;
-      _handleData(localPendingData);
-    }
-  };
-  ws.onmessage = m => {
-    _handleData(m.data);
-  };
-})();
-                ${lt}/code${gt}${lt}/pre${gt}
-              ${lt}/body${gt}
-            ${lt}/html${gt}
-          `);
+                    const buffer = Buffer.from(arrayBuffer);
+                    res.end(buffer);
+                  });
+              } else {
+                res.statusCode = proxyRes.status;
+                res.end();
+                return null;
+              }
+            })
+            .catch(err => {
+              console.warn(err.stack);
+              res.statusCode = 500;
+              res.end();
+            });
         } else if (match = req.url.match(/^\/frame\/([0-9]+)$/)) {
           const frameId = parseInt(match[1], 10);
           const frameData = framesData[frameId];
