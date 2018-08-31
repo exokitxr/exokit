@@ -836,6 +836,7 @@ NAN_METHOD(MLContext::Present) {
   if (MLMeshingInitSettings(&meshingSettings) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to initialize meshing settings", application_name);
   }
+  meshingSettings.flags |= MLMeshingFlags_ComputeNormals;
   /* meshingSettings.flags = MLMeshingFlags_ComputeNormals;
   meshingSettings.bounds_center = mlContext->position;
   meshingSettings.bounds_rotation = mlContext->rotation;
