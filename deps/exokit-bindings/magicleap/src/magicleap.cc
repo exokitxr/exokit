@@ -206,62 +206,59 @@ static void onUnloadResources(void* application_context) {
 
 HandRequest::HandRequest(Local<Function> cbFn) : cbFn(cbFn) {}
 
+constexpr float HAND_CONFIDENCE = 0.5;
 void HandRequest::Poll() {
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "handRequest");
 
-  MLMeshingBlockMesh *blockMeshes = mesh.data;
-  uint32_t dataCount = mesh.data_count;
-
   Local<Array> array = Nan::New<Array>();
   uint32_t numResults = 0;
-  for (uint32_t i = 0; i < dataCount; i++) {
-    constexpr float HAND_CONFIDENCE = 0.5;
 
-    const MLHandTrackingHandState &leftHandState = handData.left_hand_state;
-    if (leftHandState.hand_confidence >= HAND_CONFIDENCE) {
-      const MLVec3f &center = leftHandState.hand_center_normalized;
-      const MLHandTrackingKeyPose &keypose = leftHandState.keypose;
+  const MLHandTrackingHandState &leftHandState = handData.left_hand_state;
+  if (leftHandState.hand_confidence >= HAND_CONFIDENCE) {
+    const MLVec3f &center = leftHandState.hand_center_normalized;
+    const MLHandTrackingKeyPose &keypose = leftHandState.keypose;
 
-      Local<Object> obj = Nan::New<Object>();
+    Local<Object> obj = Nan::New<Object>();
 
-      obj->Set(JS_STR("hand"), JS_STR("left"));
+    obj->Set(JS_STR("hand"), JS_STR("left"));
 
-      Local<Float32Array> centerArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)center.values, 3 * sizeof(float)), 0, 3);
-      obj->Set(JS_STR("center"), centerArray);
+    Local<Float32Array> centerArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)center.values, 3 * sizeof(float)), 0, 3);
+    obj->Set(JS_STR("center"), centerArray);
 
-      const char *gesture = gestureCategoryToDescriptor(keypose);
-      if (gesture) {
-        obj->Set(JS_STR("gesture"), JS_STR(gesture));
-      } else {
-        obj->Set(JS_STR("gesture"), Nan::Null());
-      }
-
-      obj->Set(JS_INT(numResults++), obj);
+    const char *gesture = gestureCategoryToDescriptor(keypose);
+    if (gesture) {
+      obj->Set(JS_STR("gesture"), JS_STR(gesture));
+    } else {
+      obj->Set(JS_STR("gesture"), Nan::Null());
     }
 
-    const MLHandTrackingHandState &rightHandState = handData.right_hand_state;
-    if (rightHandState.hand_confidence >= HAND_CONFIDENCE) {
-      const MLVec3f &center = rightHandState.hand_center_normalized;
-      const MLHandTrackingKeyPose &keypose = rightHandState.keypose;
-
-      Local<Object> obj = Nan::New<Object>();
-
-      obj->Set(JS_STR("hand"), JS_STR("right"));
-
-      Local<Float32Array> centerArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)center.values, 3 * sizeof(float)), 0, 3);
-      obj->Set(JS_STR("center"), centerArray);
-
-      const char *gesture = gestureCategoryToDescriptor(keypose);
-      if (gesture) {
-        obj->Set(JS_STR("gesture"), JS_STR(gesture));
-      } else {
-        obj->Set(JS_STR("gesture"), Nan::Null());
-      }
-
-      obj->Set(JS_INT(numResults++), obj);
-    }
+    array->Set(JS_INT(numResults++), obj);
   }
+
+  const MLHandTrackingHandState &rightHandState = handData.right_hand_state;
+  if (rightHandState.hand_confidence >= HAND_CONFIDENCE) {
+    const MLVec3f &center = rightHandState.hand_center_normalized;
+    const MLHandTrackingKeyPose &keypose = rightHandState.keypose;
+
+    Local<Object> obj = Nan::New<Object>();
+
+    obj->Set(JS_STR("hand"), JS_STR("right"));
+
+    Local<Float32Array> centerArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)center.values, 3 * sizeof(float)), 0, 3);
+    obj->Set(JS_STR("center"), centerArray);
+
+    const char *gesture = gestureCategoryToDescriptor(keypose);
+    if (gesture) {
+      obj->Set(JS_STR("gesture"), JS_STR(gesture));
+    } else {
+      obj->Set(JS_STR("gesture"), Nan::Null());
+    }
+
+    array->Set(JS_INT(numResults++), obj);
+  }
+  
+std::cout << "hand confidence " << leftHandState.hand_center_normalized.x << " " << leftHandState.hand_center_normalized.y << " " << leftHandState.hand_center_normalized.z << " " << leftHandState.hand_confidence << " : " << rightHandState.hand_center_normalized.x << " " << rightHandState.hand_center_normalized.y << " " << rightHandState.hand_center_normalized.z << " " << rightHandState.hand_confidence << std::endl;
 
   Local<Function> cbFn = Nan::New(this->cbFn);
   Local<Value> argv[] = {
@@ -828,6 +825,19 @@ NAN_METHOD(MLContext::Present) {
 
   if (MLHandTrackingCreate(&handTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create hand tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  MLHandTrackingConfiguration handTrackingConfig;
+  handTrackingConfig.handtracking_pipeline_enabled = true;
+  handTrackingConfig.keypoints_filter_level = MLKeypointFilterLevel_0;
+  handTrackingConfig.pose_filter_level = MLPoseFilterLevel_0;
+  for (int i = 0; i < MLHandTrackingKeyPose_Count; i++) {
+    handTrackingConfig.keypose_config[i] = true;
+  }
+  if (MLHandTrackingSetConfiguration(handTracker, &handTrackingConfig) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to set hand tracker config.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }

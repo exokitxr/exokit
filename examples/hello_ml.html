@@ -19,9 +19,10 @@
       const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
       mesh.position.set(x, y, z);
       mesh.quaternion.set(qx, qy, qz, qw);
-      mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-      mesh.updateMatrixWorld(true);
-      mesh.matrixAutoUpdate = false;
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      // mesh.matrixAutoUpdate = false;
       mesh.frustumCulled = false;
       return mesh;
     };
@@ -37,6 +38,7 @@
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
       // camera.position.set(0, 1, 0);
       camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
 
       const ambientLight = new THREE.AmbientLight(0x808080);
       scene.add(ambientLight);
@@ -134,38 +136,65 @@
         return mesh;
       };
       const _loadTerrainMesh = (terrainMesh, {positions, normals, indices}) => {
-        // let updated = false;
-        // if (positions && terrainMesh.geometry.attributes.position.array !== positions) {
-          // console.log('update positions', positions.length);
-          const newPositions = new Float32Array(positions.length);
-          newPositions.set(positions);
-          terrainMesh.geometry.addAttribute('position', new THREE.BufferAttribute(newPositions, 3));
-          // updated = true;
-        // }
-        // if (normals && terrainMesh.geometry.attributes.normal.array !== normals) {
-          // console.log('update normals', normals.length, normals.slice(0, 9), normals instanceof Float32Array);
-          const newNormals = new Float32Array(normals.length);
-          newNormals.set(normals);
-          terrainMesh.geometry.addAttribute('normal', new THREE.BufferAttribute(newNormals, 3));
-          // updated = true;
-        // }
-        // if (indices && terrainMesh.geometry.index.array !== indices) {
-          // console.log('update indices', indices.length, indices.slice(0, 3), indices instanceof Uint32Array);
-          const newIndices = new Uint16Array(indices.length);
-          newIndices.set(indices);
-          terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
-          // updated = true;
-        // }
-        // return updated;
-      };
-      // const terrainMesh = _makeTerrainMesh();
-      // scene.add(terrainMesh);
+        const newPositions = new Float32Array(positions.length);
+        newPositions.set(positions);
+        terrainMesh.geometry.addAttribute('position', new THREE.BufferAttribute(newPositions, 3));
 
+        const newNormals = new Float32Array(normals.length);
+        newNormals.set(normals);
+        terrainMesh.geometry.addAttribute('normal', new THREE.BufferAttribute(newNormals, 3));
+
+        const newIndices = new Uint16Array(indices.length);
+        newIndices.set(indices);
+        terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
+      };
+
+      const _makeHandMesh = () => {
+        const geometry = new THREE.CubeBufferGeometry(0.05, 0.05, 0.05);
+        const material =  new THREE.MeshPhongMaterial({
+          color: 0xFF0000,
+          // side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      const handMeshes = [
+        _makeHandMesh(),
+        _makeHandMesh(),
+      ];
+      handMeshes.forEach(handMesh => {
+        scene.add(handMesh);
+      });
+      const handMeshVector = new THREE.Vector3();
       const _onHand = hands => {
+        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
+        const vrCameras = vrCamera.isArrayCamera ? vrCamera.cameras : [camera];
+        for (let i = 0; i < handMeshes.length; i++) {
+          handMeshes[i].visible = false;
+        }
         for (let i = 0; i < hands.length; i++) {
           const hand = hands[i];
           if (hand) {
-            console.log('got hand', hand.hand, hand.center.join(','), hand.gesture);
+            const handMesh = handMeshes[i];
+            vrCameras[0].matrixWorld.decompose(handMesh.position, handMesh.quaternion, handMesh.scale);
+            vrCameras[1].matrixWorld.decompose(handMeshVector, handMesh.quaternion, handMesh.scale);
+            handMesh.position
+              .add(handMeshVector)
+              .divideScalar(2);
+            const zOffset = (hand.center[2] - 1) / 2;
+            const near = -0.1;
+            const far = -0.625;
+            const zFactor = near + (-zOffset * (far - near))
+            console.log('z factor', hand.center[2], zOffset);
+            handMesh.position
+              .add(
+                handMeshVector.set(hand.center[0]/2*0.6, hand.center[1]/2*0.6, zFactor)
+                  .applyQuaternion(handMesh.quaternion)
+              );
+            handMesh.updateMatrix();
+            handMesh.updateMatrixWorld();
+            handMesh.visible = true;
           }
         }
       };
@@ -201,7 +230,7 @@
 
           const controllerMesh = controllerMeshes[i];
           controllerMesh.matrix.fromArray(pose.pointerMatrix);
-          controllerMesh.updateMatrixWorld(true);
+          controllerMesh.updateMatrixWorld();
         }
       }
 
@@ -231,7 +260,7 @@
         scene.add(objectMesh);
       };
 
-      console.log('request first frame');
+      // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
         renderer.vr.setSession(session, {
           frameOfReferenceType: 'stage',
