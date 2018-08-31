@@ -78,7 +78,8 @@
         scene.add(controllerMesh);
       });
 
-      const terrainMeshes = {};
+      const terrainMeshes = [];
+      let terrainMeshEpoch = 0;
       /* const terrainMaterial = new THREE.ShaderMaterial({
         vertexShader: `\
           void main() {
@@ -104,15 +105,15 @@
         color: 0x666666,
       });
       const _getTerrainMesh = id => {
-        let terrainMesh = terrainMeshes[id];
+        let terrainMesh = terrainMeshes.find(terrainMesh.id === id);
         if (!terrainMesh) {
-          terrainMesh = _makeTerrainMesh();
-          terrainMeshes[id] = terrainMesh;
+          terrainMesh = _makeTerrainMesh(id, terrainMeshEpoch);
+          terrainMeshes.push(terrainMesh);
           scene.add(terrainMesh);
         }
         return terrainMesh;
       };
-      const _makeTerrainMesh = () => {
+      const _makeTerrainMesh = (id, epoch) => {
         const geometry = new THREE.BufferGeometry();
         const positions = Float32Array.from([
           0, 0, 0,
@@ -132,6 +133,8 @@
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
         const material = terrainMaterial;
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.id = id;
+        mesh.epoch = epoch;
         mesh.frustumCulled = false;
         return mesh;
       };
@@ -186,7 +189,6 @@
             const near = -0.1;
             const far = -0.625;
             const zFactor = near + (-zOffset * (far - near))
-            console.log('z factor', hand.center[2], zOffset);
             handMesh.position
               .add(
                 handMeshVector.set(hand.center[0]/2*0.6, hand.center[1]/2*0.6, zFactor)
@@ -205,7 +207,19 @@
           const update = updates[i];
           const terrainMesh = _getTerrainMesh(update.id);
           _loadTerrainMesh(terrainMesh, update);
+          terrainMesh.epoch = terrainMeshEpoch;
         }
+        
+        terrainMeshes = terrainMeshes.filter(terrainMesh => {
+          if (terrainMesh.epoch === terrainMeshEpoch) {
+            return true;
+          } else {
+            scene.remove(terrainMesh);
+            terrainMesh.geometry.destroy();
+            return false;
+          }
+        });
+        terrainMeshEpoch++;
       };
       window.browser.nativeMl.RequestMesh(_onMesh);
 
