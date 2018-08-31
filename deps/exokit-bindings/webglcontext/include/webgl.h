@@ -75,7 +75,7 @@
 
 #include <defines.h>
 
-#ifndef LUMIN
+#if !defined(LUMIN) && !defined(ANDROID)
 #include <glfw/include/glfw.h>
 #else
 #include <egl/include/egl.h>
