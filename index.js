@@ -1307,7 +1307,7 @@ const _bindWindow = (window, newWindowCb) => {
     
     // update magic leap post state
     if (nativeMl && mlGlContext) {
-      nativeMl.PostPollEvents(mlGlContext, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
+      nativeMl.PostPollEvents(mlContext, mlGlContext, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
     }
     if (args.performance) {
       const now = Date.now();
