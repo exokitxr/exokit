@@ -78,7 +78,7 @@
         scene.add(controllerMesh);
       });
 
-      const terrainMeshes = [];
+      let terrainMeshes = [];
       let terrainMeshEpoch = 0;
       /* const terrainMaterial = new THREE.ShaderMaterial({
         vertexShader: `\
@@ -104,10 +104,10 @@
       const terrainMaterial = new THREE.MeshPhongMaterial({
         color: 0x666666,
       });
-      const _getTerrainMesh = id => {
-        let terrainMesh = terrainMeshes.find(terrainMesh.id === id);
+      const _getTerrainMesh = (id, epoch) => {
+        let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.id === id);
         if (!terrainMesh) {
-          terrainMesh = _makeTerrainMesh(id, terrainMeshEpoch);
+          terrainMesh = _makeTerrainMesh(id, epoch);
           terrainMeshes.push(terrainMesh);
           scene.add(terrainMesh);
         }
@@ -205,17 +205,17 @@
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
-          const terrainMesh = _getTerrainMesh(update.id);
+          const terrainMesh = _getTerrainMesh(update.id, terrainMeshEpoch);
           _loadTerrainMesh(terrainMesh, update);
           terrainMesh.epoch = terrainMeshEpoch;
         }
-        
+
         terrainMeshes = terrainMeshes.filter(terrainMesh => {
           if (terrainMesh.epoch === terrainMeshEpoch) {
             return true;
           } else {
             scene.remove(terrainMesh);
-            terrainMesh.geometry.destroy();
+            terrainMesh.geometry.dispose();
             return false;
           }
         });
