@@ -319,6 +319,9 @@ class Document extends DOM.HTMLLoadableElement {
       });
     }
   }
+  hasFocus() {
+    return (this.defaultView.top === this.defaultView);
+  }
 }
 module.exports.Document = Document;
 // FIXME: Temporary until refactor out into modules more and not have circular dependencies.
