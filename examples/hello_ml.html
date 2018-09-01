@@ -294,7 +294,7 @@
           res.setHeader('Location', '/examples/camera_client.html');
           res.end();
         } else if (match = req.url.match(/\.(html|js)$/)) {
-          fetch(req.url)
+          fetch('file:///package' + req.url)
             .then(proxyRes => {
               if (proxyRes.ok) {
                 return proxyRes.arrayBuffer()
