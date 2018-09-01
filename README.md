@@ -159,6 +159,7 @@ you can set `debugger` breakpoints and such.
 
 ## Contributors
 
+- [Shawn Gabriel Alexander Presser aka "shawwn" aka "@theshawwn"](//github.com/shawwn)
 - [Avaer K](//github.com/modulesio)
 - [Nick L](//github.com/Fierent)
 - [Chris Eddy](//github.com/ChrisEddy)
