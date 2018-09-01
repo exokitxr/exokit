@@ -2,7 +2,40 @@ const path = require('path');
 const bindings = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
 const {nativeAudio, nativeVr} = bindings;
 const WindowWorker = require('window-worker');
-const vmOne = require('vm-one');
+const vmOne = process.env.DISABLE_VMONE ? {
+  make() {
+    const sandbox = {
+      require,
+      process,
+      Buffer,
+      ArrayBuffer,
+      Uint8Array,
+      Uint8ClampedArray,
+      Int8Array,
+      Uint16Array,
+      Int16Array,
+      Uint32Array,
+      Int32Array,
+      Float32Array,
+      Float64Array,
+      DataView,
+    };
+    if (typeof Blob !== 'undefined') {
+      sandbox.Blob = Blob;
+    }
+    sandbox.global = sandbox;
+    const vm = require('vm');
+    const ctx = vm.createContext(sandbox);
+    return {
+      getGlobal() {
+        return sandbox;
+      },
+      run(code, name) {
+        return vm.runInContext(code, sandbox, {filename: name});
+      },
+    }
+  }
+} : require('vm-one');
 const webGlToOpenGl = require('webgl-to-opengl');
 
 bindings.nativeWorker = WindowWorker;
