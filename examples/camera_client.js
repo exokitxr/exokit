@@ -76,7 +76,7 @@
               },
             }); */
             
-            console.log('got data', new Uint8Array(results[3].arrayBuffer));
+            // console.log('got data', new Uint8Array(results[3].arrayBuffer));
             
             yuv.drawFrame({
               format: /*YUVBuffer.format(*/{
