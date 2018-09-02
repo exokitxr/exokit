@@ -710,23 +710,23 @@ void RunEventsInMainThread(uv_async_t *handle) {
 
     Local<Value> arg;
     switch (event) {
-      case NEW_INIT_ARG: {
+      case Event::NEW_INIT_ARG: {
         arg = JS_STR("newInitArg");
         break;
       }
-      case STOP: {
+      case Event::STOP: {
         arg = JS_STR("stop");
         break;
       }
-      case PAUSE: {
+      case Event::PAUSE: {
         arg = JS_STR("pause");
         break;
       }
-      case RESUME: {
+      case Event::RESUME: {
         arg = JS_STR("resume");
         break;
       }
-      case UNLOAD_RESOURCES: {
+      case Event::UNLOAD_RESOURCES: {
         arg = JS_STR("unloadResources");
         break;
       }
