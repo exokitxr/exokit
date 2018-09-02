@@ -1549,11 +1549,13 @@ NAN_METHOD(MLContext::PrePollEvents) {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
       planesRequest.bounds_center = mlContext->position;
-      planesRequest.bounds_rotation = mlContext->rotation;
+      // planesRequest.bounds_rotation = mlContext->rotation;
+      planesRequest.bounds_rotation = {0, 0, 0, 1};
     }
     planesRequest.bounds_extents.x = 3;
     planesRequest.bounds_extents.y = 3;
     planesRequest.bounds_extents.z = 3;
+
     planesRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All;
     planesRequest.min_hole_length = 0.5;
     planesRequest.min_plane_area = 0.25;
