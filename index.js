@@ -536,14 +536,42 @@ if (nativeMl) {
     mlHasPose = false;
   };
 
+  const _mlEvent = e => {
+    console.log('got ml event', e);
+
+    switch (e) {
+      case 'newInitArg': {
+        break;
+      }
+      case 'stop':
+      case 'pause': {
+        if (mlContext) {
+          mlContext.Exit();
+        }
+        nativeMl.DeinitLifecycle();
+        process.exit();
+        break;
+      }
+      case 'resume': {
+        break;
+      }
+      case 'unloadResources': {
+        break;
+      }
+      default: {
+        console.warn('invalid ml lifecycle event', e);
+        break;
+      }
+    }
+  };
   if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle();
+    nativeMl.InitLifecycle(_mlEvent);
   } else {
     // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      nativeMl.InitLifecycle();
+      nativeMl.InitLifecycle(_mlEvent);
     });
     s.on('error', () => {});
   }
@@ -1307,7 +1335,7 @@ const _bindWindow = (window, newWindowCb) => {
     
     // update magic leap post state
     if (nativeMl && mlGlContext) {
-      nativeMl.PostPollEvents(mlGlContext, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
+      nativeMl.PostPollEvents(mlContext, mlGlContext, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
     }
     if (args.performance) {
       const now = Date.now();
