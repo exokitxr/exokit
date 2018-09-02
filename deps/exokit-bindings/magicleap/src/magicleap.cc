@@ -192,36 +192,36 @@ static void onNewInitArg(void* application_context) {
 
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On new init arg called %x.", application_name, args);
-  
-  events.push_bach(Events::NEW_INIT_ARG);
+
+  events.push_back(Event::NEW_INIT_ARG);
   uv_async_send(&eventsAsync);
 }
 
 static void onStop(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On stop called.", application_name);
-  eventsAsync.push_bach(Events::STOP);
+  events.push_back(Event::STOP);
   uv_async_send(&eventsAsync);
 }
 
 static void onPause(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
   ML_LOG(Info, "%s: On pause called.", application_name);
-  eventsAsync.push_bach(Events::PAUSD);
+  events.push_back(Event::PAUSE);
   uv_async_send(&eventsAsync);
 }
 
 static void onResume(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On resume called.", application_name);
-  eventsAsync.push_bach(Events::RESSUME);
+  events.push_back(Event::RESUME);
   uv_async_send(&eventsAsync);
 }
 
 static void onUnloadResources(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On unload resources called.", application_name);
-  eventsAsync.push_bach(Events::UNLOAD_RESOURCES);
+  events.push_back(Event::UNLOAD_RESOURCES);
   uv_async_send(&eventsAsync);
 }
 
