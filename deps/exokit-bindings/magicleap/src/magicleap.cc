@@ -1549,11 +1549,13 @@ NAN_METHOD(MLContext::PrePollEvents) {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
       planesRequest.bounds_center = mlContext->position;
-      planesRequest.bounds_rotation = mlContext->rotation;
+      // planesRequest.bounds_rotation = mlContext->rotation;
+      planesRequest.bounds_rotation = {0, 0, 0, 1};
     }
     planesRequest.bounds_extents.x = 3;
     planesRequest.bounds_extents.y = 3;
     planesRequest.bounds_extents.z = 3;
+
     planesRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All;
     planesRequest.min_hole_length = 0.5;
     planesRequest.min_plane_area = 0.25;
@@ -1586,29 +1588,15 @@ NAN_METHOD(MLContext::PostPollEvents) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
     if (result == MLResult_Ok) {
       uint32_t dataCount = meshInfo.data_count;
-      /* std::vector<MLMeshingBlockInfo *> meshInfoData(dataCount);
-      for (decltype(dataCount) i = 0; i < dataCount; i++) {
-        meshInfoData[i] = &meshInfo.data[i];
-      }
-      std::sort(meshInfoData.begin(), meshInfoData.end(), [&](MLMeshingBlockInfo *a, MLMeshingBlockInfo *b) -> bool {
-        const MLMeshingExtents &aExtents = a->extents;
-        float aDistance = std::pow(aExtents.center.x - mlContext->position.x, 2) + std::pow(aExtents.center.y - mlContext->position.y, 2) + std::pow(aExtents.center.z - mlContext->position.z, 2);
-
-        const MLMeshingExtents &bExtents = b->extents;
-        float bDistance = std::pow(bExtents.center.x - mlContext->position.x, 2) + std::pow(bExtents.center.y - mlContext->position.y, 2) + std::pow(bExtents.center.z - mlContext->position.z, 2);
-
-        return aDistance > bDistance;
-      }); */
       uint32_t requestCount = 0;
       meshRemovedList.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
-        // const MLMeshingBlockInfo &meshBlockInfo = *(meshInfoData[i]);
         const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
         const MLMeshingMeshState &state = meshBlockInfo.state;
-        // if ((requestCount < 16) && (state == MLMeshingMeshState_New || state == MLMeshingMeshState_Updated || state == MLMeshingMeshState_Unchanged)) {
         if (state == MLMeshingMeshState_New || state == MLMeshingMeshState_Updated) {
           MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[requestCount++];
           meshBlockRequest.id = meshBlockInfo.id;
+          // meshBlockRequest.level = MLMeshingLOD_Minimum;
           meshBlockRequest.level = MLMeshingLOD_Medium;
           // meshBlockRequest.level = MLMeshingLOD_Maximum;
         } else if (state == MLMeshingMeshState_Deleted) {
@@ -1638,7 +1626,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
       meshRequest.request_count = requestsThisTime;
 
       meshBlockRequestIndex += requestsThisTime;
-      // meshBlockRequestIndex = numMeshBlockRequests;
 
       MLResult result = MLMeshingRequestMesh(meshTracker, &meshRequest, &meshRequestHandle);
       if (result == MLResult_Ok) {
@@ -1657,7 +1644,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
   }
   if (meshRequestsPending && meshRequestPending) {
     MLResult result = MLMeshingGetMeshResult(meshTracker, meshRequestHandle, &mesh);
-    if (result == MLResult_Ok)
+    if (result == MLResult_Ok) {
       std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
         m->Poll();
       });

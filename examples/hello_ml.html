@@ -221,6 +221,36 @@
       };
       window.browser.nativeMl.RequestMesh(_onMesh);
 
+      const planeMeshes = [];
+      const planeGeometry = new THREE.PlaneBufferGeometry(1, 1);
+      const planeMaterial = new THREE.MeshPhongMaterial({
+        color: 0xFF0000,
+      });
+      const _loadPlanes = planes => {
+        for (let i = 0; i < planeMeshes.length; i++) {
+          scene.remove(planeMeshes[i]);
+        }
+        planeMeshes.length = 0;
+
+        for (let i = 0; i < planes.length; i++) {
+          const plane = planes[i];
+
+          const mesh = new THREE.Mesh(planeGeometry, planeMaterial);
+          mesh.position.fromArray(plane.position);
+          mesh.quaternion.fromArray(plane.rotation);
+          mesh.scale.set(plane.width, plane.height, 1);
+          mesh.updateMatrix();
+          mesh.updateMatrixWorld();
+          scene.add(mesh);
+          planeMeshes.push(mesh);
+        }
+      };
+
+      const _onPlanes = planes => {
+        _loadPlanes(planes);
+      };
+      window.browser.nativeMl.RequestPlanes(_onPlanes);
+
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
