@@ -10,7 +10,7 @@ using namespace std;
 namespace ml {
 
 enum DummyValue {
-  STOPPED = 0,
+  STOPPED,
   RUNNING,
   PAUSED,
 };
