@@ -536,8 +536,8 @@ if (nativeMl) {
     mlHasPose = false;
   };
 
-  const _mlEvent = e => {
-    console.log('got ml event', e);
+  const _mlLifecycleEvent = e => {
+    console.log('got ml lifecycle event', e);
 
     switch (e) {
       case 'newInitArg': {
@@ -564,14 +564,17 @@ if (nativeMl) {
       }
     }
   };
+  const _mlKeyboardEvent = e => {
+    console.log('got ml keyboard event', e);
+  };
   if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle(_mlEvent);
+    nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
   } else {
     // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      nativeMl.InitLifecycle(_mlEvent);
+      nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
     });
     s.on('error', () => {});
   }

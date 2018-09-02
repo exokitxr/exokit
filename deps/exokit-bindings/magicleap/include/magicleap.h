@@ -63,7 +63,24 @@ enum Event {
   UNLOAD_RESOURCES,
 };
 
+enum KeyboardEventType {
+  CHAR,
+  KEY_DOWN,
+  KEY_UP,
+};
+
 class MLContext;
+
+class KeyboardEvent {
+public:
+  KeyboardEvent(KeyboardEventType type, uint32_t char_utf32);
+  KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask);
+
+  KeyboardEventType type;
+  uint32_t char_utf32;
+  MLKeyCode key_code;
+  uint32_t modifier_mask;
+};
 
 class HandRequest {
 public:
