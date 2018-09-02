@@ -536,40 +536,42 @@ if (nativeMl) {
     mlHasPose = false;
   };
 
-  if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle(e => {
-      console.log('got ml event', e);
+  const _mlEvent = e => {
+    console.log('got ml event', e);
 
-      switch (e) {
-        case 'newInitArg': {
-          break;
-        }
-        case 'stop': {
-          nativeMl.DeinitLifecycle();
-          process.exit();
-          break;
-        }
-        case 'pause': {
-          break;
-        }
-        case 'resume': {
-          break;
-        }
-        case 'unloadResources': {
-          break;
-        }
-        default: {
-          console.warn('invalid ml lifecycle event', e);
-          break;
-        }
+    switch (e) {
+      case 'newInitArg': {
+        break;
       }
-    });
+      case 'stop':
+      case 'pause': {
+        if (mlContext) {
+          mlContext.Exit();
+        }
+        nativeMl.DeinitLifecycle();
+        process.exit();
+        break;
+      }
+      case 'resume': {
+        break;
+      }
+      case 'unloadResources': {
+        break;
+      }
+      default: {
+        console.warn('invalid ml lifecycle event', e);
+        break;
+      }
+    }
+  };
+  if (!nativeMl.IsSimulated()) {
+    nativeMl.InitLifecycle(_mlEvent);
   } else {
     // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      nativeMl.InitLifecycle();
+      nativeMl.InitLifecycle(_mlEvent);
     });
     s.on('error', () => {});
   }
