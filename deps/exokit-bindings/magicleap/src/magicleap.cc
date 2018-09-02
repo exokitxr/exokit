@@ -881,7 +881,7 @@ NAN_METHOD(MLContext::Present) {
   }
 
   if (MLHeadTrackingCreate(&mlContext->head_tracker) != MLResult_Ok || MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to create head tracker..", application_name);
+    ML_LOG(Error, "%s: Failed to create head tracker.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
