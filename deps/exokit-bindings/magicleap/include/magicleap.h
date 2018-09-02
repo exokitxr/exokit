@@ -115,20 +115,6 @@ public:
   std::vector<CameraRequestPlane *> planes;
 };
 
-class MLStageGeometry : public ObjectWrap {
-public:
-  static Handle<Object> Initialize(Isolate *isolate);
-
-protected:
-  MLStageGeometry(MLContext *mlContext);
-  ~MLStageGeometry();
-
-  static NAN_METHOD(New);
-  // static NAN_METHOD(GetGeometry);
-
-  MLContext *mlContext;
-};
-
 class MLContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
@@ -172,40 +158,6 @@ public:
 
   // input
   MLHandle inputTracker;
-  // MLHandle gestureTracker;
-
-  /* // planes
-  MLHandle planesFloorHandle;
-  MLHandle planesWallHandle;
-  MLHandle planesCeilingHandle;
-
-  MLHandle planesFloorQuery;
-  MLHandle planesWallQuery;
-  MLHandle planesCeilingQuery;
-
-  MLHandle planesFloorQueryHandle;
-  MLHandle planesWallQueryHandle;
-  MLHandle planesCeilingQueryHandle;
-
-  MLPlane floorPlanes[MAX_NUM_PLANES];
-  MLPlane wallPlanes[MAX_NUM_PLANES];
-  MLPlane ceilingPlanes[MAX_NUM_PLANES];
-  uint32_t numFloorPlanes;
-  uint32_t numWallPlanes;
-  uint32_t numCeilingPlanes;
-
-  std::condition_variable mesherCv;
-  std::mutex mesherMutex;
-
-  bool haveMeshStaticData;
-  MLMeshingStaticData meshStaticData;
-  MLDataArray meshData;
-  MLDataArrayDiff meshesDataDiff;
-  MLDataArray meshData2;
-  MLDataArrayDiff meshesDataDiff2;
-  std::vector<uint8_t> positions;
-  std::vector<uint8_t> normals;
-  std::vector<uint8_t> triangles; */
 
   // occlusion
   // MLHandle occlusionTracker;

@@ -633,84 +633,9 @@ void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int wid
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-// MLStageGeometry
-
-MLStageGeometry::MLStageGeometry(MLContext *mlContext) : mlContext(mlContext) {}
-
-MLStageGeometry::~MLStageGeometry() {}
-
-Handle<Object> MLStageGeometry::Initialize(Isolate *isolate) {
-  Nan::EscapableHandleScope scope;
-
-  // constructor
-  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
-  ctor->InstanceTemplate()->SetInternalFieldCount(1);
-  ctor->SetClassName(JS_STR("MLStageGeometry"));
-
-  // prototype
-  // Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  // Nan::SetMethod(proto, "getGeometry", GetGeometry);
-
-  Local<Function> ctorFn = ctor->GetFunction();
-
-  return scope.Escape(ctorFn);
-}
-
-NAN_METHOD(MLStageGeometry::New) {
-  if (info[0]->IsObject()) {
-    Local<Object> mlContextObj = Local<Object>::Cast(info[0]);
-    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(mlContextObj);
-
-    Local<Object> mlStageGeometryObj = info.This();
-    MLStageGeometry *mlStageGeometry = new MLStageGeometry(mlContext);
-    mlStageGeometry->Wrap(mlStageGeometryObj);
-
-    info.GetReturnValue().Set(mlStageGeometryObj);
-  } else {
-    Nan::ThrowError("MLStageGeometry::New: invalid arguments");
-  }
-}
-
-/* NAN_METHOD(MLStageGeometry::GetGeometry) {
-  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsUint32Array() && info[3]->IsArray()) {
-    MLStageGeometry *mlStageGeometry = ObjectWrap::Unwrap<MLStageGeometry>(info.This());
-    MLContext *mlContext = mlStageGeometry->mlContext;
-
-    Local<Float32Array> positionsArray = Local<Float32Array>::Cast(info[0]);
-    Local<Float32Array> normalsArray = Local<Float32Array>::Cast(info[1]);
-    Local<Uint32Array> trianglesArray = Local<Uint32Array>::Cast(info[2]);
-
-    if (
-      positionsArray->ByteLength() >= mlContext->positions.size() &&
-      normalsArray->ByteLength() >= mlContext->normals.size() &&
-      trianglesArray->ByteLength() >= mlContext->triangles.size()
-    ) {
-      memcpy((uint8_t *)positionsArray->Buffer()->GetContents().Data() + positionsArray->ByteOffset(), mlContext->positions.data(), mlContext->positions.size());
-      memcpy((uint8_t *)normalsArray->Buffer()->GetContents().Data() + normalsArray->ByteOffset(), mlContext->normals.data(), mlContext->normals.size());
-      memcpy((uint8_t *)trianglesArray->Buffer()->GetContents().Data() + trianglesArray->ByteOffset(), mlContext->triangles.data(), mlContext->triangles.size());
-
-      Local<Array> metrics = Local<Array>::Cast(info[3]);
-      metrics->Set(0, JS_INT((unsigned int)(mlContext->positions.size() / sizeof(float))));
-      metrics->Set(1, JS_INT((unsigned int)(mlContext->normals.size() / sizeof(float))));
-      metrics->Set(2, JS_INT((unsigned int)(mlContext->triangles.size() / sizeof(uint32_t))));
-    } else {
-      Nan::ThrowError("MLStageGeometry::GetGeometry: insufficient buffer sizes");
-    }
-  } else {
-    Nan::ThrowError("MLStageGeometry::GetGeometry: invalid arguments");
-  }
-} */
-
 MLContext::MLContext() :
   position{0, 0, 0},
-  rotation{0, 0, 0, 1}/*,
-  haveMeshStaticData(false),
-  planesFloorQueryHandle(ML_INVALID_HANDLE),
-  planesWallQueryHandle(ML_INVALID_HANDLE),
-  planesCeilingQueryHandle(ML_INVALID_HANDLE),
-  numFloorPlanes(0),
-  numWallPlanes(0),
-  numCeilingPlanes(0) */
+  rotation{0, 0, 0, 1}
   {}
 
 MLContext::~MLContext() {}
@@ -730,9 +655,6 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
   Local<Function> ctorFn = ctor->GetFunction();
-
-  /* Local<Object> stageGeometryCons = MLStageGeometry::Initialize(isolate);
-  ctorFn->Set(JS_STR("MLStageGeometry"), stageGeometryCons); */
 
   Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
   Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
@@ -755,13 +677,6 @@ NAN_METHOD(MLContext::New) {
   Local<Object> mlContextObj = info.This();
   MLContext *mlContext = new MLContext();
   mlContext->Wrap(mlContextObj);
-
-  /* Local<Function> stageGeometryCons = Local<Function>::Cast(mlContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("MLStageGeometry")));
-  Local<Value> argv[] = {
-    mlContextObj,
-  };
-  Local<Object> stageGeometryObj = stageGeometryCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
-  mlContextObj->Set(JS_STR("stageGeometry"), stageGeometryObj); */
 
   info.GetReturnValue().Set(mlContextObj);
 }
