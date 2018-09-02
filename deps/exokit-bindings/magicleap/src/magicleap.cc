@@ -9,20 +9,6 @@ using namespace std;
 
 namespace ml {
 
-enum DummyValue {
-  STOPPED,
-  RUNNING,
-  PAUSED,
-};
-
-enum Event {
-  NEW_INIT_ARG,
-  STOP,
-  PAUSE,
-  RESUME,
-  UNLOAD_RESOURCES,
-};
-
 const char application_name[] = "com.exokit.app";
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;

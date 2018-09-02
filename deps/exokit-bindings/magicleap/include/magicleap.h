@@ -49,6 +49,20 @@ struct application_context_t {
   int dummy_value;
 };
 
+enum DummyValue {
+  STOPPED,
+  RUNNING,
+  PAUSED,
+};
+
+enum Event {
+  NEW_INIT_ARG,
+  STOP,
+  PAUSE,
+  RESUME,
+  UNLOAD_RESOURCES,
+};
+
 class MLContext;
 
 class HandRequest {
