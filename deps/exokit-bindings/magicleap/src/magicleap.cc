@@ -740,7 +740,7 @@ void RunEventsInMainThread(uv_async_t *handle) {
     Local<Value> argv[] = {
       arg,
     };
-    asyncResource.MakeCallback(eventsCbFn, 0, nullptr);
+    asyncResource.MakeCallback(eventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
   }
   events.clear();
 }
