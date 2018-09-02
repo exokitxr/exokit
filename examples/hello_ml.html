@@ -78,7 +78,7 @@
         scene.add(controllerMesh);
       });
 
-      const terrainMeshes = {};
+      const terrainMeshes = [];
       /* const terrainMaterial = new THREE.ShaderMaterial({
         vertexShader: `\
           void main() {
@@ -103,16 +103,16 @@
       const terrainMaterial = new THREE.MeshPhongMaterial({
         color: 0x666666,
       });
-      const _getTerrainMesh = id => {
-        let terrainMesh = terrainMeshes[id];
+      const _getTerrainMesh = meshId => {
+        let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
         if (!terrainMesh) {
-          terrainMesh = _makeTerrainMesh();
-          terrainMeshes[id] = terrainMesh;
+          terrainMesh = _makeTerrainMesh(meshId);
+          terrainMeshes.push(terrainMesh);
           scene.add(terrainMesh);
         }
         return terrainMesh;
       };
-      const _makeTerrainMesh = () => {
+      const _makeTerrainMesh = meshId => {
         const geometry = new THREE.BufferGeometry();
         const positions = Float32Array.from([
           0, 0, 0,
@@ -132,6 +132,7 @@
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
         const material = terrainMaterial;
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.meshId = meshId;
         mesh.frustumCulled = false;
         return mesh;
       };
@@ -147,6 +148,10 @@
         const newIndices = new Uint16Array(indices.length);
         newIndices.set(indices);
         terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
+      };
+      const _removeTerrainMesh = terrainMesh => {
+        terrainMesh.geometry.dispose();
+        scene.remove(terrainMesh);
       };
 
       const _makeHandMesh = () => {
@@ -186,7 +191,6 @@
             const near = -0.1;
             const far = -0.625;
             const zFactor = near + (-zOffset * (far - near))
-            console.log('z factor', hand.center[2], zOffset);
             handMesh.position
               .add(
                 handMeshVector.set(hand.center[0]/2*0.6, hand.center[1]/2*0.6, zFactor)
@@ -203,8 +207,16 @@
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
-          const terrainMesh = _getTerrainMesh(update.id);
-          _loadTerrainMesh(terrainMesh, update);
+          const {id, valid} = update;
+          if (valid) {
+            const terrainMesh = _getTerrainMesh(id);
+            _loadTerrainMesh(terrainMesh, update);
+          } else {
+            const terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === id);
+            if (terrainMesh) {
+              _removeTerrainMesh(terrainMesh);
+            }
+          }
         }
       };
       window.browser.nativeMl.RequestMesh(_onMesh);
