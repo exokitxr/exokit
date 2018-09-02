@@ -49,7 +49,38 @@ struct application_context_t {
   int dummy_value;
 };
 
+enum DummyValue {
+  STOPPED,
+  RUNNING,
+  PAUSED,
+};
+
+enum Event {
+  NEW_INIT_ARG,
+  STOP,
+  PAUSE,
+  RESUME,
+  UNLOAD_RESOURCES,
+};
+
+enum KeyboardEventType {
+  CHAR,
+  KEY_DOWN,
+  KEY_UP,
+};
+
 class MLContext;
+
+class KeyboardEvent {
+public:
+  KeyboardEvent(KeyboardEventType type, uint32_t char_utf32);
+  KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask);
+
+  KeyboardEventType type;
+  uint32_t char_utf32;
+  MLKeyCode key_code;
+  uint32_t modifier_mask;
+};
 
 class HandRequest {
 public:
@@ -134,9 +165,13 @@ public:
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
   static NAN_METHOD(RequestHand);
+  static NAN_METHOD(CancelHand);
   static NAN_METHOD(RequestMesh);
+  static NAN_METHOD(CancelMesh);
   static NAN_METHOD(RequestPlanes);
+  static NAN_METHOD(CancelPlanes);
   static NAN_METHOD(RequestEye);
+  static NAN_METHOD(CancelEye);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);

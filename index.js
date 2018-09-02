@@ -536,8 +536,8 @@ if (nativeMl) {
     mlHasPose = false;
   };
 
-  const _mlEvent = e => {
-    console.log('got ml event', e);
+  const _mlLifecycleEvent = e => {
+    console.log('got ml lifecycle event', e);
 
     switch (e) {
       case 'newInitArg': {
@@ -564,14 +564,59 @@ if (nativeMl) {
       }
     }
   };
+  const _mlKeyboardEvent = e => {
+    // console.log('got ml keyboard event', e);
+
+    if (mlGlContext) {
+      const {canvas} = mlGlContext;
+      const window = canvas.ownerDocument.defaultView;
+      
+      switch (e.type) {
+        case 'keydown': {
+          let handled = false;
+          if (e.keyCode === 27) { // ESC
+            if (window.top.document.pointerLockElement) {
+              window.top.document.exitPointerLock();
+              handled = true;
+            }
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            }
+          }
+          if (e.keyCode === 122) { // F11
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            } else {
+              window.top.document.requestFullscreen();
+              handled = true;
+            }
+          }
+
+          if (!handled) {
+            canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+          }
+          break;
+        }
+        case 'keyup':
+        case 'keypress': {
+          canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  };
   if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle(_mlEvent);
+    nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
   } else {
     // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      nativeMl.InitLifecycle(_mlEvent);
+      nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
     });
     s.on('error', () => {});
   }
@@ -604,7 +649,7 @@ nativeWindow.setEventHandler((type, data) => {
       }
       case 'keydown': {
         let handled = false;
-        if (data.keyCode === 27) {
+        if (data.keyCode === 27) { // ESC
           if (window.top.document.pointerLockElement) {
             window.top.document.exitPointerLock();
             handled = true;
@@ -614,8 +659,7 @@ nativeWindow.setEventHandler((type, data) => {
             handled = true;
           }
         }
-        //122 is F11 key
-        if (data.keyCode === 122){
+        if (data.keyCode === 122) { // F11
           if (window.top.document.fullscreenElement) {
             window.top.document.exitFullscreen();
             handled = true;

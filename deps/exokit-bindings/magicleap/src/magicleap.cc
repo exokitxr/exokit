@@ -9,28 +9,23 @@ using namespace std;
 
 namespace ml {
 
-enum DummyValue {
-  STOPPED,
-  RUNNING,
-  PAUSED,
-};
-
-enum Event {
-  NEW_INIT_ARG,
-  STOP,
-  PAUSE,
-  RESUME,
-  UNLOAD_RESOURCES,
-};
-
 const char application_name[] = "com.exokit.app";
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
 Nan::Persistent<Function> initCb;
 
+MLLifecycleCallbacks lifecycle_callbacks;
+MLInputKeyboardCallbacks keyboardCallbacks;
+MLCameraDeviceStatusCallbacks cameraDeviceStatusCallbacks;
+MLCameraCaptureCallbacks cameraCaptureCallbacks;
+
 Nan::Persistent<Function> eventsCb;
 std::vector<Event> events;
 uv_async_t eventsAsync;
+
+Nan::Persistent<Function> keyboardEventsCb;
+std::vector<KeyboardEvent> keyboardEvents;
+uv_async_t keyboardEventsAsync;
 
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
@@ -434,7 +429,7 @@ void EyeRequest::Poll() {
   if (MLSnapshotGetTransform(snapshot, &id, &transform) == MLResult_Ok) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "eyeRequest");
-    
+
     Local<Float32Array> fixationTransformArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (3 + 4) * sizeof(float)), 0, 3 + 4);
     fixationTransformArray->Set(0, JS_NUM(transform.position.x));
     fixationTransformArray->Set(1, JS_NUM(transform.position.y));
@@ -452,11 +447,31 @@ void EyeRequest::Poll() {
   } else {
     ML_LOG(Error, "%s: ML failed to get eye transform!", application_name);
   }
-  
+
   if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
     ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
   }
 }
+
+// keyboard callbacks
+
+void onChar(uint32_t char_utf32, void *data) {
+  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::CHAR, char_utf32));
+  uv_async_send(&keyboardEventsAsync);
+}
+void onKeyDown(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
+  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::KEY_DOWN, key_code, modifier_mask));
+  uv_async_send(&keyboardEventsAsync);
+}
+void onKeyUp(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
+  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::KEY_UP, key_code, modifier_mask));
+  uv_async_send(&keyboardEventsAsync);
+}
+
+// KeyboardEvent
+
+KeyboardEvent::KeyboardEvent(KeyboardEventType type, uint32_t char_utf32) : type(type), char_utf32(char_utf32), key_code(MLKEYCODE_UNKNOWN), modifier_mask(0) {}
+KeyboardEvent::KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask) : type(type), char_utf32(0), key_code(key_code), modifier_mask(modifier_mask) {}
 
 // camera device status callbacks
 
@@ -662,9 +677,13 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
   Nan::SetMethod(ctorFn, "RequestHand", RequestHand);
+  Nan::SetMethod(ctorFn, "CancelHand", CancelHand);
   Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
+  Nan::SetMethod(ctorFn, "CancelMesh", CancelMesh);
   Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
+  Nan::SetMethod(ctorFn, "CancelPlanes", CancelPlanes);
   Nan::SetMethod(ctorFn, "RequestEye", RequestEye);
+  Nan::SetMethod(ctorFn, "CancelEye", CancelEye);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
@@ -725,17 +744,78 @@ void RunEventsInMainThread(uv_async_t *handle) {
   events.clear();
 }
 
-MLLifecycleCallbacks lifecycle_callbacks;
-MLCameraDeviceStatusCallbacks cameraDeviceStatusCallbacks;
-MLCameraCaptureCallbacks cameraCaptureCallbacks;
+inline uint32_t normalizeMLKeyCode(MLKeyCode mlKeyCode) {
+  switch (mlKeyCode) {
+    case MLKEYCODE_ENTER: return 13;
+    case MLKEYCODE_ESCAPE: return 27;
+    case MLKEYCODE_DEL: return 8;
+    case MLKEYCODE_FORWARD_DEL: return 46;
+    default: return (uint32_t)mlKeyCode;
+  }
+}
+
+void RunKeyboardEventsInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  for (const auto &keyboardEvent : keyboardEvents) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "keyboardEvents");
+
+    Local<Object> obj = Nan::New<Object>();
+
+    Local<Value> typeArg;
+    switch (keyboardEvent.type) {
+      case KeyboardEventType::CHAR: {
+        typeArg = JS_STR("keypresss");
+        break;
+      }
+      case KeyboardEventType::KEY_DOWN: {
+        typeArg = JS_STR("keydown");
+        break;
+      }
+      case KeyboardEventType::KEY_UP: {
+        typeArg = JS_STR("keyup");
+        break;
+      }
+      default: {
+        typeArg = Nan::Null();
+        break;
+      }
+    }
+    obj->Set(JS_STR("type"), typeArg);
+    uint32_t charCode = (uint32_t)keyboardEvent.char_utf32;
+    uint32_t keyCode = normalizeMLKeyCode(keyboardEvent.key_code);
+    obj->Set(JS_STR("charCode"), JS_INT(charCode));
+    obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
+    obj->Set(JS_STR("which"), JS_INT(keyCode));
+    obj->Set(JS_STR("shiftKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SHIFT));
+    obj->Set(JS_STR("altKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_ALT));
+    obj->Set(JS_STR("ctrlKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CTRL));
+    obj->Set(JS_STR("metaKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_META));
+    // obj->Set(JS_STR("sym"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SYM));
+    // obj->Set(JS_STR("function"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_FUNCTION));
+    // obj->Set(JS_STR("capsLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
+    // obj->Set(JS_STR("numLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_NUM_LOCK));
+    // obj->Set(JS_STR("scrollLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
+
+    Local<Function> keyboardEventsCbFn = Nan::New(keyboardEventsCb);
+    Local<Value> argv[] = {
+      obj,
+    };
+    asyncResource.MakeCallback(keyboardEventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  }
+  keyboardEvents.clear();
+}
+
 NAN_METHOD(MLContext::InitLifecycle) {
   std::cout << "init lifecycle" << std::endl;
 
-  if (info[0]->IsFunction()) {
-    Local<Function> eventsCbFn = Local<Function>::Cast(info[0]);
-    eventsCb.Reset(eventsCbFn);
+  if (info[0]->IsFunction() && info[1]->IsFunction()) {
+    eventsCb.Reset(Local<Function>::Cast(info[0]));
+    keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
 
     uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
+    uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
 
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
     lifecycle_callbacks.on_stop = onStop;
@@ -875,6 +955,18 @@ NAN_METHOD(MLContext::Present) {
     ML_LOG(Error, "%s: Failed to create input tracker.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
+  }
+
+  {
+    keyboardCallbacks.on_char = onChar;
+    keyboardCallbacks.on_key_down = onKeyDown;
+    keyboardCallbacks.on_key_up = onKeyUp;
+    MLResult result = MLInputSetKeyboardCallbacks(mlContext->inputTracker, &keyboardCallbacks, nullptr);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to set keyboard callbacks %x", application_name, result);
+      Nan::ThrowError("MLContext::InitLifecycle failed to set keyboard callbacks");
+      return;
+    }
   }
 
   /* if (MLGestureTrackingCreate(&mlContext->gestureTracker) != MLResult_Ok) {
@@ -1373,12 +1465,52 @@ NAN_METHOD(MLContext::RequestHand) {
   }
 }
 
+NAN_METHOD(MLContext::CancelHand) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      handRequests.erase(std::remove_if(handRequests.begin(), handRequests.end(), [&](HandRequest *h) -> bool {
+        Local<Function> localCbFn = Nan::New(h->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete h;
+          return false;
+        } else {
+          return true;
+        }
+      }));
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 NAN_METHOD(MLContext::RequestMesh) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
     MeshRequest *meshRequest = new MeshRequest(cbFn);
     meshRequests.push_back(meshRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::CancelMesh) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      meshRequests.erase(std::remove_if(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) -> bool {
+        Local<Function> localCbFn = Nan::New(m->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete m;
+          return false;
+        } else {
+          return true;
+        }
+      }));
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }
@@ -1395,12 +1527,52 @@ NAN_METHOD(MLContext::RequestPlanes) {
   }
 }
 
+NAN_METHOD(MLContext::CancelPlanes) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      planesRequests.erase(std::remove_if(planesRequests.begin(), planesRequests.end(), [&](PlanesRequest *p) -> bool {
+        Local<Function> localCbFn = Nan::New(p->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete p;
+          return false;
+        } else {
+          return true;
+        }
+      }));
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 NAN_METHOD(MLContext::RequestEye) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
     EyeRequest *eyeRequest = new EyeRequest(cbFn);
     eyeRequests.push_back(eyeRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::CancelEye) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      eyeRequests.erase(std::remove_if(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) -> bool {
+        Local<Function> localCbFn = Nan::New(e->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete e;
+          return false;
+        } else {
+          return true;
+        }
+      }));
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }

@@ -15,7 +15,7 @@
     const controllerMaterial = new THREE.MeshPhongMaterial({
       color: 0x4caf50,
     });
-    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 0) => {
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
       const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
       mesh.position.set(x, y, z);
       mesh.quaternion.set(qx, qy, qz, qw);
@@ -78,28 +78,57 @@
         scene.add(controllerMesh);
       });
 
+      const _makeHandMesh = () => {
+        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
+        const material =  new THREE.MeshPhongMaterial({
+          color: 0xFF0000,
+          // side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      const handMeshes = [
+        _makeHandMesh(),
+        _makeHandMesh(),
+      ];
+      handMeshes.forEach(handMesh => {
+        scene.add(handMesh);
+      });
+      const handMeshVector = new THREE.Vector3();
+      const _onHand = hands => {
+        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
+        const vrCameras = vrCamera.isArrayCamera ? vrCamera.cameras : [camera];
+        for (let i = 0; i < handMeshes.length; i++) {
+          handMeshes[i].visible = false;
+        }
+        for (let i = 0; i < hands.length; i++) {
+          const hand = hands[i];
+          if (hand) {
+            const handMesh = handMeshes[i];
+            vrCameras[0].matrixWorld.decompose(handMesh.position, handMesh.quaternion, handMesh.scale);
+            vrCameras[1].matrixWorld.decompose(handMeshVector, handMesh.quaternion, handMesh.scale);
+            handMesh.position
+              .add(handMeshVector)
+              .divideScalar(2);
+            const zOffset = (hand.center[2] - 1) / 2;
+            const near = -0.1;
+            const far = -0.625;
+            const zFactor = near + (-zOffset * (far - near))
+            handMesh.position
+              .add(
+                handMeshVector.set(hand.center[0]/2*0.6, hand.center[1]/2*0.6, zFactor)
+                  .applyQuaternion(handMesh.quaternion)
+              );
+            handMesh.updateMatrix();
+            handMesh.updateMatrixWorld();
+            handMesh.visible = true;
+          }
+        }
+      };
+
       const terrainMeshes = [];
-      /* const terrainMaterial = new THREE.ShaderMaterial({
-        vertexShader: `\
-          void main() {
-            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            vec4 position = projectionMatrix * mvPosition;
-            gl_Position = position;
-          }
-        `,
-        fragmentShader: `\
-          void main() {
-            float originalZ = gl_FragCoord.z / gl_FragCoord.w;
-            float factor = max((3.0 - originalZ) / 3.0, 0.1);
-            // float depthDangerFactor = 0.95;
-            // if (factor > depthDangerFactor) {
-              // gl_FragColor.rgba = vec4(1.0, 0.0, 0.0, 1.0);
-            // } else {
-              gl_FragColor.rgba = vec4(vec3(factor), 1.0);
-            // }
-          }
-        `,
-      }); */
       const terrainMaterial = new THREE.MeshPhongMaterial({
         color: 0x666666,
       });
@@ -153,57 +182,12 @@
         terrainMesh.geometry.dispose();
         scene.remove(terrainMesh);
       };
-
-      const _makeHandMesh = () => {
-        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
-        const material =  new THREE.MeshPhongMaterial({
-          color: 0xFF0000,
-          // side: THREE.DoubleSide,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.frustumCulled = false;
-        return mesh;
-      };
-      const handMeshes = [
-        _makeHandMesh(),
-        _makeHandMesh(),
-      ];
-      handMeshes.forEach(handMesh => {
-        scene.add(handMesh);
-      });
-      const handMeshVector = new THREE.Vector3();
-      const _onHand = hands => {
-        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
-        const vrCameras = vrCamera.isArrayCamera ? vrCamera.cameras : [camera];
-        for (let i = 0; i < handMeshes.length; i++) {
-          handMeshes[i].visible = false;
+      const _clearTerrainMeshes = () => {
+        for (let i = 0; i < terrainMeshes.length; i++) {
+          _removeTerrainMesh(terrainMeshes[i]);
         }
-        for (let i = 0; i < hands.length; i++) {
-          const hand = hands[i];
-          if (hand) {
-            const handMesh = handMeshes[i];
-            vrCameras[0].matrixWorld.decompose(handMesh.position, handMesh.quaternion, handMesh.scale);
-            vrCameras[1].matrixWorld.decompose(handMeshVector, handMesh.quaternion, handMesh.scale);
-            handMesh.position
-              .add(handMeshVector)
-              .divideScalar(2);
-            const zOffset = (hand.center[2] - 1) / 2;
-            const near = -0.1;
-            const far = -0.625;
-            const zFactor = near + (-zOffset * (far - near))
-            handMesh.position
-              .add(
-                handMeshVector.set(hand.center[0]/2*0.6, hand.center[1]/2*0.6, zFactor)
-                  .applyQuaternion(handMesh.quaternion)
-              );
-            handMesh.updateMatrix();
-            handMesh.updateMatrixWorld();
-            handMesh.visible = true;
-          }
-        }
+        terrainMeshes.length = 0;
       };
-      window.browser.nativeMl.RequestHand(_onHand);
-
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
@@ -219,7 +203,6 @@
           }
         }
       };
-      window.browser.nativeMl.RequestMesh(_onMesh);
 
       const planeMeshes = [];
       const planeGeometry = new THREE.PlaneBufferGeometry(1, 1);
@@ -227,10 +210,7 @@
         color: 0xFF0000,
       });
       const _loadPlanes = planes => {
-        for (let i = 0; i < planeMeshes.length; i++) {
-          scene.remove(planeMeshes[i]);
-        }
-        planeMeshes.length = 0;
+        _clearPlanes();
 
         for (let i = 0; i < planes.length; i++) {
           const plane = planes[i];
@@ -246,11 +226,15 @@
           planeMeshes.push(mesh);
         }
       };
-
+      const _clearPlanes = () => {
+        for (let i = 0; i < planeMeshes.length; i++) {
+          scene.remove(planeMeshes[i]);
+        }
+        planeMeshes.length = 0;
+      };
       const _onPlanes = planes => {
         _loadPlanes(planes);
       };
-      window.browser.nativeMl.RequestPlanes(_onPlanes);
 
       const eyeMesh = (() => {
         const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
@@ -258,6 +242,7 @@
           color: 0x0000FF,
         });
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
         mesh.frustumCulled = false;
         return mesh;
       })();
@@ -268,7 +253,41 @@
         eyeMesh.updateMatrix();
         eyeMesh.updateMatrixWorld();
       };
-      window.browser.nativeMl.RequestEye(_onEye);
+
+      let enabled = false;
+      const _enable = () => {
+        window.browser.nativeMl.RequestHand(_onHand);
+        window.browser.nativeMl.RequestMesh(_onMesh);
+        window.browser.nativeMl.RequestPlanes(_onPlanes);
+        window.browser.nativeMl.RequestEye(_onEye);
+        eyeMesh.visible = true;
+
+        enabled = true;
+      };
+      const _disable = () => {
+        window.browser.nativeMl.CancelHand(_onHand);
+        handMeshes.forEach(handMesh => {
+          handMesh.visible = false;
+        });
+        window.browser.nativeMl.CancelMesh(_onMesh);
+        _clearTerrainMeshes();
+        window.browser.nativeMl.CancelPlanes(_onPlanes);
+        _clearPlanes();
+        window.browser.nativeMl.CancelEye(_onEye);
+        eyeMesh.visible = false;
+
+        enabled = false;
+      };
+      _enable();
+      window.addEventListener('keydown', e => {
+        if (e.keyCode === 13) { // enter
+          if (enabled) {
+            _disable();
+          } else {
+            _enable();
+          }
+        }
+      });
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
