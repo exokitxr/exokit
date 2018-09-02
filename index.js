@@ -537,7 +537,33 @@ if (nativeMl) {
   };
 
   if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle();
+    nativeMl.InitLifecycle(e => {
+      console.log('got ml event', e);
+
+      switch (e) {
+        case 'newInitArg': {
+          break;
+        }
+        case 'stop': {
+          nativeMl.DeinitLifecycle();
+          process.exit();
+          break;
+        }
+        case 'pause': {
+          break;
+        }
+        case 'resume': {
+          break;
+        }
+        case 'unloadResources': {
+          break;
+        }
+        default: {
+          console.warn('invalid ml lifecycle event', e);
+          break;
+        }
+      }
+    });
   } else {
     // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
