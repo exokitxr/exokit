@@ -734,7 +734,7 @@ void RunEventsInMainThread(uv_async_t *handle) {
         break;
       }
     }
-    
+
     Local<Function> eventsCbFn = Nan::New(eventsCb);
     Local<Value> argv[] = {
       arg,
@@ -753,7 +753,7 @@ NAN_METHOD(MLContext::InitLifecycle) {
   if (info[0]->IsFunction()) {
     Local<Function> eventsCbFn = Local<Function>::Cast(info[0]);
     eventsCb.Reset(eventsCbFn);
-    
+
     uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
 
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
