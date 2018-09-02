@@ -165,9 +165,13 @@ public:
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
   static NAN_METHOD(RequestHand);
+  static NAN_METHOD(CancelHand);
   static NAN_METHOD(RequestMesh);
+  static NAN_METHOD(CancelMesh);
   static NAN_METHOD(RequestPlanes);
+  static NAN_METHOD(CancelPlanes);
   static NAN_METHOD(RequestEye);
+  static NAN_METHOD(CancelEye);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);

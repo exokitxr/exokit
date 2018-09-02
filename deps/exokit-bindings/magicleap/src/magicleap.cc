@@ -677,9 +677,13 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
   Nan::SetMethod(ctorFn, "RequestHand", RequestHand);
+  Nan::SetMethod(ctorFn, "CancelHand", CancelHand);
   Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
+  Nan::SetMethod(ctorFn, "CancelMesh", CancelMesh);
   Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
+  Nan::SetMethod(ctorFn, "CancelPlanes", CancelPlanes);
   Nan::SetMethod(ctorFn, "RequestEye", RequestEye);
+  Nan::SetMethod(ctorFn, "CancelEye", CancelEye);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
@@ -1448,12 +1452,52 @@ NAN_METHOD(MLContext::RequestHand) {
   }
 }
 
+NAN_METHOD(MLContext::CancelHand) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      handRequests.erase(std::remove_if(handRequests.begin(), handRequests.end(), [&](HandRequest *h) -> bool {
+        Local<Function> localCbFn = Nan::New(h->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete h;
+          return false;
+        } else {
+          return true;
+        }
+      }));
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 NAN_METHOD(MLContext::RequestMesh) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
     MeshRequest *meshRequest = new MeshRequest(cbFn);
     meshRequests.push_back(meshRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::CancelMesh) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      meshRequests.erase(std::remove_if(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) -> bool {
+        Local<Function> localCbFn = Nan::New(m->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete m;
+          return false;
+        } else {
+          return true;
+        }
+      }));
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }
@@ -1470,12 +1514,52 @@ NAN_METHOD(MLContext::RequestPlanes) {
   }
 }
 
+NAN_METHOD(MLContext::CancelPlanes) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      planesRequests.erase(std::remove_if(planesRequests.begin(), planesRequests.end(), [&](PlanesRequest *p) -> bool {
+        Local<Function> localCbFn = Nan::New(p->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete p;
+          return false;
+        } else {
+          return true;
+        }
+      }));
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 NAN_METHOD(MLContext::RequestEye) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
     EyeRequest *eyeRequest = new EyeRequest(cbFn);
     eyeRequests.push_back(eyeRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::CancelEye) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      eyeRequests.erase(std::remove_if(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) -> bool {
+        Local<Function> localCbFn = Nan::New(e->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete e;
+          return false;
+        } else {
+          return true;
+        }
+      }));
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }
