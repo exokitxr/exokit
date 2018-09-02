@@ -24,6 +24,7 @@
 #include <ml_hand_tracking.h>
 #include <ml_perception.h>
 #include <ml_planes.h>
+#include <ml_eye_tracking.h>
 #include <ml_privilege_ids.h>
 #include <ml_privilege_functions.h>
 #include <ml_meshing2.h>
