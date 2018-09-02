@@ -607,7 +607,7 @@ nativeWindow.setEventHandler((type, data) => {
       }
       case 'keydown': {
         let handled = false;
-        if (data.keyCode === 27) {
+        if (data.keyCode === 27) { // ESC
           if (window.top.document.pointerLockElement) {
             window.top.document.exitPointerLock();
             handled = true;
@@ -617,8 +617,7 @@ nativeWindow.setEventHandler((type, data) => {
             handled = true;
           }
         }
-        //122 is F11 key
-        if (data.keyCode === 122){
+        if (data.keyCode === 122) { // F11
           if (window.top.document.fullscreenElement) {
             window.top.document.exitFullscreen();
             handled = true;
