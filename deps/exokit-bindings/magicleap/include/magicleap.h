@@ -23,6 +23,7 @@
 #include <ml_head_tracking.h>
 #include <ml_hand_tracking.h>
 #include <ml_perception.h>
+#include <ml_snapshot.h>
 #include <ml_meshing2.h>
 #include <ml_planes.h>
 #include <ml_camera.h>

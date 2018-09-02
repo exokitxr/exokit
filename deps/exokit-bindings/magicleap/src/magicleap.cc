@@ -424,37 +424,38 @@ void PlanesRequest::Poll() {
 EyeRequest::EyeRequest(Local<Function> cbFn) : cbFn(cbFn) {}
 
 void EyeRequest::Poll() {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "eyeRequest");
-
-  Local<Object> obj = Nan::New<Object>();
-
-  {
-    const MLCoordinateFrameUID &id = eyeStaticData.left_center;
-    uint64_t id1 = id.data[0];
-    uint64_t id2 = id.data[1];
-    char s[16*2 + 1];
-    sprintf(s, "%016llx%016llx", id1, id2);
-    obj->Set(JS_STR("leftCenter"), JS_STR(s));
+  MLSnapshot *snapshot;
+  if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
+    ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
   }
 
-  {
-    const MLCoordinateFrameUID &id = eyeStaticData.right_center;
-    uint64_t id1 = id.data[0];
-    uint64_t id2 = id.data[1];
-    char s[16*2 + 1];
-    sprintf(s, "%016llx%016llx", id1, id2);
-    obj->Set(JS_STR("rightCenter"), JS_STR(s));
+  const MLCoordinateFrameUID &id = eyeStaticData.fixation;
+  MLTransform transform;
+  if (MLSnapshotGetTransform(snapshot, &id, &transform) == MLResult_Ok) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "eyeRequest");
+    
+    Local<Float32Array> fixationTransformArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (3 + 4) * sizeof(float)), 0, 3 + 4);
+    fixationTransformArray->Set(0, JS_NUM(transform.position.x));
+    fixationTransformArray->Set(1, JS_NUM(transform.position.y));
+    fixationTransformArray->Set(2, JS_NUM(transform.position.z));
+    fixationTransformArray->Set(3, JS_NUM(transform.rotation.x));
+    fixationTransformArray->Set(4, JS_NUM(transform.rotation.y));
+    fixationTransformArray->Set(5, JS_NUM(transform.rotation.z));
+    fixationTransformArray->Set(6, JS_NUM(transform.rotation.w));
+
+    Local<Function> cbFn = Nan::New(this->cbFn);
+    Local<Value> argv[] = {
+      fixationTransformArray,
+    };
+    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  } else {
+    ML_LOG(Error, "%s: ML failed to get eye transform!", application_name);
   }
-
-  obj->Set(JS_STR("leftBlink"), JS_BOOL(eyeState.left_blink));
-  obj->Set(JS_STR("rightBlink"), JS_BOOL(eyeState.right_blink));
-
-  Local<Function> cbFn = Nan::New(this->cbFn);
-  Local<Value> argv[] = {
-    obj,
-  };
-  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  
+  if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
+    ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
+  }
 }
 
 // camera device status callbacks
