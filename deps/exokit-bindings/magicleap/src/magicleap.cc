@@ -1529,7 +1529,8 @@ NAN_METHOD(MLContext::PrePollEvents) {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
       meshExtents.center = mlContext->position;
-      meshExtents.rotation =  mlContext->rotation;
+      // meshExtents.rotation =  mlContext->rotation;
+      meshExtents.rotation = {0, 0, 0, 1};
     }
     meshExtents.extents.x = 3;
     meshExtents.extents.y = 3;
