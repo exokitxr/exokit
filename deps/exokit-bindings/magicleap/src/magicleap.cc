@@ -15,10 +15,22 @@ enum DummyValue {
   PAUSED,
 };
 
+enum Event {
+  NEW_INIT_ARG,
+  STOP,
+  PAUSE,
+  RESUME,
+  UNLOAD_RESOURCES,
+};
+
 const char application_name[] = "com.exokit.app";
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
 Nan::Persistent<Function> initCb;
+
+Nan::Persistent<Function> eventsCb;
+std::vector<Event> events;
+uv_async_t eventsAsync;
 
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
@@ -178,28 +190,39 @@ static void onNewInitArg(void* application_context) {
   MLLifecycleInitArgList *args;
   MLLifecycleGetInitArgList(&args);
 
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On new init arg called %x.", application_name, args);
+  
+  events.push_bach(Events::NEW_INIT_ARG);
+  uv_async_send(&eventsAsync);
 }
 
 static void onStop(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On stop called.", application_name);
+  eventsAsync.push_bach(Events::STOP);
+  uv_async_send(&eventsAsync);
 }
 
 static void onPause(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
   ML_LOG(Info, "%s: On pause called.", application_name);
+  eventsAsync.push_bach(Events::PAUSD);
+  uv_async_send(&eventsAsync);
 }
 
 static void onResume(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On resume called.", application_name);
+  eventsAsync.push_bach(Events::RESSUME);
+  uv_async_send(&eventsAsync);
 }
 
 static void onUnloadResources(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On unload resources called.", application_name);
+  eventsAsync.push_bach(Events::UNLOAD_RESOURCES);
+  uv_async_send(&eventsAsync);
 }
 
 // HandRequest
@@ -647,6 +670,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   ctorFn->Set(JS_STR("MLStageGeometry"), stageGeometryCons); */
 
   Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
+  Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
@@ -676,59 +700,116 @@ NAN_METHOD(MLContext::New) {
   info.GetReturnValue().Set(mlContextObj);
 }
 
+void RunEventsInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  for (const auto &event : events) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
+
+    Local<String> arg;
+    switch (event) {
+      case NEW_INIT_ARG: {
+        arg = JS_STR("newInitArg");
+        break;
+      }
+      case STOP: {
+        arg = JS_STR("stop");
+        break;
+      }
+      case PAUSE: {
+        arg = JS_STR("pause");
+        break;
+      }
+      case RESUME: {
+        arg = JS_STR("resume");
+        break;
+      }
+      case UNLOAD_RESOURCES: {
+        arg = JS_STR("unloadResources");
+        break;
+      }
+      default: {
+        arg = Nan::Null();
+        break;
+      }
+    }
+    
+    Local<Function> eventsCbFn = Nan::New(eventsCb);
+    Local<Value> argv[] = {
+      arg,
+    };
+    asyncResource.MakeCallback(eventsCbFn, 0, nullptr);
+  }
+  events.clear();
+}
+
 MLLifecycleCallbacks lifecycle_callbacks;
 MLCameraDeviceStatusCallbacks cameraDeviceStatusCallbacks;
 MLCameraCaptureCallbacks cameraCaptureCallbacks;
 NAN_METHOD(MLContext::InitLifecycle) {
   std::cout << "init lifecycle" << std::endl;
 
-  lifecycle_callbacks.on_new_initarg = onNewInitArg;
-  lifecycle_callbacks.on_stop = onStop;
-  lifecycle_callbacks.on_pause = onPause;
-  lifecycle_callbacks.on_resume = onResume;
-  lifecycle_callbacks.on_unload_resources = onUnloadResources;
-  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void *)(&application_context));
-  if (lifecycle_status != MLResult_Ok) {
-    Nan::ThrowError("MLContext::InitLifecycle failed to initialize lifecycle");
-    return;
-  }
+  if (info[0]->IsFunction()) {
+    Local<Function> eventsCbFn = Local<Function>::Cast(info[0]);
+    eventsCb.Reset(eventsCbFn);
+    
+    uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
 
-  {
-    cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
-    cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
-    cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
-    cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
-    cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
-    cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
-    cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
-    MLResult result = MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr);
-    if (result != MLResult_Ok) {
-      ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
-      Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+    lifecycle_callbacks.on_new_initarg = onNewInitArg;
+    lifecycle_callbacks.on_stop = onStop;
+    lifecycle_callbacks.on_pause = onPause;
+    lifecycle_callbacks.on_resume = onResume;
+    lifecycle_callbacks.on_unload_resources = onUnloadResources;
+    lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void *)(&application_context));
+    if (lifecycle_status != MLResult_Ok) {
+      Nan::ThrowError("MLContext::InitLifecycle failed to initialize lifecycle");
       return;
     }
-  }
 
-  {
-    cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
-    cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
-    cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
-    cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
-    cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
-    cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
-    MLResult result = MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr);
-    if (result != MLResult_Ok) {
-      ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
-      Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
-      return;
+    {
+      cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
+      cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
+      cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
+      cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
+      cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
+      cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
+      cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
+      MLResult result = MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+        Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+        return;
+      }
     }
+
+    {
+      cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
+      cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
+      cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
+      cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
+      cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
+      cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
+      MLResult result = MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+        Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+        return;
+      }
+    }
+
+    // HACK: prevent exit hang
+    std::atexit([]() {
+      quick_exit(0);
+    });
+
+    application_context.dummy_value = DummyValue::STOPPED;
+  } else {
+    Nan::ThrowError("invalid arguments");
   }
+}
 
-  // HACK: prevent exit hang
-  std::atexit([]() {
-    quick_exit(0);
-  });
-
+NAN_METHOD(MLContext::DeinitLifecycle) {
   application_context.dummy_value = DummyValue::STOPPED;
 }
 
