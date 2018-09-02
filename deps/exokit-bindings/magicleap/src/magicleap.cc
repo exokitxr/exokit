@@ -756,15 +756,15 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
     Local<Value> typeArg;
     switch (keyboardEvent.type) {
       case KeyboardEventType::CHAR: {
-        typeArg = JS_STR("char");
+        typeArg = JS_STR("keypresss");
         break;
       }
       case KeyboardEventType::KEY_DOWN: {
-        typeArg = JS_STR("keyDown");
+        typeArg = JS_STR("keydown");
         break;
       }
       case KeyboardEventType::KEY_UP: {
-        typeArg = JS_STR("keyUp");
+        typeArg = JS_STR("keyup");
         break;
       }
       default: {
