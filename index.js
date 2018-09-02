@@ -565,7 +565,49 @@ if (nativeMl) {
     }
   };
   const _mlKeyboardEvent = e => {
-    console.log('got ml keyboard event', e);
+    // console.log('got ml keyboard event', e);
+
+    if (mlGlContext) {
+      const {canvas} = mlGlContext;
+      const window = canvas.ownerDocument.defaultView;
+      
+      switch (e.type) {
+        case 'keydown': {
+          let handled = false;
+          if (e.keyCode === 27) { // ESC
+            if (window.top.document.pointerLockElement) {
+              window.top.document.exitPointerLock();
+              handled = true;
+            }
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            }
+          }
+          if (e.keyCode === 122) { // F11
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            } else {
+              window.top.document.requestFullscreen();
+              handled = true;
+            }
+          }
+
+          if (!handled) {
+            canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+          }
+          break;
+        }
+        case 'keyup':
+        case 'keypress': {
+          canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+          break;
+        }
+        default:
+          break;
+      }
+    }
   };
   if (!nativeMl.IsSimulated()) {
     nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);

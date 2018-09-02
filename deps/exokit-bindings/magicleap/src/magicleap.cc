@@ -744,6 +744,16 @@ void RunEventsInMainThread(uv_async_t *handle) {
   events.clear();
 }
 
+inline uint32_t normalizeMLKeyCode(MLKeyCode mlKeyCode) {
+  switch (mlKeyCode) {
+    case MLKEYCODE_ENTER: return 13;
+    case MLKEYCODE_ESCAPE: return 27;
+    case MLKEYCODE_DEL: return 8;
+    case MLKEYCODE_FORWARD_DEL: return 46;
+    default: return (uint32_t)mlKeyCode;
+  }
+}
+
 void RunKeyboardEventsInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
@@ -773,17 +783,20 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
       }
     }
     obj->Set(JS_STR("type"), typeArg);
-    obj->Set(JS_STR("char"), JS_INT((uint32_t)keyboardEvent.char_utf32));
-    obj->Set(JS_STR("keyCode"), JS_INT((uint32_t)keyboardEvent.key_code));
-    obj->Set(JS_STR("shift"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SHIFT));
-    obj->Set(JS_STR("alt"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_ALT));
-    obj->Set(JS_STR("ctrl"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CTRL));
-    obj->Set(JS_STR("meta"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_META));
-    // obj->Set(JS_STR("sym"), JS_BOOL(keyboardEvent.modifier_mask | MLKEYMODIFIER_SYM));
-    // obj->Set(JS_STR("function"), JS_BOOL(keyboardEvent.modifier_mask | MLKEYMODIFIER_FUNCTION));
-    // obj->Set(JS_STR("capsLock"), JS_BOOL(keyboardEvent.modifier_mask | MLKEYMODIFIER_CAPS_LOCK));
-    // obj->Set(JS_STR("numLock"), JS_BOOL(keyboardEvent.modifier_mask | MLKEYMODIFIER_NUM_LOCK));
-    // obj->Set(JS_STR("scrollLock"), JS_BOOL(keyboardEvent.modifier_mask | MLKEYMODIFIER_SCROLL_LOCK));
+    uint32_t charCode = (uint32_t)keyboardEvent.char_utf32;
+    uint32_t keyCode = normalizeMLKeyCode(keyboardEvent.key_code);
+    obj->Set(JS_STR("charCode"), JS_INT(charCode));
+    obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
+    obj->Set(JS_STR("which"), JS_INT(keyCode));
+    obj->Set(JS_STR("shiftKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SHIFT));
+    obj->Set(JS_STR("altKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_ALT));
+    obj->Set(JS_STR("ctrlKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CTRL));
+    obj->Set(JS_STR("metaKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_META));
+    // obj->Set(JS_STR("sym"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SYM));
+    // obj->Set(JS_STR("function"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_FUNCTION));
+    // obj->Set(JS_STR("capsLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
+    // obj->Set(JS_STR("numLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_NUM_LOCK));
+    // obj->Set(JS_STR("scrollLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
 
     Local<Function> keyboardEventsCbFn = Nan::New(keyboardEventsCb);
     Local<Value> argv[] = {
