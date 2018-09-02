@@ -236,6 +236,7 @@
           const plane = planes[i];
 
           const mesh = new THREE.Mesh(planeGeometry, planeMaterial);
+          mesh.frustumCulled = false;
           mesh.position.fromArray(plane.position);
           mesh.quaternion.fromArray(plane.rotation);
           mesh.scale.set(plane.width, plane.height, 1);
@@ -250,6 +251,24 @@
         _loadPlanes(planes);
       };
       window.browser.nativeMl.RequestPlanes(_onPlanes);
+
+      const eyeMesh = (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x0000FF,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(eyeMesh);
+      const _onEye = eye => {
+        eyeMesh.position.fromArray(eye);
+        eyeMesh.quaternion.fromArray(eye, 3);
+        eyeMesh.updateMatrix();
+        eyeMesh.updateMatrixWorld();
+      };
+      window.browser.nativeMl.RequestEye(_onEye);
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,

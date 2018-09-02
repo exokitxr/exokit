@@ -23,12 +23,13 @@
 #include <ml_head_tracking.h>
 #include <ml_hand_tracking.h>
 #include <ml_perception.h>
-#include <ml_planes.h>
-#include <ml_privilege_ids.h>
-#include <ml_privilege_functions.h>
+#include <ml_snapshot.h>
 #include <ml_meshing2.h>
 #include <ml_planes.h>
 #include <ml_camera.h>
+#include <ml_eye_tracking.h>
+#include <ml_privilege_ids.h>
+#include <ml_privilege_functions.h>
 #include <ml_input.h>
 #include <ml_gesture.h>
 #include <ml_lifecycle.h>
@@ -71,6 +72,15 @@ public:
 class PlanesRequest {
 public:
   PlanesRequest(Local<Function> cbFn);
+  void Poll();
+
+// protected:
+  Nan::Persistent<Function> cbFn;
+};
+
+class EyeRequest {
+public:
+  EyeRequest(Local<Function> cbFn);
   void Poll();
 
 // protected:
@@ -140,6 +150,7 @@ public:
   static NAN_METHOD(RequestHand);
   static NAN_METHOD(RequestMesh);
   static NAN_METHOD(RequestPlanes);
+  static NAN_METHOD(RequestEye);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);
