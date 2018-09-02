@@ -131,6 +131,7 @@ public:
   static NAN_METHOD(InitLifecycle);
   static NAN_METHOD(DeinitLifecycle);
   static NAN_METHOD(Present);
+  static NAN_METHOD(Exit);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);

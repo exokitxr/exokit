@@ -661,6 +661,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "Present", Present);
+  Nan::SetMethod(proto, "Exit", Exit);
   Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
@@ -1053,6 +1054,63 @@ NAN_METHOD(MLContext::Present) {
   result->Set(JS_STR("width"), JS_INT(width));
   result->Set(JS_STR("height"), JS_INT(height));
   info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(MLContext::Exit) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+
+  if (lifecycle_status != MLResult_Ok) {
+    ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLGraphicsDestroyClient(&mlContext->graphics_client) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  // destroy perception system
+  if (MLHeadTrackingDestroy(mlContext->head_tracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to destroy head tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLInputDestroy(mlContext->inputTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to destroy input tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLHandTrackingDestroy(handTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to destroy hand tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLMeshingDestroyClient(&meshTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to destroy mesh handle", application_name);
+    return;
+  }
+
+  if (MLPlanesDestroy(planesTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to destroy planes handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLPerceptionShutdown() != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to stop perception.", application_name);
+    info.GetReturnValue().Set(JS_BOOL(false));
+    return;
+  }
+
+  // HACK: force the app to be "stopped"
+  application_context.dummy_value = DummyValue::STOPPED;
+
+  glDeleteFramebuffers(1, &mlContext->framebuffer_id);
 }
 
 NAN_METHOD(MLContext::WaitGetPoses) {
