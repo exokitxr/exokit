@@ -67,6 +67,11 @@ MLPlane planeResults[MAX_NUM_PLANES];
 uint32_t numPlanesResults;
 bool planesRequestPending = false;
 
+MLHandle eyeTracker;
+std::vector<EyeRequest *> eyeRequests;
+MLEyeTrackingState eyeState;
+MLEyeTrackingStaticData eyeStaticData;
+
 bool isPresent() {
   return lifecycle_status == MLResult_Ok;
 }
@@ -414,6 +419,44 @@ void PlanesRequest::Poll() {
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
+// EyeRequest
+
+EyeRequest::EyeRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+
+void EyeRequest::Poll() {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "eyeRequest");
+
+  Local<Object> obj = Nan::New<Object>();
+
+  {
+    const MLCoordinateFrameUID &id = eyeStaticData.left_center;
+    uint64_t id1 = id.data[0];
+    uint64_t id2 = id.data[1];
+    char s[16*2 + 1];
+    sprintf(s, "%016llx%016llx", id1, id2);
+    obj->Set(JS_STR("leftCenter"), JS_STR(s));
+  }
+
+  {
+    const MLCoordinateFrameUID &id = eyeStaticData.right_center;
+    uint64_t id1 = id.data[0];
+    uint64_t id2 = id.data[1];
+    char s[16*2 + 1];
+    sprintf(s, "%016llx%016llx", id1, id2);
+    obj->Set(JS_STR("rightCenter"), JS_STR(s));
+  }
+
+  obj->Set(JS_STR("leftBlink"), JS_BOOL(eyeState.left_blink));
+  obj->Set(JS_STR("rightBlink"), JS_BOOL(eyeState.right_blink));
+
+  Local<Function> cbFn = Nan::New(this->cbFn);
+  Local<Value> argv[] = {
+    obj,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+}
+
 // camera device status callbacks
 
 void cameraOnDeviceAvailable(void *data) {
@@ -698,6 +741,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestHand", RequestHand);
   Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
   Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
+  Nan::SetMethod(ctorFn, "RequestEye", RequestEye);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
@@ -963,6 +1007,12 @@ NAN_METHOD(MLContext::Present) {
     return;
   }
 
+  if (MLEyeTrackingCreate(&eyeTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create eye handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
   // Now that graphics is connected, the app is ready to go
   if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
@@ -1091,6 +1141,12 @@ NAN_METHOD(MLContext::Exit) {
 
   if (MLPlanesDestroy(planesTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to destroy planes handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLEyeTrackingDestroy(eyeTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create eye handle", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
@@ -1423,6 +1479,17 @@ NAN_METHOD(MLContext::RequestPlanes) {
   }
 }
 
+NAN_METHOD(MLContext::RequestEye) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    EyeRequest *eyeRequest = new EyeRequest(cbFn);
+    eyeRequests.push_back(eyeRequest);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 bool cameraConnected = false;
 NAN_METHOD(MLContext::RequestCamera) {
   if (info[0]->IsFunction()) {
@@ -1567,6 +1634,20 @@ NAN_METHOD(MLContext::PrePollEvents) {
     } else {
       ML_LOG(Error, "%s: Planes request failed! %x", application_name, result);
     }
+  }
+
+  if (eyeRequests.size() > 0) {
+    if (MLEyeTrackingGetState(eyeTracker, &eyeState) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Eye get state failed!", application_name);
+    }
+
+    if (MLEyeTrackingGetStaticData(eyeTracker, &eyeStaticData) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Eye get static data failed!", application_name);
+    }
+
+    std::for_each(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) {
+      e->Poll();
+    });
   }
 
   {

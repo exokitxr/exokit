@@ -77,6 +77,15 @@ public:
   Nan::Persistent<Function> cbFn;
 };
 
+class EyeRequest {
+public:
+  EyeRequest(Local<Function> cbFn);
+  void Poll();
+
+// protected:
+  Nan::Persistent<Function> cbFn;
+};
+
 class CameraRequestPlane {
 public:
   CameraRequestPlane(uint32_t width, uint32_t height, uint8_t *data, uint32_t size, uint32_t bpp, uint32_t stride);
@@ -140,6 +149,7 @@ public:
   static NAN_METHOD(RequestHand);
   static NAN_METHOD(RequestMesh);
   static NAN_METHOD(RequestPlanes);
+  static NAN_METHOD(RequestEye);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);
