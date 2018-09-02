@@ -844,7 +844,7 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-  for (int i = 0; i < 2; i++) {
+  /* for (int i = 0; i < 2; i++) {
     const MLGraphicsRenderBufferInfo &buffer = renderTargetsInfo.buffers[i];
 
     const MLGraphicsRenderTarget &colorRenderTarget = buffer.color;
@@ -856,7 +856,7 @@ NAN_METHOD(MLContext::Present) {
     const uint32_t &depthHeight = depthRenderTarget.height;
 
     ML_LOG(Info, "Got ml render target %u: %u x %u, %u x %u", i, colorWidth, colorHeight, depthWidth, depthHeight);
-  }
+  } */
 
   /* MLResult privilege_init_status = MLPrivilegesStartup();
   if (privilege_init_status != MLResult_Ok) {
