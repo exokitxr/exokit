@@ -1059,12 +1059,6 @@ NAN_METHOD(MLContext::Present) {
 NAN_METHOD(MLContext::Exit) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (lifecycle_status != MLResult_Ok) {
-    ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-
   if (MLGraphicsDestroyClient(&mlContext->graphics_client) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
     info.GetReturnValue().Set(Nan::Null());
