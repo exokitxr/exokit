@@ -40,7 +40,7 @@ Since Exokit supports anything that runs on the web, it powers experiences built
 git clone https://github.com/webmixedreality/exokit.git
 cd exokit
 npm install
-node . # or node -h for home
+node . # or node . -h for home
 ```
 
 #### Run a WebXR site (desktop)
