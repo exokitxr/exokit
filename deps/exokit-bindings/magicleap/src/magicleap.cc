@@ -707,7 +707,7 @@ void RunEventsInMainThread(uv_async_t *handle) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
 
-    Local<String> arg;
+    Local<Value> arg;
     switch (event) {
       case NEW_INIT_ARG: {
         arg = JS_STR("newInitArg");
