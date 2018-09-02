@@ -257,8 +257,6 @@ void HandRequest::Poll() {
 
     array->Set(JS_INT(numResults++), obj);
   }
-  
-std::cout << "hand confidence " << leftHandState.hand_center_normalized.x << " " << leftHandState.hand_center_normalized.y << " " << leftHandState.hand_center_normalized.z << " " << leftHandState.hand_confidence << " : " << rightHandState.hand_center_normalized.x << " " << rightHandState.hand_center_normalized.y << " " << rightHandState.hand_center_normalized.z << " " << rightHandState.hand_confidence << std::endl;
 
   Local<Function> cbFn = Nan::New(this->cbFn);
   Local<Value> argv[] = {
