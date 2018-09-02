@@ -49,9 +49,14 @@ MLMeshingExtents meshExtents;
 MLHandle meshInfoRequestHandle;
 MLMeshingMeshInfo meshInfo;
 bool meshInfoRequestPending = false;
+std::vector<MLMeshingBlockRequest> meshBlockRequests(128);
+uint32_t numMeshBlockRequests = 0;
+uint32_t meshBlockRequestIndex = 0;
 MLMeshingMeshRequest meshRequest;
+std::vector<MLCoordinateFrameUID> meshRemovedList;
 MLHandle meshRequestHandle;
 MLMeshingMesh mesh;
+bool meshRequestsPending = false;
 bool meshRequestPending = false;
 
 MLHandle planesTracker;
@@ -328,12 +333,27 @@ void MeshRequest::Poll() {
       Local<Float32Array> normals = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normal, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
       obj->Set(JS_STR("normals"), normals);
 
+      obj->Set(JS_STR("valid"), JS_BOOL(true));
+
       array->Set(numResults++, obj);
     } else if (result == MLMeshingResult_Pending) {
       // nothing
     } else {
       ML_LOG(Error, "%s: ML mesh request poll failed: %x %x", application_name, i, result);
     }
+  }
+  for (const MLCoordinateFrameUID &id : meshRemovedList) {
+    Local<Object> obj = Nan::New<Object>();
+
+    uint64_t id1 = id.data[0];
+    uint64_t id2 = id.data[1];
+    char s[16*2 + 1];
+    sprintf(s, "%016llx%016llx", id1, id2);
+    obj->Set(JS_STR("id"), JS_STR(s));
+
+    obj->Set(JS_STR("valid"), JS_BOOL(false));
+
+    array->Set(numResults++, obj);
   }
 
   Local<Function> cbFn = Nan::New(this->cbFn);
@@ -927,27 +947,7 @@ NAN_METHOD(MLContext::Present) {
     ML_LOG(Error, "%s: failed to initialize meshing settings", application_name);
   }
   meshingSettings.flags |= MLMeshingFlags_ComputeNormals;
-  /* meshingSettings.flags = MLMeshingFlags_ComputeNormals;
-  meshingSettings.bounds_center = mlContext->position;
-  meshingSettings.bounds_rotation = mlContext->rotation;
-  meshingSettings.bounds_extents.x = 3;
-  meshingSettings.bounds_extents.y = 3;
-  meshingSettings.bounds_extents.z = 3;
-  meshingSettings.compute_normals = true;
-  meshingSettings.disconnected_component_area = 0.1;
-  meshingSettings.enable_meshing = true;
-  meshingSettings.fill_hole_length = 0.1;
-  meshingSettings.fill_holes = false;
-  meshingSettings.index_order_ccw = false;
-  // meshingSettings.mesh_type = MLMeshingType_PointCloud;
-  meshingSettings.mesh_type = MLMeshingType_Blocks;
-  // meshingSettings.meshing_poll_time = 1e9;
-  meshingSettings.meshing_poll_time = 0;
-  meshingSettings.planarize = false;
-  meshingSettings.remove_disconnected_components = false;
-  meshingSettings.remove_mesh_skirt = false;
-  meshingSettings.request_vertex_confidence = false;
-  meshingSettings.target_number_triangles_per_block = 0; */
+  // meshingSettings.flags |= MLMeshingFlags_Planarize;
   {
     MLResult result = MLMeshingCreateClient(&meshTracker, &meshingSettings);
     if (result != MLResult_Ok) {
@@ -1524,7 +1524,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
     }
   }
 
-  if (meshRequests.size() > 0 && !meshInfoRequestPending && !meshRequestPending) {
+  if (meshRequests.size() > 0 && !meshInfoRequestPending && !meshRequestsPending) {
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
@@ -1576,49 +1576,52 @@ NAN_METHOD(MLContext::PrePollEvents) {
 }
 
 NAN_METHOD(MLContext::PostPollEvents) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+  GLuint fbo = info[2]->Uint32Value();
+  unsigned int width = info[3]->Uint32Value();
+  unsigned int height = info[4]->Uint32Value();
+
   if (meshInfoRequestPending) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
     if (result == MLResult_Ok) {
-      meshInfoRequestPending = false;
-
       uint32_t dataCount = meshInfo.data_count;
-      if (meshRequest.data != nullptr) {
-        delete[] meshRequest.data;
-        meshRequest.data = nullptr;
+      /* std::vector<MLMeshingBlockInfo *> meshInfoData(dataCount);
+      for (decltype(dataCount) i = 0; i < dataCount; i++) {
+        meshInfoData[i] = &meshInfo.data[i];
       }
-      meshRequest.data = new MLMeshingBlockRequest[dataCount];
+      std::sort(meshInfoData.begin(), meshInfoData.end(), [&](MLMeshingBlockInfo *a, MLMeshingBlockInfo *b) -> bool {
+        const MLMeshingExtents &aExtents = a->extents;
+        float aDistance = std::pow(aExtents.center.x - mlContext->position.x, 2) + std::pow(aExtents.center.y - mlContext->position.y, 2) + std::pow(aExtents.center.z - mlContext->position.z, 2);
+
+        const MLMeshingExtents &bExtents = b->extents;
+        float bDistance = std::pow(bExtents.center.x - mlContext->position.x, 2) + std::pow(bExtents.center.y - mlContext->position.y, 2) + std::pow(bExtents.center.z - mlContext->position.z, 2);
+
+        return aDistance > bDistance;
+      }); */
       uint32_t requestCount = 0;
+      meshRemovedList.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
+        // const MLMeshingBlockInfo &meshBlockInfo = *(meshInfoData[i]);
         const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
         const MLMeshingMeshState &state = meshBlockInfo.state;
+        // if ((requestCount < 16) && (state == MLMeshingMeshState_New || state == MLMeshingMeshState_Updated || state == MLMeshingMeshState_Unchanged)) {
         if (state == MLMeshingMeshState_New || state == MLMeshingMeshState_Updated) {
-          MLMeshingBlockRequest &meshBlockRequest = meshRequest.data[requestCount];
+          MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[requestCount++];
           meshBlockRequest.id = meshBlockInfo.id;
           meshBlockRequest.level = MLMeshingLOD_Medium;
           // meshBlockRequest.level = MLMeshingLOD_Maximum;
-
-          requestCount++;
         } else if (state == MLMeshingMeshState_Deleted) {
-          // XXX
+          meshRemovedList.push_back(meshBlockInfo.id);
         }
       }
-      if (requestCount > 16) { // XXX
-        /* std::sort(std::begin(meshRequest.data), std::begin(meshRequest.data) + requestCount, [&](MLMeshingBlockRequest *a, MLMeshingBlockRequest *b) -> bool {
+      numMeshBlockRequests = requestCount;
 
-        })); */
-        requestCount = 16;
-      }
-      meshRequest.request_count = requestCount;
-
-      MLResult result = MLMeshingRequestMesh(meshTracker, &meshRequest, &meshRequestHandle);
-      if (result == MLResult_Ok) {
-        meshRequestPending = true;
-      } else {
-        ML_LOG(Error, "%s: Mesh request failed! %x", application_name, result);
-      }
-
-      MLMeshingFreeResource(meshTracker, &meshInfoRequestHandle);
       meshInfoRequestPending = false;
+      meshRequestsPending = true;
+      meshRequestPending = false;
+      meshBlockRequestIndex = 0;
+      MLMeshingFreeResource(meshTracker, &meshInfoRequestHandle);
     } else if (result == MLResult_Pending) {
       // nothing
     } else {
@@ -1627,27 +1630,51 @@ NAN_METHOD(MLContext::PostPollEvents) {
       meshInfoRequestPending = false;
     }
   }
-  if (meshRequestPending) {
-    MLResult result = MLMeshingGetMeshResult(meshTracker, meshRequestHandle, &mesh);
-    if (result == MLResult_Ok) {
-      const MLMeshingResult &result = mesh.result;
-      if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
-        std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
-          m->Poll();
-        });
-      } else if (result == MLMeshingResult_Pending) {
-        // nothing
+  if (meshRequestsPending && !meshRequestPending) {
+    if (meshBlockRequestIndex < numMeshBlockRequests) {
+      uint32_t requestsRemaining = numMeshBlockRequests - meshBlockRequestIndex;
+      uint32_t requestsThisTime = std::min<uint32_t>(requestsRemaining, 16);
+      meshRequest.data = meshBlockRequests.data() + meshBlockRequestIndex;
+      meshRequest.request_count = requestsThisTime;
+
+      meshBlockRequestIndex += requestsThisTime;
+      // meshBlockRequestIndex = numMeshBlockRequests;
+
+      MLResult result = MLMeshingRequestMesh(meshTracker, &meshRequest, &meshRequestHandle);
+      if (result == MLResult_Ok) {
+        meshRequestsPending = true;
+        meshRequestPending = true;
       } else {
-        ML_LOG(Error, "%s: Mesh get result failed! %x", application_name, result);
+        ML_LOG(Error, "%s: Mesh request failed! %x", application_name, result);
+
+        meshRequestsPending = false;
+        meshRequestPending = false;
+      }
+    } else {
+      meshRequestsPending = false;
+      meshRequestPending = false;
+    }
+  }
+  if (meshRequestsPending && meshRequestPending) {
+    MLResult result = MLMeshingGetMeshResult(meshTracker, meshRequestHandle, &mesh);
+    if (result == MLResult_Ok)
+      std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
+        m->Poll();
+      });
+
+      if (meshRemovedList.size() > 0) {
+        meshRemovedList.clear();
       }
 
-      MLMeshingFreeResource(meshTracker, &meshRequestHandle);
+      meshRequestsPending = true;
       meshRequestPending = false;
+      MLMeshingFreeResource(meshTracker, &meshRequestHandle);
     } else if (result == MLResult_Pending) {
       // nothing
     } else {
       ML_LOG(Error, "%s: Mesh get failed! %x", application_name, result);
 
+      meshRequestsPending = true;
       meshRequestPending = false;
     }
   }
@@ -1673,11 +1700,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
     std::unique_lock<std::mutex> lock(cameraRequestsMutex);
 
     if (cameraRequests.size() > 0 && cameraResponsePending) {
-      WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-      GLuint fbo = info[1]->Uint32Value();
-      unsigned int width = info[2]->Uint32Value();
-      unsigned int height = info[3]->Uint32Value();
-
       std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
         c->Poll(gl, fbo, width, height);
       });
