@@ -251,6 +251,11 @@
       };
       window.browser.nativeMl.RequestPlanes(_onPlanes);
 
+      const _onEye = eye => {
+        console.log('got eye', eye, JSON.stringify(terrainMeshes.map(terrainMesh => terrainMesh.meshId), null, 2));
+      };
+      window.browser.nativeMl.RequestEye(_onEye);
+
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
