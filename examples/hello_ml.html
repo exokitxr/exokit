@@ -8,8 +8,10 @@
   </head>
   <body>
   <script src="three.js"></script>
+  <script src="inflate.min.js"></script>
+  <script src="FBXLoader.js"></script>
   <script>
-    let container, scene, camera, display, controllerMeshes;
+    let container, scene, camera, display, model, controllerMeshes;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -47,7 +49,7 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      (() => {
+      /* (() => {
         const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
         const material = new THREE.MeshPhongMaterial({
           color: 0xE91E63,
@@ -68,7 +70,31 @@
         // mesh.position.z = -1;
         mesh.frustumCulled = false;
         scene.add(mesh);
-      })();
+      })(); */
+
+      const loader = new THREE.FBXLoader();
+      loader.load('exokit.fbx', object => {
+        // console.log('load model 2', !!object);
+
+        /* object.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(0.5, 0, 1).normalize()
+        ); */
+        object.scale.multiplyScalar(0.001);
+        object.matrix.compose(object.position, object.quaternion, object.scale);
+        object.updateMatrixWorld(true);
+        // object.frustumCulled = false;
+
+        object.traverse(child => {
+          child.frustumCulled = false;
+        });
+
+        // console.log(object);
+
+        model = object;
+
+        scene.add(object);
+      });
 
       controllerMeshes = [
         _makeControllerMesh(-0.1),
@@ -301,6 +327,15 @@
     }
 
     function animate(time, frame) {
+      if (model) {
+        const animationTime = 4000;
+        const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
+        model.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
+        );
+        model.updateMatrixWorld();
+      }
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
 
