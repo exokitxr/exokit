@@ -1642,7 +1642,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
   }
   if (meshRequestsPending && meshRequestPending) {
     MLResult result = MLMeshingGetMeshResult(meshTracker, meshRequestHandle, &mesh);
-    if (result == MLResult_Ok)
+    if (result == MLResult_Ok) {
       std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
         m->Poll();
       });
