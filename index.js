@@ -269,10 +269,8 @@ const localFovArray2 = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
-const framebufferArray = new Uint32Array(2);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
-const viewportArray = new Uint32Array(4);
 const handsArray = [
   new Float32Array(handEntrySize),
   new Float32Array(handEntrySize),
@@ -1237,7 +1235,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
     } else if (mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
-      mlHasPose = mlContext.WaitGetPoses(framebufferArray, transformArray, projectionArray, viewportArray, controllersArray);
+      mlHasPose = mlContext.WaitGetPoses(transformArray, projectionArray, controllersArray);
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
