@@ -342,6 +342,16 @@ public:
   bool HasTextureBinding(GLenum framebuffer, GLenum target) {
     return textureBindings.find(std::make_pair(framebuffer, target)) != textureBindings.end();
   }
+  
+  void SetProgramBinding(GLuint program) {
+    programBindings[GL_VERTEX_SHADER] = program;
+  }
+  GLuint GetProgramBinding() {
+    return programBindings[GL_VERTEX_SHADER];
+  }
+  bool HasProgramBinding() {
+    return programBindings.find(GL_VERTEX_SHADER) != programBindings.end();
+  }
 
   bool live;
   NATIVEwindow *windowHandle;
@@ -358,6 +368,7 @@ public:
   std::map<GLenum, GLuint> renderbufferBindings;
   std::map<GLenum, GLuint> bufferBindings;
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
+  std::map<GLenum, GLuint> programBindings;
 };
 
 class WebGL2RenderingContext : public WebGLRenderingContext {
