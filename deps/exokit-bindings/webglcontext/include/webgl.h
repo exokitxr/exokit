@@ -82,6 +82,18 @@ using namespace node;
 
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
 
+class ViewportState {
+public:
+  ViewportState(GLint x = 0, GLint y = 0, GLsizei w = 0, GLsizei h = 0, bool valid = false);
+  ViewportState &operator=(const ViewportState &viewportState);
+
+  GLint x;
+  GLint y;
+  GLsizei w;
+  GLsizei h;
+  bool valid;
+};
+
 class WebGLRenderingContext : public ObjectWrap {
 public:
   static std::pair<Local<Object>, Local<FunctionTemplate>> Initialize(Isolate *isolate);
@@ -369,6 +381,7 @@ public:
   std::map<GLenum, GLuint> bufferBindings;
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
   std::map<GLenum, GLuint> programBindings;
+  ViewportState viewportState;
 };
 
 class WebGL2RenderingContext : public WebGLRenderingContext {
