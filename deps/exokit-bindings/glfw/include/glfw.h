@@ -27,6 +27,7 @@ typedef GLFWwindow NATIVEwindow;
 namespace glfw {
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   void *GetGLContext(NATIVEwindow *window);
+  NATIVEwindow *GetCurrentWindowContext();
   void SetCurrentWindowContext(NATIVEwindow *window);
   void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data);
 }
