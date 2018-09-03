@@ -292,6 +292,16 @@ public:
   static NAN_GETTER(DrawingBufferHeightGetter);
 
   static NAN_METHOD(SetDefaultFramebuffer);
+  
+  void SetVertexArrayBinding(GLuint vao) {
+    vertexArrayBindings[GL_VERTEX_SHADER] = vao;
+  }
+  GLuint GetVertexArrayBinding() {
+    return vertexArrayBindings[GL_VERTEX_SHADER];
+  }
+  bool HasVertexArrayBinding() {
+    return vertexArrayBindings.find(GL_VERTEX_SHADER) != vertexArrayBindings.end();
+  }
 
   void SetFramebufferBinding(GLenum target, GLuint framebuffer) {
     framebufferBindings[target] = framebuffer;
@@ -333,6 +343,7 @@ public:
   GLint packAlignment;
   GLint unpackAlignment;
   GLuint activeTexture;
+  std::map<GLenum, GLuint> vertexArrayBindings;
   std::map<GLenum, GLuint> framebufferBindings;
   std::map<GLenum, GLuint> renderbufferBindings;
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
