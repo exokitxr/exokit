@@ -28,6 +28,7 @@
 #include <ml_planes.h>
 #include <ml_camera.h>
 #include <ml_eye_tracking.h>
+#include <ml_found_object.h>
 #include <ml_privilege_ids.h>
 #include <ml_privilege_functions.h>
 #include <ml_input.h>

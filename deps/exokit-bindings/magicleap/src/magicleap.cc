@@ -67,6 +67,8 @@ std::vector<EyeRequest *> eyeRequests;
 MLEyeTrackingState eyeState;
 MLEyeTrackingStaticData eyeStaticData;
 
+MLHandle objectTracker;
+
 bool isPresent() {
   return lifecycle_status == MLResult_Ok;
 }
@@ -1020,6 +1022,12 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
+  
+  if (MLFoundObjectTrackerCreate(&objectTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create object tracker handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
 
   // Now that graphics is connected, the app is ready to go
   if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
@@ -1154,7 +1162,13 @@ NAN_METHOD(MLContext::Exit) {
   }
 
   if (MLEyeTrackingDestroy(eyeTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: failed to create eye handle", application_name);
+    ML_LOG(Error, "%s: failed to destroy eye handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLFoundObjectTrackerDestroy(objectTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to destroy object tracker handle", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
