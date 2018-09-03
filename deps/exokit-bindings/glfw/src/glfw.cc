@@ -1053,6 +1053,10 @@ NAN_METHOD(BlitFrameBuffer) {
   }
 }
 
+NATIVEwindow *GetCurrentWindowContext() {
+  return currentWindow;
+}
+
 void SetCurrentWindowContext(NATIVEwindow *window) {
   if (currentWindow != window) {
     glfwMakeContextCurrent(window);
