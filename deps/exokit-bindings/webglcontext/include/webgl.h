@@ -322,6 +322,16 @@ public:
   bool HasRenderbufferBinding(GLenum target) {
     return renderbufferBindings.find(target) != renderbufferBindings.end();
   }
+  
+  void SetBufferBinding(GLenum target, GLuint buffer) {
+    bufferBindings[target] = buffer;
+  }
+  GLuint GetBufferBinding(GLenum target) {
+    return bufferBindings[target];
+  }
+  bool HasBufferBinding(GLenum target) {
+    return bufferBindings.find(target) != bufferBindings.end();
+  }
 
   void SetTextureBinding(GLenum framebuffer, GLenum target, GLuint texture) {
     textureBindings[std::make_pair(framebuffer, target)] = texture;
@@ -346,6 +356,7 @@ public:
   std::map<GLenum, GLuint> vertexArrayBindings;
   std::map<GLenum, GLuint> framebufferBindings;
   std::map<GLenum, GLuint> renderbufferBindings;
+  std::map<GLenum, GLuint> bufferBindings;
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
 };
 
