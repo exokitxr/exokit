@@ -791,6 +791,17 @@ const _bindWindow = (window, newWindowCb) => {
       e.clipboardData.items.push(dataTransferItem);
     }
   });
+  window.document.on('copy', e => {
+    e.clipboardData = new window.DataTransfer();
+    if (contexts.length > 0) {
+      const context = contexts[0];
+      const windowHandle = context.getWindowHandle();
+//      const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
+//      e.clipboardData.items.push(dataTransferItem);
+      const clipboardContents = nativeWindow.setClipboard(windowHandle, "lol");
+    }
+  });
+
 
   window.document.addEventListener('pointerlockchange', () => {
     const {pointerLockElement} = window.document;
@@ -1017,6 +1028,17 @@ const _bindWindow = (window, newWindowCb) => {
       e.clipboardData.items.push(dataTransferItem);
     }
   });
+  window.document.on('copy', e => {
+    e.clipboardData = new window.DataTransfer();
+    if (contexts.length > 0) {
+      const context = contexts[0];
+      const windowHandle = context.getWindowHandle();
+      const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);
+      const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
+      e.clipboardData.items.push(dataTransferItem);
+    }
+  });
+
 
   window.on('vrdisplaypresentchange', e => {
     if (e.display) {
