@@ -92,7 +92,7 @@ function initDocument (document, window) {
   };
   document.execCommand = command => {
     if (command === 'copy') {
-      // nothing
+      document.dispatchEvent(new Event('copy'));
     } else if (command === 'paste') {
       document.dispatchEvent(new Event('paste'));
     }
