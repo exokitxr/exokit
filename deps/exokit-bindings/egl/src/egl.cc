@@ -234,6 +234,10 @@ NAN_METHOD(BlitFrameBuffer) {
   }
 }
 
+NATIVEwindow *GetCurrentWindowContext() {
+  return currentWindow;
+}
+
 void SetCurrentWindowContext(NATIVEwindow *window) {
   if (currentWindow != window) {
     eglMakeCurrent(window->display, EGL_NO_SURFACE, EGL_NO_SURFACE, window->context);
