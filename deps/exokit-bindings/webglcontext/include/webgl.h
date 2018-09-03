@@ -94,6 +94,18 @@ public:
   bool valid;
 };
 
+class ColorMaskState {
+public:
+  ColorMaskState(GLboolean r = true, GLboolean g = true, GLboolean b = true, GLboolean a = true, bool valid = false);
+  ColorMaskState &operator=(const ColorMaskState &colorMaskState);
+
+  GLboolean r;
+  GLboolean g;
+  GLboolean b;
+  GLboolean a;
+  bool valid;
+};
+
 class WebGLRenderingContext : public ObjectWrap {
 public:
   static std::pair<Local<Object>, Local<FunctionTemplate>> Initialize(Isolate *isolate);
@@ -382,6 +394,7 @@ public:
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
   std::map<GLenum, GLuint> programBindings;
   ViewportState viewportState;
+  ColorMaskState colorMaskState;
 };
 
 class WebGL2RenderingContext : public WebGLRenderingContext {
