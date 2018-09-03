@@ -1176,11 +1176,11 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 
   if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array()) {
     if (application_context.dummy_value == DummyValue::RUNNING) {
-      Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
-      Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
-      Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[2]);
-      Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[3]);
-      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[4]);
+      // Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
+      Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[0]);
+      Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[1]);
+      // Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[2]);
+      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[3]);
 
       MLGraphicsFrameParams frame_params;
       MLResult result = MLGraphicsInitFrameParams(&frame_params);
