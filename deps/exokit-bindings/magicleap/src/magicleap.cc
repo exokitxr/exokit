@@ -954,29 +954,9 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-  if (renderTargetsInfo.num_virtual_cameras != 2) {
+  /* if (renderTargetsInfo.num_virtual_cameras != 2) {
     ML_LOG(Error, "Invalid graphics render targets num cameras: %u", renderTargetsInfo.num_virtual_cameras);
     info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-  /* for (int i = 0; i < 2; i++) {
-    const MLGraphicsRenderBufferInfo &buffer = renderTargetsInfo.buffers[i];
-
-    const MLGraphicsRenderTarget &colorRenderTarget = buffer.color;
-    const uint32_t &colorWidth = colorRenderTarget.width;
-    const uint32_t &colorHeight = colorRenderTarget.height;
-
-    const MLGraphicsRenderTarget &depthRenderTarget = buffer.depth;
-    const uint32_t &depthWidth = depthRenderTarget.width;
-    const uint32_t &depthHeight = depthRenderTarget.height;
-
-    ML_LOG(Info, "Got ml render target %u: %u x %u, %u x %u", i, colorWidth, colorHeight, depthWidth, depthHeight);
-  } */
-
-  /* MLResult privilege_init_status = MLPrivilegesStartup();
-  if (privilege_init_status != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to initialize privilege system.", application_name);
-    info.GetReturnValue().Set(JS_BOOL(false));
     return;
   } */
 
