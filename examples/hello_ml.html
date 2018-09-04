@@ -222,9 +222,11 @@
             const terrainMesh = _getTerrainMesh(id);
             _loadTerrainMesh(terrainMesh, update);
           } else {
-            const terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === id);
-            if (terrainMesh) {
+            const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+            if (index !== -1) {
+              const terrainMesh = terrainMeshes[index];
               _removeTerrainMesh(terrainMesh);
+              terrainMeshes.splice(index, 1);
             }
           }
         }
