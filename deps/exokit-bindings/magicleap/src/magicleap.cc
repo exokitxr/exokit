@@ -1180,7 +1180,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[0]);
       Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[1]);
       // Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[2]);
-      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[3]);
+      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[2]);
 
       MLGraphicsFrameParams frame_params;
       MLResult result = MLGraphicsInitFrameParams(&frame_params);
@@ -1194,10 +1194,11 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       frame_params.focus_distance = 1.0f;
 
       result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
+
       if (result == MLResult_Ok) {
         // framebuffer
-        framebufferArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
-        framebufferArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
+        // framebufferArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
+        // framebufferArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
 
         // transform
         for (int i = 0; i < 2; i++) {
@@ -1226,23 +1227,12 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           mlContext->rotation = leftCameraTransform.rotation;
         }
 
-        // viewport
+        /* // viewport
         const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
         viewportArray->Set(0, JS_INT((int)viewport.x));
         viewportArray->Set(1, JS_INT((int)viewport.y));
         viewportArray->Set(2, JS_INT((unsigned int)viewport.w));
-        viewportArray->Set(3, JS_INT((unsigned int)viewport.h));
-
-        // planes
-        /* endPlanesQuery(mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, mlContext->floorPlanes, &mlContext->numFloorPlanes);
-        endPlanesQuery(mlContext->planesWallHandle, mlContext->planesWallQueryHandle, mlContext->wallPlanes, &mlContext->numWallPlanes);
-        endPlanesQuery(mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, mlContext->ceilingPlanes, &mlContext->numCeilingPlanes); */
-
-        /* uint32_t planesIndex = 0;
-        readPlanesQuery(mlContext->floorPlanes, mlContext->numFloorPlanes, 0, planesArray, &planesIndex);
-        readPlanesQuery(mlContext->wallPlanes, mlContext->numWallPlanes, 1, planesArray, &planesIndex);
-        readPlanesQuery(mlContext->ceilingPlanes, mlContext->numCeilingPlanes, 2, planesArray, &planesIndex);
-        numPlanesArray->Set(0, JS_INT((int)planesIndex)); */
+        viewportArray->Set(3, JS_INT((unsigned int)viewport.h)); */
 
         // controllers
         MLInputControllerState controllerStates[MLInput_MaxControllers];
