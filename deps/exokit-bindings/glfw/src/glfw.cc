@@ -837,7 +837,7 @@ NAN_METHOD(CreateRenderTarget) {
 
   {
     glGenFramebuffers(1, &msFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, msFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
 
     if (!sharedMsDepthStencilTex) {
       glGenTextures(1, &msDepthStencilTex);
@@ -848,8 +848,8 @@ NAN_METHOD(CreateRenderTarget) {
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
-    // glFramebufferTexture2DMultisampleEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, msDepthStencilTex, 0, samples);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, msDepthStencilTex, 0, samples);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
     if (!sharedMsColorTex) {
       glGenTextures(1, &msColorTex);
@@ -860,12 +860,12 @@ NAN_METHOD(CreateRenderTarget) {
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
-    // glFramebufferTexture2DMultisampleEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, samples);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, samples);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
   }
   {
     glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
     if (!sharedDepthStencilTex) {
       glGenTextures(1, &depthStencilTex);
@@ -876,7 +876,7 @@ NAN_METHOD(CreateRenderTarget) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
 
     if (!sharedColorTex) {
       glGenTextures(1, &colorTex);
@@ -887,11 +887,11 @@ NAN_METHOD(CreateRenderTarget) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
   }
 
   Local<Value> result;
-  GLenum framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  GLenum framebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
   if (framebufferStatus == GL_FRAMEBUFFER_COMPLETE) {
     Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
     array->Set(0, JS_NUM(fbo));
@@ -906,10 +906,10 @@ NAN_METHOD(CreateRenderTarget) {
   }
   info.GetReturnValue().Set(result);
 
-  if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
   } else {
-    glBindFramebuffer(GL_FRAMEBUFFER, gl->defaultFramebuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   }
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
@@ -942,36 +942,36 @@ NAN_METHOD(ResizeRenderTarget) {
   const int samples = 4;
 
   {
-    glBindFramebuffer(GL_FRAMEBUFFER, msFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
 
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
   }
   {
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
     glBindTexture(GL_TEXTURE_2D, depthStencilTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
 
     glBindTexture(GL_TEXTURE_2D, colorTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
   }
 
-  if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
   } else {
-    glBindFramebuffer(GL_FRAMEBUFFER, gl->defaultFramebuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   }
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
@@ -1046,10 +1046,15 @@ NAN_METHOD(BlitFrameBuffer) {
     (depth || stencil) ? GL_NEAREST : GL_LINEAR);
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
-  if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
   } else {
-    glBindFramebuffer(GL_FRAMEBUFFER, gl->defaultFramebuffer);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   }
 }
 
@@ -1065,13 +1070,13 @@ void SetCurrentWindowContext(NATIVEwindow *window) {
 }
 
 void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data) {
-  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
   
-  if (gl->HasFramebufferBinding(GL_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_FRAMEBUFFER, gl->GetFramebufferBinding(GL_FRAMEBUFFER));
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
   } else {
-    glBindFramebuffer(GL_FRAMEBUFFER, gl->defaultFramebuffer);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
   }
 }
 
