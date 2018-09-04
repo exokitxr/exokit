@@ -167,42 +167,40 @@
         }
         return terrainMesh;
       };
+      const fakeArrayBuffer = new ArrayBuffer(3 * 4);
+      const fakeFloat32Array = new Float32Array(fakeArrayBuffer, 0, 3);
+      const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
       const _makeTerrainMesh = meshId => {
         const geometry = new THREE.BufferGeometry();
-        const positions = Float32Array.from([
-          0, 0, 0,
-          0, 1, 0,
-          1, 1, 0,
-        ]);
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const normals = Float32Array.from([
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-        ]);
-        geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-        const indices = Uint32Array.from([
-          0, 1, 2,
-        ]);
-        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+        const gl = renderer.getContext();
+        const attributes = renderer.getAttributes();
+
+        geometry.addAttribute('position', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
+        geometry.addAttribute('normal', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.normal, gl.ARRAY_BUFFER);
+        geometry.setIndex(new THREE.BufferAttribute(fakeUint16Array, 1));
+        attributes.update(geometry.index, gl.ELEMENT_ARRAY_BUFFER);
+
         const material = terrainMaterial;
+
         const mesh = new THREE.Mesh(geometry, material);
         mesh.meshId = meshId;
         mesh.frustumCulled = false;
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {positions, normals, indices}) => {
-        const newPositions = new Float32Array(positions.length);
-        newPositions.set(positions);
-        terrainMesh.geometry.addAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+      const _loadTerrainMesh = (terrainMesh, {position, positionCount, normal, normalCount, index, count}) => {
+        const {geometry} = terrainMesh;
+        const attributes = renderer.getAttributes();
 
-        const newNormals = new Float32Array(normals.length);
-        newNormals.set(normals);
-        terrainMesh.geometry.addAttribute('normal', new THREE.BufferAttribute(newNormals, 3));
+        attributes.get(geometry.attributes.position).buffer = position;
+        geometry.attributes.position.count = positionCount / 3;
 
-        const newIndices = new Uint16Array(indices.length);
-        newIndices.set(indices);
-        terrainMesh.geometry.setIndex(new THREE.BufferAttribute(newIndices, 1));
+        attributes.get(geometry.attributes.normal).buffer = normal;
+        geometry.attributes.normal.count = normalCount / 3;
+
+        attributes.get(geometry.index).buffer = index;
+        geometry.index.count = count / 1;
       };
       const _removeTerrainMesh = terrainMesh => {
         terrainMesh.geometry.dispose();
