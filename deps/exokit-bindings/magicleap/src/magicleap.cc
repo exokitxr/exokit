@@ -1427,21 +1427,33 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 
           if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+          } else {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
           }
           if (gl->HasProgramBinding()) {
             glUseProgram(gl->GetProgramBinding());
+          } else {
+            glUseProgram(0);
           }
           if (gl->viewportState.valid) {
             glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+          } else {
+            glViewport(0, 0, 1280, 1024);
           }
           if (gl->HasVertexArrayBinding()) {
             glBindVertexArray(gl->GetVertexArrayBinding());
+          } else {
+            glBindVertexArray(gl->defaultVao);
           }
           if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
             glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+          } else {
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
           }
           if (gl->colorMaskState.valid) {
             glColorMask(gl->colorMaskState.r, gl->colorMaskState.g, gl->colorMaskState.b, gl->colorMaskState.a);
+          } else {
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
           }
         }
 
