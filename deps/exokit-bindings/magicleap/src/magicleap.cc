@@ -861,9 +861,31 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
   keyboardEvents.clear();
 }
 
+const char *meshVsh = "\
+#version 330\n\
+\n\
+in vec3 position;\n\
+\n\
+uniform mat4 projectionMatrix;\n\
+uniform mat4 viewModelMatrix;\n\
+\n\
+void main() {\n\
+  gl_Position = projectionMatrix * viewModelMatrix * vec4(position, 1.0);\n\
+}\n\
+";
+const char *meshFsh = "\
+#version 330\n\
+\n\
+out vec4 fragColor;\n\
+\n\
+uniform mat4 projectionMatrix;\n\
+uniform mat4 viewModelMatrix;\n\
+\n\
+void main() {\n\
+  fragColor = vec4(1.0);\n\
+}\n\
+";
 NAN_METHOD(MLContext::InitLifecycle) {
-  std::cout << "init lifecycle" << std::endl;
-
   if (info[0]->IsFunction() && info[1]->IsFunction()) {
     eventsCb.Reset(Local<Function>::Cast(info[0]));
     keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
@@ -946,6 +968,64 @@ NAN_METHOD(MLContext::Present) {
     ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
+  }
+  
+  {
+    glGenVertexArrays(1, &mlContext->meshVao);
+    // glBindVertexArray(meshVao);
+    
+    // vertex Shader
+    mlContext->meshVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(mlContext->meshVertex, 1, &meshVsh, NULL);
+    glCompileShader(mlContext->meshVertex);
+    GLint success;
+    glGetShaderiv(mlContext->meshVertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->meshVertex, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML vertex shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+    
+    // fragment Shader
+    mlContext->meshFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(mlContext->meshFragment, 1, &meshFsh, NULL);
+    glCompileShader(mlContext->meshFragment);
+    glGetShaderiv(mlContext->meshFragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->meshFragment, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML fragment shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // shader Program
+    mlContext->meshProgram = glCreateProgram();
+    glAttachShader(mlContext->meshProgram, mlContext->meshVertex);
+    glAttachShader(mlContext->meshProgram, mlContext->meshFragment);
+    glLinkProgram(mlContext->meshProgram);
+    glGetProgramiv(mlContext->meshProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->meshProgram, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML program linking failed\n" << infoLog << std::endl;
+      return;
+    }
+
+    mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
+    mlContext->normalLocation = glGetAttribLocation(mlContext->meshProgram, "normal");
+    mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
+    mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
+    
+    // delete the shaders as they're linked into our program now and no longer necessery
+    glDeleteShader(mlContext->meshVertex);
+    glDeleteShader(mlContext->meshFragment);
   }
 
   MLGraphicsRenderTargetsInfo renderTargetsInfo;
@@ -1415,50 +1495,114 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  // blit
-  GLuint src_framebuffer_id = info[0]->Uint32Value();
-  unsigned int width = info[1]->Uint32Value();
-  unsigned int height = info[2]->Uint32Value();
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
+    GLuint src_framebuffer_id = info[0]->Uint32Value();
+    unsigned int width = info[1]->Uint32Value();
+    unsigned int height = info[2]->Uint32Value();
 
-  const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
+    const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
 
-  for (int i = 0; i < 2; i++) {
-    MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
+    for (int i = 0; i < 2; i++) {
+      MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
 
-    glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
+      glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
+      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
 
-    glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
-      i == 0 ? width/2 : width, height,
-      viewport.x, viewport.y,
-      viewport.w, viewport.h,
-      GL_COLOR_BUFFER_BIT,
-      GL_LINEAR);
+      glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
+        i == 0 ? width/2 : width, height,
+        viewport.x, viewport.y,
+        viewport.w, viewport.h,
+        GL_COLOR_BUFFER_BIT,
+        GL_LINEAR);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
+      MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
+      }
+    }
+
+    MLResult result = MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle);
     if (result != MLResult_Ok) {
-      ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
+      ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+    }
+  }
+}
+
+NAN_METHOD(MLContext::PopulateDepth) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+  NATIVEwindow *nativeWindow = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+  GLuint framebuffer = info[2]->Uint32Value();
+  unsigned int width = info[3]->Uint32Value();
+  unsigned int height = info[4]->Uint32Value();
+  Local<Float32Array> modelViewMatrix = Local<Float32Array>::Cast(info[5]);
+  Local<Float32Array> projectionMatrix = Local<Float32Array>::Cast(info[6]);
+  Local<Array> buffers = Local<Array>::Cast(info[7]);
+
+  NATIVEwindow *oldNativeWindow = windowsystem::GetCurrentWindowContext();
+  windowsystem::SetCurrentWindowContext(nativeWindow);
+
+  glBindVertexArray(mlContext->meshVao);
+  glUseProgram(mlContext->meshProgram);
+
+  glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+  size_t numBuffers = buffers->Length();
+  for (size_t i = 0; i < numBuffers; i++) {
+    Local<Value> bufferValue = buffers->Get(i);
+    Local<Object> buffer = Local<Object>::Cast(bufferValue);
+
+    Local<Value> positionAttributeValue = buffer->Get(JS_STR("position"));
+    GLuint positionAttribute = positionAttributeValue->Uint32Value();
+
+    Local<Value> normalAttributeValue = buffer->Get(JS_STR("normal"));
+    GLuint normalAttribute = normalAttributeValue->Uint32Value();
+
+    Local<Value> indexAttributeValue = buffer->Get(JS_STR("index"));
+    GLuint indexAttribute = indexAttributeValue->Uint32Value();
+
+    Local<Value> countValue = buffer->Get(JS_STR("count"));
+    unsigned int count = countValue->Uint32Value();
+
+    glBindBuffer(GL_ARRAY_BUFFER, positionAttribute);
+    glEnableVertexAttribArray(mlContext->positionLocation);
+    glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, normalAttribute);
+    glEnableVertexAttribArray(mlContext->normalLocation);
+    glVertexAttribPointer(mlContext->normalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexAttribute);
+
+    for (int side = 0; side < 2; side++) {
+      glViewport(side * width/2, 0, width/2, height);
+      glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
     }
   }
 
-  MLResult result = MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle);
-  if (result != MLResult_Ok) {
-    ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+  windowsystem::SetCurrentWindowContext(oldNativeWindow);
+
+  if (gl->HasVertexArrayBinding()) {
+    glBindVertexArray(gl->GetVertexArrayBinding());
   }
-
-  // planes
-  /* beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor));
-  beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesWallHandle, mlContext->planesWallQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Wall));
-  beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Ceiling));
-
-  // meshing
-  mlContext->mesherCv.notify_one(); */
+  if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+    glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+  }
+  if (gl->HasProgramBinding()) {
+    glUseProgram(gl->GetProgramBinding());
+  }
+  if (gl->viewportState.valid) {
+    glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+  }
+  if (gl->colorMaskState.valid) {
+    glColorMask(gl->colorMaskState.r, gl->colorMaskState.g, gl->colorMaskState.b, gl->colorMaskState.a);
+  }
 }
 
 NAN_METHOD(MLContext::IsPresent) {
