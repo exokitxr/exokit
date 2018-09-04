@@ -1536,17 +1536,13 @@ NAN_METHOD(MLContext::SubmitFrame) {
 
 NAN_METHOD(MLContext::PopulateDepth) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-  NATIVEwindow *nativeWindow = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
-  GLuint framebuffer = info[2]->Uint32Value();
-  unsigned int width = info[3]->Uint32Value();
-  unsigned int height = info[4]->Uint32Value();
-  Local<Float32Array> modelViewMatrix = Local<Float32Array>::Cast(info[5]);
-  Local<Float32Array> projectionMatrix = Local<Float32Array>::Cast(info[6]);
-  Local<Array> buffers = Local<Array>::Cast(info[7]);
-
-  NATIVEwindow *oldNativeWindow = windowsystem::GetCurrentWindowContext();
-  windowsystem::SetCurrentWindowContext(nativeWindow);
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  GLuint framebuffer = info[1]->Uint32Value();
+  unsigned int width = info[2]->Uint32Value();
+  unsigned int height = info[3]->Uint32Value();
+  Local<Float32Array> modelViewMatrix = Local<Float32Array>::Cast(info[4]);
+  Local<Float32Array> projectionMatrix = Local<Float32Array>::Cast(info[5]);
+  Local<Array> buffers = Local<Array>::Cast(info[6]);
 
   glBindVertexArray(mlContext->meshVao);
   glUseProgram(mlContext->meshProgram);
@@ -1585,8 +1581,6 @@ NAN_METHOD(MLContext::PopulateDepth) {
       glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
     }
   }
-
-  windowsystem::SetCurrentWindowContext(oldNativeWindow);
 
   if (gl->HasVertexArrayBinding()) {
     glBindVertexArray(gl->GetVertexArrayBinding());
