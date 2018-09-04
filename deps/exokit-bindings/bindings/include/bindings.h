@@ -16,7 +16,7 @@
 #if _WIN32
 #include <leapmotion.h>
 #endif
-#if defined(MAGICLEAP) || defined(LUMIN)
+#if defined(LUMIN)
 #include <magicleap.h>
 #endif
 

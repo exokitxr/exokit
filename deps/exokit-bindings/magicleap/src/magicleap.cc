@@ -1,4 +1,4 @@
-#if defined(MAGICLEAP) || defined(LUMIN)
+#if defined(LUMIN)
 
 #include <magicleap.h>
 #include <uv.h>
