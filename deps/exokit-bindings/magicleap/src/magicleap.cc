@@ -356,9 +356,15 @@ void MeshRequest::Poll() {
       
       Local<Object> obj = Nan::New<Object>();
       obj->Set(JS_STR("id"), JS_STR(id));
-      obj->Set(JS_STR("positions"), JS_INT(meshBuffer->positionBuffer));
-      obj->Set(JS_STR("normals"), JS_INT(meshBuffer->normalBuffer));
-      obj->Set(JS_STR("indices"), JS_INT(meshBuffer->indexBuffer));
+      Local<Object> positionObj = Nan::New<Object>();
+      positionObj->Set(JS_STR("id"), JS_INT(meshBuffer->positionBuffer));
+      obj->Set(JS_STR("position"), positionObj);
+      Local<Object> normalObj = Nan::New<Object>();
+      normalObj->Set(JS_STR("id"), JS_INT(meshBuffer->normalBuffer));
+      obj->Set(JS_STR("normal"), normalObj);
+      Local<Object> indexObj = Nan::New<Object>();
+      indexObj->Set(JS_STR("id"), JS_INT(meshBuffer->indexBuffer));
+      obj->Set(JS_STR("index"), indexObj);
       obj->Set(JS_STR("valid"), JS_BOOL(true));
 
       array->Set(numResults++, obj);
