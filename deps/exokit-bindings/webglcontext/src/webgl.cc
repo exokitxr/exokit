@@ -2082,12 +2082,21 @@ NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLuint framebuffer = info[0]->Uint32Value();
 
-  GLuint oldFramebuffer = gl->HasFramebufferBinding(GL_FRAMEBUFFER) ? gl->GetFramebufferBinding(GL_FRAMEBUFFER) : 0;
   GLuint oldDefaultFramebuffer = gl->defaultFramebuffer;
+  GLuint oldFramebuffer = gl->HasFramebufferBinding(GL_FRAMEBUFFER) ? gl->GetFramebufferBinding(GL_FRAMEBUFFER) : 0;
   if (oldFramebuffer == oldDefaultFramebuffer) {
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
     gl->SetFramebufferBinding(GL_FRAMEBUFFER, framebuffer);
+  }
+  GLuint oldReadFramebuffer = gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER) ? gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER) : 0;
+  if (oldReadFramebuffer == oldDefaultFramebuffer) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
+    gl->SetFramebufferBinding(GL_READ_FRAMEBUFFER, framebuffer);
+  }
+  GLuint oldDrawFramebuffer = gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER) ? gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER) : 0;
+  if (oldDrawFramebuffer == oldDefaultFramebuffer) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+    gl->SetFramebufferBinding(GL_DRAW_FRAMEBUFFER, framebuffer);
   }
 
   gl->defaultFramebuffer = framebuffer;
