@@ -1019,7 +1019,7 @@ NAN_METHOD(MLContext::Present) {
     }
 
     mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
-    mlContext->normalLocation = glGetAttribLocation(mlContext->meshProgram, "normal");
+    // mlContext->normalLocation = glGetAttribLocation(mlContext->meshProgram, "normal");
     mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
     mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
     
@@ -1557,8 +1557,8 @@ NAN_METHOD(MLContext::PopulateDepth) {
     Local<Value> positionAttributeValue = buffer->Get(JS_STR("position"));
     GLuint positionAttribute = positionAttributeValue->Uint32Value();
 
-    Local<Value> normalAttributeValue = buffer->Get(JS_STR("normal"));
-    GLuint normalAttribute = normalAttributeValue->Uint32Value();
+    // Local<Value> normalAttributeValue = buffer->Get(JS_STR("normal"));
+    // GLuint normalAttribute = normalAttributeValue->Uint32Value();
 
     Local<Value> indexAttributeValue = buffer->Get(JS_STR("index"));
     GLuint indexAttribute = indexAttributeValue->Uint32Value();
@@ -1570,9 +1570,9 @@ NAN_METHOD(MLContext::PopulateDepth) {
     glEnableVertexAttribArray(mlContext->positionLocation);
     glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, normalAttribute);
-    glEnableVertexAttribArray(mlContext->normalLocation);
-    glVertexAttribPointer(mlContext->normalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    // glBindBuffer(GL_ARRAY_BUFFER, normalAttribute);
+    // glEnableVertexAttribArray(mlContext->normalLocation);
+    // glVertexAttribPointer(mlContext->normalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexAttribute);
 
