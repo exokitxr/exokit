@@ -295,14 +295,16 @@ void HandRequest::Poll() {
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) : positionBuffer(positionBuffer), normalBuffer(normalBuffer), indexBuffer(indexBuffer) {}
-
+MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) :
+  positionBuffer(positionBuffer),
+  normalBuffer(normalBuffer),
+  indexBuffer(indexBuffer)
+  {}
 MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
   normalBuffer = meshBuffer.normalBuffer;
   indexBuffer = meshBuffer.indexBuffer;
 }
-
 MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0) {}
 
 void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, unsigned short *indices, uint16_t numIndices) {
