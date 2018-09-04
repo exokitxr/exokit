@@ -1974,10 +1974,12 @@ NAN_METHOD(WebGLRenderingContext::DepthFunc) {
 
 
 NAN_METHOD(WebGLRenderingContext::Viewport) {
-  int x = info[0]->Int32Value();
-  int y = info[1]->Int32Value();
-  int width = info[2]->Int32Value();
-  int height = info[3]->Int32Value();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  GLint x = info[0]->Int32Value();
+  GLint y = info[1]->Int32Value();
+  GLsizei width = info[2]->Int32Value();
+  GLsizei height = info[3]->Int32Value();
 
   glViewport(x, y, width, height);
 
