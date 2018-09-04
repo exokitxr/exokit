@@ -608,13 +608,13 @@ if (nativeMl) {
     }
   };
   if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle(mlContext, mlGlContext, _mlLifecycleEvent, _mlKeyboardEvent);
+    nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
   } else {
     // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      nativeMl.InitLifecycle(mlContext, mlGlContext, _mlLifecycleEvent, _mlKeyboardEvent);
+      nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
     });
     s.on('error', () => {});
   }
