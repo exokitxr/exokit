@@ -627,6 +627,30 @@ void setGlConstants(T &proto) {
   JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
 }
 
+ViewportState::ViewportState(GLint x, GLint y, GLsizei w, GLsizei h, bool valid) : x(x), y(y), w(w), h(h), valid(valid) {}
+
+ViewportState &ViewportState::operator=(const ViewportState &viewportState) {
+  x = viewportState.x;
+  y = viewportState.y;
+  w = viewportState.w;
+  h = viewportState.h;
+  valid = viewportState.valid;
+
+  return *this;
+}
+
+ColorMaskState::ColorMaskState(GLboolean r, GLboolean g, GLboolean b, GLboolean a, bool valid) : r(r), g(g), b(b), a(a), valid(valid) {}
+
+ColorMaskState &ColorMaskState::operator=(const ColorMaskState &colorMaskState) {
+  r = colorMaskState.r;
+  g = colorMaskState.g;
+  b = colorMaskState.b;
+  a = colorMaskState.a;
+  valid = true;
+
+  return *this;
+}
+
 std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
   // Nan::EscapableHandleScope scope;
 
@@ -1983,6 +2007,8 @@ NAN_METHOD(WebGLRenderingContext::Viewport) {
 
   glViewport(x, y, width, height);
 
+  gl->viewportState = ViewportState(x, y, width, height);
+
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
@@ -3225,12 +3251,16 @@ NAN_METHOD(WebGLRenderingContext::ClearStencil) {
 }
 
 NAN_METHOD(WebGLRenderingContext::ColorMask) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLboolean r = info[0]->BooleanValue();
   GLboolean g = info[1]->BooleanValue();
   GLboolean b = info[2]->BooleanValue();
   GLboolean a = info[3]->BooleanValue();
 
   glColorMask(r, g, b, a);
+
+  gl->colorMaskState = ColorMaskState(r, g, b, a);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
