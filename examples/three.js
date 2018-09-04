@@ -22122,6 +22122,10 @@
 
 		};
 
+    this.getAttributes = function() { // XXX
+      return attributes;
+    };
+
 		this.getPixelRatio = function () {
 
 			return _pixelRatio;
