@@ -216,7 +216,7 @@ public:
   GLuint meshFragment;
   GLuint meshProgram;
   GLint positionLocation;
-  GLint normalLocation;
+  // GLint normalLocation;
   GLint modelViewMatrixLocation;
   GLint projectionMatrixLocation;
   
