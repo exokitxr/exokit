@@ -1235,7 +1235,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
     } else if (mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
-      mlHasPose = mlContext.WaitGetPoses(transformArray, projectionArray, controllersArray);
+      mlHasPose = mlContext.WaitGetPoses(mlGlContext, mlMsFbo, renderWidth*2, renderHeight, transformArray, projectionArray, controllersArray);
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
