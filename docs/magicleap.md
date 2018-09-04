@@ -56,6 +56,33 @@ The current rotation of the eye cursor, as a world quaternion. This is probably 
 
 Used to receive world planes detected by the Magic Leap platform.
 
+#### `MLPlaneTracker.onplane : function(MLPlaneUpdate[])`
+
+When set, `onplane` will be called with an array of `MLPlaneUpdate`. This indicates an update to the planes detected by the Magic Leap platform. An update replaces the preview plane state and may contain an entirely different set of planes than the previous update. Plane identity can be tracked via each `MLPlaneUpdate`'s `.id` property.
+
+### `MLPlaneUpdate`
+
+A single plane detected in the world.
+
+#### `MLPlaneUpdate.id : String`
+
+A unique identifier for this plane. If a plane's id is the same between updates, then it is an update to a previous plane.
+
+#### `MLPlaneUpdate.position : Float32Array(3)`
+
+The world position of the center of this plane.
+
+#### `MLPlaneUpdate.rotation : Float32Array(4)`
+
+The world quaternion of the direction of this plane. Apply this quaternion to the vector `(0, 0, 1)` to get the plane normal.
+
+#### `MLPlaneUpdate.size : Float32Array(2)`
+
+The size of the plane in meters.
+
+- `size[0]` is the width (x)
+- `size[1]` is the height (y)
+
 ## Endpoints
 
 #### `browser.magicleap.RequestMeshing() : MLMesher`
