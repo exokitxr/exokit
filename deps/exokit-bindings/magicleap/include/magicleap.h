@@ -182,6 +182,7 @@ public:
   static NAN_METHOD(CancelHand);
   static NAN_METHOD(RequestMesh);
   static NAN_METHOD(CancelMesh);
+  static NAN_METHOD(SetDepth);
   static NAN_METHOD(RequestPlanes);
   static NAN_METHOD(CancelPlanes);
   static NAN_METHOD(RequestEye);
