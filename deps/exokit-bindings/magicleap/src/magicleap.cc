@@ -314,13 +314,13 @@ MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), n
 void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices) {
   glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
-  
+
   glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(normals[0]), normals, GL_DYNAMIC_DRAW);
-  
+
   glBindBuffer(GL_ARRAY_BUFFER, indexBuffer);
   glBufferData(GL_ARRAY_BUFFER, numIndices * sizeof(indices[0]), indices, GL_DYNAMIC_DRAW);
-  
+
   this->numPositions = numPositions;
   this->numIndices = numIndices;
 }
@@ -969,11 +969,11 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-  
+
   {
     glGenVertexArrays(1, &mlContext->meshVao);
     // glBindVertexArray(meshVao);
-    
+
     // vertex Shader
     mlContext->meshVertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(mlContext->meshVertex, 1, &meshVsh, NULL);
@@ -988,7 +988,7 @@ NAN_METHOD(MLContext::Present) {
       std::cout << "ML vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
-    
+
     // fragment Shader
     mlContext->meshFragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(mlContext->meshFragment, 1, &meshFsh, NULL);
@@ -1022,7 +1022,7 @@ NAN_METHOD(MLContext::Present) {
     // mlContext->normalLocation = glGetAttribLocation(mlContext->meshProgram, "normal");
     mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
     mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
-    
+
     // delete the shaders as they're linked into our program now and no longer necessery
     glDeleteShader(mlContext->meshVertex);
     glDeleteShader(mlContext->meshFragment);
