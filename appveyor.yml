@@ -5,8 +5,6 @@ image:
   Visual Studio 2017
 environment:
   nodejs_version: "10"
-  MAGICLEAP:
-    secure: 4mAodSQiCUr1X1maLOYyj4nYCb87r4J54Wb1jw1EE9tT4tpcbic6hpDynrSu7Ep3
   PFX_KEY:
     secure: rb5g/ykqdQek473qm/8WbnEQ6ItBfgcL1/ShqAMWLTH5+Z3Y45MHN2BB3UXdx067
 
