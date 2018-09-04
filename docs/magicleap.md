@@ -111,6 +111,31 @@ The center of the hand pose detected in world space, as a vector.
 
 The rotation of the hand pose detected in world space, as a world quaternion. The rotation is defined as pointing in the direction of the base of the middle finger.
 
+#### `MLHandUpdate.bones : MLHandBone[2][5][3]`
+
+The detected hand finger bone positions. The order is right-handed, left-to-right, bottom-to-top:
+
+```
+handUpdate.bones[0][0][0] // left (0) thumb (0) base (0)
+handUpdate.bones[1][0][2] // right (1) thumb (0) tip (2)
+handUpdate.bones[1][1][3] // right (1) pointer (1) tip (3)
+handUpdate.bones[0][4][3] // left (0) pinkie (4) tip (3)
+```
+
+Note that the thumb has one less bone than the other fingers.
+
+### `MLHandBone`
+
+A single hand bone detected by the hand pose tracking system.
+
+#### `MLHandBone.position : Float32Array(3)`
+
+The center of the hand pose detected in world space, as a vector.
+
+#### `MLHandBone.rotation : Float32Array(4)`
+
+The rotation of the hand pose detected in world space, as a world quaternion. The rotation is defined as towards distal.
+
 ## Endpoints
 
 #### `browser.magicleap.RequestMeshing() : MLMesher`
