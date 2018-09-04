@@ -293,6 +293,29 @@ void HandRequest::Poll() {
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
+// MeshBuffer
+
+MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) : positionBuffer(positionBuffer), normalBuffer(normalBuffer), indexBuffer(indexBuffer) {}
+
+MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
+  positionBuffer = meshBuffer.positionBuffer;
+  normalBuffer = meshBuffer.normalBuffer;
+  indexBuffer = meshBuffer.indexBuffer;
+}
+
+MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0) {}
+
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, unsigned short *indices, uint16_t numIndices) {
+  glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
+  glBufferData(GL_ARRAY_BUFFER, numPositions, positions, GL_DYNAMIC_DRAW);
+  
+  glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
+  glBufferData(GL_ARRAY_BUFFER, numPositions, normals, GL_DYNAMIC_DRAW);
+  
+  glBindBuffer(GL_ARRAY_BUFFER, indexBuffer);
+  glBufferData(GL_ARRAY_BUFFER, numIndices, indices, GL_DYNAMIC_DRAW);
+}
+
 // MeshRequest
 
 MeshRequest::MeshRequest(Local<Function> cbFn) : cbFn(cbFn) {}
@@ -311,28 +334,29 @@ void MeshRequest::Poll() {
 
     const MLMeshingResult &result = blockMesh.result;
     if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
-      Local<Object> obj = Nan::New<Object>();
-
       uint64_t id1 = blockMesh.id.data[0];
       uint64_t id2 = blockMesh.id.data[1];
-      char s[16*2 + 1];
-      sprintf(s, "%016llx%016llx", id1, id2);
-      obj->Set(JS_STR("id"), JS_STR(s));
+      char idbuf[16*2 + 1];
+      sprintf(idbuf, "%016llx%016llx", id1, id2);
+      std::string id(idbuf);
 
-      uint16_t *index = blockMesh.index;
-      uint16_t indexCount = blockMesh.index_count;
-      Local<Uint16Array> indices = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), index, indexCount * sizeof(uint16_t)), 0, indexCount);
-      obj->Set(JS_STR("indices"), indices);
-
-      MLVec3f *vertex = blockMesh.vertex;
-      uint32_t vertexCount = blockMesh.vertex_count;
-      Local<Float32Array> positions = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), vertex, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
-      obj->Set(JS_STR("positions"), positions);
-
-      MLVec3f *normal = blockMesh.normal;
-      Local<Float32Array> normals = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normal, vertexCount * sizeof(MLVec3f)), 0, vertexCount * 3);
-      obj->Set(JS_STR("normals"), normals);
-
+      MeshBuffer *meshBuffer;
+      auto iter = meshBuffers.find(id);
+      if (iter != meshBuffers.end()) {
+        meshBuffer = &iter->second;
+      } else {
+        GLuint buffers[3];
+        glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
+        meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2]);
+        meshBuffer = &meshBuffers[id];
+      }
+      meshBuffer->setBuffers((float *)blockMesh.vertex, blockMesh.vertex_count, (float *)blockMesh.normal, blockMesh.index, blockMesh.index_count);
+      
+      Local<Object> obj = Nan::New<Object>();
+      obj->Set(JS_STR("id"), JS_STR(id));
+      obj->Set(JS_STR("positions"), JS_INT(meshBuffer->positionBuffer));
+      obj->Set(JS_STR("normals"), JS_INT(meshBuffer->normalBuffer));
+      obj->Set(JS_STR("indices"), JS_INT(meshBuffer->indexBuffer));
       obj->Set(JS_STR("valid"), JS_BOOL(true));
 
       array->Set(numResults++, obj);
@@ -342,15 +366,27 @@ void MeshRequest::Poll() {
       ML_LOG(Error, "%s: ML mesh request poll failed: %x %x", application_name, i, result);
     }
   }
-  for (const MLCoordinateFrameUID &id : meshRemovedList) {
+  for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
+    uint64_t id1 = cfid.data[0];
+    uint64_t id2 = cfid.data[1];
+    char idbuf[16*2 + 1];
+    sprintf(idbuf, "%016llx%016llx", id1, id2);
+    std::string id(idbuf);
+
+    auto iter = meshBuffers.find(id);
+    if (iter != meshBuffers.end()) {
+      MeshBuffer &meshBuffer = iter->second;
+      GLuint buffers[3] = {
+        meshBuffer.positionBuffer,
+        meshBuffer.normalBuffer,
+        meshBuffer.indexBuffer,
+      };
+      glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
+      meshBuffers.erase(iter);
+    }
+
     Local<Object> obj = Nan::New<Object>();
-
-    uint64_t id1 = id.data[0];
-    uint64_t id2 = id.data[1];
-    char s[16*2 + 1];
-    sprintf(s, "%016llx%016llx", id1, id2);
-    obj->Set(JS_STR("id"), JS_STR(s));
-
+    obj->Set(JS_STR("id"), JS_STR(id));
     obj->Set(JS_STR("valid"), JS_BOOL(false));
 
     array->Set(numResults++, obj);

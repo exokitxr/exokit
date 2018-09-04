@@ -91,6 +91,18 @@ public:
   Nan::Persistent<Function> cbFn;
 };
 
+class MeshBuffer {
+public:
+  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer);
+  MeshBuffer(const MeshBuffer &meshBuffer);
+  MeshBuffer();
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, unsigned short *indices, uint16_t numIndices);
+
+  GLuint positionBuffer;
+  GLuint normalBuffer;
+  GLuint indexBuffer;
+};
+
 class MeshRequest {
 public:
   MeshRequest(Local<Function> cbFn);
@@ -98,6 +110,7 @@ public:
 
 // protected:
   Nan::Persistent<Function> cbFn;
+  std::map<std::string, MeshBuffer> meshBuffers;
 };
 
 class PlanesRequest {
