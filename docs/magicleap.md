@@ -58,7 +58,9 @@ Used to receive world planes detected by the Magic Leap platform.
 
 #### `MLPlaneTracker.onplane : function(MLPlaneUpdate[])`
 
-When set, `onplane` will be called with an array of `MLPlaneUpdate`. This indicates an update to the planes detected by the Magic Leap platform. An update replaces the preview plane state and may contain an entirely different set of planes than the previous update. Plane identity can be tracked via each `MLPlaneUpdate`'s `.id` property.
+When set, `onplane` will be called with an array of `MLPlaneUpdate`. This indicates an update to the planes detected by the Magic Leap platform.
+
+An update replaces the preview plane state and may contain an entirely different set of planes than the previous update. Plane identity can be tracked via each `MLPlaneUpdate`'s `.id` property.
 
 ### `MLPlaneUpdate`
 
@@ -83,6 +85,32 @@ The size of the plane in meters.
 - `size[0]` is the width (x)
 - `size[1]` is the height (y)
 
+### `MLHandTracker`
+
+Used to acquire hand tracking updates from the Magic Leap platform.
+
+#### `MLHandTracker.onhand : function(MLHandUpdate[])`
+
+When set, `onhand` will be called with an array of `MLHandUpdate`. This indicates an update to the user's hand pose detected from the sensors on the Magic Leap platform.
+
+Each hand is identified as either `'left'` or `'right'`. An update replaces the previous hand state; if a hand is not present in any given update that means it has not been detected for the given update loop.
+
+### `MLHandUpdate`
+
+A single update to the user's tracked hand pose state.
+
+#### `MLHandUpdate.hand : String`
+
+The hand direction detected for this update. Either `'left'` or `'right'`.
+
+#### `MLHandUpdate.position : Float32Array(3)`
+
+The center of the hand pose detected in world space, as a vector.
+
+#### `MLHandUpdate.rotation : Float32Array(4)`
+
+The rotation of the hand pose detected in world space, as a world quaternion. The rotation is defined as pointing in the direction of the base of the middle finger.
+
 ## Endpoints
 
 #### `browser.magicleap.RequestMeshing() : MLMesher`
@@ -92,6 +120,10 @@ Returns an instance of `MLMesher`, which can be used to receive world meshing bu
 #### `browser.magicleap.RequestPlaneTracker() : MLPlaneTracker`
 
 Returns an instance of `MLPlaneTracker`, which can be used to receive world planes detected by the Magic Leap platform.
+
+#### `browser.magicleap.RequestHandTracking() : MLHandTracker`
+
+Returns an instance of `MLHandTracker`, which can be used to receive hand tracking data from the Magic Leap platform.
 
 #### `browser.magicleap.RequestEyeTracking() : MLEyeTracker`
 
