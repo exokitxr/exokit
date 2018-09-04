@@ -2781,6 +2781,10 @@ NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
   glBindFramebuffer(target, framebuffer);
 
   gl->SetFramebufferBinding(target, framebuffer);
+  if (target == GL_FRAMEBUFFER) {
+    gl->SetFramebufferBinding(target == GL_DRAW_FRAMEBUFFER, framebuffer);
+    gl->SetFramebufferBinding(target == GL_READ_FRAMEBUFFER, framebuffer);
+  }
 }
 
 
