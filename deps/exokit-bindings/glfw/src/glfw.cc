@@ -1484,14 +1484,15 @@ NAN_METHOD(SetClipboard) {
 
 
   if (info.Length() >= 1) {
-// Don't want to risk passing a null string around, which might create unpredictable behavior.
-      Nan::Utf8String utf8_value(info[0]);
-      int len = utf8_value.length();
-      if (len <= 0) {
-         return Nan::ThrowTypeError("arg must be a non-empty string");
-      }
-      std::string name(*utf8_value, len);
-    } else {
+    // Don't want to risk passing a null string around, which might create unpredictable behavior.
+    Nan::Utf8String utf8_value(info[0]);
+    int len = utf8_value.length();
+    if (len <= 0) {
+       return Nan::ThrowTypeError("arg must be a non-empty string");
+    }
+    std::string name(*utf8_value, len);
+    glfwSetClipboardString(window, *utf8_value);   
+  } else {
       return Nan::ThrowTypeError(
             "must provide arg length > 1");
     }
