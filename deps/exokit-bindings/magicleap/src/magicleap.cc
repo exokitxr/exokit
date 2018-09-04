@@ -1273,16 +1273,57 @@ NAN_METHOD(MLContext::Exit) {
   glDeleteFramebuffers(1, &mlContext->framebuffer_id);
 }
 
-NAN_METHOD(MLContext::WaitGetPoses) {
-  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+MLMat4f composeMatrix(
+  const MLVec3f &position = MLVec3f{0,0,0},
+  const MLQuaternionf &quaternion = MLQuaternionf{0,0,0,1},
+  const MLVec3f &scale = MLVec3f{1,1,1}
+) {
+  MLMat4f result;
+  
+  float	*te = result.matrix_colmajor;
 
-  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array()) {
+  float x = quaternion.x, y = quaternion.y, z = quaternion.z, w = quaternion.w;
+  float x2 = x + x,	y2 = y + y, z2 = z + z;
+  float xx = x * x2, xy = x * y2, xz = x * z2;
+  float yy = y * y2, yz = y * z2, zz = z * z2;
+  float wx = w * x2, wy = w * y2, wz = w * z2;
+
+  float sx = scale.x, sy = scale.y, sz = scale.z;
+
+  te[ 0 ] = ( 1 - ( yy + zz ) ) * sx;
+  te[ 1 ] = ( xy + wz ) * sx;
+  te[ 2 ] = ( xz - wy ) * sx;
+  te[ 3 ] = 0;
+
+  te[ 4 ] = ( xy - wz ) * sy;
+  te[ 5 ] = ( 1 - ( xx + zz ) ) * sy;
+  te[ 6 ] = ( yz + wx ) * sy;
+  te[ 7 ] = 0;
+
+  te[ 8 ] = ( xz + wy ) * sz;
+  te[ 9 ] = ( yz - wx ) * sz;
+  te[ 10 ] = ( 1 - ( xx + yy ) ) * sz;
+  te[ 11 ] = 0;
+
+  te[ 12 ] = position.x;
+  te[ 13 ] = position.y;
+  te[ 14 ] = position.z;
+  te[ 15 ] = 1;
+  
+  return result;
+}
+
+NAN_METHOD(MLContext::WaitGetPoses) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsFloat32Array() && info[5]->IsFloat32Array() && info[6]->IsFloat32Array()) {
     if (application_context.dummy_value == DummyValue::RUNNING) {
-      // Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
-      Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[0]);
-      Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[1]);
-      // Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[2]);
-      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[2]);
+      MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+      WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+      GLuint framebuffer = info[1]->Uint32Value();
+      GLuint width = info[2]->Uint32Value();
+      GLuint height = info[3]->Uint32Value();
+      Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[4]);
+      Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[5]);
+      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[6]);
 
       MLGraphicsFrameParams frame_params;
       MLResult result = MLGraphicsInitFrameParams(&frame_params);
@@ -1298,10 +1339,6 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
 
       if (result == MLResult_Ok) {
-        // framebuffer
-        // framebufferArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
-        // framebufferArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
-
         // transform
         for (int i = 0; i < 2; i++) {
           const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
@@ -1329,13 +1366,6 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           mlContext->rotation = leftCameraTransform.rotation;
         }
 
-        /* // viewport
-        const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
-        viewportArray->Set(0, JS_INT((int)viewport.x));
-        viewportArray->Set(1, JS_INT((int)viewport.y));
-        viewportArray->Set(2, JS_INT((unsigned int)viewport.w));
-        viewportArray->Set(3, JS_INT((unsigned int)viewport.h)); */
-
         // controllers
         MLInputControllerState controllerStates[MLInput_MaxControllers];
         result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
@@ -1362,107 +1392,58 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
         }
 
-        /* // gestures
-        MLGestureData gestureData;
-        result = MLGestureGetData(mlContext->gestureTracker, &gestureData);
-        if (result == MLResult_Ok) {
-          MLGestureOneHandedState &leftHand = gestureData.left_hand_state;
-          MLVec3f &leftCenter = leftHand.hand_center_normalized;
-          gesturesArray->Set(0*4 + 0, JS_NUM(leftCenter.x));
-          gesturesArray->Set(0*4 + 1, JS_NUM(leftCenter.y));
-          gesturesArray->Set(0*4 + 2, JS_NUM(leftCenter.z));
-          gesturesArray->Set(0*4 + 3, JS_NUM(gestureCategoryToIndex(leftHand.static_gesture_category)));
+        if (depthEnabled) {
+          glBindVertexArray(mlContext->meshVao);
+          glUseProgram(mlContext->meshProgram);
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
+          glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-          MLGestureOneHandedState &rightHand = gestureData.right_hand_state;
-          MLVec3f &rightCenter = rightHand.hand_center_normalized;
-          gesturesArray->Set(1*4 + 0, JS_NUM(rightCenter.x));
-          gesturesArray->Set(1*4 + 1, JS_NUM(rightCenter.y));
-          gesturesArray->Set(1*4 + 2, JS_NUM(rightCenter.z));
-          gesturesArray->Set(1*4 + 3, JS_NUM(gestureCategoryToIndex(rightHand.static_gesture_category)));
-        } else {
-          ML_LOG(Error, "MLGestureGetData failed: %s", application_name);
-        } */
+          for (const auto &iter : meshBuffers) {
+            const MeshBuffer &meshBuffer = iter.second;
 
-        // meshing
-        /* {
-          std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
+            glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
+            glEnableVertexAttribArray(mlContext->positionLocation);
+            glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 
-          if (mlContext->haveMeshStaticData) {
-            // MLCoordinateFrameUID coordinateFrame = mlContext->meshStaticData.frame;
-            MLDataArrayHandle &meshesHandle = mlContext->meshStaticData.meshes;
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
+            
+            for (int side = 0; side < 2; side++) {
+              const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
+              const MLTransform &transform = cameraInfo.transform;
+              const MLMat4f &modelView = composeMatrix(transform.position, transform.rotation);
+              glUniformMatrix4fv(mlContext->modelViewMatrixLocation, 16, false, modelView.matrix_colmajor);
 
-            MLResult lockResult = MLDataArrayTryLock(meshesHandle, &mlContext->meshData, &mlContext->meshesDataDiff);
-            if (lockResult == MLResult_Ok) {
-              if (mlContext->meshData.stream_count > 0) {
-                MLDataArrayStream &handleStream = mlContext->meshData.streams[0];
+              const MLMat4f &projection = cameraInfo.projection;
+              glUniformMatrix4fv(mlContext->projectionMatrixLocation, 16, false, projection.matrix_colmajor);
 
-                if (handleStream.type == MLDataArrayType_Handle) {
-                  MLDataArrayHandle &meshesHandle2 = *handleStream.handle_array;
-
-                  MLResult lockResult2 = MLDataArrayTryLock(meshesHandle2, &mlContext->meshData2, &mlContext->meshesDataDiff2);
-                  if (lockResult2 == MLResult_Ok) {
-                    uint32_t positionIndex = mlContext->meshStaticData.position_stream_index;
-                    MLDataArrayStream &positionStream = mlContext->meshData2.streams[positionIndex];
-                    uint32_t numPositionPoints = positionStream.count;
-                    uint32_t positionsSize = numPositionPoints * positionStream.data_size;
-                    mlContext->positions.resize(positionsSize);
-                    memcpy(mlContext->positions.data(), positionStream.custom_array, positionsSize);
-
-                    uint32_t normalIndex = mlContext->meshStaticData.normal_stream_index;
-                    MLDataArrayStream &normalStream = mlContext->meshData2.streams[normalIndex];
-                    uint32_t numNormalPoints = normalStream.count;
-                    uint32_t normalsSize = numNormalPoints * normalStream.data_size;
-                    mlContext->normals.resize(normalsSize);
-                    memcpy(mlContext->normals.data(), normalStream.custom_array, normalsSize);
-
-                    uint32_t triangleIndex = mlContext->meshStaticData.triangle_index_stream_index;
-                    MLDataArrayStream &triangleStream = mlContext->meshData2.streams[triangleIndex];
-                    uint32_t numTriangles = triangleStream.count;
-                    uint32_t trianglesSize = numTriangles * triangleStream.data_size;
-                    mlContext->triangles.resize(trianglesSize);
-                    memcpy(mlContext->triangles.data(), triangleStream.custom_array, trianglesSize);
-
-                    MLDataArrayUnlock(meshesHandle2);
-                  } else if (lockResult2 == MLResult_Pending) {
-                    // nothing
-                  } else if (lockResult2 == MLResult_Locked) {
-                    ML_LOG(Error, "MLDataArrayTryLock inner already locked: %d", lockResult2);
-                  } else {
-                    ML_LOG(Error, "MLDataArrayTryLock inner failed: %d", lockResult2);
-                  }
-                } else {
-                  ML_LOG(Error, "invalid handle stream type: %d", handleStream.type);
-                }
-              } else {
-                ML_LOG(Error, "invalid stream count: %d", mlContext->meshData.stream_count);
-              }
-
-              MLDataArrayUnlock(meshesHandle);
-            } else if (lockResult == MLResult_Pending) {
-              // nothing
-            } else if (lockResult == MLResult_Locked) {
-              ML_LOG(Error, "MLDataArrayTryLock outer already locked: %d", lockResult);
-            } else {
-              ML_LOG(Error, "MLDataArrayTryLock outer failed: %d", lockResult);
+              const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
+              unsigned int width = (unsigned int)viewport.w;
+              unsigned int height = (unsigned int)viewport.h;
+              glViewport(side * width/2, 0, width/2, height);
+              
+              glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
             }
-
-            mlContext->haveMeshStaticData = false;
           }
-        } */
 
-        /* // occlusion
-        MLOcclusionDepthBufferInfo occlusionBuffer;
-        for (size_t i = 0; i < 2; i++) {
-          occlusionBuffer.buffers[i].projection = mlContext->virtual_camera_array.virtual_cameras[i].projection;
-          occlusionBuffer.buffers[i].transform = mlContext->virtual_camera_array.virtual_cameras[i].transform;
+          if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+          }
+          if (gl->HasProgramBinding()) {
+            glUseProgram(gl->GetProgramBinding());
+          }
+          if (gl->viewportState.valid) {
+            glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+          }
+          if (gl->HasVertexArrayBinding()) {
+            glBindVertexArray(gl->GetVertexArrayBinding());
+          }
+          if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+            glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+          }
+          if (gl->colorMaskState.valid) {
+            glColorMask(gl->colorMaskState.r, gl->colorMaskState.g, gl->colorMaskState.b, gl->colorMaskState.a);
+          }
         }
-        occlusionBuffer.projection_type = MLGraphicsProjectionType_Default;
-        occlusionBuffer.num_buffers = 2;
-        occlusionBuffer.viewport = viewport;
-        MLResult result = MLOcclusionPopulateDepth(mlContext->occlusionTracker, &occlusionBuffer);
-        if (result != MLResult_Ok) {
-          ML_LOG(Error, "MLOcclusionPopulateDepth outer failed: %d", result);
-        } */
 
         info.GetReturnValue().Set(JS_BOOL(true));
       } else {
