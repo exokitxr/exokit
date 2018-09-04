@@ -176,6 +176,7 @@ public:
   static NAN_METHOD(Exit);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(SubmitFrame);
+  static NAN_METHOD(PopulateDepth);
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
@@ -209,6 +210,16 @@ public:
   // input
   MLHandle inputTracker;
 
+  // meshing
+  GLuint meshVao;
+  GLuint meshVertex;
+  GLuint meshFragment;
+  GLuint meshProgram;
+  GLint positionLocation;
+  GLint normalLocation;
+  GLint modelViewMatrixLocation;
+  GLint projectionMatrixLocation;
+  
   // occlusion
   // MLHandle occlusionTracker;
 };
