@@ -136,6 +136,40 @@ The center of the hand pose detected in world space, as a vector.
 
 The rotation of the hand pose detected in world space, as a world quaternion. The rotation is defined as towards distal.
 
+### `MLEyeTracker`
+
+Used to acquire eye tracking updates from the Magic Leap platform.
+
+#### `MLEyeTracker.oneye : function(MLEye[2])`
+
+When set, `oneye` will be called with an array of `MLEyeUpdate`. This indicates an update to the user's detected eye post by the Magic Leap platform.
+
+Both eyes are present in all updates.
+
+### `MLEye`
+
+A single eye state as detected by the platform.
+
+### `MLEye.fixation : Float32Array(3)`
+
+The 3D world position of the combined eyes fixation.
+
+The fixation value is the same for both eyes, since it is sourced from both eyes.
+
+### `MLEye.origin : Float32Array(3)`
+
+The world position of the eye origin as a vector. This is the origin position of the eye, not where it is looking.
+
+### `MLEye.rotation : Float32Array(4)`
+
+The rotation of the eye origin as a world quaternion.
+
+> Do not use this for checking where the eye is looking; that is what `fixation` is for.
+
+### `MLEye.blink : Boolean`
+
+Whether this eye is currently blinking closed (`true`) or not (`false`).
+
 ## Endpoints
 
 #### `browser.magicleap.RequestMeshing() : MLMesher`
