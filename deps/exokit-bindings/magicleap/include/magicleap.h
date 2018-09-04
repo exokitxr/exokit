@@ -101,6 +101,8 @@ public:
   GLuint positionBuffer;
   GLuint normalBuffer;
   GLuint indexBuffer;
+  uint32_t numPositions;
+  uint16_t numIndices;
 };
 
 class MeshRequest {
