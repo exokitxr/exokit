@@ -1843,9 +1843,11 @@ NAN_METHOD(MLContext::PostPollEvents) {
       std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
         m->Poll();
       });
-
       if (meshRemovedList.size() > 0) {
         meshRemovedList.clear();
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
       }
 
       meshRequestsPending = true;
