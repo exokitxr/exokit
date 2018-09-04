@@ -112,7 +112,6 @@ public:
 
 // protected:
   Nan::Persistent<Function> cbFn;
-  std::map<std::string, MeshBuffer> meshBuffers;
 };
 
 class PlanesRequest {
