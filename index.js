@@ -21,7 +21,6 @@ const ip = require('ip');
 const {version} = require('./package.json');
 const UPNG = require('upng-js');
 
-const {version} = require('./package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
