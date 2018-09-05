@@ -187,3 +187,9 @@ Returns an instance of `MLHandTracker`, which can be used to receive hand tracki
 #### `browser.magicleap.RequestEyeTracking() : MLEyeTracker`
 
 Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data from the Magic Leap platform.
+
+#### `browser.magicleap.PopulateDepth(populateDepth : Boolean)`
+
+Sets whether the render loop will populate the depth buffer by using the meshing subsystem.
+
+This is a fast way of doing world occlusion without any extra code.
