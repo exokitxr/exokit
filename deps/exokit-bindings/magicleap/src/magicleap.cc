@@ -1207,7 +1207,7 @@ MLMat4f composeMatrix(
   const MLVec3f &scale = MLVec3f{1,1,1}
 ) {
   MLMat4f result;
-  
+
   float	*te = result.matrix_colmajor;
 
   float x = quaternion.x, y = quaternion.y, z = quaternion.z, w = quaternion.w;
@@ -1237,7 +1237,7 @@ MLMat4f composeMatrix(
   te[ 13 ] = position.y;
   te[ 14 ] = position.z;
   te[ 15 ] = 1;
-  
+
   return result;
 }
 
@@ -1334,7 +1334,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
-            
+
             for (int side = 0; side < 2; side++) {
               const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
               const MLTransform &transform = cameraInfo.transform;
@@ -1348,7 +1348,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
               unsigned int width = (unsigned int)viewport.w;
               unsigned int height = (unsigned int)viewport.h;
               glViewport(side * width/2, 0, width/2, height);
-              
+
               glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
             }
           }
@@ -1863,7 +1863,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
       std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
         m->Poll();
       });
-      
+
       if (meshRemovedList.size() > 0) {
         for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
           uint64_t id1 = cfid.data[0];
