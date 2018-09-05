@@ -239,7 +239,7 @@ static void onUnloadResources(void* application_context) {
 HandRequest::HandRequest(Local<Function> cbFn) : cbFn(cbFn) {}
 
 constexpr float HAND_CONFIDENCE = 0.5;
-void HandRequest::Poll() {
+void HandRequest::Poll(MLSnapshot *snapshot) {
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "handRequest");
 
@@ -459,12 +459,7 @@ void PlanesRequest::Poll() {
 
 EyeRequest::EyeRequest(Local<Function> cbFn) : cbFn(cbFn) {}
 
-void EyeRequest::Poll() {
-  MLSnapshot *snapshot;
-  if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
-    ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
-  }
-
+void EyeRequest::Poll(MLSnapshot *snapshot) {
   const MLCoordinateFrameUID &id = eyeStaticData.fixation;
   MLTransform transform;
   if (MLSnapshotGetTransform(snapshot, &id, &transform) == MLResult_Ok) {
@@ -487,10 +482,6 @@ void EyeRequest::Poll() {
     asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
   } else {
     ML_LOG(Error, "%s: ML failed to get eye transform!", application_name);
-  }
-
-  if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
-    ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
   }
 }
 
@@ -1746,19 +1737,41 @@ NAN_METHOD(MLContext::CancelCamera) {
 
 NAN_METHOD(MLContext::PrePollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+  
+  MLSnapshot *snapshot;
+  bool needSnapshot = handRequests.size() > 0 || eyeRequests.size() > 0;
+  if (needSnapshot) { 
+    if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
+      ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
+    }
+  }
 
   if (handRequests.size() > 0) {
     MLResult result = MLHandTrackingGetData(handTracker, &handData);
     if (result == MLResult_Ok) {
       std::for_each(handRequests.begin(), handRequests.end(), [&](HandRequest *h) {
-        h->Poll();
-      });
+        h->Poll(snapshot);
+      });    
     } else {
       ML_LOG(Error, "%s: Hand data get failed! %x", application_name, result);
     }
   }
+  
+  if (eyeRequests.size() > 0) {
+    if (MLEyeTrackingGetState(eyeTracker, &eyeState) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Eye get state failed!", application_name);
+    }
 
-  if (meshRequests.size() > 0 && !meshInfoRequestPending && !meshRequestsPending) {
+    if (MLEyeTrackingGetStaticData(eyeTracker, &eyeStaticData) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Eye get static data failed!", application_name);
+    }
+
+    std::for_each(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) {
+      e->Poll(snapshot);
+    });
+  }
+
+  if ((meshRequests.size() > 0 || depthEnabled) && !meshInfoRequestPending && !meshRequestsPending) {
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
@@ -1803,24 +1816,16 @@ NAN_METHOD(MLContext::PrePollEvents) {
     }
   }
 
-  if (eyeRequests.size() > 0) {
-    if (MLEyeTrackingGetState(eyeTracker, &eyeState) != MLResult_Ok) {
-      ML_LOG(Error, "%s: Eye get state failed!", application_name);
-    }
-
-    if (MLEyeTrackingGetStaticData(eyeTracker, &eyeStaticData) != MLResult_Ok) {
-      ML_LOG(Error, "%s: Eye get static data failed!", application_name);
-    }
-
-    std::for_each(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) {
-      e->Poll();
-    });
-  }
-
   {
     std::unique_lock<std::mutex> lock(cameraRequestsMutex);
     if (cameraRequests.size() > 0) {
       cameraRequestConditionVariable.notify_one();
+    }
+  }
+  
+  if (needSnapshot) {
+    if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
+      ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
     }
   }
 }

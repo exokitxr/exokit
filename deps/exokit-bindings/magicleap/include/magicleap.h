@@ -85,7 +85,7 @@ public:
 class HandRequest {
 public:
   HandRequest(Local<Function> cbFn);
-  void Poll();
+  void Poll(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Function> cbFn;
@@ -126,7 +126,7 @@ public:
 class EyeRequest {
 public:
   EyeRequest(Local<Function> cbFn);
-  void Poll();
+  void Poll(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Function> cbFn;
