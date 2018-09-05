@@ -1213,7 +1213,7 @@ NAN_METHOD(MLContext::Exit) {
   glDeleteFramebuffers(1, &mlContext->framebuffer_id);
 }
 
-MLMat4f composeMatrix(
+inline MLMat4f composeMatrix(
   const MLVec3f &position = MLVec3f{0,0,0},
   const MLQuaternionf &quaternion = MLQuaternionf{0,0,0,1},
   const MLVec3f &scale = MLVec3f{1,1,1}
