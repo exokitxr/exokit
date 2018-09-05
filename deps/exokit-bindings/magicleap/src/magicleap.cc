@@ -866,9 +866,6 @@ const char *meshFsh = "\
 \n\
 out vec4 fragColor;\n\
 \n\
-uniform mat4 projectionMatrix;\n\
-uniform mat4 modelViewMatrix;\n\
-\n\
 void main() {\n\
   fragColor = vec4(1.0);\n\
 }\n\
