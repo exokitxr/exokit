@@ -1254,7 +1254,7 @@ inline MLMat4f invertMatrix(const MLMat4f &matrix) {
   MLMat4f result;
   
   float	*te = result.matrix_colmajor;
-  float *me = matrix.matrix_colmajor;
+  const float *me = matrix.matrix_colmajor;
   float n11 = me[ 0 ], n21 = me[ 1 ], n31 = me[ 2 ], n41 = me[ 3 ],
     n12 = me[ 4 ], n22 = me[ 5 ], n32 = me[ 6 ], n42 = me[ 7 ],
     n13 = me[ 8 ], n23 = me[ 9 ], n33 = me[ 10 ], n43 = me[ 11 ],
