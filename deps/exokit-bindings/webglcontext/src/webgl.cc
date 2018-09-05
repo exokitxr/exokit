@@ -2733,8 +2733,12 @@ NAN_METHOD(WebGLRenderingContext::Clear) {
 
 
 NAN_METHOD(WebGLRenderingContext::UseProgram) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint programId = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Int32Value() : 0;
+
   glUseProgram(programId);
+
+  gl->SetProgramBinding(programId);
 }
 
 NAN_METHOD(WebGLRenderingContext::CreateBuffer) {
@@ -2767,6 +2771,8 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   }
 
   glBindBuffer(target, buffer);
+  
+  gl->SetBufferBinding(target, buffer);
 }
 
 NAN_METHOD(WebGLRenderingContext::BindBufferBase) {
@@ -4520,6 +4526,8 @@ NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
   GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : gl->defaultVao;
 
   glBindVertexArray(vao);
+  
+  gl->SetVertexArrayBinding(vao);
 }
 
 NAN_METHOD(WebGLRenderingContext::FenceSync) {
