@@ -1007,12 +1007,20 @@ NAN_METHOD(MLContext::Present) {
     }
 
     mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
+    if (mlContext->positionLocation == -1) {
+      std::cout << "ML program failed to get attrib location for 'position'" << std::endl;
+      return;
+    }
     mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
     if (mlContext->modelViewMatrixLocation == -1) {
       std::cout << "ML program failed to get uniform location for 'modelViewMatrix'" << std::endl;
       return;
     }
     mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
+    if (mlContext->projectionMatrixLocation == -1) {
+      std::cout << "ML program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      return;
+    }
 
     // delete the shaders as they're linked into our program now and no longer necessery
     glDeleteShader(mlContext->meshVertex);
