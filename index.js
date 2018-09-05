@@ -18,7 +18,7 @@ const mkdirp = require('mkdirp');
 const replHistory = require('repl.history');
 const minimist = require('minimist');
 const ip = require('ip');
-const pjson = require('./package.json');
+const {version} = require('./package.json');
 const UPNG = require('upng-js');
 
 const {version} = require('./package.json');
@@ -1505,7 +1505,7 @@ const _start = () => {
        MagicLeap: !!nativeMl,
        nativeVR: !!nativeVr,
        ip: ip.address(),
-       ExokitVersion: pjson.version,
+       ExokitVersion: version,
        LoadedURL: u,
     });
   }
