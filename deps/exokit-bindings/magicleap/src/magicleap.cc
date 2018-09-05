@@ -855,10 +855,10 @@ const char *meshVsh = "\
 in vec3 position;\n\
 \n\
 uniform mat4 projectionMatrix;\n\
-uniform mat4 viewModelMatrix;\n\
+uniform mat4 modelViewMatrix;\n\
 \n\
 void main() {\n\
-  gl_Position = projectionMatrix * viewModelMatrix * vec4(position, 1.0);\n\
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n\
 }\n\
 ";
 const char *meshFsh = "\
@@ -1007,7 +1007,6 @@ NAN_METHOD(MLContext::Present) {
     }
 
     mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
-    // mlContext->normalLocation = glGetAttribLocation(mlContext->meshProgram, "normal");
     mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
     mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
 
@@ -1136,77 +1135,6 @@ NAN_METHOD(MLContext::Present) {
   ML_LOG(Info, "%s: Start loop.", application_name);
 
   glGenFramebuffers(1, &mlContext->framebuffer_id);
-
-  /* makePlanesQueryer(mlContext->planesFloorHandle);
-  makePlanesQueryer(mlContext->planesWallHandle);
-  makePlanesQueryer(mlContext->planesCeilingHandle);
-
-  std::thread([mlContext]() {
-    MLMeshingSettings meshingSettings;
-    // meshingSettings.bounds_center = mlContext->position;
-    // meshingSettings.bounds_rotation = mlContext->rotation;
-    meshingSettings.bounds_center.x = 0;
-    meshingSettings.bounds_center.y = 0;
-    meshingSettings.bounds_center.z = 0;
-    meshingSettings.bounds_rotation.x = 0;
-    meshingSettings.bounds_rotation.y = 0;
-    meshingSettings.bounds_rotation.z = 0;
-    meshingSettings.bounds_rotation.w = 1;
-    meshingSettings.bounds_extents.x = 10;
-    meshingSettings.bounds_extents.y = 10;
-    meshingSettings.bounds_extents.z = 10;
-    meshingSettings.compute_normals = true;
-    meshingSettings.disconnected_component_area = 0.1;
-    meshingSettings.enable_meshing = true;
-    meshingSettings.fill_hole_length = 0.1;
-    meshingSettings.fill_holes = false;
-    meshingSettings.index_order_ccw = false;
-    // meshingSettings.mesh_type = MLMeshingType_PointCloud;
-    meshingSettings.mesh_type = MLMeshingType_Blocks;
-    // meshingSettings.meshing_poll_time = 1e9;
-    meshingSettings.meshing_poll_time = 0;
-    meshingSettings.planarize = false;
-    meshingSettings.remove_disconnected_components = false;
-    meshingSettings.remove_mesh_skirt = false;
-    meshingSettings.request_vertex_confidence = false;
-    meshingSettings.target_number_triangles_per_block = 0;
-    if (MLMeshingCreate(&meshingSettings, &mlContext->meshTracker) != MLResult_Ok) {
-      ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
-    }
-
-    MLDataArrayInitDiff(&mlContext->meshesDataDiff);
-    MLDataArrayInitDiff(&mlContext->meshesDataDiff2);
-
-    std::mutex mesherCvMutex;
-    for (;;) {
-      std::unique_lock<std::mutex> uniqueLock(mesherCvMutex);
-      mlContext->mesherCv.wait(uniqueLock);
-
-      {
-        std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
-
-        meshingSettings.bounds_center = mlContext->position;
-        meshingSettings.bounds_rotation = mlContext->rotation;
-      }
-
-      MLResult meshingUpdateResult = MLMeshingUpdate(mlContext->meshTracker, &meshingSettings);
-      if (meshingUpdateResult != MLResult_Ok) {
-        ML_LOG(Error, "MLMeshingUpdate failed: %s", application_name);
-      }
-
-      MLResult meshingStaticDataResult = MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData);
-      if (meshingStaticDataResult == MLResult_Ok) {
-        std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
-        mlContext->haveMeshStaticData = true;
-      } else {
-        ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
-      }
-    }
-  });
-
-  if (MLOcclusionCreateClient(&mlContext->occlusionTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to create occlusion tracker.", application_name);
-  } */
 
   unsigned int width = renderTargetsInfo.buffers[0].color.width;
   unsigned int height = renderTargetsInfo.buffers[0].color.height;
