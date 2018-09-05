@@ -1618,7 +1618,7 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  if (nativeAnalytics) {
+  if (nativeAnalytics && !args.notracking) {
     require(path.join(__dirname, 'bugsnag'));
     var Mixpanel = require('mixpanel');
     const keyData = fs.readFileSync('mpkey.txt','utf8');
