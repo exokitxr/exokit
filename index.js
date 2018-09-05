@@ -19,6 +19,8 @@ const core = require('./core.js');
 const mkdirp = require('mkdirp');
 const replHistory = require('repl.history');
 const minimist = require('minimist');
+const ip = require('ip');
+const pjson = require('./package.json');
 const UPNG = require('upng-js');
 
 const {version} = require('./package.json');
@@ -1498,8 +1500,10 @@ const _prepare = () => Promise.all([
 const _start = () => {
   let {url: u} = args;
   mixpanel.track('Exokit Start', {
-     MagicLeap: nativeMl != null,
-     nativeVr: nativeVr==true,
+     MagicLeap: !!nativeMl,
+     nativeVR: !!nativeVr,
+     ip: ip.address(),
+     ExokitVersion: pjson.version,
      LoadedURL: u,
   });
 
