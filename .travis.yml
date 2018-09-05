@@ -13,7 +13,7 @@ matrix:
     before_install:
     - docker pull debian:latest
     install:
-    - docker build --build-arg MAGICLEAP_ARG="$MAGICLEAP" -t exokit .
+    - docker build -t exokit .
     - docker run exokit cat exokit-linux-bin.tar.gz >exokit-linux-bin.tar.gz
     - docker run exokit cat exokit-linux-full.tar.gz >exokit-linux-full.tar.gz
     - docker run exokit cat exokit-linux.tar.gz >exokit-linux.tar.gz

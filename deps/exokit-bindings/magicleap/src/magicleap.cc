@@ -1,4 +1,4 @@
-#if defined(MAGICLEAP) || defined(LUMIN)
+#if defined(LUMIN)
 
 #include <magicleap.h>
 #include <uv.h>
@@ -1937,7 +1937,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
       std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
         m->Poll();
       });
-
+      
       if (meshRemovedList.size() > 0) {
         for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
           uint64_t id1 = cfid.data[0];

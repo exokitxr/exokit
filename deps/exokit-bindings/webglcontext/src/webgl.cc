@@ -2873,6 +2873,10 @@ NAN_METHOD(WebGLRenderingContext::BufferData) {
     data = nullptr;
     size = info[1]->Uint32Value();
     usage = info[2]->Int32Value();
+  } else if (obj->IsNull() || obj->IsUndefined()) {
+    data = nullptr;
+    size = 0;
+    usage = info[2]->Int32Value();
   } else {
     Nan::ThrowError("bufferData: invalid arguments");
     return;

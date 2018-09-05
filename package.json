@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.452",
+  "version": "0.0.453",
   "description": "Javascript web browser for the post-screen world",
   "engines": {
     "node": ">=10.0.0"
@@ -57,7 +57,6 @@
     "isolator": "0.0.9",
     "leapmotion": "0.0.4",
     "libnode.a": "0.0.1",
-    "magicleap": "0.0.21",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "nan": "^2.10.0",
