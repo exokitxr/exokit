@@ -867,7 +867,7 @@ const char *meshFsh = "\
 out vec4 fragColor;\n\
 \n\
 uniform mat4 projectionMatrix;\n\
-uniform mat4 viewModelMatrix;\n\
+uniform mat4 modelViewMatrix;\n\
 \n\
 void main() {\n\
   fragColor = vec4(1.0);\n\
@@ -1008,6 +1008,10 @@ NAN_METHOD(MLContext::Present) {
 
     mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
     mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
+    if (mlContext->modelViewMatrixLocation == -1) {
+      std::cout << "ML program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      return;
+    }
     mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
 
     // delete the shaders as they're linked into our program now and no longer necessery
