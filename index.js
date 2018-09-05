@@ -3,8 +3,6 @@
 const cwd = process.cwd();
 process.chdir(__dirname); // needed for global bin to find libraries
 
-const Mixpanel = require('mixpanel');
-const mixpanel = Mixpanel.init('7c1cbc95d6519b7d6417d6fe1ce393e3');
 const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
@@ -1623,6 +1621,8 @@ const _start = () => {
 if (require.main === module) {
   if (nativeAnalytics) {
     require(path.join(__dirname, 'bugsnag'));
+    const Mixpanel = require('mixpanel');
+    const mixpanel = Mixpanel.init('7c1cbc95d6519b7d6417d6fe1ce393e3');
     require('fault-zone').registerHandler((stack, stackLen) => {
       const message = new Buffer(stack, 0, stackLen).toString('utf8');
       console.warn(message);
