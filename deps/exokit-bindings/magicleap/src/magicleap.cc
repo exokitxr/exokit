@@ -1333,10 +1333,11 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         }
 
         if (depthEnabled) {
+          glClearColor(1.0, 0.0, 0.0, 1.0);
+          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
           glBindVertexArray(mlContext->meshVao);
           glUseProgram(mlContext->meshProgram);
-          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
-          glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
           for (const auto &iter : meshBuffers) {
             const MeshBuffer &meshBuffer = iter.second;
