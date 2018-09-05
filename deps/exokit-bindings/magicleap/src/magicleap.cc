@@ -1376,36 +1376,40 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         }
 
         if (depthEnabled) {
-          glClearColor(1.0, 0.0, 0.0, 1.0);
-          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
 
+          glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+          glClearColor(0.0, 0.0, 0.0, 1.0);
+          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+          glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+          
           glBindVertexArray(mlContext->meshVao);
+          
           glUseProgram(mlContext->meshProgram);
 
           for (const auto &iter : meshBuffers) {
             const MeshBuffer &meshBuffer = iter.second;
 
-            glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
-            glEnableVertexAttribArray(mlContext->positionLocation);
-            glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+            if (meshBuffer.numIndices > 0) {
+              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
+              glEnableVertexAttribArray(mlContext->positionLocation);
+              glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
+              glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
 
-            for (int side = 0; side < 2; side++) {
-              const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
-              const MLTransform &transform = cameraInfo.transform;
-              const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
-              glUniformMatrix4fv(mlContext->modelViewMatrixLocation, 16, false, modelView.matrix_colmajor);
+              for (int side = 0; side < 2; side++) {
+                const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
+                const MLTransform &transform = cameraInfo.transform;
+                const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
+                glUniformMatrix4fv(mlContext->modelViewMatrixLocation, 1, false, modelView.matrix_colmajor);
 
-              const MLMat4f &projection = cameraInfo.projection;
-              glUniformMatrix4fv(mlContext->projectionMatrixLocation, 16, false, projection.matrix_colmajor);
+                const MLMat4f &projection = cameraInfo.projection;
+                glUniformMatrix4fv(mlContext->projectionMatrixLocation, 1, false, projection.matrix_colmajor);
 
-              const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
-              unsigned int width = (unsigned int)viewport.w;
-              unsigned int height = (unsigned int)viewport.h;
-              glViewport(side * width/2, 0, width/2, height);
+                glViewport(side * width/2, 0, width/2, height);
 
-              glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
+                glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
+              }
             }
           }
 
