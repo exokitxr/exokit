@@ -1499,7 +1499,7 @@ const _prepare = () => Promise.all([
 
 const _start = () => {
   let {url: u} = args;
-  if (!args.notracking) {
+  if (!nativeAnalytics && !args.notracking) {
     mixpanel.track('Exokit Start', {
        MagicLeap: !!nativeMl,
        nativeVR: !!nativeVr,
