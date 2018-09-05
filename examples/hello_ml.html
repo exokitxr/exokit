@@ -321,6 +321,10 @@
       });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.nativeMl.PopulateDepth(true);
+      // renderer.autoClear = false;
+
       container.appendChild(renderer.domElement);
 
       renderer.setAnimationLoop(animate);

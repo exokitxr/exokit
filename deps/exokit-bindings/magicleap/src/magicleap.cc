@@ -239,7 +239,7 @@ static void onUnloadResources(void* application_context) {
 HandRequest::HandRequest(Local<Function> cbFn) : cbFn(cbFn) {}
 
 constexpr float HAND_CONFIDENCE = 0.5;
-void HandRequest::Poll() {
+void HandRequest::Poll(MLSnapshot *snapshot) {
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "handRequest");
 
@@ -459,12 +459,7 @@ void PlanesRequest::Poll() {
 
 EyeRequest::EyeRequest(Local<Function> cbFn) : cbFn(cbFn) {}
 
-void EyeRequest::Poll() {
-  MLSnapshot *snapshot;
-  if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
-    ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
-  }
-
+void EyeRequest::Poll(MLSnapshot *snapshot) {
   const MLCoordinateFrameUID &id = eyeStaticData.fixation;
   MLTransform transform;
   if (MLSnapshotGetTransform(snapshot, &id, &transform) == MLResult_Ok) {
@@ -487,10 +482,6 @@ void EyeRequest::Poll() {
     asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
   } else {
     ML_LOG(Error, "%s: ML failed to get eye transform!", application_name);
-  }
-
-  if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
-    ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
   }
 }
 
@@ -721,7 +712,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "CancelHand", CancelHand);
   Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
   Nan::SetMethod(ctorFn, "CancelMesh", CancelMesh);
-  Nan::SetMethod(ctorFn, "SetDepth", SetDepth);
+  Nan::SetMethod(ctorFn, "PopulateDepth", PopulateDepth);
   Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
   Nan::SetMethod(ctorFn, "CancelPlanes", CancelPlanes);
   Nan::SetMethod(ctorFn, "RequestEye", RequestEye);
@@ -855,19 +846,16 @@ const char *meshVsh = "\
 in vec3 position;\n\
 \n\
 uniform mat4 projectionMatrix;\n\
-uniform mat4 viewModelMatrix;\n\
+uniform mat4 modelViewMatrix;\n\
 \n\
 void main() {\n\
-  gl_Position = projectionMatrix * viewModelMatrix * vec4(position, 1.0);\n\
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n\
 }\n\
 ";
 const char *meshFsh = "\
 #version 330\n\
 \n\
 out vec4 fragColor;\n\
-\n\
-uniform mat4 projectionMatrix;\n\
-uniform mat4 viewModelMatrix;\n\
 \n\
 void main() {\n\
   fragColor = vec4(1.0);\n\
@@ -1007,9 +995,20 @@ NAN_METHOD(MLContext::Present) {
     }
 
     mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
-    // mlContext->normalLocation = glGetAttribLocation(mlContext->meshProgram, "normal");
+    if (mlContext->positionLocation == -1) {
+      std::cout << "ML program failed to get attrib location for 'position'" << std::endl;
+      return;
+    }
     mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
+    if (mlContext->modelViewMatrixLocation == -1) {
+      std::cout << "ML program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      return;
+    }
     mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
+    if (mlContext->projectionMatrixLocation == -1) {
+      std::cout << "ML program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      return;
+    }
 
     // delete the shaders as they're linked into our program now and no longer necessery
     glDeleteShader(mlContext->meshVertex);
@@ -1137,77 +1136,6 @@ NAN_METHOD(MLContext::Present) {
 
   glGenFramebuffers(1, &mlContext->framebuffer_id);
 
-  /* makePlanesQueryer(mlContext->planesFloorHandle);
-  makePlanesQueryer(mlContext->planesWallHandle);
-  makePlanesQueryer(mlContext->planesCeilingHandle);
-
-  std::thread([mlContext]() {
-    MLMeshingSettings meshingSettings;
-    // meshingSettings.bounds_center = mlContext->position;
-    // meshingSettings.bounds_rotation = mlContext->rotation;
-    meshingSettings.bounds_center.x = 0;
-    meshingSettings.bounds_center.y = 0;
-    meshingSettings.bounds_center.z = 0;
-    meshingSettings.bounds_rotation.x = 0;
-    meshingSettings.bounds_rotation.y = 0;
-    meshingSettings.bounds_rotation.z = 0;
-    meshingSettings.bounds_rotation.w = 1;
-    meshingSettings.bounds_extents.x = 10;
-    meshingSettings.bounds_extents.y = 10;
-    meshingSettings.bounds_extents.z = 10;
-    meshingSettings.compute_normals = true;
-    meshingSettings.disconnected_component_area = 0.1;
-    meshingSettings.enable_meshing = true;
-    meshingSettings.fill_hole_length = 0.1;
-    meshingSettings.fill_holes = false;
-    meshingSettings.index_order_ccw = false;
-    // meshingSettings.mesh_type = MLMeshingType_PointCloud;
-    meshingSettings.mesh_type = MLMeshingType_Blocks;
-    // meshingSettings.meshing_poll_time = 1e9;
-    meshingSettings.meshing_poll_time = 0;
-    meshingSettings.planarize = false;
-    meshingSettings.remove_disconnected_components = false;
-    meshingSettings.remove_mesh_skirt = false;
-    meshingSettings.request_vertex_confidence = false;
-    meshingSettings.target_number_triangles_per_block = 0;
-    if (MLMeshingCreate(&meshingSettings, &mlContext->meshTracker) != MLResult_Ok) {
-      ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
-    }
-
-    MLDataArrayInitDiff(&mlContext->meshesDataDiff);
-    MLDataArrayInitDiff(&mlContext->meshesDataDiff2);
-
-    std::mutex mesherCvMutex;
-    for (;;) {
-      std::unique_lock<std::mutex> uniqueLock(mesherCvMutex);
-      mlContext->mesherCv.wait(uniqueLock);
-
-      {
-        std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
-
-        meshingSettings.bounds_center = mlContext->position;
-        meshingSettings.bounds_rotation = mlContext->rotation;
-      }
-
-      MLResult meshingUpdateResult = MLMeshingUpdate(mlContext->meshTracker, &meshingSettings);
-      if (meshingUpdateResult != MLResult_Ok) {
-        ML_LOG(Error, "MLMeshingUpdate failed: %s", application_name);
-      }
-
-      MLResult meshingStaticDataResult = MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData);
-      if (meshingStaticDataResult == MLResult_Ok) {
-        std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
-        mlContext->haveMeshStaticData = true;
-      } else {
-        ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
-      }
-    }
-  });
-
-  if (MLOcclusionCreateClient(&mlContext->occlusionTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to create occlusion tracker.", application_name);
-  } */
-
   unsigned int width = renderTargetsInfo.buffers[0].color.width;
   unsigned int height = renderTargetsInfo.buffers[0].color.height;
   Local<Object> result = Nan::New<Object>();
@@ -1273,13 +1201,13 @@ NAN_METHOD(MLContext::Exit) {
   glDeleteFramebuffers(1, &mlContext->framebuffer_id);
 }
 
-MLMat4f composeMatrix(
+inline MLMat4f composeMatrix(
   const MLVec3f &position = MLVec3f{0,0,0},
   const MLQuaternionf &quaternion = MLQuaternionf{0,0,0,1},
   const MLVec3f &scale = MLVec3f{1,1,1}
 ) {
   MLMat4f result;
-  
+
   float	*te = result.matrix_colmajor;
 
   float x = quaternion.x, y = quaternion.y, z = quaternion.z, w = quaternion.w;
@@ -1309,7 +1237,62 @@ MLMat4f composeMatrix(
   te[ 13 ] = position.y;
   te[ 14 ] = position.z;
   te[ 15 ] = 1;
+
+  return result;
+}
+
+inline MLMat4f invertMatrix(const MLMat4f &matrix) {
+  MLMat4f result;
   
+  float	*te = result.matrix_colmajor;
+  const float *me = matrix.matrix_colmajor;
+  float n11 = me[ 0 ], n21 = me[ 1 ], n31 = me[ 2 ], n41 = me[ 3 ],
+    n12 = me[ 4 ], n22 = me[ 5 ], n32 = me[ 6 ], n42 = me[ 7 ],
+    n13 = me[ 8 ], n23 = me[ 9 ], n33 = me[ 10 ], n43 = me[ 11 ],
+    n14 = me[ 12 ], n24 = me[ 13 ], n34 = me[ 14 ], n44 = me[ 15 ],
+
+    t11 = n23 * n34 * n42 - n24 * n33 * n42 + n24 * n32 * n43 - n22 * n34 * n43 - n23 * n32 * n44 + n22 * n33 * n44,
+    t12 = n14 * n33 * n42 - n13 * n34 * n42 - n14 * n32 * n43 + n12 * n34 * n43 + n13 * n32 * n44 - n12 * n33 * n44,
+    t13 = n13 * n24 * n42 - n14 * n23 * n42 + n14 * n22 * n43 - n12 * n24 * n43 - n13 * n22 * n44 + n12 * n23 * n44,
+    t14 = n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34 - n12 * n23 * n34;
+
+  float det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
+
+  if ( det == 0 ) {
+
+    std::cout << "ML can't invert matrix, determinant is 0" << std::endl;
+
+    return MLMat4f{
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1,
+    };
+
+  }
+
+  float detInv = 1 / det;
+
+  te[ 0 ] = t11 * detInv;
+  te[ 1 ] = ( n24 * n33 * n41 - n23 * n34 * n41 - n24 * n31 * n43 + n21 * n34 * n43 + n23 * n31 * n44 - n21 * n33 * n44 ) * detInv;
+  te[ 2 ] = ( n22 * n34 * n41 - n24 * n32 * n41 + n24 * n31 * n42 - n21 * n34 * n42 - n22 * n31 * n44 + n21 * n32 * n44 ) * detInv;
+  te[ 3 ] = ( n23 * n32 * n41 - n22 * n33 * n41 - n23 * n31 * n42 + n21 * n33 * n42 + n22 * n31 * n43 - n21 * n32 * n43 ) * detInv;
+
+  te[ 4 ] = t12 * detInv;
+  te[ 5 ] = ( n13 * n34 * n41 - n14 * n33 * n41 + n14 * n31 * n43 - n11 * n34 * n43 - n13 * n31 * n44 + n11 * n33 * n44 ) * detInv;
+  te[ 6 ] = ( n14 * n32 * n41 - n12 * n34 * n41 - n14 * n31 * n42 + n11 * n34 * n42 + n12 * n31 * n44 - n11 * n32 * n44 ) * detInv;
+  te[ 7 ] = ( n12 * n33 * n41 - n13 * n32 * n41 + n13 * n31 * n42 - n11 * n33 * n42 - n12 * n31 * n43 + n11 * n32 * n43 ) * detInv;
+
+  te[ 8 ] = t13 * detInv;
+  te[ 9 ] = ( n14 * n23 * n41 - n13 * n24 * n41 - n14 * n21 * n43 + n11 * n24 * n43 + n13 * n21 * n44 - n11 * n23 * n44 ) * detInv;
+  te[ 10 ] = ( n12 * n24 * n41 - n14 * n22 * n41 + n14 * n21 * n42 - n11 * n24 * n42 - n12 * n21 * n44 + n11 * n22 * n44 ) * detInv;
+  te[ 11 ] = ( n13 * n22 * n41 - n12 * n23 * n41 - n13 * n21 * n42 + n11 * n23 * n42 + n12 * n21 * n43 - n11 * n22 * n43 ) * detInv;
+
+  te[ 12 ] = t14 * detInv;
+  te[ 13 ] = ( n13 * n24 * n31 - n14 * n23 * n31 + n14 * n21 * n33 - n11 * n24 * n33 - n13 * n21 * n34 + n11 * n23 * n34 ) * detInv;
+  te[ 14 ] = ( n14 * n22 * n31 - n12 * n24 * n31 - n14 * n21 * n32 + n11 * n24 * n32 + n12 * n21 * n34 - n11 * n22 * n34 ) * detInv;
+  te[ 15 ] = ( n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33 ) * detInv;
+
   return result;
 }
 
@@ -1393,35 +1376,40 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         }
 
         if (depthEnabled) {
-          glBindVertexArray(mlContext->meshVao);
-          glUseProgram(mlContext->meshProgram);
-          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+
+          glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+          glClearColor(0.0, 0.0, 0.0, 1.0);
+          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
           glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+          
+          glBindVertexArray(mlContext->meshVao);
+          
+          glUseProgram(mlContext->meshProgram);
 
           for (const auto &iter : meshBuffers) {
             const MeshBuffer &meshBuffer = iter.second;
 
-            glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
-            glEnableVertexAttribArray(mlContext->positionLocation);
-            glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+            if (meshBuffer.numIndices > 0) {
+              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
+              glEnableVertexAttribArray(mlContext->positionLocation);
+              glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
-            
-            for (int side = 0; side < 2; side++) {
-              const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
-              const MLTransform &transform = cameraInfo.transform;
-              const MLMat4f &modelView = composeMatrix(transform.position, transform.rotation);
-              glUniformMatrix4fv(mlContext->modelViewMatrixLocation, 16, false, modelView.matrix_colmajor);
+              glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
 
-              const MLMat4f &projection = cameraInfo.projection;
-              glUniformMatrix4fv(mlContext->projectionMatrixLocation, 16, false, projection.matrix_colmajor);
+              for (int side = 0; side < 2; side++) {
+                const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
+                const MLTransform &transform = cameraInfo.transform;
+                const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
+                glUniformMatrix4fv(mlContext->modelViewMatrixLocation, 1, false, modelView.matrix_colmajor);
 
-              const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
-              unsigned int width = (unsigned int)viewport.w;
-              unsigned int height = (unsigned int)viewport.h;
-              glViewport(side * width/2, 0, width/2, height);
-              
-              glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
+                const MLMat4f &projection = cameraInfo.projection;
+                glUniformMatrix4fv(mlContext->projectionMatrixLocation, 1, false, projection.matrix_colmajor);
+
+                glViewport(side * width/2, 0, width/2, height);
+
+                glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
+              }
             }
           }
 
@@ -1594,7 +1582,7 @@ NAN_METHOD(MLContext::CancelMesh) {
   }
 }
 
-NAN_METHOD(MLContext::SetDepth) {
+NAN_METHOD(MLContext::PopulateDepth) {
   if (info[0]->IsBoolean()) {
     depthEnabled = info[0]->BooleanValue();
   } else {
@@ -1753,19 +1741,41 @@ NAN_METHOD(MLContext::CancelCamera) {
 
 NAN_METHOD(MLContext::PrePollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+  
+  MLSnapshot *snapshot;
+  bool needSnapshot = handRequests.size() > 0 || eyeRequests.size() > 0;
+  if (needSnapshot) { 
+    if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
+      ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
+    }
+  }
 
   if (handRequests.size() > 0) {
     MLResult result = MLHandTrackingGetData(handTracker, &handData);
     if (result == MLResult_Ok) {
       std::for_each(handRequests.begin(), handRequests.end(), [&](HandRequest *h) {
-        h->Poll();
-      });
+        h->Poll(snapshot);
+      });    
     } else {
       ML_LOG(Error, "%s: Hand data get failed! %x", application_name, result);
     }
   }
+  
+  if (eyeRequests.size() > 0) {
+    if (MLEyeTrackingGetState(eyeTracker, &eyeState) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Eye get state failed!", application_name);
+    }
 
-  if (meshRequests.size() > 0 && !meshInfoRequestPending && !meshRequestsPending) {
+    if (MLEyeTrackingGetStaticData(eyeTracker, &eyeStaticData) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Eye get static data failed!", application_name);
+    }
+
+    std::for_each(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) {
+      e->Poll(snapshot);
+    });
+  }
+
+  if ((meshRequests.size() > 0 || depthEnabled) && !meshInfoRequestPending && !meshRequestsPending) {
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
@@ -1810,24 +1820,16 @@ NAN_METHOD(MLContext::PrePollEvents) {
     }
   }
 
-  if (eyeRequests.size() > 0) {
-    if (MLEyeTrackingGetState(eyeTracker, &eyeState) != MLResult_Ok) {
-      ML_LOG(Error, "%s: Eye get state failed!", application_name);
-    }
-
-    if (MLEyeTrackingGetStaticData(eyeTracker, &eyeStaticData) != MLResult_Ok) {
-      ML_LOG(Error, "%s: Eye get static data failed!", application_name);
-    }
-
-    std::for_each(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) {
-      e->Poll();
-    });
-  }
-
   {
     std::unique_lock<std::mutex> lock(cameraRequestsMutex);
     if (cameraRequests.size() > 0) {
       cameraRequestConditionVariable.notify_one();
+    }
+  }
+  
+  if (needSnapshot) {
+    if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
+      ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
     }
   }
 }

@@ -85,7 +85,7 @@ public:
 class HandRequest {
 public:
   HandRequest(Local<Function> cbFn);
-  void Poll();
+  void Poll(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Function> cbFn;
@@ -126,7 +126,7 @@ public:
 class EyeRequest {
 public:
   EyeRequest(Local<Function> cbFn);
-  void Poll();
+  void Poll(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Function> cbFn;
@@ -182,7 +182,7 @@ public:
   static NAN_METHOD(CancelHand);
   static NAN_METHOD(RequestMesh);
   static NAN_METHOD(CancelMesh);
-  static NAN_METHOD(SetDepth);
+  static NAN_METHOD(PopulateDepth);
   static NAN_METHOD(RequestPlanes);
   static NAN_METHOD(CancelPlanes);
   static NAN_METHOD(RequestEye);
