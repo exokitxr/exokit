@@ -712,7 +712,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "CancelHand", CancelHand);
   Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
   Nan::SetMethod(ctorFn, "CancelMesh", CancelMesh);
-  Nan::SetMethod(ctorFn, "SetDepth", SetDepth);
+  Nan::SetMethod(ctorFn, "PopulateDepth", PopulateDepth);
   Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
   Nan::SetMethod(ctorFn, "CancelPlanes", CancelPlanes);
   Nan::SetMethod(ctorFn, "RequestEye", RequestEye);
@@ -1582,7 +1582,7 @@ NAN_METHOD(MLContext::CancelMesh) {
   }
 }
 
-NAN_METHOD(MLContext::SetDepth) {
+NAN_METHOD(MLContext::PopulateDepth) {
   if (info[0]->IsBoolean()) {
     depthEnabled = info[0]->BooleanValue();
   } else {
