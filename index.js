@@ -3,6 +3,8 @@
 const cwd = process.cwd();
 process.chdir(__dirname); // needed for global bin to find libraries
 
+const Mixpanel = require('mixpanel');
+const mixpanel = Mixpanel.init('7c1cbc95d6519b7d6417d6fe1ce393e3');
 const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
@@ -1495,6 +1497,12 @@ const _prepare = () => Promise.all([
 
 const _start = () => {
   let {url: u} = args;
+  mixpanel.track('Exokit Start', {
+     MagicLeap: nativeMl != null,
+     nativeVr: nativeVr==true,
+     LoadedURL: u,
+  });
+
   if (!u && args.home) {
     u = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html') + (args.tag ? ('?t=' + encodeURIComponent(args.tab)) : '');
   }
