@@ -1267,7 +1267,7 @@ inline MLMat4f invertMatrix(const MLMat4f &matrix) {
 
   float det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
 
-  if ( det === 0 ) {
+  if ( det == 0 ) {
 
     std::cout << "ML can't invert matrix, determinant is 0" << std::endl;
 
