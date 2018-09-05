@@ -57,6 +57,7 @@ const args = (() => {
         'quit',
         'blit',
         'uncapped',
+        'notracking',
         'require',
       ],
       string: [
@@ -68,6 +69,7 @@ const args = (() => {
       ],
       alias: {
         v: 'version',
+        nt: 'notracking',
         h: 'home',
         l: 'log',
         t: 'tab',
@@ -100,6 +102,7 @@ const args = (() => {
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
       uncapped: minimistArgs.uncapped,
+      notracking: minimistArgs.notracking,
       image: minimistArgs.image,
       require: minimistArgs.require,
     };
@@ -1499,14 +1502,15 @@ const _prepare = () => Promise.all([
 
 const _start = () => {
   let {url: u} = args;
-  mixpanel.track('Exokit Start', {
-     MagicLeap: !!nativeMl,
-     nativeVR: !!nativeVr,
-     ip: ip.address(),
-     ExokitVersion: pjson.version,
-     LoadedURL: u,
-  });
-
+  if (!args.notracking) {
+    mixpanel.track('Exokit Start', {
+       MagicLeap: !!nativeMl,
+       nativeVR: !!nativeVr,
+       ip: ip.address(),
+       ExokitVersion: pjson.version,
+       LoadedURL: u,
+    });
+  }
   if (!u && args.home) {
     u = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html') + (args.tag ? ('?t=' + encodeURIComponent(args.tab)) : '');
   }
