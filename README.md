@@ -72,7 +72,7 @@ mldb log exokit:*
 
 - The future is immersive. The web is the best application platform. Javascript is the best ecosystem.
 - Content should be hardware agnostic. Tomorrow will have different hardware. VR and AR should be compatible.
-- It's not possible to do both 2D and 3D well. We don't do 2D. We can call a 2D browser.
+- It's not possible to do both 2D and 3D well. We don't do 2D. We can use an external 2D browser.
 - Use your favorite game engine. Exokit is not a game engine.
 - Legacy browser design choices don't make sense in XR.
 - Exokit empowers and connect apps, even (especially) if they aren't designed to cooperate.
