@@ -54,7 +54,7 @@ const args = (() => {
         'quit',
         'blit',
         'uncapped',
-        'notracking',
+        'noTracking',
         'require',
       ],
       string: [
@@ -66,7 +66,7 @@ const args = (() => {
       ],
       alias: {
         v: 'version',
-        nt: 'notracking',
+        nt: 'noTracking',
         h: 'home',
         l: 'log',
         t: 'tab',
@@ -99,7 +99,7 @@ const args = (() => {
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
       uncapped: minimistArgs.uncapped,
-      notracking: minimistArgs.notracking,
+      noTracking: minimistArgs.noTracking,
       image: minimistArgs.image,
       require: minimistArgs.require,
     };
@@ -1499,7 +1499,7 @@ const _prepare = () => Promise.all([
 
 const _start = () => {
   let {url: u} = args;
-  if (!nativeAnalytics && !args.notracking) {
+  if (!nativeAnalytics && !args.noTracking) {
     mixpanel.track('Exokit Start', {
        MagicLeap: !!nativeMl,
        nativeVR: !!nativeVr,
@@ -1618,10 +1618,10 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  if (nativeAnalytics && !args.notracking) {
+  if (nativeAnalytics && !args.noTracking) {
     require(path.join(__dirname, 'bugsnag'));
     var Mixpanel = require('mixpanel');
-    const keyData = fs.readFileSync('mpkey.txt','utf8');
+    const keyData = fs.readFileSync('mpkey.json', 'utf8');
     var mixpanel = Mixpanel.init(keyData);
     require('fault-zone').registerHandler((stack, stackLen) => {
       const message = new Buffer(stack, 0, stackLen).toString('utf8');
