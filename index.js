@@ -27,7 +27,6 @@ const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 
 const GlobalContext = require('./src/GlobalContext');
-GlobalContext.commands = [];
 
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');
 const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
@@ -1599,6 +1598,9 @@ const _start = () => {
         }
       }
 
+      if (!GlobalContext.commands) {
+        GlobalContext.commands = [];
+      }
       GlobalContext.commands.push(cmd);
 
       callback(err, result);
