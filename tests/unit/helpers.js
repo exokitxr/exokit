@@ -1,5 +1,5 @@
 /* global describe */
-const exokit = require('../../index');
+const exokit = require('../../src/index');
 
 /**
  * Test that is only run locally and is skipped on CI.

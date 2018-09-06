@@ -1,5 +1,5 @@
 /* global assert, beforeEach, describe, it */
-const exokit = require('../../../index');
+const exokit = require('../../../src/index');
 
 describe('ScriptElement', () => {
   var window;
@@ -10,7 +10,7 @@ describe('ScriptElement', () => {
       .then(o => {
         window = o.window;
         document = o.document;
-        
+
         window.navigator.getVRDisplaysSync = () => [];
 
         window.onload = () => {
@@ -30,7 +30,7 @@ describe('ScriptElement', () => {
       assert.equal(window.lol3 instanceof window.Lol3, true);
       assert.equal(window.lol4 instanceof window.Lol4, true);
     });
-    
+
     it('Insert <script async=false>', cb => {
       let count = 0;
       let err = null;
@@ -38,14 +38,14 @@ describe('ScriptElement', () => {
         if (i !== count) {
           err = err || new Error('failed check ' + i + ' ' + count);
         }
-        
+
         count++;
-        
+
         if (count === 2) {
           cb(err);
         }
       };
-      
+
       {
         const script = document.createElement('script');
         script.async = false;
@@ -54,14 +54,14 @@ describe('ScriptElement', () => {
       }
 
       {
-        const script = document.createElement('script');                                                
+        const script = document.createElement('script');
         script.async = false;
         script.src = 'lol-sync1.js';
         document.body.appendChild(script);
       }
 
       {
-        const script = document.createElement('script');                                                
+        const script = document.createElement('script');
         script.async = false;
         script.src = 'lol-sync2.js';
         document.body.appendChild(script);

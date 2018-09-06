@@ -4,14 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const packageJson = require('./package.json');
+const packageJson = require('../package.json');
 const bugsnag = require('bugsnag');
 
-const GlobalContext = require('./src/GlobalContext');
+const GlobalContext = require('./GlobalContext');
 
 const bugsnagApiKey = (() => {
   try {
-    return fs.readFileSync(path.join(__dirname, 'bugsnag.txt'), 'utf8').match(/^(\S*)/)[1];
+    return fs.readFileSync(path.join(__dirname, '../', 'bugsnag.txt'), 'utf8').match(/^(\S*)/)[1];
   } catch (err) {
     if (err.code !== 'ENOENT') {
       console.warn(err.stack);

@@ -1,5 +1,5 @@
 const path = require('path');
-const bindings = require(path.join(__dirname, 'build', 'Release', 'exokit.node'));
+const bindings = require(path.join(__dirname, '../', 'build', 'Release', 'exokit.node'));
 const {nativeAudio, nativeVr} = bindings;
 const WindowWorker = require('window-worker');
 const vmOne = require('vm-one');
@@ -66,7 +66,7 @@ bindings.nativeGl2 = (nativeGl2 => {
   function WebGL2RenderingContext(canvas) {
     const gl = new nativeGl2();
     _decorateGlIntercepts(gl);
-    
+
     if (WebGLRenderingContext.onconstruct(gl, canvas)) {
       return gl;
     } else {
