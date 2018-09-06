@@ -38,7 +38,7 @@ MLHandle handTracker;
 MLHandTrackingData handData;
 MLHandTrackingStaticData handStaticData;
 std::vector<HandRequest *> handRequests;
-float handBones[2][1 + 5][4][1 + 3 + 4];
+float handBones[2][1 + 5][4][1 + 3];
 
 MLHandle meshTracker;
 std::vector<MeshRequest *> meshRequests;
@@ -247,7 +247,16 @@ void HandRequest::Poll() {
   Local<Array> array = Nan::New<Array>();
   uint32_t numResults = 0;
 
-  if (*(uint32_t *)&handBones[0][0][0][0]) {
+  bool hasLeftHandBone = false;
+  for (size_t i = 0; i < 6; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      if (*(uint32_t *)&handBones[0][i][j][0]) {
+        hasLeftHandBone = true;
+        break;
+      }
+    }
+  }
+  if (hasLeftHandBone) {
     Local<Object> obj = Nan::New<Object>();
 
     obj->Set(JS_STR("hand"), JS_STR("left"));
@@ -260,15 +269,7 @@ void HandRequest::Poll() {
         Local<Value> boneVal;
 
         if (*(uint32_t *)&handBones[0][i][j][0]) {
-          Local<Object> boneObj = Nan::New<Object>();
-
-          Local<Float32Array> position = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[0][i][j][1], 3 * sizeof(float)), 0, 3);
-          boneObj->Set(JS_STR("position"), position);
-
-          Local<Float32Array> rotation = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[0][i][j][1 + 3], 4 * sizeof(float)), 0, 4);
-          boneObj->Set(JS_STR("rotation"), rotation);
-
-          boneVal = boneObj;
+          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[0][i][j][1], 3 * sizeof(float)), 0, 3);
         } else {
           boneVal = Nan::Null();
         }
@@ -290,7 +291,16 @@ void HandRequest::Poll() {
     array->Set(JS_INT(numResults++), obj);
   }
 
-  if (*(uint32_t *)&handBones[1][0][0][0]) {
+  bool hasRightHandBone = false;
+  for (size_t i = 0; i < 6; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      if (*(uint32_t *)&handBones[1][i][j][0]) {
+        hasRightHandBone = true;
+        break;
+      }
+    }
+  }
+  if (hasRightHandBone) {
     Local<Object> obj = Nan::New<Object>();
 
     obj->Set(JS_STR("hand"), JS_STR("right"));
@@ -303,15 +313,7 @@ void HandRequest::Poll() {
         Local<Value> boneVal;
 
         if (*(uint32_t *)&handBones[1][i][j][0]) {
-          Local<Object> boneObj = Nan::New<Object>();
-
-          Local<Float32Array> position = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[1][i][j][1], 3 * sizeof(float)), 0, 3);
-          boneObj->Set(JS_STR("position"), position);
-
-          Local<Float32Array> rotation = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[1][i][j][1 + 3], 4 * sizeof(float)), 0, 4);
-          boneObj->Set(JS_STR("rotation"), rotation);
-
-          boneVal = boneObj;
+          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[1][i][j][1], 3 * sizeof(float)), 0, 3);
         } else {
           boneVal = Nan::Null();
         }
@@ -1782,63 +1784,31 @@ NAN_METHOD(MLContext::CancelCamera) {
   }
 }
 
-// void setFingerValue(const MLHandTrackingHandState &handState, float data[4][1 + 3 + 4]);
-void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3 + 4]);
-void setFingerValue(const MLThumbState &thumbState, MLSnapshot *snapshot, float data[4][1 + 3 + 4]);
-void setFingerValue(const MLFingerState &fingerState, MLSnapshot *snapshot, float data[4][1 + 3 + 4]);
-void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, float data[1 + 3 + 4]);
-void setFingerValue(float data[1 + 3 + 4]);
+void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]);
+void setFingerValue(const MLThumbState &thumbState, MLSnapshot *snapshot, float data[4][1 + 3]);
+void setFingerValue(const MLFingerState &fingerState, MLSnapshot *snapshot, float data[4][1 + 3]);
+void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, float data[1 + 3]);
+void setFingerValue(float data[1 + 3]);
 
-/* void setFingerValue(const MLHandTrackingHandState &handState, float data[4][1 + 3 + 4]) {
-  uint32_t *uint32Data = (uint32_t *)data[0];
-  float *floatData = (float *)data[0];
-
-  if (handState.hand_confidence >= 0.5) {
-    uint32Data[0] = true;
-    floatData[1] = handState.hand_center_normalized.x;
-    floatData[2] = handState.hand_center_normalized.y;
-    floatData[3] = handState.hand_center_normalized.z;
-    const MLQuaternionf &rotation = MLQuaternionf{0, 0, 0, 1};
-    floatData[4] = rotation.x;
-    floatData[5] = rotation.y;
-    floatData[6] = rotation.z;
-    floatData[7] = rotation.w;
-  } else {
-    uint32Data[0] = false;
-    const MLVec3f &position = MLVec3f{0, 0, 0};
-    floatData[1] = position.x;
-    floatData[2] = position.y;
-    floatData[3] = position.z;
-    const MLQuaternionf &rotation = MLQuaternionf{0, 0, 0, 1};
-    floatData[4] = rotation.x;
-    floatData[5] = rotation.y;
-    floatData[6] = rotation.z;
-    floatData[7] = rotation.w;
-  }
-
-  setFingerValue(data[1]);
-  setFingerValue(data[2]);
-  setFingerValue(data[3]);
-} */
-void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3 + 4]) {
-  setFingerValue(wristState.center, snapshot, data[0]);
-  setFingerValue(wristState.radial, snapshot, data[1]);
-  setFingerValue(wristState.ulnar, snapshot, data[2]);
+void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]) {
+  setFingerValue(wristState.radial, snapshot, data[0]);
+  setFingerValue(wristState.ulnar, snapshot, data[1]);
+  setFingerValue(wristState.center, snapshot, data[2]);
   setFingerValue(data[3]);
 }
-void setFingerValue(const MLThumbState &thumbState, MLSnapshot *snapshot, float data[4][1 + 3 + 4]) {
+void setFingerValue(const MLThumbState &thumbState, MLSnapshot *snapshot, float data[4][1 + 3]) {
   setFingerValue(thumbState.cmc, snapshot, data[0]);
   setFingerValue(thumbState.mcp, snapshot, data[1]);
   setFingerValue(thumbState.ip, snapshot, data[2]);
   setFingerValue(thumbState.tip, snapshot, data[3]);
 }
-void setFingerValue(const MLFingerState &fingerState, MLSnapshot *snapshot, float data[4][1 + 3 + 4]) {
+void setFingerValue(const MLFingerState &fingerState, MLSnapshot *snapshot, float data[4][1 + 3]) {
   setFingerValue(fingerState.mcp, snapshot, data[0]);
   setFingerValue(fingerState.pip, snapshot, data[1]);
   setFingerValue(fingerState.dip, snapshot, data[2]);
   setFingerValue(fingerState.tip, snapshot, data[3]);
 }
-void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, float data[1 + 3 + 4]) {
+void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, float data[1 + 3]) {
   uint32_t *uint32Data = (uint32_t *)data;
   float *floatData = (float *)data;
 
@@ -1846,14 +1816,12 @@ void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, 
     MLTransform transform;
     MLResult result = MLSnapshotGetTransform(snapshot, &keyPointState.frame_id, &transform);
     if (result == MLResult_Ok) {
+      // ML_LOG(Info, "%s: ML keypoint ok", application_name);
+      
       uint32Data[0] = true;
       floatData[1] = transform.position.x;
       floatData[2] = transform.position.y;
       floatData[3] = transform.position.z;
-      floatData[4] = transform.rotation.x;
-      floatData[5] = transform.rotation.y;
-      floatData[6] = transform.rotation.z;
-      floatData[7] = transform.rotation.w;
     } else {
       // ML_LOG(Error, "%s: ML failed to get finger transform: %s", application_name, MLSnapshotGetResultString(result));
 
@@ -1862,11 +1830,6 @@ void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, 
       floatData[1] = position.x;
       floatData[2] = position.y;
       floatData[3] = position.z;
-      const MLQuaternionf &rotation = MLQuaternionf{0, 0, 0, 1};
-      floatData[4] = rotation.x;
-      floatData[5] = rotation.y;
-      floatData[6] = rotation.z;
-      floatData[7] = rotation.w;
     }
   } else {
     uint32Data[0] = false;
@@ -1874,14 +1837,9 @@ void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, 
     floatData[1] = position.x;
     floatData[2] = position.y;
     floatData[3] = position.z;
-    const MLQuaternionf &rotation = MLQuaternionf{0, 0, 0, 1};
-    floatData[4] = rotation.x;
-    floatData[5] = rotation.y;
-    floatData[6] = rotation.z;
-    floatData[7] = rotation.w;
   }
 }
-void setFingerValue(float data[1 + 3 + 4]) {
+void setFingerValue(float data[1 + 3]) {
   uint32_t *uint32Data = (uint32_t *)data;
   float *floatData = (float *)data;
 
@@ -1890,11 +1848,6 @@ void setFingerValue(float data[1 + 3 + 4]) {
   floatData[1] = position.x;
   floatData[2] = position.y;
   floatData[3] = position.z;
-  const MLQuaternionf &rotation = MLQuaternionf{0, 0, 0, 1};
-  floatData[4] = rotation.x;
-  floatData[5] = rotation.y;
-  floatData[6] = rotation.z;
-  floatData[7] = rotation.w;
 }
 
 NAN_METHOD(MLContext::PrePollEvents) {
