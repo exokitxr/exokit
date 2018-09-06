@@ -24,7 +24,7 @@ const {version} = require('./package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
-const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
+const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow} = nativeBindings;
 
 const GlobalContext = require('./src/GlobalContext');
 
@@ -1618,8 +1618,9 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  if (nativeAnalytics && !args.noTracking) {
-    require('./analytics.js');
+  if (!args.noTracking) {
+    const analytics = require('./analytics.js');
+    analytics.setNativeBindings(nativeBindings);
   }
   if (args.log) {
     const RedirectOutput = require('redirect-output').default;

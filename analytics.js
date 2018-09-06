@@ -44,23 +44,31 @@ if (bugsnagApiKey) {
       userInfo: os.userInfo(),
     },
   });
-
-  require('fault-zone').registerHandler((stack, stackLen) => {
-    const message = new Buffer(stack, 0, stackLen).toString('utf8');
-    console.warn(message);
-    child_process.execFileSync(process.argv[0], [
-      path.join(__dirname, 'bugsnag.js'),
-    ], {
-      input: message,
-    });
-    process.exit(1);
-  });
 }
 
 const mixpanelApiKey = analyticsJson && analyticsJson.mixpanel;
 if (mixpanelApiKey) {
   GlobalContext.mixpanel = Mixpanel.init(mixpanelApiKey);
 }
+
+module.exports = {
+  setNativeBindings(nativeBindings) {
+    const {nativeAnalytics} = nativeBindings;
+
+    if (bugsnagApiKey && nativeAnalytics) {
+      require('fault-zone').registerHandler((stack, stackLen) => {
+        const message = new Buffer(stack, 0, stackLen).toString('utf8');
+        console.warn(message);
+        child_process.execFileSync(process.argv[0], [
+          path.join(__dirname, 'bugsnag.js'),
+        ], {
+          input: message,
+        });
+        process.exit(1);
+      });
+    }
+  },
+};
 
 /* if (require.main === module) {
   const bs = [];
