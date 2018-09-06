@@ -62,7 +62,7 @@ if (mixpanelApiKey) {
   GlobalContext.mixpanel = Mixpanel.init(mixpanelApiKey);
 }
 
-if (require.main === module) {
+/* if (require.main === module) {
   const bs = [];
   process.stdin.on('data', d => {
     bs.push(d);
@@ -75,4 +75,4 @@ if (require.main === module) {
       stack: s,
     });
   });
-}
+} 8/
