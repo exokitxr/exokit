@@ -2,8 +2,6 @@
 
 using namespace v8;
 
-static NSVGrasterizer *imageContextSvgRasterizer = nsvgCreateRasterizer();
-
 Handle<Object> Image::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
@@ -58,7 +56,7 @@ void Image::RunInMainThread(uv_async_t *handle) {
 
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "imageLoad");
-  
+
   Local<Function> cbFn = Nan::New(image->cbFn);
   Local<String> arg0 = Nan::New<String>(image->error).ToLocalChecked();
   Local<Value> argv[] = {
@@ -104,7 +102,13 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
             int w = svgImage->width;
             int h = svgImage->height;
             unsigned char *address = (unsigned char *)malloc(w * h * 4);
+
+            // Create, use, and destroy rasterizer. Before was often
+            // segfaulting on I-Frames when the there was a single static
+            // rasterizer instance.
+            NSVGrasterizer *imageContextSvgRasterizer = nsvgCreateRasterizer();
             nsvgRasterize(imageContextSvgRasterizer, svgImage, 0, 0, 1, address, w, h, w * 4);
+            nsvgDeleteRasterizer(imageContextSvgRasterizer);
 
             SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
             SkPixmap pixmap(info, address, w * 4);
