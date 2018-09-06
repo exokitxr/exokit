@@ -85,6 +85,19 @@ bool isSimulated() {
 #endif
 }
 
+std::string &&id2String(const MLCoordinateFrameUID &id) {
+  uint64_t id1 = id.data[0];
+  uint64_t id2 = id.data[1];
+  char idbuf[16*2 + 1];
+  sprintf(idbuf, "%016llx%016llx", id1, id2);
+  return std::string(idbuf);
+}
+std::string &&id2String(const uint64_t &id) {
+  char idbuf[16 + 1];
+  sprintf(idbuf, "%016llx", id);
+  return std::string(idbuf);
+}
+
 /* void makePlanesQueryer(MLHandle &planesHandle) {
   if (MLPlanesCreate(&planesHandle) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
@@ -392,11 +405,7 @@ void MeshRequest::Poll() {
 
     const MLMeshingResult &result = blockMesh.result;
     if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
-      uint64_t id1 = blockMesh.id.data[0];
-      uint64_t id2 = blockMesh.id.data[1];
-      char idbuf[16*2 + 1];
-      sprintf(idbuf, "%016llx%016llx", id1, id2);
-      std::string id(idbuf);
+      const std::string &id = id2String(blockMesh.id);
 
       auto iter = meshBuffers.find(id);
       if (iter != meshBuffers.end()) {
@@ -429,11 +438,7 @@ void MeshRequest::Poll() {
     }
   }
   for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
-    uint64_t id1 = cfid.data[0];
-    uint64_t id2 = cfid.data[1];
-    char idbuf[16*2 + 1];
-    sprintf(idbuf, "%016llx%016llx", id1, id2);
-    std::string id(idbuf);
+    const std::string &id = id2String(cfid);
 
     Local<Object> obj = Nan::New<Object>();
     obj->Set(JS_STR("id"), JS_STR(id));
@@ -463,16 +468,15 @@ void PlanesRequest::Poll() {
 
     Local<Object> obj = Nan::New<Object>();
 
-    uint64_t id = (uint64_t)plane.id;
+    uint64_t planeId = (uint64_t)plane.id;
     // uint32_t flags = plane.flags;
     float width = plane.width;
     float height = plane.height;
     MLVec3f &position = plane.position;
     MLQuaternionf &rotation = plane.rotation;
 
-    char s[16 + 1];
-    sprintf(s, "%016llx", id);
-    obj->Set(JS_STR("id"), JS_STR(s));
+    const std::string &id = id2String(planeId);
+    obj->Set(JS_STR("id"), JS_STR(id));
 
     obj->Set(JS_STR("width"), JS_NUM(width));
     obj->Set(JS_STR("height"), JS_NUM(height));
@@ -1817,7 +1821,7 @@ void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, 
     MLResult result = MLSnapshotGetTransform(snapshot, &keyPointState.frame_id, &transform);
     if (result == MLResult_Ok) {
       // ML_LOG(Info, "%s: ML keypoint ok", application_name);
-      
+
       uint32Data[0] = true;
       floatData[1] = transform.position.x;
       floatData[2] = transform.position.y;
@@ -1865,7 +1869,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
             ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
           }
         }
-        
+
         // setFingerValue(handData.left_hand_state, handBones[0][0]);
         setFingerValue(handStaticData.left.wrist, snapshot, handBones[0][0]);
         setFingerValue(handStaticData.left.thumb, snapshot, handBones[0][1]);
@@ -1983,6 +1987,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
     if (result == MLResult_Ok) {
       uint32_t dataCount = meshInfo.data_count;
       uint32_t requestCount = 0;
+      meshRequestNewMap.clear();
       meshRemovedList.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
         const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
@@ -2047,11 +2052,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
         const MLMeshingResult &result = blockMesh.result;
         if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
-          uint64_t id1 = blockMesh.id.data[0];
-          uint64_t id2 = blockMesh.id.data[1];
-          char idbuf[16*2 + 1];
-          sprintf(idbuf, "%016llx%016llx", id1, id2);
-          std::string id(idbuf);
+          const std::string &id = id2String(blockMesh.id);
 
           MeshBuffer *meshBuffer;
           auto iter = meshBuffers.find(id);
@@ -2077,11 +2078,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
       if (meshRemovedList.size() > 0) {
         for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
-          uint64_t id1 = cfid.data[0];
-          uint64_t id2 = cfid.data[1];
-          char idbuf[16*2 + 1];
-          sprintf(idbuf, "%016llx%016llx", id1, id2);
-          std::string id(idbuf);
+          const std::string &id = id2String(cfid);
 
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
