@@ -50,6 +50,7 @@ std::vector<MLMeshingBlockRequest> meshBlockRequests(128);
 uint32_t numMeshBlockRequests = 0;
 uint32_t meshBlockRequestIndex = 0;
 MLMeshingMeshRequest meshRequest;
+std::map<std::string, bool> meshRequestNewMap;
 std::vector<MLCoordinateFrameUID> meshRemovedList;
 MLHandle meshRequestHandle;
 MLMeshingMesh mesh;
@@ -362,7 +363,8 @@ MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexB
   normalBuffer(normalBuffer),
   indexBuffer(indexBuffer),
   numPositions(0),
-  numIndices(0)
+  numIndices(0),
+  isNew(true)
   {}
 MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
@@ -370,10 +372,11 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   indexBuffer = meshBuffer.indexBuffer;
   numPositions = meshBuffer.numPositions;
   numIndices = meshBuffer.numIndices;
+  isNew = meshBuffer.isNew;
 }
-MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), numPositions(0), numIndices(0) {}
+MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), numPositions(0), numIndices(0), isNew(true) {}
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew) {
   glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
@@ -385,6 +388,7 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
 
   this->numPositions = numPositions;
   this->numIndices = numIndices;
+  this->isNew = isNew;
 }
 
 // MeshRequest
@@ -425,7 +429,8 @@ void MeshRequest::Poll() {
         indexObj->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
         obj->Set(JS_STR("index"), indexObj);
         obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
-        obj->Set(JS_STR("valid"), JS_BOOL(true));
+        obj->Set(JS_STR("isNew"), JS_BOOL(meshBuffer.isNew));
+        obj->Set(JS_STR("isValid"), JS_BOOL(true));
 
         array->Set(numResults++, obj);
       } else {
@@ -442,7 +447,7 @@ void MeshRequest::Poll() {
 
     Local<Object> obj = Nan::New<Object>();
     obj->Set(JS_STR("id"), JS_STR(id));
-    obj->Set(JS_STR("valid"), JS_BOOL(false));
+    obj->Set(JS_STR("isValid"), JS_BOOL(false));
 
     array->Set(numResults++, obj);
   }
@@ -1998,6 +2003,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
           // meshBlockRequest.level = MLMeshingLOD_Minimum;
           meshBlockRequest.level = MLMeshingLOD_Medium;
           // meshBlockRequest.level = MLMeshingLOD_Maximum;
+
+          const std::string &id = id2String(meshBlockInfo.id);
+          meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
         } else if (state == MLMeshingMeshState_Deleted) {
           meshRemovedList.push_back(meshBlockInfo.id);
         }
@@ -2064,7 +2072,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
             meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2]);
             meshBuffer = &meshBuffers[id];
           }
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count);
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id]);
         } else if (result == MLMeshingResult_Pending) {
           // nothing
         } else {

@@ -96,13 +96,14 @@ public:
   MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, unsigned short *indices, uint16_t numIndices);
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, unsigned short *indices, uint16_t numIndices, bool isNew);
 
   GLuint positionBuffer;
   GLuint normalBuffer;
   GLuint indexBuffer;
   uint32_t numPositions;
   uint16_t numIndices;
+  bool isNew;
 };
 
 class MeshRequest {
