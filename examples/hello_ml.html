@@ -108,7 +108,6 @@
       const localVector2 = new THREE.Vector3();
       const localVector3 = new THREE.Vector3();
       const localVector4 = new THREE.Vector3();
-      const localVector5 = new THREE.Vector3();
       const localQuaternion = new THREE.Quaternion();
       const localMatrix = new THREE.Matrix4();
       const oneVector = new THREE.Vector3(1, 1, 1);
@@ -182,15 +181,12 @@
                 if (validBones.length >= 2) {
                   const startBone = localVector.fromArray(validBones[0]);
                   const endBone = localVector2.fromArray(validBones[validBones.length - 1]);
-                  const center = localVector3.copy(endBone)
-                    .add(startBone)
-                    .divideScalar(2);
-                  const direction = localVector4.copy(endBone)
+                  const direction = localVector3.copy(endBone)
                     .sub(startBone)
                     .normalize();
                   const quaternion = localQuaternion.setFromUnitVectors(upVector, direction);
-                  const scale = localVector5.set(1, 1, 1);
-                  return localMatrix.compose(center, quaternion, scale);
+                  const scale = localVector4.set(1, 1, 1);
+                  return localMatrix.compose(endBone, quaternion, scale);
                 }
               }
               return null;
