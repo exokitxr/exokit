@@ -79,7 +79,7 @@ inline void registerDlibs(std::map<std::string, void *> &dlibs) {
   dlibs["/package/node_modules/child-process-thread/build/Release/child_process_thread.node"] = (void *)&node_register_module_child_process_thread;
 } */
 
-const size_t STDIO_BUF_SIZE = 4096;
+constexpr size_t STDIO_BUF_SIZE = 64 * 1024;
 const MLPrivilegeID privileges[] = {
   MLPrivilegeID_LowLatencyLightwear,
   MLPrivilegeID_WorldReconstruction,
