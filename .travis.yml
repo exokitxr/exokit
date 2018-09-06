@@ -57,6 +57,7 @@ matrix:
     - mv node-v10.6.0-darwin-x64 node
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
+    - cp analytics-prod.json analytics.json
     - "./node/bin/npm install"
     - "./node/bin/npm run test:ci"
     - install_name_tool -change '@rpath/OpenVR.framework/Versions/A/OpenVR' '@loader_path/../../node_modules/native-openvr-deps/bin/osx64/OpenVR.framework/Versions/A/OpenVR'

@@ -14,6 +14,7 @@ RUN \
   mv node-v10.6.0-linux-x64 node
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
+  cp analytics-prod.json analytics.json && \
   npm install --unsafe-perm . && \
   npm run test:ci
 RUN \
