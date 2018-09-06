@@ -32,6 +32,7 @@ else
   git pull --rebase
   popd
 fi
+cp analytics-prod.json analytics.json
 
 ./magicleap-js/hack-toolchain.js
 
