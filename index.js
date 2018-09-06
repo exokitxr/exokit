@@ -1498,15 +1498,13 @@ const _prepare = () => Promise.all([
 
 const _start = () => {
   let {url: u} = args;
-  if (!nativeAnalytics && !args.noTracking) {
-    mixpanel.track('Exokit Start', {
-       MagicLeap: !!nativeMl,
-       nativeVR: !!nativeVr,
-       ip: ip.address(),
-       ExokitVersion: version,
-       LoadedURL: u,
-    });
-  }
+  GlobalContext.mixpanel && GlobalContext.mixpanel.track('Exokit Start', {
+     MagicLeap: !!nativeMl,
+     nativeVR: !!nativeVr,
+     ip: ip.address(),
+     ExokitVersion: version,
+     LoadedURL: u,
+  });
   if (!u && args.home) {
     u = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html') + (args.tag ? ('?t=' + encodeURIComponent(args.tab)) : '');
   }
