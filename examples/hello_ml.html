@@ -104,54 +104,76 @@
         scene.add(controllerMesh);
       });
 
-      const _makeHandMesh = () => {
-        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
+      const localVector = new THREE.Vector3();
+      const localVector2 = new THREE.Vector3();
+      const localQuaternion = new THREE.Quaternion();
+      const localMatrix = new THREE.Matrix4();
+      const handMesh = (() => {
+        const baseGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+
+        const geometry = new THREE.BufferGeometry();
+
+        const positions = new Float32Array(baseGeometry.attributes.position.array.length * 2 * 6 * 4);
+        const positionAttribute = new THREE.BufferAttribute(positions, 3);
+        geometry.addAttribute('position', positionAttribute);
+
+        const indices = new Uint16Array(baseGeometry.index.array.length * 2 * 6 * 4);
+        const indexAttribute = new THREE.BufferAttribute(indices, 1);
+        geometry.setIndex(indexAttribute);
+
         const material =  new THREE.MeshPhongMaterial({
           color: 0xFF0000,
-          // side: THREE.DoubleSide,
         });
+
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = false;
+        mesh.update = hands => {
+          let positionIndex = 0;
+          let indexIndex = 0;
+
+          const scale = localVector2.set(1, 1, 1);
+
+          for (let i = 0; i < hands.length; i++) {
+            const hand = hands[i];
+            const {fingers} = hand;
+            for (let j = 0; j < fingers.length; j++) {
+              const bones = fingers[j];
+              for (let k = 0; k < bones.length; k++) {
+                const bone = bones[k];
+                if (bone) {
+                  const {position, rotation} = bone;
+
+                  const newGeometry = baseGeometry.clone();
+                  newGeometry.applyMatrix(
+                    localMatrix.compose(
+                      localVector.fromArray(position),
+                      localQuaternion.fromArray(rotation),
+                      scale
+                    )
+                  );
+
+                  for (let l = 0; l < newGeometry.index.array.length; l++) {
+                    newGeometry.index.array[l] += positionIndex / 3;
+                  }
+
+                  positions.set(newGeometry.attributes.position.array, positionIndex);
+                  positionIndex += newGeometry.attributes.position.array.length;
+
+                  indices.set(newGeometry.index.array, indexIndex);
+                  indexIndex += newGeometry.index.array.length;
+                }
+              }
+            }
+          }
+
+          positionAttribute.needsUpdate = true;
+          indexAttribute.needsUpdate = true;
+        };
         mesh.frustumCulled = false;
         return mesh;
-      };
-      const handMeshes = [
-        _makeHandMesh(),
-        _makeHandMesh(),
-      ];
-      handMeshes.forEach(handMesh => {
-        scene.add(handMesh);
-      });
-      const handMeshVector = new THREE.Vector3();
+      })();
+      scene.add(handMesh);
       const _onHand = hands => {
-        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
-        const vrCameras = vrCamera.isArrayCamera ? vrCamera.cameras : [camera];
-        for (let i = 0; i < handMeshes.length; i++) {
-          handMeshes[i].visible = false;
-        }
-        for (let i = 0; i < hands.length; i++) {
-          const hand = hands[i];
-          if (hand) {
-            const handMesh = handMeshes[i];
-            vrCameras[0].matrixWorld.decompose(handMesh.position, handMesh.quaternion, handMesh.scale);
-            vrCameras[1].matrixWorld.decompose(handMeshVector, handMesh.quaternion, handMesh.scale);
-            handMesh.position
-              .add(handMeshVector)
-              .divideScalar(2);
-            const zOffset = (hand.center[2] - 1) / 2;
-            const near = -0.1;
-            const far = -0.625;
-            const zFactor = near + (-zOffset * (far - near))
-            handMesh.position
-              .add(
-                handMeshVector.set(hand.center[0]/2*0.6, hand.center[1]/2*0.6, zFactor)
-                  .applyQuaternion(handMesh.quaternion)
-              );
-            handMesh.updateMatrix();
-            handMesh.updateMatrixWorld();
-            handMesh.visible = true;
-          }
-        }
+        handMesh.update(hands);
       };
 
       const terrainMeshes = [];
