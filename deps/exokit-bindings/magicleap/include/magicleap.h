@@ -85,7 +85,7 @@ public:
 class HandRequest {
 public:
   HandRequest(Local<Function> cbFn);
-  void Poll(MLSnapshot *snapshot);
+  void Poll();
 
 // protected:
   Nan::Persistent<Function> cbFn;
