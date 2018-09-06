@@ -1619,10 +1619,7 @@ const _start = () => {
 
 if (require.main === module) {
   if (nativeAnalytics && !args.noTracking) {
-    require(path.join(__dirname, 'bugsnag'));
-    var Mixpanel = require('mixpanel');
-    const keyData = fs.readFileSync('mpkey.json', 'utf8');
-    var mixpanel = Mixpanel.init(keyData);
+    require(path.join(__dirname, 'analytics'));
     require('fault-zone').registerHandler((stack, stackLen) => {
       const message = new Buffer(stack, 0, stackLen).toString('utf8');
       console.warn(message);
