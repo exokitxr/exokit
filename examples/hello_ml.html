@@ -106,18 +106,28 @@
 
       const localVector = new THREE.Vector3();
       const localVector2 = new THREE.Vector3();
+      const localVector3 = new THREE.Vector3();
+      const localVector4 = new THREE.Vector3();
+      const localVector5 = new THREE.Vector3();
       const localQuaternion = new THREE.Quaternion();
       const localMatrix = new THREE.Matrix4();
+      const oneVector = new THREE.Vector3(1, 1, 1);
+      const upVector = new THREE.Vector3(0, 1, 0);
+      const zeroQuaternion = new THREE.Quaternion();
       const handMesh = (() => {
-        const baseGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+        const pointerGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+          .applyMatrix(
+            localMatrix.makeTranslation(0, 1/2, 0)
+          );
+        const boneGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
 
         const geometry = new THREE.BufferGeometry();
 
-        const positions = new Float32Array(baseGeometry.attributes.position.array.length * 2 * 6 * 4);
+        const positions = new Float32Array(boneGeometry.attributes.position.array.length * 2 * 6 * 4 + pointerGeometry.attributes.position.array.length * 2);
         const positionAttribute = new THREE.BufferAttribute(positions, 3);
         geometry.addAttribute('position', positionAttribute);
 
-        const indices = new Uint16Array(baseGeometry.index.array.length * 2 * 6 * 4);
+        const indices = new Uint16Array(boneGeometry.index.array.length * 2 * 6 * 4 + pointerGeometry.index.array.length * 2);
         const indexAttribute = new THREE.BufferAttribute(indices, 1);
         geometry.setIndex(indexAttribute);
 
@@ -130,30 +140,31 @@
           let positionIndex = 0;
           let indexIndex = 0;
 
-          const scale = localVector2.set(1, 1, 1);
+          // console.log('update 0', hands.length);
+
+          const _shiftIndex = array => {
+            for (let l = 0; l < array.length; l++) {
+              array[l] += positionIndex / 3;
+            }
+          };
 
           for (let i = 0; i < hands.length; i++) {
+            // console.log('update 1', i);
+
             const hand = hands[i];
             const {fingers} = hand;
             for (let j = 0; j < fingers.length; j++) {
               const bones = fingers[j];
               for (let k = 0; k < bones.length; k++) {
-                const bone = bones[k];
-                if (bone) {
-                  const {position, rotation} = bone;
+                const positionFloat32Array = bones[k];
+                if (positionFloat32Array) {
+                  const position = localVector.fromArray(positionFloat32Array);
+                  const newGeometry = boneGeometry.clone()
+                    .applyMatrix(
+                      localMatrix.makeTranslation(position.x, position.y, position.z)
+                    );
 
-                  const newGeometry = baseGeometry.clone();
-                  newGeometry.applyMatrix(
-                    localMatrix.compose(
-                      localVector.fromArray(position),
-                      localQuaternion.fromArray(rotation),
-                      scale
-                    )
-                  );
-
-                  for (let l = 0; l < newGeometry.index.array.length; l++) {
-                    newGeometry.index.array[l] += positionIndex / 3;
-                  }
+                  _shiftIndex(newGeometry.index.array);
 
                   positions.set(newGeometry.attributes.position.array, positionIndex);
                   positionIndex += newGeometry.attributes.position.array.length;
@@ -163,10 +174,66 @@
                 }
               }
             }
+
+            const _getFingerRay = fingers => {
+              for (let i = 0; i < fingers.length; i++) {
+                const bones = fingers[i];
+                const validBones = bones.filter(bone => !!bone);
+                if (validBones.length >= 2) {
+                  const startBone = localVector.fromArray(validBones[0]);
+                  const endBone = localVector2.fromArray(validBones[validBones.length - 1]);
+                  const center = localVector3.copy(endBone)
+                    .add(startBone)
+                    .divideScalar(2);
+                  const direction = localVector4.copy(endBone)
+                    .sub(startBone)
+                    .normalize();
+                  const quaternion = localQuaternion.setFromUnitVectors(upVector, direction);
+                  const scale = localVector5.set(1, 1, 1);
+                  return localMatrix.compose(center, quaternion, scale);
+                }
+              }
+              return null;
+            };
+            const pointerTransform = _getFingerRay([
+              fingers[2], // index
+              fingers[3], // middle
+              fingers[1], // thumb
+            ]);
+            if (pointerTransform) {
+              const newGeometry = pointerGeometry.clone()
+                .applyMatrix(pointerTransform);
+
+              _shiftIndex(newGeometry.index.array);
+
+              positions.set(newGeometry.attributes.position.array, positionIndex);
+              positionIndex += newGeometry.attributes.position.array.length;
+
+              indices.set(newGeometry.index.array, indexIndex);
+              indexIndex += newGeometry.index.array.length;
+            }
+
+            const gripTransform = _getFingerRay([
+              fingers[0].slice(2).concat(fingers[3]), // wrist center, middle
+              fingers[1], // thumb
+            ]);
+            if (gripTransform) {
+              const newGeometry = pointerGeometry.clone()
+                .applyMatrix(gripTransform);
+
+              _shiftIndex(newGeometry.index.array);
+
+              positions.set(newGeometry.attributes.position.array, positionIndex);
+              positionIndex += newGeometry.attributes.position.array.length;
+
+              indices.set(newGeometry.index.array, indexIndex);
+              indexIndex += newGeometry.index.array.length;
+            }
           }
 
           positionAttribute.needsUpdate = true;
           indexAttribute.needsUpdate = true;
+          geometry.setDrawRange(0, indexIndex);
         };
         mesh.frustumCulled = false;
         return mesh;
