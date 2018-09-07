@@ -177,10 +177,10 @@
             const _getFingerRay = fingers => {
               for (let i = 0; i < fingers.length; i++) {
                 const bones = fingers[i];
-                const validBones = bones.filter(bone => !!bone);
-                if (validBones.length >= 2) {
-                  const startBone = localVector.fromArray(validBones[0]);
-                  const endBone = localVector2.fromArray(validBones[validBones.length - 1]);
+                const localBones = bones.filter(bone => !!bone);
+                if (localBones.length >= 2) {
+                  const startBone = localVector.fromArray(localBones[0]);
+                  const endBone = localVector2.fromArray(localBones[localBones.length - 1]);
                   const direction = localVector3.copy(endBone)
                     .sub(startBone)
                     .normalize();
@@ -300,8 +300,9 @@
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
-          const {id, valid} = update;
-          if (valid) {
+          const {id, present} = update;
+
+          if (present) {
             const terrainMesh = _getTerrainMesh(id);
             _loadTerrainMesh(terrainMesh, update);
           } else {
@@ -366,9 +367,11 @@
       };
 
       let enabled = false;
+      let mesher = null;
       const _enable = () => {
         window.browser.nativeMl.RequestHand(_onHand);
-        window.browser.nativeMl.RequestMesh(_onMesh);
+        mesher = window.browser.nativeMl.RequestMeshing();
+        mesher.onmesh = _onMesh;
         window.browser.nativeMl.RequestPlanes(_onPlanes);
         window.browser.nativeMl.RequestEye(_onEye);
         eyeMesh.visible = true;
@@ -380,7 +383,8 @@
         handMeshes.forEach(handMesh => {
           handMesh.visible = false;
         });
-        window.browser.nativeMl.CancelMesh(_onMesh);
+        mesher.destroy();
+        mesher = null;
         _clearTerrainMeshes();
         window.browser.nativeMl.CancelPlanes(_onPlanes);
         _clearPlanes();
