@@ -11,7 +11,8 @@
   <script src="inflate.min.js"></script>
   <script src="FBXLoader.js"></script>
   <script>
-    let container, scene, camera, display, model, eyeMesh, controllerMeshes;
+    let container, scene, camera, display, model, controllerMeshes, eyeMesh;
+    let mesher = null, planeTracker = null, eyeTracker = null;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -361,9 +362,6 @@
       };
 
       let enabled = false;
-      let mesher = null;
-      let planeTracker = null;
-      let eyeTracker = null;
       const _enable = () => {
         window.browser.nativeMl.RequestHand(_onHand);
         mesher = window.browser.nativeMl.RequestMeshing();
