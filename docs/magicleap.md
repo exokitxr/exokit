@@ -103,13 +103,13 @@ A single update to the user's tracked hand pose state.
 
 The hand direction detected for this update. Either `'left'` or `'right'`.
 
-#### `MLHandUpdate.pointer : MLTransform`
+#### `MLHandUpdate.pointer : MLTransform?`
 
 The pointer transform of the hand pose.
 
 This is a ray starting at the tip of the index finger and pointing in the direction of the finger, but it may be based on other pose keypoints as a substitute.
 
-#### `MLHandUpdate.grip : MLTransform`
+#### `MLHandUpdate.grip : MLTransform?`
 
 The grip transform of the hand pose.
 
