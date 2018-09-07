@@ -45,9 +45,7 @@ using namespace node;
 
 namespace ml {
 
-struct application_context_t {
-  int dummy_value;
-};
+// enums
 
 enum DummyValue {
   STOPPED,
@@ -69,7 +67,13 @@ enum KeyboardEventType {
   KEY_UP,
 };
 
+// classes
+
 class MLContext;
+
+struct application_context_t {
+  int dummy_value;
+};
 
 class KeyboardEvent {
 public:
