@@ -471,8 +471,7 @@ void MLMesher::Poll() {
 
           Local<Object> obj = Nan::New<Object>();
           obj->Set(JS_STR("id"), JS_STR(id));
-          obj->Set(JS_STR("present"), JS_BOOL(true));
-          obj->Set(JS_STR("new"), JS_BOOL(meshBuffer.isNew));
+          obj->Set(JS_STR("type"), JS_STR(meshBuffer.isNew ? "new" : "update"));
 
           Local<Object> positionObj = Nan::New<Object>();
           positionObj->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
@@ -502,7 +501,7 @@ void MLMesher::Poll() {
 
       Local<Object> obj = Nan::New<Object>();
       obj->Set(JS_STR("id"), JS_STR(id));
-      obj->Set(JS_STR("present"), JS_BOOL(false));
+      obj->Set(JS_STR("type"), JS_STR("remove"));
 
       array->Set(numResults++, obj);
     }
