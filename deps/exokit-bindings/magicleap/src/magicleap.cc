@@ -27,6 +27,8 @@ Nan::Persistent<Function> keyboardEventsCb;
 std::vector<KeyboardEvent> keyboardEvents;
 uv_async_t keyboardEventsAsync;
 
+Nan::Persistent<Function> mlMesherConstructor;
+
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
 std::condition_variable  cameraRequestConditionVariable;
@@ -41,7 +43,7 @@ std::vector<HandRequest *> handRequests;
 float handBones[2][1 + 5][4][1 + 3];
 
 MLHandle meshTracker;
-std::vector<MeshRequest *> meshRequests;
+std::vector<MLMesher *> meshers;
 MLMeshingExtents meshExtents;
 MLHandle meshInfoRequestHandle;
 MLMeshingMeshInfo meshInfo;
@@ -391,72 +393,139 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->isNew = isNew;
 }
 
-// MeshRequest
+// MLMesher
 
-MeshRequest::MeshRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+MLMesher::MLMesher() {}
 
-void MeshRequest::Poll() {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "meshRequest");
+MLMesher::~MLMesher() {}
 
-  MLMeshingBlockMesh *blockMeshes = mesh.data;
-  uint32_t dataCount = mesh.data_count;
+NAN_METHOD(MLMesher::New) {
+  MLMesher *mlMesher = new MLMesher();
+  Local<Object> mlMesherObj = info.This();
+  mlMesher->Wrap(mlMesherObj);
 
-  Local<Array> array = Nan::New<Array>();
-  uint32_t numResults = 0;
-  for (uint32_t i = 0; i < dataCount; i++) {
-    MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+  Nan::SetAccessor(mlMesherObj, JS_STR("onmesh"), OnMeshGetter, OnMeshSetter);
 
-    const MLMeshingResult &result = blockMesh.result;
-    if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
-      const std::string &id = id2String(blockMesh.id);
+  info.GetReturnValue().Set(mlMesherObj);
 
-      auto iter = meshBuffers.find(id);
-      if (iter != meshBuffers.end()) {
-        const MeshBuffer &meshBuffer = iter->second;
+  meshers.push_back(mlMesher);
+}
 
-        Local<Object> obj = Nan::New<Object>();
-        obj->Set(JS_STR("id"), JS_STR(id));
-        Local<Object> positionObj = Nan::New<Object>();
-        positionObj->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
-        obj->Set(JS_STR("position"), positionObj);
-        obj->Set(JS_STR("positionCount"), JS_INT(meshBuffer.numPositions));
-        Local<Object> normalObj = Nan::New<Object>();
-        normalObj->Set(JS_STR("id"), JS_INT(meshBuffer.normalBuffer));
-        obj->Set(JS_STR("normal"), normalObj);
-        obj->Set(JS_STR("normalCount"), JS_INT(meshBuffer.numPositions));
-        Local<Object> indexObj = Nan::New<Object>();
-        indexObj->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
-        obj->Set(JS_STR("index"), indexObj);
-        obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
-        obj->Set(JS_STR("isNew"), JS_BOOL(meshBuffer.isNew));
-        obj->Set(JS_STR("isValid"), JS_BOOL(true));
+Local<Function> MLMesher::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
 
-        array->Set(numResults++, obj);
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLMesher"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLMesher::OnMeshGetter) {
+  // Nan::HandleScope scope;
+  MLMesher *mlMesher = ObjectWrap::Unwrap<MLMesher>(info.This());
+
+  Local<Function> cb = Nan::New(mlMesher->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLMesher::OnMeshSetter) {
+  // Nan::HandleScope scope;
+  MLMesher *mlMesher = ObjectWrap::Unwrap<MLMesher>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlMesher->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLMesher::OnMeshSetter: invalid arguments");
+  }
+}
+
+void MLMesher::Poll() {
+  if (!this->cb.IsEmpty()) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Poll");
+
+    MLMeshingBlockMesh *blockMeshes = mesh.data;
+    uint32_t dataCount = mesh.data_count;
+
+    Local<Array> array = Nan::New<Array>();
+    uint32_t numResults = 0;
+    for (uint32_t i = 0; i < dataCount; i++) {
+      MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+
+      const MLMeshingResult &result = blockMesh.result;
+      if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
+        const std::string &id = id2String(blockMesh.id);
+
+        auto iter = meshBuffers.find(id);
+        if (iter != meshBuffers.end()) {
+          const MeshBuffer &meshBuffer = iter->second;
+
+          Local<Object> obj = Nan::New<Object>();
+          obj->Set(JS_STR("id"), JS_STR(id));
+          obj->Set(JS_STR("present"), JS_BOOL(true));
+          obj->Set(JS_STR("new"), JS_BOOL(meshBuffer.isNew));
+
+          Local<Object> positionObj = Nan::New<Object>();
+          positionObj->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
+          obj->Set(JS_STR("position"), positionObj);
+          obj->Set(JS_STR("positionCount"), JS_INT(meshBuffer.numPositions));
+          Local<Object> normalObj = Nan::New<Object>();
+          normalObj->Set(JS_STR("id"), JS_INT(meshBuffer.normalBuffer));
+          obj->Set(JS_STR("normal"), normalObj);
+          obj->Set(JS_STR("normalCount"), JS_INT(meshBuffer.numPositions));
+          Local<Object> indexObj = Nan::New<Object>();
+          indexObj->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
+          obj->Set(JS_STR("index"), indexObj);
+          obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
+
+          array->Set(numResults++, obj);
+        } else {
+          // ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, idbuf);
+        }
+      } else if (result == MLMeshingResult_Pending) {
+        // nothing
       } else {
-        // ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, idbuf);
+        ML_LOG(Error, "%s: ML mesh request poll failed: %x %x", application_name, i, result);
       }
-    } else if (result == MLMeshingResult_Pending) {
-      // nothing
-    } else {
-      ML_LOG(Error, "%s: ML mesh request poll failed: %x %x", application_name, i, result);
     }
+    for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
+      const std::string &id = id2String(cfid);
+
+      Local<Object> obj = Nan::New<Object>();
+      obj->Set(JS_STR("id"), JS_STR(id));
+      obj->Set(JS_STR("present"), JS_BOOL(false));
+
+      array->Set(numResults++, obj);
+    }
+
+    Local<Function> cbFn = Nan::New(this->cb);
+    Local<Value> argv[] = {
+      array,
+    };
+    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
   }
-  for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
-    const std::string &id = id2String(cfid);
+}
 
-    Local<Object> obj = Nan::New<Object>();
-    obj->Set(JS_STR("id"), JS_STR(id));
-    obj->Set(JS_STR("isValid"), JS_BOOL(false));
+NAN_METHOD(MLMesher::Destroy) {
+  MLMesher *mlMesher = ObjectWrap::Unwrap<MLMesher>(info.This());
 
-    array->Set(numResults++, obj);
-  }
-
-  Local<Function> cbFn = Nan::New(this->cbFn);
-  Local<Value> argv[] = {
-    array,
-  };
-  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  meshers.erase(std::remove_if(meshers.begin(), meshers.end(), [&](MLMesher *m) -> bool {
+    if (m == mlMesher) {
+      delete m;
+      return false;
+    } else {
+      return true;
+    }
+  }));
 }
 
 // PlanesRequest
@@ -734,10 +803,7 @@ void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int wid
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-MLContext::MLContext() :
-  position{0, 0, 0},
-  rotation{0, 0, 0, 1}
-  {}
+MLContext::MLContext() : position{0, 0, 0}, rotation{0, 0, 0, 1} {}
 
 MLContext::~MLContext() {}
 
@@ -764,8 +830,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
   Nan::SetMethod(ctorFn, "RequestHand", RequestHand);
   Nan::SetMethod(ctorFn, "CancelHand", CancelHand);
-  Nan::SetMethod(ctorFn, "RequestMesh", RequestMesh);
-  Nan::SetMethod(ctorFn, "CancelMesh", CancelMesh);
+  Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
   Nan::SetMethod(ctorFn, "PopulateDepth", PopulateDepth);
   Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
   Nan::SetMethod(ctorFn, "CancelPlanes", CancelPlanes);
@@ -923,6 +988,8 @@ NAN_METHOD(MLContext::InitLifecycle) {
     uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
     uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
 
+    mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
+
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
     lifecycle_callbacks.on_stop = onStop;
     lifecycle_callbacks.on_pause = onPause;
@@ -982,7 +1049,6 @@ NAN_METHOD(MLContext::DeinitLifecycle) {
 
 NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   if (lifecycle_status != MLResult_Ok) {
@@ -1355,6 +1421,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
     if (application_context.dummy_value == DummyValue::RUNNING) {
       MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+
       GLuint framebuffer = info[1]->Uint32Value();
       GLuint width = info[2]->Uint32Value();
       GLuint height = info[3]->Uint32Value();
@@ -1589,51 +1656,24 @@ NAN_METHOD(MLContext::CancelHand) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
-    {
-      handRequests.erase(std::remove_if(handRequests.begin(), handRequests.end(), [&](HandRequest *h) -> bool {
-        Local<Function> localCbFn = Nan::New(h->cbFn);
-        if (localCbFn->StrictEquals(cbFn)) {
-          delete h;
-          return false;
-        } else {
-          return true;
-        }
-      }));
-    }
-  } else {
+    handRequests.erase(std::remove_if(handRequests.begin(), handRequests.end(), [&](HandRequest *h) -> bool {
+      Local<Function> localCbFn = Nan::New(h->cbFn);
+      if (localCbFn->StrictEquals(cbFn)) {
+        delete h;
+        return false;
+      } else {
+        return true;
+      }
+    }));
+} else {
     Nan::ThrowError("invalid arguments");
   }
 }
 
-NAN_METHOD(MLContext::RequestMesh) {
-  if (info[0]->IsFunction()) {
-    Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    MeshRequest *meshRequest = new MeshRequest(cbFn);
-    meshRequests.push_back(meshRequest);
-  } else {
-    Nan::ThrowError("invalid arguments");
-  }
-}
-
-NAN_METHOD(MLContext::CancelMesh) {
-  if (info[0]->IsFunction()) {
-    Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    {
-      meshRequests.erase(std::remove_if(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) -> bool {
-        Local<Function> localCbFn = Nan::New(m->cbFn);
-        if (localCbFn->StrictEquals(cbFn)) {
-          delete m;
-          return false;
-        } else {
-          return true;
-        }
-      }));
-    }
-  } else {
-    Nan::ThrowError("invalid arguments");
-  }
+NAN_METHOD(MLContext::RequestMeshing) {
+  Local<Function> mlMesherCons = Nan::New(mlMesherConstructor);
+  Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlMesherObj);
 }
 
 NAN_METHOD(MLContext::PopulateDepth) {
@@ -1690,17 +1730,15 @@ NAN_METHOD(MLContext::CancelEye) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
-    {
-      eyeRequests.erase(std::remove_if(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) -> bool {
-        Local<Function> localCbFn = Nan::New(e->cbFn);
-        if (localCbFn->StrictEquals(cbFn)) {
-          delete e;
-          return false;
-        } else {
-          return true;
-        }
-      }));
-    }
+    eyeRequests.erase(std::remove_if(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) -> bool {
+      Local<Function> localCbFn = Nan::New(e->cbFn);
+      if (localCbFn->StrictEquals(cbFn)) {
+        delete e;
+        return false;
+      } else {
+        return true;
+      }
+    }));
   } else {
     Nan::ThrowError("invalid arguments");
   }
@@ -1776,18 +1814,16 @@ NAN_METHOD(MLContext::CancelCamera) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
-    {
-      std::unique_lock<std::mutex> lock(cameraRequestsMutex);
-      cameraRequests.erase(std::remove_if(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) -> bool {
-        Local<Function> localCbFn = Nan::New(c->cbFn);
-        if (localCbFn->StrictEquals(cbFn)) {
-          delete c;
-          return false;
-        } else {
-          return true;
-        }
-      }));
-    }
+    std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+    cameraRequests.erase(std::remove_if(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) -> bool {
+      Local<Function> localCbFn = Nan::New(c->cbFn);
+      if (localCbFn->StrictEquals(cbFn)) {
+        delete c;
+        return false;
+      } else {
+        return true;
+      }
+    }));
   } else {
     Nan::ThrowError("invalid arguments");
   }
@@ -1861,7 +1897,6 @@ void setFingerValue(float data[1 + 3]) {
 
 NAN_METHOD(MLContext::PrePollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
-
   MLSnapshot *snapshot = nullptr;
 
   if (handRequests.size() > 0) {
@@ -1921,7 +1956,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
     });
   }
 
-  if ((meshRequests.size() > 0 || depthEnabled) && !meshInfoRequestPending && !meshRequestsPending) {
+  if ((meshers.size() > 0 || depthEnabled) && !meshInfoRequestPending && !meshRequestsPending) {
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
@@ -1983,6 +2018,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
 NAN_METHOD(MLContext::PostPollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+
   GLuint fbo = info[2]->Uint32Value();
   unsigned int width = info[3]->Uint32Value();
   unsigned int height = info[4]->Uint32Value();
@@ -2080,7 +2116,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         }
       }
 
-      std::for_each(meshRequests.begin(), meshRequests.end(), [&](MeshRequest *m) {
+      std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
         m->Poll();
       });
 

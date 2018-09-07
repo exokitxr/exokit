@@ -110,13 +110,22 @@ public:
   bool isNew;
 };
 
-class MeshRequest {
+class MLMesher : public ObjectWrap {
 public:
-  MeshRequest(Local<Function> cbFn);
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLMesher();
+  ~MLMesher();
+  
+  static NAN_METHOD(New);
+  static NAN_GETTER(OnMeshGetter);
+  static NAN_SETTER(OnMeshSetter);
+  static NAN_METHOD(Destroy);
+
   void Poll();
 
 // protected:
-  Nan::Persistent<Function> cbFn;
+  Nan::Persistent<Function> cb;
 };
 
 class PlanesRequest {
@@ -185,8 +194,7 @@ public:
   static NAN_METHOD(OnPresentChange);
   static NAN_METHOD(RequestHand);
   static NAN_METHOD(CancelHand);
-  static NAN_METHOD(RequestMesh);
-  static NAN_METHOD(CancelMesh);
+  static NAN_METHOD(RequestMeshing);
   static NAN_METHOD(PopulateDepth);
   static NAN_METHOD(RequestPlanes);
   static NAN_METHOD(CancelPlanes);
@@ -223,7 +231,7 @@ public:
   // GLint normalLocation;
   GLint modelViewMatrixLocation;
   GLint projectionMatrixLocation;
-  
+
   // occlusion
   // MLHandle occlusionTracker;
 };
