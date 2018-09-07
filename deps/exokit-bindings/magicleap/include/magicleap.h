@@ -86,15 +86,6 @@ public:
   uint32_t modifier_mask;
 };
 
-class HandRequest {
-public:
-  HandRequest(Local<Function> cbFn);
-  void Poll();
-
-// protected:
-  Nan::Persistent<Function> cbFn;
-};
-
 class MeshBuffer {
 public:
   MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer);
@@ -138,6 +129,24 @@ public:
   static NAN_METHOD(New);
   static NAN_GETTER(OnPlanesGetter);
   static NAN_SETTER(OnPlanesSetter);
+  static NAN_METHOD(Destroy);
+
+  void Poll();
+
+// protected:
+  Nan::Persistent<Function> cb;
+};
+
+class MLHandTracker : public ObjectWrap {
+public:
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLHandTracker();
+  ~MLHandTracker();
+  
+  static NAN_METHOD(New);
+  static NAN_GETTER(OnHandsGetter);
+  static NAN_SETTER(OnHandsSetter);
   static NAN_METHOD(Destroy);
 
   void Poll();
@@ -210,12 +219,11 @@ public:
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
-  static NAN_METHOD(RequestHand);
-  static NAN_METHOD(CancelHand);
   static NAN_METHOD(RequestMeshing);
-  static NAN_METHOD(PopulateDepth);
   static NAN_METHOD(RequestPlaneTracking);
+  static NAN_METHOD(RequestHandTracking);
   static NAN_METHOD(RequestEyeTracking);
+  static NAN_METHOD(PopulateDepth);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);

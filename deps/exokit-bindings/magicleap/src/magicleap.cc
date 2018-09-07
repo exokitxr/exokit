@@ -29,6 +29,7 @@ uv_async_t keyboardEventsAsync;
 
 Nan::Persistent<Function> mlMesherConstructor;
 Nan::Persistent<Function> mlPlaneTrackerConstructor;
+Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
 
 std::thread cameraRequestThread;
@@ -41,7 +42,7 @@ bool cameraResponsePending = false;
 MLHandle handTracker;
 MLHandTrackingData handData;
 MLHandTrackingStaticData handStaticData;
-std::vector<HandRequest *> handRequests;
+std::vector<MLHandTracker *> handTrackers;
 float handBones[2][1 + 5][4][1 + 3];
 
 MLHandle meshTracker;
@@ -252,112 +253,6 @@ static void onUnloadResources(void* application_context) {
   ML_LOG(Info, "%s: On unload resources called.", application_name);
   events.push_back(Event::UNLOAD_RESOURCES);
   uv_async_send(&eventsAsync);
-}
-
-// HandRequest
-
-HandRequest::HandRequest(Local<Function> cbFn) : cbFn(cbFn) {}
-
-void HandRequest::Poll() {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "handRequest");
-
-  Local<Array> array = Nan::New<Array>();
-  uint32_t numResults = 0;
-
-  bool hasLeftHandBone = false;
-  for (size_t i = 0; i < 6; i++) {
-    for (size_t j = 0; j < 4; j++) {
-      if (*(uint32_t *)&handBones[0][i][j][0]) {
-        hasLeftHandBone = true;
-        break;
-      }
-    }
-  }
-  if (hasLeftHandBone) {
-    Local<Object> obj = Nan::New<Object>();
-
-    obj->Set(JS_STR("hand"), JS_STR("left"));
-
-    Local<Array> fingersArray = Nan::New<Array>(6);
-    for (size_t i = 0; i < 6; i++) {
-      Local<Array> bonesArray = Nan::New<Array>(4);
-
-      for (size_t j = 0; j < 4; j++) {
-        Local<Value> boneVal;
-
-        if (*(uint32_t *)&handBones[0][i][j][0]) {
-          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[0][i][j][1], 3 * sizeof(float)), 0, 3);
-        } else {
-          boneVal = Nan::Null();
-        }
-
-        bonesArray->Set(j, boneVal);
-      }
-
-      fingersArray->Set(i, bonesArray);
-    }
-    obj->Set(JS_STR("fingers"), fingersArray);
-
-    const char *gesture = gestureCategoryToDescriptor(handData.left_hand_state.keypose);
-    if (gesture) {
-      obj->Set(JS_STR("gesture"), JS_STR(gesture));
-    } else {
-      obj->Set(JS_STR("gesture"), Nan::Null());
-    }
-
-    array->Set(JS_INT(numResults++), obj);
-  }
-
-  bool hasRightHandBone = false;
-  for (size_t i = 0; i < 6; i++) {
-    for (size_t j = 0; j < 4; j++) {
-      if (*(uint32_t *)&handBones[1][i][j][0]) {
-        hasRightHandBone = true;
-        break;
-      }
-    }
-  }
-  if (hasRightHandBone) {
-    Local<Object> obj = Nan::New<Object>();
-
-    obj->Set(JS_STR("hand"), JS_STR("right"));
-
-    Local<Array> fingersArray = Nan::New<Array>(6);
-    for (size_t i = 0; i < 6; i++) {
-      Local<Array> bonesArray = Nan::New<Array>(4);
-
-      for (size_t j = 0; j < 4; j++) {
-        Local<Value> boneVal;
-
-        if (*(uint32_t *)&handBones[1][i][j][0]) {
-          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[1][i][j][1], 3 * sizeof(float)), 0, 3);
-        } else {
-          boneVal = Nan::Null();
-        }
-
-        bonesArray->Set(j, boneVal);
-      }
-
-      fingersArray->Set(i, bonesArray);
-    }
-    obj->Set(JS_STR("fingers"), fingersArray);
-
-    const char *gesture = gestureCategoryToDescriptor(handData.right_hand_state.keypose);
-    if (gesture) {
-      obj->Set(JS_STR("gesture"), JS_STR(gesture));
-    } else {
-      obj->Set(JS_STR("gesture"), Nan::Null());
-    }
-
-    array->Set(JS_INT(numResults++), obj);
-  }
-
-  Local<Function> cbFn = Nan::New(this->cbFn);
-  Local<Value> argv[] = {
-    array,
-  };
-  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 // MeshBuffer
@@ -640,6 +535,176 @@ NAN_METHOD(MLPlaneTracker::Destroy) {
   planeTrackers.erase(std::remove_if(planeTrackers.begin(), planeTrackers.end(), [&](MLPlaneTracker *p) -> bool {
     if (p == mlPlaneTracker) {
       delete p;
+      return false;
+    } else {
+      return true;
+    }
+  }));
+}
+
+// MLHandTracker
+
+MLHandTracker::MLHandTracker() {}
+
+MLHandTracker::~MLHandTracker() {}
+
+NAN_METHOD(MLHandTracker::New) {
+  MLHandTracker *mlHandTracker = new MLHandTracker();
+  Local<Object> mlHandTrackerObj = info.This();
+  mlHandTracker->Wrap(mlHandTrackerObj);
+
+  Nan::SetAccessor(mlHandTrackerObj, JS_STR("onhands"), OnHandsGetter, OnHandsSetter);
+
+  info.GetReturnValue().Set(mlHandTrackerObj);
+
+  handTrackers.push_back(mlHandTracker);
+}
+
+Local<Function> MLHandTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLHandTracker"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLHandTracker::OnHandsGetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  Local<Function> cb = Nan::New(mlHandTracker->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLHandTracker::OnHandsSetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlHandTracker->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLHandTracker::OnHandsSetter: invalid arguments");
+  }
+}
+
+void MLHandTracker::Poll() {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
+
+  Local<Array> array = Nan::New<Array>();
+  uint32_t numResults = 0;
+
+  bool hasLeftHandBone = false;
+  for (size_t i = 0; i < 6; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      if (*(uint32_t *)&handBones[0][i][j][0]) {
+        hasLeftHandBone = true;
+        break;
+      }
+    }
+  }
+  if (hasLeftHandBone) {
+    Local<Object> obj = Nan::New<Object>();
+
+    obj->Set(JS_STR("hand"), JS_STR("left"));
+
+    Local<Array> fingersArray = Nan::New<Array>(6);
+    for (size_t i = 0; i < 6; i++) {
+      Local<Array> bonesArray = Nan::New<Array>(4);
+
+      for (size_t j = 0; j < 4; j++) {
+        Local<Value> boneVal;
+
+        if (*(uint32_t *)&handBones[0][i][j][0]) {
+          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[0][i][j][1], 3 * sizeof(float)), 0, 3);
+        } else {
+          boneVal = Nan::Null();
+        }
+
+        bonesArray->Set(j, boneVal);
+      }
+
+      fingersArray->Set(i, bonesArray);
+    }
+    obj->Set(JS_STR("fingers"), fingersArray);
+
+    const char *gesture = gestureCategoryToDescriptor(handData.left_hand_state.keypose);
+    if (gesture) {
+      obj->Set(JS_STR("gesture"), JS_STR(gesture));
+    } else {
+      obj->Set(JS_STR("gesture"), Nan::Null());
+    }
+
+    array->Set(JS_INT(numResults++), obj);
+  }
+
+  bool hasRightHandBone = false;
+  for (size_t i = 0; i < 6; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      if (*(uint32_t *)&handBones[1][i][j][0]) {
+        hasRightHandBone = true;
+        break;
+      }
+    }
+  }
+  if (hasRightHandBone) {
+    Local<Object> obj = Nan::New<Object>();
+
+    obj->Set(JS_STR("hand"), JS_STR("right"));
+
+    Local<Array> fingersArray = Nan::New<Array>(6);
+    for (size_t i = 0; i < 6; i++) {
+      Local<Array> bonesArray = Nan::New<Array>(4);
+
+      for (size_t j = 0; j < 4; j++) {
+        Local<Value> boneVal;
+
+        if (*(uint32_t *)&handBones[1][i][j][0]) {
+          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&handBones[1][i][j][1], 3 * sizeof(float)), 0, 3);
+        } else {
+          boneVal = Nan::Null();
+        }
+
+        bonesArray->Set(j, boneVal);
+      }
+
+      fingersArray->Set(i, bonesArray);
+    }
+    obj->Set(JS_STR("fingers"), fingersArray);
+
+    const char *gesture = gestureCategoryToDescriptor(handData.right_hand_state.keypose);
+    if (gesture) {
+      obj->Set(JS_STR("gesture"), JS_STR(gesture));
+    } else {
+      obj->Set(JS_STR("gesture"), Nan::Null());
+    }
+
+    array->Set(JS_INT(numResults++), obj);
+  }
+
+  Local<Function> cb = Nan::New(this->cb);
+  Local<Value> argv[] = {
+    array,
+  };
+  asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+}
+
+NAN_METHOD(MLHandTracker::Destroy) {
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  handTrackers.erase(std::remove_if(handTrackers.begin(), handTrackers.end(), [&](MLHandTracker *h) -> bool {
+    if (h == mlHandTracker) {
+      delete h;
       return false;
     } else {
       return true;
@@ -950,8 +1015,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
-  Nan::SetMethod(ctorFn, "RequestHand", RequestHand);
-  Nan::SetMethod(ctorFn, "CancelHand", CancelHand);
+  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
   Nan::SetMethod(ctorFn, "PopulateDepth", PopulateDepth);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
@@ -1110,6 +1174,7 @@ NAN_METHOD(MLContext::InitLifecycle) {
 
     mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
     mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
+    mlHandTrackerConstructor.Reset(MLHandTracker::Initialize(Isolate::GetCurrent()));
     mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
 
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
@@ -1763,47 +1828,10 @@ NAN_METHOD(MLContext::OnPresentChange) {
   }
 }
 
-NAN_METHOD(MLContext::RequestHand) {
-  if (info[0]->IsFunction()) {
-    Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    HandRequest *handRequest = new HandRequest(cbFn);
-    handRequests.push_back(handRequest);
-  } else {
-    Nan::ThrowError("invalid arguments");
-  }
-}
-
-NAN_METHOD(MLContext::CancelHand) {
-  if (info[0]->IsFunction()) {
-    Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    handRequests.erase(std::remove_if(handRequests.begin(), handRequests.end(), [&](HandRequest *h) -> bool {
-      Local<Function> localCbFn = Nan::New(h->cbFn);
-      if (localCbFn->StrictEquals(cbFn)) {
-        delete h;
-        return false;
-      } else {
-        return true;
-      }
-    }));
-} else {
-    Nan::ThrowError("invalid arguments");
-  }
-}
-
 NAN_METHOD(MLContext::RequestMeshing) {
   Local<Function> mlMesherCons = Nan::New(mlMesherConstructor);
   Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
   info.GetReturnValue().Set(mlMesherObj);
-}
-
-NAN_METHOD(MLContext::PopulateDepth) {
-  if (info[0]->IsBoolean()) {
-    depthEnabled = info[0]->BooleanValue();
-  } else {
-    Nan::ThrowError("invalid arguments");
-  }
 }
 
 NAN_METHOD(MLContext::RequestPlaneTracking) {
@@ -1812,10 +1840,24 @@ NAN_METHOD(MLContext::RequestPlaneTracking) {
   info.GetReturnValue().Set(mlPlaneTrackerObj);
 }
 
+NAN_METHOD(MLContext::RequestHandTracking) {
+  Local<Function> mlHandTrackerCons = Nan::New(mlHandTrackerConstructor);
+  Local<Object> mlHandTrackerObj = mlHandTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlHandTrackerObj);
+}
+
 NAN_METHOD(MLContext::RequestEyeTracking) {
   Local<Function> mlEyeTrackerCons = Nan::New(mlEyeTrackerConstructor);
   Local<Object> mlEyeTrackerObj = mlEyeTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
   info.GetReturnValue().Set(mlEyeTrackerObj);
+}
+
+NAN_METHOD(MLContext::PopulateDepth) {
+  if (info[0]->IsBoolean()) {
+    depthEnabled = info[0]->BooleanValue();
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
 }
 
 bool cameraConnected = false;
@@ -1973,7 +2015,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
   MLSnapshot *snapshot = nullptr;
 
-  if (handRequests.size() > 0) {
+  if (handTrackers.size() > 0) {
     MLResult result = MLHandTrackingGetData(handTracker, &handData);
     if (result == MLResult_Ok) {
       MLResult result = MLHandTrackingGetStaticData(handTracker, &handStaticData);
@@ -2000,7 +2042,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
         setFingerValue(handStaticData.right.ring, snapshot, handBones[1][4]);
         setFingerValue(handStaticData.right.pinky, snapshot, handBones[1][5]);
 
-        std::for_each(handRequests.begin(), handRequests.end(), [&](HandRequest *h) {
+        std::for_each(handTrackers.begin(), handTrackers.end(), [&](MLHandTracker *h) {
           h->Poll();
         });
       } else {
