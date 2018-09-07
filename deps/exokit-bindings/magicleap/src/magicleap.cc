@@ -28,6 +28,7 @@ std::vector<KeyboardEvent> keyboardEvents;
 uv_async_t keyboardEventsAsync;
 
 Nan::Persistent<Function> mlMesherConstructor;
+Nan::Persistent<Function> mlEyeTrackerConstructor;
 
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
@@ -70,7 +71,7 @@ uint32_t numPlanesResults;
 bool planesRequestPending = false;
 
 MLHandle eyeTracker;
-std::vector<EyeRequest *> eyeRequests;
+std::vector<MLEyeTracker *> eyeTrackers;
 MLEyeTrackingState eyeState;
 MLEyeTrackingStaticData eyeStaticData;
 
@@ -577,34 +578,87 @@ void PlanesRequest::Poll() {
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-// EyeRequest
+// MLEyeTracker
 
-EyeRequest::EyeRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+MLEyeTracker::MLEyeTracker() {}
 
-void EyeRequest::Poll(MLSnapshot *snapshot) {
+MLEyeTracker::~MLEyeTracker() {}
+
+NAN_METHOD(MLEyeTracker::New) {
+  MLEyeTracker *mlEyeTracker = new MLEyeTracker();
+  Local<Object> mlEyeTrackerObj = info.This();
+  mlEyeTracker->Wrap(mlEyeTrackerObj);
+
+  Nan::SetAccessor(mlEyeTrackerObj, JS_STR("position"), PositionGetter);
+  Nan::SetAccessor(mlEyeTrackerObj, JS_STR("rotation"), RotationGetter);
+
+  info.GetReturnValue().Set(mlEyeTrackerObj);
+
+  eyeTrackers.push_back(mlEyeTracker);
+}
+
+Local<Function> MLEyeTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLEyeTracker"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLEyeTracker::PositionGetter) {
+  // Nan::HandleScope scope;
+  MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+
+  Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
+  positionArray->Set(0, JS_NUM(mlEyeTracker->transform.position.x));
+  positionArray->Set(1, JS_NUM(mlEyeTracker->transform.position.y));
+  positionArray->Set(2, JS_NUM(mlEyeTracker->transform.position.z));
+  
+  info.GetReturnValue().Set(positionArray);
+}
+
+NAN_GETTER(MLEyeTracker::RotationGetter) {
+  // Nan::HandleScope scope;
+  MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+
+  Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
+  rotationArray->Set(0, JS_NUM(mlEyeTracker->transform.rotation.x));
+  rotationArray->Set(1, JS_NUM(mlEyeTracker->transform.rotation.y));
+  rotationArray->Set(2, JS_NUM(mlEyeTracker->transform.rotation.z));
+  rotationArray->Set(3, JS_NUM(mlEyeTracker->transform.rotation.w));
+  
+  info.GetReturnValue().Set(rotationArray);
+}
+
+void MLEyeTracker::Poll(MLSnapshot *snapshot) {
   const MLCoordinateFrameUID &id = eyeStaticData.fixation;
-  MLTransform transform;
-  if (MLSnapshotGetTransform(snapshot, &id, &transform) == MLResult_Ok) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "eyeRequest");
-
-    Local<Float32Array> fixationTransformArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (3 + 4) * sizeof(float)), 0, 3 + 4);
-    fixationTransformArray->Set(0, JS_NUM(transform.position.x));
-    fixationTransformArray->Set(1, JS_NUM(transform.position.y));
-    fixationTransformArray->Set(2, JS_NUM(transform.position.z));
-    fixationTransformArray->Set(3, JS_NUM(transform.rotation.x));
-    fixationTransformArray->Set(4, JS_NUM(transform.rotation.y));
-    fixationTransformArray->Set(5, JS_NUM(transform.rotation.z));
-    fixationTransformArray->Set(6, JS_NUM(transform.rotation.w));
-
-    Local<Function> cbFn = Nan::New(this->cbFn);
-    Local<Value> argv[] = {
-      fixationTransformArray,
-    };
-    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  if (MLSnapshotGetTransform(snapshot, &id, &this->transform) == MLResult_Ok) {
+    // nothing
   } else {
     ML_LOG(Error, "%s: ML failed to get eye transform!", application_name);
   }
+}
+
+NAN_METHOD(MLEyeTracker::Destroy) {
+  MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+
+  eyeTrackers.erase(std::remove_if(eyeTrackers.begin(), eyeTrackers.end(), [&](MLEyeTracker *e) -> bool {
+    if (e == mlEyeTracker) {
+      delete e;
+      return false;
+    } else {
+      return true;
+    }
+  }));
 }
 
 // keyboard callbacks
@@ -833,8 +887,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "PopulateDepth", PopulateDepth);
   Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
   Nan::SetMethod(ctorFn, "CancelPlanes", CancelPlanes);
-  Nan::SetMethod(ctorFn, "RequestEye", RequestEye);
-  Nan::SetMethod(ctorFn, "CancelEye", CancelEye);
+  Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
@@ -988,6 +1041,7 @@ NAN_METHOD(MLContext::InitLifecycle) {
     uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
 
     mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
+    mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
 
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
     lifecycle_callbacks.on_stop = onStop;
@@ -1714,33 +1768,10 @@ NAN_METHOD(MLContext::CancelPlanes) {
   }
 }
 
-NAN_METHOD(MLContext::RequestEye) {
-  if (info[0]->IsFunction()) {
-    Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    EyeRequest *eyeRequest = new EyeRequest(cbFn);
-    eyeRequests.push_back(eyeRequest);
-  } else {
-    Nan::ThrowError("invalid arguments");
-  }
-}
-
-NAN_METHOD(MLContext::CancelEye) {
-  if (info[0]->IsFunction()) {
-    Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    eyeRequests.erase(std::remove_if(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) -> bool {
-      Local<Function> localCbFn = Nan::New(e->cbFn);
-      if (localCbFn->StrictEquals(cbFn)) {
-        delete e;
-        return false;
-      } else {
-        return true;
-      }
-    }));
-  } else {
-    Nan::ThrowError("invalid arguments");
-  }
+NAN_METHOD(MLContext::RequestEyeTracking) {
+  Local<Function> mlEyeTrackerCons = Nan::New(mlEyeTrackerConstructor);
+  Local<Object> mlEyeTrackerObj = mlEyeTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlEyeTrackerObj);
 }
 
 bool cameraConnected = false;
@@ -1936,7 +1967,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
     }
   }
 
-  if (eyeRequests.size() > 0) {
+  if (eyeTrackers.size() > 0) {
     if (MLEyeTrackingGetState(eyeTracker, &eyeState) != MLResult_Ok) {
       ML_LOG(Error, "%s: Eye get state failed!", application_name);
     }
@@ -1950,7 +1981,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
         ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
       }
     }
-    std::for_each(eyeRequests.begin(), eyeRequests.end(), [&](EyeRequest *e) {
+    std::for_each(eyeTrackers.begin(), eyeTrackers.end(), [&](MLEyeTracker *e) {
       e->Poll(snapshot);
     });
   }

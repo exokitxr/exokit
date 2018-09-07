@@ -137,13 +137,22 @@ public:
   Nan::Persistent<Function> cbFn;
 };
 
-class EyeRequest {
+class MLEyeTracker : public ObjectWrap {
 public:
-  EyeRequest(Local<Function> cbFn);
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLEyeTracker();
+  ~MLEyeTracker();
+  
+  static NAN_METHOD(New);
+  static NAN_GETTER(PositionGetter);
+  static NAN_GETTER(RotationGetter);
+  static NAN_METHOD(Destroy);
+
   void Poll(MLSnapshot *snapshot);
 
 // protected:
-  Nan::Persistent<Function> cbFn;
+  MLTransform transform;
 };
 
 class CameraRequestPlane {
@@ -198,8 +207,7 @@ public:
   static NAN_METHOD(PopulateDepth);
   static NAN_METHOD(RequestPlanes);
   static NAN_METHOD(CancelPlanes);
-  static NAN_METHOD(RequestEye);
-  static NAN_METHOD(CancelEye);
+  static NAN_METHOD(RequestEyeTracking);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);
