@@ -300,9 +300,9 @@
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
-          const {id, present} = update;
+          const {id, type} = update;
 
-          if (present) {
+          if (type === 'new' || type === 'update') {
             const terrainMesh = _getTerrainMesh(id);
             _loadTerrainMesh(terrainMesh, update);
           } else {
