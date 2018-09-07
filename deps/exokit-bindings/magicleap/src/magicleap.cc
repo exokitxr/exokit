@@ -86,14 +86,14 @@ bool isSimulated() {
 #endif
 }
 
-std::string &&id2String(const MLCoordinateFrameUID &id) {
+std::string id2String(const MLCoordinateFrameUID &id) {
   uint64_t id1 = id.data[0];
   uint64_t id2 = id.data[1];
   char idbuf[16*2 + 1];
   sprintf(idbuf, "%016llx%016llx", id1, id2);
   return std::string(idbuf);
 }
-std::string &&id2String(const uint64_t &id) {
+std::string id2String(const uint64_t &id) {
   char idbuf[16 + 1];
   sprintf(idbuf, "%016llx", id);
   return std::string(idbuf);
