@@ -128,13 +128,22 @@ public:
   Nan::Persistent<Function> cb;
 };
 
-class PlanesRequest {
+class MLPlaneTracker : public ObjectWrap {
 public:
-  PlanesRequest(Local<Function> cbFn);
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLPlaneTracker();
+  ~MLPlaneTracker();
+  
+  static NAN_METHOD(New);
+  static NAN_GETTER(OnPlanesGetter);
+  static NAN_SETTER(OnPlanesSetter);
+  static NAN_METHOD(Destroy);
+
   void Poll();
 
 // protected:
-  Nan::Persistent<Function> cbFn;
+  Nan::Persistent<Function> cb;
 };
 
 class MLEyeTracker : public ObjectWrap {
@@ -205,8 +214,7 @@ public:
   static NAN_METHOD(CancelHand);
   static NAN_METHOD(RequestMeshing);
   static NAN_METHOD(PopulateDepth);
-  static NAN_METHOD(RequestPlanes);
-  static NAN_METHOD(CancelPlanes);
+  static NAN_METHOD(RequestPlaneTracking);
   static NAN_METHOD(RequestEyeTracking);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);

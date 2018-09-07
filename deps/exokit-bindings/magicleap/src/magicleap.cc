@@ -28,6 +28,7 @@ std::vector<KeyboardEvent> keyboardEvents;
 uv_async_t keyboardEventsAsync;
 
 Nan::Persistent<Function> mlMesherConstructor;
+Nan::Persistent<Function> mlPlaneTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
 
 std::thread cameraRequestThread;
@@ -63,7 +64,7 @@ bool meshRequestPending = false;
 std::map<std::string, MeshBuffer> meshBuffers;
 
 MLHandle planesTracker;
-std::vector<PlanesRequest *> planesRequests;
+std::vector<MLPlaneTracker *> planeTrackers;
 MLPlanesQuery planesRequest;
 MLHandle planesRequestHandle;
 MLPlane planeResults[MAX_NUM_PLANES];
@@ -528,54 +529,122 @@ NAN_METHOD(MLMesher::Destroy) {
   }));
 }
 
-// PlanesRequest
+// MLPlaneTracker
 
-PlanesRequest::PlanesRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+MLPlaneTracker::MLPlaneTracker() {}
 
-void PlanesRequest::Poll() {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "planesRequest");
+MLPlaneTracker::~MLPlaneTracker() {}
 
-  Local<Array> array = Nan::New<Array>(numPlanesResults);
-  for (uint32_t i = 0; i < numPlanesResults; i++) {
-    MLPlane &plane = planeResults[i];
+NAN_METHOD(MLPlaneTracker::New) {
+  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker();
+  Local<Object> mlPlaneTrackerObj = info.This();
+  mlPlaneTracker->Wrap(mlPlaneTrackerObj);
 
-    Local<Object> obj = Nan::New<Object>();
+  Nan::SetAccessor(mlPlaneTrackerObj, JS_STR("onplanes"), OnPlanesGetter, OnPlanesSetter);
 
-    uint64_t planeId = (uint64_t)plane.id;
-    // uint32_t flags = plane.flags;
-    float width = plane.width;
-    float height = plane.height;
-    MLVec3f &position = plane.position;
-    MLQuaternionf &rotation = plane.rotation;
+  info.GetReturnValue().Set(mlPlaneTrackerObj);
 
-    const std::string &id = id2String(planeId);
-    obj->Set(JS_STR("id"), JS_STR(id));
+  planeTrackers.push_back(mlPlaneTracker);
+}
 
-    obj->Set(JS_STR("width"), JS_NUM(width));
-    obj->Set(JS_STR("height"), JS_NUM(height));
+Local<Function> MLPlaneTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
 
-    Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
-    positionArray->Set(0, JS_NUM(position.x));
-    positionArray->Set(1, JS_NUM(position.y));
-    positionArray->Set(2, JS_NUM(position.z));
-    obj->Set(JS_STR("position"), positionArray);
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLPlaneTracker"));
 
-    Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
-    rotationArray->Set(0, JS_NUM(rotation.x));
-    rotationArray->Set(1, JS_NUM(rotation.y));
-    rotationArray->Set(2, JS_NUM(rotation.z));
-    rotationArray->Set(3, JS_NUM(rotation.w));
-    obj->Set(JS_STR("rotation"), rotationArray);
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
 
-    array->Set(i, obj);
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLPlaneTracker::OnPlanesGetter) {
+  // Nan::HandleScope scope;
+  MLPlaneTracker *mlPlaneTracker = ObjectWrap::Unwrap<MLPlaneTracker>(info.This());
+
+  Local<Function> cb = Nan::New(mlPlaneTracker->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLPlaneTracker::OnPlanesSetter) {
+  // Nan::HandleScope scope;
+  MLPlaneTracker *mlPlaneTracker = ObjectWrap::Unwrap<MLPlaneTracker>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlPlaneTracker->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLPlaneTracker::OnPlaneSetter: invalid arguments");
   }
+}
 
-  Local<Function> cbFn = Nan::New(this->cbFn);
-  Local<Value> argv[] = {
-    array,
-  };
-  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+void MLPlaneTracker::Poll() {
+  if (!this->cb.IsEmpty()) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
+
+    Local<Array> array = Nan::New<Array>(numPlanesResults);
+    for (uint32_t i = 0; i < numPlanesResults; i++) {
+      MLPlane &plane = planeResults[i];
+
+      Local<Object> obj = Nan::New<Object>();
+
+      uint64_t planeId = (uint64_t)plane.id;
+      // uint32_t flags = plane.flags;
+      float width = plane.width;
+      float height = plane.height;
+      MLVec3f &position = plane.position;
+      MLQuaternionf &rotation = plane.rotation;
+
+      const std::string &id = id2String(planeId);
+      obj->Set(JS_STR("id"), JS_STR(id));
+
+      Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
+      positionArray->Set(0, JS_NUM(position.x));
+      positionArray->Set(1, JS_NUM(position.y));
+      positionArray->Set(2, JS_NUM(position.z));
+      obj->Set(JS_STR("position"), positionArray);
+
+      Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
+      rotationArray->Set(0, JS_NUM(rotation.x));
+      rotationArray->Set(1, JS_NUM(rotation.y));
+      rotationArray->Set(2, JS_NUM(rotation.z));
+      rotationArray->Set(3, JS_NUM(rotation.w));
+      obj->Set(JS_STR("rotation"), rotationArray);
+      
+      Local<Float32Array> sizeArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 2 * sizeof(float)), 0, 2);
+      sizeArray->Set(0, JS_NUM(width));
+      sizeArray->Set(1, JS_NUM(height));
+      obj->Set(JS_STR("size"), sizeArray);
+
+      array->Set(i, obj);
+    }
+
+    Local<Function> cb = Nan::New(this->cb);
+    Local<Value> argv[] = {
+      array,
+    };
+    asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+  }
+}
+
+NAN_METHOD(MLPlaneTracker::Destroy) {
+  MLPlaneTracker *mlPlaneTracker = ObjectWrap::Unwrap<MLPlaneTracker>(info.This());
+
+  planeTrackers.erase(std::remove_if(planeTrackers.begin(), planeTrackers.end(), [&](MLPlaneTracker *p) -> bool {
+    if (p == mlPlaneTracker) {
+      delete p;
+      return false;
+    } else {
+      return true;
+    }
+  }));
 }
 
 // MLEyeTracker
@@ -885,8 +954,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "CancelHand", CancelHand);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
   Nan::SetMethod(ctorFn, "PopulateDepth", PopulateDepth);
-  Nan::SetMethod(ctorFn, "RequestPlanes", RequestPlanes);
-  Nan::SetMethod(ctorFn, "CancelPlanes", CancelPlanes);
+  Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
   Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
@@ -1041,6 +1109,7 @@ NAN_METHOD(MLContext::InitLifecycle) {
     uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
 
     mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
+    mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
     mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
 
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
@@ -1737,35 +1806,10 @@ NAN_METHOD(MLContext::PopulateDepth) {
   }
 }
 
-NAN_METHOD(MLContext::RequestPlanes) {
-  if (info[0]->IsFunction()) {
-    Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    PlanesRequest *planesRequest = new PlanesRequest(cbFn);
-    planesRequests.push_back(planesRequest);
-  } else {
-    Nan::ThrowError("invalid arguments");
-  }
-}
-
-NAN_METHOD(MLContext::CancelPlanes) {
-  if (info[0]->IsFunction()) {
-    Local<Function> cbFn = Local<Function>::Cast(info[0]);
-
-    {
-      planesRequests.erase(std::remove_if(planesRequests.begin(), planesRequests.end(), [&](PlanesRequest *p) -> bool {
-        Local<Function> localCbFn = Nan::New(p->cbFn);
-        if (localCbFn->StrictEquals(cbFn)) {
-          delete p;
-          return false;
-        } else {
-          return true;
-        }
-      }));
-    }
-  } else {
-    Nan::ThrowError("invalid arguments");
-  }
+NAN_METHOD(MLContext::RequestPlaneTracking) {
+  Local<Function> mlPlaneTrackerCons = Nan::New(mlPlaneTrackerConstructor);
+  Local<Object> mlPlaneTrackerObj = mlPlaneTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlPlaneTrackerObj);
 }
 
 NAN_METHOD(MLContext::RequestEyeTracking) {
@@ -2006,7 +2050,7 @@ NAN_METHOD(MLContext::PrePollEvents) {
     }
   }
 
-  if (planesRequests.size() > 0 && !planesRequestPending) {
+  if (planeTrackers.size() > 0 && !planesRequestPending) {
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
@@ -2190,7 +2234,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
   if (planesRequestPending) {
     MLResult result = MLPlanesQueryGetResults(planesTracker, planesRequestHandle, planeResults, &numPlanesResults);
     if (result == MLResult_Ok) {
-      std::for_each(planesRequests.begin(), planesRequests.end(), [&](PlanesRequest *p) {
+      std::for_each(planeTrackers.begin(), planeTrackers.end(), [&](MLPlaneTracker *p) {
         p->Poll();
       });
 
