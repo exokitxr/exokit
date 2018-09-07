@@ -103,38 +103,57 @@ A single update to the user's tracked hand pose state.
 
 The hand direction detected for this update. Either `'left'` or `'right'`.
 
-#### `MLHandUpdate.position : Float32Array(3)`
+#### `MLHandUpdate.pointer : MLTransform`
 
-The center of the hand pose detected in world space, as a vector.
+The pointer transform of the hand pose.
+
+This is a ray starting at the tip of the index finger and pointing in the direction of the finger, but it may be based on other pose keypoints as a substitute.
+
+#### `MLHandUpdate.grip : MLTransform`
+
+The grip transform of the hand pose.
+
+This is usually a ray starting at the center of the wrist and pointing at the middle finger, but it may be based on other pose keypoints as a substitute.
 
 #### `MLHandUpdate.rotation : Float32Array(4)`
 
 The rotation of the hand pose detected in world space, as a world quaternion. The rotation is defined as pointing in the direction of the base of the middle finger.
 
-#### `MLHandUpdate.bones : MLHandBone[2][5][3]`
+#### `MLHandUpdate.wrist : Float32Array[3][3]`
+
+The detected wrist bone position, each as a Float32Array(3) vector vector in world space. The order is:
+
+- `center`
+- `radial`
+- `ulnar`
+
+#### `MLHandUpdate.fingers : Float32Array[2][5][4][3]`
 
 The detected hand finger bone positions. The order is right-handed, left-to-right, bottom-to-top:
 
 ```
-handUpdate.bones[0][0][0] // left (0) thumb (0) base (0)
-handUpdate.bones[1][0][2] // right (1) thumb (0) tip (2)
-handUpdate.bones[1][1][3] // right (1) pointer (1) tip (3)
-handUpdate.bones[0][4][3] // left (0) pinkie (4) tip (3)
+handUpdate.bones[0][0][0] // left (0) thumb (0) base (0) as a Float32Array(3) vector
+handUpdate.bones[1][0][2] // right (1) thumb (0) tip (2) as a Float32Array(3) vector
+handUpdate.bones[1][1][3] // right (1) pointer (1) tip (3) as a Float32Array(3) vector
+handUpdate.bones[0][4][3] // left (0) pinkie (4) tip (3) as a Float32Array(3) vector
 ```
 
-Note that the thumb has one less bone than the other fingers.
+##### Notes:
 
-### `MLHandBone`
+- A bone may be `null`, which means it is not currently detected.
+- The thumb has one less bone than the other fingers.
 
-A single hand bone detected by the hand pose tracking system.
+### `MLTransform`
 
-#### `MLHandBone.position : Float32Array(3)`
+A generic container for position/rotation data in world space.
 
-The center of the hand pose detected in world space, as a vector.
+#### `MLTransform.position : Float32Array(3)`
 
-#### `MLHandBone.rotation : Float32Array(4)`
+A three-component world position vector.
 
-The rotation of the hand pose detected in world space, as a world quaternion. The rotation is defined as towards distal.
+#### `MLTransform.rotation : Float32Array(4)`
+
+A four-component world quaternion.
 
 ### `MLEyeTracker`
 
