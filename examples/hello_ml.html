@@ -11,7 +11,7 @@
   <script src="inflate.min.js"></script>
   <script src="FBXLoader.js"></script>
   <script>
-    let container, scene, camera, display, model, controllerMeshes;
+    let container, scene, camera, display, model, eyeMesh, controllerMeshes;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -103,6 +103,18 @@
       controllerMeshes.forEach(controllerMesh => {
         scene.add(controllerMesh);
       });
+
+      eyeMesh = (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x0000FF,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(eyeMesh);
 
       const localVector = new THREE.Vector3();
       const localVector2 = new THREE.Vector3();
@@ -348,33 +360,15 @@
         _loadPlanes(planes);
       };
 
-      const eyeMesh = (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x0000FF,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = false;
-        mesh.frustumCulled = false;
-        return mesh;
-      })();
-      scene.add(eyeMesh);
-      const _onEye = eye => {
-        eyeMesh.position.fromArray(eye);
-        eyeMesh.quaternion.fromArray(eye, 3);
-        eyeMesh.updateMatrix();
-        eyeMesh.updateMatrixWorld();
-      };
-
       let enabled = false;
       let mesher = null;
+      let eyeTracker = null;
       const _enable = () => {
         window.browser.nativeMl.RequestHand(_onHand);
         mesher = window.browser.nativeMl.RequestMeshing();
         mesher.onmesh = _onMesh;
         window.browser.nativeMl.RequestPlanes(_onPlanes);
-        window.browser.nativeMl.RequestEye(_onEye);
-        eyeMesh.visible = true;
+        eyeTracker = window.browser.nativeMl.RequestEyeTracker();
 
         enabled = true;
       };
@@ -388,8 +382,8 @@
         _clearTerrainMeshes();
         window.browser.nativeMl.CancelPlanes(_onPlanes);
         _clearPlanes();
-        window.browser.nativeMl.CancelEye(_onEye);
-        eyeMesh.visible = false;
+        eyeTracker.destroy();
+        eyeTracker = null;
 
         enabled = false;
       };
@@ -428,6 +422,15 @@
           new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
         );
         model.updateMatrixWorld();
+      }
+      if (eyeTracker) {
+        eyeMesh.position.fromArray(eyeTracker.position);
+        eyeMesh.quaternion.fromArray(eyeTracker.rotation);
+        eyeMesh.updateMatrix();
+        eyeMesh.updateMatrixWorld();
+        eyeMesh.visible = true;
+      } else {
+        eyeMesh.visible = false;
       }
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
