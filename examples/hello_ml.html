@@ -362,12 +362,14 @@
 
       let enabled = false;
       let mesher = null;
+      let planeTracker = null;
       let eyeTracker = null;
       const _enable = () => {
         window.browser.nativeMl.RequestHand(_onHand);
         mesher = window.browser.nativeMl.RequestMeshing();
         mesher.onmesh = _onMesh;
-        window.browser.nativeMl.RequestPlanes(_onPlanes);
+        planeTracker = window.browser.nativeMl.RequestPlaneTracking();
+        planeTracker.onplanes = _onPlanes;
         eyeTracker = window.browser.nativeMl.RequestEyeTracker();
 
         enabled = true;
@@ -380,7 +382,8 @@
         mesher.destroy();
         mesher = null;
         _clearTerrainMeshes();
-        window.browser.nativeMl.CancelPlanes(_onPlanes);
+        planeTracker.destroy();
+        planeTracker = null;
         _clearPlanes();
         eyeTracker.destroy();
         eyeTracker = null;
