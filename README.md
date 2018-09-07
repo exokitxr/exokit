@@ -4,7 +4,7 @@
 
 <img src="https://github.com/webmixedreality/exokit/blob/master/icon.png" width=100/>
 
-[![Slack](https://exoslack.now.sh/badge.svg)](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NTE2NjkyNjU4LTIwOGY1ZmE0YzNhMWFjNDRhMjgyZTgwM2IwMmY1Mjc5MzIyNjE3NzgzNmRmMGIwMzM0ODg3OGY3ZTg4YjFhZTU)
+[![Slack](https://exoslack.now.sh/badge.svg)](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q)
 [![Github releases](https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg)](https://github.com/webmixedreality/exokit/releases )
 [![npm package](https://img.shields.io/npm/v/exokit.svg)](https://www.npmjs.com/package/exokit)
 [![Travis CI build status](https://travis-ci.org/modulesio/exokit-windows.svg?branch=master)](https://travis-ci.org/modulesio/exokit-windows)
