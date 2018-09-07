@@ -12,7 +12,7 @@
   <script src="FBXLoader.js"></script>
   <script>
     let container, scene, camera, display, model, controllerMeshes, eyeMesh;
-    let mesher = null, planeTracker = null, eyeTracker = null;
+    let mesher = null, planeTracker = null, handTracker = null, eyeTracker = null;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -244,11 +244,12 @@
           indexAttribute.needsUpdate = true;
           geometry.setDrawRange(0, indexIndex);
         };
+        mesh.visible = false;
         mesh.frustumCulled = false;
         return mesh;
       })();
       scene.add(handMesh);
-      const _onHand = hands => {
+      const _onHands = hands => {
         handMesh.update(hands);
       };
 
@@ -363,26 +364,27 @@
 
       let enabled = false;
       const _enable = () => {
-        window.browser.nativeMl.RequestHand(_onHand);
         mesher = window.browser.nativeMl.RequestMeshing();
         mesher.onmesh = _onMesh;
         planeTracker = window.browser.nativeMl.RequestPlaneTracking();
         planeTracker.onplanes = _onPlanes;
+        handTracker = window.browser.nativeMl.RequestHandTracking();
+        handTracker.onhands = _onHands;
+        handMesh.visible = true;
         eyeTracker = window.browser.nativeMl.RequestEyeTracking();
 
         enabled = true;
       };
       const _disable = () => {
-        window.browser.nativeMl.CancelHand(_onHand);
-        handMeshes.forEach(handMesh => {
-          handMesh.visible = false;
-        });
         mesher.destroy();
         mesher = null;
         _clearTerrainMeshes();
         planeTracker.destroy();
         planeTracker = null;
         _clearPlanes();
+        handTracker.destroy();
+        handTracker = null;
+        handMesh.visible = false;
         eyeTracker.destroy();
         eyeTracker = null;
 
