@@ -343,7 +343,7 @@
           mesh.frustumCulled = false;
           mesh.position.fromArray(plane.position);
           mesh.quaternion.fromArray(plane.rotation);
-          mesh.scale.set(plane.width, plane.height, 1);
+          mesh.scale.set(plane.size[0], plane.size[1], 1);
           mesh.updateMatrix();
           mesh.updateMatrixWorld();
           scene.add(mesh);
