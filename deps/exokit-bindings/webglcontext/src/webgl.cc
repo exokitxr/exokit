@@ -710,6 +710,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "getError", glCallWrap<GetError>);
   Nan::SetMethod(proto, "drawArrays", glCallWrap<DrawArrays>);
   Nan::SetMethod(proto, "drawArraysInstanced", glCallWrap<DrawArraysInstanced>);
+  Nan::SetMethod(proto, "drawArraysInstancedANGLE", glCallWrap<DrawArraysInstancedANGLE>);
 
   Nan::SetMethod(proto, "generateMipmap", glCallWrap<GenerateMipmap>);
 
@@ -760,6 +761,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "activeTexture", glCallWrap<ActiveTexture>);
   Nan::SetMethod(proto, "drawElements", glCallWrap<DrawElements>);
   Nan::SetMethod(proto, "drawElementsInstanced", glCallWrap<DrawElementsInstanced>);
+  Nan::SetMethod(proto, "drawElementsInstancedANGLE", glCallWrap<DrawElementsInstancedANGLE>);
   Nan::SetMethod(proto, "drawRangeElements", glCallWrap<DrawRangeElements>);
   Nan::SetMethod(proto, "flush", glCallWrap<Flush>);
   Nan::SetMethod(proto, "finish", glCallWrap<Finish>);
@@ -779,7 +781,9 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "vertexAttribI4uiv", glCallWrap<VertexAttribI4uiv>);
 
   Nan::SetMethod(proto, "vertexAttribDivisor", glCallWrap<VertexAttribDivisor>);
+  Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glCallWrap<VertexAttribDivisorANGLE>);
   Nan::SetMethod(proto, "drawBuffers", glCallWrap<DrawBuffers>);
+  Nan::SetMethod(proto, "drawBuffersWEBGL", glCallWrap<DrawBuffersWEBGL>);
 
   Nan::SetMethod(proto, "blendColor", BlendColor);
   Nan::SetMethod(proto, "blendEquationSeparate", BlendEquationSeparate);
@@ -1972,6 +1976,21 @@ NAN_METHOD(WebGLRenderingContext::DrawArraysInstanced) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(WebGLRenderingContext::DrawArraysInstancedANGLE) {
+  Local<Object> contextObj = Local<Object>::Cast(info.This()->Get(JS_STR("context")));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(contextObj);
+  int mode = info[0]->Int32Value();
+  int first = info[1]->Int32Value();
+  int count = info[2]->Int32Value();
+  int primcount = info[3]->Int32Value();
+
+  glDrawArraysInstanced(mode, first, count, primcount);
+
+  gl->dirty = true;
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
 NAN_METHOD(WebGLRenderingContext::GenerateMipmap) {
   GLint target = info[0]->Int32Value();
   glGenerateMipmap(target);
@@ -3010,6 +3029,22 @@ NAN_METHOD(WebGLRenderingContext::DrawElementsInstanced) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(WebGLRenderingContext::DrawElementsInstancedANGLE) {
+  Local<Object> contextObj = Local<Object>::Cast(info.This()->Get(JS_STR("contex")));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(contextObj);
+  GLenum mode = info[0]->Uint32Value();
+  GLsizei count = info[1]->Int32Value();
+  GLenum type = info[2]->Uint32Value();
+  GLvoid *offset = reinterpret_cast<GLvoid*>(info[3]->Uint32Value());
+  GLsizei primcount = info[4]->Int32Value();
+
+  glDrawElementsInstanced(mode, count, type, offset, primcount);
+
+  gl->dirty = true;
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
 NAN_METHOD(WebGLRenderingContext::DrawRangeElements) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLenum mode = info[0]->Uint32Value();
@@ -3223,7 +3258,27 @@ NAN_METHOD(WebGLRenderingContext::VertexAttribDivisor) {
   glVertexAttribDivisor(index, divisor);
 }
 
+NAN_METHOD(WebGLRenderingContext::VertexAttribDivisorANGLE) {
+  GLuint index = info[0]->Uint32Value();
+  GLuint divisor = info[1]->Uint32Value();
+
+  glVertexAttribDivisor(index, divisor);
+}
+
 NAN_METHOD(WebGLRenderingContext::DrawBuffers) {
+  Local<Array> buffersArray = Local<Array>::Cast(info[0]);
+  GLenum buffers[32];
+  size_t numBuffers = std::min<size_t>(buffersArray->Length(), sizeof(buffers)/sizeof(buffers[0]));
+  for (size_t i = 0; i < numBuffers; i++) {
+    buffers[i] = buffersArray->Get(i)->Uint32Value();
+  }
+
+  glDrawBuffers(numBuffers, buffers);
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(WebGLRenderingContext::DrawBuffersWEBGL) {
   Local<Array> buffersArray = Local<Array>::Cast(info[0]);
   GLenum buffers[32];
   size_t numBuffers = std::min<size_t>(buffersArray->Length(), sizeof(buffers)/sizeof(buffers[0]));
@@ -4441,14 +4496,16 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else if (strcmp(sname, "ANGLE_instanced_arrays") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
     result->Set(String::NewFromUtf8(Isolate::GetCurrent(), "GL_VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE"), Number::New(Isolate::GetCurrent(), GL_VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE));
-    Nan::SetMethod(result, "drawArraysInstancedANGLE", DrawArraysInstanced);
-    Nan::SetMethod(result, "drawElementsInstancedANGLE", DrawElementsInstanced);
-    Nan::SetMethod(result, "vertexAttribDivisorANGLE", VertexAttribDivisor);
+    result->Set(JS_STR("context"), info.This());
+    Nan::SetMethod(result, "drawArraysInstancedANGLE", DrawArraysInstancedANGLE);
+    Nan::SetMethod(result, "drawElementsInstancedANGLE", DrawElementsInstancedANGLE);
+    Nan::SetMethod(result, "vertexAttribDivisorANGLE", VertexAttribDivisorANGLE);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "WEBGL_draw_buffers") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
 
-    Nan::SetMethod(result, "drawBuffersWEBGL", DrawBuffers);
+    result->Set(JS_STR("context"), info.This());
+    Nan::SetMethod(result, "drawBuffersWEBGL", DrawBuffersWEBGL);
 
     result->Set(JS_STR("COLOR_ATTACHMENT0_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT0));
     result->Set(JS_STR("COLOR_ATTACHMENT1_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT1));
