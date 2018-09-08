@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id=canvas />
+    <script src="three.js"></script>
+    <script src="FirstPersonControls.js"></script>
+<script>
+(() => {
+const width = 1280;
+const height = 1024;
+
+const canvas = document.getElementById('canvas');
+canvas.width = width;
+canvas.height = height;
+
+let scene, camera, clock, controls;
+
+function init() {
+  scene = new THREE.Scene();
+  scene.matrixAutoUpdate = false;
+  // scene.background = new THREE.Color(0x3B3961);
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  // camera.position.set(0, 1, 0);
+  camera.lookAt(new THREE.Vector3());
+  scene.add(camera);
+
+  const ambientLight = new THREE.AmbientLight(0x808080);
+  scene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+  directionalLight.position.set(1, 1, 1);
+  scene.add(directionalLight);
+
+  (() => {
+    const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xE91E63,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    // mesh.position.y = 0.5;
+    // mesh.position.z = -1;
+    mesh.frustumCuled = false;
+    scene.add(mesh);
+  })();
+
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: true,
+  });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  clock = new THREE.Clock();
+
+  controls = new THREE.FirstPersonControls( camera );
+  controls.movementSpeed = 1000;
+  controls.lookSpeed = 0.125;
+  controls.lookVertical = true;
+
+  renderer.setAnimationLoop(animate);
+}
+
+function animate() {
+  const delta = clock.getDelta();
+  controls.update(delta);
+
+  renderer.render(scene, camera);
+}
+
+init();
+
+// connection
+
+const terrainMeshes = [];
+const terrainMaterial = new THREE.MeshPhongMaterial({
+  color: 0x666666,
+});
+const _getTerrainMesh = meshId => {
+  let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
+  if (!terrainMesh) {
+    terrainMesh = _makeTerrainMesh(meshId);
+    terrainMeshes.push(terrainMesh);
+    scene.add(terrainMesh);
+  }
+  return terrainMesh;
+};
+const fakeArrayBuffer = new ArrayBuffer(3 * 4);
+const fakeFloat32Array = new Float32Array(fakeArrayBuffer, 0, 3);
+const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
+const _makeTerrainMesh = meshId => {
+  const geometry = new THREE.BufferGeometry();
+  const gl = renderer.getContext();
+  const attributes = renderer.getAttributes();
+
+  geometry.addAttribute('position', new THREE.BufferAttribute(fakeFloat32Array, 3));
+  attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
+  geometry.addAttribute('normal', new THREE.BufferAttribute(fakeFloat32Array, 3));
+  attributes.update(geometry.attributes.normal, gl.ARRAY_BUFFER);
+  geometry.setIndex(new THREE.BufferAttribute(fakeUint16Array, 1));
+  attributes.update(geometry.index, gl.ELEMENT_ARRAY_BUFFER);
+
+  const material = terrainMaterial;
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.meshId = meshId;
+  mesh.frustumCulled = false;
+  return mesh;
+};
+const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionArray, positionCount, normalBuffer, normalArray, normalCount, indexBuffer, indexArray, count}) => {
+  const {geometry} = terrainMesh;
+  const attributes = renderer.getAttributes();
+
+  attributes.get(geometry.attributes.position).buffer = positionBuffer;
+  geometry.attributes.position.count = positionCount / 3;
+
+  attributes.get(geometry.attributes.normal).buffer = normalBuffer;
+  geometry.attributes.normal.count = normalCount / 3;
+
+  attributes.get(geometry.index).buffer = indexBuffer;
+  geometry.index.count = count / 1;
+};
+const _removeTerrainMesh = terrainMesh => {
+  terrainMesh.geometry.dispose();
+  scene.remove(terrainMesh);
+};
+
+const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
+ws.binaryType = 'arraybuffer';
+ws.onopen = () => {
+  console.log('connected');
+};
+
+let running = false;
+const queue = [];
+const _handleData = data => {
+  if (!running) {
+    running = true;
+
+    data = JSON.parse(data);
+    const {id} = data;
+
+    fetch('/mesh/' + id)
+      .then(res => res.arrayBuffer())
+      .then(arrayBuffer => {
+        let i = 0;
+        const positionCount = new Uint32Array(arrayBuffer, i, 1);
+        i += Uint32Array.BYTES_PER_ELEMENT;
+        const positionArray = new Float32Array(arrayBuffer, i, positionCount);
+        i += Float32Array.BYTES_PER_ELEMENT * positionCount;
+
+        const normalCount = new Uint32Array(arrayBuffer, i, 1);
+        i += Uint32Array.BYTES_PER_ELEMENT;
+        const normalArray = new Float32Array(arrayBuffer, i, normalCount);
+        i += Float32Array.BYTES_PER_ELEMENT * normalCount;
+
+        const count = new Uint32Array(arrayBuffer, i, 1);
+        i += Uint32Array.BYTES_PER_ELEMENT;
+        const indexArray = new Uint16Array(arrayBuffer, i, count);
+        i += Uint16Array.BYTES_PER_ELEMENT * count;
+
+        _loadTerrainMesh(_getTerrainMesh(id), {
+          positionArray,
+          positionCount,
+          normalArray,
+          normalCount,
+          indexArray,
+          indexCount,
+        });
+      })
+      .catch(err => {
+        console.warn(err.stack);
+      })
+      .finally(() => {
+        running = false;
+
+        if (queue.length > 0) {
+          _handeData(queue.shift());
+        }
+      });
+  } else {
+    queue.push(data);
+  }
+};
+ws.onmessage = m => {
+  _handleData(m.data);
+};
+})();
+</script>
+  </body>
+</html>
