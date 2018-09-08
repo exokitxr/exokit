@@ -152,8 +152,6 @@
           let positionIndex = 0;
           let indexIndex = 0;
 
-          // console.log('update 0', hands.length);
-
           const _shiftIndex = array => {
             for (let l = 0; l < array.length; l++) {
               array[l] += positionIndex / 3;
@@ -161,8 +159,6 @@
           };
 
           for (let i = 0; i < hands.length; i++) {
-            // console.log('update 1', i);
-
             const hand = hands[i];
             const {fingers} = hand;
             for (let j = 0; j < fingers.length; j++) {
