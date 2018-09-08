@@ -799,154 +799,156 @@ bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], fl
 }
 
 void MLHandTracker::Poll() {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
+  if (!this->cb.IsEmpty()) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
 
-  Local<Array> array = Nan::New<Array>();
-  uint32_t numResults = 0;
+    Local<Array> array = Nan::New<Array>();
+    uint32_t numResults = 0;
 
-  MLTransform leftPointerTransform;
-  MLTransform leftGripTransform;
-  MLTransform rightPointerTransform;
-  MLTransform rightGripTransform;
+    MLTransform leftPointerTransform;
+    MLTransform leftGripTransform;
+    MLTransform rightPointerTransform;
+    MLTransform rightGripTransform;
 
-  if (hasHandBone(0)) {
-    Local<Object> obj = Nan::New<Object>();
+    if (hasHandBone(0)) {
+      Local<Object> obj = Nan::New<Object>();
 
-    obj->Set(JS_STR("hand"), JS_STR("left"));
+      obj->Set(JS_STR("hand"), JS_STR("left"));
 
-    if (getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0])) {
-      Local<Object> pointerObj = Nan::New<Object>();
-      pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
-      pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
-      obj->Set(JS_STR("pointer"), pointerObj);
-    } else {
-      obj->Set(JS_STR("pointer"), Nan::Null());
-    }
-    if (getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0])) {
-      Local<Object> gripObj = Nan::New<Object>();
-      gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.position.values, 3 * sizeof(float)), 0, 3));
-      gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
-      obj->Set(JS_STR("grip"), gripObj);
-    } else {
-      obj->Set(JS_STR("grip"), Nan::Null());
-    }
-
-    Local<Array> wristArray = Nan::New<Array>(4);
-    for (size_t i = 0; i < 4; i++) {
-      Local<Value> boneVal;
-
-      if (*(uint32_t *)&wristBones[0][i][0]) {
-        boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&wristBones[0][i][1], 3 * sizeof(float)), 0, 3);
+      if (getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0])) {
+        Local<Object> pointerObj = Nan::New<Object>();
+        pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
+        pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
+        obj->Set(JS_STR("pointer"), pointerObj);
       } else {
-        boneVal = Nan::Null();
+        obj->Set(JS_STR("pointer"), Nan::Null());
+      }
+      if (getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0])) {
+        Local<Object> gripObj = Nan::New<Object>();
+        gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.position.values, 3 * sizeof(float)), 0, 3));
+        gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
+        obj->Set(JS_STR("grip"), gripObj);
+      } else {
+        obj->Set(JS_STR("grip"), Nan::Null());
       }
 
-      wristArray->Set(i, boneVal);
-    }
-    obj->Set(JS_STR("wrist"), wristArray);
-
-    Local<Array> fingersArray = Nan::New<Array>(5);
-    for (size_t i = 0; i < 5; i++) {
-      Local<Array> bonesArray = Nan::New<Array>(4);
-
-      for (size_t j = 0; j < 4; j++) {
+      Local<Array> wristArray = Nan::New<Array>(4);
+      for (size_t i = 0; i < 4; i++) {
         Local<Value> boneVal;
 
-        if (*(uint32_t *)&fingerBones[0][i][j][0]) {
-          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&fingerBones[0][i][j][1], 3 * sizeof(float)), 0, 3);
+        if (*(uint32_t *)&wristBones[0][i][0]) {
+          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&wristBones[0][i][1], 3 * sizeof(float)), 0, 3);
         } else {
           boneVal = Nan::Null();
         }
 
-        bonesArray->Set(j, boneVal);
+        wristArray->Set(i, boneVal);
       }
+      obj->Set(JS_STR("wrist"), wristArray);
 
-      fingersArray->Set(i, bonesArray);
-    }
-    obj->Set(JS_STR("fingers"), fingersArray);
+      Local<Array> fingersArray = Nan::New<Array>(5);
+      for (size_t i = 0; i < 5; i++) {
+        Local<Array> bonesArray = Nan::New<Array>(4);
 
-    const char *gesture = gestureCategoryToDescriptor(handData.left_hand_state.keypose);
-    if (gesture) {
-      obj->Set(JS_STR("gesture"), JS_STR(gesture));
-    } else {
-      obj->Set(JS_STR("gesture"), Nan::Null());
-    }
+        for (size_t j = 0; j < 4; j++) {
+          Local<Value> boneVal;
 
-    array->Set(JS_INT(numResults++), obj);
-  }
+          if (*(uint32_t *)&fingerBones[0][i][j][0]) {
+            boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&fingerBones[0][i][j][1], 3 * sizeof(float)), 0, 3);
+          } else {
+            boneVal = Nan::Null();
+          }
 
-  if (hasHandBone(1)) {
-    Local<Object> obj = Nan::New<Object>();
+          bonesArray->Set(j, boneVal);
+        }
 
-    obj->Set(JS_STR("hand"), JS_STR("right"));
+        fingersArray->Set(i, bonesArray);
+      }
+      obj->Set(JS_STR("fingers"), fingersArray);
 
-    if (getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1])) {
-      Local<Object> pointerObj = Nan::New<Object>();
-      pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
-      pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
-      obj->Set(JS_STR("pointer"), pointerObj);
-    } else {
-      obj->Set(JS_STR("pointer"), Nan::Null());
-    }
-    if (getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1])) {
-      Local<Object> gripObj = Nan::New<Object>();
-      gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.position.values, 3 * sizeof(float)), 0, 3));
-      gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
-      obj->Set(JS_STR("grip"), gripObj);
-    } else {
-      obj->Set(JS_STR("grip"), Nan::Null());
-    }
-
-    Local<Array> wristArray = Nan::New<Array>(4);
-    for (size_t i = 0; i < 4; i++) {
-      Local<Value> boneVal;
-
-      if (*(uint32_t *)&wristBones[1][i][0]) {
-        boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&wristBones[1][i][1], 3 * sizeof(float)), 0, 3);
+      const char *gesture = gestureCategoryToDescriptor(handData.left_hand_state.keypose);
+      if (gesture) {
+        obj->Set(JS_STR("gesture"), JS_STR(gesture));
       } else {
-        boneVal = Nan::Null();
+        obj->Set(JS_STR("gesture"), Nan::Null());
       }
 
-      wristArray->Set(i, boneVal);
+      array->Set(JS_INT(numResults++), obj);
     }
-    obj->Set(JS_STR("wrist"), wristArray);
 
-    Local<Array> fingersArray = Nan::New<Array>(5);
-    for (size_t i = 0; i < 5; i++) {
-      Local<Array> bonesArray = Nan::New<Array>(4);
+    if (hasHandBone(1)) {
+      Local<Object> obj = Nan::New<Object>();
 
-      for (size_t j = 0; j < 4; j++) {
+      obj->Set(JS_STR("hand"), JS_STR("right"));
+
+      if (getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1])) {
+        Local<Object> pointerObj = Nan::New<Object>();
+        pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
+        pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
+        obj->Set(JS_STR("pointer"), pointerObj);
+      } else {
+        obj->Set(JS_STR("pointer"), Nan::Null());
+      }
+      if (getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1])) {
+        Local<Object> gripObj = Nan::New<Object>();
+        gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.position.values, 3 * sizeof(float)), 0, 3));
+        gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
+        obj->Set(JS_STR("grip"), gripObj);
+      } else {
+        obj->Set(JS_STR("grip"), Nan::Null());
+      }
+
+      Local<Array> wristArray = Nan::New<Array>(4);
+      for (size_t i = 0; i < 4; i++) {
         Local<Value> boneVal;
 
-        if (*(uint32_t *)&fingerBones[1][i][j][0]) {
-          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&fingerBones[1][i][j][1], 3 * sizeof(float)), 0, 3);
+        if (*(uint32_t *)&wristBones[1][i][0]) {
+          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&wristBones[1][i][1], 3 * sizeof(float)), 0, 3);
         } else {
           boneVal = Nan::Null();
         }
 
-        bonesArray->Set(j, boneVal);
+        wristArray->Set(i, boneVal);
+      }
+      obj->Set(JS_STR("wrist"), wristArray);
+
+      Local<Array> fingersArray = Nan::New<Array>(5);
+      for (size_t i = 0; i < 5; i++) {
+        Local<Array> bonesArray = Nan::New<Array>(4);
+
+        for (size_t j = 0; j < 4; j++) {
+          Local<Value> boneVal;
+
+          if (*(uint32_t *)&fingerBones[1][i][j][0]) {
+            boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&fingerBones[1][i][j][1], 3 * sizeof(float)), 0, 3);
+          } else {
+            boneVal = Nan::Null();
+          }
+
+          bonesArray->Set(j, boneVal);
+        }
+
+        fingersArray->Set(i, bonesArray);
+      }
+      obj->Set(JS_STR("fingers"), fingersArray);
+
+      const char *gesture = gestureCategoryToDescriptor(handData.right_hand_state.keypose);
+      if (gesture) {
+        obj->Set(JS_STR("gesture"), JS_STR(gesture));
+      } else {
+        obj->Set(JS_STR("gesture"), Nan::Null());
       }
 
-      fingersArray->Set(i, bonesArray);
-    }
-    obj->Set(JS_STR("fingers"), fingersArray);
-
-    const char *gesture = gestureCategoryToDescriptor(handData.right_hand_state.keypose);
-    if (gesture) {
-      obj->Set(JS_STR("gesture"), JS_STR(gesture));
-    } else {
-      obj->Set(JS_STR("gesture"), Nan::Null());
+      array->Set(JS_INT(numResults++), obj);
     }
 
-    array->Set(JS_INT(numResults++), obj);
+    Local<Function> cb = Nan::New(this->cb);
+    Local<Value> argv[] = {
+      array,
+    };
+    asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
   }
-
-  Local<Function> cb = Nan::New(this->cb);
-  Local<Value> argv[] = {
-    array,
-  };
-  asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 NAN_METHOD(MLHandTracker::Destroy) {
