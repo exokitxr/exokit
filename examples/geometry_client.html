@@ -54,7 +54,7 @@ function init() {
   renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
-    alpha: true,
+    // alpha: true,
   });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -181,7 +181,7 @@ const _handleData = data => {
             }
           });
       } else {
-        _removeTerrainMeh(id);
+        _removeTerrainMesh(id);
       }
     }))
       .catch(err => {
@@ -191,7 +191,7 @@ const _handleData = data => {
         running = false;
 
         if (queue.length > 0) {
-          _handeData(queue.shift());
+          _handleData(queue.shift());
         }
       });
   } else {
