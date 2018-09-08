@@ -164,14 +164,18 @@ public:
   ~MLEyeTracker();
   
   static NAN_METHOD(New);
-  static NAN_GETTER(PositionGetter);
-  static NAN_GETTER(RotationGetter);
+  static NAN_GETTER(FixationGetter);
+  static NAN_GETTER(EyesGetter);
   static NAN_METHOD(Destroy);
 
   void Poll(MLSnapshot *snapshot);
 
 // protected:
   MLTransform transform;
+  MLTransform leftTransform;
+  bool leftBlink;
+  MLTransform rightTransform;
+  bool rightBlink;
 };
 
 class CameraRequestPlane {

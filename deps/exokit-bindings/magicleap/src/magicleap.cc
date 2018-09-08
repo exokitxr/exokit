@@ -958,8 +958,8 @@ NAN_METHOD(MLEyeTracker::New) {
   Local<Object> mlEyeTrackerObj = info.This();
   mlEyeTracker->Wrap(mlEyeTrackerObj);
 
-  Nan::SetAccessor(mlEyeTrackerObj, JS_STR("position"), PositionGetter);
-  Nan::SetAccessor(mlEyeTrackerObj, JS_STR("rotation"), RotationGetter);
+  Nan::SetAccessor(mlEyeTrackerObj, JS_STR("fixation"), FixationGetter);
+  Nan::SetAccessor(mlEyeTrackerObj, JS_STR("eyes"), EyesGetter);
 
   info.GetReturnValue().Set(mlEyeTrackerObj);
 
@@ -983,38 +983,79 @@ Local<Function> MLEyeTracker::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
-NAN_GETTER(MLEyeTracker::PositionGetter) {
+NAN_GETTER(MLEyeTracker::FixationGetter) {
   // Nan::HandleScope scope;
   MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+
+  Local<Object> obj = Nan::New<Object>();
 
   Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
   positionArray->Set(0, JS_NUM(mlEyeTracker->transform.position.x));
   positionArray->Set(1, JS_NUM(mlEyeTracker->transform.position.y));
   positionArray->Set(2, JS_NUM(mlEyeTracker->transform.position.z));
-
-  info.GetReturnValue().Set(positionArray);
-}
-
-NAN_GETTER(MLEyeTracker::RotationGetter) {
-  // Nan::HandleScope scope;
-  MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+  obj->Set(JS_STR("position"), positionArray);
 
   Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
   rotationArray->Set(0, JS_NUM(mlEyeTracker->transform.rotation.x));
   rotationArray->Set(1, JS_NUM(mlEyeTracker->transform.rotation.y));
   rotationArray->Set(2, JS_NUM(mlEyeTracker->transform.rotation.z));
   rotationArray->Set(3, JS_NUM(mlEyeTracker->transform.rotation.w));
+  obj->Set(JS_STR("rotation"), rotationArray);
 
-  info.GetReturnValue().Set(rotationArray);
+  info.GetReturnValue().Set(obj);
+}
+
+NAN_GETTER(MLEyeTracker::EyesGetter) {
+  // Nan::HandleScope scope;
+  MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+
+  Local<Array> array = Nan::New<Array>(2);
+  for (size_t i = 0; i < 2; i++) {
+    Local<Object> obj = Nan::New<Object>();
+
+    const MLTransform &eyeTransform = i == 0 ? mlEyeTracker->leftTransform : mlEyeTracker->rightTransform;
+    Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
+    positionArray->Set(0, JS_NUM(eyeTransform.position.x));
+    positionArray->Set(1, JS_NUM(eyeTransform.position.y));
+    positionArray->Set(2, JS_NUM(eyeTransform.position.z));
+    obj->Set(JS_STR("position"), positionArray);
+
+    Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
+    rotationArray->Set(0, JS_NUM(eyeTransform.rotation.x));
+    rotationArray->Set(1, JS_NUM(eyeTransform.rotation.y));
+    rotationArray->Set(2, JS_NUM(eyeTransform.rotation.z));
+    rotationArray->Set(3, JS_NUM(eyeTransform.rotation.w));
+    obj->Set(JS_STR("rotation"), rotationArray);
+
+    const bool &eyeBlink = i == 0 ? mlEyeTracker->leftBlink : mlEyeTracker->rightBlink;
+    obj->Set(JS_STR("blink"), JS_BOOL(eyeBlink));
+
+    array->Set(i, obj);
+  }
+
+  info.GetReturnValue().Set(array);
 }
 
 void MLEyeTracker::Poll(MLSnapshot *snapshot) {
-  const MLCoordinateFrameUID &id = eyeStaticData.fixation;
-  if (MLSnapshotGetTransform(snapshot, &id, &this->transform) == MLResult_Ok) {
+  if (MLSnapshotGetTransform(snapshot, &eyeStaticData.fixation, &this->transform) == MLResult_Ok) {
     // nothing
   } else {
-    ML_LOG(Error, "%s: ML failed to get eye transform!", application_name);
+    ML_LOG(Error, "%s: ML failed to get eye fixation transform!", application_name);
   }
+
+  if (MLSnapshotGetTransform(snapshot, &eyeStaticData.left_center, &this->leftTransform) == MLResult_Ok) {
+    // nothing
+  } else {
+    ML_LOG(Error, "%s: ML failed to get left eye center transform!", application_name);
+  }
+  this->leftBlink = eyeState.left_blink;
+
+  if (MLSnapshotGetTransform(snapshot, &eyeStaticData.right_center, &this->rightTransform) == MLResult_Ok) {
+    // nothing
+  } else {
+    ML_LOG(Error, "%s: ML failed to get right eye center transform!", application_name);
+  }
+  this->rightBlink = eyeState.right_blink;
 }
 
 NAN_METHOD(MLEyeTracker::Destroy) {
