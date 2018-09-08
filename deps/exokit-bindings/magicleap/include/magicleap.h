@@ -99,6 +99,7 @@ public:
   GLuint indexBuffer;
   float *positions;
   uint32_t numPositions;
+  float *normals;
   uint16_t *indices;
   uint16_t numIndices;
   bool isNew;

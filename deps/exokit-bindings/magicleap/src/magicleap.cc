@@ -264,6 +264,7 @@ MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexB
   indexBuffer(indexBuffer),
   positions(nullptr),
   numPositions(0),
+  normals(nullptr),
   indices(nullptr),
   numIndices(0),
   isNew(true)
@@ -272,11 +273,14 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
   normalBuffer = meshBuffer.normalBuffer;
   indexBuffer = meshBuffer.indexBuffer;
+  positions = meshBuffer.positions;
   numPositions = meshBuffer.numPositions;
+  normals = meshBuffer.normals;
+  indices = meshBuffer.indices;
   numIndices = meshBuffer.numIndices;
   isNew = meshBuffer.isNew;
 }
-MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), indices(nullptr), numIndices(0), isNew(true) {}
+MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), isNew(true) {}
 
 void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew) {
   glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
@@ -290,6 +294,7 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
 
   this->positions = positions;
   this->numPositions = numPositions;
+  this->normals = normals;
   this->indices = indices;
   this->numIndices = numIndices;
   this->isNew = isNew;
