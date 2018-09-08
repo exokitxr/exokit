@@ -398,7 +398,7 @@ void MLMesher::Poll() {
           Local<Object> indexBuffer = Nan::New<Object>();
           indexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
           obj->Set(JS_STR("indexBuffer"), indexBuffer);
-          Local<Float32Array> indexArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.normals, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
+          Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.indices, meshBuffer.numIndices * sizeof(float)), 0, meshBuffer.numIndices);
           obj->Set(JS_STR("indexArray"), indexArray);
           obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
 
