@@ -783,6 +783,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "vertexAttribDivisor", glCallWrap<VertexAttribDivisor>);
   Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glCallWrap<VertexAttribDivisorANGLE>);
   Nan::SetMethod(proto, "drawBuffers", glCallWrap<DrawBuffers>);
+  Nan::SetMethod(proto, "drawBuffersWEBGL", glCallWrap<DrawBuffersWEBGL>);
 
   Nan::SetMethod(proto, "blendColor", BlendColor);
   Nan::SetMethod(proto, "blendEquationSeparate", BlendEquationSeparate);
@@ -3277,6 +3278,19 @@ NAN_METHOD(WebGLRenderingContext::DrawBuffers) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(WebGLRenderingContext::DrawBuffersWEBGL) {
+  Local<Array> buffersArray = Local<Array>::Cast(info[0]);
+  GLenum buffers[32];
+  size_t numBuffers = std::min<size_t>(buffersArray->Length(), sizeof(buffers)/sizeof(buffers[0]));
+  for (size_t i = 0; i < numBuffers; i++) {
+    buffers[i] = buffersArray->Get(i)->Uint32Value();
+  }
+
+  glDrawBuffers(numBuffers, buffers);
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
 NAN_METHOD(WebGLRenderingContext::BlendColor) {
   GLclampf r = (float)info[0]->NumberValue();
   GLclampf g = (float)info[1]->NumberValue();
@@ -4490,7 +4504,8 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else if (strcmp(sname, "WEBGL_draw_buffers") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
 
-    Nan::SetMethod(result, "drawBuffersWEBGL", DrawBuffers);
+    result->Set(JS_STR("context"), info.This());
+    Nan::SetMethod(result, "drawBuffersWEBGL", DrawBuffersWEBGL);
 
     result->Set(JS_STR("COLOR_ATTACHMENT0_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT0));
     result->Set(JS_STR("COLOR_ATTACHMENT1_WEBGL"), JS_INT(GL_COLOR_ATTACHMENT1));

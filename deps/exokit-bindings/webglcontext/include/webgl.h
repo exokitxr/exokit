@@ -230,6 +230,7 @@ public:
   static NAN_METHOD(VertexAttribDivisor);
   static NAN_METHOD(VertexAttribDivisorANGLE);
   static NAN_METHOD(DrawBuffers);
+  static NAN_METHOD(DrawBuffersWEBGL);
 
   static NAN_METHOD(BlendColor);
   static NAN_METHOD(BlendEquationSeparate);
