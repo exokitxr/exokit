@@ -816,7 +816,7 @@ void MLHandTracker::Poll() {
     } else {
       obj->Set(JS_STR("grip"), Nan::Null());
     }
-    
+
     Local<Array> wristArray = Nan::New<Array>(4);
     for (size_t i = 0; i < 4; i++) {
       Local<Value> boneVal;
@@ -882,7 +882,7 @@ void MLHandTracker::Poll() {
     } else {
       obj->Set(JS_STR("grip"), Nan::Null());
     }
-    
+
     Local<Array> wristArray = Nan::New<Array>(4);
     for (size_t i = 0; i < 4; i++) {
       Local<Value> boneVal;
