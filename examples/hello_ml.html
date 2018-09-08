@@ -267,17 +267,17 @@
         mesh.frustumCulled = false;
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {position, positionCount, normal, normalCount, index, count}) => {
+      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
         const {geometry} = terrainMesh;
         const attributes = renderer.getAttributes();
 
-        attributes.get(geometry.attributes.position).buffer = position;
+        attributes.get(geometry.attributes.position).buffer = positionBuffer;
         geometry.attributes.position.count = positionCount / 3;
 
-        attributes.get(geometry.attributes.normal).buffer = normal;
+        attributes.get(geometry.attributes.normal).buffer = normalBuffer;
         geometry.attributes.normal.count = normalCount / 3;
 
-        attributes.get(geometry.index).buffer = index;
+        attributes.get(geometry.index).buffer = indexBuffer;
         geometry.index.count = count / 1;
       };
       const _removeTerrainMesh = terrainMesh => {
