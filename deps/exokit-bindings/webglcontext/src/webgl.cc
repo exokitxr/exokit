@@ -3030,7 +3030,7 @@ NAN_METHOD(WebGLRenderingContext::DrawElementsInstanced) {
 }
 
 NAN_METHOD(WebGLRenderingContext::DrawElementsInstancedANGLE) {
-  Local<Object> contextObj = Local<Object>::Cast(info.This()->Get(JS_STR("contex")));
+  Local<Object> contextObj = Local<Object>::Cast(info.This()->Get(JS_STR("context")));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(contextObj);
   GLenum mode = info[0]->Uint32Value();
   GLsizei count = info[1]->Int32Value();
