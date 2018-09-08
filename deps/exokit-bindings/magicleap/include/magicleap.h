@@ -12,6 +12,7 @@
 #include <node.h>
 #include <nan.h>
 #include <defines.h>
+#include <cmath>
 #include <vector>
 #include <thread>
 #include <mutex>
@@ -45,9 +46,7 @@ using namespace node;
 
 namespace ml {
 
-struct application_context_t {
-  int dummy_value;
-};
+// enums
 
 enum DummyValue {
   STOPPED,
@@ -69,7 +68,13 @@ enum KeyboardEventType {
   KEY_UP,
 };
 
+// classes
+
 class MLContext;
+
+struct application_context_t {
+  int dummy_value;
+};
 
 class KeyboardEvent {
 public:
@@ -82,54 +87,95 @@ public:
   uint32_t modifier_mask;
 };
 
-class HandRequest {
-public:
-  HandRequest(Local<Function> cbFn);
-  void Poll();
-
-// protected:
-  Nan::Persistent<Function> cbFn;
-};
-
 class MeshBuffer {
 public:
   MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, unsigned short *indices, uint16_t numIndices);
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, unsigned short *indices, uint16_t numIndices, bool isNew);
 
   GLuint positionBuffer;
   GLuint normalBuffer;
   GLuint indexBuffer;
   uint32_t numPositions;
   uint16_t numIndices;
+  bool isNew;
 };
 
-class MeshRequest {
+class MLMesher : public ObjectWrap {
 public:
-  MeshRequest(Local<Function> cbFn);
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLMesher();
+  ~MLMesher();
+  
+  static NAN_METHOD(New);
+  static NAN_GETTER(OnMeshGetter);
+  static NAN_SETTER(OnMeshSetter);
+  static NAN_METHOD(Destroy);
+
   void Poll();
 
 // protected:
-  Nan::Persistent<Function> cbFn;
+  Nan::Persistent<Function> cb;
 };
 
-class PlanesRequest {
+class MLPlaneTracker : public ObjectWrap {
 public:
-  PlanesRequest(Local<Function> cbFn);
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLPlaneTracker();
+  ~MLPlaneTracker();
+  
+  static NAN_METHOD(New);
+  static NAN_GETTER(OnPlanesGetter);
+  static NAN_SETTER(OnPlanesSetter);
+  static NAN_METHOD(Destroy);
+
   void Poll();
 
 // protected:
-  Nan::Persistent<Function> cbFn;
+  Nan::Persistent<Function> cb;
 };
 
-class EyeRequest {
+class MLHandTracker : public ObjectWrap {
 public:
-  EyeRequest(Local<Function> cbFn);
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLHandTracker();
+  ~MLHandTracker();
+  
+  static NAN_METHOD(New);
+  static NAN_GETTER(OnHandsGetter);
+  static NAN_SETTER(OnHandsSetter);
+  static NAN_METHOD(Destroy);
+
+  void Poll();
+
+// protected:
+  Nan::Persistent<Function> cb;
+};
+
+class MLEyeTracker : public ObjectWrap {
+public:
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLEyeTracker();
+  ~MLEyeTracker();
+  
+  static NAN_METHOD(New);
+  static NAN_GETTER(FixationGetter);
+  static NAN_GETTER(EyesGetter);
+  static NAN_METHOD(Destroy);
+
   void Poll(MLSnapshot *snapshot);
 
 // protected:
-  Nan::Persistent<Function> cbFn;
+  MLTransform transform;
+  MLTransform leftTransform;
+  bool leftBlink;
+  MLTransform rightTransform;
+  bool rightBlink;
 };
 
 class CameraRequestPlane {
@@ -178,15 +224,11 @@ public:
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(OnPresentChange);
-  static NAN_METHOD(RequestHand);
-  static NAN_METHOD(CancelHand);
-  static NAN_METHOD(RequestMesh);
-  static NAN_METHOD(CancelMesh);
-  static NAN_METHOD(PopulateDepth);
-  static NAN_METHOD(RequestPlanes);
-  static NAN_METHOD(CancelPlanes);
-  static NAN_METHOD(RequestEye);
-  static NAN_METHOD(CancelEye);
+  static NAN_METHOD(RequestMeshing);
+  static NAN_METHOD(RequestPlaneTracking);
+  static NAN_METHOD(RequestHandTracking);
+  static NAN_METHOD(RequestEyeTracking);
+  static NAN_METHOD(RequestDepthPopulation);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);
@@ -218,7 +260,7 @@ public:
   // GLint normalLocation;
   GLint modelViewMatrixLocation;
   GLint projectionMatrixLocation;
-  
+
   // occlusion
   // MLHandle occlusionTracker;
 };

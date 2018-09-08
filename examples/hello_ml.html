@@ -11,7 +11,8 @@
   <script src="inflate.min.js"></script>
   <script src="FBXLoader.js"></script>
   <script>
-    let container, scene, camera, display, model, controllerMeshes;
+    let container, scene, camera, display, model, controllerMeshes, eyeMesh;
+    let mesher = null, planeTracker = null, handTracker = null, eyeTracker = null;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -100,6 +101,18 @@
         scene.add(controllerMesh);
       });
 
+      eyeMesh = (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x0000FF,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(eyeMesh);
+
       const localVector = new THREE.Vector3();
       const localVector2 = new THREE.Vector3();
       const localVector3 = new THREE.Vector3();
@@ -143,9 +156,10 @@
 
           for (let i = 0; i < hands.length; i++) {
             const hand = hands[i];
-            const {fingers} = hand;
-            for (let j = 0; j < fingers.length; j++) {
-              const bones = fingers[j];
+            const {pointer, grip, wrist, fingers} = hand;
+            const allFingers = [wrist].concat(fingers);
+            for (let j = 0; j < allFingers.length; j++) {
+              const bones = allFingers[j];
               for (let k = 0; k < bones.length; k++) {
                 const positionFloat32Array = bones[k];
                 if (positionFloat32Array) {
@@ -166,31 +180,15 @@
               }
             }
 
-            const _getFingerRay = fingers => {
-              for (let i = 0; i < fingers.length; i++) {
-                const bones = fingers[i];
-                const validBones = bones.filter(bone => !!bone);
-                if (validBones.length >= 2) {
-                  const startBone = localVector.fromArray(validBones[0]);
-                  const endBone = localVector2.fromArray(validBones[validBones.length - 1]);
-                  const direction = localVector3.copy(endBone)
-                    .sub(startBone)
-                    .normalize();
-                  const quaternion = localQuaternion.setFromUnitVectors(upVector, direction);
-                  const scale = localVector4.set(1, 1, 1);
-                  return localMatrix.compose(endBone, quaternion, scale);
-                }
-              }
-              return null;
-            };
-            const pointerTransform = _getFingerRay([
-              fingers[2], // index
-              fingers[3], // middle
-              fingers[1], // thumb
-            ]);
-            if (pointerTransform) {
+            if (pointer) {
               const newGeometry = pointerGeometry.clone()
-                .applyMatrix(pointerTransform);
+                .applyMatrix(
+                  localMatrix.compose(
+                    localVector.fromArray(pointer.position),
+                    localQuaternion.fromArray(pointer.rotation),
+                    localVector2.set(1, 1, 1),
+                  )
+                );
 
               _shiftIndex(newGeometry.index.array);
 
@@ -201,13 +199,15 @@
               indexIndex += newGeometry.index.array.length;
             }
 
-            const gripTransform = _getFingerRay([
-              fingers[0].slice(2).concat(fingers[3]), // wrist center, middle
-              fingers[1], // thumb
-            ]);
-            if (gripTransform) {
+            if (grip) {
               const newGeometry = pointerGeometry.clone()
-                .applyMatrix(gripTransform);
+                .applyMatrix(
+                  localMatrix.compose(
+                    localVector.fromArray(grip.position),
+                    localQuaternion.fromArray(grip.rotation),
+                    localVector2.set(1, 1, 1),
+                  )
+                );
 
               _shiftIndex(newGeometry.index.array);
 
@@ -223,11 +223,12 @@
           indexAttribute.needsUpdate = true;
           geometry.setDrawRange(0, indexIndex);
         };
+        mesh.visible = false;
         mesh.frustumCulled = false;
         return mesh;
       })();
       scene.add(handMesh);
-      const _onHand = hands => {
+      const _onHands = hands => {
         handMesh.update(hands);
       };
 
@@ -292,8 +293,9 @@
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
-          const {id, valid} = update;
-          if (valid) {
+          const {id, type} = update;
+
+          if (type === 'new' || type === 'update') {
             const terrainMesh = _getTerrainMesh(id);
             _loadTerrainMesh(terrainMesh, update);
           } else {
@@ -322,7 +324,7 @@
           mesh.frustumCulled = false;
           mesh.position.fromArray(plane.position);
           mesh.quaternion.fromArray(plane.rotation);
-          mesh.scale.set(plane.width, plane.height, 1);
+          mesh.scale.set(plane.size[0], plane.size[1], 1);
           mesh.updateMatrix();
           mesh.updateMatrixWorld();
           scene.add(mesh);
@@ -339,45 +341,31 @@
         _loadPlanes(planes);
       };
 
-      const eyeMesh = (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x0000FF,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = false;
-        mesh.frustumCulled = false;
-        return mesh;
-      })();
-      scene.add(eyeMesh);
-      const _onEye = eye => {
-        eyeMesh.position.fromArray(eye);
-        eyeMesh.quaternion.fromArray(eye, 3);
-        eyeMesh.updateMatrix();
-        eyeMesh.updateMatrixWorld();
-      };
-
       let enabled = false;
       const _enable = () => {
-        window.browser.nativeMl.RequestHand(_onHand);
-        window.browser.nativeMl.RequestMesh(_onMesh);
-        window.browser.nativeMl.RequestPlanes(_onPlanes);
-        window.browser.nativeMl.RequestEye(_onEye);
-        eyeMesh.visible = true;
+        mesher = window.browser.magicleap.RequestMeshing();
+        mesher.onmesh = _onMesh;
+        planeTracker = window.browser.magicleap.RequestPlaneTracking();
+        planeTracker.onplanes = _onPlanes;
+        handTracker = window.browser.magicleap.RequestHandTracking();
+        handTracker.onhands = _onHands;
+        handMesh.visible = true;
+        eyeTracker = window.browser.magicleap.RequestEyeTracking();
 
         enabled = true;
       };
       const _disable = () => {
-        window.browser.nativeMl.CancelHand(_onHand);
-        handMeshes.forEach(handMesh => {
-          handMesh.visible = false;
-        });
-        window.browser.nativeMl.CancelMesh(_onMesh);
+        mesher.destroy();
+        mesher = null;
         _clearTerrainMeshes();
-        window.browser.nativeMl.CancelPlanes(_onPlanes);
+        planeTracker.destroy();
+        planeTracker = null;
         _clearPlanes();
-        window.browser.nativeMl.CancelEye(_onEye);
-        eyeMesh.visible = false;
+        handTracker.destroy();
+        handTracker = null;
+        handMesh.visible = false;
+        eyeTracker.destroy();
+        eyeTracker = null;
 
         enabled = false;
       };
@@ -399,7 +387,7 @@
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
 
-      // window.browser.nativeMl.PopulateDepth(true);
+      // window.browser.magicleap.RequestDepthPopulation(true);
       // renderer.autoClear = false;
 
       container.appendChild(renderer.domElement);
@@ -416,6 +404,18 @@
           new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
         );
         model.updateMatrixWorld();
+      }
+      if (eyeTracker) {
+        const {fixation} = eyeTracker;
+        const {position, rotation} = fixation;
+
+        eyeMesh.position.fromArray(position);
+        eyeMesh.quaternion.fromArray(rotation);
+        eyeMesh.updateMatrix();
+        eyeMesh.updateMatrixWorld();
+        eyeMesh.visible = true;
+      } else {
+        eyeMesh.visible = false;
       }
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
@@ -558,13 +558,13 @@
             c.send(JSON.stringify(updates));
           }
         };
-        window.browser.nativeMl.RequestCamera(_onCameraFrame);
+        window.browser.magicleap.RequestCamera(_onCameraFrame);
 
         c.on('close', () => {
           console.log('close connection 1');
           framesData.length = 0;
           console.log('close connection 2');
-          window.browser.nativeMl.CancelCamera(_onCameraFrame);
+          window.browser.magicleap.CancelCamera(_onCameraFrame);
           console.log('close connection 3');
         });
       });
