@@ -1210,45 +1210,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         }
         return RequestCamera.apply(this, arguments);
       })(nativeMlProxy.RequestCamera);
-      nativeMlProxy.RequestHand = (RequestHand => function(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(datas) {
-            for (let i = 0; i < datas.length; i++) {
-              const data = datas[i];
-              data.center = utils._normalizeBuffer(data.center, window);
-            }
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return RequestHand.apply(this, arguments);
-      })(nativeMlProxy.RequestHand);
-      nativeMlProxy.RequestMesh = (RequestMesh => function(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(datas) {
-            for (let i = 0; i < datas.length; i++) {
-              const data = datas[i];
-              data.indices = utils._normalizeBuffer(data.indices, window);
-              data.positions = utils._normalizeBuffer(data.positions, window);
-              data.normals = utils._normalizeBuffer(data.normals, window);
-            }
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return RequestMesh.apply(this, arguments);
-      })(nativeMlProxy.RequestMesh);
-      nativeMlProxy.RequestPlanes = (RequestPlanes => function(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(datas) {
-            for (let i = 0; i < datas.length; i++) {
-              const data = datas[i];
-              data.position = utils._normalizeBuffer(data.position, window);
-              data.rotation = utils._normalizeBuffer(data.rotation, window);
-            }
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return RequestPlanes.apply(this, arguments);
-      })(nativeMlProxy.RequestPlanes);
       return nativeMlProxy;
     })(),
     monitors: new MonitorManager(),
