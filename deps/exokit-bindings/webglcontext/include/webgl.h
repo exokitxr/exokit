@@ -161,6 +161,7 @@ public:
   static NAN_METHOD(GetError);
   static NAN_METHOD(DrawArrays);
   static NAN_METHOD(DrawArraysInstanced);
+  static NAN_METHOD(DrawArraysInstancedANGLE);
   static NAN_METHOD(GenerateMipmap);
   static NAN_METHOD(GetAttribLocation);
   static NAN_METHOD(DepthFunc);
@@ -207,6 +208,7 @@ public:
   static NAN_METHOD(ActiveTexture);
   static NAN_METHOD(DrawElements);
   static NAN_METHOD(DrawElementsInstanced);
+  static NAN_METHOD(DrawElementsInstancedANGLE);
   static NAN_METHOD(DrawRangeElements);
   static NAN_METHOD(Flush);
   static NAN_METHOD(Finish);
@@ -226,6 +228,7 @@ public:
   static NAN_METHOD(VertexAttribI4uiv);
   
   static NAN_METHOD(VertexAttribDivisor);
+  static NAN_METHOD(VertexAttribDivisorANGLE);
   static NAN_METHOD(DrawBuffers);
 
   static NAN_METHOD(BlendColor);
