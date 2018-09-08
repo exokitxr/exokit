@@ -1194,7 +1194,31 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     })(), */
     electron,
     magicleap: nativeMl ? {
-      RequestMeshing: nativeMl.RequestMeshing,
+      RequestMeshing() {
+        const mesher = nativeMl.RequestMeshing.apply(nativeMl, arguments);
+        return {
+          get onmesh() {
+            return mesher.onmesh;
+          },
+          set onmesh(cb) {
+            mesher.onmesh = cb ? updates => {
+              for (let i = 0; i < updates.length; i++) {
+                const update = updates[i];
+                if (update.positionArray) {
+                  update.positionArray = utils._normalizeBuffer(update.positionArray, window);
+                }
+                if (update.normalArray) {
+                  update.normalArray = utils._normalizeBuffer(update.normalArray, window);
+                }
+                if (update.indexArray) {
+                  update.indexArray = utils._normalizeBuffer(update.indexArray, window);
+                }
+              }
+              cb(updates);
+            } : null;
+          },
+        };
+      },
       RequestPlaneTracking: nativeMl.RequestPlaneTracking,
       RequestHandTracking: nativeMl.RequestHandTracking,
       RequestEyeTracking: nativeMl.RequestEyeTracking,
