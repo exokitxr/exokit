@@ -1,0 +1,354 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script>
+    let container, scene, camera, display;
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      const localVector = new THREE.Vector3();
+      const localVector2 = new THREE.Vector3();
+      const localVector3 = new THREE.Vector3();
+      const localVector4 = new THREE.Vector3();
+      const localQuaternion = new THREE.Quaternion();
+      const localMatrix = new THREE.Matrix4();
+      const oneVector = new THREE.Vector3(1, 1, 1);
+      const upVector = new THREE.Vector3(0, 1, 0);
+      const zeroQuaternion = new THREE.Quaternion();
+      const handMesh = (() => {
+        const pointerGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+          .applyMatrix(
+            localMatrix.makeTranslation(0, 1/2, 0)
+          );
+        const boneGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+
+        const geometry = new THREE.BufferGeometry();
+
+        const positions = new Float32Array(boneGeometry.attributes.position.array.length * 2 * 6 * 4 + pointerGeometry.attributes.position.array.length * 2);
+        const positionAttribute = new THREE.BufferAttribute(positions, 3);
+        geometry.addAttribute('position', positionAttribute);
+
+        const indices = new Uint16Array(boneGeometry.index.array.length * 2 * 6 * 4 + pointerGeometry.index.array.length * 2);
+        const indexAttribute = new THREE.BufferAttribute(indices, 1);
+        geometry.setIndex(indexAttribute);
+
+        const material =  new THREE.MeshPhongMaterial({
+          color: 0xFF0000,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.update = hands => {
+          let positionIndex = 0;
+          let indexIndex = 0;
+
+          const _shiftIndex = array => {
+            for (let l = 0; l < array.length; l++) {
+              array[l] += positionIndex / 3;
+            }
+          };
+
+          for (let i = 0; i < hands.length; i++) {
+            const hand = hands[i];
+            const {pointer, grip, wrist, fingers} = hand;
+            const allFingers = [wrist].concat(fingers);
+            for (let j = 0; j < allFingers.length; j++) {
+              const bones = allFingers[j];
+              for (let k = 0; k < bones.length; k++) {
+                const positionFloat32Array = bones[k];
+                if (positionFloat32Array) {
+                  const position = localVector.fromArray(positionFloat32Array);
+                  const newGeometry = boneGeometry.clone()
+                    .applyMatrix(
+                      localMatrix.makeTranslation(position.x, position.y, position.z)
+                    );
+
+                  _shiftIndex(newGeometry.index.array);
+
+                  positions.set(newGeometry.attributes.position.array, positionIndex);
+                  positionIndex += newGeometry.attributes.position.array.length;
+
+                  indices.set(newGeometry.index.array, indexIndex);
+                  indexIndex += newGeometry.index.array.length;
+                }
+              }
+            }
+
+            if (pointer) {
+              const newGeometry = pointerGeometry.clone()
+                .applyMatrix(
+                  localMatrix.compose(
+                    localVector.fromArray(pointer.position),
+                    localQuaternion.fromArray(pointer.rotation),
+                    localVector2.set(1, 1, 1),
+                  )
+                );
+
+              _shiftIndex(newGeometry.index.array);
+
+              positions.set(newGeometry.attributes.position.array, positionIndex);
+              positionIndex += newGeometry.attributes.position.array.length;
+
+              indices.set(newGeometry.index.array, indexIndex);
+              indexIndex += newGeometry.index.array.length;
+            }
+
+            if (grip) {
+              const newGeometry = pointerGeometry.clone()
+                .applyMatrix(
+                  localMatrix.compose(
+                    localVector.fromArray(grip.position),
+                    localQuaternion.fromArray(grip.rotation),
+                    localVector2.set(1, 1, 1),
+                  )
+                );
+
+              _shiftIndex(newGeometry.index.array);
+
+              positions.set(newGeometry.attributes.position.array, positionIndex);
+              positionIndex += newGeometry.attributes.position.array.length;
+
+              indices.set(newGeometry.index.array, indexIndex);
+              indexIndex += newGeometry.index.array.length;
+            }
+          }
+
+          positionAttribute.needsUpdate = true;
+          indexAttribute.needsUpdate = true;
+          geometry.setDrawRange(0, indexIndex);
+        };
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(handMesh);
+      const _onHands = hands => {
+        handMesh.update(hands);
+      };
+      const _onGesture = e => {
+        const {hand, gesture, lastGesture} = e;
+        console.log('got gesture', {hand, gesture, lastGesture});
+      };
+
+      const handTracker = window.browser.magicleap.RequestHandTracking();
+      handTracker.onhands = _onHands;
+      handTracker.ongesture = _onGesture;
+      handMesh.visible = true;
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    function animate(time, frame) {
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.updateMatrixWorld(true);
+        }
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      session.onselect = e => {
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+        const objectMesh = _makeControllerMesh(
+          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+        );
+        scene.add(objectMesh);
+      };
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+
+    (() => {
+      const framesData = [];
+
+      const server = window.browser.http.createServer((req, res) => {
+        console.log('got request', req.url);
+
+        let match;
+        if (req.url === '/') {
+          res.statusCode = 302;
+          res.setHeader('Location', '/examples/camera_client.html');
+          res.end();
+        } else if (match = req.url.match(/\.(html|js)$/)) {
+          fetch('file:///package' + req.url)
+            .then(proxyRes => {
+              if (proxyRes.ok) {
+                return proxyRes.arrayBuffer()
+                  .then(arrayBuffer => {
+                    const type = (() => {
+                      switch (match[1]) {
+                        case 'html': return 'text/html';
+                        case 'js': return 'application/javascript';
+                        default: return 'text/plain';
+                      }
+                    })();
+                    res.setHeader('Content-Type', type);
+
+                    const buffer = Buffer.from(arrayBuffer);
+                    res.end(buffer);
+                  });
+              } else {
+                res.statusCode = proxyRes.status;
+                res.end();
+                return null;
+              }
+            })
+            .catch(err => {
+              console.warn(err.stack);
+              res.statusCode = 500;
+              res.end();
+            });
+        } else if (match = req.url.match(/^\/frame\/([0-9]+)$/)) {
+          const frameId = parseInt(match[1], 10);
+          const frameData = framesData[frameId];
+          if (frameData) {
+            console.log('send frame data', typeof frameData, frameData.constructor && frameData.constructor.name, frameData && frameData.length);
+            res.setHeader('Content-Type', 'application/octet-stream');
+            res.end(frameData);
+          } else {
+            res.statusCode = 404;
+            res.end();
+          }
+        } else {
+          res.statusCode = 404;
+          res.end();
+        }
+      });
+
+      const wss = new window.browser.ws.Server({
+        server,
+      });
+      wss.on('connection', (c, request) => {
+        console.log('open connection');
+
+        const _onCameraFrame = a => {
+          console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
+          if (c.readyState === window.browser.ws.OPEN) {
+            const updates = a.map((e, i) => {
+              const {width, height, bpp, stride, data} = e;
+              framesData[i] = Buffer.from(data);
+              return {
+                index: i,
+                width,
+                height,
+                bpp,
+                stride,
+              };
+            });
+            c.send(JSON.stringify(updates));
+          }
+        };
+        window.browser.magicleap.RequestCamera(_onCameraFrame);
+
+        c.on('close', () => {
+          console.log('close connection 1');
+          framesData.length = 0;
+          console.log('close connection 2');
+          window.browser.magicleap.CancelCamera(_onCameraFrame);
+          console.log('close connection 3');
+        });
+      });
+
+      server.listen(7999, '0.0.0.0', () => {
+        console.log('listening');
+      });
+      server.on('error', err => {
+        console.warn('server error', err.stack);
+      });
+    })();
+  </script>
+  </body>
+</html>
