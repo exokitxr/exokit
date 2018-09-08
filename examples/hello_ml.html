@@ -347,14 +347,14 @@
 
       let enabled = false;
       const _enable = () => {
-        mesher = window.browser.nativeMl.RequestMeshing();
+        mesher = window.browser.magicleap.RequestMeshing();
         mesher.onmesh = _onMesh;
-        planeTracker = window.browser.nativeMl.RequestPlaneTracking();
+        planeTracker = window.browser.magicleap.RequestPlaneTracking();
         planeTracker.onplanes = _onPlanes;
-        handTracker = window.browser.nativeMl.RequestHandTracking();
+        handTracker = window.browser.magicleap.RequestHandTracking();
         handTracker.onhands = _onHands;
         handMesh.visible = true;
-        eyeTracker = window.browser.nativeMl.RequestEyeTracking();
+        eyeTracker = window.browser.magicleap.RequestEyeTracking();
 
         enabled = true;
       };
@@ -391,7 +391,7 @@
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
 
-      // window.browser.nativeMl.PopulateDepth(true);
+      // window.browser.magicleap.RequestDepthPopulation(true);
       // renderer.autoClear = false;
 
       container.appendChild(renderer.domElement);
@@ -559,13 +559,13 @@
             c.send(JSON.stringify(updates));
           }
         };
-        window.browser.nativeMl.RequestCamera(_onCameraFrame);
+        window.browser.magicleap.RequestCamera(_onCameraFrame);
 
         c.on('close', () => {
           console.log('close connection 1');
           framesData.length = 0;
           console.log('close connection 2');
-          window.browser.nativeMl.CancelCamera(_onCameraFrame);
+          window.browser.magicleap.CancelCamera(_onCameraFrame);
           console.log('close connection 3');
         });
       });
