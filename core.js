@@ -1193,12 +1193,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return wsProxy;
     })(), */
     electron,
-    nativeMl: (() => {
-      const nativeMlProxy = {};
-      for (const k in nativeMl) {
-        nativeMlProxy[k] = nativeMl[k];
-      }
-      nativeMlProxy.RequestCamera = (RequestCamera => function(cb) {
+    magicleap: {
+      RequestMeshing: nativeMl.RequestMeshing,
+      RequestPlaneTracking: nativeMl.RequestPlaneTracking,
+      RequestHandTracking: nativeMl.RequestHandTracking,
+      RequestEyeTracking: nativeMl.RequestEyeTracking,
+      RequestDepthPopulation: nativeMl.RequestDepthPopulation,
+      RequestCamera(cb) {
         if (typeof cb === 'function') {
           cb = (cb => function(datas) {
             for (let i = 0; i < datas.length; i++) {
@@ -1208,10 +1209,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
             return cb.apply(this, arguments);
           })(cb);
         }
-        return RequestCamera.apply(this, arguments);
-      })(nativeMlProxy.RequestCamera);
-      return nativeMlProxy;
-    })(),
+        return nativeMl.RequestCamera.apply(nativeMl, arguments);
+      },
+    },
     monitors: new MonitorManager(),
   };
   window.DOMParser = class DOMParser {
