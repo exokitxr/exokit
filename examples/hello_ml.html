@@ -410,8 +410,11 @@
         model.updateMatrixWorld();
       }
       if (eyeTracker) {
-        eyeMesh.position.fromArray(eyeTracker.position);
-        eyeMesh.quaternion.fromArray(eyeTracker.rotation);
+        const {fixation} = eyeTracker;
+        const {position, rotation} = fixation;
+
+        eyeMesh.position.fromArray(position);
+        eyeMesh.quaternion.fromArray(rotation);
         eyeMesh.updateMatrix();
         eyeMesh.updateMatrixWorld();
         eyeMesh.visible = true;
