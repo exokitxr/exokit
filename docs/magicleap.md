@@ -209,7 +209,7 @@ Whether this eye is currently blinking closed (`true`) or not (`false`).
 
 Returns an instance of `MLMesher`, which can be used to receive world meshing buffer updates from the Magic Leap platform.
 
-#### `browser.magicleap.RequestPlaneTracker() : MLPlaneTracker`
+#### `browser.magicleap.RequestPlaneTracking() : MLPlaneTracker`
 
 Returns an instance of `MLPlaneTracker`, which can be used to receive world planes detected by the Magic Leap platform.
 
@@ -221,7 +221,7 @@ Returns an instance of `MLHandTracker`, which can be used to receive hand tracki
 
 Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data from the Magic Leap platform.
 
-#### `browser.magicleap.PopulateDepth(populateDepth : Boolean)`
+#### `browser.magicleap.RequestDepthPopulation(populateDepth : Boolean)`
 
 Sets whether the render loop will populate the depth buffer by using the meshing subsystem.
 
