@@ -649,6 +649,8 @@ NAN_SETTER(MLHandTracker::OnGestureSetter) {
   }
 }
 
+// utils
+
 inline MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
   return MLVec3f{
     a.x - b.x,
@@ -748,6 +750,67 @@ inline MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const ML
   return normalizeQuaternion(result);
 }
 
+MLVec3f getTriangleNormal(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) {
+  MLVec3f target = subVectors(c, b);
+  MLVec3f v0 = subVectors(a, b);
+  target = crossVectors(target, v0);
+
+  float targetLengthSq = vectorLengthSq(target);
+  if (targetLengthSq > 0) {
+    return multiplyVector(target, 1 / sqrt(targetLengthSq));
+  } else {
+    return MLVec3f{
+      0,
+      0,
+      0
+    };
+  }
+}
+
+MLMat4f getLookAtMatrix(const MLVec3f &eye, const MLVec3f &target, const MLVec3f &up) {
+  MLMat4f result;
+  float *te = this.elements;
+  
+  MLVec3f x;
+  MLVec3f y;
+  MLVec3f z;
+
+  z = subVectors(eye, target);
+
+  if (vectorLengthSq(z) == 0) {
+    // eye and target are in the same position
+    z.z = 1;
+  }
+
+  z = normalizeVector(z);
+  x = crossVectors(up,z);
+
+  if (vectorLengthSq(x) == 0) {
+    // up and z are parallel
+
+    if (std::abs(up.z) == 1) {
+      z.x += 0.0001;
+    } else {
+      z.z += 0.0001;
+    }
+
+    z = normalizeVector(z);
+    x = crossVectors(up, z);
+
+  }
+
+  x = normalizeVector(x);
+  y = crossVectors(z, x);
+
+  te[ 0 ] = x.x; te[ 4 ] = y.x; te[ 8 ] = z.x;
+  te[ 1 ] = x.y; te[ 5 ] = y.y; te[ 9 ] = z.y;
+  te[ 2 ] = x.z; te[ 6 ] = y.z; te[ 10 ] = z.z;
+
+  return result;
+}
+
+// hands
+
 bool hasHandBone(int handIndex) {
   for (size_t i = 0; i < 4; i++) {
     if (*(uint32_t *)&wristBones[handIndex][i][0]) {
@@ -801,23 +864,6 @@ bool getBonesTransform(MLTransform &transform, std::vector<std::vector<float *>>
       return false;
     }
   });
-}
-
-MLVec3f getTriangleNormal(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) {
-  MLVec3f target = subVectors(c, b);
-  MLVec3f v0 = subVectors(a, b);
-  target = crossVectors(target, v0);
-
-  float targetLengthSq = vectorLengthSq(target);
-  if (targetLengthSq > 0) {
-    return multiplyVector(target, 1 / sqrt(targetLengthSq));
-  } else {
-    return MLVec3f{
-      0,
-      0,
-      0
-    };
-  }
 }
 
 bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], bool left) {
