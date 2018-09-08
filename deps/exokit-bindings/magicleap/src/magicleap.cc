@@ -841,7 +841,7 @@ bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 
       fingerBones[i][3],
     };
     validBones.erase(std::remove_if(validBones.begin(), validBones.end(), [&](float *bone) -> bool {
-      if ((*(uint32_t *)&bone[0]) && (&bone[0] != startBone)) {
+      if (*(uint32_t *)&bone[0]) {
         return false; // keep
       } else {
         return true; // remove
