@@ -24,17 +24,29 @@ The type of update. Can be either:
 - `'update'`: the mesh was previously emitted as `new` but its data has changed. No action is necessary, but may be desired.
 - `'remove'`: the mesh is no longer in scope for the meshing system and should be discarded.
 
-#### `MLMeshUpdate.position : WebGLBuffer`
+#### `MLMeshUpdate.positionBuffer : WebGLBuffer`
 
-The raw `WebGLBuffer` for the mesh positions in world space. Represented as three `WebGLFloat` per vertex. Not in any particular order; indexed by `MLMeshUpdate.index`. Tightly packed stride.
+The opaque `WebGLBuffer` for the mesh positions in world space. Represented as three `WebGLFloat` per vertex. Not in any particular order; indexed by `MLMeshUpdate.indexBuffer`. Tightly packed stride.
 
-#### `MLMeshUpdate.normal : WebGLBuffer`
+#### `MLMeshUpdate.positionArray : Float32Array`
 
-The raw `WebGLBuffer` for the mesh normals. Represented as three `WebGLFloat` per vertex. Not in any particular order; indexed by `MLMeshUpdate.index`. Tightly packed stride.
+The `Float32Array` buffer that was uploaded to the `positionBuffer`.
 
-#### `MLMeshUpdate.index : WebGLBuffer`
+#### `MLMeshUpdate.normalBuffer : WebGLBuffer`
 
-The raw `WebGLBuffer` for the mesh indices for `MLMeshUpdate.position` and `MLMeshUpdate.normal`. Represented as three `WegGLShort` per triangle. Tightly packed stride.
+The opaque `WebGLBuffer` for the mesh normals. Represented as three `WebGLFloat` per vertex. Not in any particular order; indexed by `MLMeshUpdate.indexBuffer`. Tightly packed stride.
+
+#### `MLMeshUpdate.normalArray : Float32Array`
+
+The `Float32Array` buffer that was uploaded to the `normalBuffer`.
+
+#### `MLMeshUpdate.indexBuffer : WebGLBuffer`
+
+The opaque `WebGLBuffer` for the mesh indices for `MLMeshUpdate.position` and `MLMeshUpdate.normal`. Represented as three `WegGLShort` per triangle. Tightly packed stride.
+
+#### `MLMeshUpdate.indexArray : Uint16Array`
+
+The `Uint16Array` buffer that was uploaded to the `indexBuffer`.
 
 #### `MLMeshUpdate.count : Number`
 
