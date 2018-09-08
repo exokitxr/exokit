@@ -310,7 +310,12 @@ const _handleData = data => {
             }
           });
       } else {
-        _removeTerrainMesh(id);
+        const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+        if (index !== -1) {
+          const terrainMesh = terrainMeshes[index];
+          _removeTerrainMesh(terrainMesh);
+          terrainMeshes.splice(index, 1);
+        }
       }
     }))
       .catch(err => {
