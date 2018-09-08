@@ -152,12 +152,15 @@ public:
   static NAN_METHOD(New);
   static NAN_GETTER(OnHandsGetter);
   static NAN_SETTER(OnHandsSetter);
+  static NAN_GETTER(OnGestureGetter);
+  static NAN_SETTER(OnGestureSetter);
   static NAN_METHOD(Destroy);
 
   void Poll();
 
 // protected:
   Nan::Persistent<Function> cb;
+  Nan::Persistent<Function> ongesture;
 };
 
 class MLEyeTracker : public ObjectWrap {

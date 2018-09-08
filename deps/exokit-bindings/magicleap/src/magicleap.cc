@@ -41,6 +41,8 @@ bool cameraResponsePending = false;
 
 MLHandle handTracker;
 MLHandTrackingData handData;
+MLHandTrackingKeyPose lastKeyposeLeft = MLHandTrackingKeyPose_NoHand;
+MLHandTrackingKeyPose lastKeyposeRight = MLHandTrackingKeyPose_NoHand;
 MLHandTrackingStaticData handStaticData;
 std::vector<MLHandTracker *> handTrackers;
 float wristBones[2][4][1 + 3];
@@ -215,6 +217,14 @@ inline const char *gestureCategoryToDescriptor(MLHandTrackingKeyPose keyPose) {
       return "c";
     default:
       return nullptr;
+  }
+}
+inline Local<Value> gestureCategoryToJsValue(MLHandTrackingKeyPose keyPose) {
+  const char *gesture = gestureCategoryToDescriptor(handData.left_hand_state.keypose);
+  if (gesture) {
+    return JS_STR(gesture);
+  } else {
+    return Nan::Null();
   }
 }
 
@@ -619,6 +629,26 @@ NAN_SETTER(MLHandTracker::OnHandsSetter) {
   }
 }
 
+NAN_GETTER(MLHandTracker::OnGestureGetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  Local<Function> ongesture = Nan::New(mlHandTracker->ongesture);
+  info.GetReturnValue().Set(ongesture);
+}
+
+NAN_SETTER(MLHandTracker::OnGestureSetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localOngesture = Local<Function>::Cast(value);
+    mlHandTracker->ongesture.Reset(localOngesture);
+  } else {
+    Nan::ThrowError("MLHandTracker::OnGestureSetter: invalid arguments");
+  }
+}
+
 inline MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
   return MLVec3f{
     a.x - b.x,
@@ -873,12 +903,26 @@ void MLHandTracker::Poll() {
       }
       obj->Set(JS_STR("fingers"), fingersArray);
 
-      const char *gesture = gestureCategoryToDescriptor(handData.left_hand_state.keypose);
-      if (gesture) {
-        obj->Set(JS_STR("gesture"), JS_STR(gesture));
-      } else {
-        obj->Set(JS_STR("gesture"), Nan::Null());
+      Local<Value> gestureVal = gestureCategoryToJsValue(handData.left_hand_state.keypose);
+      obj->Set(JS_STR("gesture"), gestureVal);
+
+      if (handData.left_hand_state.keypose != lastKeyposeLeft && !this->ongesture.IsEmpty()) {
+        Local<Object> gestureObj = Nan::New<Object>();
+        
+        gestureObj->Set(JS_STR("hand"), JS_STR("left"));
+
+        gestureObj->Set(JS_STR("gesture"), gestureVal);
+
+        Local<Value> lastGestureVal = gestureCategoryToJsValue(lastKeyposeLeft);
+        gestureObj->Set(JS_STR("lastGesture"), lastGestureVal);
+
+        Local<Function> ongesture = Nan::New(this->ongesture);
+        Local<Value> argv[] = {
+          gestureObj,
+        };
+        asyncResource.MakeCallback(ongesture, sizeof(argv)/sizeof(argv[0]), argv);
       }
+      lastKeyposeLeft = handData.left_hand_state.keypose;
 
       array->Set(JS_INT(numResults++), obj);
     }
@@ -939,12 +983,26 @@ void MLHandTracker::Poll() {
       }
       obj->Set(JS_STR("fingers"), fingersArray);
 
-      const char *gesture = gestureCategoryToDescriptor(handData.right_hand_state.keypose);
-      if (gesture) {
-        obj->Set(JS_STR("gesture"), JS_STR(gesture));
-      } else {
-        obj->Set(JS_STR("gesture"), Nan::Null());
+      Local<Value> gestureVal = gestureCategoryToJsValue(handData.right_hand_state.keypose);
+      obj->Set(JS_STR("gesture"), gestureVal);
+
+      if (handData.right_hand_state.keypose != lastKeyposeRight && !this->ongesture.IsEmpty()) {
+        Local<Object> gestureObj = Nan::New<Object>();
+        
+        gestureObj->Set(JS_STR("hand"), JS_STR("right"));
+
+        gestureObj->Set(JS_STR("gesture"), gestureVal);
+
+        Local<Value> lastGestureVal = gestureCategoryToJsValue(lastKeyposeRight);
+        gestureObj->Set(JS_STR("lastGesture"), lastGestureVal);
+
+        Local<Function> ongesture = Nan::New(this->ongesture);
+        Local<Value> argv[] = {
+          gestureObj,
+        };
+        asyncResource.MakeCallback(ongesture, sizeof(argv)/sizeof(argv[0]), argv);
       }
+      lastKeyposeRight = handData.right_hand_state.keypose;
 
       array->Set(JS_INT(numResults++), obj);
     }
