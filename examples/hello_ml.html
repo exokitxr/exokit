@@ -184,23 +184,6 @@
               }
             }
 
-            const _getFingerRay = fingers => {
-              for (let i = 0; i < fingers.length; i++) {
-                const bones = fingers[i];
-                const localBones = bones.filter(bone => !!bone);
-                if (localBones.length >= 2) {
-                  const startBone = localVector.fromArray(localBones[0]);
-                  const endBone = localVector2.fromArray(localBones[localBones.length - 1]);
-                  const direction = localVector3.copy(endBone)
-                    .sub(startBone)
-                    .normalize();
-                  const quaternion = localQuaternion.setFromUnitVectors(upVector, direction);
-                  const scale = localVector4.set(1, 1, 1);
-                  return localMatrix.compose(endBone, quaternion, scale);
-                }
-              }
-              return null;
-            };
             if (pointer) {
               const newGeometry = pointerGeometry.clone()
                 .applyMatrix(
