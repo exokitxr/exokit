@@ -185,6 +185,16 @@
             }
           }
         }
+
+        if (connections.length > 0) {
+          const updateSpec = updates.map(({id, type}) => ({id, type}));
+          const updateSpecString = JSON.stringify(updateSpec);
+
+          for (let i = 0; i < connections.length; i++) {
+            const c = connections[i];
+            c.send(updateSpecString);
+          }
+        }
       };
 
       let enabled = false;
@@ -350,6 +360,14 @@
       });
       wss.on('connection', (c, request) => {
         console.log('open connection');
+
+        const ids = Object.keys(terrainMeshData);
+        const updateSpec = ids.map(id => ({
+          type: 'new',
+          id,
+        }));
+        const updateSpecString = JSON.stringify(updateSpec);
+        c.send(updateSpecString);
 
         connections.push(c);
 
