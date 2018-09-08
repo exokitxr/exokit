@@ -145,37 +145,45 @@ const _handleData = data => {
   if (!running) {
     running = true;
 
-    data = JSON.parse(data);
-    const {id} = data;
+    const updates = JSON.parse(data);
+    Promise.all(updates.map(update => {
+      const {id, type} = update;
 
-    fetch('/mesh/' + id)
-      .then(res => res.arrayBuffer())
-      .then(arrayBuffer => {
-        let i = 0;
-        const positionCount = new Uint32Array(arrayBuffer, i, 1);
-        i += Uint32Array.BYTES_PER_ELEMENT;
-        const positionArray = new Float32Array(arrayBuffer, i, positionCount);
-        i += Float32Array.BYTES_PER_ELEMENT * positionCount;
+      if (type === 'new' || type === 'update') {
+        return fetch('/mesh/' + id)
+          .then(res => res.ok ? res.arrayBuffer() : Promise.resolve(null))
+          .then(arrayBuffer => {
+            if (arrayBuffer) {
+              let i = 0;
+              const positionCount = new Uint32Array(arrayBuffer, i, 1);
+              i += Uint32Array.BYTES_PER_ELEMENT;
+              const positionArray = new Float32Array(arrayBuffer, i, positionCount);
+              i += Float32Array.BYTES_PER_ELEMENT * positionCount;
 
-        const normalCount = new Uint32Array(arrayBuffer, i, 1);
-        i += Uint32Array.BYTES_PER_ELEMENT;
-        const normalArray = new Float32Array(arrayBuffer, i, normalCount);
-        i += Float32Array.BYTES_PER_ELEMENT * normalCount;
+              const normalCount = new Uint32Array(arrayBuffer, i, 1);
+              i += Uint32Array.BYTES_PER_ELEMENT;
+              const normalArray = new Float32Array(arrayBuffer, i, normalCount);
+              i += Float32Array.BYTES_PER_ELEMENT * normalCount;
 
-        const count = new Uint32Array(arrayBuffer, i, 1);
-        i += Uint32Array.BYTES_PER_ELEMENT;
-        const indexArray = new Uint16Array(arrayBuffer, i, count);
-        i += Uint16Array.BYTES_PER_ELEMENT * count;
+              const count = new Uint32Array(arrayBuffer, i, 1);
+              i += Uint32Array.BYTES_PER_ELEMENT;
+              const indexArray = new Uint16Array(arrayBuffer, i, count);
+              i += Uint16Array.BYTES_PER_ELEMENT * count;
 
-        _loadTerrainMesh(_getTerrainMesh(id), {
-          positionArray,
-          positionCount,
-          normalArray,
-          normalCount,
-          indexArray,
-          indexCount,
-        });
-      })
+              _loadTerrainMesh(_getTerrainMesh(id), {
+                positionArray,
+                positionCount,
+                normalArray,
+                normalCount,
+                indexArray,
+                indexCount,
+              });
+            }
+          });
+      } else {
+        _removeTerrainMeh(id);
+      }
+    }))
       .catch(err => {
         console.warn(err.stack);
       })
