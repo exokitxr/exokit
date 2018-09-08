@@ -914,9 +914,9 @@ void MLHandTracker::Poll() {
 
       if (handData.left_hand_state.keypose != lastKeyposeLeft && !this->ongesture.IsEmpty()) {
         Local<Object> gestureObj = Nan::New<Object>();
-        
+
         gestureObj->Set(JS_STR("hand"), JS_STR("left"));
-        
+
         Local<Value> gesturePositionObj;
         Local<Value> gestureRotationObj;
         if (leftPointerTransformValue) {
@@ -1011,7 +1011,7 @@ void MLHandTracker::Poll() {
 
       if (handData.right_hand_state.keypose != lastKeyposeRight && !this->ongesture.IsEmpty()) {
         Local<Object> gestureObj = Nan::New<Object>();
-        
+
         gestureObj->Set(JS_STR("hand"), JS_STR("right"));
 
         Local<Value> gesturePositionObj;
