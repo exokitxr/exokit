@@ -657,6 +657,14 @@ inline MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
   };
 }
 
+inline MLVec3f multiplyVector(const MLVec3f &v, float l) {
+  return MLVec3f{
+    v.x * l,
+    v.y * l,
+    v.z * l
+  };
+}
+
 inline MLVec3f divideVector(const MLVec3f &v, float l) {
   return MLVec3f{
     v.x / l,
@@ -677,8 +685,12 @@ inline MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b) {
   };
 }
 
+inline float vectorLengthSq(const MLVec3f &v) {
+  return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+
 inline float vectorLength(const MLVec3f &v) {
-  return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+  return sqrt(vectorLengthSq(v));
 }
 
 inline MLVec3f normalizeVector(const MLVec3f &v) {
@@ -791,6 +803,119 @@ bool getBonesTransform(MLTransform &transform, std::vector<std::vector<float *>>
   });
 }
 
+MLVec3f getTriangleNormal(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) {
+  MLVec3f target = subVectors(c, b);
+  MLVec3f v0 = subVectors(a, b);
+  target = crossVectors(target, v0);
+
+  float targetLengthSq = vectorLengthSq(target);
+  if (targetLengthSq > 0) {
+    return multiplyVector(target, 1 / sqrt(targetLengthSq));
+  } else {
+    return MLVec3f{
+      0,
+      0,
+      0
+    };
+  }
+}
+
+bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], bool left) {
+  std::vector<std::vector<float *>> fingers;
+  for (size_t i = 0; i < 5; i++) {
+    fingers.push_back(std::vector<float *>{
+      fingerBones[i][0],
+      fingerBones[i][1],
+      fingerBones[i][2],
+      fingerBones[i][3],
+    });
+  }
+
+  std::vector<float *> startBones;
+  size_t startBonesFingerIndex;
+  for (size_t i = 0; i < 5; i++) {
+    std::vector<float *> validBones = {
+      fingerBones[i][0],
+      fingerBones[i][1],
+      fingerBones[i][2],
+      fingerBones[i][3],
+    };
+    validBones.erase(std::remove_if(validBones.begin(), validBones.end(), [&](float *bone) -> bool {
+      if ((*(uint32_t *)&bone[0]) && (&bone[0] != startBone)) {
+        return false; // keep
+      } else {
+        return true; // remove
+      }
+    }), validBones.end());
+
+    if (validBones.size() > 0) {
+      startBones = validBones;
+      startBonesFingerIndex = i;
+      break;
+    }
+  }
+  if (startBones.size() > 0) {
+    std::vector<float *> allBones;
+    for (size_t i = 5 - 1; i > startBonesFingerIndex; i--) {
+      std::vector<float *> validBones = {
+        fingerBones[i][3],
+        fingerBones[i][2],
+        fingerBones[i][1],
+        fingerBones[i][0],
+      };
+      validBones.erase(std::remove_if(validBones.begin(), validBones.end(), [&](float *bone) -> bool {
+        if (*(uint32_t *)&bone[0]) {
+          return false; // keep
+        } else {
+          return true; // remove
+        }
+      }), validBones.end());
+
+      if (startBones.size() >= 2 && validBones.size() >= 1) {
+        allBones.push_back(startBones[0]);
+        allBones.push_back(startBones[1]);
+        allBones.push_back(validBones[0]);
+        break;
+      } else if (startBones.size() >= 1 && validBones.size() >= 2) {
+        allBones.push_back(startBones[0]);
+        allBones.push_back(validBones[0]);
+        allBones.push_back(validBones[1]);
+        break;
+      }
+    }
+    if (allBones.size() > 0) {
+      MLVec3f a = {
+        allBones[0][1],
+        allBones[0][2],
+        allBones[0][3]
+      };
+      MLVec3f b = {
+        allBones[1][1],
+        allBones[1][2],
+        allBones[1][3]
+      };
+      MLVec3f c = {
+        allBones[2][1],
+        allBones[2][2],
+        allBones[2][3]
+      };
+
+      center = {
+        (a.x + b.x + c.x) / 3,
+        (a.y + b.y + c.y) / 3,
+        (a.z + b.z + c.z) / 3
+      };
+      normal = getTriangleNormal(a, b, c);
+
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]) {
   std::vector<std::vector<float *>> fingers = {
     { // index
@@ -842,10 +967,17 @@ void MLHandTracker::Poll() {
     Local<Array> array = Nan::New<Array>();
     uint32_t numResults = 0;
 
+    MLVec3f leftHandCenter;
+    MLVec3f leftHandNormal;
+    bool leftHandTransformValid;
     MLTransform leftPointerTransform;
     bool leftPointerTransformValid;
     MLTransform leftGripTransform;
     bool leftGripTransformValid;
+    
+    MLVec3f rightHandCenter;
+    MLVec3f rightHandNormal;
+    bool rightHandTransformValid;
     MLTransform rightPointerTransform;
     bool rightPointerTransformValid;
     MLTransform rightGripTransform;
@@ -855,6 +987,12 @@ void MLHandTracker::Poll() {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("left"));
+
+      leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0]);
+      if (leftHandTransformValid) {
+        obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandCenter.values, 3 * sizeof(float)), 0, 3));
+        obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandNormal.values, 3 * sizeof(float)), 0, 3));
+      }
 
       leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0]);
       if (leftPointerTransformValid) {
@@ -952,9 +1090,15 @@ void MLHandTracker::Poll() {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("right"));
+      
+      rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[0], fingerBones[0]);
+      if (rightHandTransformValid) {
+        obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandCenter.values, 3 * sizeof(float)), 0, 3));
+        obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandNormal.values, 3 * sizeof(float)), 0, 3));
+      }
 
-      rightPointerTransformValue = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1]);
-      if (rightPointerTransformValue) {
+      rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1]);
+      if (rightPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
         pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
         pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
