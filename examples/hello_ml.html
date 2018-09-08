@@ -160,9 +160,10 @@
 
           for (let i = 0; i < hands.length; i++) {
             const hand = hands[i];
-            const {fingers} = hand;
-            for (let j = 0; j < fingers.length; j++) {
-              const bones = fingers[j];
+            const {pointer, grip, wrist, fingers} = hand;
+            const allFingers = [wrist].concat(fingers);
+            for (let j = 0; j < allFingers.length; j++) {
+              const bones = allFingers[j];
               for (let k = 0; k < bones.length; k++) {
                 const positionFloat32Array = bones[k];
                 if (positionFloat32Array) {
@@ -200,14 +201,15 @@
               }
               return null;
             };
-            const pointerTransform = _getFingerRay([
-              fingers[2], // index
-              fingers[3], // middle
-              fingers[1], // thumb
-            ]);
-            if (pointerTransform) {
+            if (pointer) {
               const newGeometry = pointerGeometry.clone()
-                .applyMatrix(pointerTransform);
+                .applyMatrix(
+                  localMatrix.compose(
+                    localVector.fromArray(pointer.position),
+                    localQuaternion.fromArray(pointer.rotation),
+                    localVector2.set(1, 1, 1),
+                  )
+                );
 
               _shiftIndex(newGeometry.index.array);
 
@@ -218,13 +220,15 @@
               indexIndex += newGeometry.index.array.length;
             }
 
-            const gripTransform = _getFingerRay([
-              fingers[0].slice(2).concat(fingers[3]), // wrist center, middle
-              fingers[1], // thumb
-            ]);
-            if (gripTransform) {
+            if (grip) {
               const newGeometry = pointerGeometry.clone()
-                .applyMatrix(gripTransform);
+                .applyMatrix(
+                  localMatrix.compose(
+                    localVector.fromArray(grip.position),
+                    localQuaternion.fromArray(grip.rotation),
+                    localVector2.set(1, 1, 1),
+                  )
+                );
 
               _shiftIndex(newGeometry.index.array);
 
