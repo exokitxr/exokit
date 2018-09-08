@@ -1193,7 +1193,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return wsProxy;
     })(), */
     electron,
-    magicleap: {
+    magicleap: nativeMl ? {
       RequestMeshing: nativeMl.RequestMeshing,
       RequestPlaneTracking: nativeMl.RequestPlaneTracking,
       RequestHandTracking: nativeMl.RequestHandTracking,
@@ -1211,7 +1211,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         }
         return nativeMl.RequestCamera.apply(nativeMl, arguments);
       },
-    },
+    } : null,
     monitors: new MonitorManager(),
   };
   window.DOMParser = class DOMParser {
