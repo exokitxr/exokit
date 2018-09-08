@@ -224,7 +224,7 @@ public:
   static NAN_METHOD(RequestPlaneTracking);
   static NAN_METHOD(RequestHandTracking);
   static NAN_METHOD(RequestEyeTracking);
-  static NAN_METHOD(PopulateDepth);
+  static NAN_METHOD(RequestDepthPopulation);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(PrePollEvents);

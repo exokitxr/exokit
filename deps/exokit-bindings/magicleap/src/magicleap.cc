@@ -1250,7 +1250,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
   Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
-  Nan::SetMethod(ctorFn, "PopulateDepth", PopulateDepth);
+  Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
   Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
@@ -2085,7 +2085,7 @@ NAN_METHOD(MLContext::RequestEyeTracking) {
   info.GetReturnValue().Set(mlEyeTrackerObj);
 }
 
-NAN_METHOD(MLContext::PopulateDepth) {
+NAN_METHOD(MLContext::RequestDepthPopulation) {
   if (info[0]->IsBoolean()) {
     depthEnabled = info[0]->BooleanValue();
   } else {
