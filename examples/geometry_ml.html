@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script>
     let container, scene, camera, display, controllerMeshes;
-    let mesher = null;
+    let mesher = null, connections, terrainMeshData;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -137,7 +137,7 @@
         }
         terrainMeshes.length = 0;
       };
-      const terrainMeshData = {};
+      terrainMeshData = {};
       const _loadTerrainData = ({id, positionArray, positionCount, normalArray, normalCount, indexArray, count}) => {
         const dataArray = new ArrayBuffer(
           Uint32Array.BYTES_PER_ELEMENT + positionCount * Float32Array.BYTES_PER_ELEMENT +
@@ -354,7 +354,7 @@
         }
       });
 
-      const connections = [];
+      connections = [];
       const wss = new window.browser.ws.Server({
         server,
       });
