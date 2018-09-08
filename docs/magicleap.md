@@ -138,6 +138,20 @@ handUpdate.bones[1][1][3] // right (1) pointer (1) tip (3) as a Float32Array(3) 
 handUpdate.bones[0][4][3] // left (0) pinkie (4) tip (3) as a Float32Array(3) vector
 ```
 
+#### `MLHandUpdate.gesture : String`
+
+The current gesture pose of the hand. One of:
+
+- `null` (no gesture detected)
+- `'finger'`
+- `'fist'`
+- `'pinch'`
+- `'thumb'`
+- `'l'`
+- `'openHandBack'`
+- `'ok'`
+- `'c'`
+
 ##### Notes:
 
 - A bone may be `null`, which means it is not currently detected.
