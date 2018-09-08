@@ -988,7 +988,7 @@ void MLHandTracker::Poll() {
 
       obj->Set(JS_STR("hand"), JS_STR("left"));
 
-      leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0]);
+      leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0], true);
       if (leftHandTransformValid) {
         obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandCenter.values, 3 * sizeof(float)), 0, 3));
         obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandNormal.values, 3 * sizeof(float)), 0, 3));
@@ -1057,7 +1057,7 @@ void MLHandTracker::Poll() {
 
         Local<Value> gesturePositionObj;
         Local<Value> gestureRotationObj;
-        if (leftPointerTransformValue) {
+        if (leftPointerTransformValid) {
           gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.position.values, 3 * sizeof(float)), 0, 3);
           gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4);
         } else if (leftGripTransformValid) {
@@ -1091,7 +1091,7 @@ void MLHandTracker::Poll() {
 
       obj->Set(JS_STR("hand"), JS_STR("right"));
       
-      rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[0], fingerBones[0]);
+      rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false);
       if (rightHandTransformValid) {
         obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandCenter.values, 3 * sizeof(float)), 0, 3));
         obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandNormal.values, 3 * sizeof(float)), 0, 3));
@@ -1106,8 +1106,8 @@ void MLHandTracker::Poll() {
       } else {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
-      rightGripTransformValue = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1]);
-      if (rightGripTransformValue) {
+      rightGripTransformValid = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1]);
+      if (rightGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
         gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.position.values, 3 * sizeof(float)), 0, 3));
         gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
@@ -1160,7 +1160,7 @@ void MLHandTracker::Poll() {
 
         Local<Value> gesturePositionObj;
         Local<Value> gestureRotationObj;
-        if (rightPointerTransformValue) {
+        if (rightPointerTransformValid) {
           gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3);
           gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4);
         } else if (rightGripTransformValid) {
