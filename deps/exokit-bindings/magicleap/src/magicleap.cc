@@ -767,10 +767,62 @@ MLVec3f getTriangleNormal(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) 
   }
 }
 
+MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m) {
+  // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
+  // assumes the upper 3x3 of m is a pure rotation matrix (i.e, unscaled)
+
+  const float *te = m.matrix_colmajor;
+
+  const float m11 = te[ 0 ], m12 = te[ 4 ], m13 = te[ 8 ],
+  m21 = te[ 1 ], m22 = te[ 5 ], m23 = te[ 9 ],
+  m31 = te[ 2 ], m32 = te[ 6 ], m33 = te[ 10 ];
+
+  float trace = m11 + m22 + m33,
+  s;
+
+  if (trace > 0.0f) {
+    s = 0.5f / sqrt(trace + 1.0f);
+
+    return MLQuaternionf{
+      (m32 - m23) * s,
+      (m13 - m31) * s,
+      (m21 - m12) * s,
+      0.25f / s
+    };
+  } else if (m11 > m22 && m11 > m33) {
+    s = 2.0f * sqrt(1.0f + m11 - m22 - m33);
+
+    return MLQuaternionf{
+      0.25f * s,
+      (m12 + m21) / s,
+      (m13 + m31) / s,
+      (m32 - m23) / s
+    };
+  } else if ( m22 > m33 ) {
+    s = 2.0f * sqrt(1.0f + m22 - m11 - m33);
+
+    return MLQuaternionf{
+      (m12 + m21) / s,
+      0.25f * s,
+      (m23 + m32) / s,
+      (m13 - m31) / s
+    };
+  } else {
+    s = 2.0f * sqrt(1.0f + m33 - m11 - m22);
+
+    return MLQuaternionf{
+      (m13 + m31) / s,
+      (m23 + m32) / s,
+      0.25f * s,
+      (m21 - m12) / s
+    };
+  }
+}
+
 MLMat4f getLookAtMatrix(const MLVec3f &eye, const MLVec3f &target, const MLVec3f &up) {
   MLMat4f result;
-  float *te = this.elements;
-  
+  float *te = result.matrix_colmajor;
+
   MLVec3f x;
   MLVec3f y;
   MLVec3f z;
@@ -1020,7 +1072,7 @@ void MLHandTracker::Poll() {
     bool leftPointerTransformValid;
     MLTransform leftGripTransform;
     bool leftGripTransformValid;
-    
+
     MLVec3f rightHandCenter;
     MLVec3f rightHandNormal;
     bool rightHandTransformValid;
@@ -1136,7 +1188,7 @@ void MLHandTracker::Poll() {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("right"));
-      
+
       rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false);
       if (rightHandTransformValid) {
         obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandCenter.values, 3 * sizeof(float)), 0, 3));
