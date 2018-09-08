@@ -44,13 +44,13 @@ The number of indices in `MLMeshUpdate.index`. Indended to be passed to `glDrawE
 
 Used to get the current 3D eye tracking position from the Magic Leap platform.
 
-#### `MLEyeTracker.position : Float32Array(3)`
+#### `MLEyeTracker.fixation : MLTransform`
 
-The current position of the eye cursor, as a world vector. This is probably in front of the camera, in the negative Z.
+The current location of the eye cursor, as a world transform. This is probably in front of the camera, in the negative Z.
 
-#### `MLEyeTracker.rotation : Float32Array(4)`
+#### `MLEyeTracker.eyes : MLEye`
 
-The current rotation of the eye cursor, as a world quaternion. This is probably aligned with the camera direction.
+The individual eye locations and statuses. Note that this does not include the eye fixation (cursor); that is contained in `fixation`.
 
 ### `MLPlaneTracker`
 
@@ -183,15 +183,11 @@ Both eyes are present in all updates.
 
 A single eye state as detected by the platform.
 
-### `MLEye.fixation : Float32Array(3)`
+### `MLEye.position : Float32Array(3)`
 
-The 3D world position of the combined eyes fixation.
+The world position of the eye origin as a vector.
 
-The fixation value is the same for both eyes, since it is sourced from both eyes.
-
-### `MLEye.origin : Float32Array(3)`
-
-The world position of the eye origin as a vector. This is the origin position of the eye, not where it is looking.
+> Do not use this for checking where the eye is looking; that is what `fixation` is for.
 
 ### `MLEye.rotation : Float32Array(4)`
 
@@ -201,7 +197,7 @@ The rotation of the eye origin as a world quaternion.
 
 ### `MLEye.blink : Boolean`
 
-Whether this eye is currently blinking closed (`true`) or not (`false`).
+Whether this eye is currently closed (`true`) or open (`false`).
 
 ## Endpoints
 
