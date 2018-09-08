@@ -741,43 +741,45 @@ bool getBonesTransform(MLTransform &transform, std::vector<std::vector<float *>>
 }
 
 bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]) {
-  std::vector<std::vector<float *>> fingers;
-  fingers.push_back(std::vector<float *>{ // index
-    fingerBones[1][0],
-    fingerBones[1][1],
-    fingerBones[1][2],
-    fingerBones[1][3],
-  });
-  fingers.push_back(std::vector<float *>{ // middle
-    fingerBones[2][0],
-    fingerBones[2][1],
-    fingerBones[2][2],
-    fingerBones[2][3],
-  });
-  fingers.push_back(std::vector<float *>{ // thumb
-    fingerBones[0][0],
-    fingerBones[0][1],
-    fingerBones[0][2],
-    fingerBones[0][3],
-  });
+  std::vector<std::vector<float *>> fingers = {
+    { // index
+      fingerBones[1][0],
+      fingerBones[1][1],
+      fingerBones[1][2],
+      fingerBones[1][3],
+    },
+    { // middle
+      fingerBones[2][0],
+      fingerBones[2][1],
+      fingerBones[2][2],
+      fingerBones[2][3],
+    },
+    { // thumb
+      fingerBones[0][0],
+      fingerBones[0][1],
+      fingerBones[0][2],
+      fingerBones[0][3],
+    },
+  };
   return getBonesTransform(transform, fingers);
 }
 
 bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]) {
-  std::vector<std::vector<float *>> fingers;
-  fingers.push_back(std::vector<float *>{ // wrist center, middleFinger
-    wristBones[0],
-    fingerBones[2][0],
-    fingerBones[2][1],
-    fingerBones[2][2],
-    fingerBones[2][3],
-  });
-  fingers.push_back(std::vector<float *>{ // thumb
-    fingerBones[0][0],
-    fingerBones[0][1],
-    fingerBones[0][2],
-    fingerBones[0][3],
-  });
+  std::vector<std::vector<float *>> fingers = {
+    { // wrist center, middleFinger
+      wristBones[0],
+      fingerBones[2][0],
+      fingerBones[2][1],
+      fingerBones[2][2],
+      fingerBones[2][3],
+    },
+    { // thumb
+      fingerBones[0][0],
+      fingerBones[0][1],
+      fingerBones[0][2],
+      fingerBones[0][3],
+    },
+  };
   return getBonesTransform(transform, fingers);
 }
 
