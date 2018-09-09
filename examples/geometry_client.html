@@ -224,6 +224,10 @@ function animate() {
     }
     prevTime = time;
   }
+  if (paintMesh) {
+    camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+    paintMesh.update(localVector, localQuaternion);
+  }
   renderer.render(scene, camera);
 }
 
