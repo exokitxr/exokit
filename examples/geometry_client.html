@@ -313,7 +313,6 @@ const _removePlayerMesh = playerMesh => {
 };
 
 let paintMesh = null;
-let paintControllerIndex = -1;
 const paintMaterial = (() => {
   const texture = new THREE.Texture(
     null,
@@ -530,7 +529,7 @@ const _makePaintMesh = meshId => {
 
         geometry.setDrawRange(0, lastPoint * 2);
 
-        if (connections.length > 0) {
+        if (connection) {
           const updateSpecs = [
             JSON.stringify({
               method: 'paint',
@@ -539,12 +538,8 @@ const _makePaintMesh = meshId => {
             mesh.getBuffer(lastPoint),
           ];
 
-          for (let i = 0; i < connections.length; i++) {
-            const c = connections[i];
-
-            for (let j = 0; j < updateSpecs.length; j++) {
-              c.send(updateSpecs[j]);
-            }
+          for (let i = 0; i < updateSpecs.length; i++) {
+            connection.send(updateSpecs[i]);
           }
         }
       }
@@ -588,9 +583,9 @@ const _makePaintMesh = meshId => {
   return mesh;
 };
 
-const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
-ws.binaryType = 'arraybuffer';
-ws.onopen = () => {
+let connection = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
+connection.binaryType = 'arraybuffer';
+connection.onopen = () => {
   let running = false;
   const queue = [];
 
@@ -712,7 +707,7 @@ ws.onopen = () => {
       _handleData(queue.shift());
     }
   };
-  ws.onmessage = m => {
+  connection.onmessage = m => {
     _handleData(m.data);
   };
 
@@ -727,13 +722,26 @@ ws.onopen = () => {
       rotation: localQuaternion.toArray(),
     };
     const updateSpecString = JSON.stringify(updateSpec);
-    ws.send(updateSpecString);
+    connection.send(updateSpecString);
   }, 1000 / 30);
 
-  ws.onclose = () => {
+  connection.onclose = () => {
+    connection = null;
     clearInterval(interval);
   };
 };
+
+window.addEventListener('mousedown', () => {
+  if (!paintMesh) {
+    paintMesh = _getPaintMesh();
+  }
+});
+window.addEventListener('mouseup', () => {
+  if (paintMesh) {
+    paintMesh = null;
+  }
+});
+
 })();
 </script>
   </body>
