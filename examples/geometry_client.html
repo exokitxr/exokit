@@ -698,6 +698,8 @@ connection.onopen = () => {
         } else {
           console.warn('out of order binary message', daata.byteLength);
         }
+
+        _next();
       }
     } else {
       queue.push(data);
