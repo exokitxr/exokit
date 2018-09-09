@@ -337,10 +337,11 @@
               res.statusCode = 500;
               res.end();
             });
-        } else if (match = req.url.match(/^\/mesh\/([0-9]+)$/)) {
-          const meshId = parseInt(match[1], 10);
-          const tmd = terrainMeshData[meshId];
+        } else if (match = req.url.match(/^\/mesh\/(.+)$/)) {
+          const meshId = match[1];
+          let tmd = terrainMeshData[meshId];
           if (tmd) {
+            tmd = Buffer.from(tmd);
             console.log('send terrain mesh data', tmd.length);
             res.setHeader('Content-Type', 'application/octet-stream');
             res.end(tmd);
