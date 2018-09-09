@@ -305,6 +305,40 @@ const _makePaintMesh = meshId => {
       }
     }
   };
+  mesh.load = data => {
+    const positionsAttribute = geometry.getAttribute('position');
+    const {array: positions} = positionsAttribute;
+    const normalsAttribute = geometry.getAttribute('normal');
+    const {array: normals} = normalsAttribute;
+    const colorsAttribute = geometry.getAttribute('color');
+    const {array: colors} = colorsAttribute;
+    const uvsAttribute = geometry.getAttribute('uv');
+    const {array: uvs} = uvsAttribute;
+
+    const array = new Float32Array(data);
+    const numPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
+    const dataPositionSize = numPoints * 2 * 3;
+    const dataUvSize = numPoints * 2 * 2;
+
+    const newPositions = array.slice(0, dataPositionSize);
+    const newNormals = array.slice(dataPositionSize, dataPositionSize * 2);
+    const newColors = array.slice(dataPositionSize * 2, dataPositionSize * 3);
+    const newUvs = array.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize);
+
+    positions.set(newPositions);
+    normals.set(newNormals);
+    colors.set(newColors);
+    uvs.set(newUvs);
+
+    positionsAttribute.needsUpdate = true;
+    normalsAttribute.needsUpdate = true;
+    colorsAttribute.needsUpdate = true;
+    uvsAttribute.needsUpdate = true;
+
+    // lastPoint = numPoints;
+
+    geometry.setDrawRange(0, numPoints * 2);
+  };
 
   return mesh;
 };
@@ -585,7 +619,7 @@ init();
   const _getControllerIndex = e => e.inputSource.handedness === 'left' ? 0 : 1;
   session.onselectstart = e => {
     if (!paintMesh) {
-      paintMesh = _makePaintMesh();
+      paintMesh = _getPaintMesh();
       paintControllerIndex = _getControllerIndex(e);
     }
   };
@@ -692,22 +726,39 @@ wss.on('connection', c => {
 
   connections.push(c);
 
+  let pendingPaintMeshId = null;
   c.on('message', data => {
-    const message = JSON.parse(data);
-    const {method} = message;
+    if (typeof data === 'string') {
+      const message = JSON.parse(data);
+      const {method} = message;
 
-    switch (method) {
-      case 'transform': {
-        const {position, rotation} = message;
-        c.mesh.position.fromArray(position);
-        c.mesh.quaternion.fromArray(rotation);
-        c.mesh.updateMatrix();
-        c.mesh.updateMatrixWorld();
-        break;
+      switch (method) {
+        case 'transform': {
+          const {position, rotation} = message;
+          c.mesh.position.fromArray(position);
+          c.mesh.quaternion.fromArray(rotation);
+          c.mesh.updateMatrix();
+          c.mesh.updateMatrixWorld();
+          break;
+        }
+        case 'paint': {
+          const {meshId} = message;
+          pendingPaintMeshId = message;
+          break;
+        }
+        default: {
+          console.warn('unknown client method', method);
+          break;
+        }
       }
-      default: {
-        console.warn('unknown client method', method);
-        break;
+    } else {
+      if (pendingPaintMeshId) {
+        const paintMesh = _getPaintMesh(pendingPaintMeshId);
+        paintMesh.load(data);
+
+        pendingPaintMeshId = null;
+      } else {
+        console.warn('out of order binary message', daata.byteLength);
       }
     }
   });
