@@ -298,6 +298,13 @@ ws.binaryType = 'arraybuffer';
 ws.onopen = () => {
   let running = false;
   const queue = [];
+  const _next = () => {
+    running = false;
+
+    if (queue.length > 0) {
+      _handleData(queue.shift());
+    }
+  };
   const _handleData = data => {
     if (!running) {
       running = true;
@@ -356,13 +363,7 @@ ws.onopen = () => {
             .catch(err => {
               console.warn(err.stack);
             })
-            .finally(() => {
-              running = false;
-
-              if (queue.length > 0) {
-                _handleData(queue.shift());
-              }
-            });
+            .finally(_next);
           break;
         }
         case 'transform': {
@@ -384,6 +385,11 @@ ws.onopen = () => {
             }
           }
 
+          _next();
+          break;
+        }
+        default: {
+          _next();
           break;
         }
       }
