@@ -133,11 +133,14 @@ function init() {
     document.addEventListener( 'pointerlockerror', pointerlockerror, false );
     document.addEventListener( 'mozpointerlockerror', pointerlockerror, false );
     document.addEventListener( 'webkitpointerlockerror', pointerlockerror, false );
-    instructions.addEventListener( 'click', function ( event ) {
+    instructions.addEventListener( 'click', e => {
       instructions.style.display = 'none';
       // Ask the browser to lock the pointer
       // element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
       element.requestPointerLock();
+
+      e.preventDefault();
+      e.stopPropagation();
     }, false );
   })();
 
