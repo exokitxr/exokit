@@ -247,14 +247,9 @@ const _makeTerrainMesh = meshId => {
 const _loadTerrainMesh = (terrainMesh, {positionArray, positionCount, normalArray, normalCount, indexArray, count}) => {
   const {geometry} = terrainMesh;
 
-  geometry.attributes.position.array = positionArray;
-  geometry.attributes.position.needsUpdate = true;
-
-  geometry.attributes.normal.array = normalArray;
-  geometry.attributes.normal.needsUpdate = true;
-
-  geometry.index.array = indexArray;
-  geometry.index.needsUpdate = true;
+  geometry.addAttribute('position', new THREE.BufferAttribute(positionArray, 3));
+  geometry.addAttribute('normal', new THREE.BufferAttribute(normalArray, 3));
+  geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
 };
 const _removeTerrainMesh = terrainMesh => {
   terrainMesh.geometry.dispose();
