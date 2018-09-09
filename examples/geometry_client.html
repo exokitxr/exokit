@@ -399,7 +399,7 @@ ws.onopen = () => {
   const localVector2 = new THREE.Vector3();
   const localQuaternion = new THREE.Quaternion();
   const interval = setInterval(() => {
-    camera.matrixWorld.decompose(localVector, localQuaternion. localVector2);
+    camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
     const updateSpec = {
       method: 'transform',
       position: localVector.toArray(),
