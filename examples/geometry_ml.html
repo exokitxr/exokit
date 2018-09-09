@@ -116,6 +116,7 @@ const _makePaintMesh = () => {
   mesh.drawMode = THREE.TriangleStripDrawMode;
   mesh.visible = false;
   mesh.frustumCulled = false;
+  mesh.meshId = Math.random().toString(36).substring(7);
   mesh.getBuffer = endPoint => {
     const positionSize = endPoint * 2 * 3;
     const uvSize = endPoint * 2 * 2;
@@ -272,19 +273,27 @@ const _makePaintMesh = () => {
         uvsAttribute.needsUpdate = true;
 
         lastPoint++;
-
-        /* _broadcastUpdate({
-          meshId: currentMeshId,
-          data: mesh.getBuffer(lastPoint),
-        }); */
-
-        /* if (!mesh.visible) {
-          mesh.visible = true;
-        } */
+        lastPointTime = currentPointTime;
 
         geometry.setDrawRange(0, lastPoint * 2);
 
-        lastPointTime = currentPointTime;
+        if (connections.length > 0) {
+          const updateSpecs = [
+            JSON.stringify({
+              method: 'paint',
+              meshId: mesh.meshId,
+            }),
+            mesh.getBuffer(lastPoint),
+          ];
+
+          for (let i = 0; i < connections.length; i++) {
+            const c = connections[i];
+
+            for (let j = 0; j < updateSpecs.length; j++) {
+              c.send(updateSpecs[j]);
+            }
+          }
+        }
       }
     }
   };
