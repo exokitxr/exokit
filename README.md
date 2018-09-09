@@ -2,7 +2,7 @@
 
 ## Native VR and AR engine for JavaScript 🦖
 
-<img src="https://github.com/webmixedreality/exokit/blob/master/icon.png" width=100/>
+<img src="https://github.com/webmixedreality/exokit/blob/master/assets/icon.png" width=100/>
 
 [![Slack](https://exoslack.now.sh/badge.svg)](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q)
 [![Github releases](https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg)](https://github.com/webmixedreality/exokit/releases )

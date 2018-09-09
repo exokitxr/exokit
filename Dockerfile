@@ -19,7 +19,7 @@ RUN \
 RUN \
   mkdir -p /tmp/exokit-bin/bin /tmp/exokit-bin/lib/exokit && \
   cp -R . /tmp/exokit-bin/lib/exokit && \
-  cp exokit-bin.sh /tmp/exokit-bin/bin/exokit && \
+  cp scripts/exokit-bin.sh /tmp/exokit-bin/bin/exokit && \
   cd /tmp/exokit-bin && \
   tar -czf /app/exokit-linux-bin.tar.gz --exclude=".*" --exclude="*.tar.gz" * && \
   cd /app && \

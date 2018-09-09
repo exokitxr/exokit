@@ -15,7 +15,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 ## MacOS
 
-**Requirements**: Node.js 10, XCode 
+**Requirements**: Node.js 10, XCode
 
 ### Procedure
 1. open **Terminal.app**
@@ -43,11 +43,11 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 1. place certificate/private key in `cert/{app.cert,app.privkey}`
 1. open **Ubuntu Bash on Windows**
 1. `export MLSDK=/mnt/c/your_mlsdk_path_goes_here # fill this in`
-1. run `build-ml.sh --signed`
+1. run `scripts/build-ml.sh --signed`
 
 ### Procedure (unsigned)
 1. download Magic Leap Package Manager from https://creator.magicleap.com
 1. install Magic Leap Lumin SDK
 1. open **Ubuntu Bash on Windows**
 1. `export MLSDK=/mnt/c/your_mlsdk_path_goes_here # fill this in`
-1. `build-ml.sh --unsigned`
+1. `scripts/build-ml.sh --unsigned`

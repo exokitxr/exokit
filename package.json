@@ -12,7 +12,7 @@
   "scripts": {
     "build": "node-gyp build",
     "debug": "ndb",
-    "install": "node ./preinstall.js && node-gyp rebuild",
+    "install": "node ./scripts/preinstall.js && node-gyp rebuild",
     "lint": "eslint src tests",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "serve": "serve examples",
