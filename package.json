@@ -72,6 +72,7 @@
     "redirect-output": "^1.0.0",
     "repl.history": "^0.1.4",
     "rimraf": "^2.6.2",
+    "three": "0.96.0",
     "upng-js": "^2.1.0",
     "vm-one": "0.0.17",
     "vr-display": "0.0.26",
