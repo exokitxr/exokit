@@ -244,18 +244,17 @@ const _makeTerrainMesh = meshId => {
   mesh.frustumCulled = false;
   return mesh;
 };
-const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionArray, positionCount, normalBuffer, normalArray, normalCount, indexBuffer, indexArray, count}) => {
+const _loadTerrainMesh = (terrainMesh, {positionArray, positionCount, normalArray, normalCount, indexArray, count}) => {
   const {geometry} = terrainMesh;
-  const attributes = renderer.getAttributes();
 
-  attributes.get(geometry.attributes.position).buffer = positionBuffer;
-  geometry.attributes.position.count = positionCount / 3;
+  geometry.attributes.position.array = positionArray;
+  geometry.attributes.position.needsUpdate = true;
 
-  attributes.get(geometry.attributes.normal).buffer = normalBuffer;
-  geometry.attributes.normal.count = normalCount / 3;
+  geometry.attributes.normal.array = normalArray;
+  geometry.attributes.normal.needsUpdate = true;
 
-  attributes.get(geometry.index).buffer = indexBuffer;
-  geometry.index.count = count / 1;
+  geometry.index.array = indexArray;
+  geometry.index.needsUpdate = true;
 };
 const _removeTerrainMesh = terrainMesh => {
   terrainMesh.geometry.dispose();
@@ -306,7 +305,7 @@ const _handleData = data => {
                 normalArray,
                 normalCount,
                 indexArray,
-                indexCount,
+                count,
               };
               console.log('load terrain mesh', update); // XXX
               _loadTerrainMesh(_getTerrainMesh(id), update);
