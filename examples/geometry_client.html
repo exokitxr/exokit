@@ -269,7 +269,6 @@ const _handleData = data => {
     running = true;
 
     const updates = JSON.parse(data);
-    console.log('got updates', updates); // XXX
     Promise.all(updates.map(update => {
       const {id, type} = update;
 
@@ -302,7 +301,6 @@ const _handleData = data => {
                 indexArray,
                 count,
               };
-              console.log('load terrain mesh', update); // XXX
               _loadTerrainMesh(_getTerrainMesh(id), update);
             }
           });
