@@ -16,8 +16,6 @@ let mesher = null, connections = [], terrainMeshData = {};
 
 const MAX_NUM_POINTS = 1024;
 const POINT_FRAME_RATE = 20;
-const POINT_FRAME_TIME = 1000 / POINT_FRAME_RATE;
-const SIZE = 0.02;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -100,7 +98,17 @@ const paintMaterial = (() => {
   return material;
 })();
 const paintColor = new THREE.Color(0xe91e63);
-const _makePaintMesh = () => {
+const paintMeshes = [];
+const _getPaintMesh = (meshId = Math.random().toString(36).substring(7)) => {
+  let paintMesh = paintMeshes.find(paintMesh => paintMesh.meshId === meshId);
+  if (!paintMesh) {
+    paintMesh = makePaintMesh(meshId);
+    paintMeshes.push(paintMesh);
+    scene.add(paintMesh);
+  }
+  return paintMesh;
+};
+const _makePaintMesh = meshId => {
   const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(MAX_NUM_POINTS * 2 * 3);
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -116,7 +124,7 @@ const _makePaintMesh = () => {
   mesh.drawMode = THREE.TriangleStripDrawMode;
   mesh.visible = false;
   mesh.frustumCulled = false;
-  mesh.meshId = Math.random().toString(36).substring(7);
+  mesh.meshId = meshId;
   mesh.getBuffer = endPoint => {
     const positionSize = endPoint * 2 * 3;
     const uvSize = endPoint * 2 * 2;
@@ -578,7 +586,6 @@ init();
   session.onselectstart = e => {
     if (!paintMesh) {
       paintMesh = _makePaintMesh();
-      scene.add(paintMesh);
       paintControllerIndex = _getControllerIndex(e);
     }
   };
