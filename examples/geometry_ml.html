@@ -715,13 +715,30 @@ wss.on('connection', c => {
   c.mesh = _makePlayerMesh();
   scene.add(c.mesh);
 
-  const ids = Object.keys(terrainMeshData).filter(id => !!terrainMeshData[id]);
-  const updateSpec = ids.map(id => ({
-    type: 'new',
-    id,
-  }));
-  const updateSpecString = JSON.stringify(updateSpec);
-  c.send(updateSpecString);
+  const _sendTerrains = () => {
+    const ids = Object.keys(terrainMeshData).filter(id => !!terrainMeshData[id]);
+    const updateSpec = ids.map(id => ({
+      type: 'new',
+      id,
+    }));
+    const updateSpecString = JSON.stringify(updateSpec);
+    c.send(updateSpecString);
+  };
+  const _sendPaints = () => {
+    const updateSpecs = [
+      JSON.stringify({
+        method: 'paint',
+        meshId: mesh.meshId,
+      }),
+      mesh.getBuffer(lastPoint),
+    ];
+
+    for (let i = 0; i < updateSpecs.length; i++) {
+      c.send(updateSpecs[i]);
+    }
+  };
+  _sendTerrains();
+  _sendPaints();
 
   connections.push(c);
 
