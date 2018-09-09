@@ -368,7 +368,6 @@ const _makePaintMesh = meshId => {
 
   const mesh = new THREE.Mesh(geometry, paintMaterial);
   mesh.drawMode = THREE.TriangleStripDrawMode;
-  mesh.visible = false;
   mesh.frustumCulled = false;
   mesh.meshId = meshId;
   mesh.getBuffer = endPoint => {
