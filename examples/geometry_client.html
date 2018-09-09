@@ -678,7 +678,7 @@ connection.onopen = () => {
             const {meshId} = message;
             pendingPaintMeshId = meshId;
 
-            next();
+            _next();
             break;
           }
           default: {
