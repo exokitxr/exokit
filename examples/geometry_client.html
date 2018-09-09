@@ -396,13 +396,13 @@ ws.onopen = () => {
   };
 
   const interval = setInterval(() => {
-    const update = {
+    const updateSpec = {
       method: 'transform',
       position: camera.position.toArray(),
       rotation: camera.quaternion.toArray(),
     };
-    const updateString = JSON.stringify(update);
-    ws.send(updateString);
+    const updateSpecString = JSON.stringify(updateSpec);
+    ws.send(updateSpecString);
   }, 1000 / 30);
 
   ws.onclose = () => {

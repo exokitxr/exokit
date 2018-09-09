@@ -260,7 +260,7 @@
           const updateSpecString = JSON.stringify(updateSpec);
 
           for (let i = 0; i < connections.length; i++) {
-            const connection = connections[i];
+            const c = connections[i];
             c.send(updateSpecString);
           }
         }
@@ -418,13 +418,13 @@
 
         connections.push(c);
 
-        c.on('message', m => {
-          const data = JSON.parse(m.data);
-          const {method} = data;
+        c.on('message', data => {
+          const message = JSON.parse(data);
+          const {method} = message;
 
           switch (method) {
             case 'transform': {
-              const {position, rotation} = data;
+              const {position, rotation} = message;
               c.mesh.position.fromArray(position);
               c.mesh.quaternion.fromArray(rotation);
               c.mesh.updateMatrix();
