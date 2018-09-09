@@ -727,16 +727,20 @@ wss.on('connection', c => {
     c.send(updateSpecString);
   };
   const _sendPaints = () => {
-    const updateSpecs = [
-      JSON.stringify({
-        method: 'paint',
-        meshId: mesh.meshId,
-      }),
-      mesh.getBuffer(lastPoint),
-    ];
+    for (let i = 0; i < paintMeshes.length; i++) {
+      const paintMesh = paintMeshes[i];
+      const {meshId} = paintMesh;
+      const updateSpecs = [
+        JSON.stringify({
+          method: 'paint',
+          meshId,
+        }),
+        mesh.getBuffer(lastPoint),
+      ];
 
-    for (let i = 0; i < updateSpecs.length; i++) {
-      c.send(updateSpecs[i]);
+      for (let j = 0; j < updateSpecs.length; j++) {
+        c.send(updateSpecs[j]);
+      }
     }
   };
   _sendTerrains();
