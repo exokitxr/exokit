@@ -1,8 +1,9 @@
 const {EventEmitter} = require('events');
+const THREE = require('three');
+
 const {Event, EventTarget} = require('./Event');
 const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
-const THREE = require('../lib/three-min.js');
 const symbols = require('./symbols');
 const {_elementGetter, _elementSetter} = require('./utils');
 

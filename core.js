@@ -21,7 +21,7 @@ const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
 const {TextEncoder, TextDecoder} = require('window-text-encoding');
 const parseXml = require('@rgrove/parse-xml');
-const THREE = require('./lib/three-min.js');
+const THREE = require('three');
 const {
   MRDisplay,
   VRDisplay,
