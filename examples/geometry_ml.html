@@ -27,6 +27,26 @@
       mesh.frustumCulled = false;
       return mesh;
     };
+    const playerGeometry = new THREE.CylinderBufferGeometry(0.1, 0.1, 0.2, 32, 1)
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0))
+      .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+        new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(0, 0, -1)
+        )
+      ));
+    const playerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x2196f3,
+    });
+    const _makePlayerMesh = () => {
+      const mesh = new THREE.Mesh(playerGeometry, playerMaterial);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      // mesh.updateMatrix();
+      // mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
 
     function init() {
       container = document.createElement('div');
@@ -358,8 +378,12 @@
       const wss = new window.browser.ws.Server({
         server,
       });
-      wss.on('connection', (c, request) => {
+      wss.on('connection', c => {
         console.log('open connection');
+
+        c.playerId = Math.random().toString(36).substring(7);
+        c.mesh = _makePlayerMesh();
+        scene.add(c.mesh);
 
         const ids = Object.keys(terrainMeshData).filter(id => !!terrainMeshData[id]);
         const updateSpec = ids.map(id => ({
@@ -371,8 +395,31 @@
 
         connections.push(c);
 
+        c.on('message', m => {
+          const data = JSON.parse(m.data);
+          const {method} = data;
+
+          switch (method) {
+            case 'transform': {
+              const {position, rotation} = data;
+              c.mesh.position.fromArray(position);
+              c.mesh.quaternion.fromArray(rotation);
+              c.mesh.updateMatrix();
+              c.mesh.updateMatrixWorld();
+              break;
+            }
+            default: {
+              console.warn('unknown client method', method);
+              break;
+            }
+          }
+        });
         c.on('close', () => {
           console.log('close connection');
+
+          scene.remove(c.mesh);
+          c.mesh.geometry.dispose();
+
           connections.splice(connections.indexOf(c), 1);
         });
       });
