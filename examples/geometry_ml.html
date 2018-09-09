@@ -659,7 +659,7 @@ const server = window.browser.http.createServer((req, res) => {
     res.statusCode = 302;
     res.setHeader('Location', '/examples/geometry_client.html');
     res.end();
-  } else if (match = req.url.match(/\.(html|js)$/)) {
+  } else if (match = req.url.match(/\.(html|js|png)$/)) {
     fetch('file:///package' + req.url)
       .then(proxyRes => {
         if (proxyRes.ok) {
