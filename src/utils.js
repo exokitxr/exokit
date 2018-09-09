@@ -88,8 +88,11 @@ const _normalizePrototype = (obj, targetContext) => {
 
   const isToWindow = !!targetContext[symbols.prototypesSymbol];
 
-  // Use Buffer for Blob.
-  if (name === 'Blob') { name = 'Buffer'; }
+  // Convert Blob's buffer.
+  if (name === 'Blob') {
+    _normalizePrototype(obj.buffer, targetContext);
+    return obj;
+  }
 
   // Normalize to window prototype.
   if (isToWindow) {
