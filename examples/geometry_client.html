@@ -593,12 +593,15 @@ const _makePaintMesh = meshId => {
 let connection = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
 connection.binaryType = 'arraybuffer';
 connection.onopen = () => {
+  console.log('connection open');
+
   let running = false;
   const queue = [];
-
   let pendingPaintMeshId = null;
   const _handleData = data => {
     if (!running) {
+      console.log('handle data', data);
+
       running = true;
 
       if (typeof data === 'string') {
@@ -717,6 +720,8 @@ connection.onopen = () => {
     }
   };
   connection.onmessage = m => {
+    console.log('connnection data', m.data);
+
     _handleData(m.data);
   };
 
@@ -735,6 +740,8 @@ connection.onopen = () => {
   }, 1000 / 30);
 
   connection.onclose = () => {
+    console.log('connnection close');
+
     connection = null;
     clearInterval(interval);
   };
