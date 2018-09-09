@@ -395,11 +395,15 @@ ws.onopen = () => {
     _handleData(m.data);
   };
 
+  const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
+  const localQuaternion = new THREE.Quaternion();
   const interval = setInterval(() => {
+    camera.matrixWorld.decompose(localVector, localQuaternion. localVector2);
     const updateSpec = {
       method: 'transform',
-      position: camera.position.toArray(),
-      rotation: camera.quaternion.toArray(),
+      position: localVector.toArray(),
+      rotation: localQuaternion.toArray(),
     };
     const updateSpecString = JSON.stringify(updateSpec);
     ws.send(updateSpecString);
