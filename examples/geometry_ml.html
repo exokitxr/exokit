@@ -124,7 +124,9 @@ const _makePaintMesh = meshId => {
   mesh.drawMode = THREE.TriangleStripDrawMode;
   mesh.frustumCulled = false;
   mesh.meshId = meshId;
-  mesh.getBuffer = endPoint => {
+  let lastPoint = 0;
+  let lastPointTime = 0;
+  mesh.getBuffer = (endPoint = lastPoint) => {
     const positionSize = endPoint * 2 * 3;
     const uvSize = endPoint * 2 * 2;
     const array = new Float32Array(
@@ -141,8 +143,6 @@ const _makePaintMesh = meshId => {
     return array.buffer;
   };
   const _getFrame = t => Math.floor(t / POINT_FRAME_RATE);
-  let lastPoint = 0;
-  let lastPointTime = 0;
   mesh.update = (position, rotation) => {
     if (lastPoint < MAX_NUM_POINTS) {
       const lastFrame = _getFrame(lastPointTime);
@@ -742,7 +742,7 @@ wss.on('connection', c => {
           method: 'paint',
           meshId: paintMesh.meshId,
         }),
-        paintMesh.getBuffer(lastPoint),
+        paintMesh.getBuffer(),
       ];
 
       for (let j = 0; j < updateSpecs.length; j++) {
