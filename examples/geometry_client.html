@@ -337,7 +337,7 @@ const paintMeshes = [];
 const _getPaintMesh = (meshId = Math.random().toString(36).substring(7)) => {
   let paintMesh = paintMeshes.find(paintMesh => paintMesh.meshId === meshId);
   if (!paintMesh) {
-    paintMesh = makePaintMesh(meshId);
+    paintMesh = _makePaintMesh(meshId);
     paintMeshes.push(paintMesh);
     scene.add(paintMesh);
   }
