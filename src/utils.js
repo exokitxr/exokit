@@ -1,6 +1,7 @@
 const parseIntStrict = require('parse-int');
 const url = require('url');
 const GlobalContext = require('./GlobalContext');
+const symbols = require('./symbols');
 
 function _getBaseUrl(u) {
   let baseUrl;
@@ -72,71 +73,61 @@ const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, c
 module.exports._runJavascript = _runJavascript;
 
 /**
- * Convert (normalize prototype) native object to pass to JS.
- * Or convert JS object when passing to native.
- * Node's vm module was slow so there's vm-one for one-way bindings.
- * github.com/modulesio/vm-one
+ * Normalize prototype between native and V8.
+ * Node's vm module was slow so there's vm-one for one-way bindings:
+ *   github.com/modulesio/vm-one
  * nativeVm.setPrototype will do the nan casting setPrototype between types.
  * Required for instanceof to work.
  *
  * @param obj - Object to convert.
  * @param targetContext - window or vm context that prototype will get retrieved from.
  */
-const _normalizeBuffer = (function () {
-  let dummyWindow;
+const _normalizePrototype = (obj, targetContext) => {
+  let name = obj && obj.constructor && obj.constructor.name;
+  if (obj instanceof targetContext[name]) { return obj; }
 
-  return (obj, targetContext) => {
-    // Dummy window to reference original prototypes
-    // (e.g., in case Promise gets overwritten by polyfill).
-    if (!dummyWindow) {
-      let vmo = GlobalContext.nativeVm.make();
-      dummyWindow = vmo.getGlobal();
-      dummyWindow.vm = vmo;
-    }
+  const isToWindow = !!targetContext[symbols.prototypesSymbol];
 
-    const name = obj && obj.constructor && obj.constructor.name;
+  // Use Buffer for Blob.
+  if (name === 'Blob') { name = 'Buffer'; }
 
-    switch (name) {
-      case 'Buffer':
-      case 'ArrayBuffer':
-      case 'Uint8Array':
-      case 'Uint8ClampedArray':
-      case 'Int8Array':
-      case 'Uint16Array':
-      case 'Int16Array':
-      case 'Uint32Array':
-      case 'Int32Array':
-      case 'Float32Array':
-      case 'Float64Array':
-      case 'DataView': {
-        if (!(obj instanceof targetContext[name])) {
-          GlobalContext.nativeVm.setPrototype(obj, targetContext[name].prototype);
-        }
-        break;
-      }
-      case 'Blob': {
-        if (!(obj.buffer instanceof targetContext.Buffer)) {
-          GlobalContext.nativeVm.setPrototype(obj.buffer, targetContext.Buffer.prototype);
-        }
-        break;
-      }
-      case 'Promise': {
-        if (!(obj instanceof targetContext[name])) {
-          if (targetContext.prototype === dummyWindow.prototype) {
-            // If passing to JS, cast to the original Promise prototype in case it was
-            // overwritten by the site (e.g., polyfill).
-            GlobalContext.nativeVm.setPrototype(obj, dummyWindow.Promise.prototype);
-          } else {
-            GlobalContext.nativeVm.setPrototype(obj, targetContext[name].prototype);
-          }
-        }
-        break;
-      }
-    }
+  // Normalize to window prototype.
+  if (isToWindow) {
+    GlobalContext.nativeVm.setPrototype(obj, targetContext[symbols.prototypesSymbol][name] ||
+                                             targetContext[name].prototype);
     return obj;
-  };
-})();
-module.exports._normalizeBuffer = _normalizeBuffer;
+  }
+
+  // Normalize to native prototype.
+  GlobalContext.nativeVm.setPrototype(obj, targetContext[name].prototype);
+  return obj;
+};
+module.exports._normalizePrototype = _normalizePrototype;
+
+/**
+ * Store prototypes on window object to be used alongside _normalizePrototype.
+ * In case they get mangled by a website.
+ */
+module.exports._storeOriginalWindowPrototypes = function (window, prototypesSymbol) {
+  window[prototypesSymbol] = {};
+  [
+    'ArrayBuffer',
+    'Buffer',
+    'DataView',
+    'Float32Array',
+    'Float64Array',
+    'Int16Array',
+    'Int32Array',
+    'Int8Array',
+    'Promise',
+    'Uint16Array',
+    'Uint32Array',
+    'Uint8Array',
+    'Uint8ClampedArray'
+  ].forEach(prototypeName => {
+    window[prototypesSymbol][prototypeName] = window[prototypeName].prototype;
+  });
+};
 
 const _elementGetter = (self, attribute) => self.listeners(attribute)[0];
 module.exports._elementGetter = _elementGetter;
