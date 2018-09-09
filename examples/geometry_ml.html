@@ -244,16 +244,22 @@
         }
       });
 
+      const localVector = new THREE.Vector3();
+      const localVector2 = new THREE.Vector3();
+      const localQuaternion = new THREE.Quaternion();
       const interval = setInterval(() => {
         if (connections.length > 0) {
+          const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+          vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+
           const updateSpec = {
             method: 'transform',
             players: [
               {
                 id: 'host',
                 type: 'update',
-                position: camera.position.toArray(),
-                rotation: camera.quaternion.toArray(),
+                position: localVector.toArray(),
+                rotation: localQuaternion.toArray(),
               },
             ],
           };
