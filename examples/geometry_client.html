@@ -259,76 +259,88 @@ const _removeTerrainMesh = terrainMesh => {
 const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
 ws.binaryType = 'arraybuffer';
 ws.onopen = () => {
-  console.log('connected');
-};
+  let running = false;
+  const queue = [];
+  const _handleData = data => {
+    if (!running) {
+      running = true;
 
-let running = false;
-const queue = [];
-const _handleData = data => {
-  if (!running) {
-    running = true;
+      const updates = JSON.parse(data);
+      Promise.all(updates.map(update => {
+        const {id, type} = update;
 
-    const updates = JSON.parse(data);
-    Promise.all(updates.map(update => {
-      const {id, type} = update;
+        if (type === 'new' || type === 'update') {
+          return fetch('/mesh/' + id)
+            .then(res => res.ok ? res.arrayBuffer() : Promise.resolve(null))
+            .then(arrayBuffer => {
+              if (arrayBuffer) {
+                let i = 0;
+                const positionCount = new Uint32Array(arrayBuffer, i, 1)[0];
+                i += Uint32Array.BYTES_PER_ELEMENT;
+                const positionArray = new Float32Array(arrayBuffer, i, positionCount);
+                i += Float32Array.BYTES_PER_ELEMENT * positionCount;
 
-      if (type === 'new' || type === 'update') {
-        return fetch('/mesh/' + id)
-          .then(res => res.ok ? res.arrayBuffer() : Promise.resolve(null))
-          .then(arrayBuffer => {
-            if (arrayBuffer) {
-              let i = 0;
-              const positionCount = new Uint32Array(arrayBuffer, i, 1)[0];
-              i += Uint32Array.BYTES_PER_ELEMENT;
-              const positionArray = new Float32Array(arrayBuffer, i, positionCount);
-              i += Float32Array.BYTES_PER_ELEMENT * positionCount;
+                const normalCount = new Uint32Array(arrayBuffer, i, 1)[0];
+                i += Uint32Array.BYTES_PER_ELEMENT;
+                const normalArray = new Float32Array(arrayBuffer, i, normalCount);
+                i += Float32Array.BYTES_PER_ELEMENT * normalCount;
 
-              const normalCount = new Uint32Array(arrayBuffer, i, 1)[0];
-              i += Uint32Array.BYTES_PER_ELEMENT;
-              const normalArray = new Float32Array(arrayBuffer, i, normalCount);
-              i += Float32Array.BYTES_PER_ELEMENT * normalCount;
+                const count = new Uint32Array(arrayBuffer, i, 1)[0];
+                i += Uint32Array.BYTES_PER_ELEMENT;
+                const indexArray = new Uint16Array(arrayBuffer, i, count);
+                i += Uint16Array.BYTES_PER_ELEMENT * count;
 
-              const count = new Uint32Array(arrayBuffer, i, 1)[0];
-              i += Uint32Array.BYTES_PER_ELEMENT;
-              const indexArray = new Uint16Array(arrayBuffer, i, count);
-              i += Uint16Array.BYTES_PER_ELEMENT * count;
-
-              const update = {
-                positionArray,
-                positionCount,
-                normalArray,
-                normalCount,
-                indexArray,
-                count,
-              };
-              _loadTerrainMesh(_getTerrainMesh(id), update);
-            }
-          });
-      } else {
-        const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
-        if (index !== -1) {
-          const terrainMesh = terrainMeshes[index];
-          _removeTerrainMesh(terrainMesh);
-          terrainMeshes.splice(index, 1);
+                const update = {
+                  positionArray,
+                  positionCount,
+                  normalArray,
+                  normalCount,
+                  indexArray,
+                  count,
+                };
+                _loadTerrainMesh(_getTerrainMesh(id), update);
+              }
+            });
+        } else {
+          const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+          if (index !== -1) {
+            const terrainMesh = terrainMeshes[index];
+            _removeTerrainMesh(terrainMesh);
+            terrainMeshes.splice(index, 1);
+          }
         }
-      }
-    }))
-      .catch(err => {
-        console.warn(err.stack);
-      })
-      .finally(() => {
-        running = false;
+      }))
+        .catch(err => {
+          console.warn(err.stack);
+        })
+        .finally(() => {
+          running = false;
 
-        if (queue.length > 0) {
-          _handleData(queue.shift());
-        }
-      });
-  } else {
-    queue.push(data);
-  }
-};
-ws.onmessage = m => {
-  _handleData(m.data);
+          if (queue.length > 0) {
+            _handleData(queue.shift());
+          }
+        });
+    } else {
+      queue.push(data);
+    }
+  };
+  ws.onmessage = m => {
+    _handleData(m.data);
+  };
+
+  const interval = setInterval(() => {
+    const update = {
+      method: 'transform',
+      position: camera.position.toArray(),
+      rotation: camera.quaternion.toArray(),
+    };
+    const updateString = JSON.stringify(update);
+    ws.send(updateString);
+  }, 1000 / 30);
+
+  ws.onclose = () => {
+    clearInterval(interval);
+  };
 };
 })();
 </script>
