@@ -281,8 +281,8 @@
         geometry.index.count = count / 1;
       };
       const _removeTerrainMesh = terrainMesh => {
-        terrainMesh.geometry.dispose();
         scene.remove(terrainMesh);
+        terrainMesh.geometry.dispose();
       };
       const _clearTerrainMeshes = () => {
         for (let i = 0; i < terrainMeshes.length; i++) {

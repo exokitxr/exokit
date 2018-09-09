@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script>
     let container, scene, camera, display, controllerMeshes;
-    let mesher = null, connections, terrainMeshData;
+    let mesher = null, connections = [], terrainMeshData = {};
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -148,8 +148,8 @@
         geometry.index.count = count / 1;
       };
       const _removeTerrainMesh = terrainMesh => {
-        terrainMesh.geometry.dispose();
         scene.remove(terrainMesh);
+        terrainMesh.geometry.dispose();
       };
       const _clearTerrainMeshes = () => {
         for (let i = 0; i < terrainMeshes.length; i++) {
@@ -157,7 +157,6 @@
         }
         terrainMeshes.length = 0;
       };
-      terrainMeshData = {};
       const _loadTerrainData = ({id, positionArray, positionCount, normalArray, normalCount, indexArray, count}) => {
         const dataArray = new ArrayBuffer(
           Uint32Array.BYTES_PER_ELEMENT + positionCount * Float32Array.BYTES_PER_ELEMENT +
@@ -207,7 +206,10 @@
         }
 
         if (connections.length > 0) {
-          const updateSpec = updates.map(({id, type}) => ({id, type}));
+          const updateSpec = {
+            method: 'mesh',
+            updates: updates.map(({id, type}) => ({id, type})),
+          };
           const updateSpecString = JSON.stringify(updateSpec);
 
           for (let i = 0; i < connections.length; i++) {
@@ -241,6 +243,28 @@
           }
         }
       });
+
+      const interval = setInterval(() => {
+        if (connections.length > 0) {
+          const updateSpec = {
+            method: 'transform',
+            players: [
+              {
+                id: 'host',
+                type: 'update',
+                position: camera.position.toArray(),
+                rotation: camera.quaternion.toArray(),
+              },
+            ],
+          };
+          const updateSpecString = JSON.stringify(updateSpec);
+
+          for (let i = 0; i < connections.length; i++) {
+            const connection = connections[i];
+            c.send(updateSpecString);
+          }
+        }
+      }, 1000 / 30);
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -374,7 +398,6 @@
         }
       });
 
-      connections = [];
       const wss = new window.browser.ws.Server({
         server,
       });

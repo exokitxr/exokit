@@ -252,8 +252,45 @@ const _loadTerrainMesh = (terrainMesh, {positionArray, positionCount, normalArra
   geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
 };
 const _removeTerrainMesh = terrainMesh => {
-  terrainMesh.geometry.dispose();
   scene.remove(terrainMesh);
+  terrainMesh.geometry.dispose();
+};
+
+const playerMeshes = [];
+const playerGeometry = new THREE.CylinderBufferGeometry(0.1, 0.1, 0.2, 32, 1)
+  .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0))
+  .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+    new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, -1)
+    )
+  ));
+const playerMaterial = new THREE.MeshPhongMaterial({
+  color: 0x2196f3,
+});
+const _getPlayerMesh = meshId => {
+  let playerMesh = playerMeshes.find(playerMesh => playerMesh.meshId === meshId);
+  if (!playerMesh) {
+    playerMesh = _makePlayerMesh(meshId);
+    playerMeshes.push(playerMesh);
+    scene.add(playerMesh);
+  }
+  return playerMesh;
+};
+const _makePlayerMesh = meshId => {
+  const mesh = new THREE.Mesh(playerGeometry, playerMaterial);
+  mesh.meshId = meshId;
+  mesh.frustumCulled = false;
+  return mesh;
+};
+const _loadPlayerMesh = (playerMesh, {position, rotation}) => {
+  playerMesh.position.fromArray(position);
+  playerMesh.quaternion.fromArray(rotation);
+  playerMesh.updateMatrix();
+  playerMesh.updateMatrixWorld();
+};
+const _removePlayerMesh = playerMesh => {
+  scene.remove(playerMesh);
 };
 
 const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
@@ -265,61 +302,91 @@ ws.onopen = () => {
     if (!running) {
       running = true;
 
-      const updates = JSON.parse(data);
-      Promise.all(updates.map(update => {
-        const {id, type} = update;
+      const message = JSON.parse(data);
+      const {method} = message;
 
-        if (type === 'new' || type === 'update') {
-          return fetch('/mesh/' + id)
-            .then(res => res.ok ? res.arrayBuffer() : Promise.resolve(null))
-            .then(arrayBuffer => {
-              if (arrayBuffer) {
-                let i = 0;
-                const positionCount = new Uint32Array(arrayBuffer, i, 1)[0];
-                i += Uint32Array.BYTES_PER_ELEMENT;
-                const positionArray = new Float32Array(arrayBuffer, i, positionCount);
-                i += Float32Array.BYTES_PER_ELEMENT * positionCount;
+      switch (method) {
+        case 'mesh': {
+          const {updates} = message;
 
-                const normalCount = new Uint32Array(arrayBuffer, i, 1)[0];
-                i += Uint32Array.BYTES_PER_ELEMENT;
-                const normalArray = new Float32Array(arrayBuffer, i, normalCount);
-                i += Float32Array.BYTES_PER_ELEMENT * normalCount;
+          Promise.all(updates.map(update => {
+            const {id, type} = update;
 
-                const count = new Uint32Array(arrayBuffer, i, 1)[0];
-                i += Uint32Array.BYTES_PER_ELEMENT;
-                const indexArray = new Uint16Array(arrayBuffer, i, count);
-                i += Uint16Array.BYTES_PER_ELEMENT * count;
+            if (type === 'new' || type === 'update') {
+              return fetch('/mesh/' + id)
+                .then(res => res.ok ? res.arrayBuffer() : Promise.resolve(null))
+                .then(arrayBuffer => {
+                  if (arrayBuffer) {
+                    let i = 0;
+                    const positionCount = new Uint32Array(arrayBuffer, i, 1)[0];
+                    i += Uint32Array.BYTES_PER_ELEMENT;
+                    const positionArray = new Float32Array(arrayBuffer, i, positionCount);
+                    i += Float32Array.BYTES_PER_ELEMENT * positionCount;
 
-                const update = {
-                  positionArray,
-                  positionCount,
-                  normalArray,
-                  normalCount,
-                  indexArray,
-                  count,
-                };
-                _loadTerrainMesh(_getTerrainMesh(id), update);
+                    const normalCount = new Uint32Array(arrayBuffer, i, 1)[0];
+                    i += Uint32Array.BYTES_PER_ELEMENT;
+                    const normalArray = new Float32Array(arrayBuffer, i, normalCount);
+                    i += Float32Array.BYTES_PER_ELEMENT * normalCount;
+
+                    const count = new Uint32Array(arrayBuffer, i, 1)[0];
+                    i += Uint32Array.BYTES_PER_ELEMENT;
+                    const indexArray = new Uint16Array(arrayBuffer, i, count);
+                    i += Uint16Array.BYTES_PER_ELEMENT * count;
+
+                    const update = {
+                      positionArray,
+                      positionCount,
+                      normalArray,
+                      normalCount,
+                      indexArray,
+                      count,
+                    };
+                    _loadTerrainMesh(_getTerrainMesh(id), update);
+                  }
+                });
+            } else {
+              const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+              if (index !== -1) {
+                const terrainMesh = terrainMeshes[index];
+                _removeTerrainMesh(terrainMesh);
+                terrainMeshes.splice(index, 1);
+              }
+            }
+          }))
+            .catch(err => {
+              console.warn(err.stack);
+            })
+            .finally(() => {
+              running = false;
+
+              if (queue.length > 0) {
+                _handleData(queue.shift());
               }
             });
-        } else {
-          const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
-          if (index !== -1) {
-            const terrainMesh = terrainMeshes[index];
-            _removeTerrainMesh(terrainMesh);
-            terrainMeshes.splice(index, 1);
-          }
+          break;
         }
-      }))
-        .catch(err => {
-          console.warn(err.stack);
-        })
-        .finally(() => {
-          running = false;
+        case 'transform': {
+          const {players} = message;
 
-          if (queue.length > 0) {
-            _handleData(queue.shift());
+          for (let i = 0; i < players.length; i++) {
+            const player = players[i];
+            const {type, id} = player;
+
+            if (type === 'update') {
+              _loadPlayerMesh(_getPlayerMesh(id), player);
+            } else {
+              const index = playerMeshes.findIndex(playerMesh => playerMesh.meshId === id);
+              if (index !== -1) {
+                const playerMesh = playerMeshes[index];
+                _removePlayerMesh(playerMesh);
+                playerMeshes.splice(index, 1);
+              }
+            }
           }
-        });
+
+          break;
+        }
+      }
     } else {
       queue.push(data);
     }
