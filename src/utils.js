@@ -72,6 +72,22 @@ const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, c
 };
 module.exports._runJavascript = _runJavascript;
 
+const NORMALIZE_LIST = [
+  'ArrayBuffer',
+  'Buffer',
+  'DataView',
+  'Float32Array',
+  'Float64Array',
+  'Int16Array',
+  'Int32Array',
+  'Int8Array',
+  'Promise',
+  'Uint16Array',
+  'Uint32Array',
+  'Uint8Array',
+  'Uint8ClampedArray'
+];
+
 /**
  * Normalize prototype between native and V8.
  * Node's vm module was slow so there's vm-one for one-way bindings:
@@ -83,10 +99,20 @@ module.exports._runJavascript = _runJavascript;
  * @param targetContext - window or vm context that prototype will get retrieved from.
  */
 const _normalizePrototype = (obj, targetContext) => {
+  if (!obj || typeof obj !== 'object') { return obj; }
+
   let name = obj && obj.constructor && obj.constructor.name;
-  if (obj instanceof targetContext[name]) { return obj; }
+
+  if (NORMALIZE_LIST.indexOf(name) === -1) { return obj; }
 
   const isToWindow = !!targetContext[symbols.prototypesSymbol];
+
+  if (isToWindow && obj instanceof targetContext[symbols.prototypesSymbol][name]) {
+    return obj;
+  }
+  if (!isToWindow && obj instanceof targetContext[name]) {
+    return obj;
+  }
 
   // Convert Blob's buffer.
   if (name === 'Blob') {
@@ -96,7 +122,7 @@ const _normalizePrototype = (obj, targetContext) => {
 
   // Normalize to window prototype.
   if (isToWindow) {
-    GlobalContext.nativeVm.setPrototype(obj, targetContext[symbols.prototypesSymbol][name] ||
+    GlobalContext.nativeVm.setPrototype(obj, targetContext[symbols.prototypesSymbol][name].prototype ||
                                              targetContext[name].prototype);
     return obj;
   }
@@ -113,22 +139,8 @@ module.exports._normalizePrototype = _normalizePrototype;
  */
 module.exports._storeOriginalWindowPrototypes = function (window, prototypesSymbol) {
   window[prototypesSymbol] = {};
-  [
-    'ArrayBuffer',
-    'Buffer',
-    'DataView',
-    'Float32Array',
-    'Float64Array',
-    'Int16Array',
-    'Int32Array',
-    'Int8Array',
-    'Promise',
-    'Uint16Array',
-    'Uint32Array',
-    'Uint8Array',
-    'Uint8ClampedArray'
-  ].forEach(prototypeName => {
-    window[prototypesSymbol][prototypeName] = window[prototypeName].prototype;
+  NORMALIZE_LIST.forEach(prototypeName => {
+    window[prototypesSymbol][prototypeName] = window[prototypeName];
   });
 };
 
