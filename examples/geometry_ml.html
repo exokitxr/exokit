@@ -717,11 +717,13 @@ wss.on('connection', c => {
 
   const _sendTerrains = () => {
     const ids = Object.keys(terrainMeshData).filter(id => !!terrainMeshData[id]);
-    const updateSpec = ids.map(id => ({
-      type: 'new',
-      id,
-    }));
-    const updateSpecString = JSON.stringify(updateSpec);
+    const updateSpecString = JSON.stringify({
+      method: 'mesh',
+      updates: ids.map(id => ({
+        type: 'new',
+        id,
+      })),
+    });
     c.send(updateSpecString);
   };
   const _sendPaints = () => {
