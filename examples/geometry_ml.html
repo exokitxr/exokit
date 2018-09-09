@@ -27,8 +27,8 @@
       mesh.frustumCulled = false;
       return mesh;
     };
-    const playerGeometry = new THREE.CylinderBufferGeometry(0.1, 0.1, 0.2, 32, 1)
-      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0))
+    const playerGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0))
       .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
         new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 1, 0),
