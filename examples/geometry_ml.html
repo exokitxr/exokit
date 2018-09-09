@@ -296,8 +296,10 @@ const _makePaintMesh = meshId => {
           for (let i = 0; i < connections.length; i++) {
             const c = connections[i];
 
-            for (let j = 0; j < updateSpecs.length; j++) {
-              c.send(updateSpecs[j]);
+            if (c.readyState === window.browser.ws.OPEN) {
+              for (let j = 0; j < updateSpecs.length; j++) {
+                c.send(updateSpecs[j]);
+              }
             }
           }
         }
@@ -508,7 +510,10 @@ function init() {
 
       for (let i = 0; i < connections.length; i++) {
         const c = connections[i];
-        c.send(updateSpecString);
+
+        if (c.readyState === window.browser.ws.OPEN) {
+          c.send(updateSpecString);
+        }
       }
     }
   };
@@ -559,7 +564,10 @@ function init() {
 
       for (let i = 0; i < connections.length; i++) {
         const c = connections[i];
-        c.send(updateSpecString);
+
+        if (c.readyState === window.browser.ws.OPEN) {
+          c.send(updateSpecString);
+        }
       }
     }
   }, 1000 / 30);
@@ -729,13 +737,12 @@ wss.on('connection', c => {
   const _sendPaints = () => {
     for (let i = 0; i < paintMeshes.length; i++) {
       const paintMesh = paintMeshes[i];
-      const {meshId} = paintMesh;
       const updateSpecs = [
         JSON.stringify({
           method: 'paint',
-          meshId,
+          meshId: paintMesh.meshId,
         }),
-        mesh.getBuffer(lastPoint),
+        paintMesh.getBuffer(lastPoint),
       ];
 
       for (let j = 0; j < updateSpecs.length; j++) {
@@ -765,7 +772,7 @@ wss.on('connection', c => {
         }
         case 'paint': {
           const {meshId} = message;
-          pendingPaintMeshId = message;
+          pendingPaintMeshId = meshId;
           break;
         }
         default: {
