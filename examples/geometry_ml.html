@@ -362,7 +362,7 @@
       wss.on('connection', (c, request) => {
         console.log('open connection');
 
-        const ids = Object.keys(terrainMeshData);
+        const ids = Object.keys(terrainMeshData).filter(id => !!terrainMeshData[id]);
         const updateSpec = ids.map(id => ({
           type: 'new',
           id,
