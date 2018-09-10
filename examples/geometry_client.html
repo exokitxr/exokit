@@ -748,16 +748,68 @@ connection.onopen = () => {
   };
 };
 
-window.addEventListener('mousedown', () => {
-  if (!paintMesh) {
-    paintMesh = _getPaintMesh();
+const _bootXr = async display => {
+  const session = await display.requestSession({
+    exclusive: true,
+  });
+  display.session = session;
+
+  const _getControllerIndex = e => e.inputSource.handedness === 'left' ? 0 : 1;
+  session.onselectstart = e => {
+    if (!paintMesh) {
+      paintMesh = _getPaintMesh();
+      paintControllerIndex = _getControllerIndex(e);
+    }
+  };
+  session.onselectend = e => {
+    if (paintControllerIndex === _getControllerIndex(e)) {
+      paintMesh = null;
+      paintControllerIndex = -1;
+    }
+  };
+
+  session.requestAnimationFrame((timestamp, frame) => {
+    renderer.vr.setSession(session, {
+      frameOfReferenceType: 'stage',
+    });
+
+    const viewport = session.baseLayer.getViewport(frame.views[0]);
+    const width = viewport.width;
+    const height = viewport.height;
+
+    renderer.setSize(width * 2, height);
+
+    renderer.setAnimationLoop(null);
+
+    renderer.vr.enabled = true;
+    renderer.vr.setDevice(display);
+    renderer.vr.setAnimationLoop(animate);
+  });
+};
+const _bootKeyboard = () => {
+  window.addEventListener('mousedown', () => {
+    if (!paintMesh) {
+      paintMesh = _getPaintMesh();
+    }
+  });
+  window.addEventListener('mouseup', () => {
+    if (paintMesh) {
+      paintMesh = null;
+    }
+  });
+};
+const _boot = async () => {
+  if (navigator.xr) {
+    const display = await navigator.xr.requestDevice();
+    if (display) {
+      await _bootXr(display);
+    } else {
+      _bootKeyboard();
+    }
+  } else {
+    _bootKeyboard();
   }
-});
-window.addEventListener('mouseup', () => {
-  if (paintMesh) {
-    paintMesh = null;
-  }
-});
+})();
 
 })();
 </script>
