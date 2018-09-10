@@ -1963,6 +1963,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             MLQuaternionf &orientation = controllerState.orientation;
             float trigger = controllerState.trigger_normalized;
             float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
+            float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
             MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
 
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
@@ -1974,8 +1975,9 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 6, JS_NUM(orientation.w));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 7, JS_NUM(trigger));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 8, JS_NUM(bumper));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 9, JS_NUM(touchPosAndForce.x));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 10, JS_NUM(touchPosAndForce.y));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 9, JS_NUM(home));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 10, JS_NUM(touchPosAndForce.x));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 11, JS_NUM(touchPosAndForce.y));
           }
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);

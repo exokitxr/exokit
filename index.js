@@ -1281,6 +1281,12 @@ const _bindWindow = (window, newWindowCb) => {
         leftGamepad.buttons[2].touched = leftBumperPushed;
         leftGamepad.buttons[2].pressed = leftBumperPushed;
         controllersArrayIndex++;
+        const leftHomeValue = controllersArray[controllersArrayIndex];
+        leftGamepad.buttons[3].value = leftHomeValue;
+        const leftHomePushed = leftHomeValue > 0.5;
+        leftGamepad.buttons[3].touched = leftHomePushed;
+        leftGamepad.buttons[3].pressed = leftHomePushed;
+        controllersArrayIndex++;
         leftGamepad.axes[0] = controllersArray[controllersArrayIndex];
         leftGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
         controllersArrayIndex += 2;
@@ -1303,6 +1309,12 @@ const _bindWindow = (window, newWindowCb) => {
         const rightBumperPushed = rightBumperValue > 0.5;
         rightGamepad.buttons[2].touched = rightBumperPushed;
         rightGamepad.buttons[2].pressed = rightBumperPushed;
+        controllersArrayIndex++;
+        const rightHomeValue = controllersArray[controllersArrayIndex];
+        rightGamepad.buttons[3].value = rightHomeValue;
+        const rightHomePushed = rightHomeValue > 0.5;
+        rightGamepad.buttons[3].touched = rightHomePushed;
+        rightGamepad.buttons[3].pressed = rightHomePushed;
         controllersArrayIndex++;
         rightGamepad.axes[0] = controllersArray[controllersArrayIndex];
         rightGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
