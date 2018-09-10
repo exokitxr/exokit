@@ -289,26 +289,29 @@ function animate(time, frame) {
   const gamepads = navigator.getGamepads();
   for (let i = 0; i < gamepads.length; i++) {
     const gamepad = gamepads[i];
-    const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
 
-    const grabbed = gamepad.buttons[2].pressed;
-    const lastGrabbed = lastGrabbeds[controllerIndex];
-    if (grabbed && !lastGrabbed) {
-      _clearPaintMeshes();
+    if (gamepad) {
+      const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
 
-      paintMesh = null;
-      paintControllerIndex = -1;
+      const grabbed = gamepad.buttons[2].pressed;
+      const lastGrabbed = lastGrabbeds[controllerIndex];
+      if (grabbed && !lastGrabbed) {
+        _clearPaintMeshes();
 
-      if (connection) {
-        const updateSpec = {
-          method: 'clear',
-        };
-        const updateSpecString = JSON.stringify(updateSpec);
+        paintMesh = null;
+        paintControllerIndex = -1;
 
-        c.send(updateSpecString);
+        if (connection) {
+          const updateSpec = {
+            method: 'clear',
+          };
+          const updateSpecString = JSON.stringify(updateSpec);
+
+          c.send(updateSpecString);
+        }
       }
+      lastGrabbeds[controllerIndex] = grabbed;
     }
-    lastGrabbeds[controllerIndex] = grabbed;
   }
 
   const now = Date.now();
