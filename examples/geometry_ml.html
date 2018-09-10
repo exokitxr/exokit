@@ -727,7 +727,7 @@ function animate(time, frame) {
 
       const menu = gamepad.buttons[3].pressed;
       const lastMenus = lastMenus[controllerIndex];
-      if (menu && !lastMenus) {
+      if (menu && !lastMenu) {
         terrainMeshesVisible = !terrainMeshesVisible;
         for (let j = 0 j < terrainMeshes.length; j++) {
           terrainMeshes[j].visible = terrainMeshesVisible;
