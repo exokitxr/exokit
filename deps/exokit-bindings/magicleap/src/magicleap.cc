@@ -1962,7 +1962,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             MLVec3f &position = controllerState.position;
             MLQuaternionf &orientation = controllerState.orientation;
             float trigger = controllerState.trigger_normalized;
-            float bumper = controllerState.trigger_normalized ? 1.0f : 0.0f;
+            float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
             MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
 
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
