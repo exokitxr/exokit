@@ -306,7 +306,7 @@ const _makePaintMesh = meshId => {
       }
     }
   };
-  mesh.load = data => {
+  mesh.load = buffer => {
     const positionsAttribute = geometry.getAttribute('position');
     const {array: positions} = positionsAttribute;
     const normalsAttribute = geometry.getAttribute('normal');
@@ -316,7 +316,12 @@ const _makePaintMesh = meshId => {
     const uvsAttribute = geometry.getAttribute('uv');
     const {array: uvs} = uvsAttribute;
 
-    const array = new Float32Array(data);
+    if ((buffer.byteOffset % 4) !== 0) {
+      const newBuffer = Buffer.from(new ArrayBuffer(buffer.length));
+      buffer.copy(newBuffer);
+      buffer = newBuffer;
+    }
+    const array = new Float32Array(buffer.buffer, buffer.byteOffset);
     const numPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
     const dataPositionSize = numPoints * 2 * 3;
     const dataUvSize = numPoints * 2 * 2;
