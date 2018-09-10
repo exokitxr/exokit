@@ -74,7 +74,15 @@ module.exports._runJavascript = _runJavascript;
 const _normalizeBuffer = (b, target) => {
   const name = b && b.constructor && b.constructor.name;
   switch (name) {
-    case 'Buffer':
+    case 'Buffer': {
+      if (!(b instanceof target.Buffer)) {
+        GlobalContext.nativeVm.setPrototype(b, target.Buffer.prototype);
+      }
+      if (!(b.buffer instanceof target.ArrayBuffer)) {
+        GlobalContext.nativeVm.setPrototype(b.buffer, target.ArrayBuffer.prototype);
+      }
+      break;
+    }
     case 'ArrayBuffer':
     case 'Uint8Array':
     case 'Uint8ClampedArray':
