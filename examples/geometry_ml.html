@@ -348,6 +348,14 @@ const _makePaintMesh = meshId => {
 
   return mesh;
 };
+const _clearPaintMeshes = () => {
+  for (let i = 0; i < paintMeshes.length; i++) {
+    const paintMesh = paintMeshes[i];
+    scene.remove(paintMesh);
+    paintMesh.geometry.dispose();
+  }
+  paintMeshes.length = 0;
+};
 
 function init() {
   container = document.createElement('div');
@@ -592,6 +600,7 @@ function init() {
   renderer.setAnimationLoop(animate);
 }
 
+const lastGrabbeds = [false, false];
 function animate(time, frame) {
   if (renderer.vr.enabled) {
     const inputSources = display.session.getInputSources();
@@ -611,6 +620,22 @@ function animate(time, frame) {
       localMatrix.fromArray(pose.pointerMatrix)
         .decompose(localVector, localQuaternion, localVector2);
       paintMesh.update(localVector, localQuaternion);
+    }
+
+    const gamepads = navigate.getGamepads();
+    for (let i = 0; i < gamepads.length; i++) {
+      const gamepad = gamepads[i];
+      const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
+
+      const grabbed = gamepad.buttons[2].pressed;
+      const lastGrabbed = lastGrabbeds[controllerIndex];
+      if (grabbed && !lastGrabbed) {
+        _clearPaintMeshes();
+
+        paintMesh = null;
+        paintControllerIndex = -1;
+      }
+      lastGrabbeds[controllerIndex] = grabbed;
     }
   }
 
