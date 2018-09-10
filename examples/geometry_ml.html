@@ -715,8 +715,8 @@ function animate(time, frame) {
           method: 'clear',
         };
         const updateSpecString = JSON.stringify(updateSpec);
-        for (let i = 0; i < connections.length; i++) {
-          const c = connections[i];
+        for (let j = 0; j < connections.length; j++) {
+          const c = connections[j];
 
           if (c.readyState === window.browser.ws.OPEN) {
             c.send(updateSpecString);
