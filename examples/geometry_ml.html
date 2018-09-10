@@ -760,6 +760,8 @@ wss.on('connection', c => {
 
   connections.push(c);
 
+  const _getOtherConnections = () => connections.filter(c2 => c2 !== c);
+
   let pendingPaintMeshId = null;
   c.on('message', data => {
     if (typeof data === 'string') {
@@ -774,7 +776,7 @@ wss.on('connection', c => {
           c.mesh.updateMatrix();
           c.mesh.updateMatrixWorld();
 
-          const otherConnections = connections.filter(c2 => c2 !== c);
+          const otherConnections = _getOtherConnections();
           if (otherConnections.length > 0) {
             const updateSpec = {
               method: 'transform',
@@ -814,6 +816,25 @@ wss.on('connection', c => {
       if (pendingPaintMeshId) {
         const paintMesh = _getPaintMesh(pendingPaintMeshId);
         paintMesh.load(data);
+
+        const otherConnections = _getOtherConnections();
+        if (otherConnections.length > 0) {
+          const updateSpecs = [
+            JSON.stringify({
+              method: 'paint',
+              meshId: pendingPaintMeshId,
+            }),
+            data,
+          ];
+
+          for (let i = 0; i < otherConnections.length; i++) {
+            const c2 = otherConnections[i];
+
+            if (c2 !== c && c2.readyState === window.browser.ws.OPEN) {
+              c2.send(updateSpecString);
+            }
+          }
+        }
 
         pendingPaintMeshId = null;
       } else {
