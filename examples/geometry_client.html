@@ -227,6 +227,10 @@ function animate() {
   }
   if (paintMesh) {
     camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+    localVector.add(
+      localVector2.set(0, 0, -0.3)
+        .applyQuaternion(localQuaternion)
+    );
     paintMesh.update(localVector, localQuaternion);
   }
   renderer.render(scene, camera);
@@ -731,10 +735,6 @@ connection.onopen = () => {
   const localQuaternion = new THREE.Quaternion();
   const interval = setInterval(() => {
     camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-    localVector.add(
-      localVector2.set(0, 0, -0.5)
-        .applyQuaternion(localQuaternion)
-    );
     const updateSpec = {
       method: 'transform',
       position: localVector.toArray(),
