@@ -623,7 +623,7 @@ function animate(time, frame) {
       paintMesh.update(localVector, localQuaternion);
     }
 
-    const gamepads = navigate.getGamepads();
+    const gamepads = navigator.getGamepads();
     for (let i = 0; i < gamepads.length; i++) {
       const gamepad = gamepads[i];
       const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
