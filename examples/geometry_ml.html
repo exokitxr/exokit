@@ -56,14 +56,11 @@ const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
       new THREE.Vector3(0, 0, -1)
     )
   ));
-const playerMaterial = new THREE.MeshPhongMaterial({
-  color: 0x2196f3,
-});
 const _makePlayerMesh = (meshId = Math.random().toString(36).substring(7)) => {
   const mesh = (() => {
     const object = new THREE.Object3D();
 
-    const headMesh = new THREE.Mesh(headGeometry, playerMaterial);
+    const headMesh = new THREE.Mesh(headGeometry, controllerMaterial);
     // headMesh.matrixAutoUpdate = false;
     headMesh.frustumCulled = false;
     object.add(headMesh);
