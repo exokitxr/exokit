@@ -48,7 +48,7 @@ const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1
   mesh.frustumCulled = false;
   return mesh;
 };
-const playerGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
+const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
   .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0))
   .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
     new THREE.Quaternion().setFromUnitVectors(
@@ -60,10 +60,49 @@ const playerMaterial = new THREE.MeshPhongMaterial({
   color: 0x2196f3,
 });
 const _makePlayerMesh = () => {
-  const mesh = new THREE.Mesh(playerGeometry, playerMaterial);
-  mesh.matrixAutoUpdate = false;
-  mesh.frustumCulled = false;
+  const mesh = (() => {
+    const object = new THREE.Object3D();
+
+    const headMesh = new THREE.Mesh(headGeometry, playerMaterial);
+    // headMesh.matrixAutoUpdate = false;
+    headMesh.frustumCulled = false;
+    object.add(headMesh);
+    object.headMesh = headMesh;
+
+    const controllerMeshes = Array(2);
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      const controllerMesh = _makeControllerMesh();
+      // controllerMesh.matrixAutoUpdate = false;
+      controllerMesh.frustumCulled = false;
+
+      controllerMeshes[i] = controllerMesh;
+      object.add(controllerMesh);
+    }
+    object.controllerMeshes = controllerMeshes;
+
+    return object;
+  })();
+  // mesh.matrixAutoUpdate = false;
+  // mesh.frustumCulled = false;
   return mesh;
+};
+const _loadPlayerMesh = (playerMesh, {position, rotation, controllers}) => {
+  const {headMesh} = playerMesh;
+  headMesh.position.fromArray(position);
+  headMesh.quaternion.fromArray(rotation);
+  headMesh.updateMatrix();
+  headMesh.updateMatrixWorld();
+
+  for (let i = 0; i < controllers.length; i++) {
+    const controller = controllers[i];
+    const {position, rotation} = controller;
+    const controllerMesh = playerMesh.controllerMeshes[i];
+
+    controllerMesh.position.fromArray(position);
+    controllerMesh.quaternion.fromArray(rotation);
+    controllerMesh.updateMatrix();
+    controllerMesh.updateMatrixWorld();
+  }
 };
 
 let paintMesh = null;
@@ -556,35 +595,6 @@ function init() {
     }
   });
 
-  const interval = setInterval(() => {
-    if (connections.length > 0) {
-      const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
-      vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-
-      const updateSpec = {
-        method: 'transform',
-        players: [
-          {
-            id: 'host',
-            type: 'update',
-            position: localVector.toArray(),
-            rotation: localQuaternion.toArray(),
-          },
-        ],
-      };
-      // console.log('send update', JSON.stringify(updateSpec, ));
-      const updateSpecString = JSON.stringify(updateSpec);
-
-      for (let i = 0; i < connections.length; i++) {
-        const c = connections[i];
-
-        if (c.readyState === window.browser.ws.OPEN) {
-          c.send(updateSpecString);
-        }
-      }
-    }
-  }, 1000 / 30);
-
   renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
@@ -600,6 +610,7 @@ function init() {
   renderer.setAnimationLoop(animate);
 }
 
+let lastUpdateTime = Date.now();
 const lastGrabbeds = [false, false];
 function animate(time, frame) {
   if (renderer.vr.enabled) {
@@ -649,6 +660,50 @@ function animate(time, frame) {
         }
       }
       lastGrabbeds[controllerIndex] = grabbed;
+    }
+
+    const now = Date.now();
+    if ((now - lastUpdateTime) > (1000 / 30)) {
+      if (connections.length > 0) {
+        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+        vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+        const position = localVector.toArray();
+        const rotation = localQuaternion.toArray();
+        const controllers = inputSources.map(inputSource => {
+          const pose = frame.getInputPose(inputSource);
+          localMatrix.fromArray(pose.pointerMatrix)
+            .decompose(localVector, localQuaternion, localVector2);
+
+          return {
+            position: localVector.toArray(),
+            rotation: localQuaternion.toArray(),
+          };
+        });
+
+        const updateSpec = {
+          method: 'transform',
+          players: [
+            {
+              id: 'host',
+              type: 'update',
+              position,
+              rotation,
+              controllers,
+            },
+          ],
+        };
+        const updateSpecString = JSON.stringify(updateSpec);
+
+        for (let i = 0; i < connections.length; i++) {
+          const c = connections[i];
+
+          if (c.readyState === window.browser.ws.OPEN) {
+            c.send(updateSpecString);
+          }
+        }
+      }
+
+      lastUpdateTime = now;
     }
   }
 
@@ -808,11 +863,8 @@ wss.on('connection', c => {
 
       switch (method) {
         case 'transform': {
-          const {position, rotation} = message;
-          c.mesh.position.fromArray(position);
-          c.mesh.quaternion.fromArray(rotation);
-          c.mesh.updateMatrix();
-          c.mesh.updateMatrixWorld();
+          const {position, rotation, controllers} = message;
+          _loadPlayerMesh(c.mesh, message);
 
           const otherConnections = _getOtherConnections();
           if (otherConnections.length > 0) {
@@ -824,6 +876,7 @@ wss.on('connection', c => {
                   id: c.playerId,
                   position,
                   rotation,
+                  controllers,
                 },
               ],
             };

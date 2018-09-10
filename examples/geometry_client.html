@@ -234,6 +234,7 @@ function init() {
   renderer.setAnimationLoop(animate);
 }
 
+let lastUpdateTime = Date.now();
 const lastGrabbeds = [false, false];
 function animate(time, frame) {
   if (controlsEnabled) {
@@ -308,6 +309,41 @@ function animate(time, frame) {
       }
     }
     lastGrabbeds[controllerIndex] = grabbed;
+  }
+
+  const now = Date.now();
+  if ((now - lastUpdateTime) > (1000 / 30)) {
+    const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+    vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+    const position = localVector.toArray();
+    const rotation = localQuaternion.toArray();
+    const controllers = inputSources.map(inputSource => {
+      const pose = frame.getInputPose(inputSource);
+      localMatrix.fromArray(pose.pointerMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+
+      return {
+        position: localVector.toArray(),
+        rotation: localQuaternion.toArray(),
+      };
+    });
+
+    const updateSpec = {
+      method: 'transform',
+      players: [
+        {
+          id: 'host',
+          type: 'update',
+          position,
+          rotation,
+          controllers,
+        },
+      ],
+    };
+    const updateSpecString = JSON.stringify(updateSpec);
+    connection.send(updateSpecString);
+
+    lastUpdateTime = now;
   }
 
   renderer.render(scene, camera);
@@ -388,7 +424,7 @@ const _removeTerrainMesh = terrainMesh => {
 };
 
 const playerMeshes = [];
-const playerGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
+const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
   .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0))
   .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
     new THREE.Quaternion().setFromUnitVectors(
@@ -408,17 +444,50 @@ const _getPlayerMesh = meshId => {
   }
   return playerMesh;
 };
-const _makePlayerMesh = meshId => {
-  const mesh = new THREE.Mesh(playerGeometry, playerMaterial);
-  mesh.meshId = meshId;
-  mesh.frustumCulled = false;
+const _makePlayerMesh = () => {
+  const mesh = (() => {
+    const object = new THREE.Object3D();
+
+    const headMesh = new THREE.Mesh(headGeometry, playerMaterial);
+    // headMesh.matrixAutoUpdate = false;
+    headMesh.frustumCulled = false;
+    object.add(headMesh);
+    object.headMesh = headMesh;
+
+    const controllerMeshes = Array(2);
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      const controllerMesh = _makeControllerMesh();
+      // controllerMesh.matrixAutoUpdate = false;
+      controllerMesh.frustumCulled = false;
+
+      controllerMeshes[i] = controllerMesh;
+      object.add(controllerMesh);
+    }
+    object.controllerMeshes = controllerMeshes;
+
+    return object;
+  })();
+  // mesh.matrixAutoUpdate = false;
+  // mesh.frustumCulled = false;
   return mesh;
 };
-const _loadPlayerMesh = (playerMesh, {position, rotation}) => {
-  playerMesh.position.fromArray(position);
-  playerMesh.quaternion.fromArray(rotation);
-  playerMesh.updateMatrix();
-  playerMesh.updateMatrixWorld();
+const _loadPlayerMesh = (playerMesh, {position, rotation, controllers}) => {
+  const {headMesh} = playerMesh;
+  headMesh.position.fromArray(position);
+  headMesh.quaternion.fromArray(rotation);
+  headMesh.updateMatrix();
+  headMesh.updateMatrixWorld();
+
+  for (let i = 0; i < controllers.length; i++) {
+    const controller = controllers[i];
+    const {position, rotation} = controller;
+    const controllerMesh = playerMesh.controllerMeshes[i];
+
+    controllerMesh.position.fromArray(position);
+    controllerMesh.quaternion.fromArray(rotation);
+    controllerMesh.updateMatrix();
+    controllerMesh.updateMatrixWorld();
+  }
 };
 const _removePlayerMesh = playerMesh => {
   scene.remove(playerMesh);
@@ -843,20 +912,6 @@ connection.onopen = () => {
   connection.onmessage = m => {
     _handleData(m.data);
   };
-
-  const localVector = new THREE.Vector3();
-  const localVector2 = new THREE.Vector3();
-  const localQuaternion = new THREE.Quaternion();
-  const interval = setInterval(() => {
-    camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-    const updateSpec = {
-      method: 'transform',
-      position: localVector.toArray(),
-      rotation: localQuaternion.toArray(),
-    };
-    const updateSpecString = JSON.stringify(updateSpec);
-    connection.send(updateSpecString);
-  }, 1000 / 30);
 
   connection.onclose = () => {
     console.log('connnection close');
