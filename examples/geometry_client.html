@@ -448,7 +448,7 @@ const _getPlayerMesh = meshId => {
   }
   return playerMesh;
 };
-const _makePlayerMesh = () => {
+const _makePlayerMesh = (meshId = Math.random().toString(36).substring(7)) => {
   const mesh = (() => {
     const object = new THREE.Object3D();
 
@@ -471,6 +471,7 @@ const _makePlayerMesh = () => {
 
     return object;
   })();
+  mesh.meshId = meshId;
   // mesh.matrixAutoUpdate = false;
   // mesh.frustumCulled = false;
   return mesh;

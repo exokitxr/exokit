@@ -59,7 +59,7 @@ const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
 const playerMaterial = new THREE.MeshPhongMaterial({
   color: 0x2196f3,
 });
-const _makePlayerMesh = () => {
+const _makePlayerMesh = (meshId = Math.random().toString(36).substring(7)) => {
   const mesh = (() => {
     const object = new THREE.Object3D();
 
@@ -82,6 +82,7 @@ const _makePlayerMesh = () => {
 
     return object;
   })();
+  mesh.meshId = meshId;
   // mesh.matrixAutoUpdate = false;
   // mesh.frustumCulled = false;
   return mesh;
@@ -817,7 +818,6 @@ const wss = new window.browser.ws.Server({
 wss.on('connection', c => {
   console.log('open connection');
 
-  c.playerId = Math.random().toString(36).substring(7);
   c.mesh = _makePlayerMesh();
   scene.add(c.mesh);
 
@@ -873,7 +873,7 @@ wss.on('connection', c => {
               players: [
                 {
                   type: 'update',
-                  id: c.playerId,
+                  id: c.mesh.meshId,
                   position,
                   rotation,
                   controllers,
