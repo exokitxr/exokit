@@ -449,9 +449,56 @@ function init() {
   });
 
   const terrainMeshes = [];
-  const terrainMaterial = new THREE.MeshPhongMaterial({
-    color: 0x666666,
+  const terrainMaterial = (() => {
+    const texture = new THREE.Texture(
+      null,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.NearestFilter,
+      THREE.NearestFilter,
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType,
+      16
+    );
+    _requestImage('dot.png')
+      .then(brushImg => {
+        texture.image = brushImg;
+        texture.needsUpdate = true;
+      });
+
+    const material = new THREE.ShaderMaterial({
+    uniforms: {
+      map: {
+        type: 't',
+        value: texture,
+      },
+    },
+    vertexShader: `\
+      varying vec2 vUv;
+      void main() {
+        float m = mod(gl_VertexID, 3.0);
+        if (m < 0.5) {
+          vUv = vec2(0.0, 0.0);
+        } else if (m < 1.5) {
+          vUv = vec2(1.0, 1.0);
+        } else {
+          vUv = vec2(1.0, 0.0);
+        }
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `\
+      uniform sampler2D map;
+      varying vec2 vUv;
+      void main() {
+        gl_FragColor = texture2D(map, vUv);
+      }
+    `,
+    // transparent: true,
   });
+  return material;
+})();
   const _getTerrainMesh = meshId => {
     let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
     if (!terrainMesh) {
