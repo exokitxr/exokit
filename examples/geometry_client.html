@@ -476,7 +476,7 @@ const _removeTerrainMesh = terrainMesh => {
 };
 
 const playerMeshes = [];
-const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
+const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 3, 1)
   .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0))
   .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
     new THREE.Quaternion().setFromUnitVectors(
