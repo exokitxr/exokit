@@ -605,8 +605,6 @@ connection.onopen = () => {
   let pendingPaintMeshId = null;
   const _handleData = data => {
     if (!running) {
-      console.log('handle data', data);
-
       running = true;
 
       if (typeof data === 'string') {
@@ -725,8 +723,6 @@ connection.onopen = () => {
     }
   };
   connection.onmessage = m => {
-    console.log('connnection data', m.data);
-
     _handleData(m.data);
   };
 
