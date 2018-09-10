@@ -46,7 +46,7 @@
     <script src="PointerLockControls.js"></script>
 <script>
 (() => {
-let scene, camera, clock, controls;
+let scene, camera, clock, controls, display;
 let connection;
 
 const MAX_NUM_POINTS = 1024;
@@ -204,7 +204,7 @@ function init() {
   renderer.setAnimationLoop(animate);
 }
 
-function animate() {
+function animate(time, frame) {
   if (controlsEnabled) {
     var time = performance.now();
     var delta = ( time - prevTime ) / 1000;
@@ -225,6 +225,17 @@ function animate() {
     }
     prevTime = time;
   }
+
+  const inputSources = display.session.getInputSources();
+  for (let i = 0; i < inputSources.length; i++) {
+    const inputSource = inputSources[i];
+    const pose = frame.getInputPose(inputSource);
+
+    const controllerMesh = controllerMeshes[i];
+    controllerMesh.matrix.fromArray(pose.pointerMatrix);
+    controllerMesh.updateMatrixWorld(true);
+  }
+
   if (paintMesh) {
     if (paintControllerIndex === -1) {
       camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
@@ -242,12 +253,36 @@ function animate() {
 
     paintMesh.update(localVector, localQuaternion);
   }
+
   renderer.render(scene, camera);
 }
 
 init();
 
 // connection
+
+const controllerGeometry = new THREE.BoxBufferGeometry(0.5, 0.01, 0.1);
+const controllerMaterial = new THREE.MeshPhongMaterial({
+  color: 0x4caf50,
+});
+const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+  const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+  mesh.position.set(x, y, z);
+  mesh.quaternion.set(qx, qy, qz, qw);
+  // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+  mesh.updateMatrix();
+  mesh.updateMatrixWorld();
+  mesh.matrixAutoUpdate = false;
+  mesh.frustumCulled = false;
+  return mesh;
+};
+const controllerMeshes = [
+  _makeControllerMesh(-0.1),
+  _makeControllerMesh(0.1),
+];
+controllerMeshes.forEach(controllerMesh => {
+  scene.add(controllerMesh);
+});
 
 const terrainMeshes = [];
 const terrainMaterial = new THREE.MeshPhongMaterial({
@@ -775,8 +810,10 @@ connection.onopen = () => {
   };
 };
 
-const _bootXr = async display => {
-  const session = await display.requestSession({
+const _bootXr = async newDisplay => {
+  display = newDisplay;
+
+  const session = await newDisplay.requestSession({
     exclusive: true,
   });
   display.session = session;
@@ -827,9 +864,9 @@ const _bootKeyboard = () => {
 };
 const _boot = async () => {
   if (navigator.xr) {
-    const display = await navigator.xr.requestDevice();
-    if (display) {
-      await _bootXr(display);
+    const newDisplay = await navigator.xr.requestDevice();
+    if (newDisplay) {
+      await _bootXr(newDisplay);
     } else {
       _bootKeyboard();
     }
