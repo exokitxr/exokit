@@ -716,6 +716,7 @@ const _makePaintMesh = meshId => {
 
         geometry.setDrawRange(0, lastPoint * 2);
 
+        console.log('paint send', connection, connection.readyState, WebSocket.OPEN); // XXX
         if (connection && connection.readyState === WebSocket.OPEN) {
           const updateSpecs = [
             JSON.stringify({
