@@ -604,6 +604,14 @@ const _makePaintMesh = meshId => {
 
   return mesh;
 };
+const _clearPaintMeshes = () => {
+  for (let i = 0; i < paintMeshes.length; i++) {
+    const paintMesh = paintMeshes[i];
+    scene.remove(paintMesh);
+    paintMesh.geometry.dispose();
+  }
+  paintMeshes.length = 0;
+};
 
 connection = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
 connection.binaryType = 'arraybuffer';
@@ -700,6 +708,15 @@ connection.onopen = () => {
           case 'paint': {
             const {meshId} = message;
             pendingPaintMeshId = meshId;
+
+            _next();
+            break;
+          }
+          case 'clear': {
+            _clearPaintMeshes();
+
+            paintMesh = null;
+            paintControllerIndex = null;
 
             _next();
             break;

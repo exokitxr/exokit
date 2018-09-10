@@ -634,6 +634,18 @@ function animate(time, frame) {
 
         paintMesh = null;
         paintControllerIndex = -1;
+
+        const updateSpec = {
+          method: 'clear',
+        };
+        const updateSpecString = JSON.stringify(updateSpec);
+        for (let i = 0; i < connections.length; i++) {
+          const c = connections[i];
+
+          if (c.readyState === window.browser.ws.OPEN) {
+            c.send(updateSpecString);
+          }
+        }
       }
       lastGrabbeds[controllerIndex] = grabbed;
     }
