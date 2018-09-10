@@ -1018,7 +1018,6 @@ wss.on('connection', c => {
     console.log('close connection');
 
     scene.remove(c.mesh);
-    c.mesh.geometry.dispose();
 
     connections.splice(connections.indexOf(c), 1);
 
