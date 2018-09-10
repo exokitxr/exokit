@@ -321,7 +321,7 @@ const _makePaintMesh = meshId => {
       buffer.copy(newBuffer);
       buffer = newBuffer;
     }
-    const array = new Float32Array(buffer.buffer, buffer.byteOffset);
+    const array = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Float32Array.BYTES_PER_ELEMENT);
     const numPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
     const dataPositionSize = numPoints * 2 * 3;
     const dataUvSize = numPoints * 2 * 2;
