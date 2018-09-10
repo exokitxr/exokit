@@ -977,8 +977,7 @@ const _bootKeyboard = () => {
     }
   });
   window.addEventListener('keypress', e => {
-    console.log('got keypress', e.which); // XXX
-    if (e.which === 67) { // c
+    if (e.which === 99) { // c
       _clearPaintMeshes();
 
       paintMesh = null;
