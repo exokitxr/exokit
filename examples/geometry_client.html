@@ -258,7 +258,7 @@ function animate(time, frame) {
     prevTime = time;
   }
 
-  const inputSources = display.session.getInputSources();
+  const inputSources = display ? display.session.getInputSources() : [];
   for (let i = 0; i < inputSources.length; i++) {
     const inputSource = inputSources[i];
     const pose = frame.getInputPose(inputSource);
