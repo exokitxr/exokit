@@ -462,6 +462,7 @@ function init() {
   });
 
   const terrainMeshes = [];
+  let terrainMeshesVisible = true;
   const terrainMaterial = (() => {
     const texture = new THREE.Texture(
       null,
@@ -540,6 +541,7 @@ function init() {
 
     const mesh = new THREE.Mesh(geometry, material);
     mesh.meshId = meshId;
+    mesh.visible = terrainMeshesVisible;
     mesh.frustumCulled = false;
     return mesh;
   };
@@ -673,6 +675,7 @@ function init() {
 
 let lastUpdateTime = Date.now();
 const lastGrabbeds = [false, false];
+const lastMenus = [false, false];
 function animate(time, frame) {
   if (renderer.vr.enabled) {
     const inputSources = display.session.getInputSources();
@@ -721,6 +724,16 @@ function animate(time, frame) {
         }
       }
       lastGrabbeds[controllerIndex] = grabbed;
+
+      const menu = gamepad.buttons[3].pressed;
+      const lastMenus = lastMenus[controllerIndex];
+      if (menu && !lastMenus) {
+        terrainMeshesVisible = !terrainMeshesVisible;
+        for (let j = 0 j < terrainMeshes.length; j++) {
+          terrainMeshes[j].visible = terrainMeshesVisible;
+        }
+      }
+      lastMenus[controllerIndex] = menu;
     }
 
     const now = Date.now();
