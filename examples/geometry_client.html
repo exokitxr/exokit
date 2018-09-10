@@ -887,6 +887,23 @@ const _bootKeyboard = () => {
       paintMesh = null;
     }
   });
+  window.addEventListener('keypress', e => {
+    if (e.which === 67) { // c
+      _clearPaintMeshes();
+
+      paintMesh = null;
+      paintControllerIndex = -1;
+
+      if (connection) {
+        const updateSpec = {
+          method: 'clear',
+        };
+        const updateSpecString = JSON.stringify(updateSpec);
+
+        c.send(updateSpecString);
+      }
+    }
+  });
 };
 const _boot = async () => {
   if (navigator.xr) {
