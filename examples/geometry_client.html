@@ -226,11 +226,20 @@ function animate() {
     prevTime = time;
   }
   if (paintMesh) {
-    camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-    localVector.add(
-      localVector2.set(0, 0, -0.3)
-        .applyQuaternion(localQuaternion)
-    );
+    if (paintControllerIndex === -1) {
+      camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+      localVector.add(
+        localVector2.set(0, 0, -0.3)
+          .applyQuaternion(localQuaternion)
+      );
+    } else {
+      const inputSource = inputSources[paintControllerIndex];
+      const pose = frame.getInputPose(inputSource);
+
+      localMatrix.fromArray(pose.pointerMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+    }
+
     paintMesh.update(localVector, localQuaternion);
   }
   renderer.render(scene, camera);
@@ -325,6 +334,7 @@ const _removePlayerMesh = playerMesh => {
 };
 
 let paintMesh = null;
+let paintControllerIndex = -1;
 const paintMaterial = (() => {
   const texture = new THREE.Texture(
     null,
