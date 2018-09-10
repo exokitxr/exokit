@@ -301,13 +301,12 @@ function animate(time, frame) {
         paintMesh = null;
         paintControllerIndex = -1;
 
-        if (connection) {
+        if (connection && connection.readyState === WebSocket.OPEN) {
           const updateSpec = {
             method: 'clear',
           };
           const updateSpecString = JSON.stringify(updateSpec);
-
-          c.send(updateSpecString);
+          connection.send(updateSpecString);
         }
       }
       lastGrabbeds[controllerIndex] = grabbed;
@@ -331,20 +330,22 @@ function animate(time, frame) {
       };
     });
 
-    const updateSpec = {
-      method: 'transform',
-      players: [
-        {
-          id: 'host',
-          type: 'update',
-          position,
-          rotation,
-          controllers,
-        },
-      ],
-    };
-    const updateSpecString = JSON.stringify(updateSpec);
-    connection.send(updateSpecString);
+    if (connection && connection.readyState === WebSocket.OPEN) {
+      const updateSpec = {
+        method: 'transform',
+        players: [
+          {
+            id: 'host',
+            type: 'update',
+            position,
+            rotation,
+            controllers,
+          },
+        ],
+      };
+      const updateSpecString = JSON.stringify(updateSpec);
+      connection.send(updateSpecString);
+    }
 
     lastUpdateTime = now;
   }
@@ -714,7 +715,7 @@ const _makePaintMesh = meshId => {
 
         geometry.setDrawRange(0, lastPoint * 2);
 
-        if (connection) {
+        if (connection && connection.readyState === WebSocket.OPEN) {
           const updateSpecs = [
             JSON.stringify({
               method: 'paint',
@@ -982,13 +983,12 @@ const _bootKeyboard = () => {
       paintMesh = null;
       paintControllerIndex = -1;
 
-      if (connection) {
+      if (connection && connection.readyState === WebSocket.OPEN) {
         const updateSpec = {
           method: 'clear',
         };
         const updateSpecString = JSON.stringify(updateSpec);
-
-        c.send(updateSpecString);
+        connection.send(updateSpecString);
       }
     }
   });
