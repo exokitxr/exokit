@@ -484,6 +484,8 @@ const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 32, 1)
       new THREE.Vector3(0, 0, -1)
     )
   ));
+const bodyGeometry = new THREE.BoxBufferGeometry(0.2, 0.5, 0.1)
+  .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.5/2 - 0.1, 0));
 const _getPlayerMesh = meshId => {
   let playerMesh = playerMeshes.find(playerMesh => playerMesh.meshId === meshId);
   if (!playerMesh) {
@@ -502,6 +504,12 @@ const _makePlayerMesh = (meshId = Math.random().toString(36).substring(7)) => {
     headMesh.frustumCulled = false;
     object.add(headMesh);
     object.headMesh = headMesh;
+
+    const bodyMesh = new THREE.Mesh(bodyGeometry, controllerMaterial);
+    // bodyMesh.matrixAutoUpdate = false;
+    bodyMesh.frustumCulled = false;
+    object.add(bodyMesh);
+    object.bodyMesh = bodyMesh;
 
     const controllerMeshes = Array(2);
     for (let i = 0; i < controllerMeshes.length; i++) {
@@ -522,11 +530,18 @@ const _makePlayerMesh = (meshId = Math.random().toString(36).substring(7)) => {
   return mesh;
 };
 const _loadPlayerMesh = (playerMesh, {position, rotation, controllers}) => {
-  const {headMesh} = playerMesh;
+  const {headMesh, bodyMesh} = playerMesh;
   headMesh.position.fromArray(position);
   headMesh.quaternion.fromArray(rotation);
   headMesh.updateMatrix();
   headMesh.updateMatrixWorld();
+
+  bodyMesh.position.fromArray(position);
+  localEuler.setFromQuaternion(headMesh.quaternion, 'YXZ');
+  localEuler.x = 0;
+  bodyMesh.quaternion.setFromEuler(localEuler);
+  bodyMesh.updateMatrix();
+  bodyMesh.updateMatrixWorld();
 
   for (let i = 0; i < controllers.length; i++) {
     const controller = controllers[i];
