@@ -773,6 +773,31 @@ wss.on('connection', c => {
           c.mesh.quaternion.fromArray(rotation);
           c.mesh.updateMatrix();
           c.mesh.updateMatrixWorld();
+
+          const otherConnections = connections.filter(c2 => c2 !== c);
+          if (otherConnections.length > 0) {
+            const updateSpec = {
+              method: 'transform',
+              players: [
+                {
+                  type: 'update',
+                  id: c.playerId,
+                  position,
+                  rotation,
+                },
+              ],
+            };
+            const updateSpecString = JSON.stringify(updateSpec);
+
+            for (let i = 0; i < otherConnections.length; i++) {
+              const c2 = otherConnections[i];
+
+              if (c2 !== c && c2.readyState === window.browser.ws.OPEN) {
+                c2.send(updateSpecString);
+              }
+            }
+          }
+
           break;
         }
         case 'paint': {
@@ -803,6 +828,27 @@ wss.on('connection', c => {
     c.mesh.geometry.dispose();
 
     connections.splice(connections.indexOf(c), 1);
+
+    if (connections.length > 0) {
+      const updateSpec = {
+        method: 'transform',
+        players: [
+          {
+            type: 'remove',
+            id: c.playerId,
+          },
+        ],
+      };
+      const updateSpecString = JSON.stringify(updateSpec);
+
+      for (let i = 0; i < connections.length; i++) {
+        const c2 = connections[i];
+
+        if (c2 !== c && c2.readyState === window.browser.ws.OPEN) {
+          c2.send(updateSpecString);
+        }
+      }
+    }
   });
 });
 
