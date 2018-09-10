@@ -147,10 +147,6 @@ let window = await require('./index').load(yourUrl);
 Now you have a handle on the window object as you test your application, and
 you can set `debugger` breakpoints and such.
 
-## Keyboard
-
-![Keyboard](https://raw.githubusercontent.com/webmixedreality/exokit/master/assets/keyboard.png)
-
 ## Community
 
 - [Slack](https://communityinviter.com/apps/exokit/exokit) for development
