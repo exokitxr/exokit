@@ -613,6 +613,7 @@ function animate(time, frame) {
       controllerMesh.matrix.fromArray(pose.pointerMatrix);
       controllerMesh.updateMatrixWorld(true);
     }
+
     if (paintMesh) {
       const inputSource = inputSources[paintControllerIndex];
       const pose = frame.getInputPose(inputSource);
@@ -842,6 +843,25 @@ wss.on('connection', c => {
         case 'paint': {
           const {meshId} = message;
           pendingPaintMeshId = meshId;
+          break;
+        }
+        case 'clear': {
+          _clearPaintMeshes();
+
+          paintMesh = null;
+          paintControllerIndex = -1;
+
+          const updateSpec = {
+            method: 'clear',
+          };
+          const updateSpecString = JSON.stringify(updateSpec);
+          for (let i = 0; i < connections.length; i++) {
+            const c = connections[i];
+
+            if (c.readyState === window.browser.ws.OPEN) {
+              c.send(updateSpecString);
+            }
+          }
           break;
         }
         default: {

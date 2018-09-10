@@ -204,6 +204,7 @@ function init() {
   renderer.setAnimationLoop(animate);
 }
 
+const lastGrabbeds = [false, false];
 function animate(time, frame) {
   if (controlsEnabled) {
     var time = performance.now();
@@ -252,6 +253,31 @@ function animate(time, frame) {
     }
 
     paintMesh.update(localVector, localQuaternion);
+  }
+
+  const gamepads = navigate.getGamepads();
+  for (let i = 0; i < gamepads.length; i++) {
+    const gamepad = gamepads[i];
+    const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
+
+    const grabbed = gamepad.buttons[2].pressed;
+    const lastGrabbed = lastGrabbeds[controllerIndex];
+    if (grabbed && !lastGrabbed) {
+      _clearPaintMeshes();
+
+      paintMesh = null;
+      paintControllerIndex = -1;
+
+      if (connection) {
+        const updateSpec = {
+          method: 'clear',
+        };
+        const updateSpecString = JSON.stringify(updateSpec);
+
+        c.send(updateSpecString);
+      }
+    }
+    lastGrabbeds[controllerIndex] = grabbed;
   }
 
   renderer.render(scene, camera);
