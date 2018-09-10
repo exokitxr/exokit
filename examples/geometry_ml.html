@@ -863,8 +863,10 @@ wss.on('connection', c => {
 
       switch (method) {
         case 'transform': {
-          const {position, rotation, controllers} = message;
-          _loadPlayerMesh(c.mesh, message);
+          const {players} = message;
+          const player = players[0];
+          const {position, rotation, controllers} = player;
+          _loadPlayerMesh(c.mesh, player);
 
           const otherConnections = _getOtherConnections();
           if (otherConnections.length > 0) {

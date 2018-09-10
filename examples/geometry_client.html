@@ -716,7 +716,6 @@ const _makePaintMesh = meshId => {
 
         geometry.setDrawRange(0, lastPoint * 2);
 
-        console.log('paint send', connection, connection.readyState, WebSocket.OPEN); // XXX
         if (connection && connection.readyState === WebSocket.OPEN) {
           const updateSpecs = [
             JSON.stringify({
@@ -882,7 +881,7 @@ connection.onopen = () => {
             _clearPaintMeshes();
 
             paintMesh = null;
-            paintControllerIndex = null;
+            paintControllerIndex = -1;
 
             _next();
             break;
@@ -978,6 +977,7 @@ const _bootKeyboard = () => {
     }
   });
   window.addEventListener('keypress', e => {
+    console.log('got keypress', e.which); // XXX
     if (e.which === 67) { // c
       _clearPaintMeshes();
 
