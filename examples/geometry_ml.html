@@ -11,7 +11,7 @@
 <script>
 (() => {
 
-let container, scene, camera, display, controllerMeshes;
+let container, scene, camera, display, controllerMeshes, teleportMesh;
 let mesher = null, connections = [], terrainMeshData = {};
 
 const MAX_NUM_POINTS = 1024;
@@ -19,9 +19,14 @@ const POINT_FRAME_RATE = 20;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
+const localVector5 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
+const localRay = new THREE.Ray();
+const localPlane = new THREE.Plane();
 
 const _requestImage = src => new Promise((accept, reject) => {
   const img = new Image();
@@ -461,6 +466,25 @@ function init() {
     scene.add(controllerMesh);
   });
 
+  teleportMesh = (() => {
+    const geometry = new THREE.CylinderBufferGeometry(0.1, 0, 0.3, 3, 1)
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.3, 0));
+
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xf44336,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+    // mesh.updateMatrix();
+    // mesh.updateMatrixWorld();
+    // mesh.matrixAutoUpdate = false;
+    mesh.visible = false;
+    mesh.frustumCulled = false;
+    return mesh;
+  })();
+  scene.add(teleportMesh);
+
   const terrainMeshes = [];
   let terrainMeshesVisible = true;
   const terrainMaterial = (() => {
@@ -674,6 +698,7 @@ function init() {
 }
 
 let lastUpdateTime = Date.now();
+const lastPads = [false, false];
 const lastGrabbeds = [false, false];
 const lastMenus = [false, false];
 function animate(time, frame) {
@@ -698,10 +723,74 @@ function animate(time, frame) {
       paintMesh.update(localVector, localQuaternion);
     }
 
+    const _teleportStart = (position, rotation) => {
+      const intersection = localRay
+        .set(
+          position,
+          localVector2.set(0, 0, -1)
+            .applyQuaternion(rotation)
+        )
+        .intersectPlane(
+          localPlane.setFromNormalAndCoplanarPoint(
+            localVector2.set(0, 1, 0),
+            localVector3.copy(position)
+              .add(localVector4.set(0, -1, 0))
+          ),
+          localVector5
+        );
+
+      if (intersection) {
+        localVector2.copy(intersection)
+          .sub(position);
+        localVector2.y = 0;
+        if (localVector2.length() > 3) {
+          localVector2.normalize().multiplyScalar(3);
+        }
+        localVector2.y -= 1;
+        teleportMesh.position.copy(position)
+          .add(localVector2);
+      } else {
+        localEuler.setFromQuaternion(rotation, 'YXZ');
+        localEuler.x = 0;
+        localEuler.z = 0;
+        teleportMesh.position.copy(position)
+          .add(
+            localVector2.set(0, -1, -3)
+              .applyEuler(localEuler)
+          );
+        // teleportMesh.position.y = 0;
+      }
+      // console.log('set position', position.toArray().join(','));
+      // teleportMesh.position.copy(position);
+      // teleportMesh.quaternion.setFromEuler(localEuler);
+      teleportMesh.updateMatrix();
+      teleportMesh.updateMatrixWorld();
+      teleportMesh.visible = true;
+    };
+    const _teleportEnd = () => {
+      // XXX
+      teleportMesh.visible = false;
+    };
+
     const gamepads = navigator.getGamepads();
     for (let i = 0; i < gamepads.length; i++) {
       const gamepad = gamepads[i];
       const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
+
+      const pad = gamepad.buttons[0].pressed;
+      const lastPad = lastPads[controllerIndex];
+      if (pad) {
+        const inputSource = inputSources[controllerIndex];
+        const pose = frame.getInputPose(inputSource);
+
+        localMatrix.fromArray(pose.pointerMatrix)
+          .decompose(localVector, localQuaternion, localVector2);
+
+        _teleportStart(localVector, localQuaternion);
+      } else if (!pad && lastPad) {
+        _teleportEnd();
+      }
+      lastPads[controllerIndex] = pad;
 
       const grabbed = gamepad.buttons[2].pressed;
       const lastGrabbed = lastGrabbeds[controllerIndex];
@@ -726,10 +815,10 @@ function animate(time, frame) {
       lastGrabbeds[controllerIndex] = grabbed;
 
       const menu = gamepad.buttons[3].pressed;
-      const lastMenus = lastMenus[controllerIndex];
+      const lastMenu = lastMenus[controllerIndex];
       if (menu && !lastMenu) {
         terrainMeshesVisible = !terrainMeshesVisible;
-        for (let j = 0 j < terrainMeshes.length; j++) {
+        for (let j = 0; j < terrainMeshes.length; j++) {
           terrainMeshes[j].visible = terrainMeshesVisible;
         }
       }
