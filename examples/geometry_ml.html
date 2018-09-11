@@ -818,7 +818,9 @@ function animate(time, frame) {
       if (connections.length > 0) {
         const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
         vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-        const position = localVector.toArray();
+        const position = localVector
+          .sub(scene2.position)
+          .toArray();
         const rotation = localQuaternion.toArray();
         const controllers = inputSources.map(inputSource => {
           const pose = frame.getInputPose(inputSource);
@@ -826,7 +828,9 @@ function animate(time, frame) {
             .decompose(localVector, localQuaternion, localVector2);
 
           return {
-            position: localVector.toArray(),
+            position: localVector
+              .sub(scene2.position)
+              .toArray(),
             rotation: localQuaternion.toArray(),
           };
         });
