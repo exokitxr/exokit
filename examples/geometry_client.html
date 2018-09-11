@@ -100,19 +100,6 @@ function init() {
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
 
-  /* (() => {
-    const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0xE91E63,
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    // mesh.position.y = 0.5;
-    mesh.position.z = -1;
-    mesh.updateMatrix();
-    mesh.updateMatrixWorld();
-    mesh.frustumCuled = false;
-    scene.add(mesh);
-  })(); */
   const skyboxMesh = (() => {
     const vertexShader = [
       'varying vec3 vWorldPosition;',
