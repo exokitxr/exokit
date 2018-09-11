@@ -700,6 +700,7 @@ function animate(time, frame) {
 
       localMatrix.fromArray(pose.pointerMatrix)
         .decompose(localVector, localQuaternion, localVector2);
+      localVector.sub(scene2.position);
       paintMesh.update(localVector, localQuaternion);
     }
 
