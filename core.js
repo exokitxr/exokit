@@ -1654,15 +1654,34 @@ exokit.load = (src, options = {}) => {
   if (!url.parse(src).protocol) {
     src = 'http://' + src;
   }
-  return fetch(src)
+  let redirectCount = 0;
+  const _fetchTextFollow = src => fetch(src, {
+    redirect: 'manual',
+  })
     .then(res => {
       if (res.status >= 200 && res.status < 300) {
-        return res.text();
+        return Promise.resolve({
+          src,
+          htmlString: res.text()
+        });
+      } else if (res.status >= 300 && res.status < 400) {
+        const l = res.headers.get('Location');
+        if (l) {
+          if (redirectCount < 10) {
+            redirectCount++;
+            return _fetchTextFollow(l);
+          } else {
+            return Promise.reject(new Error('fetch got too many redirects: ' + res.status + ' : ' + src));
+          }
+        } else {
+          return Promise.reject(new Error('fetch got redirect with no location header: ' + res.status + ' : ' + src));
+        }
       } else {
         return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + src));
       }
-    })
-    .then(htmlString => {
+    });
+  return _fetchTextFollow(src)
+    .then(({src, htmlString}) => {
       let baseUrl;
       if (options.baseUrl) {
         baseUrl = options.baseUrl;
