@@ -739,11 +739,7 @@ function animate(time, frame) {
             localVector2.set(0, -1, -3)
               .applyEuler(localEuler)
           );
-        // teleportMesh.position.y = 0;
       }
-      // console.log('set position', position.toArray().join(','));
-      // teleportMesh.position.copy(position);
-      // teleportMesh.quaternion.setFromEuler(localEuler);
       teleportMesh.updateMatrix();
       teleportMesh.updateMatrixWorld();
       teleportMesh.visible = true;

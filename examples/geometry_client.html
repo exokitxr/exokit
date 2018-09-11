@@ -46,7 +46,7 @@
     <script src="PointerLockControls.js"></script>
 <script>
 (() => {
-let scene, camera, clock, controls, display;
+let scene, scene2, camera, clock, controls, display;
 let connection;
 
 const MAX_NUM_POINTS = 1024;
@@ -54,6 +54,9 @@ const POINT_FRAME_RATE = 20;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
+const localVector5 = new THREE.Vector3();
 const localEuler = new THREE.Euler();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
@@ -87,6 +90,9 @@ function init() {
   scene = new THREE.Scene();
   scene.matrixAutoUpdate = false;
   // scene.background = new THREE.Color(0x3B3961);
+
+  scene2 = new THREE.Object3D();
+  scene.add(scene2);
 
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
   // camera.position.set(0, 1, 0);
@@ -129,7 +135,7 @@ function init() {
     }));
     return mesh;
   })();
-  scene.add(skyboxMesh);
+  scene2.add(skyboxMesh);
 
   (() => {
     var element = document.body;
@@ -164,9 +170,6 @@ function init() {
       e.stopPropagation();
     }, false );
   })();
-
-  controls = new THREE.PointerLockControls(camera);
-	scene.add(controls.getObject());
 
   var onKeyDown = function ( event ) {
     switch ( event.keyCode ) {
@@ -264,16 +267,19 @@ function animate(time, frame) {
   if (paintMesh) {
     if (paintControllerIndex === -1) {
       camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-      localVector.add(
-        localVector2.set(0, 0, -0.3)
-          .applyQuaternion(localQuaternion)
-      );
+      localVector
+        .add(
+          localVector2.set(0, 0, -0.3)
+            .applyQuaternion(localQuaternion)
+        )
+        .sub(scene2.position);
     } else {
       const inputSource = inputSources[paintControllerIndex];
       const pose = frame.getInputPose(inputSource);
 
       localMatrix.fromArray(pose.pointerMatrix)
         .decompose(localVector, localQuaternion, localVector2);
+      localVector.sub(scene2.position);
     }
 
     paintMesh.update(localVector, localQuaternion);
@@ -283,36 +289,52 @@ function animate(time, frame) {
     const intersection = localRay
       .set(
         position,
-        localVector2.set(0, 0, -3)
+        localVector2.set(0, 0, -1)
           .applyQuaternion(rotation)
       )
       .intersectPlane(
         localPlane.setFromNormalAndCoplanarPoint(
           localVector2.set(0, 1, 0),
-          localVector3.set(0, 0, 0)
+          localVector3.copy(position)
+            .add(localVector4.set(0, -1, 0))
         ),
-        localVector4
+        localVector5
       );
 
     if (intersection) {
-      teleportMesh.position.copy(intersection);
+      localVector2.copy(intersection)
+        .sub(position);
+      localVector2.y = 0;
+      if (localVector2.length() > 3) {
+        localVector2.normalize().multiplyScalar(3);
+      }
+      localVector2.y -= 1;
+      teleportMesh.position.copy(position)
+        .add(localVector2);
     } else {
       localEuler.setFromQuaternion(rotation, 'YXZ');
       localEuler.x = 0;
       localEuler.z = 0;
-      teleportMesh.position.copy(localVector2)
+      teleportMesh.position.copy(position)
         .add(
-          localVector2.set(0, 0, -3)
+          localVector2.set(0, -1, -3)
             .applyEuler(localEuler)
         );
     }
-    teleportMesh.position.copy(position);
-    teleportMesh.quaternion.setFromEuler(localEuler);
+    teleportMesh.updateMatrix();
+    teleportMesh.updateMatrixWorld();
     teleportMesh.visible = true;
   };
   const _teleportEnd = () => {
-    controls.getObject().position.copy(teleportMesh.position);
-    teleportMesh.visible = true;
+    const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+    vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+
+    scene2.position.x += localVector.x - teleportMesh.position.x;
+    scene2.position.z += localVector.z - teleportMesh.position.z;
+    scene2.updateMatrix();
+    scene2.updateMatrixWorld();
+
+    teleportMesh.visible = false;
   };
 
   const gamepads = navigator.getGamepads();
@@ -371,7 +393,9 @@ function animate(time, frame) {
   if ((now - lastUpdateTime) > (1000 / 30)) {
     const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
     vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-    const position = localVector.toArray();
+    const position = localVector
+      .sub(scene2.position)
+      .toArray();
     const rotation = localQuaternion.toArray();
     const controllers = inputSources.map(inputSource => {
       const pose = frame.getInputPose(inputSource);
@@ -379,7 +403,9 @@ function animate(time, frame) {
         .decompose(localVector, localQuaternion, localVector2);
 
       return {
-        position: localVector.toArray(),
+        position: localVector
+          .sub(scene2.position)
+          .toArray(),
         rotation: localQuaternion.toArray(),
       };
     });
@@ -461,7 +487,7 @@ const _getTerrainMesh = meshId => {
   if (!terrainMesh) {
     terrainMesh = _makeTerrainMesh(meshId);
     terrainMeshes.push(terrainMesh);
-    scene.add(terrainMesh);
+    scene2.add(terrainMesh);
   }
   return terrainMesh;
 };
@@ -495,7 +521,7 @@ const _loadTerrainMesh = (terrainMesh, {positionArray, positionCount, normalArra
   geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
 };
 const _removeTerrainMesh = terrainMesh => {
-  scene.remove(terrainMesh);
+  scene2.remove(terrainMesh);
   terrainMesh.geometry.dispose();
 };
 
@@ -515,7 +541,7 @@ const _getPlayerMesh = meshId => {
   if (!playerMesh) {
     playerMesh = _makePlayerMesh(meshId);
     playerMeshes.push(playerMesh);
-    scene.add(playerMesh);
+    scene2.add(playerMesh);
   }
   return playerMesh;
 };
@@ -579,7 +605,7 @@ const _loadPlayerMesh = (playerMesh, {position, rotation, controllers}) => {
   }
 };
 const _removePlayerMesh = playerMesh => {
-  scene.remove(playerMesh);
+  scene2.remove(playerMesh);
 };
 
 let paintMesh = null;
@@ -620,7 +646,7 @@ const _getPaintMesh = (meshId = Math.random().toString(36).substring(7)) => {
   if (!paintMesh) {
     paintMesh = _makePaintMesh(meshId);
     paintMeshes.push(paintMesh);
-    scene.add(paintMesh);
+    scene2.add(paintMesh);
   }
   return paintMesh;
 };
@@ -856,7 +882,7 @@ const _makePaintMesh = meshId => {
 const _clearPaintMeshes = () => {
   for (let i = 0; i < paintMeshes.length; i++) {
     const paintMesh = paintMeshes[i];
-    scene.remove(paintMesh);
+    scene2.remove(paintMesh);
     paintMesh.geometry.dispose();
   }
   paintMeshes.length = 0;
@@ -1050,6 +1076,9 @@ const _bootXr = async newDisplay => {
   });
 };
 const _bootKeyboard = () => {
+  controls = new THREE.PointerLockControls(camera);
+  scene.add(controls.getObject());
+
   window.addEventListener('mousedown', () => {
     if (!paintMesh) {
       paintMesh = _getPaintMesh();
