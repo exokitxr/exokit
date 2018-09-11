@@ -43,18 +43,18 @@ find -name '\.bin' | xargs rm -Rf
 rm -Rf build/libexokit
 mkdir -p build/libexokit
 find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/libexokit/libexokit.a
-./gen-dlibs-h.js >build/libexokit/dlibs.h
+./scripts/gen-dlibs-h.js >build/libexokit/dlibs.h
 
 # build mpk
 
 ./magicleap-js/hack-toolchain.js -u
 
-cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin program-device.mabu
+cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin metadata/program-device.mabu
 if [ "$ARG1" = "--signed" ] || [ "$ARG1" = "--all" ]; then
-  cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m manifest-device.xml -p --create-package -s cert/app.cert app-device.package
+  cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m metadata/metadata/manifest-device.xml -p --create-package -s cert/app.cert metadata/app-device.package
   cp build/magicleap/app-device/app-device.mpk build/magicleap/exokit.mpk
 fi
 if [ "$ARG1" = "--unsigned" ] || [ "$ARG1" = "--all" ]; then
-  cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m manifest-device.xml -p --create-package --allow-unsigned app-device.package
+  cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m metadata/manifest-device.xml -p --create-package --allow-unsigned metadata/app-device.package
   cp build/magicleap/app-device/app-device.mpk build/magicleap/exokit-unsigned.mpk
 fi

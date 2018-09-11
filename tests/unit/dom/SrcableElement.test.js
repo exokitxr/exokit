@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const helpers = require('../helpers');
-const exokit = require('../../../index');
+const exokit = require('../../../src/index');
 
 const imageData = fs.readFileSync(path.resolve(__dirname, '../data/test.png'), 'base64');
 const imageDataUri = `data:image/img;base64,${imageData}`;
@@ -25,7 +25,7 @@ describe('HTMLSrcableElement', () => {
     window.navigator.getVRDisplaysSync = () => [];
     document = o.document;
   });
-  
+
   afterEach(() => {
     window.destroy();
   });
@@ -65,7 +65,7 @@ describe('HTMLSrcableElement', () => {
       let passed = false;
       el.onload = () => {
         if (passed) {
-          done(); 
+          done();
         } else {
           done(new Error('seems sync'));
         }
@@ -115,7 +115,7 @@ describe('HTMLSrcableElement', () => {
       let passed = false;
       el.oncanplay = () => {
         if (passed) {
-          done(); 
+          done();
         } else {
           done(new Error('seems sync'));
         }
@@ -144,7 +144,7 @@ describe('HTMLSrcableElement', () => {
       el.onerror = err => { done(err); };
       el.src = `${TEST_URL}/test.mp4`;
     })
-    
+
     it('works with data url', done => {
       el = document.createElement('video');
       el.oncanplay = () => { done(); };
@@ -165,7 +165,7 @@ describe('HTMLSrcableElement', () => {
       let passed = false;
       el.oncanplay = () => {
         if (passed) {
-          done(); 
+          done();
         } else {
           done(new Error('seems sync'));
         }

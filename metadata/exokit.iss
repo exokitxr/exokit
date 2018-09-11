@@ -27,7 +27,7 @@ AllowNoIcons=yes
 LicenseFile={#ProjectRoot}\LICENSE.md
 OutputDir={#ProjectRoot}\dist\{#MyAppVersion}
 OutputBaseFilename={#MyAppLCShortName}-v{#MyAppVersion}-win-x64
-SetupIconFile={#ProjectRoot}\{#MyIcon}
+SetupIconFile={#ProjectRoot}\metadata\{#MyIcon}
 Compression=lzma
 ; Much faster
 ; Compression=none
@@ -35,7 +35,7 @@ SolidCompression=yes
 ChangesEnvironment=yes
 DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64 ia64
-UninstallDisplayIcon={app}\{#MyIcon}
+UninstallDisplayIcon={app}\metadata\{#MyIcon}
 AppCopyright=Copyright (c) 2018 WebMR
 
 [Languages]
@@ -50,12 +50,12 @@ Source: "{#ProjectRoot}\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: 
 [Registry]
 Root: HKCR; Subkey: "Exokit"; ValueType: "string"; ValueData: "URL:Exokit Protocol"; Flags: uninsdeletekey
 Root: HKCR; Subkey: "Exokit"; ValueType: "string"; ValueName: "URL Protocol"; ValueData: ""
-Root: HKCR; Subkey: "Exokit\DefaultIcon"; ValueType: "string"; ValueData: "{app}\{#MyAppExeName},0"
-Root: HKCR; Subkey: "Exokit\shell\open\command"; ValueType: "string"; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+Root: HKCR; Subkey: "Exokit\DefaultIcon"; ValueType: "string"; ValueData: "{app}\scripts\{#MyAppExeName},0"
+Root: HKCR; Subkey: "Exokit\shell\open\command"; ValueType: "string"; ValueData: """{app}\scripts\{#MyAppExeName}"" ""%1"""
 
 [Icons]
-Name: "{group}\{#MyAppName}"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-h -l"; IconFilename: "{app}\{#MyIcon}"
-Name: "{group}\{#MyAppShortName} Engine CLI"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-l"; IconFilename: "{app}\{#MyIcon}"
+Name: "{group}\{#MyAppName}"; WorkingDir: "{%userprofile}"; Filename: "{app}\scripts\{#MyAppExeName}"; Parameters: "-h -l"; IconFilename: "{app}\metadata\{#MyIcon}"
+Name: "{group}\{#MyAppShortName} Engine CLI"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-l"; IconFilename: "{app}\metadata\{#MyIcon}"
 Name: "{group}\Uninstall {#MyAppShortName}"; Filename: "{uninstallexe}"
 
 [Code]
@@ -142,12 +142,12 @@ begin
 //   // Create a file to check for Node.JS
 //   TmpJS := ExpandConstant('{tmp}') + '\nvm_check.js';
 //   SaveStringToFile(TmpJS, 'console.log(require("path").dirname(process.execPath));', False);
-// 
+//
 //   // Execute the node file and save the output temporarily
 //   TmpResultFile := ExpandConstant('{tmp}') + '\nvm_node_check.txt';
 //   Exec(ExpandConstant('{cmd}'), '/C node "'+TmpJS+'" > "' + TmpResultFile + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 //   DeleteFile(TmpJS)
-// 
+//
 //   // Process the results
 //   LoadStringFromFile(TmpResultFile,stdout);
 //   NodePath := Trim(Ansi2String(stdout));
@@ -171,7 +171,7 @@ begin
 //       TakeControl(NodePath, NodeVersion);
 //     end;
 //   end;
-// 
+//
 //   // Make sure the symlink directory doesn't exist
 //   if DirExists(SymlinkPage.Values[0]) then begin
 //     // If the directory is empty, just delete it since it will be recreated anyway.
@@ -208,13 +208,13 @@ var
   nvm_symlink: string;
 begin
 //   MsgBox('Removing NVM for Windows will remove the nvm command and all versions of node.js, including global npm modules.', mbInformation, MB_OK);
-// 
+//
 //   // Remove the symlink
 //   RegQueryStringValue(HKEY_LOCAL_MACHINE,
 //     'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
 //     'NVM_SYMLINK', nvm_symlink);
 //   RemoveDir(nvm_symlink);
-// 
+//
 //   // Clean the registry
 //   RegDeleteValue(HKEY_LOCAL_MACHINE,
 //     'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
@@ -228,25 +228,25 @@ begin
 //   RegDeleteValue(HKEY_CURRENT_USER,
 //     'Environment',
 //     'NVM_SYMLINK')
-// 
+//
 //   RegQueryStringValue(HKEY_LOCAL_MACHINE,
 //     'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
 //     'Path', path);
-// 
+//
 //   StringChangeEx(path,'%NVM_HOME%','',True);
 //   StringChangeEx(path,'%NVM_SYMLINK%','',True);
 //   StringChangeEx(path,';;',';',True);
-// 
+//
 //   RegWriteExpandStringValue(HKEY_LOCAL_MACHINE, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'Path', path);
-// 
+//
 //   RegQueryStringValue(HKEY_CURRENT_USER,
 //     'Environment',
 //     'Path', path);
-// 
+//
 //   StringChangeEx(path,'%NVM_HOME%','',True);
 //   StringChangeEx(path,'%NVM_SYMLINK%','',True);
 //   StringChangeEx(path,';;',';',True);
-// 
+//
 //   RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', path);
 
   Result := True;
@@ -260,13 +260,13 @@ begin
   if CurStep = ssPostInstall then
   begin
 //     SaveStringToFile(ExpandConstant('{app}\settings.txt'), 'root: ' + ExpandConstant('{app}') + #13#10 + 'path: ' + SymlinkPage.Values[0] + #13#10, False);
-// 
+//
 //     // Add Registry settings
 //     RegWriteExpandStringValue(HKEY_LOCAL_MACHINE, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'NVM_HOME', ExpandConstant('{app}'));
 //     RegWriteExpandStringValue(HKEY_LOCAL_MACHINE, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'NVM_SYMLINK', SymlinkPage.Values[0]);
 //     RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'NVM_HOME', ExpandConstant('{app}'));
 //     RegWriteExpandStringValue(HKEY_CURRENT_USER, 'Environment', 'NVM_SYMLINK', SymlinkPage.Values[0]);
-// 
+//
 //     // Update system and user PATH if needed
 //     RegQueryStringValue(HKEY_LOCAL_MACHINE,
 //       'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',

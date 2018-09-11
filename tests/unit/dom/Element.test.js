@@ -1,5 +1,5 @@
 /* global afterEach, assert, beforeEach, describe, it */
-const exokit = require('../../../index');
+const exokit = require('../../../src/index');
 
 describe('Element', () => {
   var window;

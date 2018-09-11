@@ -6,14 +6,14 @@
     "node": ">=10.0.0"
   },
   "bin": {
-    "exokit": "index.js"
+    "exokit": "src/index.js"
   },
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "build": "node-gyp build",
     "debug": "ndb",
-    "install": "node ./preinstall.js && node-gyp rebuild",
-    "lint": "eslint core.js index.js native-bindings.js src tests",
+    "install": "node ./scripts/preinstall.js && node-gyp rebuild",
+    "lint": "eslint src tests",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "serve": "serve examples",
     "start": "node .",
