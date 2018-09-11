@@ -477,6 +477,7 @@ const teleportMesh = (() => {
   mesh.frustumCulled = false;
   return mesh;
 })();
+scene.add(teleportMesh);
 
 const terrainMeshes = [];
 const terrainMaterial = new THREE.MeshPhongMaterial({
