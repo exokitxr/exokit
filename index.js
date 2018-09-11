@@ -459,7 +459,7 @@ if (nativeMl) {
           const width = halfWidth * 2;
           renderWidth = halfWidth;
           renderHeight = height;
-          
+
           const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
           mlFbo = fbo;
           mlTex = tex;
@@ -568,7 +568,7 @@ if (nativeMl) {
     if (mlGlContext) {
       const {canvas} = mlGlContext;
       const window = canvas.ownerDocument.defaultView;
-      
+
       switch (e.type) {
         case 'keydown': {
           let handled = false;
@@ -1408,7 +1408,7 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    
+
     // update magic leap post state
     if (nativeMl && mlGlContext) {
       nativeMl.PostPollEvents(mlContext, mlGlContext, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);

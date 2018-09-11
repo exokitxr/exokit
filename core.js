@@ -800,6 +800,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const window = vmo.getGlobal();
   window.vm = vmo;
 
+  // Store original prototypes for converting to and from native and JS.
+  utils._storeOriginalWindowPrototypes(window, symbols.prototypesSymbol);
+
   const windowStartScript = `(() => {
     ${!GlobalContext.args.require ? 'global.require = undefined;' : ''}
 
@@ -957,31 +960,31 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.fetch = (url, options) => {
-    const _boundFetch = (url, options) => utils._normalizeBuffer(
+    const _boundFetch = (url, options) => utils._normalizePrototype(
       fetch(url, options),
       window
     )
       .then(res => {
         res.arrayBuffer = (fn => function() {
-          return utils._normalizeBuffer(
+          return utils._normalizePrototype(
             fn.apply(this, arguments),
             window
           );
         })(res.arrayBuffer);
         res.blob = (fn => function() {
-          return utils._normalizeBuffer(
+          return utils._normalizePrototype(
             fn.apply(this, arguments),
             window
           );
         })(res.blob);
         res.json = (fn => function() {
-          return utils._normalizeBuffer(
+          return utils._normalizePrototype(
             fn.apply(this, arguments),
             window
           );
         })(res.json);
         res.text = (fn => function() {
-          return utils._normalizeBuffer(
+          return utils._normalizePrototype(
             fn.apply(this, arguments),
             window
           );
@@ -989,11 +992,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
         res.arrayBuffer = (fn => function() {
           return fn.apply(this, arguments)
-            .then(ab => utils._normalizeBuffer(ab, window));
+            .then(ab => utils._normalizePrototype(ab, window));
         })(res.arrayBuffer);
         res.blob = (fn => function() {
           return fn.apply(this, arguments)
-            .then(b => utils._normalizeBuffer(b, window));
+            .then(b => utils._normalizePrototype(b, window));
         })(res.blob);
 
         return res;
@@ -1015,13 +1018,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Request = Request;
   window.Response = (Old => class Response extends Old {
     constructor(body, opts) {
-      super(utils._normalizeBuffer(body, global), opts);
+      super(utils._normalizePrototype(body, global), opts);
     }
   })(Response);
   window.Headers = Headers;
   window.Blob = (Old => class Blob extends Old {
     constructor(parts, opts) {
-      super(parts && parts.map(part => utils._normalizeBuffer(part, global)), opts);
+      super(parts && parts.map(part => utils._normalizePrototype(part, global)), opts);
     }
   })(Blob);
   window.FormData = FormData;
@@ -1032,7 +1035,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         return super.open(method, url, async, username, password);
       }
       get response() {
-        return utils._normalizeBuffer(super.response, window);
+        return utils._normalizePrototype(super.response, window);
       }
     }
     for (const k in XMLHttpRequestBase) {
@@ -1044,12 +1047,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     class WebSocket extends Old {
       emit(type, event) {
         if (type === 'message') {
-          event = utils._normalizeBuffer(event, window);
+          event = utils._normalizePrototype(event, window);
         }
         return super.emit.apply(this, arguments);
       }
       send(data) {
-        return super.send(utils._normalizeBuffer(data, global));
+        return super.send(utils._normalizePrototype(data, global));
       }
     }
     for (const k in Old) {
@@ -1152,17 +1155,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           cb = (cb => function(req, res) {
             res.write = (write => function(d) {
               if (typeof d === 'object') {
-                d = utils._normalizeBuffer(d, global);
+                d = utils._normalizePrototype(d, global);
               }
               return write.apply(this, arguments);
             })(res.write);
             res.end = (end => function(d) {
               if (typeof d === 'object') {
-                d = utils._normalizeBuffer(d, global);
+                d = utils._normalizePrototype(d, global);
               }
               return end.apply(this, arguments);
             })(res.end);
-            
+
             return cb.apply(this, arguments);
           })(cb);
         }
@@ -1239,7 +1242,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           cb = (cb => function(datas) {
             for (let i = 0; i < datas.length; i++) {
               const data = datas[i];
-              data.data = utils._normalizeBuffer(data.data, window);
+              data.data = utils._normalizePrototype(data.data, window);
             }
             return cb.apply(this, arguments);
           })(cb);
@@ -1686,15 +1689,35 @@ exokit.load = (src, options = {}) => {
   if (!url.parse(src).protocol) {
     src = 'http://' + src;
   }
-  return fetch(src)
+  let redirectCount = 0;
+  const _fetchTextFollow = src => fetch(src, {
+    redirect: 'manual',
+  })
     .then(res => {
       if (res.status >= 200 && res.status < 300) {
-        return res.text();
+        return res.text()
+          .then(htmlString => ({
+            src,
+            htmlString,
+          }));
+      } else if (res.status >= 300 && res.status < 400) {
+        const l = res.headers.get('Location');
+        if (l) {
+          if (redirectCount < 10) {
+            redirectCount++;
+            return _fetchTextFollow(l);
+          } else {
+            return Promise.reject(new Error('fetch got too many redirects: ' + res.status + ' : ' + src));
+          }
+        } else {
+          return Promise.reject(new Error('fetch got redirect with no location header: ' + res.status + ' : ' + src));
+        }
       } else {
         return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + src));
       }
-    })
-    .then(htmlString => {
+    });
+  return _fetchTextFollow(src)
+    .then(({src, htmlString}) => {
       let baseUrl;
       if (options.baseUrl) {
         baseUrl = options.baseUrl;

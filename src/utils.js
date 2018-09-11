@@ -1,6 +1,7 @@
 const parseIntStrict = require('parse-int');
 const url = require('url');
 const GlobalContext = require('./GlobalContext');
+const symbols = require('./symbols');
 
 function _getBaseUrl(u) {
   let baseUrl;
@@ -71,45 +72,84 @@ const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, c
 };
 module.exports._runJavascript = _runJavascript;
 
-const _normalizeBuffer = (b, target) => {
-  const name = b && b.constructor && b.constructor.name;
-  switch (name) {
-    case 'Buffer': {
-      if (!(b instanceof target.Buffer)) {
-        GlobalContext.nativeVm.setPrototype(b, target.Buffer.prototype);
-      }
-      if (!(b.buffer instanceof target.ArrayBuffer)) {
-        GlobalContext.nativeVm.setPrototype(b.buffer, target.ArrayBuffer.prototype);
-      }
-      break;
-    }
-    case 'ArrayBuffer':
-    case 'Uint8Array':
-    case 'Uint8ClampedArray':
-    case 'Int8Array':
-    case 'Uint16Array':
-    case 'Int16Array':
-    case 'Uint32Array':
-    case 'Int32Array':
-    case 'Float32Array':
-    case 'Float64Array':
-    case 'DataView':
-    case 'Promise': {
-      if (!(b instanceof target[name])) {
-        GlobalContext.nativeVm.setPrototype(b, target[name].prototype);
-      }
-      break;
-    }
-    case 'Blob': {
-      if (!(b.buffer instanceof target.Buffer)) {
-        GlobalContext.nativeVm.setPrototype(b.buffer, target.Buffer.prototype);
-      }
-      break;
-    }
+const NORMALIZE_LIST = [
+  'ArrayBuffer',
+  'Buffer',
+  'DataView',
+  'Float32Array',
+  'Float64Array',
+  'Int16Array',
+  'Int32Array',
+  'Int8Array',
+  'Promise',
+  'Uint16Array',
+  'Uint32Array',
+  'Uint8Array',
+  'Uint8ClampedArray'
+];
+
+/**
+ * Normalize prototype between native and V8.
+ * Node's vm module was slow so there's vm-one for one-way bindings:
+ *   github.com/modulesio/vm-one
+ * nativeVm.setPrototype will do the nan casting setPrototype between types.
+ * Required for instanceof to work.
+ *
+ * @param obj - Object to convert.
+ * @param targetContext - window or vm context that prototype will get retrieved from.
+ */
+const _normalizePrototype = (obj, targetContext) => {
+  if (!obj || typeof obj !== 'object') { return obj; }
+
+  let name = obj && obj.constructor && obj.constructor.name;
+
+  if (NORMALIZE_LIST.indexOf(name) === -1) { return obj; }
+
+  const isToWindow = !!targetContext[symbols.prototypesSymbol];
+
+  if (isToWindow && obj instanceof targetContext[symbols.prototypesSymbol][name]) {
+    return obj;
   }
-  return b;
+  if (!isToWindow && obj instanceof targetContext[name]) {
+    return obj;
+  }
+
+  // Convert Buffer's ArrayBuffer.
+  if (name === 'Buffer') {
+    _normalizePrototype(obj, targetContext);
+    _normalizePrototype(obj.buffer, targetContext);
+    return obj;
+  }
+
+  // Convert Blob's buffer.
+  if (name === 'Blob') {
+    _normalizePrototype(obj.buffer, targetContext);
+    return obj;
+  }
+
+  // Normalize to window prototype.
+  if (isToWindow) {
+    GlobalContext.nativeVm.setPrototype(obj, targetContext[symbols.prototypesSymbol][name].prototype ||
+                                             targetContext[name].prototype);
+    return obj;
+  }
+
+  // Normalize to native prototype.
+  GlobalContext.nativeVm.setPrototype(obj, targetContext[name].prototype);
+  return obj;
 };
-module.exports._normalizeBuffer = _normalizeBuffer;
+module.exports._normalizePrototype = _normalizePrototype;
+
+/**
+ * Store prototypes on window object to be used alongside _normalizePrototype.
+ * In case they get mangled by a website.
+ */
+module.exports._storeOriginalWindowPrototypes = function (window, prototypesSymbol) {
+  window[prototypesSymbol] = {};
+  NORMALIZE_LIST.forEach(prototypeName => {
+    window[prototypesSymbol][prototypeName] = window[prototypeName];
+  });
+};
 
 const _elementGetter = (self, attribute) => self.listeners(attribute)[0];
 module.exports._elementGetter = _elementGetter;
