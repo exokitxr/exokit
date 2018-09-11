@@ -235,7 +235,10 @@ function init() {
 }
 
 let lastUpdateTime = Date.now();
+const lastPads = [false, false];
 const lastGrabbeds = [false, false];
+let qDown = false;
+let lastQDown = false;
 function animate(time, frame) {
   if (controlsEnabled) {
     var time = performance.now();
@@ -286,12 +289,63 @@ function animate(time, frame) {
     paintMesh.update(localVector, localQuaternion);
   }
 
+  const _teleportStart = (position, rotation) => {
+    const intersection = localRay
+      .set(
+        position,
+        localVector2.set(0, 0, -3)
+          .applyQuaternion(rotation)
+      )
+      .intersectPlane(
+        localPlane.setFromNormalAndCoplanarPoint(
+          localVector2.set(0, 1, 0),
+          localVector3.set(0, 0, 0)
+        ),
+        localVector4
+      );
+
+    if (intersection) {
+      teleportMesh.position.copy(intersection);
+    } else {
+      localEuler.setFromQuaternion(rotation, 'YXZ');
+      localEuler.x = 0;
+      localEuler.z = 0;
+      teleportMesh.position.copy(localVector2)
+        .add(
+          localVector2.set(0, 0, -3)
+            .applyEuler(localEuler)
+        );
+    }
+    teleportMesh.position.copy(position);
+    teleportMesh.quaternion.setFromEuler(localEuler);
+    teleportMesh.visible = true;
+  };
+  const _teleportEnd = () => {
+    controls.getObject().position.copy(teleportMesh.position);
+    teleportMesh.visible = true;
+  };
+
   const gamepads = navigator.getGamepads();
   for (let i = 0; i < gamepads.length; i++) {
     const gamepad = gamepads[i];
 
     if (gamepad) {
       const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
+
+      const pad = gamepad.buttons[0].pressed;
+      const lastPad = lastPads[controllerIndex];
+      if (pad) {
+        const inputSource = inputSources[controllerIndex];
+        const pose = frame.getInputPose(inputSource);
+
+        localMatrix.fromArray(pose.pointerMatrix)
+          .decompose(localVector, localQuaternion, localVector2);
+
+        _teleportStart(localVector, localQuaternion);
+      } else if (!pad && lastPad) {
+        _teleportEnd();
+      }
+      lastPads[controllerIndex] = pad;
 
       const grabbed = gamepad.buttons[2].pressed;
       const lastGrabbed = lastGrabbeds[controllerIndex];
@@ -312,6 +366,16 @@ function animate(time, frame) {
       lastGrabbeds[controllerIndex] = grabbed;
     }
   }
+
+  if (qDown) {
+    const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+    vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+
+    _teleportStart(localVector, localQuaternion);
+  } else if (!qDown && lastQDown) {
+    _teleportEnd();
+  }
+  lastQDown = qDown;
 
   const now = Date.now();
   if ((now - lastUpdateTime) > (1000 / 30)) {
@@ -379,6 +443,23 @@ const controllerMeshes = [
 controllerMeshes.forEach(controllerMesh => {
   scene.add(controllerMesh);
 });
+
+const teleportMesh = (() => {
+  const geometry = new THREE.CylinderBufferGeometry(0.01, 0.1, 0.3, 3, 1)
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0));
+
+  const material = new THREE.MeshPhongMaterial({
+    color: 0xf44336,
+  });
+
+  const mesh = new THREE.Mesh(geometry, material);
+  // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+  // mesh.updateMatrix();
+  // mesh.updateMatrixWorld();
+  // mesh.matrixAutoUpdate = false;
+  mesh.frustumCulled = false;
+  return mesh;
+})();
 
 const terrainMeshes = [];
 const terrainMaterial = new THREE.MeshPhongMaterial({
@@ -986,6 +1067,16 @@ const _bootKeyboard = () => {
   window.addEventListener('mouseup', () => {
     if (paintMesh) {
       paintMesh = null;
+    }
+  });
+  window.addEventListener('keydown', e => {
+    if (e.which === 81) { // q
+      qDown = true;
+    }
+  });
+  window.addEventListener('keyup', e => {
+    if (e.which === 81) { // q
+      qDown = false;
     }
   });
   window.addEventListener('keypress', e => {
