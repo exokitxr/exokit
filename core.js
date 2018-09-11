@@ -1660,10 +1660,11 @@ exokit.load = (src, options = {}) => {
   })
     .then(res => {
       if (res.status >= 200 && res.status < 300) {
-        return Promise.resolve({
-          src,
-          htmlString: res.text()
-        });
+        return res.text()
+          .then(htmlString => ({
+            src,
+            htmlString,
+          }));
       } else if (res.status >= 300 && res.status < 400) {
         const l = res.headers.get('Location');
         if (l) {
