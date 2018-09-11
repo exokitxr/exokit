@@ -54,8 +54,11 @@ const POINT_FRAME_RATE = 20;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localEuler = new THREE.Euler();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
+const localRay = new THREE.Ray();
+const localPlane = new THREE.Plane();
 
 const _requestImage = src => new Promise((accept, reject) => {
   const img = new Image();
