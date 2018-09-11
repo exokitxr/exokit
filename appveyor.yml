@@ -52,7 +52,7 @@ deploy:
   - provider: GitHub
     description: 'Exokit git'
     auth_token:
-      secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN
+      secure: qQU6Qfie9FkYGW1inshRh/P37b5KRsA4fGM4GjqRm8PlBlt1nSIctc5tXIq6WeyY
     artifact: "exokit-windows.zip"
     draft: false
     prerelease: false
@@ -61,7 +61,7 @@ deploy:
   - provider: GitHub
     description: 'Exokit git'
     auth_token:
-      secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN
+      secure: qQU6Qfie9FkYGW1inshRh/P37b5KRsA4fGM4GjqRm8PlBlt1nSIctc5tXIq6WeyY
     artifact: "exokit-windows-full.zip"
     draft: false
     prerelease: false
@@ -70,7 +70,7 @@ deploy:
   - provider: GitHub
     description: 'Exokit installer'
     auth_token:
-      secure: JzzhsoEKVJ6oKuS/3Uwa+odltY7CFRU/V5BaO62rG6BwfSeCydMDX5o/gJScQGkN
+      secure: qQU6Qfie9FkYGW1inshRh/P37b5KRsA4fGM4GjqRm8PlBlt1nSIctc5tXIq6WeyY
     artifact: "exokit-win-x64.exe"
     draft: false
     prerelease: false
