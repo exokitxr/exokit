@@ -11,7 +11,7 @@
 <script>
 (() => {
 
-let container, scene, camera, display, controllerMeshes, teleportMesh;
+let container, scene, scene2, camera, display, controllerMeshes, teleportMesh;
 let mesher = null, connections = [], terrainMeshData = {};
 
 const MAX_NUM_POINTS = 1024;
@@ -162,7 +162,7 @@ const _getPaintMesh = (meshId = Math.random().toString(36).substring(7)) => {
   if (!paintMesh) {
     paintMesh = _makePaintMesh(meshId);
     paintMeshes.push(paintMesh);
-    scene.add(paintMesh);
+    scene2.add(paintMesh);
   }
   return paintMesh;
 };
@@ -409,7 +409,7 @@ const _makePaintMesh = meshId => {
 const _clearPaintMeshes = () => {
   for (let i = 0; i < paintMeshes.length; i++) {
     const paintMesh = paintMeshes[i];
-    scene.remove(paintMesh);
+    scene2.remove(paintMesh);
     paintMesh.geometry.dispose();
   }
   paintMeshes.length = 0;
@@ -423,6 +423,9 @@ function init() {
   scene.matrixAutoUpdate = false;
   // scene.background = new THREE.Color(0x3B3961);
 
+  scene2 = new THREE.Object3D();
+  scene.add(scene2);
+
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
   // camera.position.set(0, 1, 0);
   camera.lookAt(new THREE.Vector3());
@@ -434,29 +437,6 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
-
-  /* (() => {
-    const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0xE91E63,
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.y = 0.5;
-    // mesh.position.z = -1;
-    mesh.frustumCuled = false;
-    scene.add(mesh);
-  })();
-  (() => {
-    const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0x4CAF50,
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.y = 1 + 0.1;
-    // mesh.position.z = -1;
-    mesh.frustumCulled = false;
-    scene.add(mesh);
-  })(); */
 
   controllerMeshes = [
     _makeControllerMesh(-0.1),
@@ -542,7 +522,7 @@ function init() {
     if (!terrainMesh) {
       terrainMesh = _makeTerrainMesh(meshId);
       terrainMeshes.push(terrainMesh);
-      scene.add(terrainMesh);
+      scene2.add(terrainMesh);
     }
     return terrainMesh;
   };
@@ -583,7 +563,7 @@ function init() {
     geometry.index.count = count / 1;
   };
   const _removeTerrainMesh = terrainMesh => {
-    scene.remove(terrainMesh);
+    scene2.remove(terrainMesh);
     terrainMesh.geometry.dispose();
   };
   const _clearTerrainMeshes = () => {
@@ -768,7 +748,14 @@ function animate(time, frame) {
       teleportMesh.visible = true;
     };
     const _teleportEnd = () => {
-      // XXX
+      const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+      vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+
+      scene2.position.x += localVector.x - teleportMesh.position.x;
+      scene2.position.z += localVector.z - teleportMesh.position.z;
+      scene2.updateMatrix();
+      scene2.updateMatrixWorld();
+
       teleportMesh.visible = false;
     };
 
@@ -981,7 +968,7 @@ wss.on('connection', c => {
   console.log('open connection');
 
   c.mesh = _makePlayerMesh();
-  scene.add(c.mesh);
+  scene2.add(c.mesh);
 
   const _sendTerrains = () => {
     const ids = Object.keys(terrainMeshData).filter(id => !!terrainMeshData[id]);
@@ -1119,7 +1106,7 @@ wss.on('connection', c => {
   c.on('close', () => {
     console.log('close connection');
 
-    scene.remove(c.mesh);
+    scene2.remove(c.mesh);
 
     connections.splice(connections.indexOf(c), 1);
 
