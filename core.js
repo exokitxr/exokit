@@ -1187,14 +1187,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
               c.on = (on => function(e, cb) {
                 if (e === 'message' && cb) {
                   cb = (cb => function(m) {
-                    m = utils._normalizeBuffer(m, window);
+                    m = utils._normalizePrototype(m, window);
                     return cb.apply(this, arguments);
                   })(cb);
                 }
                 return on.apply(this, arguments);
               })(c.on);
               c.send = (send => function(d) {
-                d = utils._normalizeBuffer(d, global);
+                d = utils._normalizePrototype(d, global);
                 return send.apply(this, arguments);
               })(c.send);
               return cb.apply(this, arguments);
@@ -1219,13 +1219,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
               for (let i = 0; i < updates.length; i++) {
                 const update = updates[i];
                 if (update.positionArray) {
-                  update.positionArray = utils._normalizeBuffer(update.positionArray, window);
+                  update.positionArray = utils._normalizePrototype(update.positionArray, window);
                 }
                 if (update.normalArray) {
-                  update.normalArray = utils._normalizeBuffer(update.normalArray, window);
+                  update.normalArray = utils._normalizePrototype(update.normalArray, window);
                 }
                 if (update.indexArray) {
-                  update.indexArray = utils._normalizeBuffer(update.indexArray, window);
+                  update.indexArray = utils._normalizePrototype(update.indexArray, window);
                 }
               }
               cb(updates);
