@@ -2,7 +2,9 @@
 
 const find = require('find');
 
-find.file(/\.node$/, __dirname, files => {
+const dirname = process.argv[2];
+
+find.file(/\.node$/, dirname, files => {
   let decls = `extern "C" {\n`;
   let registers = `inline void registerDlibs(std::map<std::string, void *> &dlibs) {\n`;
 
@@ -10,7 +12,7 @@ find.file(/\.node$/, __dirname, files => {
     const file = files[i];
     if (!/obj\.target/.test(file)) {
       const match = file.match(/^(.+\/)([^\/]+)\.node$/);
-      const relpath = match[1].slice(__dirname.length);
+      const relpath = match[1].slice(dirname.length);
       const binName = match[2];
       const npmName = (() => {
         const match = relpath.match(/\/node_modules\/([^\/]+)/);
