@@ -114,7 +114,12 @@ const _normalizePrototype = (obj, targetContext) => {
     return obj;
   }
 
-  // Convert Blob's buffer.
+  // Convert Buffer's ArrayBuffer.
+  if (name === 'Buffer') {
+    _normalizePrototype(obj.buffer, targetContext);
+  }
+
+  // Only convert Blob's buffer.
   if (name === 'Blob') {
     _normalizePrototype(obj.buffer, targetContext);
     return obj;
@@ -122,8 +127,7 @@ const _normalizePrototype = (obj, targetContext) => {
 
   // Normalize to window prototype.
   if (isToWindow) {
-    GlobalContext.nativeVm.setPrototype(obj, targetContext[symbols.prototypesSymbol][name].prototype ||
-                                             targetContext[name].prototype);
+    GlobalContext.nativeVm.setPrototype(obj, targetContext[symbols.prototypesSymbol][name].prototype || targetContext[name].prototype);
     return obj;
   }
 
