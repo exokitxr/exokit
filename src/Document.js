@@ -337,6 +337,7 @@ class DocumentFragment extends DOM.HTMLElement {
   }
 }
 module.exports.DocumentFragment = DocumentFragment;
+GlobalContext.DocumentFragment = DocumentFragment;
 
 class Range extends DocumentFragment {
   constructor() {

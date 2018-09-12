@@ -1946,7 +1946,7 @@ class HTMLTemplateElement extends HTMLElement {
   }
 
   get content() {
-    const content = new DocumentFragment();
+    const content = new GlobalContext.DocumentFragment();
     content.ownerDocument = this.ownerDocument;
     content.childNodes = new NodeList(this.childNodes);
     return content;
