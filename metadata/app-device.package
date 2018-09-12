@@ -87,7 +87,7 @@ REFS = program-device
 # For packages, this changes the staging area for assets, and
 # the location of the package *.mpk file for device builds.
 #
-OUT = build\magicleap\app-device
+OUT = ../build/magicleap/app-device
 
 # Package building is driven by this low-level flag list,
 # but it's preferable to look for "pkg/.../" options (mabu --print-options)
