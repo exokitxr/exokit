@@ -275,7 +275,7 @@ const handsArray = [
   new Float32Array(handEntrySize),
   new Float32Array(handEntrySize),
 ];
-const controllersArray = new Float32Array((3 + 4 + 3) * 2);
+const controllersArray = new Float32Array((3 + 4 + 6) * 2);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -1275,9 +1275,26 @@ const _bindWindow = (window, newWindowCb) => {
         leftGamepad.buttons[1].pressed = leftTriggerPushed;
         leftGamepad.axes[2] = leftTriggerValue;
         controllersArrayIndex++;
+        const leftBumperValue = controllersArray[controllersArrayIndex];
+        leftGamepad.buttons[2].value = leftBumperValue;
+        const leftBumperPushed = leftBumperValue > 0.5;
+        leftGamepad.buttons[2].touched = leftBumperPushed;
+        leftGamepad.buttons[2].pressed = leftBumperPushed;
+        controllersArrayIndex++;
+        const leftHomeValue = controllersArray[controllersArrayIndex];
+        leftGamepad.buttons[3].value = leftHomeValue;
+        const leftHomePushed = leftHomeValue > 0.5;
+        leftGamepad.buttons[3].touched = leftHomePushed;
+        leftGamepad.buttons[3].pressed = leftHomePushed;
+        controllersArrayIndex++;
         leftGamepad.axes[0] = controllersArray[controllersArrayIndex];
         leftGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
-        controllersArrayIndex += 2;
+        const leftPadValue = controllersArray[controllersArrayIndex + 2];
+        leftGamepad.buttons[0].value = leftPadValue;
+        const leftPadPushed = leftPadValue > 0.5;
+        leftGamepad.buttons[0].touched = leftPadPushed;
+        leftGamepad.buttons[0].pressed = leftPadPushed;
+        controllersArrayIndex += 3;
 
         gamepads[0] = leftGamepad;
 
@@ -1292,9 +1309,26 @@ const _bindWindow = (window, newWindowCb) => {
         rightGamepad.buttons[1].pressed = rightTriggerPushed;
         rightGamepad.axes[2] = rightTriggerValue;
         controllersArrayIndex++;
+        const rightBumperValue = controllersArray[controllersArrayIndex];
+        rightGamepad.buttons[2].value = rightBumperValue;
+        const rightBumperPushed = rightBumperValue > 0.5;
+        rightGamepad.buttons[2].touched = rightBumperPushed;
+        rightGamepad.buttons[2].pressed = rightBumperPushed;
+        controllersArrayIndex++;
+        const rightHomeValue = controllersArray[controllersArrayIndex];
+        rightGamepad.buttons[3].value = rightHomeValue;
+        const rightHomePushed = rightHomeValue > 0.5;
+        rightGamepad.buttons[3].touched = rightHomePushed;
+        rightGamepad.buttons[3].pressed = rightHomePushed;
+        controllersArrayIndex++;
         rightGamepad.axes[0] = controllersArray[controllersArrayIndex];
         rightGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
-        controllersArrayIndex += 2;
+        const rightPadValue = controllersArray[controllersArrayIndex + 2];
+        rightGamepad.buttons[0].value = rightPadValue;
+        const rightPadPushed = rightPadValue > 0.5;
+        rightGamepad.buttons[0].touched = rightPadPushed;
+        rightGamepad.buttons[0].pressed = rightPadPushed;
+        controllersArrayIndex += 3;
 
         gamepads[1] = rightGamepad;
 

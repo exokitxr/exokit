@@ -63,7 +63,9 @@ mldb log exokit:*
 #### Debug (Magic Leap device)
 
 ```
-"$MLSDK/tools/debug/debug.py" --deploy-mpk exokit.mpk build/magicleap/program-device/release_lumin_clang-3.8_aarch64/program-device --env "ARGS=node . examples/hello_ml.html" # or URL to load
+ls ./cert/app.{cert,privkey} # place Magic Leap certificate here
+./build-ml.sh # run from Ubuntu bash on Windows
+"$MLSDK/tools/debug/debug.py" --deploy-mpk ./build/magicleap/exokit.mpk ./build/magicleap/program-device/release_lumin_clang-3.8_aarch64/program-device --env "ARGS=node . examples/hello_ml.html" # or URL to load
 ```
 
 ## Manifesto
@@ -146,10 +148,6 @@ let window = await require('./index').load(yourUrl);
 
 Now you have a handle on the window object as you test your application, and
 you can set `debugger` breakpoints and such.
-
-## Keyboard
-
-![Keyboard](https://raw.githubusercontent.com/webmixedreality/exokit/master/assets/keyboard.png)
 
 ## Community
 

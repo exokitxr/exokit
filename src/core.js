@@ -1174,18 +1174,29 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return httpProxy;
     })(),
     // https,
-    ws,
-    /* ws: (() => {
+    ws: (() => {
       const wsProxy = {};
       for (const k in ws) {
         wsProxy[k] = ws[k];
       }
       wsProxy.Server = (OldServer => function Server() {
-        const server = OldServer.apply(this, arguments);
+        const server = Reflect.construct(OldServer, arguments);
         server.on = (on => function(e, cb) {
-          if (e === 'message' && cb) {
-            cb = (cb => function(m) {
-              m.data = utils._normalizePrototype(m.data, global);
+          if (e === 'connection' && cb) {
+            cb = (cb => function(c) {
+              c.on = (on => function(e, cb) {
+                if (e === 'message' && cb) {
+                  cb = (cb => function(m) {
+                    m = utils._normalizePrototype(m, window);
+                    return cb.apply(this, arguments);
+                  })(cb);
+                }
+                return on.apply(this, arguments);
+              })(c.on);
+              c.send = (send => function(d) {
+                d = utils._normalizePrototype(d, global);
+                return send.apply(this, arguments);
+              })(c.send);
               return cb.apply(this, arguments);
             })(cb);
           }
@@ -1194,10 +1205,34 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         return server;
       })(wsProxy.Server);
       return wsProxy;
-    })(), */
+    })(),
     electron,
     magicleap: nativeMl ? {
-      RequestMeshing: nativeMl.RequestMeshing,
+      RequestMeshing() {
+        const mesher = nativeMl.RequestMeshing.apply(nativeMl, arguments);
+        return {
+          get onmesh() {
+            return mesher.onmesh;
+          },
+          set onmesh(cb) {
+            mesher.onmesh = cb ? updates => {
+              for (let i = 0; i < updates.length; i++) {
+                const update = updates[i];
+                if (update.positionArray) {
+                  update.positionArray = utils._normalizePrototype(update.positionArray, window);
+                }
+                if (update.normalArray) {
+                  update.normalArray = utils._normalizePrototype(update.normalArray, window);
+                }
+                if (update.indexArray) {
+                  update.indexArray = utils._normalizePrototype(update.indexArray, window);
+                }
+              }
+              cb(updates);
+            } : null;
+          },
+        };
+      },
       RequestPlaneTracking: nativeMl.RequestPlaneTracking,
       RequestHandTracking: nativeMl.RequestHandTracking,
       RequestEyeTracking: nativeMl.RequestEyeTracking,
@@ -1654,15 +1689,35 @@ exokit.load = (src, options = {}) => {
   if (!url.parse(src).protocol) {
     src = 'http://' + src;
   }
-  return fetch(src)
+  let redirectCount = 0;
+  const _fetchTextFollow = src => fetch(src, {
+    redirect: 'manual',
+  })
     .then(res => {
       if (res.status >= 200 && res.status < 300) {
-        return res.text();
+        return res.text()
+          .then(htmlString => ({
+            src,
+            htmlString,
+          }));
+      } else if (res.status >= 300 && res.status < 400) {
+        const l = res.headers.get('Location');
+        if (l) {
+          if (redirectCount < 10) {
+            redirectCount++;
+            return _fetchTextFollow(l);
+          } else {
+            return Promise.reject(new Error('fetch got too many redirects: ' + res.status + ' : ' + src));
+          }
+        } else {
+          return Promise.reject(new Error('fetch got redirect with no location header: ' + res.status + ' : ' + src));
+        }
       } else {
         return Promise.reject(new Error('fetch got invalid status code: ' + res.status + ' : ' + src));
       }
-    })
-    .then(htmlString => {
+    });
+  return _fetchTextFollow(src)
+    .then(({src, htmlString}) => {
       let baseUrl;
       if (options.baseUrl) {
         baseUrl = options.baseUrl;
