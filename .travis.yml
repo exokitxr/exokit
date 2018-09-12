@@ -63,11 +63,11 @@ matrix:
       build/Release/exokit.node
     - mkdir -p /tmp/Exokit.app/Contents/MacOS
     - cp -R * /tmp/Exokit.app/Contents/MacOS
-    - cp Info.plist /tmp/Exokit.app/Contents
+    - cp metadata/Info.plist /tmp/Exokit.app/Contents
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
     - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
-    - ./exokit-codesign-macos.sh
+    - ./scripts/exokit-codesign-macos.sh
     deploy:
     - provider: releases
       api_key:

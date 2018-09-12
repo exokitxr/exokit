@@ -19,13 +19,13 @@ const replHistory = require('repl.history');
 const minimist = require('minimist');
 const UPNG = require('upng-js');
 
-const {version} = require('./package.json');
+const {version} = require('../package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 
-const GlobalContext = require('./src/GlobalContext');
+const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
 
 const dataPath = path.join(os.homedir() || __dirname, '.exokit');

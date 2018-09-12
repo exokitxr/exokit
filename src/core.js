@@ -21,7 +21,7 @@ const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
 const {TextEncoder, TextDecoder} = require('window-text-encoding');
 const parseXml = require('@rgrove/parse-xml');
-const THREE = require('./lib/three-min.js');
+const THREE = require('../lib/three-min.js');
 const {
   MRDisplay,
   VRDisplay,
@@ -34,29 +34,29 @@ const {
   getGamepads,
   getAllGamepads,
 } = require('vr-display')(THREE);
-const electron = require('./src/electron');
+const electron = require('./electron');
 
-const BindingsModule = require('./src/bindings');
-const {defaultCanvasSize} = require('./src/constants');
-const GlobalContext = require('./src/GlobalContext');
-const symbols = require('./src/symbols');
-const {urls} = require('./src/urls');
+const BindingsModule = require('./bindings');
+const {defaultCanvasSize} = require('./constants');
+const GlobalContext = require('./GlobalContext');
+const symbols = require('./symbols');
+const {urls} = require('./urls');
 
 GlobalContext.args = {};
 GlobalContext.version = '';
 
 // Class imports.
 const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType,
-       DOMImplementation, initDocument} = require('./src/Document');
-const DOM = require('./src/DOM');
-const {DOMRect, Node, NodeList} = require('./src/DOM');
-const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent} = require('./src/Event');
-const {History} = require('./src/History');
-const {Location} = require('./src/Location');
-const {XMLHttpRequest} = require('./src/Network');
-const XR = require('./src/XR');
-const utils = require('./src/utils');
-const {_elementGetter, _elementSetter} = require('./src/utils');
+       DOMImplementation, initDocument} = require('./Document');
+const DOM = require('./DOM');
+const {DOMRect, Node, NodeList} = require('./DOM');
+const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent} = require('./Event');
+const {History} = require('./History');
+const {Location} = require('./Location');
+const {XMLHttpRequest} = require('./Network');
+const XR = require('./XR');
+const utils = require('./utils');
+const {_elementGetter, _elementSetter} = require('./utils');
 
 let browser = null;
 const _requestBrowser = async () => {
@@ -1111,7 +1111,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   window.customElements = new CustomElementRegistry(window);
   window.CustomElementRegistry = CustomElementRegistry;
-  window.MutationObserver = require('./src/MutationObserver').MutationObserver;
+  window.MutationObserver = require('./MutationObserver').MutationObserver;
   window.DOMRect = DOMRect;
   window.getComputedStyle = el => {
     let styleSpec = el[symbols.computedStyleSymbol];

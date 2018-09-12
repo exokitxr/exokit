@@ -15,17 +15,12 @@ KIND = program
 # mabu determines the source type by the file extension
 # and invokes the C/C++ compiler or assembler as appropriate.
 #
-SRCS = main.cpp
-
-# path/to/source.c \
-#   another_source.cpp \
-#   yet_another.asm \
-#   $(MLSDK)/even/files/in/SDK.cpp
+SRCS = ../main.cpp
 
 # Include paths for any language are specified here.
 #
-INCS = .node-gyp/10.9.0/include/node \
-  node_modules/nan
+INCS = ../.node-gyp/10.9.0/include/node \
+  ../node_modules/nan
 
 # Macro definitions for any language are specified here.
 #
@@ -89,13 +84,12 @@ USES = ml_sdk OpenGL stdc++
 # The <target> must end in a slash when paired with wildcard or directory
 # sources, and cannot include wildcards.
 #
-DATAS = package.json : / \
-  *.js : / \
-  src/ : /src/ \
-  lib/ : /lib/ \
-  build/Release/exokit.node : /build/Release/exokit.node \
-  node_modules/ : /node_modules/ \
-  examples/ : /examples/ \
+DATAS = ../package.json : / \
+  ../src/ : /src/ \
+  ../lib/ : /lib/ \
+  ../build/Release/exokit.node : /build/Release/exokit.node \
+  ../node_modules/ : /node_modules/ \
+  ../examples/ : /examples/ \
 
 # If you need to perform pre-build or post-build steps,
 # write Makefile snippets using double-colon rules in
@@ -127,7 +121,7 @@ DATAS = package.json : / \
 # Note that the build output will always appear in
 # a subdirectory of this one, named after the build target.
 #
-OUT = build\magicleap\program-device
+OUT = ../build/magicleap/program-device
 
 # You may rename the output program this way (rather than
 # by renaming your *.mabu file).
@@ -178,11 +172,11 @@ SHLIBS = ml_privileges \
 LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   $(MLSDK)/lumin/usr/lib \
   $(MLSDK)/lib/lumin \
-  build/libexokit \
-  node_modules/libnode.a \
-  node_modules/native-canvas-deps\lib2\magicleap \
-  node_modules/native-audio-deps\lib2\magicleap \
-  node_modules/native-video-deps\lib2\magicleap
+  ../build/libexokit \
+  ../node_modules/libnode.a \
+  ../node_modules/native-canvas-deps\lib2\magicleap \
+  ../node_modules/native-audio-deps\lib2\magicleap \
+  ../node_modules/native-video-deps\lib2\magicleap
 
 # flags for C/C++/assembly preprocessing
 #

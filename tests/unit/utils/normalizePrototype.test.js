@@ -1,5 +1,5 @@
 /* global afterEach, assert, beforeEach, describe, it */
-const exokit = require('../../../index');
+const exokit = require('../../../src/index');
 const _normalizePrototype = require('../../../src/utils')._normalizePrototype;
 
 describe('utils._normalizeProtoype', () => {
