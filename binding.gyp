@@ -496,7 +496,6 @@
             '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
             '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
-            '<(module_root_dir)/deps/exokit-bindings/egl/include',
             "<!(echo $ANDROIDNDK)/sysroot/usr/include",
           ],
           'library_dirs': [
