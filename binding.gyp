@@ -474,7 +474,6 @@
             '<!@(ls -1 deps/exokit-bindings/webaudiocontext/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/videocontext/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
-            '<!@(ls -1 deps/exokit-bindings/egl/src/*.cc)',
           ],
           'include_dirs': [
             "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
@@ -506,7 +505,6 @@
           ],
           'libraries': [
             '-lskia',
-            '-lGLESv3',
             '-lLabSound',
             '-lavformat',
             '-lavcodec',
