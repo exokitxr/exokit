@@ -22,7 +22,7 @@ Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking
 
 #### `browser.magicleap.RequestDepthPopulation(populateDepth : Boolean)`
 
-Sets whether the render loop will populate the depth buffer from the meshing system at the start of a frame. If want natural AR occlusion without messing with mesh data, this is the easiest option.
+Sets whether the render loop will populate the depth buffer from the meshing system at the start of a frame. If you want natural AR occlusion without messing with mesh data, this is the easiest option.
 
 The way this works is that the main framebuffer of your `<canvas>` (framebuffer `0`) will have its depth component pre-rendered at the start of every frame using the unmodified WebVR/WebXR viewport and matrices.
 
