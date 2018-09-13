@@ -81,7 +81,7 @@ The `Float32Array` buffer that was uploaded to the `normalBuffer`.
 
 #### `MLMeshUpdate.indexBuffer : WebGLBuffer`
 
-The opaque `WebGLBuffer` for the mesh indices for `MLMeshUpdate.position` and `MLMeshUpdate.normal`. Represented as three `WegGLShort` per triangle. Tightly packed stride.
+The opaque `WebGLBuffer` for the mesh indices for `MLMeshUpdate.position` and `MLMeshUpdate.normal`. Represented as three `WebGLShort` per triangle. Tightly packed stride.
 
 #### `MLMeshUpdate.indexArray : Uint16Array`
 
