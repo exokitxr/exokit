@@ -1267,7 +1267,7 @@ void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int wid
     unsigned int halfWidth = width / 2;
     Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), halfWidth * height * 4);
     unsigned char *data = (unsigned char *)arrayBuffer->GetContents().Data();
-    egl::ReadPixels(gl, fbo, 0, 0, halfWidth, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    windowsystem::ReadPixels(gl, fbo, 0, 0, halfWidth, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
     obj->Set(JS_STR("data"), arrayBuffer);
     obj->Set(JS_STR("width"), JS_INT(halfWidth));
     obj->Set(JS_STR("height"), JS_INT(height));
