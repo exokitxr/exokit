@@ -321,7 +321,7 @@ const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
-/* class ARDisplay extends MRDisplay {
+class ARDisplay extends MRDisplay {
   constructor(window) {
     super('AR', window);
 
@@ -356,7 +356,7 @@ const localMatrix = new THREE.Matrix4();
     frameData.leftProjectionMatrix.set(this._projectionMatrix);
     frameData.rightProjectionMatrix.set(this._projectionMatrix);
   }
-} */
+}
 class MLDisplay extends MRDisplay {
   constructor() {
     super('ML');
@@ -882,19 +882,21 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return fakeVrDisplay;
     },
     getGamepads,
-    /* getVRMode: () => vrMode,
+    getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
         vrDisplays[i].destroy();
       }
 
-      if (newVrMode === 'vr') {
-        vrDisplays = [new VRDisplay(window, 0)];
-      } else if (newVrMode === 'ar') {
+//      if (newVrMode === 'vr') {
+//        vrDisplays = [new VRDisplay(window, 0)];
+//      }
+      if (newVrMode === 'ar') {
         display = new ARDisplay(window, 1);
-      } else if (newVrMode === 'ml') {
-        vrDisplays = [new MLDisplay(window, 2)];
       }
+//    else if (newVrMode === 'ml') {
+//        vrDisplays = [new MLDisplay(window, 2)];
+//      }
       vrMode = newVrMode;
     },
     getVRTexture: () => vrTexture,
@@ -904,7 +906,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     getVRTextures: () => vrTextures,
     setVRTextures: newVrTextures => {
       vrTextures = newVrTextures;
-    }, */
+    },
   };
 
   // WebVR enabled.
@@ -1329,7 +1331,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.VRDisplay = VRDisplay;
   window.MLDisplay = MLDisplay;
   window.FakeVRDisplay = FakeVRDisplay;
-  // window.ARDisplay = ARDisplay;
+  window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
   window.XR = XR.XR;
   window.XRDevice = XR.XRDevice;
@@ -1642,9 +1644,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         _updateGamepads(update.gamepads);
       }
     };
-    /* window.updateArFrame = (viewMatrix, projectionMatrix) => {
+    window.updateArFrame = (viewMatrix, projectionMatrix) => {
       arDisplay.update(viewMatrix, projectionMatrix);
-    }; */
+    };
 
     if (nativeMl) {
       let lastPresent = nativeMl.IsPresent();
