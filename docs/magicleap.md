@@ -36,9 +36,20 @@ Used to acquire meshing updates from the Magic Leap platform.
 
 When set, `onmesh` will be called with an array of `MLBufferUpdate`. This indicates a change to the world mesh state which should be applied to the scene.
 
+
+#### `MLMesher.destroy : function()`
+
+Dispose of this `MLMesher` instance and stop tracking.
+
 ### `MLMeshUpdate`
 
 A single update to the world mesh.
+
+#### `MLMeshUpdate.id : String`
+
+A globally unique ID that can be used to identify the world chunk for this mesh.
+
+If this ID is the same between updates, then the update represents a change to the existing chunk.
 
 #### `MLMeshUpdate.type : String`
 
@@ -88,6 +99,10 @@ The current location of the eye cursor, as a world transform. This is probably i
 
 The individual eye locations and statuses. Note that this does not include the eye fixation (cursor); that is contained in `fixation`.
 
+#### `MLEyeTracker.destroy : function()`
+
+Dispose of this `MLEyeTracker` instance and stop tracking.
+
 ### `MLPlaneTracker`
 
 Used to receive world planes detected by the Magic Leap platform.
@@ -97,6 +112,10 @@ Used to receive world planes detected by the Magic Leap platform.
 When set, `onplane` will be called with an array of `MLPlaneUpdate`. This indicates an update to the planes detected by the Magic Leap platform.
 
 An update replaces the preview plane state and may contain an entirely different set of planes than the previous update. Plane identity can be tracked via each `MLPlaneUpdate`'s `.id` property.
+
+#### `MLPlaneTracker.destroy : function()`
+
+Dispose of this `MLPlaneTracker` instance and stop tracking.
 
 ### `MLPlaneUpdate`
 
@@ -130,6 +149,10 @@ Used to acquire hand tracking updates from the Magic Leap platform.
 When set, `onhand` will be called with an array of `MLHandUpdate`. This indicates an update to the user's hand pose detected from the sensors on the Magic Leap platform.
 
 Each hand is identified as either `'left'` or `'right'`. An update replaces the previous hand state; if a hand is not present in any given update that means it has not been detected for the given update loop.
+
+#### `MLHandTracker.destroy : function()`
+
+Dispose of this `MLHandTracker` instance and stop tracking.
 
 ### `MLHandUpdate`
 
