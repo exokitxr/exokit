@@ -2,6 +2,30 @@
 
 The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint. This is inspired by the [WebExtension API style](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API). It is not a web standard (yet).
 
+## Endpoints
+
+#### `browser.magicleap.RequestMeshing() : MLMesher`
+
+Returns an instance of `MLMesher`, which can be used to receive world meshing buffer updates from the Magic Leap platform.
+
+#### `browser.magicleap.RequestPlaneTracking() : MLPlaneTracker`
+
+Returns an instance of `MLPlaneTracker`, which can be used to receive world planes detected by the Magic Leap platform.
+
+#### `browser.magicleap.RequestHandTracking() : MLHandTracker`
+
+Returns an instance of `MLHandTracker`, which can be used to receive hand tracking data from the Magic Leap platform.
+
+#### `browser.magicleap.RequestEyeTracking() : MLEyeTracker`
+
+Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data from the Magic Leap platform.
+
+#### `browser.magicleap.RequestDepthPopulation(populateDepth : Boolean)`
+
+Sets whether the render loop will populate the depth buffer by using the meshing subsystem.
+
+This is a fast way of doing world occlusion without any extra code.
+
 ## Classes
 
 ### `MLMesher`
@@ -210,27 +234,3 @@ The rotation of the eye origin as a world quaternion.
 ### `MLEye.blink : Boolean`
 
 Whether this eye is currently closed (`true`) or open (`false`).
-
-## Endpoints
-
-#### `browser.magicleap.RequestMeshing() : MLMesher`
-
-Returns an instance of `MLMesher`, which can be used to receive world meshing buffer updates from the Magic Leap platform.
-
-#### `browser.magicleap.RequestPlaneTracking() : MLPlaneTracker`
-
-Returns an instance of `MLPlaneTracker`, which can be used to receive world planes detected by the Magic Leap platform.
-
-#### `browser.magicleap.RequestHandTracking() : MLHandTracker`
-
-Returns an instance of `MLHandTracker`, which can be used to receive hand tracking data from the Magic Leap platform.
-
-#### `browser.magicleap.RequestEyeTracking() : MLEyeTracker`
-
-Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data from the Magic Leap platform.
-
-#### `browser.magicleap.RequestDepthPopulation(populateDepth : Boolean)`
-
-Sets whether the render loop will populate the depth buffer by using the meshing subsystem.
-
-This is a fast way of doing world occlusion without any extra code.
