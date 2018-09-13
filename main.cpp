@@ -358,6 +358,6 @@ int main(int argc, char **argv) {
 
     ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit end");
 
-      return 0;
+    return 0;
   }
 }
