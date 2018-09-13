@@ -34,7 +34,7 @@ Used to acquire meshing updates from the Magic Leap platform.
 
 #### `MLMesher.onmesh : function(MLMeshUpdate[])`
 
-When set, `onmesh` will be called with an array of `MLBufferUpdate`. This indicates a change to the world mesh state which should be applied to the scene.
+When set, `onmesh` will be called with an array of `MLMeshUpdate`. This indicates a change to the world mesh state which should be applied to the scene.
 
 
 #### `MLMesher.destroy : function()`
