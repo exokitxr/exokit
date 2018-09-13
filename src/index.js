@@ -914,7 +914,6 @@ const _bindWindow = (window, newWindowCb) => {
         } else if (mlGlContext === context && mlHasPose) {
           nativeWindow.blitFrameBuffer(context, mlMsFbo, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
 
-          console.log('submit frame', mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
           mlContext.SubmitFrame(mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
           mlHasPose = false;
 
