@@ -896,36 +896,37 @@ const _bindWindow = (window, newWindowCb) => {
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
+      const windowHandle = context.getWindowHandle();
 
-      if (context.isDirty()) {
-        const windowHandle = context.getWindowHandle();
+      const isDirty = context.isDirty() || mlGlContext === context;
+      const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context;
+      if (isDirty && isVisible) {
         nativeWindow.setCurrentWindowContext(windowHandle);
         context.flush();
 
-        if (nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context) {
-          if (vrPresentState.glContext === context && vrPresentState.hasPose) {
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
+        if (vrPresentState.glContext === context && vrPresentState.hasPose) {
+          nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
 
-            vrPresentState.compositor.Submit(context, vrPresentState.tex);
-            vrPresentState.hasPose = false;
+          vrPresentState.compositor.Submit(context, vrPresentState.tex);
+          vrPresentState.hasPose = false;
 
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
-          } else if (mlGlContext === context && mlHasPose) {
-            nativeWindow.blitFrameBuffer(context, mlMsFbo, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
+          nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
+        } else if (mlGlContext === context && mlHasPose) {
+          nativeWindow.blitFrameBuffer(context, mlMsFbo, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
 
-            mlContext.SubmitFrame(mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
-            mlHasPose = false;
+          console.log('submit frame', mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
+          mlContext.SubmitFrame(mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
+          mlHasPose = false;
 
-            nativeWindow.blitFrameBuffer(context, mlFbo, 0, mlGlContext.canvas.width, mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
-          }
-
-          nativeWindow.swapBuffers(windowHandle);
-
-          numDirtyFrames++;
-          _checkDirtyFrameTimeout();
-
-          context.clearDirty();
+          nativeWindow.blitFrameBuffer(context, mlFbo, 0, mlGlContext.canvas.width, mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
         }
+
+        nativeWindow.swapBuffers(windowHandle);
+
+        numDirtyFrames++;
+        _checkDirtyFrameTimeout();
+
+        context.clearDirty();
       }
     }
   }
