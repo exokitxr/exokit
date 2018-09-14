@@ -676,7 +676,11 @@ function tickAnimationFrame() {
     for (let i = 0; i < localCbs.length; i++) {
       const rafCb = localCbs[i];
       if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
-        rafCb(performanceNow);
+        try {
+          rafCb(performanceNow);
+        } catch (e) {
+          console.warn(e);
+        }
 
         const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
         if (index !== -1) {
@@ -688,8 +692,11 @@ function tickAnimationFrame() {
     for (let i = 0; i < localCbs.length; i++) {
       const rafCb = localCbs[i];
       if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
-        rafCb(performanceNow);
-
+        try {
+          rafCb(performanceNow);
+        } catch (e) {
+          console.warn(e);
+        }
         const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
         if (index !== -1) {
           rafCbs[index] = null;
