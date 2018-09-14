@@ -1,4 +1,4 @@
-/* global assert, beforeEach, describe, it */
+/* global afterEach, assert, beforeEach, describe, doesnotexist, it */
 const exokit = require('../../../src/index');
 
 describe('requestAnimationFrame', () => {
@@ -42,6 +42,22 @@ describe('requestAnimationFrame', () => {
     setTimeout(() => {
       assert.equal(rafed, false);
 
+      cb();
+    }, 100);
+  });
+
+  it('catches errors', function (cb) {
+    const spy = this.sinon.spy();
+    function step () {
+      spy();
+      console.log(doesnotexist);
+    }
+
+    window.requestAnimationFrame(step);
+    window.requestAnimationFrame(step);
+
+    setTimeout(() => {
+      assert.equal(spy.callCount, 2);
       cb();
     }, 100);
   });
