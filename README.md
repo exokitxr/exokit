@@ -143,11 +143,11 @@ npm run debug
 Then in the console, input:
 
 ```
-let window = await require('./index').load(yourUrl);
+let window = await require('./src/').load(yourUrl);
 ```
 
 Now you have a handle on the window object as you test your application, and
-you can set `debugger` breakpoints and such.
+you can set `debugger` breakpoints, inspect memory, profile CPU, etc.
 
 ## Community
 
