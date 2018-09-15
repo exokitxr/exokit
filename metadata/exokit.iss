@@ -5,7 +5,7 @@
 #define MyAppURL "https://github.com/webmixedreality/exokit"
 #define MyAppExeName "exokit.cmd"
 #define MyIcon "exokit.ico"
-#define ProjectRoot "."
+#define ProjectRoot ".."
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
