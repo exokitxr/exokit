@@ -1540,6 +1540,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   });
 
+  // Block polyfills from overwriting Promise object.
+  const originalWindowPromise = window.Promise;
+  Object.defineProperty(window, 'Promise', {
+    get() {
+      return originalWindowPromise;
+    },
+    set() {
+      console.warn('window.Promise cannot be overwritten.');
+      return;
+    }
+  });
+
   if (!parent) {
     window.tickAnimationFrame = tickAnimationFrame;
 
