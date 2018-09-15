@@ -148,7 +148,10 @@ module.exports._storeOriginalWindowPrototypes = function (window, prototypesSymb
   });
 };
 
-const _elementGetter = (self, attribute) => self.listeners(attribute)[0];
+const _elementGetter = (self, attribute) => {
+  const listeners = self._listeners[attribute];
+  return listeners && listeners[0];
+};
 module.exports._elementGetter = _elementGetter;
 
 const _elementSetter = (self, attribute, cb) => {
