@@ -2186,6 +2186,26 @@ class HTMLImageElement extends HTMLSrcableElement {
 };
 module.exports.HTMLImageElement = HTMLImageElement;
 
+class TimeRanges {
+  constructor(ranges) {
+    this._ranges = ranges;
+  }
+
+  start(i) {
+    return this._ranges[i][0];
+  }
+
+  end(i) {
+    return this._ranges[i][1];
+  }
+
+  get length() {
+    return this._ranges.length;
+  }
+  set length(length) {}
+}
+module.exports.TimeRanges = TimeRanges;
+
 class HTMLAudioElement extends HTMLMediaElement {
   constructor(attrs = [], value = '') {
     super('AUDIO', attrs, value);
