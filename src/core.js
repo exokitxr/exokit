@@ -1818,7 +1818,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
     decodeAudioData(arrayBuffer, successCallback, errorCallback) {
       return new Promise((resolve, reject) => {
         try {
-          let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
+          const audioBuffer = this._decodeAudioDataSync(arrayBuffer);
           if (successCallback) {
             process.nextTick(() => {
               try {
