@@ -4,6 +4,8 @@ const GlobalContext = require('./GlobalContext');
 class EventTarget {
   constructor() {
     this._listeners = {};
+    this._currentListeners = null;
+    this._currentListenerIndex = 0;
   }
 
   addEventListener(event, listener) {
@@ -19,6 +21,10 @@ class EventTarget {
       const index = this._listeners[event].indexOf(listener);
       if (index !== -1) {
         this._listeners[event].splice(index, 1);
+        
+        if (this._listeners[event] === this._currentListeners && index <= this._currentListenerIndex) {
+          this._currentListenerIndex--;
+        }
       }
     }
   }
@@ -32,14 +38,17 @@ class EventTarget {
       if (listeners && listeners.length > 0) {
         const args = Array.from(arguments).slice(1);
 
-        for (let i = 0; i < listeners.length; i++) {
+        this._currentListeners = listeners;
+        for (this._currentListenerIndex = 0; this._currentListenerIndex < listeners.length; this._currentListenerIndex++) {
           try {
 
-            listeners[i].apply(this, args);
+            listeners[this._currentListenerIndex].apply(this, args);
           } catch (err) {
             console.warn(err);
           }
         }
+        this._currentListeners = null;
+        // this._currentListenerIndex = 0;
       }
     } else {
       event.target = this;
@@ -52,13 +61,16 @@ class EventTarget {
         if (listeners && listeners.length > 0) {
           event.currentTarget = this;
 
-          for (let i = 0; i < listeners.length; i++) {
+          this._currentListeners = listeners;
+          for (this._currentListenerIndex = 0; this._currentListenerIndex < listeners.length; this._currentListenerIndex++) {
             try {
-              listeners[i].call(this, event);
+              listeners[this._currentListenerIndex].call(this, event);
             } catch (err) {
               console.warn(err);
             }
           }
+          this._currentListeners = null;
+          // this._currentListenerIndex = 0;
 
           event.currentTarget = null;
         }
