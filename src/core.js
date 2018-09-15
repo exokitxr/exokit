@@ -1431,8 +1431,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     load: undefined,
     error: undefined,
   };
-  window.dispatchEvent = function(type) {
-    if (typeof type === 'string' && !this[symbols.disabledEventsSymbol][type]) {
+  window.dispatchEvent = function(event) {
+    if (!this[symbols.disabledEventsSymbol][event.type]) {
       Node.prototype.dispatchEvent.apply(this, arguments);
     }
   };
