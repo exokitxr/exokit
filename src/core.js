@@ -332,7 +332,7 @@ const localMatrix = new THREE.Matrix4();
       this._width = window.innerWidth / 2;
       this._height = window.innerHeight;
     };
-    window.top.on('resize', _resize);
+    window.top.addEventListener('resize', _resize);
     const _updatearframe = (viewMatrix, projectionMatrix) => {
       this._viewMatrix.set(viewMatrix);
       this._projectionMatrix.set(projectionMatrix);
@@ -340,8 +340,8 @@ const localMatrix = new THREE.Matrix4();
     window.top.on('updatearframe', _updatearframe);
 
     this._cleanups.push(() => {
-      window.top.removeListener('resize', _resize);
-      window.top.removeListener('updatearframe', _updatearframe);
+      window.top.removeEventListener('resize', _resize);
+      window.top.removeEventListener('updatearframe', _updatearframe);
     });
   }
 
@@ -618,7 +618,7 @@ const _runHtml = (element, window) => {
       element.traverse(el => {
         const {id} = el;
         if (id) {
-          el._emit('attribute', 'id', id);
+          el.dispatchEvent('attribute', 'id', id);
         }
 
         if (el[symbols.runSymbol]) {
@@ -633,9 +633,12 @@ const _runHtml = (element, window) => {
         }
       });
       if (document[symbols.runningSymbol]) {
-        document.once('flush', () => {
+        const _flush = () => {
+          document.removeEventListener('flush', _flush);
+          
           accept();
-        });
+        };
+        document.addEventListener('flush', _flush);
       } else {
         accept();
       }
@@ -823,10 +826,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     global.setImmediate = undefined;
   })();`;
 
-  for (const k in EventEmitter.prototype) {
-    window[k] = EventEmitter.prototype[k];
+  for (const k in EventTarget.prototype) {
+    window[k] = EventTarget.prototype[k];
   }
-  EventEmitter.call(window);
+  window._listeners = []; // EventTarget.constructor
 
   window.window = window;
   window.self = window;
@@ -927,7 +930,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   }
 
   window.destroy = function() {
-    this._emit('destroy', {window: this});
+    this.dispatchEvent('destroy', {window: this});
   };
   window.URL = URL;
   window.console = console;
@@ -1412,7 +1415,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.postMessage = function(data) {
     setImmediate(() => {
-      window._emit('message', new MessageEvent(data));
+      window.dispatchEvent('message', new MessageEvent(data));
     });
   };
   /*
@@ -1428,9 +1431,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     load: undefined,
     error: undefined,
   };
-  window._emit = function(type) {
-    if (!this[symbols.disabledEventsSymbol][type]) {
-      Node.prototype._emit.apply(this, arguments);
+  window.dispatchEvent = function(type) {
+    if (typeof type === 'string' && !this[symbols.disabledEventsSymbol][type]) {
+      Node.prototype.dispatchEvent.apply(this, arguments);
     }
   };
   Object.defineProperty(window, 'onload', {
@@ -1507,8 +1510,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     }
   };
-
-  window.on('destroy', e => {
+  
+  window.addEventListener('destroy', e => {
     _destroyTimeouts(e.window);
   });
   window.history.on('popstate', (u, state) => {
@@ -1525,9 +1528,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         dataPath: options.dataPath,
       })
         .then(newWindow => {
-          window._emit('beforeunload');
-          window._emit('unload');
-          window._emit('navigate', newWindow);
+          window.dispatchEvent('beforeunload');
+          window.dispatchEvent('unload');
+          window.dispatchEvent('navigate', newWindow);
 
           _destroyTimeouts(window);
         })
@@ -1675,8 +1678,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   } else {
     window[symbols.mrDisplaysSymbol] = _cloneMrDisplays(top[symbols.mrDisplaysSymbol], window);
 
-    top.on('vrdisplaypresentchange', e => {
-      window._emit('vrdisplaypresentchange', e);
+    top.addEventListener('vrdisplaypresentchange', e => {
+      window.dispatchEvent('vrdisplaypresentchange', e);
     });
   }
   return window;

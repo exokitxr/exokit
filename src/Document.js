@@ -124,7 +124,7 @@ function initDocument (document, window) {
         if (runElQueue.length > 0) {
           _addRun(runElQueue.shift());
         } else {
-          document.emit('flush');
+          document.dispatchEvent('flush');
         }
       } else {
         runElQueue.push(fn);
@@ -140,7 +140,7 @@ function initDocument (document, window) {
       for (let i = 0; i < iframes.length; i++) {
         const iframe = iframes[i];
         if (iframe.contentDocument) {
-          iframe.contentDocument._emit('pointerlockchange');
+          iframe.contentDocument.dispatchEvent('pointerlockchange');
         }
       }
     });
@@ -149,7 +149,7 @@ function initDocument (document, window) {
       for (let i = 0; i < iframes.length; i++) {
         const iframe = iframes[i];
         if (iframe.contentDocument) {
-          iframe.contentDocument._emit('fullscreenchange');
+          iframe.contentDocument.dispatchEvent('fullscreenchange');
         }
       }
     });
@@ -312,7 +312,7 @@ class Document extends DOM.HTMLLoadableElement {
       topDocument[symbols.pointerLockElementSymbol] = null;
 
       process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
+        topDocument.dispatchEvent('pointerlockchange');
       });
     }
   }
@@ -323,7 +323,7 @@ class Document extends DOM.HTMLLoadableElement {
       topDocument[symbols.fullscreenElementSymbol] = null;
 
       process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
+        topDocument.dispatchEvent('fullscreenchange');
       });
     }
   }

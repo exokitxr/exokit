@@ -33,11 +33,11 @@ const _loadPromise = el => new Promise((accept, reject) => {
     reject(err);
   };
   const _cleanup = () => {
-    el.removeListener('load', load);
-    el.removeListener('error', error);
+    el.removeEventListener('load', load);
+    el.removeEventListener('error', error);
   };
-  el.on('load', load);
-  el.on('error', error);
+  el.addEventListener('load', load);
+  el.addEventListener('error', error);
 });
 
 const EMPTY_ARRAY = [];
@@ -246,11 +246,11 @@ const _setAttributeRaw = (el, prop, value) => {
         value,
       };
       el.attrs.push(attr);
-      el._emit('attribute', prop, value, null);
+      el.dispatchEvent('attribute', prop, value, null);
     } else {
       const oldValue = attr.value;
       attr.value = value;
-      el._emit('attribute', prop, value, oldValue);
+      el.dispatchEvent('attribute', prop, value, oldValue);
     }
   }
 };
@@ -275,7 +275,7 @@ const _makeAttributesProxy = el => new Proxy(el.attrs, {
     if (index !== -1) {
       const oldValue = target[index].value;
       target.splice(index, 1);
-      el._emit('attribute', prop, null, oldValue);
+      el.dispatchEvent('attribute', prop, null, oldValue);
     }
     return true;
   },
@@ -524,7 +524,7 @@ class Element extends Node {
     this._classList = null;
     this._dataset = null;
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'id') {
         if (this.ownerDocument.defaultView[value] === undefined) {
           _defineId(this.ownerDocument.defaultView, value, this);
@@ -533,12 +533,12 @@ class Element extends Node {
         this._classList.reset(value);
       }
     });
-    this.on('children', (addedNodes, removedNodes, previousSibling, nextSiblings) => {
+    this.addEventListener('children', (addedNodes, removedNodes, previousSibling, nextSiblings) => {
       for (let i = 0; i < addedNodes.length; i++) {
-        addedNodes[i].emit('attached');
+        addedNodes[i].dispatchEvent('attached');
       }
       for (let i = 0; i < removedNodes.length; i++) {
-        removedNodes[i].emit('removed');
+        removedNodes[i].dispatchEvent('removed');
       }
     });
   }
@@ -617,9 +617,8 @@ class Element extends Node {
     if (this._children) { this._children.update(); }
 
     // Notify observers.
-    this._emit('children', newChildren, EMPTY_ARRAY,
-               this.childNodes[this.childNodes.length - 2] || null, null);
-    this.ownerDocument._emit('domchange');
+    this.dispatchEvent('children', newChildren, EMPTY_ARRAY, this.childNodes[this.childNodes.length - 2] || null, null);
+    this.ownerDocument.dispatchEvent('domchange');
 
     return childNode;
   }
@@ -634,8 +633,8 @@ class Element extends Node {
         this._children.update();
       }
 
-      this._emit('children', [], [childNode], this.childNodes[index - 1] || null, this.childNodes[index] || null);
-      this.ownerDocument._emit('domchange');
+      this.dispatchEvent('children', [], [childNode], this.childNodes[index - 1] || null, this.childNodes[index] || null);
+      this.ownerDocument.dispatchEvent('domchange');
 
       return childNode;
     } else {
@@ -657,8 +656,8 @@ class Element extends Node {
         this._children.update();
       }
 
-      this._emit('children', [newChild], [oldChild], this.childNodes[index - 1] || null, this.childNodes[index] || null);
-      this.ownerDocument._emit('domchange');
+      this.dispatchEvent('children', [newChild], [oldChild], this.childNodes[index - 1] || null, this.childNodes[index] || null);
+      this.ownerDocument.dispatchEvent('domchange');
 
       return oldChild;
     } else {
@@ -675,8 +674,8 @@ class Element extends Node {
         this._children.update();
       }
 
-      this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
-      this.ownerDocument._emit('domchange');
+      this.dispatchEvent('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
+      this.ownerDocument.dispatchEvent('domchange');
     }
   }
   insertAfter(childNode, nextSibling) {
@@ -689,8 +688,8 @@ class Element extends Node {
         this._children.update();
       }
 
-      this._emit('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
-      this.ownerDocument._emit('domchange');
+      this.dispatchEvent('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
+      this.ownerDocument.dispatchEvent('domchange');
     }
   }
   insertAdjacentHTML(position, text) {
@@ -709,7 +708,7 @@ class Element extends Node {
           index,
           0,
         ].concat(newChildNodes));
-        this.parentNode._emit('children', newChildNodes, [], null, null);
+        this.parentNode.dispatchEvent('children', newChildNodes, [], null, null);
         break;
       }
       case 'afterbegin': {
@@ -718,7 +717,7 @@ class Element extends Node {
           0,
           0,
         ].concat(newChildNodes));
-        this._emit('children', newChildNodes, [], null, null);
+        this.dispatchEvent('children', newChildNodes, [], null, null);
         break;
       }
       case 'beforeend': {
@@ -727,7 +726,7 @@ class Element extends Node {
           this.childNodes.length,
           0,
         ].concat(newChildNodes));
-        this._emit('children', newChildNodes, [], null, null);
+        this.dispatchEvent('children', newChildNodes, [], null, null);
         break;
       }
       case 'afterend': {
@@ -737,7 +736,7 @@ class Element extends Node {
           index + 1,
           0,
         ].concat(newChildNodes));
-        this.parentNode._emit('children', newChildNodes, [], null, null);
+        this.parentNode.dispatchEvent('children', newChildNodes, [], null, null);
         break;
       }
       default: {
@@ -953,15 +952,15 @@ class Element extends Node {
       this._children.update();
     }
 
-    this._emit('children', newChildNodes, oldChildNodes, null, null);
-    this.ownerDocument._emit('domchange');
+    this.dispatchEvent('children', newChildNodes, oldChildNodes, null, null);
+    this.ownerDocument.dispatchEvent('domchange');
 
     _promiseSerial(newChildNodes.map(childNode => () => GlobalContext._runHtml(childNode, this.ownerDocument.defaultView)))
       .catch(err => {
         console.warn(err);
       });
 
-    this._emit('innerHTML', innerHTML);
+    this.dispatchEvent('innerHTML', innerHTML);
   }
 
   get innerText() {
@@ -1081,7 +1080,7 @@ class Element extends Node {
       topDocument[symbols.pointerLockElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
+        topDocument.dispatchEvent('pointerlockchange');
       });
     }
   }
@@ -1093,7 +1092,7 @@ class Element extends Node {
       topDocument[symbols.fullscreenElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
+        topDocument.dispatchEvent('fullscreenchange');
       });
     }
   }
@@ -1157,7 +1156,7 @@ class HTMLElement extends Element {
     this._style = null;
     this[symbols.computedStyleSymbol] = null;
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'class' && this._classList) {
         this._classList.reset(value);
       } else if (name === 'style') {
@@ -1357,7 +1356,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
 
     this.stylesheet = null;
 
-    this.on('innerHTML', innerHTML => {
+    this.addEventListener('innerHTML', innerHTML => {
       Promise.resolve()
         .then(() => css.parse(innerHTML).stylesheet)
         .then(stylesheet => {
@@ -1392,7 +1391,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
 
   set innerHTML(innerHTML) {
     innerHTML = innerHTML + '';
-    this._emit('innerHTML', innerHTML);
+    this.dispatchEvent('innerHTML', innerHTML);
   }
 
   [symbols.runSymbol]() {
@@ -1412,7 +1411,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
 
     this.stylesheet = null;
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'href' && this.isRunnable()) {
         const url = value;
         this.ownerDocument.defaultView.fetch(url)
@@ -1427,6 +1426,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
           .then(stylesheet => {
             this.stylesheet = stylesheet;
             GlobalContext.styleEpoch++;
+
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .catch(err => {
@@ -1472,7 +1472,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
     if (this.isRunnable()) {
       const hrefAttr = this.attributes.href;
       if (hrefAttr) {
-        this._emit('attribute', 'href', hrefAttr.value);
+        this.dispatchEvent('attribute', 'href', hrefAttr.value);
         running = true;
       }
     }
@@ -1504,19 +1504,19 @@ class HTMLScriptElement extends HTMLLoadableElement {
         this.loadRunNow();
       }
     };
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'src' && value && this.isRunnable() && _isAttached() && this.readyState === null) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : false);
       }
     });
-    this.on('attached', () => {
+    this.addEventListener('attached', () => {
       if (this.src && this.isRunnable() && _isAttached() && this.readyState === null) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
     });
-    this.on('innerHTML', innerHTML => {
+    this.addEventListener('innerHTML', innerHTML => {
       if (this.isRunnable() && _isAttached() && this.readyState === null) {
         this.runNow();
       }
@@ -1568,7 +1568,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     innerHTML = innerHTML + '';
 
     this.childNodes = new NodeList([new Text(innerHTML)]);
-    this._emit('innerHTML', innerHTML);
+    this.dispatchEvent('innerHTML', innerHTML);
   }
 
   isRunnable() {
@@ -1655,7 +1655,7 @@ class HTMLSrcableElement extends HTMLLoadableElement {
   [symbols.runSymbol]() {
     const srcAttr = this.attributes.src;
     if (srcAttr) {
-      this._emit('attribute', 'src', srcAttr.value);
+      this.dispatchEvent('attribute', 'src', srcAttr.value);
     }
     return Promise.resolve();
   }
@@ -1771,7 +1771,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.contentDocument = null;
     this.live = true;
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'src') {
         let url = value;
         const match = url.match(/^javascript:(.+)$/); // XXX should support this for regular fetches too
@@ -1808,11 +1808,11 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               this.contentWindow = contentWindow;
               this.contentDocument = contentDocument;
 
-              contentDocument.on('framebuffer', framebuffer => {
-                this._emit('framebuffer', framebuffer);
+              contentDocument.addEventListener('framebuffer', framebuffer => {
+                this.dispatchEvent('framebuffer', framebuffer);
               });
-              contentWindow.on('destroy', e => {
-                parentWindow.emit('destroy', e);
+              contentWindow.addEventListener('destroy', e => {
+                parentWindow.dispatchEvent('destroy', e);
               });
 
               this.dispatchEvent(new Event('load', {target: this}));
@@ -1833,7 +1833,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         }
       }
     });
-    this.on('destroy', () => {
+    this.addEventListener('destroy', () => {
       if (this.contentWindow) {
         this.contentWindow.destroy();
         this.contentWindow = null;
@@ -1851,7 +1851,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
   destroy() {
     if (this.live) {
-      this._emit('destroy');
+      this.dispatchEvent('destroy');
       this.live = false;
     }
   }
@@ -1864,7 +1864,7 @@ class HTMLCanvasElement extends HTMLElement {
 
     this._context = null;
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'width' || name === 'height') {
         if (this._context && this._context.resize) {
           this._context.resize(this.width, this.height);
@@ -2010,7 +2010,7 @@ class CharacterNode extends Node {
   set textContent(textContent) {
     this.value = textContent;
 
-    this._emit('value');
+    this.dispatchEvent('value');
   }
 
   get data() {
@@ -2019,7 +2019,7 @@ class CharacterNode extends Node {
   set data(data) {
     this.value = data;
 
-    this._emit('value');
+    this.dispatchEvent('value');
   }
   get length() {
     return this.value.length;
@@ -2112,7 +2112,7 @@ class HTMLImageElement extends HTMLSrcableElement {
 
     this.image = new bindings.nativeImage();
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'src') {
         const src = value;
 
@@ -2232,7 +2232,7 @@ class HTMLAudioElement extends HTMLMediaElement {
     this.readyState = HTMLMediaElement.HAVE_NOTHING;
     this.audio = new bindings.nativeAudio.Audio();
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'src') {
         const src = value;
 
@@ -2321,7 +2321,7 @@ class HTMLVideoElement extends HTMLMediaElement {
     this.readyState = HTMLMediaElement.HAVE_NOTHING;
     this.data = new Uint8Array(0);
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'src') {
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
@@ -2428,7 +2428,7 @@ class HTMLVideoElement extends HTMLMediaElement {
     this.readyState = HTMLMediaElement.HAVE_NOTHING;
     this.video = new bindings.nativeVideo.Video();
 
-    this.on('attribute', (name, value) => {
+    this.addEventListener('attribute', (name, value) => {
       if (name === 'src') {
         console.log('video downloading...');
         const src = value;
@@ -2452,11 +2452,11 @@ class HTMLVideoElement extends HTMLMediaElement {
           .then(() => {
             console.log('video download done');
             this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
-            this._emit('canplay');
-            this._emit('canplaythrough');
+            this.dispatchEvent('canplay');
+            this.dispatchEvent('canplaythrough');
           })
           .catch(err => {
-            this._emit('error', err);
+            this.dispatchEvent('error', err);
           });
       } else if (name === 'loop') {
         this.video.loop = !!value || value === '';
@@ -2473,11 +2473,11 @@ class HTMLVideoElement extends HTMLMediaElement {
             _cleanup();
           };
           const _cleanup = () => {
-            this.removeListener('canplay', canplay);
-            this.removeListener('error', error);
+            this.removeEventListener('canplay', canplay);
+            this.removeEventListener('error', error);
           };
-          this.on('canplay', canplay);
-          this.on('error', error);
+          this.addEventListener('canplay', canplay);
+          this.addEventListener('error', error);
         }
       }
     });
@@ -2546,7 +2546,7 @@ class HTMLVideoElement extends HTMLMediaElement {
     let sources;
     const srcAttr = this.attributes.src;
     if (srcAttr) {
-      this._emit('attribute', 'src', srcAttr.value);
+      this.dispatchEvent('attribute', 'src', srcAttr.value);
       running = true;
     } else if (sources = this.childNodes.filter(childNode => childNode.nodeType === Node.ELEMENT_NODE && childNode.matches('source'))) {
       for (let i = 0; i < sources.length; i++) {
