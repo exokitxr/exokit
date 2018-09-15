@@ -175,6 +175,25 @@ class Node extends EventTarget {
   cloneNode(deep = false) {
     return _cloneNode(deep, this);
   }
+
+  _dispatchEventOnDocumentReady() {
+    if (this.ownerDocument.readyState === 'complete') {
+      this.dispatchEvent.apply(this, arguments);
+    } else {
+      const args = Array.from(arguments);
+
+      const _readystatechange = () => {
+        if (this.ownerDocument.readyState === 'complete') {
+          this.ownerDocument.removeEventListener('readystatechange', _readystatechange);
+
+          setImmediate(() => {
+            this.dispatchEvent.apply(this, args);
+          });
+        }
+      };
+      this.ownerDocument.addEventListener('readystatechange', _readystatechange);
+    }
+  }
 }
 
 /**
