@@ -56,7 +56,6 @@ class EventTarget {
       const _emit = (node, event) => {
         const listeners = node._listeners[event.type];
 
-        // console.log('dispatch event 2', this.tagName, event && event.type, listeners && listeners.length); // XXX
 
         if (listeners && listeners.length > 0) {
           event.currentTarget = this;
