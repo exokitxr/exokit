@@ -1819,7 +1819,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
             }
           })
           .catch(err => {
-            console.error(err);
+            console.warn(err);
+
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .finally(() => {
