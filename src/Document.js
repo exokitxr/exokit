@@ -54,8 +54,16 @@ function initDocument (document, window) {
     range.ownerDocument = document;
     return range;
   };
-  document.createTextNode = text => new DOM.Text(text);
-  document.createComment = comment => new DOM.Comment(comment);
+  document.createTextNode = text => {
+    const node = new DOM.Text(text);
+    node.ownerDocument = document;
+    return node;
+  }
+  document.createComment = comment => {
+    const node = new DOM.Comment(comment);
+    node.ownerDocument = document;
+    return node;
+  };
   document.createEvent = type => {
     switch (type) {
       case 'KeyboardEvent':
