@@ -155,13 +155,12 @@ const _elementGetter = (self, attribute) => {
 module.exports._elementGetter = _elementGetter;
 
 const _elementSetter = (self, attribute, cb) => {
+  if (self._listeners[attribute]) {
+    self._listeners[attribute].length = 0;
+  }
+
   if (typeof cb === 'function') {
     self.addEventListener(attribute, cb);
-  } else {
-    const listeners = self.listeners(attribute);
-    for (let i = 0; i < listeners.length; i++) {
-      self.removeEventListener(attribute, listeners[i]);
-    }
   }
 };
 module.exports._elementSetter = _elementSetter;
