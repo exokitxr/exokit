@@ -58,7 +58,7 @@ class MutationObserver {
         _attribute = (name, value, oldValue) => {
           this.handleAttribute(el, name, value, oldValue);
         };
-        el.on('attribute', _attribute);
+        el.addEventListener('attribute', _attribute);
       }
 
       _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
@@ -74,13 +74,13 @@ class MutationObserver {
           }
         }
       };
-      el.on('children', _children);
+      el.addEventListener('children', _children);
 
       if (this.options.characterData) {
         _value = () => {
           this.handleValue(el);
         };
-        el.on('value', _value);
+        el.addEventListener('value', _value);
       }
 
       this.bindings.set(el, [_attribute, _children, _value]);
@@ -103,13 +103,13 @@ class MutationObserver {
           _value,
         ] = bindings;
         if (_attribute) {
-          el.removeListener('attribute', _attribute);
+          el.removeEventListener('attribute', _attribute);
         }
         if (_children) {
-          el.removeListener('children', _children);
+          el.removeEventListener('children', _children);
         }
         if (_value) {
-          el.removeListener('value', _value);
+          el.removeEventListener('value', _value);
         }
         this.bindings.delete(el);
       }
