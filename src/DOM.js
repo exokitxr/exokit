@@ -2374,6 +2374,12 @@ class HTMLVideoElement extends HTMLMediaElement {
       this.video.close();
     }
   }
+
+  get buffered() {
+    return new TimeRanges([0, this.duration]);
+  }
+  set buffered(buffered) {}
+
   update() {
     if (this.video) {
       this.video.update();
