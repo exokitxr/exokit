@@ -50,7 +50,7 @@ const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentTy
        DOMImplementation, initDocument} = require('./Document');
 const DOM = require('./DOM');
 const {DOMRect, Node, NodeList} = require('./DOM');
-const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent} = require('./Event');
+const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {History} = require('./History');
 const {Location} = require('./Location');
 const {XMLHttpRequest} = require('./Network');
@@ -1308,6 +1308,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.WheelEvent = WheelEvent;
   window.DragEvent = DragEvent;
   window.MessageEvent = MessageEvent;
+  window.PromiseRejectionEvent = PromiseRejectionEvent;
   window.CustomEvent = CustomEvent;
   window.addEventListener = EventTarget.prototype.addEventListener.bind(window);
   window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
