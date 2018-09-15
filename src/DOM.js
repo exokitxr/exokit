@@ -2216,6 +2216,13 @@ class HTMLAudioElement extends HTMLMediaElement {
           })
           .then(() => {
             this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+
+            const progressEvent = new Event('progress', {target: this});
+            progressEvent.loaded = 1;
+            progressEvent.total = 1;
+            progressEvent.lengthComputable = true;
+            this._dispatchEventOnDocumentReady(progressEvent);
+
             this._emit('canplay');
             this._emit('canplaythrough');
           })
