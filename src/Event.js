@@ -242,6 +242,13 @@ class ErrorEvent extends Event {
 }
 module.exports.ErrorEvent = ErrorEvent;
 
+class PromiseRejectionEvent extends Event {
+  constructor(type, init = {}) {
+    super(type, init);
+  }
+}
+module.exports.PromiseRejectionEvent = PromiseRejectionEvent;
+
 class CustomEvent extends Event {
   constructor(type, init = {}) {
     super(type, init);
