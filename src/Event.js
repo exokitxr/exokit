@@ -30,10 +30,8 @@ class EventTarget {
   }
 
   dispatchEvent(event) {
-
     if (typeof event === 'string') {
       const listeners = this._listeners[event];
-
 
       if (listeners && listeners.length > 0) {
         const args = Array.from(arguments).slice(1);
