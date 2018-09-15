@@ -2280,6 +2280,11 @@ class HTMLAudioElement extends HTMLMediaElement {
       this.audio.duration = duration;
     }
   }
+
+  get buffered() {
+    return new TimeRanges([0, this.duration]);
+  }
+  set buffered(buffered) {}
 };
 module.exports.HTMLAudioElement = HTMLAudioElement;
 
