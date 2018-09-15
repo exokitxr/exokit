@@ -2291,6 +2291,12 @@ class HTMLVideoElement extends HTMLMediaElement {
         const resource = this.ownerDocument.resources.addResource();
 
         setImmediate(() => {
+          const progressEvent = new Event('progress', {target: this});
+          progressEvent.loaded = 1;
+          progressEvent.total = 1;
+          progressEvent.lengthComputable = true;
+          this._dispatchEventOnDocumentReady(progressEvent);
+
           this.dispatchEvent(new Event('canplay', {target: this}));
           this.dispatchEvent(new Event('canplaythrough', {target: this}));
 
