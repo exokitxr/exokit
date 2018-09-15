@@ -1,59 +1,81 @@
-const {EventEmitter} = require('events');
 const USKeyboardLayout = require('./USKeyboardLayout');
 const GlobalContext = require('./GlobalContext');
 
-class EventTarget extends EventEmitter {
+class EventTarget {
   constructor() {
-    super();
-
-    this.setMaxListeners(Infinity);
-
-    this.on('error', err => {
-      console.warn(err);
-    });
+    this._listeners = {};
   }
 
   addEventListener(event, listener) {
     if (typeof listener === 'function') {
-      this.on(event, listener);
+      if (!this._listeners[event]) {
+        this._listeners[event] = [];
+      }
+      this._listeners[event].push(listener);
     }
   }
   removeEventListener(event, listener) {
-    if (typeof listener === 'function') {
-      this.removeListener(event, listener);
+    if (typeof listener === 'function' && this._listeners[event]) {
+      const index = this._listeners[event].indexOf(listener);
+      if (index !== -1) {
+        this._listeners[event].splice(index, 1);
+      }
     }
   }
 
   dispatchEvent(event) {
-    event.target = this;
 
-    const _emit = (node, event) => {
-      event.currentTarget = this;
+    if (typeof event === 'string') {
+      const listeners = this._listeners[event];
 
-      try {
-        node._emit(event.type, event);
-      } catch (err) {
-        console.warn(err);
+
+      if (listeners && listeners.length > 0) {
+        const args = Array.from(arguments).slice(1);
+
+        for (let i = 0; i < listeners.length; i++) {
+          try {
+
+            listeners[i].apply(this, args);
+          } catch (err) {
+            console.warn(err);
+          }
+        }
       }
+    } else {
+      event.target = this;
 
-      event.currentTarget = null;
-    };
-    const _recurse = (node, event) => {
-      _emit(node, event);
+      const _emit = (node, event) => {
+        const listeners = node._listeners[event.type];
 
-      if (event.bubbles && node instanceof GlobalContext.Document) {
-        _emit(node.defaultView, event);
-      }
+        // console.log('dispatch event 2', this.tagName, event && event.type, listeners && listeners.length); // XXX
 
-      if (event.bubbles && !event.propagationStopped && node.parentNode) {
-        _recurse(node.parentNode, event);
-      }
-    };
-    _recurse(this, event);
-  }
+        if (listeners && listeners.length > 0) {
+          event.currentTarget = this;
 
-  _emit() { // need to call this instead of EventEmitter.prototype.emit because some frameworks override HTMLElement.prototype.emit()
-    return EventEmitter.prototype.emit.apply(this, arguments);
+          for (let i = 0; i < listeners.length; i++) {
+            try {
+              listeners[i].call(this, event);
+            } catch (err) {
+              console.warn(err);
+            }
+          }
+
+          event.currentTarget = null;
+        }
+      };
+      const _recurse = (node, event) => {
+        _emit(node, event);
+
+        if (event.bubbles && node instanceof GlobalContext.Document) {
+          _emit(node.defaultView, event);
+        }
+
+        if (event.bubbles && !event.propagationStopped && node.parentNode) {
+          _recurse(node.parentNode, event);
+        }
+      };
+      _recurse(this, event);
+    }
   }
 }
 module.exports.EventTarget = EventTarget;
