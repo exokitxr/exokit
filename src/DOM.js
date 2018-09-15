@@ -186,7 +186,7 @@ class Node extends EventTarget {
         if (this.ownerDocument.readyState === 'complete') {
           this.ownerDocument.removeEventListener('readystatechange', _readystatechange);
 
-          setImmediate(() => {
+          process.nextTick(() => {
             this.dispatchEvent.apply(this, args);
           });
         }
