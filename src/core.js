@@ -618,7 +618,7 @@ const _runHtml = (element, window) => {
       element.traverse(el => {
         const {id} = el;
         if (id) {
-          el.dispatchEvent('attribute', 'id', id);
+          el.dispatchNodeEvent('attribute', 'id', id);
         }
 
         if (el[symbols.runSymbol]) {
@@ -930,7 +930,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   }
 
   window.destroy = function() {
-    this.dispatchEvent('destroy', {window: this});
+    this.dispatchNodeEvent('destroy', {window: this});
   };
   window.URL = URL;
   window.console = console;
@@ -1415,7 +1415,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.postMessage = function(data) {
     setImmediate(() => {
-      window.dispatchEvent('message', new MessageEvent(data));
+      window.dispatchNodeEvent('message', new MessageEvent(data));
     });
   };
   /*
@@ -1433,6 +1433,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.dispatchEvent = function(event) {
     if (!this[symbols.disabledEventsSymbol][event.type]) {
+      Node.prototype.dispatchEvent.apply(this, arguments);
+    }
+  };
+  window.dispatchNodeEvent = function(type) {
+    if (!this[symbols.disabledEventsSymbol][type]) {
       Node.prototype.dispatchEvent.apply(this, arguments);
     }
   };
@@ -1528,9 +1533,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         dataPath: options.dataPath,
       })
         .then(newWindow => {
-          window.dispatchEvent('beforeunload');
-          window.dispatchEvent('unload');
-          window.dispatchEvent('navigate', newWindow);
+          window.dispatchNodeEvent('beforeunload');
+          window.dispatchNodeEvent('unload');
+          window.dispatchNodeEvent('navigate', newWindow);
 
           _destroyTimeouts(window);
         })
@@ -1679,7 +1684,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     window[symbols.mrDisplaysSymbol] = _cloneMrDisplays(top[symbols.mrDisplaysSymbol], window);
 
     top.addEventListener('vrdisplaypresentchange', e => {
-      window.dispatchEvent('vrdisplaypresentchange', e);
+      window.dispatchNodeEvent('vrdisplaypresentchange', e);
     });
   }
   return window;

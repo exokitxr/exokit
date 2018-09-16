@@ -159,7 +159,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
       };
 
-      document.dispatchEvent('framebuffer', {
+      document.dispatchNodeEvent('framebuffer', {
         framebuffer,
         colorTexture,
         depthStencilTexture,
@@ -225,7 +225,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       canvas._context = null;
 
       if (hidden) {
-        document.dispatchEvent('framebuffer', null);
+        document.dispatchNodeEvent('framebuffer', null);
       }
       canvas.ownerDocument.removeEventListener('domchange', ondomchange);
 

@@ -246,11 +246,11 @@ const _setAttributeRaw = (el, prop, value) => {
         value,
       };
       el.attrs.push(attr);
-      el.dispatchEvent('attribute', prop, value, null);
+      el.dispatchNodeEvent('attribute', prop, value, null);
     } else {
       const oldValue = attr.value;
       attr.value = value;
-      el.dispatchEvent('attribute', prop, value, oldValue);
+      el.dispatchNodeEvent('attribute', prop, value, oldValue);
     }
   }
 };
@@ -275,7 +275,7 @@ const _makeAttributesProxy = el => new Proxy(el.attrs, {
     if (index !== -1) {
       const oldValue = target[index].value;
       target.splice(index, 1);
-      el.dispatchEvent('attribute', prop, null, oldValue);
+      el.dispatchNodeEvent('attribute', prop, null, oldValue);
     }
     return true;
   },
@@ -535,10 +535,10 @@ class Element extends Node {
     });
     this.addEventListener('children', (addedNodes, removedNodes, previousSibling, nextSiblings) => {
       for (let i = 0; i < addedNodes.length; i++) {
-        addedNodes[i].dispatchEvent('attached');
+        addedNodes[i].dispatchNodeEvent('attached');
       }
       for (let i = 0; i < removedNodes.length; i++) {
-        removedNodes[i].dispatchEvent('removed');
+        removedNodes[i].dispatchNodeEvent('removed');
       }
     });
   }
@@ -617,8 +617,8 @@ class Element extends Node {
     if (this._children) { this._children.update(); }
 
     // Notify observers.
-    this.dispatchEvent('children', newChildren, EMPTY_ARRAY, this.childNodes[this.childNodes.length - 2] || null, null);
-    this.ownerDocument.dispatchEvent('domchange');
+    this.dispatchNodeEvent('children', newChildren, EMPTY_ARRAY, this.childNodes[this.childNodes.length - 2] || null, null);
+    this.ownerDocument.dispatchNodeEvent('domchange');
 
     return childNode;
   }
@@ -633,8 +633,8 @@ class Element extends Node {
         this._children.update();
       }
 
-      this.dispatchEvent('children', [], [childNode], this.childNodes[index - 1] || null, this.childNodes[index] || null);
-      this.ownerDocument.dispatchEvent('domchange');
+      this.dispatchNodeEvent('children', [], [childNode], this.childNodes[index - 1] || null, this.childNodes[index] || null);
+      this.ownerDocument.dispatchNodeEvent('domchange');
 
       return childNode;
     } else {
@@ -656,8 +656,8 @@ class Element extends Node {
         this._children.update();
       }
 
-      this.dispatchEvent('children', [newChild], [oldChild], this.childNodes[index - 1] || null, this.childNodes[index] || null);
-      this.ownerDocument.dispatchEvent('domchange');
+      this.dispatchNodeEvent('children', [newChild], [oldChild], this.childNodes[index - 1] || null, this.childNodes[index] || null);
+      this.ownerDocument.dispatchNodeEvent('domchange');
 
       return oldChild;
     } else {
@@ -674,8 +674,8 @@ class Element extends Node {
         this._children.update();
       }
 
-      this.dispatchEvent('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
-      this.ownerDocument.dispatchEvent('domchange');
+      this.dispatchNodeEvent('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
+      this.ownerDocument.dispatchNodeEvent('domchange');
     }
   }
   insertAfter(childNode, nextSibling) {
@@ -688,8 +688,8 @@ class Element extends Node {
         this._children.update();
       }
 
-      this.dispatchEvent('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
-      this.ownerDocument.dispatchEvent('domchange');
+      this.dispatchNodeEvent('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
+      this.ownerDocument.dispatchNodeEvent('domchange');
     }
   }
   insertAdjacentHTML(position, text) {
@@ -708,7 +708,7 @@ class Element extends Node {
           index,
           0,
         ].concat(newChildNodes));
-        this.parentNode.dispatchEvent('children', newChildNodes, [], null, null);
+        this.parentNode.dispatchNodeEvent('children', newChildNodes, [], null, null);
         break;
       }
       case 'afterbegin': {
@@ -717,7 +717,7 @@ class Element extends Node {
           0,
           0,
         ].concat(newChildNodes));
-        this.dispatchEvent('children', newChildNodes, [], null, null);
+        this.dispatchNodeEvent('children', newChildNodes, [], null, null);
         break;
       }
       case 'beforeend': {
@@ -726,7 +726,7 @@ class Element extends Node {
           this.childNodes.length,
           0,
         ].concat(newChildNodes));
-        this.dispatchEvent('children', newChildNodes, [], null, null);
+        this.dispatchNodeEvent('children', newChildNodes, [], null, null);
         break;
       }
       case 'afterend': {
@@ -736,7 +736,7 @@ class Element extends Node {
           index + 1,
           0,
         ].concat(newChildNodes));
-        this.parentNode.dispatchEvent('children', newChildNodes, [], null, null);
+        this.parentNode.dispatchNodeEvent('children', newChildNodes, [], null, null);
         break;
       }
       default: {
@@ -952,15 +952,15 @@ class Element extends Node {
       this._children.update();
     }
 
-    this.dispatchEvent('children', newChildNodes, oldChildNodes, null, null);
-    this.ownerDocument.dispatchEvent('domchange');
+    this.dispatchNodeEvent('children', newChildNodes, oldChildNodes, null, null);
+    this.ownerDocument.dispatchNodeEvent('domchange');
 
     _promiseSerial(newChildNodes.map(childNode => () => GlobalContext._runHtml(childNode, this.ownerDocument.defaultView)))
       .catch(err => {
         console.warn(err);
       });
 
-    this.dispatchEvent('innerHTML', innerHTML);
+    this.dispatchNodeEvent('innerHTML', innerHTML);
   }
 
   get innerText() {
@@ -1080,7 +1080,7 @@ class Element extends Node {
       topDocument[symbols.pointerLockElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument.dispatchEvent('pointerlockchange');
+        topDocument.dispatchNodeEvent('pointerlockchange');
       });
     }
   }
@@ -1092,7 +1092,7 @@ class Element extends Node {
       topDocument[symbols.fullscreenElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument.dispatchEvent('fullscreenchange');
+        topDocument.dispatchNodeEvent('fullscreenchange');
       });
     }
   }
@@ -1391,7 +1391,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
 
   set innerHTML(innerHTML) {
     innerHTML = innerHTML + '';
-    this.dispatchEvent('innerHTML', innerHTML);
+    this.dispatchNodeEvent('innerHTML', innerHTML);
   }
 
   [symbols.runSymbol]() {
@@ -1472,7 +1472,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
     if (this.isRunnable()) {
       const hrefAttr = this.attributes.href;
       if (hrefAttr) {
-        this.dispatchEvent('attribute', 'href', hrefAttr.value);
+        this.dispatchNodeEvent('attribute', 'href', hrefAttr.value);
         running = true;
       }
     }
@@ -1568,7 +1568,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     innerHTML = innerHTML + '';
 
     this.childNodes = new NodeList([new Text(innerHTML)]);
-    this.dispatchEvent('innerHTML', innerHTML);
+    this.dispatchNodeEvent('innerHTML', innerHTML);
   }
 
   isRunnable() {
@@ -1655,7 +1655,7 @@ class HTMLSrcableElement extends HTMLLoadableElement {
   [symbols.runSymbol]() {
     const srcAttr = this.attributes.src;
     if (srcAttr) {
-      this.dispatchEvent('attribute', 'src', srcAttr.value);
+      this.dispatchNodeEvent('attribute', 'src', srcAttr.value);
     }
     return Promise.resolve();
   }
@@ -1809,10 +1809,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               this.contentDocument = contentDocument;
 
               contentDocument.addEventListener('framebuffer', framebuffer => {
-                this.dispatchEvent('framebuffer', framebuffer);
+                this.dispatchNodeEvent('framebuffer', framebuffer);
               });
               contentWindow.addEventListener('destroy', e => {
-                parentWindow.dispatchEvent('destroy', e);
+                parentWindow.dispatchNodeEvent('destroy', e);
               });
 
               this.dispatchEvent(new Event('load', {target: this}));
@@ -1852,7 +1852,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
   destroy() {
     if (this.live) {
-      this.dispatchEvent('destroy');
+      this.dispatchNodeEvent('destroy');
       this.live = false;
     }
   }
@@ -2011,7 +2011,7 @@ class CharacterNode extends Node {
   set textContent(textContent) {
     this.value = textContent;
 
-    this.dispatchEvent('value');
+    this.dispatchNodeEvent('value');
   }
 
   get data() {
@@ -2020,7 +2020,7 @@ class CharacterNode extends Node {
   set data(data) {
     this.value = data;
 
-    this.dispatchEvent('value');
+    this.dispatchNodeEvent('value');
   }
   get length() {
     return this.value.length;
@@ -2453,11 +2453,11 @@ class HTMLVideoElement extends HTMLMediaElement {
           .then(() => {
             console.log('video download done');
             this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
-            this.dispatchEvent('canplay');
-            this.dispatchEvent('canplaythrough');
+            this.dispatchNodeEvent('canplay');
+            this.dispatchNodeEvent('canplaythrough');
           })
           .catch(err => {
-            this.dispatchEvent('error', err);
+            this.dispatchNodeEvent('error', err);
           });
       } else if (name === 'loop') {
         this.video.loop = !!value || value === '';
@@ -2547,7 +2547,7 @@ class HTMLVideoElement extends HTMLMediaElement {
     let sources;
     const srcAttr = this.attributes.src;
     if (srcAttr) {
-      this.dispatchEvent('attribute', 'src', srcAttr.value);
+      this.dispatchNodeEvent('attribute', 'src', srcAttr.value);
       running = true;
     } else if (sources = this.childNodes.filter(childNode => childNode.nodeType === Node.ELEMENT_NODE && childNode.matches('source'))) {
       for (let i = 0; i < sources.length; i++) {
