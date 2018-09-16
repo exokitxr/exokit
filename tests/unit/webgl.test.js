@@ -1,7 +1,7 @@
 /* global afterEach, beforeEach, describe, assert, it */
 const exokit = require('../../src/index');
 
-describe.only('webgl', () => {
+describe('webgl', () => {
   var gl;
   var window;
 
