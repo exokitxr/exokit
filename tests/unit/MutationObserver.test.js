@@ -21,7 +21,6 @@ describe('MutationObserver', () => {
     childEl = document.createElement('p');
     childEl.id = 'child';
 
-    document.body.appendChild(el);
     setTimeout(() => { done(); });
   });
 
@@ -263,38 +262,54 @@ describe('MutationObserver', () => {
     });
   });
 
-  it('can observe document', done => {
-    const observerHelper = cb => {
-      const observer = new MutationObserver(cb);
-      observer.observe(document, {attributes: false, childList: true, subtree: true});
-      return observer;
-    };
-
-    observerHelper(mutations => {
-      const mutation = mutations[0];
-      assert.equal(mutations.length, 1);
-      assert.equal(mutation.addedNodes.length, 1);
-      assert.equal(mutation.addedNodes[0].id, 'child');
-      assert.equal(mutation.type , 'childList');
-      done();
+  describe('characterData', () => {
+    it('detects text node characterData change', done => {
+      const textNode = document.createTextNode('');
+      const observer = new MutationObserver(mutations => {
+        const mutation = mutations[0];
+        assert.equal(mutations.length, 1);
+        assert.equal(mutation.type , 'characterData');
+        done();
+      });
+      observer.observe(textNode, {characterData: true});
+      textNode.data = 'zol';
     });
-
-    el.appendChild(childEl);
   });
 
-  it('does not trigger mutation observer on non-attached elements', done => {
-    document.body.removeChild(el);
+  describe('document observation', () => {
+    it('can observe document', done => {
+      document.body.appendChild(el);
 
-    const observer = new MutationObserver(() => {
-      assert.equal(1, 0, 'Should not have triggered');
+      const observerHelper = cb => {
+        const observer = new MutationObserver(cb);
+        observer.observe(document, {attributes: false, childList: true, subtree: true});
+        return observer;
+      };
+
+      observerHelper(mutations => {
+        const mutation = mutations[0];
+        assert.equal(mutations.length, 1);
+        assert.equal(mutation.addedNodes.length, 1);
+        assert.equal(mutation.addedNodes[0].id, 'child');
+        assert.equal(mutation.type , 'childList');
+        done();
+      });
+
+      setTimeout(() => { el.appendChild(childEl); });
     });
-    observer.observe(el, {attributes: false, childList: true, subtree: true});
 
-    // el is not part of document.
-    el.appendChild(childEl);
-    el.setAttribute('data-foo', 'foo');
-    childEl.setAttribute('data-bar', 'bar');
+    it('does not mutate on non-attached elements when listening to document', done => {
+      const observer = new MutationObserver(() => {
+        assert.equal(1, 0, 'Should not have triggered');
+      });
+      observer.observe(document, {attributes: false, childList: true, subtree: true});
 
-    done();
+      // el is not part of document.
+      el.appendChild(childEl);
+      el.setAttribute('data-foo', 'foo');
+      childEl.setAttribute('data-bar', 'bar');
+
+      done();
+    });
   });
 });
