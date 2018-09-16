@@ -1,7 +1,8 @@
 /* global afterEach, beforeEach, describe, assert, it */
 const exokit = require('../../src/index');
+const helpers = require('./helpers');
 
-describe('webgl', () => {
+helpers.describeSkipCI('webgl', () => {
   var ext;
   var gl;
   var window;
