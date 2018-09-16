@@ -131,8 +131,8 @@ class MutationObserver {
   }
 
   handleAttribute(el, name, value, oldValue) {
-    // Only queue mutations if element is part of the DOM (#361).
-    if (!el.ownerDocument.contains(el)) { return; }
+    // If observing document, only queue mutations if element is part of the DOM (#361).
+    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
 
     // Respect attribute filter.
     if (this.options.attributeFilter && !this.options.attributeFilter.includes(name)) {
@@ -145,8 +145,8 @@ class MutationObserver {
   }
 
   handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
-    // Only queue mutations if element is part of the DOM (#361).
-    if (!el.ownerDocument.contains(el)) { return; }
+    // If observing document, only queue mutations if element is part of the DOM (#361).
+    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
 
     this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes,
                                        previousSibling, nextSibling, null, null, null));
@@ -154,8 +154,8 @@ class MutationObserver {
   }
 
   handleValue(el) {
-    // Only queue mutations if element is part of the DOM (#361).
-    if (!el.ownerDocument.contains(el)) { return; }
+    // If observing document, only queue mutations if element is part of the DOM (#361).
+    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
 
     this.queue.push(new MutationRecord('characterData', el, emptyNodeList, emptyNodeList,
                                        null, null, null, null, null));
