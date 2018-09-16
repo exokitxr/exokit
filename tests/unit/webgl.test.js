@@ -2,6 +2,7 @@
 const exokit = require('../../src/index');
 
 describe('webgl', () => {
+  var ext;
   var gl;
   var window;
 
@@ -16,9 +17,17 @@ describe('webgl', () => {
 
   describe('getExtension', () => {
     it('enables EXT_blend_minmax', () => {
-      const minmax = gl.getExtension('EXT_blend_minmax');
-      assert.equal(typeof minmax.MIN_EXT, 'number');
-      assert.equal(typeof minmax.MAX_EXT, 'number');
+      ext = gl.getExtension('EXT_blend_minmax');
+      assert.equal(typeof ext.MIN_EXT, 'number');
+      assert.equal(typeof ext.MAX_EXT, 'number');
+    });
+
+    it('enables EXT_color_buffer_half_float', () => {
+      ext = gl.getExtension('EXT_color_buffer_half_float');
+      assert.equal(typeof ext.FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT, 'number');
+      assert.equal(typeof ext.RGB16F_EXT, 'number');
+      assert.equal(typeof ext.RGBA16F_EXT, 'number');
+      assert.equal(typeof ext.UNSIGNED_NORMALIZED_EXT, 'number');
     });
   });
 });

@@ -4553,6 +4553,13 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else if (strcmp(sname, "EXT_color_buffer_float") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
     info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "EXT_color_buffer_half_float") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT"), JS_INT(GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT));
+    result->Set(JS_STR("RGB16F_EXT"), JS_INT(GL_RGB16F_EXT));
+    result->Set(JS_STR("RGBA16F_EXT"), JS_INT(GL_RGBA16F_EXT));
+    result->Set(JS_STR("UNSIGNED_NORMALIZED_EXT"), JS_INT(GL_UNSIGNED_NORMALIZED_EXT));
+    info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "EXT_blend_minmax") == 0) {
     // Adds two constants: developer.mozilla.org/docs/Web/API/EXT_blend_minmax
     Local<Object> result = Object::New(Isolate::GetCurrent());
