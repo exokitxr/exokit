@@ -2771,7 +2771,7 @@ NAN_METHOD(WebGLRenderingContext::CreateBuffer) {
 
 NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  
+
   GLenum target;
   GLuint buffer;
   if (info.Length() < 2) {
@@ -2790,7 +2790,7 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   }
 
   glBindBuffer(target, buffer);
-  
+
   gl->SetBufferBinding(target, buffer);
 }
 
@@ -4553,6 +4553,12 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else if (strcmp(sname, "EXT_color_buffer_float") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
     info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "EXT_blend_minmax") == 0) {
+    // Adds two constants: developer.mozilla.org/docs/Web/API/EXT_blend_minmax
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(String::NewFromUtf8(Isolate::GetCurrent(), "MIN_EXT"), Number::New(Isolate::GetCurrent(), GL_MIN_EXT));
+    result->Set(String::NewFromUtf8(Isolate::GetCurrent(), "MAX_EXT"), Number::New(Isolate::GetCurrent(), GL_MAX_EXT));
+    info.GetReturnValue().Set(result);
   } else {
     info.GetReturnValue().Set(Null(Isolate::GetCurrent()));
   }
@@ -4587,7 +4593,7 @@ NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
   GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : gl->defaultVao;
 
   glBindVertexArray(vao);
-  
+
   gl->SetVertexArrayBinding(vao);
 }
 
