@@ -30,60 +30,60 @@ class EventTarget {
   }
 
   dispatchEvent(event) {
-    if (typeof event === 'string') {
-      const listeners = this._listeners[event];
+    event.target = this;
+
+    const _emit = (node, event) => {
+      const listeners = node._listeners[event.type];
+
 
       if (listeners && listeners.length > 0) {
-        const args = Array.from(arguments).slice(1);
+        event.currentTarget = this;
 
         this._currentListeners = listeners;
         for (this._currentListenerIndex = 0; this._currentListenerIndex < listeners.length; this._currentListenerIndex++) {
           try {
-
-            listeners[this._currentListenerIndex].apply(this, args);
+            listeners[this._currentListenerIndex].call(this, event);
           } catch (err) {
             console.warn(err);
           }
         }
         this._currentListeners = null;
         // this._currentListenerIndex = 0;
+
+        event.currentTarget = null;
       }
-    } else {
-      event.target = this;
+    };
+    const _recurse = (node, event) => {
+      _emit(node, event);
 
-      const _emit = (node, event) => {
-        const listeners = node._listeners[event.type];
+      if (event.bubbles && node instanceof GlobalContext.Document) {
+        _emit(node.defaultView, event);
+      }
 
+      if (event.bubbles && !event.propagationStopped && node.parentNode) {
+        _recurse(node.parentNode, event);
+      }
+    };
+    _recurse(this, event);
+  }
+  
+  dispatchNodeEvent(event) {
+    const listeners = this._listeners[event];
 
-        if (listeners && listeners.length > 0) {
-          event.currentTarget = this;
+    if (listeners && listeners.length > 0) {
+      const args = Array.from(arguments).slice(1);
 
-          this._currentListeners = listeners;
-          for (this._currentListenerIndex = 0; this._currentListenerIndex < listeners.length; this._currentListenerIndex++) {
-            try {
-              listeners[this._currentListenerIndex].call(this, event);
-            } catch (err) {
-              console.warn(err);
-            }
-          }
-          this._currentListeners = null;
-          // this._currentListenerIndex = 0;
+      this._currentListeners = listeners;
+      for (this._currentListenerIndex = 0; this._currentListenerIndex < listeners.length; this._currentListenerIndex++) {
+        try {
 
-          event.currentTarget = null;
+          listeners[this._currentListenerIndex].apply(this, args);
+        } catch (err) {
+          console.warn(err);
         }
-      };
-      const _recurse = (node, event) => {
-        _emit(node, event);
-
-        if (event.bubbles && node instanceof GlobalContext.Document) {
-          _emit(node.defaultView, event);
-        }
-
-        if (event.bubbles && !event.propagationStopped && node.parentNode) {
-          _recurse(node.parentNode, event);
-        }
-      };
-      _recurse(this, event);
+      }
+      this._currentListeners = null;
+      // this._currentListenerIndex = 0;
     }
   }
 }
