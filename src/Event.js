@@ -1,13 +1,12 @@
 const USKeyboardLayout = require('./USKeyboardLayout');
 const GlobalContext = require('./GlobalContext');
 
-class EventTarget {
-  constructor() {
-    this._listeners = {};
-    this._currentListeners = null;
-    this._currentListenerIndex = 0;
-  }
-
+function EventTarget() {
+  this._listeners = {};
+  this._currentListeners = null;
+  this._currentListenerIndex = 0;
+}
+EventTarget.prototype = {
   addEventListener(event, listener) {
     if (typeof listener === 'function') {
       if (!this._listeners[event]) {
@@ -15,7 +14,7 @@ class EventTarget {
       }
       this._listeners[event].push(listener);
     }
-  }
+  },
   removeEventListener(event, listener) {
     if (typeof listener === 'function' && this._listeners[event]) {
       const index = this._listeners[event].indexOf(listener);
@@ -27,7 +26,7 @@ class EventTarget {
         }
       }
     }
-  }
+  },
 
   dispatchEvent(event) {
     event.target = this;
@@ -65,7 +64,7 @@ class EventTarget {
       }
     };
     _recurse(this, event);
-  }
+  },
   
   dispatchNodeEvent(event) {
     const listeners = this._listeners[event];
@@ -85,8 +84,8 @@ class EventTarget {
       this._currentListeners = null;
       // this._currentListenerIndex = 0;
     }
-  }
-}
+  },
+};
 module.exports.EventTarget = EventTarget;
 
 class Event {

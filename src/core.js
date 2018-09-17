@@ -829,7 +829,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   for (const k in EventTarget.prototype) {
     window[k] = EventTarget.prototype[k];
   }
-  window._listeners = []; // EventTarget.constructor
+  EventTarget.call(window);
 
   window.window = window;
   window.self = window;
