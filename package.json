@@ -80,7 +80,7 @@
     "window-fetch": "0.0.9",
     "window-selector": "0.0.5",
     "window-text-encoding": "0.0.2",
-    "window-worker": "0.0.81",
+    "window-worker": "0.0.82",
     "window-xhr": "0.0.19",
     "ws": "^6.0.0"
   },
