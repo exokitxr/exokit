@@ -36,6 +36,7 @@ function initDocument (document, window) {
   document.head = head;
   document.body = body;
   document.location = window.location;
+  document.cookie = '';
   document.createElement = tagName => {
     tagName = tagName.toUpperCase();
     const HTMLElementTemplate = window[symbols.htmlTagsSymbol][tagName];
