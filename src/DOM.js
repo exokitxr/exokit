@@ -2261,7 +2261,7 @@ class HTMLAudioElement extends HTMLMediaElement {
             progressEvent.loaded = 1;
             progressEvent.total = 1;
             progressEvent.lengthComputable = true;
-            this._emit(progressEvent);
+            this.dispatchEvent(progressEvent);
 
             this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
             this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
@@ -2340,7 +2340,7 @@ class HTMLVideoElement extends HTMLMediaElement {
           progressEvent.loaded = 1;
           progressEvent.total = 1;
           progressEvent.lengthComputable = true;
-          this._emit(progressEvent);
+          this.dispatchEvent(progressEvent);
 
           this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
