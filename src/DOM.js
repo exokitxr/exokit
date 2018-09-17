@@ -175,6 +175,25 @@ class Node extends EventTarget {
   cloneNode(deep = false) {
     return _cloneNode(deep, this);
   }
+
+  _dispatchEventOnDocumentReady() {
+    if (this.ownerDocument.readyState === 'complete') {
+      this.dispatchEvent.apply(this, arguments);
+    } else {
+      const args = Array.from(arguments);
+
+      const _readystatechange = () => {
+        if (this.ownerDocument.readyState === 'complete') {
+          this.ownerDocument.removeEventListener('readystatechange', _readystatechange);
+
+          process.nextTick(() => {
+            this.dispatchEvent.apply(this, args);
+          });
+        }
+      };
+      this.ownerDocument.addEventListener('readystatechange', _readystatechange);
+    }
+  }
 }
 
 /**
@@ -2117,7 +2136,7 @@ class HTMLImageElement extends HTMLSrcableElement {
             });
           }))
           .then(() => {
-            this.dispatchEvent(new Event('load', {target: this}));
+            this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
           })
           .catch(err => {
             console.warn('failed to load image:', src);
@@ -2125,7 +2144,7 @@ class HTMLImageElement extends HTMLSrcableElement {
             const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
-            this.dispatchEvent(e);
+            this._dispatchEventOnDocumentReady(e);
           })
           .finally(() => {
             setImmediate(() => {
@@ -2243,8 +2262,8 @@ class HTMLAudioElement extends HTMLMediaElement {
             progressEvent.lengthComputable = true;
             this._emit(progressEvent);
 
-            this._emit('canplay');
-            this._emit('canplaythrough');
+            this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
+            this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
           })
           .catch(err => {
             console.warn('failed to load audio:', src);
@@ -2252,7 +2271,7 @@ class HTMLAudioElement extends HTMLMediaElement {
             const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
-            this.dispatchEvent(e);
+            this._dispatchEventOnDocumentReady(e);
           })
           .finally(() => {
             setImmediate(() => {
@@ -2322,8 +2341,8 @@ class HTMLVideoElement extends HTMLMediaElement {
           progressEvent.lengthComputable = true;
           this._emit(progressEvent);
 
-          this.dispatchEvent(new Event('canplay', {target: this}));
-          this.dispatchEvent(new Event('canplaythrough', {target: this}));
+          this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
+          this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 
           resource.setProgress(1);
         });
