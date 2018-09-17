@@ -34,7 +34,6 @@ EventTarget.prototype = {
     const _emit = (node, event) => {
       const listeners = node._listeners[event.type];
 
-
       if (listeners && listeners.length > 0) {
         event.currentTarget = this;
 
@@ -75,7 +74,6 @@ EventTarget.prototype = {
       this._currentListeners = listeners;
       for (this._currentListenerIndex = 0; this._currentListenerIndex < listeners.length; this._currentListenerIndex++) {
         try {
-
           listeners[this._currentListenerIndex].apply(this, args);
         } catch (err) {
           console.warn(err);
