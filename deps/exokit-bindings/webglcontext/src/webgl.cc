@@ -4573,6 +4573,15 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     result->Set(JS_STR("SRGB_ALPHA_EXT"), JS_INT(GL_SRGB_ALPHA_EXT));
     result->Set(JS_STR("SRGB_EXT"), JS_INT(GL_SRGB_EXT));
     info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OES_vertex_array_object") == 0) {
+    // Same as other vertex array methods, but with the OES suffix for WebGL 1.
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("context"), info.This());
+    Nan::SetMethod(result, "createVertexArrayOES", CreateVertexArray);
+    Nan::SetMethod(result, "deleteVertexArrayOES", DeleteVertexArray);
+    Nan::SetMethod(result, "isVertexArrayOES", IsVertexArray);
+    Nan::SetMethod(result, "bindVertexArrayOES", BindVertexArrayOES);
+    info.GetReturnValue().Set(result);
   } else {
     info.GetReturnValue().Set(Null(Isolate::GetCurrent()));
   }
@@ -4604,6 +4613,17 @@ NAN_METHOD(WebGLRenderingContext::DeleteVertexArray) {
 
 NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : gl->defaultVao;
+
+  glBindVertexArray(vao);
+
+  gl->SetVertexArrayBinding(vao);
+}
+
+NAN_METHOD(WebGLRenderingContext::BindVertexArrayOES) {
+  Local<Object> contextObj = Local<Object>::Cast(info.This()->Get(JS_STR("context")));
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(contextObj);
   GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : gl->defaultVao;
 
   glBindVertexArray(vao);

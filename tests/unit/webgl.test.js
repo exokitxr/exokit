@@ -38,5 +38,14 @@ helpers.describeSkipCI('webgl', () => {
       assert.equal(typeof ext.SRGB_ALPHA_EXT, 'number');
       assert.equal(typeof ext.SRGB_EXT, 'number');
     });
+
+    it('returns OES_vertex_array_object ', () => {
+      ext = gl.getExtension('OES_vertex_array_object');
+      const vao = ext.createVertexArrayOES();
+      assert.ok(!ext.isVertexArrayOES(vao));
+      ext.bindVertexArrayOES(vao);
+      assert.ok(ext.isVertexArrayOES(vao));
+      ext.deleteVertexArrayOES(vao);
+    });
   });
 });

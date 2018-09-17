@@ -221,12 +221,12 @@ public:
   static NAN_METHOD(VertexAttrib2fv);
   static NAN_METHOD(VertexAttrib3fv);
   static NAN_METHOD(VertexAttrib4fv);
-  
+
   static NAN_METHOD(VertexAttribI4i);
   static NAN_METHOD(VertexAttribI4iv);
   static NAN_METHOD(VertexAttribI4ui);
   static NAN_METHOD(VertexAttribI4uiv);
-  
+
   static NAN_METHOD(VertexAttribDivisor);
   static NAN_METHOD(VertexAttribDivisorANGLE);
   static NAN_METHOD(DrawBuffers);
@@ -305,6 +305,7 @@ public:
   static NAN_METHOD(CreateVertexArray);
   static NAN_METHOD(DeleteVertexArray);
   static NAN_METHOD(BindVertexArray);
+  static NAN_METHOD(BindVertexArrayOES);
 
   static NAN_METHOD(FenceSync);
   static NAN_METHOD(DeleteSync);
@@ -320,7 +321,7 @@ public:
   static NAN_GETTER(DrawingBufferHeightGetter);
 
   static NAN_METHOD(SetDefaultFramebuffer);
-  
+
   void SetVertexArrayBinding(GLuint vao) {
     vertexArrayBindings[GL_VERTEX_SHADER] = vao;
   }
@@ -350,7 +351,7 @@ public:
   bool HasRenderbufferBinding(GLenum target) {
     return renderbufferBindings.find(target) != renderbufferBindings.end();
   }
-  
+
   void SetBufferBinding(GLenum target, GLuint buffer) {
     bufferBindings[target] = buffer;
   }
@@ -370,7 +371,7 @@ public:
   bool HasTextureBinding(GLenum framebuffer, GLenum target) {
     return textureBindings.find(std::make_pair(framebuffer, target)) != textureBindings.end();
   }
-  
+
   void SetProgramBinding(GLuint program) {
     programBindings[GL_VERTEX_SHADER] = program;
   }
