@@ -159,7 +159,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
       };
 
-      document._emit('framebuffer', {
+      document.dispatchNodeEvent('framebuffer', {
         framebuffer,
         colorTexture,
         depthStencilTexture,
@@ -205,7 +205,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         }
       });
     };
-    canvas.ownerDocument.on('domchange', ondomchange);
+    canvas.ownerDocument.addEventListener('domchange', ondomchange);
 
     cleanups.push(() => {
       nativeWindow.setCurrentWindowContext(windowHandle);
@@ -225,9 +225,9 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       canvas._context = null;
 
       if (hidden) {
-        document._emit('framebuffer', null);
+        document.dispatchNodeEvent('framebuffer', null);
       }
-      canvas.ownerDocument.removeListener('domchange', ondomchange);
+      canvas.ownerDocument.removeEventListener('domchange', ondomchange);
 
       contexts.splice(contexts.indexOf(gl), 1);
 
@@ -247,7 +247,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     contexts.push(gl);
     fps = nativeWindow.getRefreshRate();
 
-    canvas.ownerDocument.defaultView.on('unload', () => {
+    canvas.ownerDocument.defaultView.addEventListener('unload', () => {
       gl.destroy();
     });
 
@@ -364,9 +364,9 @@ if (nativeVr) {
             nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
           }
         };
-        canvas.on('attribute', _attribute);
+        canvas.addEventListener('attribute', _attribute);
         cleanups.push(() => {
-          canvas.removeListener('attribute', _attribute);
+          canvas.removeEventListener('attribute', _attribute);
         });
 
         window.top.updateVrFrame({
@@ -478,9 +478,9 @@ if (nativeMl) {
               nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
             }
           };
-          canvas.on('attribute', _attribute);
+          canvas.addEventListener('attribute', _attribute);
           cleanups.push(() => {
-            canvas.removeListener('attribute', _attribute);
+            canvas.removeEventListener('attribute', _attribute);
           });
 
           window.top.updateVrFrame({
@@ -616,7 +616,6 @@ if (nativeMl) {
 
       nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
     });
-    s.on('error', () => {});
   }
 }
 
@@ -775,11 +774,11 @@ const _getFrameTimeMin = () => 0;
 const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
   window.innerHeight = innerHeight;
-  window.on('unload', () => {
+  window.addEventListener('unload', () => {
     clearTimeout(timeout);
   });
-  window.on('navigate', newWindowCb);
-  window.document.on('paste', e => {
+  window.addEventListener('navigate', newWindowCb);
+  window.document.addEventListener('paste', e => {
     e.clipboardData = new window.DataTransfer();
     if (contexts.length > 0) {
       const context = contexts[0];
@@ -1003,11 +1002,11 @@ const _bindWindow = (window, newWindowCb) => {
   };
   window.setDirtyFrameTimeout = setDirtyFrameTimeout;
 
-  window.on('unload', () => {
+  window.addEventListener('unload', () => {
     clearTimeout(timeout);
   });
-  window.on('navigate', newWindowCb);
-  window.document.on('paste', e => {
+  window.addEventListener('navigate', newWindowCb);
+  window.document.addEventListener('paste', e => {
     e.clipboardData = new window.DataTransfer();
     if (contexts.length > 0) {
       const context = contexts[0];
@@ -1018,7 +1017,7 @@ const _bindWindow = (window, newWindowCb) => {
     }
   });
 
-  window.on('vrdisplaypresentchange', e => {
+  window.addEventListener('vrdisplaypresentchange', e => {
     if (e.display) {
       const gamepads = [leftGamepad, rightGamepad];
       for (let i = 0; i < gamepads.length; i++) {

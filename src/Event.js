@@ -1,42 +1,55 @@
-const {EventEmitter} = require('events');
 const USKeyboardLayout = require('./USKeyboardLayout');
 const GlobalContext = require('./GlobalContext');
 
-class EventTarget extends EventEmitter {
-  constructor() {
-    super();
-
-    this.setMaxListeners(Infinity);
-
-    this.on('error', err => {
-      console.warn(err);
-    });
-  }
-
+function EventTarget() {
+  this._listeners = {};
+  this._currentListeners = null;
+  this._currentListenerIndex = 0;
+}
+EventTarget.prototype = {
   addEventListener(event, listener) {
     if (typeof listener === 'function') {
-      this.on(event, listener);
+      if (!this._listeners[event]) {
+        this._listeners[event] = [];
+      }
+      this._listeners[event].push(listener);
     }
-  }
+  },
   removeEventListener(event, listener) {
-    if (typeof listener === 'function') {
-      this.removeListener(event, listener);
+    if (typeof listener === 'function' && this._listeners[event]) {
+      const index = this._listeners[event].indexOf(listener);
+      if (index !== -1) {
+        this._listeners[event].splice(index, 1);
+        
+        if (this._listeners[event] === this._currentListeners && index <= this._currentListenerIndex) {
+          this._currentListenerIndex--;
+        }
+      }
     }
-  }
+  },
 
   dispatchEvent(event) {
     event.target = this;
 
     const _emit = (node, event) => {
-      event.currentTarget = this;
+      const listeners = node._listeners[event.type];
 
-      try {
-        node._emit(event.type, event);
-      } catch (err) {
-        console.warn(err);
+      if (listeners && listeners.length > 0) {
+        event.currentTarget = this;
+
+        this._currentListeners = listeners;
+        for (this._currentListenerIndex = 0; this._currentListenerIndex < listeners.length; this._currentListenerIndex++) {
+          try {
+            listeners[this._currentListenerIndex].call(this, event);
+          } catch (err) {
+            console.warn(err);
+          }
+        }
+        this._currentListeners = null;
+        // this._currentListenerIndex = 0;
+
+        event.currentTarget = null;
       }
-
-      event.currentTarget = null;
     };
     const _recurse = (node, event) => {
       _emit(node, event);
@@ -50,12 +63,27 @@ class EventTarget extends EventEmitter {
       }
     };
     _recurse(this, event);
-  }
+  },
+  
+  dispatchNodeEvent(event) {
+    const listeners = this._listeners[event];
 
-  _emit() { // need to call this instead of EventEmitter.prototype.emit because some frameworks override HTMLElement.prototype.emit()
-    return EventEmitter.prototype.emit.apply(this, arguments);
-  }
-}
+    if (listeners && listeners.length > 0) {
+      const args = Array.from(arguments).slice(1);
+
+      this._currentListeners = listeners;
+      for (this._currentListenerIndex = 0; this._currentListenerIndex < listeners.length; this._currentListenerIndex++) {
+        try {
+          listeners[this._currentListenerIndex].apply(this, args);
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+      this._currentListeners = null;
+      // this._currentListenerIndex = 0;
+    }
+  },
+};
 module.exports.EventTarget = EventTarget;
 
 class Event {
