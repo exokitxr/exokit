@@ -1210,7 +1210,7 @@ class HTMLElement extends Element {
 module.exports.HTMLElement = HTMLElement;
 
 function getAnchorUrl(anchorEl) {
-  return new url.URL(anchorEl.href, anchorEl.ownerDocument.defaultView.location.origin);
+  return new url.URL(anchorEl.href, anchorEl.ownerDocument.defaultView.location.toString());
 }
 
 class HTMLAnchorElement extends HTMLElement {

@@ -6,10 +6,9 @@ describe('HTMLAnchorElement', () => {
   var document;
   var el;
 
-  beforeEach(() => {
+  beforeEach(function () {
     window = exokit().window;
     document = window.document;
-    Object.defineProperty(window.location, 'origin', {value: 'https://foo.com'});
     el = document.createElement('a');
   });
 
@@ -25,7 +24,8 @@ describe('HTMLAnchorElement', () => {
       assert.equal(el.href, '/bar/');
     });
 
-    it('can get location propert:ies', () => {
+    it('can get location propert:ies', function () {
+      this.sinon.stub(window.location, 'toString').callsFake(() => 'https://foo.com');
       el.href = 'https://bar.com:8080/corge?qux=1#qaz';
       assert.equal(el.hash, '#qaz');
       assert.equal(el.host, 'bar.com:8080');
@@ -39,11 +39,13 @@ describe('HTMLAnchorElement', () => {
       assert.equal(el.username, '');
     });
 
-    it('supports relative path', () => {
-      el.href = '/bar/';
-      assert.equal(el.href, '/bar/');
+    it('supports relative path on URL with path', function () {
+      this.sinon.stub(window.location, 'toString').callsFake(() => 'https://foo.com/baz/');
+      el.href = 'bar/';
+      assert.equal(el.href, 'bar/');
       assert.equal(el.host, 'foo.com');
       assert.equal(el.hostname, 'foo.com');
+      assert.equal(el.pathname, '/baz/bar/');
       assert.equal(el.protocol, 'https:');
       assert.equal(el.origin, 'https://foo.com');
     });
