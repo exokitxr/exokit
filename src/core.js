@@ -1438,7 +1438,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.dispatchNodeEvent = function(type) {
     if (!this[symbols.disabledEventsSymbol][type]) {
-      Node.prototype.dispatchEvent.apply(this, arguments);
+      Node.prototype.dispatchNodeEvent.apply(this, arguments);
     }
   };
   Object.defineProperty(window, 'onload', {
