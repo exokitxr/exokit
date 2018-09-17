@@ -1473,7 +1473,7 @@ const _prepare = () => Promise.all([
       runtimePath = path.join(__dirname, '/node_modules/native-openvr-deps/bin/osx64');
     } else if (platform === 'linux') {
       rootPath = path.join(os.userInfo().homedir, '.config/openvr');
-      runtimePath = path.join(__dirname, 'node_modules', 'native-openvr-deps/bin/linux64');
+      runtimePath = path.join(__dirname, '..', 'node_modules', 'native-openvr-deps/bin/linux64');
     }
 
     if (rootPath !== null) {

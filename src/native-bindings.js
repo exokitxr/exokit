@@ -1,5 +1,5 @@
 const path = require('path');
-const bindings = require(path.join(__dirname, '../', 'build', 'Release', 'exokit.node'));
+const bindings = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
 const {nativeAudio, nativeVr} = bindings;
 const WindowWorker = require('window-worker');
 const vmOne = require('vm-one');

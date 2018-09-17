@@ -13,4 +13,4 @@ if [ -x "$DIR/node/bin/node" ]; then
   NODE_BIN="$DIR/node/bin/node"
 fi
 
-exec "$NODE_BIN" "$DIR/index.js" "$@"
+exec "$NODE_BIN" "$DIR/../src/index.js" "$@"
