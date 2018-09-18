@@ -1502,25 +1502,31 @@ const char *cameraVsh = "\
 \n\
 in vec2 point;\n\
 in vec2 uv;\n\
-out vec2 vUv;\n\
+out vec2 vUvCamera;\n\
+out vec2 vUvContent;\n\
 \n\
 void main() {\n\
-  vUv = uv;\n\
-  gl_Position = vec4(point, 1., 1.);\n\
+  vUvCamera = vec2(uv.x, 1.0 - uv.y);\n\
+  vUvContent = vec2(uv.x * 0.5, uv.y);\n\
+  gl_Position = vec4(point, 1.0, 1.0);\n\
 }\n\
 ";
 const char *cameraFsh = "\
 #version 330\n\
 #extension GL_OES_EGL_image_external : enable\n\
 \n\
-in vec2 vUv;\n\
+in vec2 vUvCamera;\n\
+in vec2 vUvContent;\n\
 out vec4 fragColor;\n\
 \n\
 uniform samplerExternalOES cameraInTexture;\n\
-// uniform sampler2D cameraInTexture;\n\
+uniform sampler2D contentTexture;\n\
 \n\
 void main() {\n\
-  fragColor = texture2D(cameraInTexture, vUv);\n\
+  vec4 cameraIn = texture2D(cameraInTexture, vUvCamera);\n\
+  vec4 content = texture2D(contentTexture, vUvContent);\n\
+\n\
+  fragColor = vec4((cameraIn.rgb * (1.0 - content.a)) + (content.rgb * content.a), 1.0);\n\
 }\n\
 ";
 NAN_METHOD(MLContext::InitLifecycle) {
@@ -1617,6 +1623,32 @@ NAN_METHOD(MLContext::Present) {
     ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
+  }
+
+  MLGraphicsRenderTargetsInfo renderTargetsInfo;
+  if (MLGraphicsGetRenderTargets(mlContext->graphics_client, &renderTargetsInfo) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to get graphics render targets.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  unsigned int halfWidth = renderTargetsInfo.buffers[0].color.width;
+  unsigned int width = halfWidth * 2;
+  unsigned int height = renderTargetsInfo.buffers[0].color.height;
+
+  GLuint fbo;
+  GLuint colorTex;
+  GLuint depthStencilTex;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
+  {
+    bool ok = windowsystem::CreateRenderTarget(gl, width, height, 0, 0, 0, 0, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+    if (!ok) {
+      ML_LOG(Error, "%s: Failed to create ML present render context.", application_name);
+      info.GetReturnValue().Set(Nan::Null());
+      return;
+    }
   }
 
   {
@@ -1754,6 +1786,11 @@ NAN_METHOD(MLContext::Present) {
       std::cout << "ML camera program failed to get uniform location for 'cameraInTexture'" << std::endl;
       return;
     }
+    mlContext->contentTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "contentTexture");
+    if (mlContext->contentTextureLocation == -1) {
+      std::cout << "ML camera program failed to get uniform location for 'contentTexture'" << std::endl;
+      return;
+    }
 
     // delete the shaders as they're linked into our program now and no longer necessery
     glDeleteShader(mlContext->cameraVertex);
@@ -1784,12 +1821,15 @@ NAN_METHOD(MLContext::Present) {
     glVertexAttribPointer(mlContext->uvLocation, 2, GL_FLOAT, false, 0, 0);
 
     glGenTextures(1, &mlContext->cameraInTexture);
+    mlContext->contentTexture = colorTex;
     // glBindTexture(GL_TEXTURE_2D, mlContext->cameraInTexture);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     glGenTextures(1, &mlContext->cameraOutTexture);
+    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
     glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -1824,13 +1864,6 @@ NAN_METHOD(MLContext::Present) {
     } else {
       glBindFramebuffer(GL_TEXTURE_2D, 0);
     }
-  }
-
-  MLGraphicsRenderTargetsInfo renderTargetsInfo;
-  if (MLGraphicsGetRenderTargets(mlContext->graphics_client, &renderTargetsInfo) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to get graphics render targets.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
   }
 
   // initialize perception system
@@ -1945,11 +1978,15 @@ NAN_METHOD(MLContext::Present) {
 
   glGenFramebuffers(1, &mlContext->framebuffer_id);
 
-  unsigned int width = renderTargetsInfo.buffers[0].color.width;
-  unsigned int height = renderTargetsInfo.buffers[0].color.height;
   Local<Object> result = Nan::New<Object>();
-  result->Set(JS_STR("width"), JS_INT(width));
+  result->Set(JS_STR("width"), JS_INT(halfWidth));
   result->Set(JS_STR("height"), JS_INT(height));
+  result->Set(JS_STR("fbo"), JS_INT(fbo));
+  result->Set(JS_STR("colorTex"), JS_INT(colorTex));
+  result->Set(JS_STR("depthStencilTex"), JS_INT(depthStencilTex));
+  result->Set(JS_STR("msFbo"), JS_INT(msFbo));
+  result->Set(JS_STR("msColorTex"), JS_INT(msColorTex));
+  result->Set(JS_STR("msDepthStencilTex"), JS_INT(msDepthStencilTex));
   info.GetReturnValue().Set(result);
 }
 

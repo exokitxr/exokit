@@ -282,13 +282,13 @@ public:
   GLint pointLocation;
   GLint uvLocation;
   GLint cameraInTextureLocation;
+  GLint contentTextureLocation;
   GLuint pointBuffer;
   GLuint uvBuffer;
 
   GLuint cameraInTexture;
+  GLuint contentTexture;
   GLuint cameraOutTexture;
-  int cameraTextureWidth;
-  int cameraTextureHeight;
   GLuint cameraFbo;
 
   // occlusion
