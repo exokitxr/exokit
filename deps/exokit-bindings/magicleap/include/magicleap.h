@@ -20,7 +20,7 @@
 #include <condition_variable>
 #include <algorithm>
 #include <webgl.h>
-#include <egl.h>
+#include <egl/include/egl.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
 #include <ml_hand_tracking.h>
