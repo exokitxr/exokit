@@ -208,7 +208,7 @@ class CameraRequest {
 public:
   CameraRequest(Local<Function> cbFn);
   void Set(int width, int height, int stride);
-  void Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int contentWidth, unsigned int contentHeight);
+  void Poll(WebGLRenderingContext *gl, GLuint fbo);
 
 // protected:
   Nan::Persistent<Function> cbFn;

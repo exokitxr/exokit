@@ -88,6 +88,8 @@ MLEyeTrackingStaticData eyeStaticData;
 
 bool depthEnabled = false;
 
+const int CAMERA_SIZE[] = {960, 540};
+
 bool isPresent() {
   return lifecycle_status == MLResult_Ok;
 }
@@ -1185,14 +1187,14 @@ void CameraRequest::Set(int width, int height, int stride) {
   } */
 }
 
-void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int contentWidth, unsigned int contentHeight) {
+void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo) {
   size_t planeCount = planes.size();
-  Local<Array> array = Nan::New<Array>(planeCount + 1);
+  Local<Array> array = Nan::New<Array>(planeCount);
   for (uint8_t i = 0; i < planeCount; i++) {
     CameraRequestPlane *plane = planes[i];
 
-    uint32_t width = plane->width;
-    uint32_t height = plane->height;
+    // uint32_t width = plane->width;
+    // uint32_t height = plane->height;
     uint32_t stride = plane->stride;
 
     Local<ArrayBuffer> arrayBuffer = Nan::New(plane->data);
@@ -1200,24 +1202,10 @@ void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int con
 
     Local<Object> obj = Nan::New<Object>();
     obj->Set(JS_STR("data"), arrayBuffer);
-    obj->Set(JS_STR("width"), JS_INT(width));
-    obj->Set(JS_STR("height"), JS_INT(height));
+    obj->Set(JS_STR("width"), JS_INT(CAMERA_SIZE[0]));
+    obj->Set(JS_STR("height"), JS_INT(CAMERA_SIZE[1]));
     // obj->Set(JS_STR("bpp"), JS_INT(bpp));
     obj->Set(JS_STR("stride"), JS_INT(stride));
-    array->Set(i, obj);
-  }
-  {
-    uint8_t i = planeCount;
-    Local<Object> obj = Nan::New<Object>();
-    unsigned int halfContentWidth = contentWidth / 2;
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), halfContentWidth * contentHeight * 4);
-    unsigned char *data = (unsigned char *)arrayBuffer->GetContents().Data();
-    windowsystem::ReadPixels(gl, fbo, 0, 0, halfContentWidth, contentHeight, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    obj->Set(JS_STR("data"), arrayBuffer);
-    obj->Set(JS_STR("width"), JS_INT(halfContentWidth));
-    obj->Set(JS_STR("height"), JS_INT(contentHeight));
-    // obj->Set(JS_STR("bpp"), JS_INT(4));
-    obj->Set(JS_STR("stride"), JS_INT(halfContentWidth));
     array->Set(i, obj);
   }
 
@@ -1231,7 +1219,7 @@ void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int con
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-MLContext::MLContext() : window(nullptr), gl(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), cameraOutTexture(0), cameraTextureWidth(0), cameraTextureHeight(0), cameraFbo(0) {}
+MLContext::MLContext() : window(nullptr), gl(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
 
 MLContext::~MLContext() {}
 
@@ -1394,12 +1382,9 @@ void RunCameraInMainThread(uv_async_t *handle) {
     NATIVEwindow *window = application_context.window;
     WebGLRenderingContext *gl = application_context.gl;
 
-    int width = aNativeWindowBuffer->width;
-    int height = aNativeWindowBuffer->height;
+    // int width = aNativeWindowBuffer->width;
+    // int height = aNativeWindowBuffer->height;
     int stride = aNativeWindowBuffer->stride;
-
-    // void *data;
-    // graphicBuffer->*ml::lock.lock(USAGE_SW_READ_OFTEN | USAGE_SW_WRITE_NEVER);
 
     EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)cameraResponseImage, nullptr);
 
@@ -1407,25 +1392,22 @@ void RunCameraInMainThread(uv_async_t *handle) {
     glBindFramebuffer(GL_FRAMEBUFFER, mlContext->cameraFbo);
     glUseProgram(mlContext->cameraProgram);
 
-    if (width != mlContext->cameraTextureWidth || height != mlContext->cameraTextureHeight) {
-      glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-      mlContext->cameraTextureWidth = width;
-      mlContext->cameraTextureHeight = height;
-    }
-
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
     glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
-    glUniform1i(mlContext->cameraInTextureLocation, gl->activeTexture - GL_TEXTURE0);
+    glUniform1i(mlContext->cameraInTextureLocation, 0);
 
-    glViewport(0, 0, width, height);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, mlContext->contentTexture);
+    glUniform1i(mlContext->contentTextureLocation, 1);
+
+    glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     eglDestroyImageKHR(window->display, yuv_img);
 
     std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
-      c->Set(width, height, stride);
+      c->Set(CAMERA_SIZE[0], CAMERA_SIZE[1], stride);
     });
 
     if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -1458,16 +1440,19 @@ void RunCameraInMainThread(uv_async_t *handle) {
     } else {
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-      glBindFramebuffer(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+    if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
     } else {
-      glBindFramebuffer(GL_TEXTURE_2D, 0);
+      glBindTexture(GL_TEXTURE_2D, 0);
     }
-    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_EXTERNAL_OES)) {
-      glBindFramebuffer(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_EXTERNAL_OES));
+    if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES)) {
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES));
     } else {
-      glBindFramebuffer(GL_TEXTURE_EXTERNAL_OES, 0);
+      glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
     }
+    glActiveTexture(gl->activeTexture);
 
     cameraResponsePending = true;
   }
@@ -2551,8 +2536,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
 
   GLuint fbo = info[2]->Uint32Value();
-  unsigned int contentWidth = info[3]->Uint32Value();
-  unsigned int contentHeight = info[4]->Uint32Value();
 
   if (meshInfoRequestPending) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
@@ -2696,7 +2679,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
   if (cameraRequests.size() > 0 && cameraResponsePending) {
     std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
-      c->Poll(gl, fbo, contentWidth, contentHeight);
+      c->Poll(gl, fbo);
     });
 
     cameraResponsePending = false;
