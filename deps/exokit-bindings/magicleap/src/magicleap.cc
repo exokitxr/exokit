@@ -88,19 +88,6 @@ MLEyeTrackingStaticData eyeStaticData;
 
 bool depthEnabled = false;
 
-static const GLfloat points[] = {
-  -1.0f, -1.0f,
-  1.0f, -1.0f,
-  -1.0f, 1.0f,
-  1.0f, 1.0f,
-};
-static const GLfloat uvs[] = {
-  0.0f, 1.0f,
-  1.0f, 1.0f,
-  0.0f, 0.0f,
-  1.0f, 0.0f,
-};
-
 bool isPresent() {
   return lifecycle_status == MLResult_Ok;
 }
