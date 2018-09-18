@@ -1124,7 +1124,7 @@ void CameraRequestPlane::set(uint32_t width, uint32_t height, uint32_t stride) {
     this->data.Reset(arrayBuffer);
   } else {
     arrayBuffer = Nan::New(data);
-    
+
     if (arrayBuffer->ByteLength() != (width * height * 4)) {
       arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4);
       this->data.Reset(arrayBuffer);
@@ -1386,7 +1386,7 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
 
 void RunCameraInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
-  
+
   if (!cameraResponsePending) {
     ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)cameraResponseImage;
     // GraphicBuffer *graphicBuffer = (GraphicBuffer *)cameraResponseImage;
