@@ -14,9 +14,6 @@
 #endif
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES
-#endif
 /* #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h> */
 
