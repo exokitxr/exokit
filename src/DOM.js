@@ -1776,9 +1776,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.live = true;
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         let url = value;
-        if (!url) { return; }
         const match = url.match(/^javascript:(.+)$/); // XXX should support this for regular fetches too
         if (match) {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
@@ -2118,11 +2117,8 @@ class HTMLImageElement extends HTMLSrcableElement {
     this.image = new bindings.nativeImage();
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         const src = value;
-
-        // Empty src.
-        if (!src) { return; }
 
         const resource = this.ownerDocument.resources.addResource();
 
@@ -2241,11 +2237,8 @@ class HTMLAudioElement extends HTMLMediaElement {
     this.audio = new bindings.nativeAudio.Audio();
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         const src = value;
-
-        // Empty src.
-        if (!src) { return; }
 
         const resource = this.ownerDocument.resources.addResource();
 
@@ -2333,11 +2326,8 @@ class HTMLVideoElement extends HTMLMediaElement {
     this.data = new Uint8Array(0);
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         const src = value;
-
-        // Empty src.
-        if (!src) { return; }
 
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
@@ -2445,12 +2435,9 @@ class HTMLVideoElement extends HTMLMediaElement {
     this.video = new bindings.nativeVideo.Video();
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         console.log('video downloading...');
         const src = value;
-
-        // Empty src.
-        if (!src) { return; }
 
         this.ownerDocument.defaultView.fetch(src)
           .then(res => {
