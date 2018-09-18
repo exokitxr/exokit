@@ -2509,78 +2509,6 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 }
 
-class GraphicBuffer;
-union {
-  void *ptr;
-  void *ptrs[8];
-  int (GraphicBuffer::*lock)(unsigned int, void**); // _ZN7android13GraphicBuffer4lockEjPPv
-} lock;
-union {
-  void *ptr;
-  void *ptrs[8];
-  int (GraphicBuffer::*unlock)(); // // _ZN7android13GraphicBuffer6unlockEv
-} unlock;
-enum {
-  /* buffer is never read in software */
-  USAGE_SW_READ_NEVER         = 0x00000000,
-  /* buffer is rarely read in software */
-  USAGE_SW_READ_RARELY        = 0x00000002,
-  /* buffer is often read in software */
-  USAGE_SW_READ_OFTEN         = 0x00000003,
-  /* mask for the software read values */
-  USAGE_SW_READ_MASK          = 0x0000000F,
-
-  /* buffer is never written in software */
-  USAGE_SW_WRITE_NEVER        = 0x00000000,
-  /* buffer is rarely written in software */
-  USAGE_SW_WRITE_RARELY       = 0x00000020,
-  /* buffer is often written in software */
-  USAGE_SW_WRITE_OFTEN        = 0x00000030,
-  /* mask for the software write values */
-  USAGE_SW_WRITE_MASK         = 0x000000F0,
-  /* buffer will be used as an OpenGL ES texture */
-  USAGE_HW_TEXTURE            = 0x00000100,
-  /* buffer will be used as an OpenGL ES render target */
-  USAGE_HW_RENDER             = 0x00000200,
-  /* buffer will be used by the 2D hardware blitter */
-  USAGE_HW_2D                 = 0x00000400,
-  /* buffer will be used by the HWComposer HAL module */
-  USAGE_HW_COMPOSER           = 0x00000800,
-  /* buffer will be used with the framebuffer device */
-  USAGE_HW_FB                 = 0x00001000,
-  /* buffer will be used with the HW video encoder */
-  USAGE_HW_VIDEO_ENCODER      = 0x00010000,
-  /* buffer will be written by the HW camera pipeline */
-  USAGE_HW_CAMERA_WRITE       = 0x00020000,
-  /* buffer will be read by the HW camera pipeline */
-  USAGE_HW_CAMERA_READ        = 0x00040000,
-  /* buffer will be used as part of zero-shutter-lag queue */
-  USAGE_HW_CAMERA_ZSL         = 0x00060000,
-  /* mask for the camera access values */
-  USAGE_HW_CAMERA_MASK        = 0x00060000,
-  /* mask for the software usage bit-mask */
-  USAGE_HW_MASK               = 0x00071F00,
-  /* buffer will be used as a RenderScript Allocation */
-  USAGE_RENDERSCRIPT          = 0x00100000,
-  /* buffer should be displayed full-screen on an external display when
-   * possible
-   */
-  USAGE_EXTERNAL_DISP         = 0x00002000,
-  /* Must have a hardware-protected path to external display sink for
-   * this buffer.  If a hardware-protected path is not available, then
-   * either don't composite only this buffer (preferred) to the
-   * external sink, or (less desirable) do not route the entire
-   * composition to the external sink.
-   */
-  USAGE_PROTECTED             = 0x00004000,
-  /* implementation-specific private usage flags */
-  USAGE_PRIVATE_0             = 0x10000000,
-  USAGE_PRIVATE_1             = 0x20000000,
-  USAGE_PRIVATE_2             = 0x40000000,
-  USAGE_PRIVATE_3             = 0x80000000,
-  USAGE_PRIVATE_MASK          = 0xF0000000,
-};
-
 NAN_METHOD(MLContext::PostPollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
@@ -2741,14 +2669,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
 }
 
 Handle<Object> makeMl() {
-  std::cout << "load 1" << std::endl;
-  void *handle = dlopen("/lib64/libgui.so", RTLD_LAZY);
-  std::cout << "load 2 " << handle << std::endl;
-  ml::lock.ptr = dlsym(handle, "_ZN7android13GraphicBuffer4lockEjPPv");
-  std::cout << "load 3 " << ml::lock.ptr << std::endl;
-  ml::unlock.ptr = dlsym(handle, "_ZN7android13GraphicBuffer6unlockEv");
-  std::cout << "load 4 " << ml::unlock.ptr << std::endl;
-
   Nan::EscapableHandleScope scope;
   return scope.Escape(ml::MLContext::Initialize(Isolate::GetCurrent()));
 }
