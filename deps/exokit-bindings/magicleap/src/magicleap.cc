@@ -1756,12 +1756,24 @@ NAN_METHOD(MLContext::Present) {
 
     glGenBuffers(1, &mlContext->pointBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, mlContext->pointBuffer);
+    static const GLfloat points[] = {
+      -1.0f, -1.0f,
+      1.0f, -1.0f,
+      -1.0f, 1.0f,
+      1.0f, 1.0f,
+    };
     glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
     glEnableVertexAttribArray(mlContext->pointLocation);
     glVertexAttribPointer(mlContext->pointLocation, 2, GL_FLOAT, false, 0, 0);
 
     glGenBuffers(1, &mlContext->uvBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, mlContext->uvBuffer);
+    static const GLfloat uvs[] = {
+      0.0f, 1.0f,
+      1.0f, 1.0f,
+      0.0f, 0.0f,
+      1.0f, 0.0f,
+    };
     glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
     glEnableVertexAttribArray(mlContext->uvLocation);
     glVertexAttribPointer(mlContext->uvLocation, 2, GL_FLOAT, false, 0, 0);
