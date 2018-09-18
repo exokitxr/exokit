@@ -1832,11 +1832,6 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-  /* if (renderTargetsInfo.num_virtual_cameras != 2) {
-    ML_LOG(Error, "Invalid graphics render targets num cameras: %u", renderTargetsInfo.num_virtual_cameras);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  } */
 
   // initialize perception system
   MLPerceptionSettings perception_settings;
