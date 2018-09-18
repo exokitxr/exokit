@@ -404,18 +404,19 @@ void MLMesher::Poll() {
 
           Local<Object> positionBuffer = Nan::New<Object>();
           positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
+
           obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.positions, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
           obj->Set(JS_STR("positionArray"), positionArray);
           obj->Set(JS_STR("positionCount"), JS_INT(meshBuffer.numPositions));
-          
+
           Local<Object> normalBuffer = Nan::New<Object>();
           normalBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.normalBuffer));
           obj->Set(JS_STR("normalBuffer"), normalBuffer);
           Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.normals, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
           obj->Set(JS_STR("normalArray"), normalArray);
           obj->Set(JS_STR("normalCount"), JS_INT(meshBuffer.numPositions));
-          
+
           Local<Object> indexBuffer = Nan::New<Object>();
           indexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
           obj->Set(JS_STR("indexBuffer"), indexBuffer);
@@ -2387,7 +2388,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
       } else {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
       }
-      
+
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
         m->Poll();
       });
