@@ -2276,6 +2276,17 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 }
 
+class GraphicBuffer;
+union {
+  void *ptr;
+  void *ptrs[8];
+  int (GraphicBuffer::*lock)(unsigned int, void**); // _ZN7android13GraphicBuffer4lockEjPPv
+} lock;
+union {
+  void *ptr;
+  void *ptrs[8];
+  int (GraphicBuffer::*unlock)(); // // _ZN7android13GraphicBuffer6unlockEv
+} unlock;
 NAN_METHOD(MLContext::PostPollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
@@ -2439,6 +2450,14 @@ NAN_METHOD(MLContext::PostPollEvents) {
 }
 
 Handle<Object> makeMl() {
+  std::cout << "load 1" << std::endl;
+  void *handle = dlopen("/lib64/libgui.so", RTLD_LAZY);
+  std::cout << "load 2 " << handle << std::endl;
+  ml::lock.ptr = dlsym(handle, "_ZN7android13GraphicBuffer4lockEjPPv");
+  std::cout << "load 3 " << ml::lock.ptr << std::endl;
+  ml::unlock.ptr = dlsym(handle, "_ZN7android13GraphicBuffer6unlockEv");
+  std::cout << "load 4 " << ml::unlock.ptr << std::endl;
+
   Nan::EscapableHandleScope scope;
   return scope.Escape(ml::MLContext::Initialize(Isolate::GetCurrent()));
 }

@@ -12,6 +12,7 @@
 #include <node.h>
 #include <nan.h>
 #include <defines.h>
+#include <dlfcn.h>
 #include <cmath>
 #include <vector>
 #include <thread>
