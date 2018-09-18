@@ -1605,7 +1605,7 @@ NAN_METHOD(MLContext::Present) {
     MLResult result = MLInputSetKeyboardCallbacks(mlContext->inputTracker, &keyboardCallbacks, nullptr);
     if (result != MLResult_Ok) {
       ML_LOG(Error, "%s: failed to set keyboard callbacks %x", application_name, result);
-      Nan::ThrowError("MLContext::InitLifecycle failed to set keyboard callbacks");
+      Nan::ThrowError("MLContext::Present failed to set keyboard callbacks");
       return;
     }
   }
@@ -1648,7 +1648,7 @@ NAN_METHOD(MLContext::Present) {
     MLResult result = MLMeshingCreateClient(&meshTracker, &meshingSettings);
     if (result != MLResult_Ok) {
       ML_LOG(Error, "%s: failed to create mesh handle %x", application_name, result);
-      Nan::ThrowError("MLContext::InitLifecycle failed to create mesh handle");
+      Nan::ThrowError("MLContext::Present failed to create mesh handle");
       return;
     }
   }
