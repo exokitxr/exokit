@@ -1,0 +1,92 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.TH VJPEG 1 "Feb 26, 2018"
+.SH NAME
+vjpeg \- visual tool to experience the compression parameter available in sjpeg.
+.SH SYNOPSIS
+.B vjpeg
+.RI [ options ] " input_file
+.br
+.SH DESCRIPTION
+This manual page documents the
+.B vjpeg
+command.
+.PP
+\fBvjpeg\fP compresses a PNG, JPEG or PPM image or recompresses a JPEG image, using
+the baseline JPEG format and a visual interface based on OpenGL.
+.SH OPTIONS
+The basic options are:
+.TP
+.B \-h, \-help
+A summary of all the possible options.
+.TP
+.B \-version
+Print the SimpleJPEG's library version number (as major.minor.revision) and exit.
+.TP
+.B \-q " int
+Specify the compression factor between 0 and 100. The default
+is 75.
+A small factor produces a smaller file with lower quality.
+.TP
+.B \-info
+Overlay some file information on the display.
+
+.SH KEYS
+The available key shortcuts are:
+.IP
+   'i' ............... overlay file information
+.IP
+   ' ' ............... show the original uncompressed picture
+.IP
+   up/down ........... change the compression factor by +/- 1 units
+.IP
+   left/right ........ change the compression factor by +/- 10 units
+.IP
+   return ............ show alternate picture (if specified)
+.IP
+   0/1/2/3 ........... change the yuv_mode to auto/yuv420/sharp-yuv420/yuv444
+.IP
+   'o' ............... toggle Huffman optimization
+.IP
+   'a' ............... toggle adaptive quantization
+.IP
+   'b' ............... toggle adaptive bias
+.IP
+   'l' ............... toggle quantization limitation
+.IP
+   't' ............... toggle trellis-based quantization
+.IP
+   'e' ............... show error map
+.IP
+   'r' ............... show riskiness map
+.IP
+   '+'/'-' ........... go to next/previous file
+.IP
+   'h' ............... show this help message
+.IP
+   'q' / 'Q' / ESC ... quit
+
+Just press 'h' for help.
+
+.SH BUGS
+Please report any bugs to the SJPEG discussion list:
+https://groups.google.com/forum/#!forum/sjpeg
+The issue tracker is located at:
+https://github.com/webmproject/sjpeg/issues
+.br
+Patches welcome! See this page to get started:
+http://www.webmproject.org/code/contribute/submitting-patches/
+
+.SH EXAMPLES
+vjpeg \-q 50 picture.png
+
+.SH AUTHORS
+\fBvjpeg\fP was written by Pascal Massimino.
+.br
+The latest source tree is available at http://www.webmproject.org/code
+.PP
+This manual page was written by Pascal Massimino <pascal.massimino@gmail.com>,
+for the Debian project (and may be used by others).
+
+.SH SEE ALSO
+.BR sjpeg (1)
+.br
