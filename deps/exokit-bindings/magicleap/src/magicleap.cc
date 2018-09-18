@@ -1098,7 +1098,7 @@ void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtr
   // XXX
 }
 void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
-  if (!cameraResponsePending) {
+  /* if (!cameraResponsePending) {
     {
       std::unique_lock<std::mutex> lock(cameraRequestsMutex);
       std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
@@ -1106,7 +1106,7 @@ void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
       });
     }
     cameraResponsePending = true;
-  }
+  } */
 }
 
 // CameraRequestPlane
