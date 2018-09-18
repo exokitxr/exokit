@@ -15,11 +15,10 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include <webgl.h>
-
 using namespace v8;
 
 class WebGLRenderingContext;
+typedef unsigned int GLuint;
 
 class NATIVEwindow {
 public:

@@ -1,4 +1,5 @@
 #include <egl/include/egl.h>
+#include <webgl.h>
 
 namespace egl {
 

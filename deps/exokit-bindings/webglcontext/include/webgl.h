@@ -83,8 +83,6 @@
 using namespace v8;
 using namespace node;
 
-class NATIVEwindow;
-
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
 
 class ViewportState {
