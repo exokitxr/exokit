@@ -479,7 +479,6 @@
     })();
 
     (() => {
-      let frameData = null;
       let cameraTracker = null;
 
       const server = window.browser.http.createServer((req, res) => {
@@ -519,7 +518,7 @@
               res.statusCode = 500;
               res.end();
             });
-        } else if (req.url === '/frame') {
+        /* } else if (req.url === '/frame') {
           if (frameData) {
             console.log('send frame data', typeof frameData, frameData.constructor && frameData.constructor.name, frameData && frameData.length);
             res.setHeader('Content-Type', 'application/octet-stream');
@@ -527,7 +526,7 @@
           } else {
             res.statusCode = 404;
             res.end();
-          }
+          } */
         } else {
           res.statusCode = 404;
           res.end();
@@ -543,17 +542,10 @@
         if (!cameraTracker) {
           const _onCameraFrame = e => {
             // console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
-            if (c.readyState === window.browser.ws.OPEN) {
-              const {width, height, data} = e;
-              frameData = Buffer.from(data);
+            const frameData = Buffer.from(e.data);
 
-              const update = {
-                width,
-                height,
-              };
-              for (let i = 0; i < cameraTracker.callbacks.length; i++) {
-                cameraTracker.callbacks[i](update);
-              }
+            for (let i = 0; i < cameraTracker.callbacks.length; i++) {
+              cameraTracker.callbacks[i](frameData);
             }
           };
           window.browser.magicleap.RequestCamera(_onCameraFrame);
@@ -563,8 +555,10 @@
           };
         }
         
-        const _cameraTrackerCallback = update => {
-          c.send(JSON.stringify(update));
+        const _cameraTrackerCallback = frameData => {
+          if (c.readyState === window.browser.ws.OPEN) {
+            c.send(frameData);
+          }
         };
         cameraTracker.callbacks.push(_cameraTrackerCallback);
 
