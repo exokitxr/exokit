@@ -39,6 +39,9 @@
 #endif
 
 #elif defined(LUMIN)
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#endif
 #include <GLES3/gl32.h>
 #include <GLES2/gl2ext.h>
 #define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
