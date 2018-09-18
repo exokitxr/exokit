@@ -455,12 +455,20 @@ if (nativeMl) {
 
         const initResult = mlContext.Present(windowHandle, context);
         if (initResult) {
-          const {width: halfWidth, height} = initResult;
+          const {
+            width: halfWidth,
+            height,
+            fbo,
+            colorTex: tex,
+            depthStencilTex,
+            msFbo,
+            msColorTex: msTex,
+            msDepthStencilTex,
+          } = initResult;
           const width = halfWidth * 2;
           renderWidth = halfWidth;
           renderHeight = height;
-
-          const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+          
           mlFbo = fbo;
           mlTex = tex;
           mlDepthTex = depthStencilTex;
