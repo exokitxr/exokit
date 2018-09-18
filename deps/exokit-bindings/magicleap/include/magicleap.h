@@ -200,8 +200,8 @@ public:
 
   uint32_t width;
   uint32_t height;
-  uint8_t data[CAMERA_REQUEST_PLANE_BUFFER_SIZE];
   uint32_t stride;
+  Nan::Persistent<ArrayBuffer> data;
 };
 
 class CameraRequest {

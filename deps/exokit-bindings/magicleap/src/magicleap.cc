@@ -1108,8 +1108,9 @@ void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
 
 // CameraRequestPlane
 
-CameraRequestPlane::CameraRequestPlane(uint32_t width, uint32_t height, uint32_t stride) : width(width), height(height), stride(stride) {
-  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+CameraRequestPlane::CameraRequestPlane(uint32_t width, uint32_t height, uint32_t stride) : width(width), height(height), stride(stride), data(ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4)) {
+  Local<ArrayBuffer> arrayBuffer = Nan::New(data);
+  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, arrayBuffer->GetContents().Data());
 }
 
 void CameraRequestPlane::set(uint32_t width, uint32_t height, uint32_t stride) {
@@ -1117,7 +1118,20 @@ void CameraRequestPlane::set(uint32_t width, uint32_t height, uint32_t stride) {
   this->height = height;
   this->stride = stride;
 
-  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+  Local<ArrayBuffer> arrayBuffer;
+  if (this->data.IsEmpty()) {
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4);
+    this->data.Reset(arrayBuffer);
+  } else {
+    arrayBuffer = Nan::New(data);
+    
+    if (arrayBuffer->ByteLength() != (width * height * 4)) {
+      arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4);
+      this->data.Reset(arrayBuffer);
+    }
+  }
+
+  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, arrayBuffer->GetContents().Data());
 }
 
 // CameraRequest
@@ -1179,11 +1193,13 @@ void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int con
 
     uint32_t width = plane->width;
     uint32_t height = plane->height;
-    uint8_t *data = plane->data;
     uint32_t stride = plane->stride;
 
+    Local<ArrayBuffer> arrayBuffer = Nan::New(plane->data);
+    plane->data.Reset();
+
     Local<Object> obj = Nan::New<Object>();
-    obj->Set(JS_STR("data"), ArrayBuffer::New(Isolate::GetCurrent(), data, width * height * 4));
+    obj->Set(JS_STR("data"), arrayBuffer);
     obj->Set(JS_STR("width"), JS_INT(width));
     obj->Set(JS_STR("height"), JS_INT(height));
     // obj->Set(JS_STR("bpp"), JS_INT(bpp));
@@ -1369,6 +1385,8 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
 }
 
 void RunCameraInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+  
   if (!cameraResponsePending) {
     ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)cameraResponseImage;
     // GraphicBuffer *graphicBuffer = (GraphicBuffer *)cameraResponseImage;
