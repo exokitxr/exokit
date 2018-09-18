@@ -453,7 +453,7 @@ if (nativeMl) {
 
         fps = ML_FPS;
 
-        const initResult = mlContext.Present(windowHandle);
+        const initResult = mlContext.Present(windowHandle, context);
         if (initResult) {
           const {width: halfWidth, height} = initResult;
           const width = halfWidth * 2;
