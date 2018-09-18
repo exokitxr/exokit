@@ -1209,6 +1209,10 @@ class HTMLElement extends Element {
 }
 module.exports.HTMLElement = HTMLElement;
 
+function getAnchorUrl(anchorEl) {
+  return new url.URL(anchorEl.href, anchorEl.ownerDocument.defaultView.location.toString());
+}
+
 class HTMLAnchorElement extends HTMLElement {
   constructor(attrs = [], value = '', location = null) {
     super('A', attrs, value, location);
@@ -1222,92 +1226,92 @@ class HTMLAnchorElement extends HTMLElement {
     this.setAttribute('href', href);
   }
   get hash() {
-    return new url.URL(this.href).hash || '';
+    return getAnchorUrl(this).hash || '';
   }
   set hash(hash) {
     hash = hash + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.hash = hash;
     this.href = u.href;
   }
   get host() {
-    return new url.URL(this.href).host || '';
+    return getAnchorUrl(this).host || '';
   }
   set host(host) {
     host = host + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.host = host;
     this.href = u.href;
   }
   get hostname() {
-    return new url.URL(this.href).hostname || '';
+    return getAnchorUrl(this).hostname || '';
   }
   set hostname(hostname) {
     hostname = hostname + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.hostname = hostname;
     this.href = u.href;
   }
   get password() {
-    return new url.URL(this.href).password || '';
+    return getAnchorUrl(this).password || '';
   }
   set password(password) {
     password = password + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.password = password;
     this.href = u.href;
   }
   get origin() {
-    return new url.URL(this.href).origin || '';
+    return getAnchorUrl(this).origin || '';
   }
   set origin(origin) {
     origin = origin + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.origin = origin;
     this.href = u.href;
   }
   get pathname() {
-    return new url.URL(this.href).pathname || '';
+    return getAnchorUrl(this).pathname || '';
   }
   set pathname(pathname) {
     pathname = pathname + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.pathname = pathname;
     this.href = u.href;
   }
   get port() {
-    return new url.URL(this.href).port || '';
+    return getAnchorUrl(this).port || '';
   }
   set port(port) {
     port = port + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.port = port;
     this.href = u.href;
   }
   get protocol() {
-    return new url.URL(this.href).protocol || '';
+    return getAnchorUrl(this).protocol || '';
   }
   set protocol(protocol) {
     protocol = protocol + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.protocol = protocol;
     this.href = u.href;
   }
   get search() {
-    return new url.URL(this.href).search || '';
+    return getAnchorUrl(this).search || '';
   }
   set search(search) {
     search = search + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.search = search;
     this.href = u.href;
   }
   get username() {
-    return new url.URL(this.href).username || '';
+    return getAnchorUrl(this).username || '';
   }
   set username(username) {
     username = username + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.username = username;
     this.href = u.href;
   }
