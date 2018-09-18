@@ -480,6 +480,7 @@
 
     (() => {
       let frameData = null;
+      let cameraEnabled = false;
 
       const server = window.browser.http.createServer((req, res) => {
         console.log('got request', req.url);
@@ -539,26 +540,29 @@
       wss.on('connection', (c, request) => {
         console.log('open connection');
 
-        const _onCameraFrame = e => {
-          // console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
-          if (c.readyState === window.browser.ws.OPEN) {
-            const {width, height, data} = e;
-            frameData = Buffer.from(data);
+        if (!cameraEnabled) {
+          const _onCameraFrame = e => {
+            // console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
+            if (c.readyState === window.browser.ws.OPEN) {
+              const {width, height, data} = e;
+              frameData = Buffer.from(data);
 
-            const update = {
-              width,
-              height,
-            };
-            c.send(JSON.stringify(update));
-          }
-        };
-        window.browser.magicleap.RequestCamera(_onCameraFrame);
+              const update = {
+                width,
+                height,
+              };
+              c.send(JSON.stringify(update));
+            }
+          };
+          window.browser.magicleap.RequestCamera(_onCameraFrame);
+
+          cameraEnabled = true;
+        }
 
         c.on('close', () => {
           console.log('close connection 1');
-          framesData.length = 0;
           console.log('close connection 2');
-          window.browser.magicleap.CancelCamera(_onCameraFrame);
+          // window.browser.magicleap.CancelCamera(_onCameraFrame);
           console.log('close connection 3');
         });
       });
