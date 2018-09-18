@@ -37,6 +37,8 @@
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
 
+#include "ml-window.h"
+
 using namespace v8;
 using namespace node;
 
