@@ -45,6 +45,13 @@ describe('HTMLSrcableElement', () => {
       el.src = `${TEST_URL}/test.png`;
     });
 
+    it('can set empty src', done => {
+      el = document.createElement('img');
+      el.setAttribute('src', '');
+      document.body.appendChild(el);
+      setTimeout(() => { done(); });
+    });
+
     it('works with data url', done => {
       el = document.createElement('img');
       el.onload = () => { done(); };
@@ -93,6 +100,13 @@ describe('HTMLSrcableElement', () => {
       el.oncanplay = () => { done(); };
       el.onerror = err => { done(err); };
       el.src = `${TEST_URL}/test.ogg`;
+    });
+
+    it('can set empty src', done => {
+      el = document.createElement('audio');
+      el.setAttribute('src', '');
+      document.body.appendChild(el);
+      setTimeout(() => { done(); });
     });
 
     it('works with data url', done => {
@@ -144,6 +158,13 @@ describe('HTMLSrcableElement', () => {
       el.onerror = err => { done(err); };
       el.src = `${TEST_URL}/test.mp4`;
     })
+
+    it('can set empty src', done => {
+      el = document.createElement('video');
+      el.setAttribute('src', '');
+      document.body.appendChild(el);
+      setTimeout(() => { done(); });
+    });
 
     it('works with data url', done => {
       el = document.createElement('video');
