@@ -480,7 +480,7 @@
 
     (() => {
       let frameData = null;
-      let cameraEnabled = false;
+      let cameraTracker = null;
 
       const server = window.browser.http.createServer((req, res) => {
         console.log('got request', req.url);
@@ -540,7 +540,7 @@
       wss.on('connection', (c, request) => {
         console.log('open connection');
 
-        if (!cameraEnabled) {
+        if (!cameraTracker) {
           const _onCameraFrame = e => {
             // console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
             if (c.readyState === window.browser.ws.OPEN) {
@@ -551,16 +551,26 @@
                 width,
                 height,
               };
-              c.send(JSON.stringify(update));
+              for (let i = 0; i < cameraTracker.callbacks.length; i++) {
+                cameraTracker.callbacks[i](update);
+              }
             }
           };
           window.browser.magicleap.RequestCamera(_onCameraFrame);
 
-          cameraEnabled = true;
+          cameraTracker = {
+            callbacks: [],
+          };
         }
+        
+        const _cameraTrackerCallback = update => {
+          c.send(JSON.stringify(update));
+        };
+        cameraTracker.callbacks.push(_cameraTrackerCallback);
 
         c.on('close', () => {
           console.log('close connection 1');
+          cameraTracker.callbacks.splice(cameraTracker.callbacks.indexOf(_cameraTrackerCallback), 1);
           console.log('close connection 2');
           // window.browser.magicleap.CancelCamera(_onCameraFrame);
           console.log('close connection 3');
