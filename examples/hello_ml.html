@@ -542,7 +542,7 @@
         console.log('open connection');
 
         const _onCameraFrame = a => {
-          console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
+          // console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
           if (c.readyState === window.browser.ws.OPEN) {
             const updates = a.map((e, i) => {
               const {width, height, bpp, stride, data} = e;
