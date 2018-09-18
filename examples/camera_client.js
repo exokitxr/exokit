@@ -3,10 +3,8 @@
   const ctx = canvas.getContext('2d');
   document.body.appendChild(canvas);
 
-  let id = 0;
-
   const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/');
-  ws.binaryType = 'arraybuffer';
+  ws.binaryType = 'blob';
   ws.onopen = () => {
     console.log('connected');
   };
@@ -17,28 +15,17 @@
     if (!running) {
       running = true;
 
-      data = JSON.parse(data);
-
       try {
-        const img = await new Promise((accept, reject) => {
-          const img = new Image();
-          img.onload = () => {
-            accept();
-          };
-          img.onerror = err => {
-            reject(err);
-          };
-          img.src = '/frame/' + (id++);
-        });
-        
-        if (canvas.width !== data.width) {
-          canvas.width = result.data.width;
+        const imgBitmap = await createImageBitmap(data);
+
+        if (canvas.width !== imgBitmap.width) {
+          canvas.width = imgBitmap.width;
         }
-        if (canvas.height !== data.height) {
-          canvas.height = data.height;
+        if (canvas.height !== imgBitmap.height) {
+          canvas.height = imgBitmap.height;
         }
-        
-        ctx.drawImage(img, 0, 0);
+
+        ctx.drawImage(imgBitmap, 0, 0);
       } catch (err) {
         console.warn(err.stack);
       } finally {
