@@ -479,7 +479,7 @@
     })();
 
     (() => {
-      const framesData = [];
+      let frameData = null;
 
       const server = window.browser.http.createServer((req, res) => {
         console.log('got request', req.url);
@@ -519,8 +519,7 @@
               res.end();
             });
         } else if (match = req.url.match(/^\/frame\/([0-9]+)$/)) {
-          const frameId = parseInt(match[1], 10);
-          const frameData = framesData[frameId];
+          // const frameId = parseInt(match[1], 10);
           if (frameData) {
             console.log('send frame data', typeof frameData, frameData.constructor && frameData.constructor.name, frameData && frameData.length);
             res.setHeader('Content-Type', 'application/octet-stream');
@@ -546,7 +545,8 @@
           if (c.readyState === window.browser.ws.OPEN) {
             const updates = a.map((e, i) => {
               const {width, height, bpp, stride, data} = e;
-              framesData[i] = Buffer.from(data);
+              frameData = Buffer.allocUnsafe(data.byteLength);
+              Buffer.from(data).copy(frameData);
               return {
                 index: i,
                 width,
