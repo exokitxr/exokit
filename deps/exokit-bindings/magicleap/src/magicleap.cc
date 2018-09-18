@@ -1382,90 +1382,93 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
 }
 
 void RunCameraInMainThread(uv_async_t *handle) {
-  ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)cameraResponseImage;
-  // GraphicBuffer *graphicBuffer = (GraphicBuffer *)cameraResponseImage;
-  MLContext *mlContext = application_context.mlContext;
-  NATIVEwindow *window = application_context.window;
-  WebGLRenderingContext *gl = application_context.gl;
+  if (!cameraResponsePending) {
+    ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)cameraResponseImage;
+    // GraphicBuffer *graphicBuffer = (GraphicBuffer *)cameraResponseImage;
+    MLContext *mlContext = application_context.mlContext;
+    NATIVEwindow *window = application_context.window;
+    WebGLRenderingContext *gl = application_context.gl;
 
-  int width = aNativeWindowBuffer->width;
-  int height = aNativeWindowBuffer->height;
-  int stride = aNativeWindowBuffer->stride;
+    int width = aNativeWindowBuffer->width;
+    int height = aNativeWindowBuffer->height;
+    int stride = aNativeWindowBuffer->stride;
 
-  // void *data;
-  // graphicBuffer->*ml::lock.lock(USAGE_SW_READ_OFTEN | USAGE_SW_WRITE_NEVER);
+    // void *data;
+    // graphicBuffer->*ml::lock.lock(USAGE_SW_READ_OFTEN | USAGE_SW_WRITE_NEVER);
 
-  EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)cameraResponseImage, nullptr);
+    EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)cameraResponseImage, nullptr);
 
-  glBindVertexArray(mlContext->cameraVao);
-  glBindFramebuffer(GL_FRAMEBUFFER, mlContext->cameraFbo);
-  glUseProgram(mlContext->cameraProgram);
+    glBindVertexArray(mlContext->cameraVao);
+    glBindFramebuffer(GL_FRAMEBUFFER, mlContext->cameraFbo);
+    glUseProgram(mlContext->cameraProgram);
 
-  if (width != mlContext->cameraTextureWidth || height != mlContext->cameraTextureHeight) {
-    glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    if (width != mlContext->cameraTextureWidth || height != mlContext->cameraTextureHeight) {
+      glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-    mlContext->cameraTextureWidth = width;
-    mlContext->cameraTextureHeight = height;
-  }
+      mlContext->cameraTextureWidth = width;
+      mlContext->cameraTextureHeight = height;
+    }
 
-  glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
-  glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
-  glUniform1i(mlContext->cameraInTextureLocation, gl->activeTexture - GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
+    glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
+    glUniform1i(mlContext->cameraInTextureLocation, gl->activeTexture - GL_TEXTURE0);
 
-  glViewport(0, 0, width, height);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glViewport(0, 0, width, height);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  eglDestroyImageKHR(window->display, yuv_img);
+    eglDestroyImageKHR(window->display, yuv_img);
 
-  std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
-    c->Set(width, height, stride);
-  });
+    std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
+      c->Set(width, height, stride);
+    });
 
-  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
-  } else {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
-  }
-  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-  } else {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
-  }
-  if (gl->HasProgramBinding()) {
-    glUseProgram(gl->GetProgramBinding());
-  } else {
-    glUseProgram(0);
-  }
-  if (gl->viewportState.valid) {
-    glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
-  } else {
-    glViewport(0, 0, 1280, 1024);
-  }
-  if (gl->HasVertexArrayBinding()) {
-    glBindVertexArray(gl->GetVertexArrayBinding());
-  } else {
-    glBindVertexArray(gl->defaultVao);
-  }
-  if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-    glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-  } else {
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-  }
-  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-    glBindFramebuffer(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-  } else {
-    glBindFramebuffer(GL_TEXTURE_2D, 0);
-  }
-  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_EXTERNAL_OES)) {
-    glBindFramebuffer(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_EXTERNAL_OES));
-  } else {
-    glBindFramebuffer(GL_TEXTURE_EXTERNAL_OES, 0);
+    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasProgramBinding()) {
+      glUseProgram(gl->GetProgramBinding());
+    } else {
+      glUseProgram(0);
+    }
+    if (gl->viewportState.valid) {
+      glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+    } else {
+      glViewport(0, 0, 1280, 1024);
+    }
+    if (gl->HasVertexArrayBinding()) {
+      glBindVertexArray(gl->GetVertexArrayBinding());
+    } else {
+      glBindVertexArray(gl->defaultVao);
+    }
+    if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+      glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+    } else {
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+      glBindFramebuffer(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+    } else {
+      glBindFramebuffer(GL_TEXTURE_2D, 0);
+    }
+    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_EXTERNAL_OES)) {
+      glBindFramebuffer(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_EXTERNAL_OES));
+    } else {
+      glBindFramebuffer(GL_TEXTURE_EXTERNAL_OES, 0);
+    }
+
+    cameraResponsePending = true;
   }
 
   cameraResponseImage = ML_INVALID_HANDLE;
   uv_sem_post(&cameraSem);
-  cameraResponsePending = true;
 }
 
 const char *meshVsh = "\
