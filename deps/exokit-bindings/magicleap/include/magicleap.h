@@ -38,6 +38,7 @@
 #include <ml_logging.h>
 
 #include "ml-window.h"
+#include "sjpeg.h"
 
 using namespace v8;
 using namespace node;
@@ -191,28 +192,17 @@ public:
   bool rightBlink;
 };
 
-class CameraRequestPlane {
-public:
-  CameraRequestPlane(uint32_t width, uint32_t height, uint32_t stride);
-  CameraRequestPlane(MLHandle output);
-  void set(uint32_t width, uint32_t height, uint32_t stride);
-  void set(MLHandle output);
-
-  uint32_t width;
-  uint32_t height;
-  uint32_t stride;
-  Nan::Persistent<ArrayBuffer> data;
-};
-
 class CameraRequest {
 public:
   CameraRequest(Local<Function> cbFn);
-  void Set(int width, int height, int stride);
-  void Poll(WebGLRenderingContext *gl, GLuint fbo);
+  void Set(int width, int height, uint8_t *data, size_t size);
+  void Poll();
 
 // protected:
   Nan::Persistent<Function> cbFn;
-  std::vector<CameraRequestPlane *> planes;
+  int width;
+  int height;
+  Nan::Persistent<ArrayBuffer> data;
 };
 
 class MLContext : public ObjectWrap {
