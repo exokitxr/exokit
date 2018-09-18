@@ -112,7 +112,7 @@ public:
 
   MLMesher();
   ~MLMesher();
-  
+
   static NAN_METHOD(New);
   static NAN_GETTER(OnMeshGetter);
   static NAN_SETTER(OnMeshSetter);
@@ -130,7 +130,7 @@ public:
 
   MLPlaneTracker();
   ~MLPlaneTracker();
-  
+
   static NAN_METHOD(New);
   static NAN_GETTER(OnPlanesGetter);
   static NAN_SETTER(OnPlanesSetter);
@@ -148,7 +148,7 @@ public:
 
   MLHandTracker();
   ~MLHandTracker();
-  
+
   static NAN_METHOD(New);
   static NAN_GETTER(OnHandsGetter);
   static NAN_SETTER(OnHandsSetter);
@@ -169,7 +169,7 @@ public:
 
   MLEyeTracker();
   ~MLEyeTracker();
-  
+
   static NAN_METHOD(New);
   static NAN_GETTER(FixationGetter);
   static NAN_GETTER(EyesGetter);
