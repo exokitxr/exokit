@@ -61,6 +61,7 @@ The type of update. Can be either:
 
 - `'new'`: the mesh should be added to the scene.
 - `'update'`: the mesh was previously emitted as `new` but its data has changed. No action is necessary, but may be desired.
+- `'unchanged'`: the mesh is still valid, but its data has not changed
 - `'remove'`: the mesh is no longer in scope for the meshing system and should be discarded.
 
 #### `MLMeshUpdate.positionBuffer : WebGLBuffer`
