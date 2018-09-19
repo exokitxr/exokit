@@ -144,7 +144,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
 void InitExports(Handle<Object> exports) {
   std::pair<Local<Value>, Local<FunctionTemplate>> glResult = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), glResult.first);
-  
+
   std::pair<Local<Value>, Local<FunctionTemplate>> gl2Result = makeGl2(glResult.second);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl2"), gl2Result.first);
 

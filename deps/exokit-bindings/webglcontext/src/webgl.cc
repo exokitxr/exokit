@@ -2771,7 +2771,7 @@ NAN_METHOD(WebGLRenderingContext::CreateBuffer) {
 
 NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  
+
   GLenum target;
   GLuint buffer;
   if (info.Length() < 2) {
@@ -2790,7 +2790,7 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
   }
 
   glBindBuffer(target, buffer);
-  
+
   gl->SetBufferBinding(target, buffer);
 }
 
@@ -4553,6 +4553,35 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else if (strcmp(sname, "EXT_color_buffer_float") == 0) {
     Local<Object> result = Object::New(Isolate::GetCurrent());
     info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "EXT_color_buffer_half_float") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT"), JS_INT(GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT));
+    result->Set(JS_STR("RGB16F_EXT"), JS_INT(GL_RGB16F_EXT));
+    result->Set(JS_STR("RGBA16F_EXT"), JS_INT(GL_RGBA16F_EXT));
+    result->Set(JS_STR("UNSIGNED_NORMALIZED_EXT"), JS_INT(GL_UNSIGNED_NORMALIZED_EXT));
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "EXT_blend_minmax") == 0) {
+    // Adds two constants: developer.mozilla.org/docs/Web/API/EXT_blend_minmax
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("MIN_EXT"), JS_INT(GL_MIN_EXT));
+    result->Set(JS_STR("MAX_EXT"), JS_INT(GL_MAX_EXT));
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "EXT_sRGB") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING_EXT"), JS_INT(GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING_EXT));
+    result->Set(JS_STR("SRGB8_ALPHA8_EXT"), JS_INT(GL_SRGB8_ALPHA8_EXT));
+    result->Set(JS_STR("SRGB_ALPHA_EXT"), JS_INT(GL_SRGB_ALPHA_EXT));
+    result->Set(JS_STR("SRGB_EXT"), JS_INT(GL_SRGB_EXT));
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OES_vertex_array_object") == 0) {
+    // Same as other vertex array methods, but with the OES suffix for WebGL 1.
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("context"), info.This());
+    Nan::SetMethod(result, "createVertexArrayOES", CreateVertexArray);
+    Nan::SetMethod(result, "deleteVertexArrayOES", DeleteVertexArray);
+    Nan::SetMethod(result, "isVertexArrayOES", IsVertexArray);
+    Nan::SetMethod(result, "bindVertexArrayOES", BindVertexArrayOES);
+    info.GetReturnValue().Set(result);
   } else {
     info.GetReturnValue().Set(Null(Isolate::GetCurrent()));
   }
@@ -4587,7 +4616,18 @@ NAN_METHOD(WebGLRenderingContext::BindVertexArray) {
   GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : gl->defaultVao;
 
   glBindVertexArray(vao);
-  
+
+  gl->SetVertexArrayBinding(vao);
+}
+
+NAN_METHOD(WebGLRenderingContext::BindVertexArrayOES) {
+  Local<Object> contextObj = Local<Object>::Cast(info.This()->Get(JS_STR("context")));
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(contextObj);
+  GLuint vao = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : gl->defaultVao;
+
+  glBindVertexArray(vao);
+
   gl->SetVertexArrayBinding(vao);
 }
 

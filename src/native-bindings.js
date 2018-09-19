@@ -1,10 +1,14 @@
 const path = require('path');
-const bindings = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
-const {nativeAudio, nativeVr} = bindings;
+const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
+const {nativeAudio, nativeVr} = exokitNode;
 const WindowWorker = require('window-worker');
 const vmOne = require('vm-one');
 const webGlToOpenGl = require('webgl-to-opengl');
 
+const bindings = {};
+for (const k in exokitNode) {
+  bindings[k] = exokitNode[k];
+}
 bindings.nativeWorker = WindowWorker;
 bindings.nativeVm = vmOne;
 const _decorateGlIntercepts = gl => {
