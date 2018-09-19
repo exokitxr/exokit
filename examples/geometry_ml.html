@@ -608,6 +608,8 @@ function init() {
       if (type === 'new' || type === 'update') {
         _loadTerrainMesh(_getTerrainMesh(id), update);
         _loadTerrainData(update);
+      } else if (type === 'unchanged') {
+        // nothing
       } else {
         const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
         if (index !== -1) {
@@ -623,7 +625,9 @@ function init() {
     if (connections.length > 0) {
       const updateSpec = {
         method: 'mesh',
-        updates: updates.map(({id, type}) => ({id, type})),
+        updates: updates
+          .filter(({type}) => ['new', 'update', 'remove'].includes(type))
+          .map(({id, type}) => ({id, type})),
       };
       const updateSpecString = JSON.stringify(updateSpec);
 
