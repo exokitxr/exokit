@@ -6,9 +6,6 @@ var Sinon = require('sinon');
 
 const PORT = 10000;
 
-var core = require('../../src/core');
-core.setNativeBindingsModule(path.resolve(__dirname, '../../src/native-bindings.js'));
-
 global.assert = chai.assert;
 global.TEST_URL = `http://127.0.0.1:${PORT}`;
 
