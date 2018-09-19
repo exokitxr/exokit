@@ -57,7 +57,7 @@ popd
 
 ./magicleap-js/hack-toolchain.js -u
 
-cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin ../metadata/program-device.mabu
+cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -j 4 ../metadata/program-device.mabu
 if [ "$ARG1" = "--signed" ] || [ "$ARG1" = "--all" ]; then
   cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m ../metadata/manifest-device.xml -p --create-package -s ../cert/app.cert ../metadata/app-device.package
   cp ../build/magicleap/app-device/app-device.mpk ../build/magicleap/exokit.mpk
