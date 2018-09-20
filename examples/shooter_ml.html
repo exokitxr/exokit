@@ -1,0 +1,473 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script>
+    let container, scene, camera, renderer, display, rayMeshes, planeMesh, containerMesh;
+    let intersectScene, intersectCamera, renderTarget, terrainMeshes;
+    let mesher = null;
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      // camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      /* (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xE91E63,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 0.5;
+        // mesh.position.z = -1;
+        mesh.frustumCuled = false;
+        scene.add(mesh);
+      })();
+      (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x4CAF50,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 1 + 0.1;
+        // mesh.position.z = -1;
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+      })(); */
+
+      const _makeRayMesh = () => {
+        const rayGeometry = new THREE.CylinderBufferGeometry(0.005, 0.005, 1, 3, 1)
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0))
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, 0, -1),
+            )
+          ));
+        const rayMaterial = new THREE.MeshPhongMaterial({
+          color: 0xFF0000,
+          flatShading: true,
+        });
+        const rayMesh = new THREE.Mesh(rayGeometry, rayMaterial);
+        rayMesh.matrixAutoUpdate = false;
+        rayMesh.frustumCulled = false;
+        rayMesh.visible = false;
+        return rayMesh;
+      };
+      rayMeshes = [
+        _makeRayMesh(),
+        _makeRayMesh(),
+      ];
+      rayMeshes.forEach(rayMesh => {
+        scene.add(rayMesh);
+      });
+
+      const localVector = new THREE.Vector3();
+      const localVector2 = new THREE.Vector3();
+      const localVector3 = new THREE.Vector3();
+      const localVector4 = new THREE.Vector3();
+      const localQuaternion = new THREE.Quaternion();
+      const localMatrix = new THREE.Matrix4();
+      const oneVector = new THREE.Vector3(1, 1, 1);
+      const upVector = new THREE.Vector3(0, 1, 0);
+      const zeroQuaternion = new THREE.Quaternion();
+
+      terrainMeshes = [];
+      const terrainMaterial = new THREE.ShaderMaterial({
+        vertexShader: `\
+          varying float zPosition;
+          void main() {
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            zPosition = 1.0 - gl_Position.z;
+          }
+        `,
+        fragmentShader: `\
+          varying float zPosition;
+          void main() {
+            gl_FragColor = vec4(vec3(zPosition), 1.0);
+          }
+        `,
+        transparent: true,
+      });
+      const _getTerrainMesh = meshId => {
+        let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
+        if (!terrainMesh) {
+          terrainMesh = _makeTerrainMesh(meshId);
+          terrainMeshes.push(terrainMesh);
+          intersectScene.add(terrainMesh);
+          // scene.add(terrainMesh);
+        }
+        return terrainMesh;
+      };
+      const fakeArrayBuffer = new ArrayBuffer(3 * 4);
+      const fakeFloat32Array = new Float32Array(fakeArrayBuffer, 0, 3);
+      const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
+      const _makeTerrainMesh = meshId => {
+        const geometry = new THREE.BufferGeometry();
+        const gl = renderer.getContext();
+        const attributes = renderer.getAttributes();
+
+        geometry.addAttribute('position', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
+        geometry.addAttribute('normal', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.normal, gl.ARRAY_BUFFER);
+        geometry.setIndex(new THREE.BufferAttribute(fakeUint16Array, 1));
+        attributes.update(geometry.index, gl.ELEMENT_ARRAY_BUFFER);
+
+        const material = terrainMaterial;
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.meshId = meshId;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionArray, positionCount, normalBuffer, normalArray, normalCount, indexBuffer, indexArray, count}) => {
+        const {geometry} = terrainMesh;
+        const attributes = renderer.getAttributes();
+
+        attributes.get(geometry.attributes.position).buffer = positionBuffer;
+        geometry.attributes.position.count = positionCount / 3;
+
+        attributes.get(geometry.attributes.normal).buffer = normalBuffer;
+        geometry.attributes.normal.count = normalCount / 3;
+
+        attributes.get(geometry.index).buffer = indexBuffer;
+        geometry.index.count = count / 1;
+      };
+      const _removeTerrainMesh = terrainMesh => {
+        intersectScene.remove(terrainMesh);
+        // scene.remove(terrainMesh);
+        terrainMesh.geometry.dispose();
+        terrainMeshes.splice(terrainMeshes.indexOf(terrainMesh), 1);
+      };
+      const _onMesh = updates => {
+        try {
+          // console.log('got updates', updates.length);
+
+          for (let i = 0; i < updates.length; i++) {
+            const update = updates[i];
+            const {id, type} = update;
+
+            // console.log('got update', {id, type});
+
+            if (type === 'new' || type === 'update') {
+              const terrainMesh = _getTerrainMesh(id);
+              terrainMesh.material = terrainMaterial;
+              _loadTerrainMesh(terrainMesh, update);
+            } else if (type === 'unchanged') {
+              // const terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === id);
+              // terrainMesh.material = terrainHighlightMaterial;
+            } else {
+              const terrainMeshIndex = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+              if (terrainMeshIndex !== -1) {
+                const terrainMesh = terrainMeshes[terrainMeshIndex];
+                _removeTerrainMesh(terrainMesh);
+              }
+            }
+          }
+        } catch(err) {
+          console.warn(err.stack);
+        }
+      };
+
+      if (window.browser && window.browser.magicleap) {
+        mesher = window.browser.magicleap.RequestMeshing();
+        mesher.onmesh = _onMesh;
+      }
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClearDepth = false;
+
+      (() => {
+        intersectScene = new THREE.Scene();
+        intersectScene.matrixAutoUpdate = false;
+
+        intersectCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        intersectCamera.matrixAutoUpdate = false;
+        intersectScene.add(intersectCamera);
+
+        /* const skybox = new THREE.Mesh(
+          new THREE.BoxBufferGeometry(3, 3, 3)
+            .applyMatrix(new THREE.Matrix4().makeScale(-1, -1, -1)),
+          new THREE.MeshPhongMaterial({
+            color: 0x0000FF,
+            flatShading: true,
+          })
+        );
+        skybox.frustumCulled = false;
+        intersectScene.add(skybox); */
+
+        const ambientLight = new THREE.AmbientLight(0x808080);
+        intersectScene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+        directionalLight.position.set(1, 1, 1);
+        intersectScene.add(directionalLight);
+
+        renderTarget = new THREE.WebGLRenderTarget(512, 512, {
+          // XXX
+        });
+
+        planeMesh = new THREE.Mesh(
+          new THREE.PlaneBufferGeometry(0.2, 0.2)
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0)),
+          new THREE.MeshBasicMaterial({
+            // color: 0x0000FF,
+            map: renderTarget,
+          })
+        );
+        // planeMesh.position.z = -1;
+        // planeMesh.updateMatrixWorld();
+        // planeMesh.matrixAutoUpdate = false;
+        planeMesh.frustumCulled = false;
+        planeMesh.visible = false;
+        scene.add(planeMesh);
+      })();
+
+      container.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    const localVector = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler();
+    const localVector2 = new THREE.Vector3();
+    const pixel = new Uint8Array(new ArrayBuffer(4));
+
+    const bullets = [];
+    const particles = [];
+    let bulletUpdateTime = Date.now();
+    const bulletGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
+    const bulletMaterial = new THREE.MeshPhongMaterial({
+      color: 0xFF0000,
+      flatShading: true,
+    });
+    const _makeBullet = () => {
+      const mesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      mesh.endTime = Date.now() + 1000;
+      return mesh;
+    };
+    const particleGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+    const particleMaterial = new THREE.MeshPhongMaterial({
+      color: 0xff5722,
+      flatShading: true,
+    });
+    const _makeParticle = () => {
+      const mesh = new THREE.Mesh(particleGeometry, particleMaterial);
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      mesh.endTime = Date.now() + 1000 + Math.floor(Math.random() * 2000);
+      return mesh;
+    };
+    function animate(time, frame) {
+      const now = Date.now();
+      const timeDiff = now - bulletUpdateTime;
+      const localBullets = bullets.slice();
+      const oldVrEnabled = renderer.vr.enabled;
+      renderer.vr.enabled = false;
+      renderer.setRenderTarget(renderTarget);
+      for (let i = 0; i < localBullets.length; i++) {
+        const bullet = localBullets[i];
+        if (now < bullet.endTime) {
+          bullet.matrix.decompose(bullet.position, bullet.quaternion, bullet.scale);
+          bullet.position.add(
+            localVector
+              .set(0, 0, -1)
+              .multiplyScalar(timeDiff / 1000 * 10)
+              .applyQuaternion(bullet.quaternion)
+          );
+          bullet.matrix.compose(bullet.position, bullet.quaternion, bullet.scale);
+          // console.log('updatePos', localVector.toArray().join(','));
+          bullet.updateMatrixWorld(true);
+
+          bullet.matrix.decompose(intersectCamera.position, intersectCamera.quaternion, intersectCamera.scale);
+          intersectCamera.position.add(
+            localVector
+              .set(0, 0, 0.2)
+              .applyQuaternion(intersectCamera.quaternion)
+          );
+          intersectCamera.matrix.compose(intersectCamera.position, intersectCamera.quaternion, intersectCamera.scale);
+          intersectCamera.updateMatrixWorld(true);
+          renderer.render(intersectScene, intersectCamera, renderTarget);
+          renderer.readRenderTargetPixels(renderTarget, 512/2, 512/2, 1, 1, pixel) 
+
+          // console.log('pixel', pixel[0]);
+          if (pixel[0] > 255*0.9) {
+            scene.remove(bullet);
+            bullets.splice(bullets.indexOf(bullet), 1);
+
+            const numParticles = 10 + Math.floor(Math.random() * 20);
+            for (let j = 0; j < numParticles; j++) {
+              const particle = _makeParticle();
+              particle.matrix.copy(bullet.matrix);
+              particle.updateMatrixWorld(true);
+              particle.velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 0.01,
+                (Math.random() - 0.5) * 0.02,
+                (Math.random() - 0.5) * 0.01
+              );
+              scene.add(particle);
+              particles.push(particle);
+            }
+          }
+        } else {
+          scene.remove(bullet);
+          bullets.splice(bullets.indexOf(bullet), 1);
+        }
+      }
+      renderer.setRenderTarget(null);
+      renderer.vr.enabled = oldVrEnabled;
+
+      const localParticles = particles.slice();
+      for (let i = 0; i < localParticles.length; i++) {
+        const particle = localParticles[i];
+        if (now < particle.endTime) {
+          particle.velocity.add(
+            localVector
+              .set(0, -9.8, 0)
+              .multiplyScalar(timeDiff / 1000 * 0.002)
+          );
+          particle.matrix.decompose(particle.position, particle.quaternion, particle.scale);
+          particle.position.add(particle.velocity);
+          particle.matrix.compose(particle.position, particle.quaternion, particle.scale);
+          particle.updateMatrixWorld(true);
+        } else {
+          scene.remove(particle);
+          particles.splice(particles.indexOf(particle), 1);
+        }
+      }
+
+      bulletUpdateTime = now;
+
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const rayMesh = rayMeshes[i];
+          rayMesh.matrix.fromArray(pose.pointerMatrix);
+          rayMesh.matrix.decompose(localVector, localQuaternion, localVector2);
+          rayMesh.updateMatrixWorld(true);
+
+          if (i === 0) { // left
+            // intersectCamera.matrix.fromArray(pose.pointerMatrix);
+            // intersectCamera.matrix.decompose(intersectCamera.position, intersectCamera.quaternion, intersectCamera.scale);
+            // console.log('position', intersectCamera.position.toArray().join(','));
+            // intersectCamera.updateMatrixWorld(true);
+
+            planeMesh.matrix.fromArray(pose.pointerMatrix);
+            planeMesh.matrix.decompose(planeMesh.position, planeMesh.quaternion, planeMesh.scale);
+            planeMesh.updateMatrixWorld(true);
+          }
+        }
+      }
+
+      // const oldVrEnabled = renderer.vr.enabled;
+      // renderer.vr.enabled = false;
+      // renderer.setRenderTarget(renderTarget);
+      // renderer.render(intersectScene, intersectCamera, renderTarget);
+      // renderer.setRenderTarget(null);
+      // renderer.vr.enabled = oldVrEnabled;
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      session.onselect = e => {
+        // const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const rayMesh = rayMeshes[0];
+        // rayMesh.matrixWorld.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
+
+        const bullet = _makeBullet();
+        // bullet.position.copy(rayMesh.position);
+        // bullet.quaternion.copy(rayMesh.quaternion);
+        // bullet.scale.copy(rayMesh.scale);
+        bullet.matrix.copy(rayMesh.matrix);
+        bullet.updateMatrixWorld(true);
+        scene.add(bullet);
+        bullets.push(bullet);
+      };
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+  </script>
+  </body>
+</html>
