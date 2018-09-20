@@ -297,6 +297,8 @@
 
           if (type === 'new' || type === 'update') {
             _loadTerrainMesh(_getTerrainMesh(id), update);
+          } else if (type === 'unchanged') {
+            // nothing
           } else {
             const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
             if (index !== -1) {

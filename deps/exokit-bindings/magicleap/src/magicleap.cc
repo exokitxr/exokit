@@ -57,7 +57,8 @@ uint32_t numMeshBlockRequests = 0;
 uint32_t meshBlockRequestIndex = 0;
 MLMeshingMeshRequest meshRequest;
 std::map<std::string, bool> meshRequestNewMap;
-std::vector<MLCoordinateFrameUID> meshRemovedList;
+std::map<std::string, bool> meshRequestRemovedMap;
+std::map<std::string, bool> meshRequestUnchangedMap;
 MLHandle meshRequestHandle;
 MLMeshingMesh mesh;
 bool meshRequestsPending = false;
@@ -267,7 +268,8 @@ MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexB
   normals(nullptr),
   indices(nullptr),
   numIndices(0),
-  isNew(true)
+  isNew(true),
+  isUnchanged(false)
   {}
 MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
@@ -279,10 +281,11 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   indices = meshBuffer.indices;
   numIndices = meshBuffer.numIndices;
   isNew = meshBuffer.isNew;
+  isUnchanged = meshBuffer.isUnchanged;
 }
-MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), isNew(true) {}
+MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), isNew(true), isUnchanged(false) {}
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged) {
   glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
@@ -298,6 +301,7 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->indices = indices;
   this->numIndices = numIndices;
   this->isNew = isNew;
+  this->isUnchanged = isUnchanged;
 }
 
 // MLMesher
@@ -367,22 +371,28 @@ void MLMesher::Poll() {
     uint32_t numResults = 0;
     for (uint32_t i = 0; i < dataCount; i++) {
       MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+      const std::string &id = id2String(blockMesh.id);
 
-      const MLMeshingResult &result = blockMesh.result;
-      if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
-        const std::string &id = id2String(blockMesh.id);
-
+      if (!meshRequestRemovedMap[id]) {
         auto iter = meshBuffers.find(id);
+
         if (iter != meshBuffers.end()) {
           const MeshBuffer &meshBuffer = iter->second;
 
           Local<Object> obj = Nan::New<Object>();
           obj->Set(JS_STR("id"), JS_STR(id));
-          obj->Set(JS_STR("type"), JS_STR(meshBuffer.isNew ? "new" : "update"));
+          const char *type;
+          if (meshBuffer.isNew) {
+            type = "new";
+          } else if (meshBuffer.isUnchanged) {
+            type = "unchanged";
+          } else {
+            type = "update";
+          }
+          obj->Set(JS_STR("type"), JS_STR(type));
 
           Local<Object> positionBuffer = Nan::New<Object>();
           positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
-          
           obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.positions, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
           obj->Set(JS_STR("positionArray"), positionArray);
@@ -404,22 +414,15 @@ void MLMesher::Poll() {
 
           array->Set(numResults++, obj);
         } else {
-          // ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, idbuf);
+          ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, id.c_str());
         }
-      } else if (result == MLMeshingResult_Pending) {
-        // nothing
       } else {
-        ML_LOG(Error, "%s: ML mesh request poll failed: %x %x", application_name, i, result);
+        Local<Object> obj = Nan::New<Object>();
+        obj->Set(JS_STR("id"), JS_STR(id));
+        obj->Set(JS_STR("type"), JS_STR("remove"));
+
+        array->Set(numResults++, obj);
       }
-    }
-    for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
-      const std::string &id = id2String(cfid);
-
-      Local<Object> obj = Nan::New<Object>();
-      obj->Set(JS_STR("id"), JS_STR(id));
-      obj->Set(JS_STR("type"), JS_STR("remove"));
-
-      array->Set(numResults++, obj);
     }
 
     Local<Function> cbFn = Nan::New(this->cb);
@@ -2444,26 +2447,25 @@ NAN_METHOD(MLContext::PostPollEvents) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
     if (result == MLResult_Ok) {
       uint32_t dataCount = meshInfo.data_count;
-      uint32_t requestCount = 0;
+
       meshRequestNewMap.clear();
-      meshRemovedList.clear();
+      meshRequestRemovedMap.clear();
+      meshRequestUnchangedMap.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
         const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
         const MLMeshingMeshState &state = meshBlockInfo.state;
-        if (state == MLMeshingMeshState_New || state == MLMeshingMeshState_Updated) {
-          MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[requestCount++];
-          meshBlockRequest.id = meshBlockInfo.id;
-          // meshBlockRequest.level = MLMeshingLOD_Minimum;
-          meshBlockRequest.level = MLMeshingLOD_Medium;
-          // meshBlockRequest.level = MLMeshingLOD_Maximum;
+        MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
+        meshBlockRequest.id = meshBlockInfo.id;
+        // meshBlockRequest.level = MLMeshingLOD_Minimum;
+        meshBlockRequest.level = MLMeshingLOD_Medium;
+        // meshBlockRequest.level = MLMeshingLOD_Maximum;
 
-          const std::string &id = id2String(meshBlockInfo.id);
-          meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
-        } else if (state == MLMeshingMeshState_Deleted) {
-          meshRemovedList.push_back(meshBlockInfo.id);
-        }
+        const std::string &id = id2String(meshBlockInfo.id);
+        meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
+        meshRequestRemovedMap[id] = (state == MLMeshingMeshState_Deleted);
+        meshRequestUnchangedMap[id] = (state == MLMeshingMeshState_Unchanged);
       }
-      numMeshBlockRequests = requestCount;
+      numMeshBlockRequests = dataCount;
 
       meshInfoRequestPending = false;
       meshRequestsPending = true;
@@ -2510,11 +2512,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
       for (uint32_t i = 0; i < dataCount; i++) {
         MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+        const std::string &id = id2String(blockMesh.id);
 
-        const MLMeshingResult &result = blockMesh.result;
-        if (result == MLMeshingResult_Success || result == MLMeshingResult_PartialUpdate) {
-          const std::string &id = id2String(blockMesh.id);
-
+        if (!meshRequestRemovedMap[id]) {
           MeshBuffer *meshBuffer;
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
@@ -2525,44 +2525,36 @@ NAN_METHOD(MLContext::PostPollEvents) {
             meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2]);
             meshBuffer = &meshBuffers[id];
           }
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id]);
-        } else if (result == MLMeshingResult_Pending) {
-          // nothing
+
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
         } else {
-          ML_LOG(Error, "%s: ML mesh request poll failed: %x %x", application_name, i, result);
+          auto iter = meshBuffers.find(id);
+          if (iter != meshBuffers.end()) {
+            MeshBuffer *meshBuffer = &iter->second;
+            GLuint buffers[3] = {
+              meshBuffer->positionBuffer,
+              meshBuffer->normalBuffer,
+              meshBuffer->indexBuffer,
+            };
+            glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
+            meshBuffers.erase(iter);
+          }
         }
       }
 
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+      
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
         m->Poll();
       });
 
-      if (meshRemovedList.size() > 0) {
-        for (const MLCoordinateFrameUID &cfid : meshRemovedList) {
-          const std::string &id = id2String(cfid);
-
-          auto iter = meshBuffers.find(id);
-          if (iter != meshBuffers.end()) {
-            MeshBuffer &meshBuffer = iter->second;
-            GLuint buffers[3] = {
-              meshBuffer.positionBuffer,
-              meshBuffer.normalBuffer,
-              meshBuffer.indexBuffer,
-            };
-            glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            meshBuffers.erase(iter);
-          } else {
-            // ML_LOG(Error, "%s: ML mesh clear failed to find mesh: %x %s", application_name, idbuf);
-          }
-        }
-        meshRemovedList.clear();
-      }
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      }
-
       meshRequestsPending = true;
       meshRequestPending = false;
+
       MLMeshingFreeResource(meshTracker, &meshRequestHandle);
     } else if (result == MLResult_Pending) {
       // nothing
