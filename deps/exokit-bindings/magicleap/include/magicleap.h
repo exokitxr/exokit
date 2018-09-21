@@ -19,7 +19,6 @@
 #include <condition_variable>
 #include <algorithm>
 #include <webgl.h>
-#include <magicleap/include/ml-math.h>
 #include <egl.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
