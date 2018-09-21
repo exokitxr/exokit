@@ -1,6 +1,7 @@
 #if defined(LUMIN)
 
 #include <magicleap.h>
+#include <ml-math.h>
 #include <uv.h>
 #include <iostream>
 
@@ -41,6 +42,8 @@ bool cameraResponsePending = false;
 
 MLHandle handTracker;
 MLHandTrackingData handData;
+MLHandTrackingKeyPose lastKeyposeLeft = MLHandTrackingKeyPose_NoHand;
+MLHandTrackingKeyPose lastKeyposeRight = MLHandTrackingKeyPose_NoHand;
 MLHandTrackingStaticData handStaticData;
 std::vector<MLHandTracker *> handTrackers;
 float wristBones[2][4][1 + 3];
@@ -202,7 +205,7 @@ inline const char *gestureCategoryToDescriptor(MLHandTrackingKeyPose keyPose) {
     case MLGestureStaticHandState_Fist:
       return "fist";
     case MLGestureStaticHandState_Pinch:
-      return "punch";
+      return "pinch";
     case MLGestureStaticHandState_Thumb:
       return "thumb";
     case MLGestureStaticHandState_L:
@@ -215,6 +218,14 @@ inline const char *gestureCategoryToDescriptor(MLHandTrackingKeyPose keyPose) {
       return "c";
     default:
       return nullptr;
+  }
+}
+inline Local<Value> gestureCategoryToJsValue(MLHandTrackingKeyPose keyPose) {
+  const char *gesture = gestureCategoryToDescriptor(keyPose);
+  if (gesture) {
+    return JS_STR(gesture);
+  } else {
+    return Nan::Null();
   }
 }
 
@@ -576,6 +587,7 @@ NAN_METHOD(MLHandTracker::New) {
   mlHandTracker->Wrap(mlHandTrackerObj);
 
   Nan::SetAccessor(mlHandTrackerObj, JS_STR("onhands"), OnHandsGetter, OnHandsSetter);
+  Nan::SetAccessor(mlHandTrackerObj, JS_STR("ongesture"), OnGestureGetter, OnGestureSetter);
 
   info.GetReturnValue().Set(mlHandTrackerObj);
 
@@ -619,189 +631,24 @@ NAN_SETTER(MLHandTracker::OnHandsSetter) {
   }
 }
 
-inline MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
-  return MLVec3f{
-    a.x - b.x,
-    a.y - b.y,
-    a.z - b.z
-  };
+NAN_GETTER(MLHandTracker::OnGestureGetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  Local<Function> ongesture = Nan::New(mlHandTracker->ongesture);
+  info.GetReturnValue().Set(ongesture);
 }
 
-inline MLVec3f divideVector(const MLVec3f &v, float l) {
-  return MLVec3f{
-    v.x / l,
-    v.y / l,
-    v.z / l
-  };
-}
+NAN_SETTER(MLHandTracker::OnGestureSetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
 
-inline float dotVectors(const MLVec3f &a, const MLVec3f &b) {
-  return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-inline MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b) {
-	return MLVec3f{
-    a.y * b.z - a.z * b.y,
-		a.z * b.x - a.x * b.z,
-		a.x * b.y - a.y * b.x
-  };
-}
-
-inline float vectorLength(const MLVec3f &v) {
-  return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-}
-
-inline MLVec3f normalizeVector(const MLVec3f &v) {
-  return divideVector(v, vectorLength(v));
-}
-
-inline float quaternionLength(const MLQuaternionf &q) {
-  return sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
-}
-
-inline MLQuaternionf normalizeQuaternion(const MLQuaternionf &q) {
-  float l = quaternionLength(q);
-
-  if (l == 0) {
-    return MLQuaternionf{
-      0,
-      0,
-      0,
-      1
-    };
+  if (value->IsFunction()) {
+    Local<Function> localOngesture = Local<Function>::Cast(value);
+    mlHandTracker->ongesture.Reset(localOngesture);
   } else {
-    l = 1 / l;
-    return MLQuaternionf{
-      q.x * l,
-      q.y * l,
-      q.z * l,
-      q.w * l
-    };
+    Nan::ThrowError("MLHandTracker::OnGestureSetter: invalid arguments");
   }
-}
-
-inline MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const MLVec3f &vTo) {
-  constexpr float EPS = 0.000001;
-
-  MLVec3f v1;
-  float r = dotVectors(vFrom, vTo) + 1;
-  if (r < EPS) {
-    r = 0;
-
-    if (std::abs(vFrom.x) > std::abs(vFrom.z)) {
-      v1 = MLVec3f{-vFrom.y, vFrom.x, 0};
-    } else {
-      v1 = MLVec3f{0, -vFrom.z, vFrom.y};
-    }
-  } else {
-    v1 = crossVectors(vFrom, vTo);
-  }
-
-  MLQuaternionf result{
-    v1.x,
-    v1.y,
-    v1.z,
-    r
-  };
-  return normalizeQuaternion(result);
-}
-
-bool hasHandBone(int handIndex) {
-  for (size_t i = 0; i < 4; i++) {
-    if (*(uint32_t *)&wristBones[handIndex][i][0]) {
-      return true;
-    }
-  }
-  for (size_t i = 0; i < 5; i++) {
-    for (size_t j = 0; j < 4; j++) {
-      if (*(uint32_t *)&fingerBones[handIndex][i][j][0]) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-bool getBonesTransform(MLTransform &transform, std::vector<std::vector<float *>> &fingers) {
-  return std::any_of(fingers.begin(), fingers.end(), [&](std::vector<float *> &bones) -> bool {
-    std::vector<float *> validBones(bones);
-    validBones.erase(std::remove_if(validBones.begin(), validBones.end(), [&](float *bone) -> bool {
-      if (*(uint32_t *)&bone[0]) {
-        return false; // keep
-      } else {
-        return true; // remove
-      }
-    }), validBones.end());
-    if (validBones.size() >= 2) {
-      float *startBoneArray = validBones[0];
-      const MLVec3f startBone = {
-        startBoneArray[1],
-        startBoneArray[2],
-        startBoneArray[3]
-      };
-      float *endBoneArray = validBones[validBones.size() - 1];
-      const MLVec3f endBone = {
-        endBoneArray[1],
-        endBoneArray[2],
-        endBoneArray[3]
-      };
-      const MLVec3f &direction = normalizeVector(subVectors(endBone, startBone));
-      const MLQuaternionf &rotation = getQuaternionFromUnitVectors(
-        MLVec3f{0, 1, 0},
-        direction
-      );
-
-      transform.position = endBone;
-      transform.rotation = rotation;
-
-      return true;
-    } else {
-      return false;
-    }
-  });
-}
-
-bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]) {
-  std::vector<std::vector<float *>> fingers = {
-    { // index
-      fingerBones[1][0],
-      fingerBones[1][1],
-      fingerBones[1][2],
-      fingerBones[1][3],
-    },
-    { // middle
-      fingerBones[2][0],
-      fingerBones[2][1],
-      fingerBones[2][2],
-      fingerBones[2][3],
-    },
-    { // thumb
-      fingerBones[0][0],
-      fingerBones[0][1],
-      fingerBones[0][2],
-      fingerBones[0][3],
-    },
-  };
-  return getBonesTransform(transform, fingers);
-}
-
-bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]) {
-  std::vector<std::vector<float *>> fingers = {
-    { // wrist center, middleFinger
-      wristBones[0],
-      fingerBones[2][0],
-      fingerBones[2][1],
-      fingerBones[2][2],
-      fingerBones[2][3],
-    },
-    { // thumb
-      fingerBones[0][0],
-      fingerBones[0][1],
-      fingerBones[0][2],
-      fingerBones[0][3],
-    },
-  };
-  return getBonesTransform(transform, fingers);
 }
 
 void MLHandTracker::Poll() {
@@ -812,17 +659,37 @@ void MLHandTracker::Poll() {
     Local<Array> array = Nan::New<Array>();
     uint32_t numResults = 0;
 
+    MLVec3f leftHandCenter;
+    MLVec3f leftHandNormal;
+    bool leftHandTransformValid;
     MLTransform leftPointerTransform;
+    bool leftPointerTransformValid;
     MLTransform leftGripTransform;
-    MLTransform rightPointerTransform;
-    MLTransform rightGripTransform;
+    bool leftGripTransformValid;
 
-    if (hasHandBone(0)) {
+    MLVec3f rightHandCenter;
+    MLVec3f rightHandNormal;
+    bool rightHandTransformValid;
+    MLTransform rightPointerTransform;
+    bool rightPointerTransformValid;
+    MLTransform rightGripTransform;
+    bool rightGripTransformValid;
+
+    if (getHandBone(leftHandCenter, 0, wristBones, fingerBones)) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("left"));
 
-      if (getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0])) {
+      leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0], true);
+      if (leftHandTransformValid) {
+        obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandCenter.values, 3 * sizeof(float)), 0, 3));
+        obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandNormal.values, 3 * sizeof(float)), 0, 3));
+      } else {
+        leftHandNormal = {0, 1, 0};
+      }
+
+      leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0], leftHandNormal);
+      if (leftPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
         pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
         pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
@@ -830,7 +697,8 @@ void MLHandTracker::Poll() {
       } else {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
-      if (getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0])) {
+      leftGripTransformValid = getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0], leftHandNormal);
+      if (leftGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
         gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.position.values, 3 * sizeof(float)), 0, 3));
         gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
@@ -873,22 +741,58 @@ void MLHandTracker::Poll() {
       }
       obj->Set(JS_STR("fingers"), fingersArray);
 
-      const char *gesture = gestureCategoryToDescriptor(handData.left_hand_state.keypose);
-      if (gesture) {
-        obj->Set(JS_STR("gesture"), JS_STR(gesture));
-      } else {
-        obj->Set(JS_STR("gesture"), Nan::Null());
+      Local<Value> gestureVal = gestureCategoryToJsValue(handData.left_hand_state.keypose);
+      obj->Set(JS_STR("gesture"), gestureVal);
+
+      if (handData.left_hand_state.keypose != lastKeyposeLeft && !this->ongesture.IsEmpty()) {
+        Local<Object> gestureObj = Nan::New<Object>();
+
+        gestureObj->Set(JS_STR("hand"), JS_STR("left"));
+
+        Local<Value> gesturePositionObj;
+        Local<Value> gestureRotationObj;
+        if (leftPointerTransformValid) {
+          gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.position.values, 3 * sizeof(float)), 0, 3);
+          gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4);
+        } else if (leftGripTransformValid) {
+          gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.position.values, 3 * sizeof(float)), 0, 3);
+          gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.rotation.values, 4 * sizeof(float)), 0, 4);
+        } else {
+          gesturePositionObj = Nan::Null();
+          gestureRotationObj = Nan::Null();
+        }
+        gestureObj->Set(JS_STR("position"), gesturePositionObj);
+        gestureObj->Set(JS_STR("rotation"), gestureRotationObj);
+
+        gestureObj->Set(JS_STR("gesture"), gestureVal);
+        gestureObj->Set(JS_STR("lastGesture"), gestureCategoryToJsValue(lastKeyposeLeft));
+
+        Local<Function> ongesture = Nan::New(this->ongesture);
+        Local<Value> argv[] = {
+          gestureObj,
+        };
+        asyncResource.MakeCallback(ongesture, sizeof(argv)/sizeof(argv[0]), argv);
       }
+      lastKeyposeLeft = handData.left_hand_state.keypose;
 
       array->Set(JS_INT(numResults++), obj);
     }
 
-    if (hasHandBone(1)) {
+    if (getHandBone(rightHandCenter, 1, wristBones, fingerBones)) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("right"));
 
-      if (getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1])) {
+      rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false);
+      if (rightHandTransformValid) {
+        obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandCenter.values, 3 * sizeof(float)), 0, 3));
+        obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandNormal.values, 3 * sizeof(float)), 0, 3));
+      } else {
+        rightHandNormal = {0, 1, 0};
+      }
+
+      rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1], rightHandNormal);
+      if (rightPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
         pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
         pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
@@ -896,7 +800,8 @@ void MLHandTracker::Poll() {
       } else {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
-      if (getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1])) {
+      rightGripTransformValid = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1], rightHandNormal);
+      if (rightGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
         gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.position.values, 3 * sizeof(float)), 0, 3));
         gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
@@ -939,12 +844,39 @@ void MLHandTracker::Poll() {
       }
       obj->Set(JS_STR("fingers"), fingersArray);
 
-      const char *gesture = gestureCategoryToDescriptor(handData.right_hand_state.keypose);
-      if (gesture) {
-        obj->Set(JS_STR("gesture"), JS_STR(gesture));
-      } else {
-        obj->Set(JS_STR("gesture"), Nan::Null());
+      Local<Value> gestureVal = gestureCategoryToJsValue(handData.right_hand_state.keypose);
+      obj->Set(JS_STR("gesture"), gestureVal);
+
+      if (handData.right_hand_state.keypose != lastKeyposeRight && !this->ongesture.IsEmpty()) {
+        Local<Object> gestureObj = Nan::New<Object>();
+
+        gestureObj->Set(JS_STR("hand"), JS_STR("right"));
+
+        Local<Value> gesturePositionObj;
+        Local<Value> gestureRotationObj;
+        if (rightPointerTransformValid) {
+          gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3);
+          gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4);
+        } else if (rightGripTransformValid) {
+          gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.position.values, 3 * sizeof(float)), 0, 3);
+          gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.rotation.values, 4 * sizeof(float)), 0, 4);
+        } else {
+          gesturePositionObj = Nan::Null();
+          gestureRotationObj = Nan::Null();
+        }
+        gestureObj->Set(JS_STR("position"), gesturePositionObj);
+        gestureObj->Set(JS_STR("rotation"), gestureRotationObj);
+
+        gestureObj->Set(JS_STR("gesture"), gestureVal);
+        gestureObj->Set(JS_STR("lastGesture"), gestureCategoryToJsValue(lastKeyposeRight));
+
+        Local<Function> ongesture = Nan::New(this->ongesture);
+        Local<Value> argv[] = {
+          gestureObj,
+        };
+        asyncResource.MakeCallback(ongesture, sizeof(argv)/sizeof(argv[0]), argv);
       }
+      lastKeyposeRight = handData.right_hand_state.keypose;
 
       array->Set(JS_INT(numResults++), obj);
     }
@@ -1695,6 +1627,9 @@ NAN_METHOD(MLContext::Present) {
   for (int i = 0; i < MLHandTrackingKeyPose_Count; i++) {
     handTrackingConfig.keypose_config[i] = true;
   }
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Ok] = false;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_C] = false;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false; 
   if (MLHandTrackingSetConfiguration(handTracker, &handTrackingConfig) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to set hand tracker config.", application_name);
     info.GetReturnValue().Set(Nan::Null());
@@ -1805,101 +1740,6 @@ NAN_METHOD(MLContext::Exit) {
   application_context.dummy_value = DummyValue::STOPPED;
 
   glDeleteFramebuffers(1, &mlContext->framebuffer_id);
-}
-
-inline MLMat4f composeMatrix(
-  const MLVec3f &position = MLVec3f{0,0,0},
-  const MLQuaternionf &quaternion = MLQuaternionf{0,0,0,1},
-  const MLVec3f &scale = MLVec3f{1,1,1}
-) {
-  MLMat4f result;
-
-  float	*te = result.matrix_colmajor;
-
-  float x = quaternion.x, y = quaternion.y, z = quaternion.z, w = quaternion.w;
-  float x2 = x + x,	y2 = y + y, z2 = z + z;
-  float xx = x * x2, xy = x * y2, xz = x * z2;
-  float yy = y * y2, yz = y * z2, zz = z * z2;
-  float wx = w * x2, wy = w * y2, wz = w * z2;
-
-  float sx = scale.x, sy = scale.y, sz = scale.z;
-
-  te[ 0 ] = ( 1 - ( yy + zz ) ) * sx;
-  te[ 1 ] = ( xy + wz ) * sx;
-  te[ 2 ] = ( xz - wy ) * sx;
-  te[ 3 ] = 0;
-
-  te[ 4 ] = ( xy - wz ) * sy;
-  te[ 5 ] = ( 1 - ( xx + zz ) ) * sy;
-  te[ 6 ] = ( yz + wx ) * sy;
-  te[ 7 ] = 0;
-
-  te[ 8 ] = ( xz + wy ) * sz;
-  te[ 9 ] = ( yz - wx ) * sz;
-  te[ 10 ] = ( 1 - ( xx + yy ) ) * sz;
-  te[ 11 ] = 0;
-
-  te[ 12 ] = position.x;
-  te[ 13 ] = position.y;
-  te[ 14 ] = position.z;
-  te[ 15 ] = 1;
-
-  return result;
-}
-
-inline MLMat4f invertMatrix(const MLMat4f &matrix) {
-  MLMat4f result;
-
-  float	*te = result.matrix_colmajor;
-  const float *me = matrix.matrix_colmajor;
-  float n11 = me[ 0 ], n21 = me[ 1 ], n31 = me[ 2 ], n41 = me[ 3 ],
-    n12 = me[ 4 ], n22 = me[ 5 ], n32 = me[ 6 ], n42 = me[ 7 ],
-    n13 = me[ 8 ], n23 = me[ 9 ], n33 = me[ 10 ], n43 = me[ 11 ],
-    n14 = me[ 12 ], n24 = me[ 13 ], n34 = me[ 14 ], n44 = me[ 15 ],
-
-    t11 = n23 * n34 * n42 - n24 * n33 * n42 + n24 * n32 * n43 - n22 * n34 * n43 - n23 * n32 * n44 + n22 * n33 * n44,
-    t12 = n14 * n33 * n42 - n13 * n34 * n42 - n14 * n32 * n43 + n12 * n34 * n43 + n13 * n32 * n44 - n12 * n33 * n44,
-    t13 = n13 * n24 * n42 - n14 * n23 * n42 + n14 * n22 * n43 - n12 * n24 * n43 - n13 * n22 * n44 + n12 * n23 * n44,
-    t14 = n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34 - n12 * n23 * n34;
-
-  float det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
-
-  if ( det == 0 ) {
-
-    std::cout << "ML can't invert matrix, determinant is 0" << std::endl;
-
-    return MLMat4f{
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, 1,
-    };
-
-  }
-
-  float detInv = 1 / det;
-
-  te[ 0 ] = t11 * detInv;
-  te[ 1 ] = ( n24 * n33 * n41 - n23 * n34 * n41 - n24 * n31 * n43 + n21 * n34 * n43 + n23 * n31 * n44 - n21 * n33 * n44 ) * detInv;
-  te[ 2 ] = ( n22 * n34 * n41 - n24 * n32 * n41 + n24 * n31 * n42 - n21 * n34 * n42 - n22 * n31 * n44 + n21 * n32 * n44 ) * detInv;
-  te[ 3 ] = ( n23 * n32 * n41 - n22 * n33 * n41 - n23 * n31 * n42 + n21 * n33 * n42 + n22 * n31 * n43 - n21 * n32 * n43 ) * detInv;
-
-  te[ 4 ] = t12 * detInv;
-  te[ 5 ] = ( n13 * n34 * n41 - n14 * n33 * n41 + n14 * n31 * n43 - n11 * n34 * n43 - n13 * n31 * n44 + n11 * n33 * n44 ) * detInv;
-  te[ 6 ] = ( n14 * n32 * n41 - n12 * n34 * n41 - n14 * n31 * n42 + n11 * n34 * n42 + n12 * n31 * n44 - n11 * n32 * n44 ) * detInv;
-  te[ 7 ] = ( n12 * n33 * n41 - n13 * n32 * n41 + n13 * n31 * n42 - n11 * n33 * n42 - n12 * n31 * n43 + n11 * n32 * n43 ) * detInv;
-
-  te[ 8 ] = t13 * detInv;
-  te[ 9 ] = ( n14 * n23 * n41 - n13 * n24 * n41 - n14 * n21 * n43 + n11 * n24 * n43 + n13 * n21 * n44 - n11 * n23 * n44 ) * detInv;
-  te[ 10 ] = ( n12 * n24 * n41 - n14 * n22 * n41 + n14 * n21 * n42 - n11 * n24 * n42 - n12 * n21 * n44 + n11 * n22 * n44 ) * detInv;
-  te[ 11 ] = ( n13 * n22 * n41 - n12 * n23 * n41 - n13 * n21 * n42 + n11 * n23 * n42 + n12 * n21 * n43 - n11 * n22 * n43 ) * detInv;
-
-  te[ 12 ] = t14 * detInv;
-  te[ 13 ] = ( n13 * n24 * n31 - n14 * n23 * n31 + n14 * n21 * n33 - n11 * n24 * n33 - n13 * n21 * n34 + n11 * n23 * n34 ) * detInv;
-  te[ 14 ] = ( n14 * n22 * n31 - n12 * n24 * n31 - n14 * n21 * n32 + n11 * n24 * n32 + n12 * n21 * n34 - n11 * n22 * n34 ) * detInv;
-  te[ 15 ] = ( n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33 ) * detInv;
-
-  return result;
 }
 
 NAN_METHOD(MLContext::WaitGetPoses) {
