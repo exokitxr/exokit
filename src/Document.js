@@ -156,7 +156,7 @@ function initDocument (document, window) {
     });
   }
 
-  process.nextTick(async () => {
+  setImmediate(async () => {
     if (body) {
       const bodyChildNodes = body.childNodes;
       body.childNodes = new DOM.NodeList();
