@@ -155,6 +155,10 @@ When set, `onhand` will be called with an array of `MLHandUpdate`. This indicate
 
 Each hand is identified as either `'left'` or `'right'`. An update replaces the previous hand state; if a hand is not present in any given update that means it has not been detected for the given update loop.
 
+#### `MLHandTracker.ongesture : function(MLGestureUpdate)`
+
+When set, `ongesture` will be called with a `MLGestureUpdate`. This indicates an update to the detected hand gesture from the sensors on the Magic Leap platform.
+
 #### `MLHandTracker.destroy : function()`
 
 Dispose of this `MLHandTracker` instance and stop tracking.
@@ -165,7 +169,7 @@ A single update to the user's tracked hand pose state.
 
 #### `MLHandUpdate.hand : String`
 
-The hand direction detected for this update. Either `'left'` or `'right'`.
+The hand detected for this update. Either `'left'` or `'right'`.
 
 #### `MLHandUpdate.pointer : MLTransform?`
 
@@ -220,6 +224,28 @@ The current gesture pose of the hand. One of:
 
 - A bone may be `null`, which means it is not currently detected.
 - The thumb has one less bone than the other fingers.
+
+### `MLGestureUpdate`
+
+Represents a single gesture change in the user hand tracking system.
+
+#### `MLGestureUpdate.hand : string`
+
+The hand detected for this update. Either `'left'` or `'right'`.
+
+#### `MLGestureUpdate.gesture : string`
+
+The detected hand gesture. See `MLHandUpdate.gesture`.
+
+#### `MLGestureUpdate.position : Float32Array(3)`
+
+A three-component world position vector represting the gesture pointer origin
+
+#### `MLTransform.rotation : Float32Array(4)`
+
+A four-component world quaternion representing the gesture normal.
+
+This will be consistent across gesture updates (for tracking grab orientation delta), but do not assume it will point in any particular direction.
 
 ### `MLTransform`
 
