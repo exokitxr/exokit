@@ -221,7 +221,7 @@ inline const char *gestureCategoryToDescriptor(MLHandTrackingKeyPose keyPose) {
   }
 }
 inline Local<Value> gestureCategoryToJsValue(MLHandTrackingKeyPose keyPose) {
-  const char *gesture = gestureCategoryToDescriptor(handData.left_hand_state.keypose);
+  const char *gesture = gestureCategoryToDescriptor(keyPose);
   if (gesture) {
     return JS_STR(gesture);
   } else {
