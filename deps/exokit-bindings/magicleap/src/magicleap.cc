@@ -205,7 +205,7 @@ inline const char *gestureCategoryToDescriptor(MLHandTrackingKeyPose keyPose) {
     case MLGestureStaticHandState_Fist:
       return "fist";
     case MLGestureStaticHandState_Pinch:
-      return "punch";
+      return "pinch";
     case MLGestureStaticHandState_Thumb:
       return "thumb";
     case MLGestureStaticHandState_L:
