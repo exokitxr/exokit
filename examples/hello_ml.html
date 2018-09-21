@@ -115,18 +115,17 @@
 
       const localVector = new THREE.Vector3();
       const localVector2 = new THREE.Vector3();
-      const localVector3 = new THREE.Vector3();
-      const localVector4 = new THREE.Vector3();
       const localQuaternion = new THREE.Quaternion();
       const localMatrix = new THREE.Matrix4();
-      const oneVector = new THREE.Vector3(1, 1, 1);
-      const upVector = new THREE.Vector3(0, 1, 0);
-      const zeroQuaternion = new THREE.Quaternion();
       const handMesh = (() => {
         const pointerGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
-          .applyMatrix(
-            localMatrix.makeTranslation(0, 1/2, 0)
-          );
+          .applyMatrix(localMatrix.makeTranslation(0, 1/2, 0))
+          .applyMatrix(localMatrix.makeRotationFromQuaternion(
+            localQuaternion.setFromUnitVectors(
+              localVector.set(0, 1, 0),
+              localVector2.set(0, 0, -1)
+            )
+          ));
         const boneGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
 
         const geometry = new THREE.BufferGeometry();
