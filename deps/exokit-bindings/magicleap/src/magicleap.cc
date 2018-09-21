@@ -674,7 +674,7 @@ void MLHandTracker::Poll() {
     MLTransform rightGripTransform;
     bool rightGripTransformValid;
 
-    if (hasHandBone(0)) {
+    if (getHandBone(leftHandCenter, 0, wristBones, fingerBones)) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("left"));
@@ -777,7 +777,7 @@ void MLHandTracker::Poll() {
       array->Set(JS_INT(numResults++), obj);
     }
 
-    if (hasHandBone(1)) {
+    if (getHandBone(rightHandCenter, 1, wristBones, fingerBones)) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("right"));

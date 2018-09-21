@@ -1,10 +1,12 @@
-#if defined(LUMIN)
+#ifdef LUMIN
 
 #include <ml-math.h>
 
+namespace ml {
+
 // util
 
-inline MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
+MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
   return MLVec3f{
     a.x - b.x,
     a.y - b.y,
@@ -12,7 +14,7 @@ inline MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
   };
 }
 
-inline MLVec3f multiplyVector(const MLVec3f &v, float l) {
+MLVec3f multiplyVector(const MLVec3f &v, float l) {
   return MLVec3f{
     v.x * l,
     v.y * l,
@@ -20,7 +22,7 @@ inline MLVec3f multiplyVector(const MLVec3f &v, float l) {
   };
 }
 
-inline MLVec3f divideVector(const MLVec3f &v, float l) {
+MLVec3f divideVector(const MLVec3f &v, float l) {
   return MLVec3f{
     v.x / l,
     v.y / l,
@@ -28,11 +30,11 @@ inline MLVec3f divideVector(const MLVec3f &v, float l) {
   };
 }
 
-inline float dotVectors(const MLVec3f &a, const MLVec3f &b) {
+float dotVectors(const MLVec3f &a, const MLVec3f &b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-inline MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b) {
+MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b) {
 	return MLVec3f{
     a.y * b.z - a.z * b.y,
 		a.z * b.x - a.x * b.z,
@@ -40,23 +42,23 @@ inline MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b) {
   };
 }
 
-inline float vectorLengthSq(const MLVec3f &v) {
+float vectorLengthSq(const MLVec3f &v) {
   return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
-inline float vectorLength(const MLVec3f &v) {
+float vectorLength(const MLVec3f &v) {
   return sqrt(vectorLengthSq(v));
 }
 
-inline MLVec3f normalizeVector(const MLVec3f &v) {
+MLVec3f normalizeVector(const MLVec3f &v) {
   return divideVector(v, vectorLength(v));
 }
 
-inline float quaternionLength(const MLQuaternionf &q) {
+float quaternionLength(const MLQuaternionf &q) {
   return sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
 }
 
-inline MLQuaternionf normalizeQuaternion(const MLQuaternionf &q) {
+MLQuaternionf normalizeQuaternion(const MLQuaternionf &q) {
   float l = quaternionLength(q);
 
   if (l == 0) {
@@ -77,7 +79,16 @@ inline MLQuaternionf normalizeQuaternion(const MLQuaternionf &q) {
   }
 }
 
-inline MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const MLVec3f &vTo) {
+MLQuaternionf multiplyQuaternions(const MLQuaternionf &qa, const MLQuaternionf &qb) {
+  return MLQuaternionf{
+    qa.x * qb.w + qa.w * qb.x + qa.y * qb.z - qa.z * qb.y,
+    qa.y * qb.w + qa.w * qb.y + qa.z * qb.x - qa.x * qb.z,
+    qa.z * qb.w + qa.w * qb.z + qa.x * qb.y - qa.y * qb.x,
+    qa.w * qb.w - qa.x * qb.x - qa.y * qb.y - qa.z * qb.z
+  };
+}
+
+MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const MLVec3f &vTo) {
   constexpr float EPS = 0.000001;
 
   MLVec3f v1;
@@ -112,12 +123,33 @@ MLVec3f getTriangleNormal(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) 
   if (targetLengthSq > 0) {
     return multiplyVector(target, 1 / sqrt(targetLengthSq));
   } else {
-    return MLVec3f{
-      0,
-      0,
-      0
-    };
+    return MLVec3f{0, 0, 0};
   }
+}
+
+void orthonormalizeVectors(MLVec3f &normal, MLVec3f &tangent) {
+	normal = normalizeVector(normal);
+	tangent = normalizeVector(tangent);
+	
+  const MLVec3f &projection = multiplyVector(normal, dotVectors(normal, tangent));
+	tangent = subVectors(tangent, projection);
+  tangent = normalizeVector(tangent);
+}
+
+MLQuaternionf getLookAtQuaternion(const MLVec3f &lookAt, const MLVec3f &upDirection) {
+	MLVec3f forward = multiplyVector(lookAt, -1);
+  MLVec3f up = upDirection;
+  orthonormalizeVectors(forward, up);
+  
+	const MLVec3f &right = crossVectors(up, forward);
+
+	MLQuaternionf ret;
+	ret.w = sqrt(1.0f + right.x + up.y + forward.z) * 0.5f;
+	const float w4_recip = 1.0f / (4.0f * ret.w);
+	ret.x = (up.z - forward.y) * w4_recip;
+	ret.y = (forward.x - right.z) * w4_recip;
+	ret.z = (right.y - up.x) * w4_recip;
+	return ret;
 }
 
 MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m) {
@@ -127,11 +159,11 @@ MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m) {
   const float *te = m.matrix_colmajor;
 
   const float m11 = te[ 0 ], m12 = te[ 4 ], m13 = te[ 8 ],
-  m21 = te[ 1 ], m22 = te[ 5 ], m23 = te[ 9 ],
-  m31 = te[ 2 ], m32 = te[ 6 ], m33 = te[ 10 ];
+    m21 = te[ 1 ], m22 = te[ 5 ], m23 = te[ 9 ],
+    m31 = te[ 2 ], m32 = te[ 6 ], m33 = te[ 10 ];
 
   float trace = m11 + m22 + m33,
-  s;
+    s;
 
   if (trace > 0.0f) {
     s = 0.5f / sqrt(trace + 1.0f);
@@ -143,7 +175,7 @@ MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m) {
       0.25f / s
     };
   } else if (m11 > m22 && m11 > m33) {
-    s = 2.0f * sqrt(1.0f + m11 - m22 - m33);
+    s = 2.0f * sqrt(1.0f + m11 - m22 - m33 );
 
     return MLQuaternionf{
       0.25f * s,
@@ -151,7 +183,7 @@ MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m) {
       (m13 + m31) / s,
       (m32 - m23) / s
     };
-  } else if ( m22 > m33 ) {
+  } else if (m22 > m33) {
     s = 2.0f * sqrt(1.0f + m22 - m11 - m33);
 
     return MLQuaternionf{
@@ -184,40 +216,40 @@ MLMat4f getLookAtMatrix(const MLVec3f &eye, const MLVec3f &target, const MLVec3f
 
   if (vectorLengthSq(z) == 0) {
     // eye and target are in the same position
-    z.z = 1;
+    z.z = 1.0;
   }
-
+  
   z = normalizeVector(z);
-  x = crossVectors(up,z);
+  x = crossVectors(up, z);
 
-  if (vectorLengthSq(x) == 0) {
+  if (vectorLengthSq(x) == 0.0) {
     // up and z are parallel
 
-    if (std::abs(up.z) == 1) {
-      z.x += 0.0001;
+    if (std::abs(up.z) == 1.0f) {
+      z.x += 0.0001f;
     } else {
-      z.z += 0.0001;
+      z.z += 0.0001f;
     }
 
     z = normalizeVector(z);
     x = crossVectors(up, z);
-
   }
 
   x = normalizeVector(x);
   y = crossVectors(z, x);
 
-  te[ 0 ] = x.x; te[ 4 ] = y.x; te[ 8 ] = z.x;
-  te[ 1 ] = x.y; te[ 5 ] = y.y; te[ 9 ] = z.y;
-  te[ 2 ] = x.z; te[ 6 ] = y.z; te[ 10 ] = z.z;
+  te[ 0 ] = x.x; te[ 4 ] = y.x; te[ 8 ] = z.x;  te[ 12 ] = 0;
+  te[ 1 ] = x.y; te[ 5 ] = y.y; te[ 9 ] = z.y;  te[ 13 ] = 0;
+  te[ 2 ] = x.z; te[ 6 ] = y.z; te[ 10 ] = z.z; te[ 14 ] = 0;
+  te[ 3 ] = 0;   te[ 7 ] = 0;   te[ 11 ] = 0;   te[ 15 ] = 1;
 
   return result;
 }
 
-inline MLMat4f composeMatrix(
-  const MLVec3f &position = MLVec3f{0,0,0},
-  const MLQuaternionf &quaternion = MLQuaternionf{0,0,0,1},
-  const MLVec3f &scale = MLVec3f{1,1,1}
+MLMat4f composeMatrix(
+  const MLVec3f &position,
+  const MLQuaternionf &quaternion,
+  const MLVec3f &scale
 ) {
   MLMat4f result;
 
@@ -254,7 +286,7 @@ inline MLMat4f composeMatrix(
   return result;
 }
 
-inline MLMat4f invertMatrix(const MLMat4f &matrix) {
+MLMat4f invertMatrix(const MLMat4f &matrix) {
   MLMat4f result;
 
   float	*te = result.matrix_colmajor;
@@ -273,7 +305,7 @@ inline MLMat4f invertMatrix(const MLMat4f &matrix) {
 
   if ( det == 0 ) {
 
-    std::cout << "ML can't invert matrix, determinant is 0" << std::endl;
+    // std::cout << "ML can't invert matrix, determinant is 0" << std::endl;
 
     return MLMat4f{
       1, 0, 0, 0,
@@ -311,7 +343,7 @@ inline MLMat4f invertMatrix(const MLMat4f &matrix) {
 
 // hands
 
-bool hasHandBone(int handIndex) {
+bool getHandBone(MLVec3f &position, int handIndex, float wristBones[2][4][1 + 3], float fingerBones[2][5][4][1 + 3]) {
   for (size_t i = 0; i < 4; i++) {
     if (*(uint32_t *)&wristBones[handIndex][i][0]) {
       return true;
@@ -320,6 +352,11 @@ bool hasHandBone(int handIndex) {
   for (size_t i = 0; i < 5; i++) {
     for (size_t j = 0; j < 4; j++) {
       if (*(uint32_t *)&fingerBones[handIndex][i][j][0]) {
+        position = {
+          fingerBones[handIndex][i][j][1],
+          fingerBones[handIndex][i][j][2],
+          fingerBones[handIndex][i][j][3]
+        };
         return true;
       }
     }
@@ -327,7 +364,7 @@ bool hasHandBone(int handIndex) {
   return false;
 }
 
-bool getBonesTransform(MLTransform &transform, std::vector<std::vector<float *>> &fingers) {
+bool getFingerRayTransform(MLTransform &transform, std::vector<std::vector<float *>> &fingers, const MLVec3f &normal) {
   return std::any_of(fingers.begin(), fingers.end(), [&](std::vector<float *> &bones) -> bool {
     std::vector<float *> validBones(bones);
     validBones.erase(std::remove_if(validBones.begin(), validBones.end(), [&](float *bone) -> bool {
@@ -350,11 +387,10 @@ bool getBonesTransform(MLTransform &transform, std::vector<std::vector<float *>>
         endBoneArray[2],
         endBoneArray[3]
       };
-      const MLVec3f &direction = normalizeVector(subVectors(endBone, startBone));
-      const MLQuaternionf &rotation = getQuaternionFromUnitVectors(
-        MLVec3f{0, 1, 0},
-        direction
-      );
+      // const MLVec3f &direction = normalizeVector(subVectors(endBone, startBone));
+      // const MLMat4f &lookMatrix = getLookAtMatrix(startBone, endBone, normal);
+      // const MLQuaternionf &rotation = getQuaternionFromRotationMatrix(lookMatrix);
+      const MLQuaternionf &rotation = getLookAtQuaternion(subVectors(endBone, startBone), normal);
 
       transform.position = endBone;
       transform.rotation = rotation;
@@ -367,93 +403,59 @@ bool getBonesTransform(MLTransform &transform, std::vector<std::vector<float *>>
 }
 
 bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], bool left) {
-  std::vector<std::vector<float *>> fingers;
-  for (size_t i = 0; i < 5; i++) {
-    fingers.push_back(std::vector<float *>{
-      fingerBones[i][0],
-      fingerBones[i][1],
-      fingerBones[i][2],
-      fingerBones[i][3],
-    });
-  }
+  float (&thumb)[4][1 + 3] = fingerBones[0];
+  float *thumbTip = thumb[3];
 
-  std::vector<float *> startBones;
-  size_t startBonesFingerIndex;
-  for (size_t i = 0; i < 5; i++) {
-    std::vector<float *> validBones = {
-      fingerBones[i][0],
-      fingerBones[i][1],
-      fingerBones[i][2],
-      fingerBones[i][3],
-    };
-    validBones.erase(std::remove_if(validBones.begin(), validBones.end(), [&](float *bone) -> bool {
-      if (*(uint32_t *)&bone[0]) {
-        return false; // keep
-      } else {
-        return true; // remove
+  if (*(uint32_t *)&thumbTip[0]) {
+    float *thumbBase = nullptr;
+
+    for (size_t i = 0; i < 3; i++) {
+      if (*(uint32_t *)&thumb[i][0]) {
+        thumbBase = thumb[i];
       }
-    }), validBones.end());
-
-    if (validBones.size() > 0) {
-      startBones = validBones;
-      startBonesFingerIndex = i;
-      break;
     }
-  }
-  if (startBones.size() > 0) {
-    std::vector<float *> allBones;
-    for (size_t i = 5 - 1; i > startBonesFingerIndex; i--) {
-      std::vector<float *> validBones = {
-        fingerBones[i][3],
-        fingerBones[i][2],
-        fingerBones[i][1],
-        fingerBones[i][0],
-      };
-      validBones.erase(std::remove_if(validBones.begin(), validBones.end(), [&](float *bone) -> bool {
-        if (*(uint32_t *)&bone[0]) {
-          return false; // keep
-        } else {
-          return true; // remove
+    if (thumbBase) {
+      float *pointerSemiTip = nullptr;
+
+      for (size_t i = 1; i < 5; i++) {
+        for (size_t j = 0; j < 3; j++) {
+          if (*(uint32_t *)&fingerBones[i][j][0]) {
+            pointerSemiTip = fingerBones[i][j];
+          }
         }
-      }), validBones.end());
-
-      if (startBones.size() >= 2 && validBones.size() >= 1) {
-        allBones.push_back(startBones[0]);
-        allBones.push_back(startBones[1]);
-        allBones.push_back(validBones[0]);
-        break;
-      } else if (startBones.size() >= 1 && validBones.size() >= 2) {
-        allBones.push_back(startBones[0]);
-        allBones.push_back(validBones[0]);
-        allBones.push_back(validBones[1]);
-        break;
       }
-    }
-    if (allBones.size() > 0) {
-      MLVec3f a = {
-        allBones[0][1],
-        allBones[0][2],
-        allBones[0][3]
-      };
-      MLVec3f b = {
-        allBones[1][1],
-        allBones[1][2],
-        allBones[1][3]
-      };
-      MLVec3f c = {
-        allBones[2][1],
-        allBones[2][2],
-        allBones[2][3]
-      };
 
-      center = {
-        (a.x + b.x + c.x) / 3,
-        (a.y + b.y + c.y) / 3,
-        (a.z + b.z + c.z) / 3
-      };
-      normal = getTriangleNormal(a, b, c);
+      if (pointerSemiTip) {
+        MLVec3f a = {
+          thumbTip[1],
+          thumbTip[2],
+          thumbTip[3]
+        };
+        MLVec3f b = {
+          pointerSemiTip[1],
+          pointerSemiTip[2],
+          pointerSemiTip[3]
+        };
+        MLVec3f c = {
+          thumbBase[1],
+          thumbBase[2],
+          thumbBase[3]
+        };
 
-      return true;
+        center = {
+          (a.x + b.x + c.x) / 3,
+          (a.y + b.y + c.y) / 3,
+          (a.z + b.z + c.z) / 3
+        };
+        normal = getTriangleNormal(a, b, c);
+        if (!left) {
+          normal = multiplyVector(normal, -1);
+        }
+        
+        return true;
+      } else {
+        return false;
+      }
     } else {
       return false;
     }
@@ -462,7 +464,7 @@ bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 
   }
 }
 
-bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]) {
+bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal) {
   std::vector<std::vector<float *>> fingers = {
     { // index
       fingerBones[1][0],
@@ -483,10 +485,10 @@ bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3],
       fingerBones[0][3],
     },
   };
-  return getBonesTransform(transform, fingers);
+  return getFingerRayTransform(transform, fingers, normal);
 }
 
-bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]) {
+bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal) {
   std::vector<std::vector<float *>> fingers = {
     { // wrist center, middleFinger
       wristBones[0],
@@ -502,5 +504,9 @@ bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], fl
       fingerBones[0][3],
     },
   };
-  return getBonesTransform(transform, fingers);
+  return getFingerRayTransform(transform, fingers, normal);
 }
+
+}
+
+#endif
