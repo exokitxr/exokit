@@ -587,6 +587,7 @@ NAN_METHOD(MLHandTracker::New) {
   mlHandTracker->Wrap(mlHandTrackerObj);
 
   Nan::SetAccessor(mlHandTrackerObj, JS_STR("onhands"), OnHandsGetter, OnHandsSetter);
+  Nan::SetAccessor(mlHandTrackerObj, JS_STR("ongesture"), OnGestureGetter, OnGestureSetter);
 
   info.GetReturnValue().Set(mlHandTrackerObj);
 
