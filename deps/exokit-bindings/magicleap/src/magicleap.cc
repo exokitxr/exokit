@@ -684,6 +684,8 @@ void MLHandTracker::Poll() {
       if (leftHandTransformValid) {
         obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandCenter.values, 3 * sizeof(float)), 0, 3));
         obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandNormal.values, 3 * sizeof(float)), 0, 3));
+      } else {
+        leftHandNormal = {0, 1, 0};
       }
 
       leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0]);
@@ -787,6 +789,8 @@ void MLHandTracker::Poll() {
       if (rightHandTransformValid) {
         obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandCenter.values, 3 * sizeof(float)), 0, 3));
         obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandNormal.values, 3 * sizeof(float)), 0, 3));
+      } else {
+        rightHandNormal = {0, 1, 0};
       }
 
       rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1]);
