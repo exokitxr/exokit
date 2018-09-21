@@ -765,9 +765,7 @@ void MLHandTracker::Poll() {
         gestureObj->Set(JS_STR("rotation"), gestureRotationObj);
 
         gestureObj->Set(JS_STR("gesture"), gestureVal);
-
-        Local<Value> lastGestureVal = gestureCategoryToJsValue(lastKeyposeLeft);
-        gestureObj->Set(JS_STR("lastGesture"), lastGestureVal);
+        gestureObj->Set(JS_STR("lastGesture"), gestureCategoryToJsValue(lastKeyposeLeft));
 
         Local<Function> ongesture = Nan::New(this->ongesture);
         Local<Value> argv[] = {
@@ -870,9 +868,7 @@ void MLHandTracker::Poll() {
         gestureObj->Set(JS_STR("rotation"), gestureRotationObj);
 
         gestureObj->Set(JS_STR("gesture"), gestureVal);
-
-        Local<Value> lastGestureVal = gestureCategoryToJsValue(lastKeyposeRight);
-        gestureObj->Set(JS_STR("lastGesture"), lastGestureVal);
+        gestureObj->Set(JS_STR("lastGesture"), gestureCategoryToJsValue(lastKeyposeRight));
 
         Local<Function> ongesture = Nan::New(this->ongesture);
         Local<Value> argv[] = {
