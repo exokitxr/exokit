@@ -688,7 +688,7 @@ void MLHandTracker::Poll() {
         leftHandNormal = {0, 1, 0};
       }
 
-      leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0]);
+      leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0], leftHandNormal);
       if (leftPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
         pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
@@ -697,7 +697,7 @@ void MLHandTracker::Poll() {
       } else {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
-      leftGripTransformValid = getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0]);
+      leftGripTransformValid = getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0], leftHandNormal);
       if (leftGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
         gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.position.values, 3 * sizeof(float)), 0, 3));
@@ -793,7 +793,7 @@ void MLHandTracker::Poll() {
         rightHandNormal = {0, 1, 0};
       }
 
-      rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1]);
+      rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1], rightHandNormal);
       if (rightPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
         pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
@@ -802,7 +802,7 @@ void MLHandTracker::Poll() {
       } else {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
-      rightGripTransformValid = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1]);
+      rightGripTransformValid = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1], rightHandNormal);
       if (rightGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
         gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.position.values, 3 * sizeof(float)), 0, 3));
