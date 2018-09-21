@@ -486,37 +486,37 @@ function init() {
       });
 
     const material = new THREE.ShaderMaterial({
-    uniforms: {
-      map: {
-        type: 't',
-        value: texture,
+      uniforms: {
+        map: {
+          type: 't',
+          value: texture,
+        },
       },
-    },
-    vertexShader: `\
-      varying vec2 vUv;
-      void main() {
-        float m = mod(gl_VertexID, 3.0);
-        if (m < 0.5) {
-          vUv = vec2(0.0, 0.0);
-        } else if (m < 1.5) {
-          vUv = vec2(1.0, 1.0);
-        } else {
-          vUv = vec2(1.0, 0.0);
+      vertexShader: `\
+        varying vec2 vUv;
+        void main() {
+          float m = mod(gl_VertexID, 3.0);
+          if (m < 0.5) {
+            vUv = vec2(0.0, 0.0);
+          } else if (m < 1.5) {
+            vUv = vec2(1.0, 1.0);
+          } else {
+            vUv = vec2(1.0, 0.0);
+          }
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `\
-      uniform sampler2D map;
-      varying vec2 vUv;
-      void main() {
-        gl_FragColor = texture2D(map, vUv);
-      }
-    `,
-    // transparent: true,
-  });
-  return material;
-})();
+      `,
+      fragmentShader: `\
+        uniform sampler2D map;
+        varying vec2 vUv;
+        void main() {
+          gl_FragColor = texture2D(map, vUv);
+        }
+      `,
+      // transparent: true,
+    });
+    return material;
+  })();
   const _getTerrainMesh = meshId => {
     let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
     if (!terrainMesh) {
