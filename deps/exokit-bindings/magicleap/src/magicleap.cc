@@ -1627,6 +1627,9 @@ NAN_METHOD(MLContext::Present) {
   for (int i = 0; i < MLHandTrackingKeyPose_Count; i++) {
     handTrackingConfig.keypose_config[i] = true;
   }
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Ok] = false;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_C] = false;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false; 
   if (MLHandTrackingSetConfiguration(handTracker, &handTrackingConfig) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to set hand tracker config.", application_name);
     info.GetReturnValue().Set(Nan::Null());
