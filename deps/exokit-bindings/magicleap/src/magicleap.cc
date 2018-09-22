@@ -279,35 +279,44 @@ static void onUnloadResources(void* application_context) {
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) :
+MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer) :
   positionBuffer(positionBuffer),
   normalBuffer(normalBuffer),
+  uvBuffer(uvBuffer),
   indexBuffer(indexBuffer),
   positions(nullptr),
   numPositions(0),
   normals(nullptr),
   indices(nullptr),
   numIndices(0),
+  uvs(nullptr),
+  numUvs(0),
   isNew(true),
   isUnchanged(false)
   {}
 MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
   normalBuffer = meshBuffer.normalBuffer;
+  uvBuffer = meshBuffer.uvBuffer;
   indexBuffer = meshBuffer.indexBuffer;
   positions = meshBuffer.positions;
   numPositions = meshBuffer.numPositions;
   normals = meshBuffer.normals;
   indices = meshBuffer.indices;
   numIndices = meshBuffer.numIndices;
+  uvs = meshBuffer.uvs;
+  numUvs = meshBuffer.numUvs;
   isNew = meshBuffer.isNew;
   isUnchanged = meshBuffer.isUnchanged;
 }
-MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), isNew(true), isUnchanged(false) {}
+MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), uvBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), uvs(nullptr), numUvs(0), isNew(true), isUnchanged(false) {}
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> &uvs, bool isNew, bool isUnchanged) {
   glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
+
+  glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+  glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(uvs[0]), uvs.data(), GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(normals[0]), normals, GL_DYNAMIC_DRAW);
@@ -320,6 +329,8 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->normals = normals;
   this->indices = indices;
   this->numIndices = numIndices;
+  this->uvs = (float *)uvs.data();
+  this->numUvs = uvs.size() * 2;
   this->isNew = isNew;
   this->isUnchanged = isUnchanged;
 }
@@ -425,6 +436,13 @@ void MLMesher::Poll() {
           Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.normals, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
           obj->Set(JS_STR("normalArray"), normalArray);
           obj->Set(JS_STR("normalCount"), JS_INT(meshBuffer.numPositions));
+
+          Local<Object> uvBuffer = Nan::New<Object>();
+          uvBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.uvBuffer));
+          obj->Set(JS_STR("uvBuffer"), uvBuffer);
+          Local<Float32Array> uvArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.uvs, meshBuffer.numUvs * sizeof(float)), 0, meshBuffer.numUvs);
+          obj->Set(JS_STR("uvArray"), uvArray);
+          obj->Set(JS_STR("uvCount"), JS_INT(meshBuffer.numUvs));
 
           Local<Object> indexBuffer = Nan::New<Object>();
           indexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
@@ -1876,7 +1894,7 @@ NAN_METHOD(MLContext::Present) {
   }
   handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Ok] = false;
   handTrackingConfig.keypose_config[MLHandTrackingKeyPose_C] = false;
-  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false; 
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false;
   if (MLHandTrackingSetConfiguration(handTracker, &handTrackingConfig) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to set hand tracker config.", application_name);
     info.GetReturnValue().Set(Nan::Null());
@@ -2502,6 +2520,105 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 }
 
+const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count) {
+  std::vector<std::vector<uint16_t>> triangles(vertex_count); // vertex -> list of indices
+  for (uint16_t i = 0; i < index_count / 3; i++) {
+    const uint16_t &a = index[i * 3];
+    triangles[a].push_back(i);
+    const uint16_t &b = index[i * 3 + 1];
+    triangles[b].push_back(i);
+    const uint16_t &c = index[i * 3 + 2];
+    triangles[c].push_back(i);
+  }
+
+  std::vector<std::vector<uint16_t>> islands; // list of lists of connected vertices
+  std::vector<bool> vertexSeenIndex(vertex_count, false);
+  for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
+    if (!vertexSeenIndex[i]) {
+      std::vector<uint16_t> island;
+      island.reserve(128);
+      std::deque<uint16_t> vertexQueue = {i};
+      vertexSeenIndex[i] = true;
+
+      while (vertexQueue.size() > 0) {
+        const uint16_t vertexIndex = vertexQueue.front();
+        vertexQueue.pop_front();
+
+        island.push_back(vertexIndex);
+
+        const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
+        for (size_t j = 0; j < connectedIndices.size(); j++) {
+          const uint16_t connectedIndex = connectedIndices[j];
+          const uint16_t &a = index[connectedIndex * 3];
+          if (!vertexSeenIndex[a]) {
+            vertexQueue.push_back(a);
+            vertexSeenIndex[a] = true;
+          }
+          const uint16_t &b = index[connectedIndex * 3 + 1];
+          if (!vertexSeenIndex[b]) {
+            vertexQueue.push_back(b);
+            vertexSeenIndex[b] = true;
+          }
+          const uint16_t &c = index[connectedIndex * 3 + 2];
+          if (!vertexSeenIndex[c]) {
+            vertexQueue.push_back(c);
+            vertexSeenIndex[c] = true;
+          }
+        }
+      }
+
+      islands.push_back(std::move(island));
+    }
+  }
+
+  // compute uvs
+  std::vector<Uv> result(vertex_count);
+  for (size_t i = 0; i < islands.size(); i++) {
+    const std::vector<uint16_t> &island = islands[i];
+    MLVec3f max = {
+      -1000.0f,
+      -1000.0f,
+      -1000.0f
+    };
+    MLVec3f min = {
+      1000.0f,
+      1000.0f,
+      1000.0f
+    };
+
+    for (size_t j = 0; j < island.size(); j++) {
+      uint16_t vertexIndex = island[j];
+      const MLVec3f &v = vertex[vertexIndex];
+      if (v.x < min.x) min.x = v.x;
+      if (v.y < min.y) min.y = v.y;
+      if (v.z < min.z) min.z = v.z;
+      if (v.x > max.x) max.x = v.x;
+      if (v.y > max.y) max.y = v.y;
+      if (v.z > max.z) max.z = v.z;
+    }
+
+    const MLVec3f center = {
+      (max.x + min.x) / 2,
+      (max.y + min.y) / 2,
+      (max.z + min.z) / 2
+    };
+
+    for (size_t j = 0; j < island.size(); j++) {
+      uint16_t vertexIndex = island[j];
+      const MLVec3f &v = vertex[vertexIndex];
+      const float dx = v.x - center.x;
+      const float dy = v.y - center.y;
+      const float dz = v.z - center.z;
+      const float distSq = (dx*dx) + (dy*dy) + (dz*dz);
+      const float dist = sqrt(distSq);
+
+      result[vertexIndex] = Uv{dist, dist};
+    }
+  }
+
+  return std::move(result);
+}
+
 NAN_METHOD(MLContext::PostPollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
@@ -2585,20 +2702,23 @@ NAN_METHOD(MLContext::PostPollEvents) {
           if (iter != meshBuffers.end()) {
             meshBuffer = &iter->second;
           } else {
-            GLuint buffers[3];
+            GLuint buffers[4];
             glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2]);
+            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2], buffers[3]);
             meshBuffer = &meshBuffers[id];
           }
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
+          const std::vector<Uv> &uvs = getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count);
+
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, uvs, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
         } else {
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
             MeshBuffer *meshBuffer = &iter->second;
-            GLuint buffers[3] = {
+            GLuint buffers[] = {
               meshBuffer->positionBuffer,
               meshBuffer->normalBuffer,
+              meshBuffer->uvBuffer,
               meshBuffer->indexBuffer,
             };
             glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
