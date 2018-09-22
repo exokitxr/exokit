@@ -2532,42 +2532,45 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
   }
 
   std::vector<std::vector<uint16_t>> islands; // list of lists of connected vertices
-  std::vector<bool> vertexSeenIndex(vertex_count, false);
-  for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
-    if (!vertexSeenIndex[i]) {
-      std::vector<uint16_t> island;
-      island.reserve(128);
-      std::deque<uint16_t> vertexQueue = {i};
-      vertexSeenIndex[i] = true;
+  {
+    std::vector<bool> vertexSeenIndex(vertex_count, false);
+    for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
+      if (!vertexSeenIndex[i]) {
+        std::vector<uint16_t> island;
+        island.reserve(128);
+        std::deque<uint16_t> vertexQueue = {i};
+        vertexSeenIndex[i] = true;
 
-      while (vertexQueue.size() > 0) {
-        const uint16_t vertexIndex = vertexQueue.front();
-        vertexQueue.pop_front();
+        while (vertexQueue.size() > 0) {
+          const uint16_t &vertexIndex = vertexQueue.front();
 
-        island.push_back(vertexIndex);
+          island.push_back(vertexIndex);
 
-        const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
-        for (size_t j = 0; j < connectedIndices.size(); j++) {
-          const uint16_t connectedIndex = connectedIndices[j];
-          const uint16_t &a = index[connectedIndex * 3];
-          if (!vertexSeenIndex[a]) {
-            vertexQueue.push_back(a);
-            vertexSeenIndex[a] = true;
+          const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
+          for (size_t j = 0; j < connectedIndices.size(); j++) {
+            const uint16_t connectedIndex = connectedIndices[j];
+            const uint16_t &a = index[connectedIndex * 3];
+            if (!vertexSeenIndex[a]) {
+              vertexQueue.push_back(a);
+              vertexSeenIndex[a] = true;
+            }
+            const uint16_t &b = index[connectedIndex * 3 + 1];
+            if (!vertexSeenIndex[b]) {
+              vertexQueue.push_back(b);
+              vertexSeenIndex[b] = true;
+            }
+            const uint16_t &c = index[connectedIndex * 3 + 2];
+            if (!vertexSeenIndex[c]) {
+              vertexQueue.push_back(c);
+              vertexSeenIndex[c] = true;
+            }
           }
-          const uint16_t &b = index[connectedIndex * 3 + 1];
-          if (!vertexSeenIndex[b]) {
-            vertexQueue.push_back(b);
-            vertexSeenIndex[b] = true;
-          }
-          const uint16_t &c = index[connectedIndex * 3 + 2];
-          if (!vertexSeenIndex[c]) {
-            vertexQueue.push_back(c);
-            vertexSeenIndex[c] = true;
-          }
+
+          vertexQueue.pop_front();
         }
-      }
 
-      islands.push_back(std::move(island));
+        islands.push_back(std::move(island));
+      }
     }
   }
 
@@ -2598,11 +2601,13 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
     }
 
     const MLVec3f center = {
-      (max.x + min.x) / 2,
-      (max.y + min.y) / 2,
-      (max.z + min.z) / 2
+      (min.x + max.x) / 2,
+      (min.y + max.y) / 2,
+      (min.z + max.z) / 2
     };
 
+    float minDistSq = 1000.0f;
+    uint16_t minDistSqIndex = 0;
     for (size_t j = 0; j < island.size(); j++) {
       uint16_t vertexIndex = island[j];
       const MLVec3f &v = vertex[vertexIndex];
@@ -2610,9 +2615,61 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
       const float dy = v.y - center.y;
       const float dz = v.z - center.z;
       const float distSq = (dx*dx) + (dy*dy) + (dz*dz);
-      const float dist = sqrt(distSq);
 
-      result[vertexIndex] = Uv{dist, dist};
+      if (distSq < minDistSq) {
+        minDistSq = distSq;
+        minDistSqIndex = j;
+      }
+    }
+
+    std::vector<std::vector<uint16_t>> layers;
+    {
+      std::deque<std::pair<uint16_t, uint16_t>> vertexQueue = {std::pair<uint16_t, uint16_t>(minDistSqIndex, 0)};
+      std::vector<bool> vertexSeenIndex(vertex_count, false);
+      vertexSeenIndex[minDistSqIndex] = true;
+      while (vertexQueue.size() > 0) {
+        const std::pair<uint16_t, uint16_t> &entry = vertexQueue.front();
+        const uint16_t &vertexIndex = entry.first;
+        const uint16_t &depth = entry.second;
+        if (!(depth < layers.size())) {
+          layers.push_back(std::vector<uint16_t>());
+        }
+        layers[depth].push_back(vertexIndex);
+
+        const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
+        for (size_t j = 0; j < connectedIndices.size(); j++) {
+          const uint16_t connectedIndex = connectedIndices[j];
+          const uint16_t &a = index[connectedIndex * 3];
+          if (!vertexSeenIndex[a]) {
+            vertexQueue.push_back(std::pair<uint16_t, uint16_t>(a, depth + 1));
+            vertexSeenIndex[a] = true;
+          }
+          const uint16_t &b = index[connectedIndex * 3 + 1];
+          if (!vertexSeenIndex[b]) {
+            vertexQueue.push_back(std::pair<uint16_t, uint16_t>(b, depth + 1));
+            vertexSeenIndex[b] = true;
+          }
+          const uint16_t &c = index[connectedIndex * 3 + 2];
+          if (!vertexSeenIndex[c]) {
+            vertexQueue.push_back(std::pair<uint16_t, uint16_t>(c, depth + 1));
+            vertexSeenIndex[c] = true;
+          }
+        }
+        
+        vertexQueue.pop_front();
+      }
+    }
+    
+    for (size_t depth = 0; depth < layers.size(); depth++) {
+      const std::vector<uint16_t> &layer = layers[depth];
+      
+      for (size_t radialIndex = 0; radialIndex < layer.size(); radialIndex++) {
+        const uint16_t vertexIndex = layer[radialIndex];
+        result[vertexIndex] = Uv{
+          0.5f + (std::cos(-(float)radialIndex/(float)layer.size() + (float)M_PI/2.0f) * (float)depth/(float)layers.size()) / 2.0f,
+          0.5f + (std::sin(-(float)radialIndex/(float)layer.size() + (float)M_PI/2.0f) * (float)depth/(float)layers.size()) / 2.0f
+        };
+      }
     }
   }
 
