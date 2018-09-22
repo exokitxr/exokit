@@ -15,6 +15,7 @@
 #include <dlfcn.h>
 #include <cmath>
 #include <vector>
+#include <deque>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -94,21 +95,30 @@ public:
   uint32_t modifier_mask;
 };
 
+class Uv {
+public:
+  float u;
+  float v;
+};
+
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer);
+  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged);
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> &uvs, bool isNew, bool isUnchanged);
 
   GLuint positionBuffer;
   GLuint normalBuffer;
+  GLuint uvBuffer;
   GLuint indexBuffer;
   float *positions;
   uint32_t numPositions;
   float *normals;
   uint16_t *indices;
   uint16_t numIndices;
+  float *uvs;
+  uint32_t numUvs;
   bool isNew;
   bool isUnchanged;
 };
