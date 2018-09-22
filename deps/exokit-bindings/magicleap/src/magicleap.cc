@@ -2825,7 +2825,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
           } else {
             GLuint buffers[4];
             glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2], buffers[3]);
+            GLuint texture;
+            glGenTextures(1, &texture);
+            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2], buffers[3], texture);
             meshBuffer = &meshBuffers[id];
           }
 
@@ -2843,6 +2845,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               meshBuffer->indexBuffer,
             };
             glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
+            glDeleteTextures(1, &meshBuffer->texture);
             meshBuffers.erase(iter);
           }
         }
