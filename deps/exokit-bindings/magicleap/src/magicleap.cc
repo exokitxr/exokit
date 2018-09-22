@@ -2623,6 +2623,14 @@ const MLVec3f &longestVector(const MLVec3f &a, const MLVec3f &b, const MLVec3f &
     return c;
   }
 }
+class LayerQueueEntry {
+public:
+  uint16_t vertexIndex;
+  unsigned int depth;
+  size_t radialIndex;
+  float radiusStart;
+  float radiusEnd;
+};
 const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count) {
   std::vector<std::vector<uint16_t>> triangles(vertex_count); // vertex -> list of indices
   std::vector<MLVec3f> faceNormals(index_count); // index -> face normal
@@ -2660,7 +2668,7 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
           const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
           for (size_t j = 0; j < connectedIndices.size(); j++) {
             const uint16_t &connectedIndex = connectedIndices[j];
-            
+
             const uint16_t &a = index[connectedIndex * 3];
             if (a != vertexIndex) {
               connectedVertices.push_back(a);
@@ -2685,7 +2693,7 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
               vertexQueue.push_back(c);
               vertexSeenIndex[c] = true;
             }
-            
+
             vertexNormal = addVectors(vertexNormal, faceNormals[connectedIndex]);
           }
           vertexNormal = divideVector(vertexNormal, (float)connectedIndices.size());
@@ -2720,9 +2728,9 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
     }
   }
 
-  // compute uvs
   std::vector<Uv> result(vertex_count);
   for (size_t i = 0; i < islands.size(); i++) {
+    // find center
     const std::vector<uint16_t> &island = islands[i];
     MLVec3f max = {
       -1000.0f,
@@ -2734,7 +2742,6 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
       1000.0f,
       1000.0f
     };
-
     for (size_t j = 0; j < island.size(); j++) {
       uint16_t vertexIndex = island[j];
       const MLVec3f &v = vertex[vertexIndex];
@@ -2745,7 +2752,6 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
       if (v.y > max.y) max.y = v.y;
       if (v.z > max.z) max.z = v.z;
     }
-
     const MLVec3f center = {
       (min.x + max.x) / 2,
       (min.y + max.y) / 2,
@@ -2768,25 +2774,27 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
       }
     }
 
-    std::vector<std::vector<uint16_t>> layers;
+    // find max depth from center
+    unsigned int maxDepth = 0;
     {
-      std::deque<std::pair<uint16_t, uint16_t>> vertexQueue = {std::pair<uint16_t, uint16_t>(minDistSqIndex, 0)};
+      std::deque<std::pair<uint16_t, uint16_t>> vertexQueue = {std::pair<uint16_t, unsigned int>(minDistSqIndex, 0)};
       std::vector<bool> vertexSeenIndex(vertex_count, false);
       vertexSeenIndex[minDistSqIndex] = true;
+
       while (vertexQueue.size() > 0) {
-        const std::pair<uint16_t, uint16_t> &entry = vertexQueue.front();
+        const std::pair<uint16_t, unsigned int> &entry = vertexQueue.front();
         const uint16_t &vertexIndex = entry.first;
-        const uint16_t &depth = entry.second;
-        if (!(depth < layers.size())) {
-          layers.push_back(std::vector<uint16_t>());
+        const unsigned int &depth = entry.second;
+
+        if (depth > maxDepth) {
+          maxDepth = depth;
         }
-        layers[depth].push_back(vertexIndex);
 
         const std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
         for (size_t j = 0; j < connectedVertices.size(); j++) {
           const uint16_t connectedVertex = connectedVertices[j];
           if (!vertexSeenIndex[connectedVertex]) {
-            vertexQueue.push_back(std::pair<uint16_t, uint16_t>(connectedVertex, depth + 1));
+            vertexQueue.push_back(std::pair<uint16_t, unsigned int>{connectedVertex, depth + 1});
             vertexSeenIndex[connectedVertex] = true;
           }
         }
@@ -2795,15 +2803,49 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
       }
     }
 
-    for (size_t depth = 0; depth < layers.size(); depth++) {
-      const std::vector<uint16_t> &layer = layers[depth];
+    // compute uvs
+    {
+      std::deque<LayerQueueEntry> vertexQueue = {
+        LayerQueueEntry{minDistSqIndex, 0, 0, 0, (float)M_PI*2.0f},
+      };
+      std::vector<bool> vertexSeenIndex(vertex_count, false);
+      vertexSeenIndex[minDistSqIndex] = true;
+      while (vertexQueue.size() > 0) {
+        const LayerQueueEntry &entry = vertexQueue.front();
+        const uint16_t &vertexIndex = entry.vertexIndex;
+        const unsigned int &depth = entry.depth;
+        const size_t &radialIndex = entry.radialIndex;
+        const float &radiusStart = entry.radiusStart;
+        float radiusEnd = entry.radiusEnd;
 
-      for (size_t radialIndex = 0; radialIndex < layer.size(); radialIndex++) {
-        const uint16_t vertexIndex = layer[radialIndex];
+        const std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
+        const float radiusSliceWidth = 1.0f/(float)(connectedVertices.size()-1) * (radiusEnd - radiusStart);
+        if (radiusSliceWidth > (float)M_PI/2.0f) {
+          radiusEnd = radiusStart + ((radiusEnd - radiusStart) / (radiusSliceWidth / (float)M_PI/2.0f));
+        }
+
+        float angle = radiusStart + ((float)radialIndex/(float)(connectedVertices.size()-1)) * (radiusEnd - radiusStart);
+        angle = -angle + (float)M_PI/2.0f;
         result[vertexIndex] = Uv{
-          0.5f + (std::cos(-(float)radialIndex/(float)layer.size() + (float)M_PI/2.0f) * (float)depth/(float)layers.size()) / 2.0f,
-          0.5f + (std::sin(-(float)radialIndex/(float)layer.size() + (float)M_PI/2.0f) * (float)depth/(float)layers.size()) / 2.0f
+          0.5f + std::cos(angle) * (float)depth/(float)maxDepth / 2.0f,
+          0.5f + std::sin(angle) * (float)depth/(float)maxDepth / 2.0f
         };
+
+        for (size_t j = 0; j < connectedVertices.size(); j++) {
+          const uint16_t connectedVertex = connectedVertices[j];
+          if (!vertexSeenIndex[connectedVertex]) {
+            vertexQueue.push_back(LayerQueueEntry{
+              connectedVertex,
+              depth + 1,
+              j,
+              radiusStart + (float)j / (float)(connectedVertices.size()-1) * (radiusEnd - radiusStart),
+              radiusStart + (float)(j+1) / (float)(connectedVertices.size()-1) * (radiusEnd - radiusStart)
+            });
+            vertexSeenIndex[connectedVertex] = true;
+          }
+        }
+
+        vertexQueue.pop_front();
       }
     }
   }
