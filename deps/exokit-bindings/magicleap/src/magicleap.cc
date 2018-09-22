@@ -1329,7 +1329,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
   if (!cameraConvertPending) {
     MLHandle output;
     MLResult result = MLCameraGetPreviewStream(&output);
-    if (result == MLResult_Ok) {    
+    if (result == MLResult_Ok) {
       ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
 
       MLContext *mlContext = application_context.mlContext;
@@ -1597,7 +1597,7 @@ NAN_METHOD(MLContext::Present) {
   unsigned int halfWidth = renderTargetsInfo.buffers[0].color.width;
   unsigned int width = halfWidth * 2;
   unsigned int height = renderTargetsInfo.buffers[0].color.height;
-  
+
   // std::cout << "render info " << halfWidth << " " << height << std::endl;
 
   GLuint fbo;
@@ -2520,8 +2520,35 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 }
 
+const MLVec3f &I = {1,0,0};
+const MLVec3f &J = {0,1,0};
+const MLVec3f &K = {0,0,1};
+float approxAtan2(float y, float x) {
+  int o = 0;
+  if (y < 0) { x = -x; y = -y; o |= 4; }
+  if (x <= 0) { float t = x; x = y; y = -t; o |= 2; }
+  if (x <= y) { float t = y - x; x += y; y = t; o |= 1; }
+  return o + y / x;
+}
+float getNormalSortKey(const MLVec3f &r, const MLVec3f &c, const MLVec3f &n, const MLVec3f &pp, const MLVec3f &qp) {
+  const MLVec3f &rmc = subVectors(r, c);
+  return approxAtan2(dotVectors(n, crossVectors(rmc, pp)), dotVectors(n, crossVectors(rmc, qp)));
+}
+const MLVec3f &longestVector(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) {
+  const float aLength = vectorLengthSq(a);
+  const float bLength = vectorLengthSq(b);
+  const float cLength = vectorLengthSq(c);
+  if (aLength >= bLength && aLength >= cLength) {
+    return a;
+  } else if (bLength >= aLength && bLength >= cLength) {
+    return b;
+  } else {
+    return c;
+  }
+}
 const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count) {
   std::vector<std::vector<uint16_t>> triangles(vertex_count); // vertex -> list of indices
+  std::vector<MLVec3f> faceNormals(index_count); // index -> face normal
   for (uint16_t i = 0; i < index_count / 3; i++) {
     const uint16_t &a = index[i * 3];
     triangles[a].push_back(i);
@@ -2529,6 +2556,8 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
     triangles[b].push_back(i);
     const uint16_t &c = index[i * 3 + 2];
     triangles[c].push_back(i);
+
+    faceNormals[i] = getTriangleNormal(vertex[a], vertex[b], vertex[c]);
   }
 
   std::vector<std::vector<uint16_t>> islands; // list of lists of connected vertices
@@ -2544,27 +2573,59 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
         while (vertexQueue.size() > 0) {
           const uint16_t &vertexIndex = vertexQueue.front();
 
+          // add current vertex to island
           island.push_back(vertexIndex);
 
+          // compute vertex normal
           const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
+          MLVec3f vertexNormal = {0,0,0};
+          for (size_t j = 0; j < connectedIndices.size(); j++) {
+            const uint16_t &connectedIndex = connectedIndices[j];
+            const MLVec3f &faceNormal = faceNormals[connectedIndex];
+            vertexNormal = addVectors(vertexNormal, faceNormal);
+          }
+          vertexNormal = divideVector(vertexNormal, (float)connectedIndices.size());
+
+          // get connected indices
+          std::vector<uint16_t> sortedConnectedIndices;
           for (size_t j = 0; j < connectedIndices.size(); j++) {
             const uint16_t connectedIndex = connectedIndices[j];
             const uint16_t &a = index[connectedIndex * 3];
             if (!vertexSeenIndex[a]) {
               vertexQueue.push_back(a);
+              sortedConnectedIndices.push_back(a);
               vertexSeenIndex[a] = true;
             }
             const uint16_t &b = index[connectedIndex * 3 + 1];
             if (!vertexSeenIndex[b]) {
               vertexQueue.push_back(b);
+              sortedConnectedIndices.push_back(b);
               vertexSeenIndex[b] = true;
             }
             const uint16_t &c = index[connectedIndex * 3 + 2];
             if (!vertexSeenIndex[c]) {
               vertexQueue.push_back(c);
+              sortedConnectedIndices.push_back(c);
               vertexSeenIndex[c] = true;
             }
           }
+
+          // sort connected indices clockwise
+          const MLVec3f &c = vertex[vertexIndex];
+          const MLVec3f &n = vertexNormal;
+          const MLVec3f &ni = crossVectors(n, I);
+          const MLVec3f &nj = crossVectors(n, J);
+          const MLVec3f &nk = crossVectors(n, K);
+          const MLVec3f &pp = longestVector(ni, nj, nk);
+          const MLVec3f &qp = crossVectors(n, pp);
+          std::sort(sortedConnectedIndices.begin(), sortedConnectedIndices.end(), [&](uint16_t aIndex, uint16_t bIndex) -> bool {
+            const MLVec3f &a = vertex[aIndex];
+            const MLVec3f &b = vertex[bIndex];
+            return getNormalSortKey(a, c, n, pp, qp) - getNormalSortKey(b, c, n, pp, qp);
+          });
+
+          // replace connected indices
+          triangles[vertexIndex] = std::move(sortedConnectedIndices);
 
           vertexQueue.pop_front();
         }
@@ -2655,14 +2716,14 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
             vertexSeenIndex[c] = true;
           }
         }
-        
+
         vertexQueue.pop_front();
       }
     }
-    
+
     for (size_t depth = 0; depth < layers.size(); depth++) {
       const std::vector<uint16_t> &layer = layers[depth];
-      
+
       for (size_t radialIndex = 0; radialIndex < layer.size(); radialIndex++) {
         const uint16_t vertexIndex = layer[radialIndex];
         result[vertexIndex] = Uv{
