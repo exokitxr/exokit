@@ -1983,8 +1983,7 @@ NAN_METHOD(MLContext::Present) {
   if (MLMeshingInitSettings(&meshingSettings) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to initialize meshing settings", application_name);
   }
-  meshingSettings.flags |= MLMeshingFlags_ComputeNormals;
-  // meshingSettings.flags |= MLMeshingFlags_Planarize;
+  meshingSettings.flags |= MLMeshingFlags_ComputeNormals | MLMeshingFlags_RemoveMeshSkirt;
   {
     MLResult result = MLMeshingCreateClient(&meshTracker, &meshingSettings);
     if (result != MLResult_Ok) {
@@ -2638,6 +2637,7 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
     faceNormals[i] = getTriangleNormal(vertex[a], vertex[b], vertex[c]);
   }
 
+  std::vector<std::vector<uint16_t>> adjacentVertices(vertex_count); // vertex -> list of vertices
   std::vector<std::vector<uint16_t>> islands; // list of lists of connected vertices
   {
     std::vector<bool> vertexSeenIndex(vertex_count, false);
@@ -2654,41 +2654,43 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
           // add current vertex to island
           island.push_back(vertexIndex);
 
-          // compute vertex normal
-          const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
+          // get connected indices
+          std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
           MLVec3f vertexNormal = {0,0,0};
+          const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
           for (size_t j = 0; j < connectedIndices.size(); j++) {
             const uint16_t &connectedIndex = connectedIndices[j];
-            const MLVec3f &faceNormal = faceNormals[connectedIndex];
-            vertexNormal = addVectors(vertexNormal, faceNormal);
-          }
-          vertexNormal = divideVector(vertexNormal, (float)connectedIndices.size());
-
-          // get connected indices
-          std::vector<uint16_t> sortedConnectedIndices;
-          for (size_t j = 0; j < connectedIndices.size(); j++) {
-            const uint16_t connectedIndex = connectedIndices[j];
+            
             const uint16_t &a = index[connectedIndex * 3];
+            if (a != vertexIndex) {
+              connectedVertices.push_back(a);
+            }
             if (!vertexSeenIndex[a]) {
               vertexQueue.push_back(a);
-              sortedConnectedIndices.push_back(a);
               vertexSeenIndex[a] = true;
             }
             const uint16_t &b = index[connectedIndex * 3 + 1];
+            if (b != vertexIndex) {
+              connectedVertices.push_back(b);
+            }
             if (!vertexSeenIndex[b]) {
               vertexQueue.push_back(b);
-              sortedConnectedIndices.push_back(b);
               vertexSeenIndex[b] = true;
             }
             const uint16_t &c = index[connectedIndex * 3 + 2];
+            if (c != vertexIndex) {
+              connectedVertices.push_back(c);
+            }
             if (!vertexSeenIndex[c]) {
               vertexQueue.push_back(c);
-              sortedConnectedIndices.push_back(c);
               vertexSeenIndex[c] = true;
             }
+            
+            vertexNormal = addVectors(vertexNormal, faceNormals[connectedIndex]);
           }
+          vertexNormal = divideVector(vertexNormal, (float)connectedIndices.size());
 
-          // sort connected indices clockwise
+          // sort connected vertices clockwise
           const MLVec3f &c = vertex[vertexIndex];
           const MLVec3f &n = vertexNormal;
           const MLVec3f &ni = crossVectors(n, I);
@@ -2696,14 +2698,19 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
           const MLVec3f &nk = crossVectors(n, K);
           const MLVec3f &pp = longestVector(ni, nj, nk);
           const MLVec3f &qp = crossVectors(n, pp);
-          std::sort(sortedConnectedIndices.begin(), sortedConnectedIndices.end(), [&](uint16_t aIndex, uint16_t bIndex) -> bool {
-            const MLVec3f &a = vertex[aIndex];
-            const MLVec3f &b = vertex[bIndex];
-            return getNormalSortKey(a, c, n, pp, qp) - getNormalSortKey(b, c, n, pp, qp);
+          std::vector<std::pair<uint16_t, float>> connectedVerticesSorts(connectedVertices.size());
+          for (size_t j = 0; j < connectedVertices.size(); j++) {
+            const uint16_t &vertexIndex = connectedVertices[j];
+            const MLVec3f &v = vertex[vertexIndex];
+            const float sortKey = getNormalSortKey(v, c, n, pp, qp);
+            connectedVerticesSorts[j] = std::pair<uint16_t, float>(vertexIndex, sortKey);
+          }
+          std::sort(connectedVerticesSorts.begin(), connectedVerticesSorts.end(), [](const std::pair<uint16_t, float> &a, const std::pair<uint16_t, float> &b) -> bool {
+            return a.second < b.second;
           });
-
-          // replace connected indices
-          triangles[vertexIndex] = std::move(sortedConnectedIndices);
+          for (size_t j = 0; j < connectedVertices.size(); j++) {
+            connectedVertices[j] = connectedVerticesSorts[j].first;
+          }
 
           vertexQueue.pop_front();
         }
@@ -2775,23 +2782,12 @@ const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *i
         }
         layers[depth].push_back(vertexIndex);
 
-        const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
-        for (size_t j = 0; j < connectedIndices.size(); j++) {
-          const uint16_t connectedIndex = connectedIndices[j];
-          const uint16_t &a = index[connectedIndex * 3];
-          if (!vertexSeenIndex[a]) {
-            vertexQueue.push_back(std::pair<uint16_t, uint16_t>(a, depth + 1));
-            vertexSeenIndex[a] = true;
-          }
-          const uint16_t &b = index[connectedIndex * 3 + 1];
-          if (!vertexSeenIndex[b]) {
-            vertexQueue.push_back(std::pair<uint16_t, uint16_t>(b, depth + 1));
-            vertexSeenIndex[b] = true;
-          }
-          const uint16_t &c = index[connectedIndex * 3 + 2];
-          if (!vertexSeenIndex[c]) {
-            vertexQueue.push_back(std::pair<uint16_t, uint16_t>(c, depth + 1));
-            vertexSeenIndex[c] = true;
+        const std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
+        for (size_t j = 0; j < connectedVertices.size(); j++) {
+          const uint16_t connectedVertex = connectedVertices[j];
+          if (!vertexSeenIndex[connectedVertex]) {
+            vertexQueue.push_back(std::pair<uint16_t, uint16_t>(connectedVertex, depth + 1));
+            vertexSeenIndex[connectedVertex] = true;
           }
         }
 
