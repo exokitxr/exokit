@@ -6,6 +6,14 @@ namespace ml {
 
 // util
 
+MLVec3f addVectors(const MLVec3f &a, const MLVec3f &b) {
+  return MLVec3f{
+    a.x + b.x,
+    a.y + b.y,
+    a.z + b.z
+  };
+}
+
 MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
   return MLVec3f{
     a.x - b.x,
