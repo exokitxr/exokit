@@ -1539,30 +1539,30 @@ uniform samplerExternalOES cameraInTexture;\n\
 in vec3 position;\n\
 in vec2 uv;\n\
 in vec2 index;\n\
-out vec2 vPosition;\n\
+out vec2 vUv;\n\
 flat out uint vIndex;\n\
 \n\
 void main() {\n\
-  vPosition = (projectionMatrix * modelViewMatrix * vec4(position, 1.0)).xy;\n\
+  vUv = (projectionMatrix * modelViewMatrix * vec4(position, 1.0)).xy / 2.0 + 0.5;\n\
   vIndex = index;\n\
-  gl_Position = vec4(vUv, 0.0, 1.0);\n\
+  gl_Position = vec4((uv - 0.5) * 2.0, 0.0, 1.0);\n\
 }\n\
 ";
 const char *cameraMeshFsh2 = "\
 #version 330\n\
 #extension GL_OES_EGL_image_external : enable\n\
 \n\
-out vec2 vPosition;\n\
+in vec2 vUv;\n\
 flat in uint vIndex;\n\
 out vec4 fragColor;\n\
 \n\
 uniform samplerExternalOES cameraInTexture;\n\
 \n\
 void main() {\n\
-  vec4 indexFloat = texture2D(cameraMesh1Texture, vPosition);\n\
+  vec4 indexFloat = texture2D(cameraMesh1Texture, vUv);\n\
   uint index = uint(indexFloat.r * 256.0 * 256.0) + uint(indexFloat.g * 256.0) + uint(indexFloat.b);\n\
   if (index == vIndex) {\n\
-    fragColor = texture2D(cameraInTexture, vPosition);\n\
+    fragColor = texture2D(cameraInTexture, vUv);\n\
   } else {\n\
     discard;\n\
   }\n\
