@@ -279,11 +279,12 @@ static void onUnloadResources(void* application_context) {
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer) :
+MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint texture) :
   positionBuffer(positionBuffer),
   normalBuffer(normalBuffer),
   uvBuffer(uvBuffer),
   indexBuffer(indexBuffer),
+  texture(texture),
   positions(nullptr),
   numPositions(0),
   normals(nullptr),
@@ -299,6 +300,7 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   normalBuffer = meshBuffer.normalBuffer;
   uvBuffer = meshBuffer.uvBuffer;
   indexBuffer = meshBuffer.indexBuffer;
+  texture = meshBuffer.texture;
   positions = meshBuffer.positions;
   numPositions = meshBuffer.numPositions;
   normals = meshBuffer.normals;
