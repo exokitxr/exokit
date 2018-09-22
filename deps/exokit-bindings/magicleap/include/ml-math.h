@@ -9,6 +9,7 @@ namespace ml {
 
 // util
 
+MLVec3f addVectors(const MLVec3f &a, const MLVec3f &b);
 MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b);
 MLVec3f multiplyVector(const MLVec3f &v, float l);
 MLVec3f divideVector(const MLVec3f &v, float l);
