@@ -105,7 +105,7 @@ public:
 
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer);
+  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint texture;);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
   void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> &uvs, bool isNew, bool isUnchanged);
@@ -114,6 +114,7 @@ public:
   GLuint normalBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;
+  GLuint texture;
   float *positions;
   uint32_t numPositions;
   float *normals;
