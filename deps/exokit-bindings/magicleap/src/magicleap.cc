@@ -1493,6 +1493,79 @@ void main() {\n\
   }\n\
 }\n\
 ";
+
+// camera mesh shader
+const char *cameraMeshVsh1 = "\
+#version 330\n\
+\n\
+uniform mat4 projectionMatrix;\n\
+uniform mat4 modelViewMatrix;\n\
+\n\
+in vec3 position;\n\
+in uint index;\n\
+flat out uint vIndex;\n\
+\n\
+void main() {\n\
+  vIndex = index;\n\
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n\
+}\n\
+";
+const char *cameraMeshFsh1 = "\
+#version 330\n\
+\n\
+flat in uint vIndex;\n\
+out vec4 fragColor;\n\
+\n\
+void main() {\n\
+  float f = float(index);\n\
+  float b = floor(mod(f, 256.0));\n\
+  f = (f - b) / 256.0;\n\
+  float g = floor(mod(f, 256.0));\n\
+  f = (f - g) / 256.0;\n\
+  float r = floor(mod(f, 256.0));\n\
+  fragColor = vec4(r, g, b, 1.0);\n\
+}\n\
+";
+const char *cameraMeshVsh2 = "\
+#version 330\n\
+\n\
+uniform mat4 projectionMatrix;\n\
+uniform mat4 modelViewMatrix;\n\
+uniform sampler2D cameraMesh1Texture;\n\
+uniform samplerExternalOES cameraInTexture;\n\
+\n\
+in vec3 position;\n\
+in vec2 uv;\n\
+in vec2 index;\n\
+out vec2 vPosition;\n\
+flat out uint vIndex;\n\
+\n\
+void main() {\n\
+  vPosition = (projectionMatrix * modelViewMatrix * vec4(position, 1.0)).xy;\n\
+  vIndex = index;\n\
+  gl_Position = vec4(vUv, 0.0, 1.0);\n\
+}\n\
+";
+const char *cameraMeshFsh2 = "\
+#version 330\n\
+#extension GL_OES_EGL_image_external : enable\n\
+\n\
+out vec2 vPosition;\n\
+flat in uint vIndex;\n\
+out vec4 fragColor;\n\
+\n\
+uniform samplerExternalOES cameraInTexture;\n\
+\n\
+void main() {\n\
+  vec4 indexFloat = texture2D(cameraMesh1Texture, vPosition);\n\
+  uint index = uint(indexFloat.r * 256.0 * 256.0) + uint(indexFloat.g * 256.0) + uint(indexFloat.b);\n\
+  if (index == vIndex) {\n\
+    fragColor = texture2D(cameraInTexture, vPosition);\n\
+  } else {\n\
+    discard;\n\
+  }\n\
+}\n\
+";
 NAN_METHOD(MLContext::InitLifecycle) {
   if (info[0]->IsFunction() && info[1]->IsFunction()) {
     eventsCb.Reset(Local<Function>::Cast(info[0]));
