@@ -1983,7 +1983,7 @@ NAN_METHOD(MLContext::Present) {
   if (MLMeshingInitSettings(&meshingSettings) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to initialize meshing settings", application_name);
   }
-  meshingSettings.flags |= MLMeshingFlags_ComputeNormals | MLMeshingFlags_RemoveMeshSkirt;
+  meshingSettings.flags |= MLMeshingFlags_ComputeNormals /* | MLMeshingFlags_RemoveMeshSkirt */;
   {
     MLResult result = MLMeshingCreateClient(&meshTracker, &meshingSettings);
     if (result != MLResult_Ok) {
