@@ -41,6 +41,8 @@
 #include "ml-window.h"
 #include "sjpeg.h"
 
+#define M_PI 3.14159265358979323846
+
 using namespace v8;
 using namespace node;
 
