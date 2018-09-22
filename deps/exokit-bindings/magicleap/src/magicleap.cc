@@ -1425,6 +1425,7 @@ void RunCameraConvertInMainThread(uv_async_t *handle) {
   cameraConvertPending = false;
 }
 
+// mesh depth shader
 const char *meshVsh = "\
 #version 330\n\
 \n\
@@ -1446,6 +1447,8 @@ void main() {\n\
   fragColor = vec4(1.0);\n\
 }\n\
 ";
+
+// camera stream shader
 const char *cameraVsh = "\
 #version 330\n\
 \n\
