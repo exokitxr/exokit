@@ -2880,6 +2880,9 @@ NAN_METHOD(WebGLRenderingContext::BufferData) {
       size_t srcOffset = info[3]->Uint32Value() * getArrayBufferViewElementSize(arrayBufferView);
       data += srcOffset;
       size = info[4]->IsNumber() ? info[4]->Uint32Value() : 0;
+      if (size == 0) {
+        size = arrayBufferView->ByteLength() - srcOffset;
+      }
     } else {
       size = arrayBufferView->ByteLength();
     }
@@ -2920,6 +2923,9 @@ NAN_METHOD(WebGLRenderingContext::BufferSubData) {
       size_t srcOffset = info[3]->Uint32Value() * getArrayBufferViewElementSize(arrayBufferView);
       data += srcOffset;
       size = info[4]->IsNumber() ? info[4]->Uint32Value() : 0;
+      if (size == 0) {
+        size = arrayBufferView->ByteLength() - srcOffset;
+      }
     } else {
       size = arrayBufferView->ByteLength();
     }
