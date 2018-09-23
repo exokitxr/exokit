@@ -64,7 +64,7 @@ mldb log exokit:*
 
 ```
 ls ./cert/app.{cert,privkey} # place Magic Leap certificate here
-./build-ml.sh # run from Ubuntu bash on Windows
+./scripts/build-ml.sh # run from Ubuntu bash on Windows
 "$MLSDK/tools/debug/debug.py" --deploy-mpk ./build/magicleap/exokit.mpk ./build/magicleap/program-device/release_lumin_clang-3.8_aarch64/program-device --env "ARGS=node . examples/hello_ml.html" # or URL to load
 ```
 
