@@ -35,9 +35,6 @@ Nan::Persistent<Function> mlPlaneTrackerConstructor;
 Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
 
-std::thread cameraRequestThread;
-std::mutex cameraRequestMutex;
-std::condition_variable  cameraRequestConditionVariable;
 // std::mutex cameraRequestsMutex;
 // std::mutex cameraResponseMutex;
 std::vector<CameraRequest *> cameraRequests;
