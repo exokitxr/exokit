@@ -280,10 +280,9 @@ public:
   // camera
   GLuint cameraVao;
   GLuint cameraVertex;
-  GLuint cameraFragment;
   GLuint cameraProgram;
-  GLint pointLocation;
-  GLint uvLocation;
+  GLint cameraPointLocation;
+  GLint cameraUvLocation;
   GLint cameraInTextureLocation;
   GLint contentTextureLocation;
   GLuint pointBuffer;
@@ -293,6 +292,29 @@ public:
   GLuint contentTexture;
   GLuint cameraOutTexture;
   GLuint cameraFbo;
+
+  GLuint cameraMeshFbo;
+  GLuint cameraMeshTexture;
+  GLuint cameraMeshDepthTexture;
+
+  GLuint cameraMeshVao1;
+  GLuint cameraMeshProgram1;
+  GLuint cameraMeshPositionLocation1;
+  GLuint cameraMeshIndexLocation1;
+  GLuint cameraMeshModelViewMatrixLocation1;
+  GLuint cameraMeshProjectionMatrixLocation1;
+
+  GLuint cameraMeshFbo2;
+  GLuint cameraMeshDepthTexture2;
+  GLuint cameraMeshVao2;
+  GLuint cameraMeshProgram2;
+  GLuint cameraMeshPositionLocation2;
+  GLuint cameraMeshUvLocation2;
+  GLuint cameraMeshIndexLocation2;
+  GLuint cameraMeshModelViewMatrixLocation2;
+  GLuint cameraMeshProjectionMatrixLocation2;
+  GLuint cameraMeshPrevStageTextureLocation2;
+  GLuint cameraMeshCameraInTextureLocation2;
 
   // occlusion
   // MLHandle occlusionTracker;
