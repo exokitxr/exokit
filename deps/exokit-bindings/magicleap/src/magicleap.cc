@@ -1516,13 +1516,11 @@ flat in uint vIndex;\n\
 out vec4 fragColor;\n\
 \n\
 void main() {\n\
-  float f = float(index);\n\
+  float f = float(vIndex);\n\
   float b = floor(mod(f, 256.0));\n\
   f = (f - b) / 256.0;\n\
   float g = floor(mod(f, 256.0));\n\
-  f = (f - g) / 256.0;\n\
-  float r = floor(mod(f, 256.0));\n\
-  fragColor = vec4(r, g, b, 1.0);\n\
+  fragColor = vec4(0.0, g/255.0, b/255.0, 1.0);\n\
 }\n\
 ";
 const char *cameraMeshVsh2 = "\
@@ -1530,18 +1528,16 @@ const char *cameraMeshVsh2 = "\
 \n\
 uniform mat4 projectionMatrix;\n\
 uniform mat4 modelViewMatrix;\n\
-uniform sampler2D cameraMesh1Texture;\n\
-uniform samplerExternalOES cameraInTexture;\n\
 \n\
 in vec3 position;\n\
 in vec2 uv;\n\
-in vec2 index;\n\
+// in uint index;\n\
 out vec2 vUv;\n\
-flat out uint vIndex;\n\
+// flat out uint vIndex;\n\
 \n\
 void main() {\n\
   vUv = (projectionMatrix * modelViewMatrix * vec4(position, 1.0)).xy / 2.0 + 0.5;\n\
-  vIndex = index;\n\
+  // vIndex = index;\n\
   gl_Position = vec4((uv - 0.5) * 2.0, 0.0, 1.0);\n\
 }\n\
 ";
@@ -1553,13 +1549,14 @@ uniform sampler2D prevStageTexture;\n\
 uniform samplerExternalOES cameraInTexture;\n\
 \n\
 in vec2 vUv;\n\
-flat in uint vIndex;\n\
+// flat in uint vIndex;\n\
 out vec4 fragColor;\n\
 \n\
 void main() {\n\
-  vec4 indexFloat = texture2D(cameraMesh1Texture, vUv);\n\
-  uint index = uint(indexFloat.r * 256.0 * 256.0) + uint(indexFloat.g * 256.0) + uint(indexFloat.b);\n\
-  if (index == vIndex) {\n\
+  // vec4 indexFloat = texture2D(prevStageTexture, vUv);\n\
+  // uint index = uint(floor(indexFloat.g * 256.0 * 255.0)) + uint(floor(indexFloat.b  * 255.0));\n\
+  // if (index == vIndex) {\n\
+  if (texture2D(prevStageTexture, vUv).r > 0.0) {\n\
     fragColor = texture2D(cameraInTexture, vUv);\n\
   } else {\n\
     discard;\n\
