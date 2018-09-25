@@ -35,6 +35,7 @@ Nan::Persistent<Function> mlPlaneTrackerConstructor;
 Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
 
+bool cameraConnected = false;
 // std::mutex cameraRequestsMutex;
 // std::mutex cameraResponseMutex;
 std::vector<CameraRequest *> cameraRequests;
@@ -89,6 +90,7 @@ MLEyeTrackingState eyeState;
 MLEyeTrackingStaticData eyeStaticData;
 
 bool depthEnabled = false;
+bool cameraMeshEnabled = false;
 
 bool isPresent() {
   return lifecycle_status == MLResult_Ok;
@@ -276,12 +278,12 @@ static void onUnloadResources(void* application_context) {
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint texture) :
+MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer) :
   positionBuffer(positionBuffer),
   normalBuffer(normalBuffer),
   uvBuffer(uvBuffer),
   indexBuffer(indexBuffer),
-  texture(texture),
+  texture(0),
   positions(nullptr),
   numPositions(0),
   normals(nullptr),
@@ -310,12 +312,12 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
 }
 MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), uvBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), uvs(nullptr), numUvs(0), isNew(true), isUnchanged(false) {}
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> &uvs, bool isNew, bool isUnchanged) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged) {
   glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
-  glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(uvs[0]), uvs.data(), GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, uvs->size() * 2 * sizeof(float), uvs->data(), GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(normals[0]), normals, GL_DYNAMIC_DRAW);
@@ -328,8 +330,8 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->normals = normals;
   this->indices = indices;
   this->numIndices = numIndices;
-  this->uvs = (float *)uvs.data();
-  this->numUvs = uvs.size() * 2;
+  this->uvs = (float *)uvs->data();
+  this->numUvs = uvs->size() * 2;
   this->isNew = isNew;
   this->isUnchanged = isUnchanged;
 }
@@ -423,7 +425,6 @@ void MLMesher::Poll() {
 
           Local<Object> positionBuffer = Nan::New<Object>();
           positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
-
           obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.positions, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
           obj->Set(JS_STR("positionArray"), positionArray);
@@ -449,6 +450,16 @@ void MLMesher::Poll() {
           Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.indices, meshBuffer.numIndices * sizeof(uint16_t)), 0, meshBuffer.numIndices);
           obj->Set(JS_STR("indexArray"), indexArray);
           obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
+
+          Local<Value> textureVal;
+          if (meshBuffer.texture) {
+            Local<Object> textureObj = Nan::New<Object>();
+            textureObj->Set(JS_STR("id"), JS_INT(meshBuffer.texture));
+            textureVal = textureObj;
+          } else {
+            textureVal = Nan::Null();
+          }
+          obj->Set(JS_STR("texture"), textureVal);
 
           array->Set(numResults++, obj);
         } else {
@@ -1201,6 +1212,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
+  Nan::SetMethod(ctorFn, "RequestCameraMesh", RequestCameraMesh);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
   Nan::SetMethod(ctorFn, "PostPollEvents", PostPollEvents);
 
@@ -1690,33 +1702,32 @@ NAN_METHOD(MLContext::Present) {
 
   {
     // mesh shader
-
     glGenVertexArrays(1, &mlContext->meshVao);
 
     // vertex Shader
-    mlContext->meshVertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(mlContext->meshVertex, 1, &meshVsh, NULL);
-    glCompileShader(mlContext->meshVertex);
+    GLuint meshVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(meshVertex, 1, &meshVsh, NULL);
+    glCompileShader(meshVertex);
     GLint success;
-    glGetShaderiv(mlContext->meshVertex, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(meshVertex, GL_COMPILE_STATUS, &success);
     if (!success) {
       char infoLog[4096];
       GLsizei length;
-      glGetShaderInfoLog(mlContext->meshVertex, sizeof(infoLog), &length, infoLog);
+      glGetShaderInfoLog(meshVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
       std::cout << "ML mesh vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
     // fragment Shader
-    mlContext->meshFragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(mlContext->meshFragment, 1, &meshFsh, NULL);
-    glCompileShader(mlContext->meshFragment);
-    glGetShaderiv(mlContext->meshFragment, GL_COMPILE_STATUS, &success);
+    GLuint meshFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(meshFragment, 1, &meshFsh, NULL);
+    glCompileShader(meshFragment);
+    glGetShaderiv(meshFragment, GL_COMPILE_STATUS, &success);
     if (!success) {
       char infoLog[4096];
       GLsizei length;
-      glGetShaderInfoLog(mlContext->meshFragment, sizeof(infoLog), &length, infoLog);
+      glGetShaderInfoLog(meshFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
       std::cout << "ML mesh fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
@@ -1724,8 +1735,8 @@ NAN_METHOD(MLContext::Present) {
 
     // shader Program
     mlContext->meshProgram = glCreateProgram();
-    glAttachShader(mlContext->meshProgram, mlContext->meshVertex);
-    glAttachShader(mlContext->meshProgram, mlContext->meshFragment);
+    glAttachShader(mlContext->meshProgram, meshVertex);
+    glAttachShader(mlContext->meshProgram, meshFragment);
     glLinkProgram(mlContext->meshProgram);
     glGetProgramiv(mlContext->meshProgram, GL_LINK_STATUS, &success);
     if (!success) {
@@ -1737,57 +1748,56 @@ NAN_METHOD(MLContext::Present) {
       return;
     }
 
-    mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
-    if (mlContext->positionLocation == -1) {
+    mlContext->meshPositionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
+    if (mlContext->meshPositionLocation == -1) {
       std::cout << "ML mesh program failed to get attrib location for 'position'" << std::endl;
       return;
     }
-    mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
-    if (mlContext->modelViewMatrixLocation == -1) {
+    mlContext->meshModelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
+    if (mlContext->meshModelViewMatrixLocation == -1) {
       std::cout << "ML meshprogram failed to get uniform location for 'modelViewMatrix'" << std::endl;
       return;
     }
-    mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
-    if (mlContext->projectionMatrixLocation == -1) {
+    mlContext->meshProjectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
+    if (mlContext->meshProjectionMatrixLocation == -1) {
       std::cout << "ML mesh program failed to get uniform location for 'projectionMatrix'" << std::endl;
       return;
     }
 
     // delete the shaders as they're linked into our program now and no longer necessery
-    glDeleteShader(mlContext->meshVertex);
-    glDeleteShader(mlContext->meshFragment);
+    glDeleteShader(meshVertex);
+    glDeleteShader(meshFragment);
   }
 
   {
     // camera shader
-
     glGenVertexArrays(1, &mlContext->cameraVao);
     glBindVertexArray(mlContext->cameraVao);
 
     // vertex Shader
-    mlContext->cameraVertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(mlContext->cameraVertex, 1, &cameraVsh, NULL);
-    glCompileShader(mlContext->cameraVertex);
+    GLuint cameraVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(cameraVertex, 1, &cameraVsh, NULL);
+    glCompileShader(cameraVertex);
     GLint success;
-    glGetShaderiv(mlContext->cameraVertex, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(cameraVertex, GL_COMPILE_STATUS, &success);
     if (!success) {
       char infoLog[4096];
       GLsizei length;
-      glGetShaderInfoLog(mlContext->cameraVertex, sizeof(infoLog), &length, infoLog);
+      glGetShaderInfoLog(cameraVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
       std::cout << "ML camera vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
     // fragment Shader
-    mlContext->cameraFragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(mlContext->cameraFragment, 1, &cameraFsh, NULL);
-    glCompileShader(mlContext->cameraFragment);
-    glGetShaderiv(mlContext->cameraFragment, GL_COMPILE_STATUS, &success);
+    GLuint cameraFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(cameraFragment, 1, &cameraFsh, NULL);
+    glCompileShader(cameraFragment);
+    glGetShaderiv(cameraFragment, GL_COMPILE_STATUS, &success);
     if (!success) {
       char infoLog[4096];
       GLsizei length;
-      glGetShaderInfoLog(mlContext->cameraFragment, sizeof(infoLog), &length, infoLog);
+      glGetShaderInfoLog(cameraFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
       std::cout << "ML camera fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
@@ -1795,8 +1805,8 @@ NAN_METHOD(MLContext::Present) {
 
     // shader Program
     mlContext->cameraProgram = glCreateProgram();
-    glAttachShader(mlContext->cameraProgram, mlContext->cameraVertex);
-    glAttachShader(mlContext->cameraProgram, mlContext->cameraFragment);
+    glAttachShader(mlContext->cameraProgram, cameraVertex);
+    glAttachShader(mlContext->cameraProgram, cameraFragment);
     glLinkProgram(mlContext->cameraProgram);
     glGetProgramiv(mlContext->cameraProgram, GL_LINK_STATUS, &success);
     if (!success) {
@@ -1808,13 +1818,13 @@ NAN_METHOD(MLContext::Present) {
       return;
     }
 
-    mlContext->pointLocation = glGetAttribLocation(mlContext->cameraProgram, "point");
-    if (mlContext->pointLocation == -1) {
+    mlContext->cameraPointLocation = glGetAttribLocation(mlContext->cameraProgram, "point");
+    if (mlContext->cameraPointLocation == -1) {
       std::cout << "ML camera program failed to get attrib location for 'point'" << std::endl;
       return;
     }
-    mlContext->uvLocation = glGetAttribLocation(mlContext->cameraProgram, "uv");
-    if (mlContext->uvLocation == -1) {
+    mlContext->cameraUvLocation = glGetAttribLocation(mlContext->cameraProgram, "uv");
+    if (mlContext->cameraUvLocation == -1) {
       std::cout << "ML camera program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
@@ -1830,8 +1840,8 @@ NAN_METHOD(MLContext::Present) {
     }
 
     // delete the shaders as they're linked into our program now and no longer necessery
-    glDeleteShader(mlContext->cameraVertex);
-    glDeleteShader(mlContext->cameraFragment);
+    glDeleteShader(cameraVertex);
+    glDeleteShader(cameraFragment);
 
     glGenBuffers(1, &mlContext->pointBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, mlContext->pointBuffer);
@@ -1842,8 +1852,8 @@ NAN_METHOD(MLContext::Present) {
       1.0f, 1.0f,
     };
     glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(mlContext->pointLocation);
-    glVertexAttribPointer(mlContext->pointLocation, 2, GL_FLOAT, false, 0, 0);
+    glEnableVertexAttribArray(mlContext->cameraPointLocation);
+    glVertexAttribPointer(mlContext->cameraPointLocation, 2, GL_FLOAT, false, 0, 0);
 
     glGenBuffers(1, &mlContext->uvBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, mlContext->uvBuffer);
@@ -1854,8 +1864,8 @@ NAN_METHOD(MLContext::Present) {
       1.0f, 0.0f,
     };
     glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(mlContext->uvLocation);
-    glVertexAttribPointer(mlContext->uvLocation, 2, GL_FLOAT, false, 0, 0);
+    glEnableVertexAttribArray(mlContext->cameraUvLocation);
+    glVertexAttribPointer(mlContext->cameraUvLocation, 2, GL_FLOAT, false, 0, 0);
 
     glGenTextures(1, &mlContext->cameraInTexture);
     mlContext->contentTexture = colorTex;
@@ -1877,30 +1887,229 @@ NAN_METHOD(MLContext::Present) {
     {
       GLenum result = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
       if (result != GL_FRAMEBUFFER_COMPLETE) {
-        ML_LOG(Error, "%s: Failed to create generate camera framebuffer: %x", application_name, result);
+        ML_LOG(Error, "%s: Failed to create camera framebuffer: %x", application_name, result);
       }
     }
+  }
 
-    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-    } else {
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  glGenTextures(1, &mlContext->cameraMeshTexture);
+  glBindTexture(GL_TEXTURE_2D, mlContext->cameraMeshTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+  glGenTextures(1, &mlContext->cameraMeshDepthTexture);
+  glBindTexture(GL_TEXTURE_2D, mlContext->cameraMeshDepthTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+  glGenFramebuffers(1, &mlContext->cameraMeshFbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mlContext->cameraMeshTexture, 0);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, mlContext->cameraMeshDepthTexture, 0);
+
+  {
+    GLenum result = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    if (result != GL_FRAMEBUFFER_COMPLETE) {
+      ML_LOG(Error, "%s: Failed to create camera mesh framebuffer: %x", application_name, result);
     }
-    if (gl->HasVertexArrayBinding()) {
-      glBindVertexArray(gl->GetVertexArrayBinding());
-    } else {
-      glBindVertexArray(gl->defaultVao);
+  }
+
+  {
+    // camera mesh shader 1
+    glGenVertexArrays(1, &mlContext->cameraMeshVao1);
+    glBindVertexArray(mlContext->cameraMeshVao1);
+
+    // vertex Shader
+    GLuint cameraMeshVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(cameraMeshVertex, 1, &cameraMeshVsh1, NULL);
+    glCompileShader(cameraMeshVertex);
+    GLint success;
+    glGetShaderiv(cameraMeshVertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(cameraMeshVertex, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera mesh 1 vertex shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // fragment Shader
+    GLuint cameraMeshFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(cameraMeshFragment, 1, &cameraMeshFsh1, NULL);
+    glCompileShader(cameraMeshFragment);
+    glGetShaderiv(cameraMeshFragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(cameraMeshFragment, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera mesh 1 fragment shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // shader Program
+    mlContext->cameraMeshProgram1 = glCreateProgram();
+    glAttachShader(mlContext->cameraMeshProgram1, cameraMeshVertex);
+    glAttachShader(mlContext->cameraMeshProgram1, cameraMeshFragment);
+    glLinkProgram(mlContext->cameraMeshProgram1);
+    glGetProgramiv(mlContext->cameraMeshProgram1, GL_LINK_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraMeshProgram1, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera mesh 1 program linking failed\n" << infoLog << std::endl;
+      return;
     }
-    if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-      glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-    } else {
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    mlContext->cameraMeshPositionLocation1 = glGetAttribLocation(mlContext->cameraMeshProgram1, "position");
+    if (mlContext->cameraMeshPositionLocation1 == -1) {
+      std::cout << "ML camera mesh 1 program failed to get attrib location for 'position'" << std::endl;
+      return;
     }
-    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-      glBindFramebuffer(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-    } else {
-      glBindFramebuffer(GL_TEXTURE_2D, 0);
+    mlContext->cameraMeshIndexLocation1 = glGetAttribLocation(mlContext->cameraMeshProgram1, "index");
+    if (mlContext->cameraMeshIndexLocation1 == -1) {
+      std::cout << "ML camera mesh 1 program failed to get attrib location for 'index'" << std::endl;
+      return;
     }
+    mlContext->cameraMeshModelViewMatrixLocation1 = glGetUniformLocation(mlContext->cameraMeshProgram1, "modelViewMatrix");
+    if (mlContext->cameraMeshModelViewMatrixLocation1 == -1) {
+      std::cout << "ML camera mesh 1 program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      return;
+    }
+    mlContext->cameraMeshProjectionMatrixLocation1 = glGetUniformLocation(mlContext->cameraMeshProgram1, "projectionMatrix");
+    if (mlContext->cameraMeshProjectionMatrixLocation1 == -1) {
+      std::cout << "ML camera mesh 1 program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      return;
+    }
+
+    // delete the shaders as they're linked into our program now and no longer necessery
+    glDeleteShader(cameraMeshVertex);
+    glDeleteShader(cameraMeshFragment);
+  }
+
+  {
+    // camera mesh shader 2
+    glGenTextures(1, &mlContext->cameraMeshDepthTexture2);
+    glBindTexture(GL_TEXTURE_2D, mlContext->cameraMeshDepthTexture2);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glGenFramebuffers(1, &mlContext->cameraMeshFbo2);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo2);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, mlContext->cameraMeshDepthTexture2, 0);
+
+    glGenVertexArrays(1, &mlContext->cameraMeshVao2);
+    glBindVertexArray(mlContext->cameraMeshVao2);
+
+    // vertex Shader
+    GLuint cameraMeshVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(cameraMeshVertex, 1, &cameraMeshVsh2, NULL);
+    glCompileShader(cameraMeshVertex);
+    GLint success;
+    glGetShaderiv(cameraMeshVertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(cameraMeshVertex, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera mesh 2 vertex shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // fragment Shader
+    GLuint cameraMeshFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(cameraMeshFragment, 1, &cameraMeshFsh2, NULL);
+    glCompileShader(cameraMeshFragment);
+    glGetShaderiv(cameraMeshFragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(cameraMeshFragment, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera mesh 2 fragment shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // shader Program
+    mlContext->cameraMeshProgram2 = glCreateProgram();
+    glAttachShader(mlContext->cameraMeshProgram2, cameraMeshVertex);
+    glAttachShader(mlContext->cameraMeshProgram2, cameraMeshFragment);
+    glLinkProgram(mlContext->cameraMeshProgram2);
+    glGetProgramiv(mlContext->cameraMeshProgram2, GL_LINK_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraMeshProgram2, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera mesh 2 program linking failed\n" << infoLog << std::endl;
+      return;
+    }
+
+    mlContext->cameraMeshPositionLocation2 = glGetAttribLocation(mlContext->cameraMeshProgram2, "position");
+    if (mlContext->cameraMeshPositionLocation2 == -1) {
+      std::cout << "ML camera mesh 2 program failed to get attrib location for 'position'" << std::endl;
+      return;
+    }
+    mlContext->cameraMeshUvLocation2 = glGetAttribLocation(mlContext->cameraMeshProgram2, "uv");
+    if (mlContext->cameraMeshUvLocation2 == -1) {
+      std::cout << "ML camera mesh 2 program failed to get attrib location for 'uv'" << std::endl;
+      return;
+    }
+    /* mlContext->cameraMeshIndexLocation2 = glGetAttribLocation(mlContext->cameraMeshProgram2, "index");
+    if (mlContext->cameraMeshIndexLocation2 == -1) {
+      std::cout << "ML camera mesh 2 program failed to get attrib location for 'index'" << std::endl;
+      return;
+    } */
+    mlContext->cameraMeshModelViewMatrixLocation2 = glGetUniformLocation(mlContext->cameraMeshProgram2, "modelViewMatrix");
+    if (mlContext->cameraMeshModelViewMatrixLocation2 == -1) {
+      std::cout << "ML camera mesh 2 program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      return;
+    }
+    mlContext->cameraMeshProjectionMatrixLocation2 = glGetUniformLocation(mlContext->cameraMeshProgram2, "projectionMatrix");
+    if (mlContext->cameraMeshProjectionMatrixLocation2 == -1) {
+      std::cout << "ML camera mesh 2 program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      return;
+    }
+    mlContext->cameraMeshPrevStageTextureLocation2 = glGetUniformLocation(mlContext->cameraMeshProgram2, "prevStageTexture");
+    if (mlContext->cameraMeshPrevStageTextureLocation2 == -1) {
+      std::cout << "ML camera mesh 2 program failed to get uniform location for 'prevStageTexture'" << std::endl;
+      return;
+    }
+    mlContext->cameraMeshCameraInTextureLocation2 = glGetUniformLocation(mlContext->cameraMeshProgram2, "cameraInTexture");
+    if (mlContext->cameraMeshCameraInTextureLocation2 == -1) {
+      std::cout << "ML camera mesh 2 program failed to get uniform location for 'cameraInTexture'" << std::endl;
+      return;
+    }
+
+    // delete the shaders as they're linked into our program now and no longer necessery
+    glDeleteShader(cameraMeshVertex);
+    glDeleteShader(cameraMeshFragment);
+  }
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasVertexArrayBinding()) {
+    glBindVertexArray(gl->GetVertexArrayBinding());
+  } else {
+    glBindVertexArray(gl->defaultVao);
+  }
+  if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+    glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+  } else {
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindFramebuffer(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  } else {
+    glBindFramebuffer(GL_TEXTURE_2D, 0);
   }
 
   // initialize perception system
@@ -2185,8 +2394,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 
             if (meshBuffer.numIndices > 0) {
               glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
-              glEnableVertexAttribArray(mlContext->positionLocation);
-              glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+              glEnableVertexAttribArray(mlContext->meshPositionLocation);
+              glVertexAttribPointer(mlContext->meshPositionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
               glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
 
@@ -2194,10 +2403,10 @@ NAN_METHOD(MLContext::WaitGetPoses) {
                 const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
                 const MLTransform &transform = cameraInfo.transform;
                 const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
-                glUniformMatrix4fv(mlContext->modelViewMatrixLocation, 1, false, modelView.matrix_colmajor);
+                glUniformMatrix4fv(mlContext->meshModelViewMatrixLocation, 1, false, modelView.matrix_colmajor);
 
                 const MLMat4f &projection = cameraInfo.projection;
-                glUniformMatrix4fv(mlContext->projectionMatrixLocation, 1, false, projection.matrix_colmajor);
+                glUniformMatrix4fv(mlContext->meshProjectionMatrixLocation, 1, false, projection.matrix_colmajor);
 
                 glViewport(side * width/2, 0, width/2, height);
 
@@ -2345,25 +2554,29 @@ NAN_METHOD(MLContext::RequestDepthPopulation) {
   }
 }
 
-bool cameraConnected = false;
+MLResult connectCamera() {
+  MLResult result = MLCameraConnect();
+  if (result == MLResult_Ok) {
+    cameraConnected = true;
+
+    std::thread([]() -> void {
+      for (;;) {
+        uv_sem_wait(&cameraConvertSem);
+
+        cameraRequestSize = SjpegCompress(cameraRequestRgb, CAMERA_SIZE[0], CAMERA_SIZE[1], 50.0f, &cameraRequestJpeg);
+
+        uv_async_send(&cameraConvertAsync);
+      }
+    }).detach();
+  }
+  return result;
+}
+
 NAN_METHOD(MLContext::RequestCamera) {
   if (info[0]->IsFunction()) {
     if (!cameraConnected) {
-      MLResult result = MLCameraConnect();
-
-      if (result == MLResult_Ok) {
-        cameraConnected = true;
-
-        std::thread([]() -> void {
-          for (;;) {
-            uv_sem_wait(&cameraConvertSem);
-
-            cameraRequestSize = SjpegCompress(cameraRequestRgb, CAMERA_SIZE[0], CAMERA_SIZE[1], 50.0f, &cameraRequestJpeg);
-
-            uv_async_send(&cameraConvertAsync);
-          }
-        }).detach();
-      } else {
+      MLResult result = connectCamera();
+      if (result != MLResult_Ok) {
         ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
         Nan::ThrowError("failed to connect camera");
         return;
@@ -2403,6 +2616,19 @@ NAN_METHOD(MLContext::CancelCamera) {
   } else {
     Nan::ThrowError("invalid arguments");
   }
+}
+
+NAN_METHOD(MLContext::RequestCameraMesh) {
+  if (!cameraConnected) {
+    MLResult result = connectCamera();
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
+      Nan::ThrowError("failed to connect camera");
+      return;
+    }
+  }
+
+  cameraMeshEnabled = true;
 }
 
 void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]);
@@ -2577,14 +2803,6 @@ NAN_METHOD(MLContext::PrePollEvents) {
     }
   }
 
-  {
-    // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
-
-    if (cameraRequests.size() > 0) {
-      cameraRequestConditionVariable.notify_one();
-    }
-  }
-
   if (snapshot) {
     if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
       ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
@@ -2592,265 +2810,555 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 }
 
-const MLVec3f &I = {1,0,0};
-const MLVec3f &J = {0,1,0};
-const MLVec3f &K = {0,0,1};
-float approxAtan2(float y, float x) {
-  int o = 0;
-  if (y < 0) { x = -x; y = -y; o |= 4; }
-  if (x <= 0) { float t = x; x = y; y = -t; o |= 2; }
-  if (x <= y) { float t = y - x; x += y; y = t; o |= 1; }
-  return o + y / x;
-}
-float getNormalSortKey(const MLVec3f &r, const MLVec3f &c, const MLVec3f &n, const MLVec3f &pp, const MLVec3f &qp) {
-  const MLVec3f &rmc = subVectors(r, c);
-  return approxAtan2(dotVectors(n, crossVectors(rmc, pp)), dotVectors(n, crossVectors(rmc, qp)));
-}
-const MLVec3f &longestVector(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) {
-  const float aLength = vectorLengthSq(a);
-  const float bLength = vectorLengthSq(b);
-  const float cLength = vectorLengthSq(c);
-  if (aLength >= bLength && aLength >= cLength) {
-    return a;
-  } else if (bLength >= aLength && bLength >= cLength) {
-    return b;
-  } else {
-    return c;
-  }
-}
-class LayerQueueEntry {
-public:
-  uint16_t vertexIndex;
-  unsigned int depth;
-  size_t radialIndex;
-  float radiusStart;
-  float radiusEnd;
+const std::vector<std::pair<int, int>> DIRECTIONS = {
+  {-1, 0},
+  {-1, -1},
+  {0, -1},
+  {1, -1},
+  {1, 0},
+  {1, 1},
+  {0, 1},
+  {-1, 1},
 };
-const std::vector<Uv> getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count) {
-  std::vector<std::vector<uint16_t>> triangles(vertex_count); // vertex -> list of indices
-  std::vector<MLVec3f> faceNormals(index_count); // index -> face normal
-  for (uint16_t i = 0; i < index_count / 3; i++) {
-    const uint16_t &a = index[i * 3];
-    triangles[a].push_back(i);
-    const uint16_t &b = index[i * 3 + 1];
-    triangles[b].push_back(i);
-    const uint16_t &c = index[i * 3 + 2];
-    triangles[c].push_back(i);
+const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> BIDIRECTIONS = {
+  {{-1, 0}, {-1, -1}},
+  {{-1, -1}, {0, -1}},
+  {{0, -1}, {1, -1}},
+  {{1, -1}, {1, 0}},
+  {{1, 0}, {1, 1}},
+  {{1, 1}, {0, 1}},
+  {{0, 1}, {-1, 1}},
+  {{-1, 1}, {-1, 0}},
+};
+void absorb(const std::pair<int, int> &v, std::pair<int, int> &min, std::pair<int, int> &max) {
+  min.first = std::min(v.first, min.first);
+  min.second = std::min(v.second, min.second);
+  max.first = std::max(v.first, max.first);
+  max.second = std::max(v.second, max.second);
+}
+void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count, std::vector<Uv> *uvs) {
+  if (index_count > 0) {
+    std::vector<std::vector<uint16_t>> triangles(vertex_count); // vertex -> list of indices
+    for (uint16_t i = 0; i < index_count / 3; i++) {
+      const uint16_t &a = index[i * 3];
+      triangles[a].push_back(i);
+      const uint16_t &b = index[i * 3 + 1];
+      triangles[b].push_back(i);
+      const uint16_t &c = index[i * 3 + 2];
+      triangles[c].push_back(i);
+    }
 
-    faceNormals[i] = getTriangleNormal(vertex[a], vertex[b], vertex[c]);
-  }
-
-  std::vector<std::vector<uint16_t>> adjacentVertices(vertex_count); // vertex -> list of vertices
-  std::vector<std::vector<uint16_t>> islands; // list of lists of connected vertices
-  {
+    std::vector<std::pair<int, int>> map(vertex_count);
+    std::pair<int, int> min = {1000, 1000};
+    std::pair<int, int> max = {-1000, -1000};
+    std::map<std::pair<int, int>, uint16_t> reverseMap;
     std::vector<bool> vertexSeenIndex(vertex_count, false);
     for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
       if (!vertexSeenIndex[i]) {
-        std::vector<uint16_t> island;
-        island.reserve(128);
         std::deque<uint16_t> vertexQueue = {i};
         vertexSeenIndex[i] = true;
 
         while (vertexQueue.size() > 0) {
           const uint16_t &vertexIndex = vertexQueue.front();
 
-          // add current vertex to island
-          island.push_back(vertexIndex);
-
-          // get connected indices
-          std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
-          MLVec3f vertexNormal = {0,0,0};
           const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
           for (size_t j = 0; j < connectedIndices.size(); j++) {
             const uint16_t &connectedIndex = connectedIndices[j];
 
-            const uint16_t &a = index[connectedIndex * 3];
-            if (a != vertexIndex) {
-              connectedVertices.push_back(a);
-            }
-            if (!vertexSeenIndex[a]) {
-              vertexQueue.push_back(a);
-              vertexSeenIndex[a] = true;
-            }
-            const uint16_t &b = index[connectedIndex * 3 + 1];
-            if (b != vertexIndex) {
-              connectedVertices.push_back(b);
-            }
-            if (!vertexSeenIndex[b]) {
-              vertexQueue.push_back(b);
-              vertexSeenIndex[b] = true;
-            }
-            const uint16_t &c = index[connectedIndex * 3 + 2];
-            if (c != vertexIndex) {
-              connectedVertices.push_back(c);
-            }
-            if (!vertexSeenIndex[c]) {
-              vertexQueue.push_back(c);
-              vertexSeenIndex[c] = true;
+            std::vector<uint16_t> seen; seen.reserve(3);
+            std::vector<uint16_t> unseen; unseen.reserve(3);
+
+            {
+              const uint16_t &a = index[connectedIndex * 3];
+              if (vertexSeenIndex[a]) {
+                seen.push_back(a);
+              } else {
+                vertexQueue.push_back(a);
+                vertexSeenIndex[a] = true;
+
+                unseen.push_back(a);
+              }
+              const uint16_t &b = index[connectedIndex * 3 + 1];
+              if (vertexSeenIndex[b]) {
+                seen.push_back(b);
+              } else {
+                vertexQueue.push_back(b);
+                vertexSeenIndex[b] = true;
+
+                unseen.push_back(b);
+              }
+              const uint16_t &c = index[connectedIndex * 3 + 2];
+              if (vertexSeenIndex[c]) {
+                seen.push_back(c);
+              } else {
+                vertexQueue.push_back(c);
+                vertexSeenIndex[c] = true;
+
+                unseen.push_back(c);
+              }
             }
 
-            vertexNormal = addVectors(vertexNormal, faceNormals[connectedIndex]);
-          }
-          vertexNormal = divideVector(vertexNormal, (float)connectedIndices.size());
+            if (seen.size() == 0) {
+              bool done = false;
+              for (int j = 0;; j++) {
+                for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                  const std::pair<int, int> &direction = DIRECTIONS[k];
+                  const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
 
-          // sort connected vertices clockwise
-          const MLVec3f &c = vertex[vertexIndex];
-          const MLVec3f &n = vertexNormal;
-          const MLVec3f &ni = crossVectors(n, I);
-          const MLVec3f &nj = crossVectors(n, J);
-          const MLVec3f &nk = crossVectors(n, K);
-          const MLVec3f &pp = longestVector(ni, nj, nk);
-          const MLVec3f &qp = crossVectors(n, pp);
-          std::vector<std::pair<uint16_t, float>> connectedVerticesSorts(connectedVertices.size());
-          for (size_t j = 0; j < connectedVertices.size(); j++) {
-            const uint16_t &vertexIndex = connectedVertices[j];
-            const MLVec3f &v = vertex[vertexIndex];
-            const float sortKey = getNormalSortKey(v, c, n, pp, qp);
-            connectedVerticesSorts[j] = std::pair<uint16_t, float>(vertexIndex, sortKey);
-          }
-          std::sort(connectedVerticesSorts.begin(), connectedVerticesSorts.end(), [](const std::pair<uint16_t, float> &a, const std::pair<uint16_t, float> &b) -> bool {
-            return a.second < b.second;
-          });
-          for (size_t j = 0; j < connectedVertices.size(); j++) {
-            connectedVertices[j] = connectedVerticesSorts[j].first;
+                  const std::pair<int, int> aPos = {dPos.first, dPos.second};
+                  const std::pair<int, int> bPos = {dPos.first + 1, dPos.second};
+                  const std::pair<int, int> cPos = {dPos.first + 1, dPos.second + 1};
+
+                  if (
+                    reverseMap.find(aPos) == reverseMap.end() &&
+                    reverseMap.find(bPos) == reverseMap.end() &&
+                    reverseMap.find(cPos) == reverseMap.end()
+                  ) {
+                    map[unseen[0]] = aPos;
+                    reverseMap[aPos] = unseen[0];
+                    absorb(aPos, min, max);
+
+                    map[unseen[1]] = bPos;
+                    reverseMap[bPos] = unseen[1];
+                    absorb(bPos, min, max);
+
+                    map[unseen[2]] = cPos;
+                    reverseMap[cPos] = unseen[2];
+                    absorb(cPos, min, max);
+
+                    done = true;
+                  }
+                  if (done) {
+                    break;
+                  }
+                }
+                if (done) {
+                  break;
+                }
+              }
+            } else if (seen.size() == 1) {
+              const uint16_t &a = seen[0];
+              const std::pair<int, int> &aPos = map[a];
+
+              bool done = false;
+              for (size_t j = 0; j < BIDIRECTIONS.size(); j++) {
+                const std::pair<std::pair<int, int>, std::pair<int, int>> &bidirection = BIDIRECTIONS[j];
+                const std::pair<int, int> &bPos = bidirection.first;
+                const std::pair<int, int> &cPos = bidirection.second;
+
+                if (
+                  reverseMap.find(bPos) == reverseMap.end() &&
+                  reverseMap.find(cPos) == reverseMap.end()
+                ) {
+                  map[unseen[0]] = bPos;
+                  reverseMap[bPos] = unseen[0];
+                  absorb(bPos, min, max);
+
+                  map[unseen[1]] = cPos;
+                  reverseMap[cPos] = unseen[1];
+                  absorb(cPos, min, max);
+
+                  done = true;
+                }
+                if (done) {
+                  break;
+                }
+              }
+              if (!done) {
+                for (int j = 0;; j++) {
+                  for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                    const std::pair<int, int> &direction = DIRECTIONS[k];
+                    const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                    const std::pair<int, int> aPos = {dPos.first, dPos.second};
+                    const std::pair<int, int> bPos = {dPos.first + 1, dPos.second};
+
+                    if (
+                      reverseMap.find(aPos) == reverseMap.end() &&
+                      reverseMap.find(bPos) == reverseMap.end()
+                    ) {
+                      map[unseen[0]] = aPos;
+                      reverseMap[aPos] = unseen[0];
+                      absorb(aPos, min, max);
+
+                      map[unseen[1]] = bPos;
+                      reverseMap[bPos] = unseen[1];
+                      absorb(bPos, min, max);
+
+                      done = true;
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                  if (done) {
+                    break;
+                  }
+                }
+              }
+            } else if (seen.size() == 2) {
+              const std::pair<int, int> &aPos = map[seen[0]];
+              const std::pair<int, int> &bPos = map[seen[1]];
+              if (aPos.first - 1 == bPos.first && aPos.second == bPos.second) { // left
+                std::pair<int, int> dPos;
+
+                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second - 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second - 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second + 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second + 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else {
+                  bool done = false;
+                  for (int j = 0;; j++) {
+                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                      const std::pair<int, int> &direction = DIRECTIONS[k];
+                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                      if (reverseMap.find(dPos) == reverseMap.end()) {
+                        map[unseen[0]] = dPos;
+                        reverseMap[dPos] = unseen[0];
+                        absorb(dPos, min, max);
+
+                        done = true;
+                      }
+                      if (done) {
+                        break;
+                      }
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                }
+              } else if (aPos.first - 1 == bPos.first && aPos.second - 1 == bPos.second) { // top left
+                std::pair<int, int> dPos;
+
+                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second - 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else {
+                  bool done = false;
+                  for (int j = 0;; j++) {
+                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                      const std::pair<int, int> &direction = DIRECTIONS[k];
+                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                      if (reverseMap.find(dPos) == reverseMap.end()) {
+                        map[unseen[0]] = dPos;
+                        reverseMap[dPos] = unseen[0];
+                        absorb(dPos, min, max);
+
+                        done = true;
+                      }
+                      if (done) {
+                        break;
+                      }
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                }
+              } else if (aPos.first == bPos.first && aPos.second - 1 == bPos.second) { // top
+                std::pair<int, int> dPos;
+
+                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second - 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second - 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else {
+                  bool done = false;
+                  for (int j = 0;; j++) {
+                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                      const std::pair<int, int> &direction = DIRECTIONS[k];
+                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                      if (reverseMap.find(dPos) == reverseMap.end()) {
+                        map[unseen[0]] = dPos;
+                        reverseMap[dPos] = unseen[0];
+                        absorb(dPos, min, max);
+
+                        done = true;
+                      }
+                      if (done) {
+                        break;
+                      }
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                }
+              } else if (aPos.first + 1 == bPos.first && aPos.second - 1 == bPos.second) { // top right
+                std::pair<int, int> dPos;
+
+                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second - 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else {
+                  bool done = false;
+                  for (int j = 0;; j++) {
+                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                      const std::pair<int, int> &direction = DIRECTIONS[k];
+                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                      if (reverseMap.find(dPos) == reverseMap.end()) {
+                        map[unseen[0]] = dPos;
+                        reverseMap[dPos] = unseen[0];
+                        absorb(dPos, min, max);
+
+                        done = true;
+                      }
+                      if (done) {
+                        break;
+                      }
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                }
+              } else if (aPos.first + 1 == bPos.first && aPos.second == bPos.second) { // right
+                std::pair<int, int> dPos;
+
+                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second - 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second - 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second + 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second + 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else {
+                  bool done = false;
+                  for (int j = 0;; j++) {
+                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                      const std::pair<int, int> &direction = DIRECTIONS[k];
+                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                      if (reverseMap.find(dPos) == reverseMap.end()) {
+                        map[unseen[0]] = dPos;
+                        reverseMap[dPos] = unseen[0];
+                        absorb(dPos, min, max);
+
+                        done = true;
+                      }
+                      if (done) {
+                        break;
+                      }
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                }
+              } else if (aPos.first + 1 == bPos.first && aPos.second + 1 == bPos.second) { // bottom right
+                std::pair<int, int> dPos;
+
+                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos =  std::pair<int, int>(aPos.first, aPos.second + 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else {
+                  bool done = false;
+                  for (int j = 0;; j++) {
+                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                      const std::pair<int, int> &direction = DIRECTIONS[k];
+                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                      if (reverseMap.find(dPos) == reverseMap.end()) {
+                        map[unseen[0]] = dPos;
+                        reverseMap[dPos] = unseen[0];
+                        absorb(dPos, min, max);
+
+                        done = true;
+                      }
+                      if (done) {
+                        break;
+                      }
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                }
+              } else if (aPos.first == bPos.first && aPos.second + 1 == bPos.second) { // bottom
+                std::pair<int, int> dPos;
+
+                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second + 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second + 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else {
+                  bool done = false;
+                  for (int j = 0;; j++) {
+                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                      const std::pair<int, int> &direction = DIRECTIONS[k];
+                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                      if (reverseMap.find(dPos) == reverseMap.end()) {
+                        map[unseen[0]] = dPos;
+                        reverseMap[dPos] = unseen[0];
+                        absorb(dPos, min, max);
+
+                        done = true;
+                      }
+                      if (done) {
+                        break;
+                      }
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                }
+              } else if (aPos.first - 1 == bPos.first && aPos.second + 1 == bPos.second) { // bottom left
+                std::pair<int, int> dPos;
+
+                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second + 1)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second)) == reverseMap.end()) {
+                  map[unseen[0]] = dPos;
+                  reverseMap[dPos] = unseen[0];
+                  absorb(dPos, min, max);
+                } else {
+                  bool done = false;
+                  for (int j = 0;; j++) {
+                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                      const std::pair<int, int> &direction = DIRECTIONS[k];
+                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
+
+                      if (reverseMap.find(dPos) == reverseMap.end()) {
+                        map[unseen[0]] = dPos;
+                        reverseMap[dPos] = unseen[0];
+                        absorb(dPos, min, max);
+
+                        done = true;
+                      }
+                      if (done) {
+                        break;
+                      }
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                }
+              } else { // none
+                bool done = false;
+                for (int j = 0;; j++) {
+                  for (size_t k = 0; k < DIRECTIONS.size(); k++) {
+                    const std::pair<int, int> &direction = DIRECTIONS[k];
+                    const std::pair<int, int> aPos = {direction.first * j, direction.second * j};
+
+                    if (
+                      reverseMap.find(aPos) == reverseMap.end()
+                    ) {
+                      map[unseen[0]] = aPos;
+                      reverseMap[aPos] = unseen[0];
+                      absorb(aPos, min, max);
+
+                      done = true;
+                    }
+                    if (done) {
+                      break;
+                    }
+                  }
+                  if (done) {
+                    break;
+                  }
+                }
+              }
+            } else { // seen.size() == 3
+              // nothing
+            }
           }
 
           vertexQueue.pop_front();
         }
-
-        islands.push_back(std::move(island));
-      }
-    }
-  }
-
-  std::vector<Uv> result(vertex_count);
-  for (size_t i = 0; i < islands.size(); i++) {
-    // find center
-    const std::vector<uint16_t> &island = islands[i];
-    MLVec3f max = {
-      -1000.0f,
-      -1000.0f,
-      -1000.0f
-    };
-    MLVec3f min = {
-      1000.0f,
-      1000.0f,
-      1000.0f
-    };
-    for (size_t j = 0; j < island.size(); j++) {
-      uint16_t vertexIndex = island[j];
-      const MLVec3f &v = vertex[vertexIndex];
-      if (v.x < min.x) min.x = v.x;
-      if (v.y < min.y) min.y = v.y;
-      if (v.z < min.z) min.z = v.z;
-      if (v.x > max.x) max.x = v.x;
-      if (v.y > max.y) max.y = v.y;
-      if (v.z > max.z) max.z = v.z;
-    }
-    const MLVec3f center = {
-      (min.x + max.x) / 2,
-      (min.y + max.y) / 2,
-      (min.z + max.z) / 2
-    };
-
-    float minDistSq = 1000.0f;
-    uint16_t minDistSqIndex = 0;
-    for (size_t j = 0; j < island.size(); j++) {
-      uint16_t vertexIndex = island[j];
-      const MLVec3f &v = vertex[vertexIndex];
-      const float dx = v.x - center.x;
-      const float dy = v.y - center.y;
-      const float dz = v.z - center.z;
-      const float distSq = (dx*dx) + (dy*dy) + (dz*dz);
-
-      if (distSq < minDistSq) {
-        minDistSq = distSq;
-        minDistSqIndex = j;
       }
     }
 
-    // find max depth from center
-    unsigned int maxDepth = 0;
     {
-      std::deque<std::pair<uint16_t, uint16_t>> vertexQueue = {std::pair<uint16_t, unsigned int>(minDistSqIndex, 0)};
-      std::vector<bool> vertexSeenIndex(vertex_count, false);
-      vertexSeenIndex[minDistSqIndex] = true;
+      uvs->resize(vertex_count);
 
-      while (vertexQueue.size() > 0) {
-        const std::pair<uint16_t, unsigned int> &entry = vertexQueue.front();
-        const uint16_t &vertexIndex = entry.first;
-        const unsigned int &depth = entry.second;
-
-        if (depth > maxDepth) {
-          maxDepth = depth;
-        }
-
-        const std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
-        for (size_t j = 0; j < connectedVertices.size(); j++) {
-          const uint16_t connectedVertex = connectedVertices[j];
-          if (!vertexSeenIndex[connectedVertex]) {
-            vertexQueue.push_back(std::pair<uint16_t, unsigned int>{connectedVertex, depth + 1});
-            vertexSeenIndex[connectedVertex] = true;
-          }
-        }
-
-        vertexQueue.pop_front();
+      float uvWidth = (float)(max.first - min.first);
+      float uvHeight = (float)(max.second - min.second);
+      for (uint32_t i = 0; i < vertex_count; i++) {
+        std::pair<int, int> &v = map[i];
+        Uv &uv = (*uvs)[i];
+        uv.u = (float)(v.first - min.first) / uvWidth;
+        uv.v = (float)(v.second - min.second) / uvHeight;
       }
     }
-
-    // compute uvs
-    {
-      std::deque<LayerQueueEntry> vertexQueue = {
-        LayerQueueEntry{minDistSqIndex, 0, 0, 0, (float)M_PI*2.0f},
-      };
-      std::vector<bool> vertexSeenIndex(vertex_count, false);
-      vertexSeenIndex[minDistSqIndex] = true;
-      while (vertexQueue.size() > 0) {
-        const LayerQueueEntry &entry = vertexQueue.front();
-        const uint16_t &vertexIndex = entry.vertexIndex;
-        const unsigned int &depth = entry.depth;
-        const size_t &radialIndex = entry.radialIndex;
-        const float &radiusStart = entry.radiusStart;
-        float radiusEnd = entry.radiusEnd;
-
-        const std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
-        const float radiusSliceWidth = 1.0f/(float)(connectedVertices.size()-1) * (radiusEnd - radiusStart);
-        if (radiusSliceWidth > (float)M_PI/2.0f) {
-          radiusEnd = radiusStart + ((radiusEnd - radiusStart) / (radiusSliceWidth / (float)M_PI/2.0f));
-        }
-
-        float angle = radiusStart + ((float)radialIndex/(float)(connectedVertices.size()-1)) * (radiusEnd - radiusStart);
-        angle = -angle + (float)M_PI/2.0f;
-        result[vertexIndex] = Uv{
-          0.5f + std::cos(angle) * (float)depth/(float)maxDepth / 2.0f,
-          0.5f + std::sin(angle) * (float)depth/(float)maxDepth / 2.0f
-        };
-
-        for (size_t j = 0; j < connectedVertices.size(); j++) {
-          const uint16_t connectedVertex = connectedVertices[j];
-          if (!vertexSeenIndex[connectedVertex]) {
-            vertexQueue.push_back(LayerQueueEntry{
-              connectedVertex,
-              depth + 1,
-              j,
-              radiusStart + (float)j / (float)(connectedVertices.size()-1) * (radiusEnd - radiusStart),
-              radiusStart + (float)(j+1) / (float)(connectedVertices.size()-1) * (radiusEnd - radiusStart)
-            });
-            vertexSeenIndex[connectedVertex] = true;
-          }
-        }
-
-        vertexQueue.pop_front();
-      }
-    }
+  } else {
+    uvs->clear();
   }
-
-  return std::move(result);
 }
 
 NAN_METHOD(MLContext::PostPollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+  NATIVEwindow *window = application_context.window;
 
   GLuint fbo = info[2]->Uint32Value();
 
@@ -2921,6 +3429,8 @@ NAN_METHOD(MLContext::PostPollEvents) {
       MLMeshingBlockMesh *blockMeshes = mesh.data;
       uint32_t dataCount = mesh.data_count;
 
+      std::vector<std::vector<Uv>> uvs(dataCount);
+
       for (uint32_t i = 0; i < dataCount; i++) {
         MLMeshingBlockMesh &blockMesh = blockMeshes[i];
         const std::string &id = id2String(blockMesh.id);
@@ -2933,15 +3443,186 @@ NAN_METHOD(MLContext::PostPollEvents) {
           } else {
             GLuint buffers[4];
             glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            GLuint texture;
-            glGenTextures(1, &texture);
-            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2], buffers[3], texture);
+            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2], buffers[3]);
             meshBuffer = &meshBuffers[id];
           }
 
-          const std::vector<Uv> &uvs = getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count);
+          std::vector<Uv> &localUvs = uvs[i];
+          getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localUvs);
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, uvs, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localUvs, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
+
+          if (cameraMeshEnabled && meshBuffers.find(id) == meshBuffers.begin()) {
+            {
+              GLuint error = glGetError();
+              if (error) {
+                std::cout << "error 1 " << error << std::endl;
+              }
+            }
+
+            {
+              glBindVertexArray(mlContext->cameraMeshVao1);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 2 " << error << std::endl;
+                }
+              }
+
+              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 3 " << error << std::endl;
+                }
+              }
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 4 " << error << std::endl;
+                }
+              }
+
+              glUseProgram(mlContext->cameraMeshProgram1);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 5 " << error << std::endl;
+                }
+              }
+
+              const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
+              const MLTransform &transform = cameraInfo.transform;
+              const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
+              glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation1, 1, false, modelView.matrix_colmajor);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 6 " << error << std::endl;
+                }
+              }
+
+              const MLMat4f &projection = cameraInfo.projection;
+              glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation1, 1, false, projection.matrix_colmajor);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 7 " << error << std::endl;
+                }
+              }
+
+              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->positionBuffer);
+              glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation1);
+              glVertexAttribPointer(mlContext->cameraMeshPositionLocation1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 8 " << error << std::endl;
+                }
+              }
+
+              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->indexBuffer);
+              glEnableVertexAttribArray(mlContext->cameraMeshIndexLocation1);
+              glVertexAttribIPointer(mlContext->cameraMeshIndexLocation1, 1, GL_UNSIGNED_INT, 0, 0);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 9 " << error << std::endl;
+                }
+              }
+
+              glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer->indexBuffer);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 10 " << error << std::endl;
+                }
+              }
+
+              glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+              glClearColor(1, 1, 1, 1);
+              glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+              glClearColor(0, 0, 0, 1); // XXX
+              glDrawElements(GL_TRIANGLES, meshBuffer->numIndices, GL_UNSIGNED_SHORT, 0);
+
+              {
+                GLuint error = glGetError();
+                if (error) {
+                  std::cout << "error 11 " << error << std::endl;
+                }
+              }
+            }
+
+            {
+              MLHandle output;
+              MLResult result = MLCameraGetPreviewStream(&output);
+              if (result == MLResult_Ok) {
+                ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+
+                EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
+
+                glBindVertexArray(mlContext->cameraMeshVao2);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo2);
+                if (!meshBuffer->texture) {
+                  glGenTextures(1, &meshBuffer->texture);
+                  glBindTexture(GL_TEXTURE_2D, meshBuffer->texture);
+                  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                } else {
+                  glBindTexture(GL_TEXTURE_2D, meshBuffer->texture);
+                }
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, meshBuffer->texture, 0);
+                glUseProgram(mlContext->cameraMeshProgram2);
+
+                const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
+                const MLTransform &transform = cameraInfo.transform;
+                const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
+                glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation2, 1, false, modelView.matrix_colmajor);
+
+                const MLMat4f &projection = cameraInfo.projection;
+                glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation2, 1, false, projection.matrix_colmajor);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, mlContext->cameraMeshTexture);
+                glUniform1i(mlContext->cameraMeshPrevStageTextureLocation2, 0);
+
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
+                glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
+                glUniform1i(mlContext->cameraMeshCameraInTextureLocation2, 1);
+
+                glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->positionBuffer);
+                glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation2);
+                glVertexAttribPointer(mlContext->cameraMeshPositionLocation2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+                glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->uvBuffer);
+                glEnableVertexAttribArray(mlContext->cameraMeshUvLocation2);
+                glVertexAttribPointer(mlContext->cameraMeshUvLocation2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer->indexBuffer);
+
+                glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+                glClearColor(0.2, 0.2, 0.2, 1); // XXX
+                glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+                glClearColor(0, 0, 0, 1);
+                glDrawElements(GL_TRIANGLES, meshBuffer->numIndices, GL_UNSIGNED_SHORT, 0);
+
+                eglDestroyImageKHR(window->display, yuv_img);
+              } else {
+                ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
+              }
+            }
+          }
         } else {
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
@@ -2953,17 +3634,40 @@ NAN_METHOD(MLContext::PostPollEvents) {
               meshBuffer->indexBuffer,
             };
             glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            glDeleteTextures(1, &meshBuffer->texture);
+            if (meshBuffer->texture) {
+              glDeleteTextures(1, &meshBuffer->texture);
+            }
             meshBuffers.erase(iter);
           }
         }
       }
 
+      if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+      } else {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+      }
+      if (gl->HasProgramBinding()) {
+        glUseProgram(gl->GetProgramBinding());
+      } else {
+        glUseProgram(0);
+      }
+      if (gl->viewportState.valid) {
+        glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+      } else {
+        glViewport(0, 0, 1280, 1024);
+      }
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
       if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
         glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
       } else {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
       }
+      glActiveTexture(gl->activeTexture);
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
         m->Poll();
