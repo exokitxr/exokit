@@ -405,6 +405,7 @@
             '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/egl/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/magicleap/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/magicleap/deps/sjpeg/src/*.cc)',
           ],
           'include_dirs': [
             "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
@@ -428,6 +429,7 @@
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/egl/include',
             '<(module_root_dir)/deps/exokit-bindings/magicleap/include',
+            '<(module_root_dir)/deps/exokit-bindings/magicleap/deps/sjpeg/src',
             "<!(echo $MLSDK)/lumin/stl/libc++/include",
             "<!(echo $MLSDK)/lumin/usr/include",
             "<!(echo $MLSDK)/include",

@@ -11,6 +11,8 @@ using namespace std;
 namespace ml {
 
 const char application_name[] = "com.exokit.app";
+constexpr int CAMERA_SIZE[] = {960, 540};
+
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
 Nan::Persistent<Function> initCb;
@@ -36,9 +38,16 @@ Nan::Persistent<Function> mlEyeTrackerConstructor;
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
 std::condition_variable  cameraRequestConditionVariable;
-std::mutex cameraRequestsMutex;
+// std::mutex cameraRequestsMutex;
+// std::mutex cameraResponseMutex;
 std::vector<CameraRequest *> cameraRequests;
-bool cameraResponsePending = false;
+uv_async_t cameraAsync;
+bool cameraConvertPending = false;
+uint8_t cameraRequestRgb[CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3];
+uint8_t *cameraRequestJpeg;
+size_t cameraRequestSize;
+uv_sem_t cameraConvertSem;
+uv_async_t cameraConvertAsync;
 
 MLHandle handTracker;
 MLHandTrackingData handData;
@@ -404,18 +413,19 @@ void MLMesher::Poll() {
 
           Local<Object> positionBuffer = Nan::New<Object>();
           positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
+
           obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.positions, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
           obj->Set(JS_STR("positionArray"), positionArray);
           obj->Set(JS_STR("positionCount"), JS_INT(meshBuffer.numPositions));
-          
+
           Local<Object> normalBuffer = Nan::New<Object>();
           normalBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.normalBuffer));
           obj->Set(JS_STR("normalBuffer"), normalBuffer);
           Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.normals, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
           obj->Set(JS_STR("normalArray"), normalArray);
           obj->Set(JS_STR("normalCount"), JS_INT(meshBuffer.numPositions));
-          
+
           Local<Object> indexBuffer = Nan::New<Object>();
           indexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
           obj->Set(JS_STR("indexBuffer"), indexBuffer);
@@ -1067,16 +1077,7 @@ void cameraOnDeviceError(MLCameraError error, void *data) {
   // XXX
 }
 void cameraOnPreviewBufferAvailable(MLHandle output, void *data) {
-  /* std::cout << "camera preview buffer available " << cameraRequests.size() << " " << cameraResponsePending << " " << output << std::endl;
-
-  if (!cameraResponsePending) {
-    std::cout << "camera preview buffer num planes " << output << std::endl;
-
-    std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
-      c->Set(output);
-    });
-    cameraResponsePending = true;
-  } */
+  uv_async_send(&cameraAsync);
 }
 
 // camera capture callbacks
@@ -1097,7 +1098,7 @@ void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtr
   // XXX
 }
 void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
-  if (!cameraResponsePending) {
+  /* if (!cameraResponsePending) {
     {
       std::unique_lock<std::mutex> lock(cameraRequestsMutex);
       std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
@@ -1105,123 +1106,53 @@ void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
       });
     }
     cameraResponsePending = true;
-  }
-}
-
-// CameraRequestPlane
-
-constexpr uint32_t previewSize = 456192;
-CameraRequestPlane::CameraRequestPlane(uint32_t width, uint32_t height, uint8_t *dataArg, uint32_t size, uint32_t bpp, uint32_t stride) : width(width), height(height), size(size), bpp(bpp), stride(stride) {
-  memcpy(data, dataArg, size);
-}
-
-CameraRequestPlane::CameraRequestPlane(MLHandle output) : width(0), height(0), size(previewSize), bpp(0), stride(0) {
-  memcpy(data, (void *)output, previewSize);
-}
-
-void CameraRequestPlane::set(uint32_t width, uint32_t height, uint8_t *dataArg, uint32_t size, uint32_t bpp, uint32_t stride) {
-  this->width = width;
-  this->height = height;
-  if (size > sizeof(data)) {
-    ML_LOG(Error, "%s: ML camera request plane overflow! %x %x", application_name, size, sizeof(data));
-  }
-  memcpy(data, dataArg, size);
-  this->bpp = bpp;
-  this->stride = stride;
-}
-
-void CameraRequestPlane::set(MLHandle output) {
-  uint32_t size = previewSize;
-  if (size > sizeof(data)) {
-    ML_LOG(Error, "%s: ML camera request plane overflow! %x %x", application_name, size, sizeof(data));
-  }
-  memcpy(data, (void *)output, size);
+  } */
 }
 
 // CameraRequest
 
-CameraRequest::CameraRequest(MLHandle request, Local<Function> cbFn) : request(request), cbFn(cbFn) {}
+CameraRequest::CameraRequest(Local<Function> cbFn) : cbFn(cbFn) {}
 
-void CameraRequest::Set(const MLCameraOutput *output) {
-  const MLCameraOutputFormat &format = output->format;
-  uint8_t planeCount = output->plane_count;
-  const MLCameraPlaneInfo *planes = output->planes;
+void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
+  this->width = width;
+  this->height = height;
+  // this->stride = stride;
 
-  for (uint8_t i = 0; i < planeCount; i++) {
-    const MLCameraPlaneInfo &plane = planes[i];
+  Local<ArrayBuffer> arrayBuffer;
+  if (size > 0) {
+    // std::cout << "got jpeg " << size << std::endl;
 
-    uint32_t width = plane.width;
-    uint32_t height = plane.height;
-    uint8_t *data = plane.data;
-    uint32_t size = plane.size;
-    uint32_t bpp = plane.bytes_per_pixel;
-    uint32_t stride = plane.stride;
-
-    // std::cout << "got plane " << width << " " << height << " " << size << " " << bpp << " " << stride << std::endl;
-
-    if (i < this->planes.size()) {
-      this->planes[i]->set(width, height, data, size, bpp, stride);
-    } else {
-      this->planes.push_back(new CameraRequestPlane(width, height, data, size, bpp, stride));
-    }
-  }
-}
-
-void CameraRequest::Set(MLHandle output) {
-  if (0 < this->planes.size()) {
-    this->planes[0]->set(output);
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), size);
+    memcpy(arrayBuffer->GetContents().Data(), data, size);
   } else {
-    this->planes.push_back(new CameraRequestPlane(output));
+    // std::cout << "failed to get jpeg " << size << std::endl;
+
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), 4);
   }
+  this->data.Reset(arrayBuffer);
 }
 
-void CameraRequest::Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int width, unsigned int height) {
-  size_t planeCount = planes.size();
-  Local<Array> array = Nan::New<Array>(planeCount + 1);
-  for (uint8_t i = 0; i < planeCount; i++) {
-    CameraRequestPlane *plane = planes[i];
-
-    uint32_t width = plane->width;
-    uint32_t height = plane->height;
-    uint8_t *data = plane->data;
-    uint32_t size = plane->size;
-    uint32_t bpp = plane->bpp;
-    uint32_t stride = plane->stride;
-
-    Local<Object> obj = Nan::New<Object>();
-    obj->Set(JS_STR("data"), ArrayBuffer::New(Isolate::GetCurrent(), data, size));
-    obj->Set(JS_STR("width"), JS_INT(width));
-    obj->Set(JS_STR("height"), JS_INT(height));
-    obj->Set(JS_STR("bpp"), JS_INT(bpp));
-    obj->Set(JS_STR("stride"), JS_INT(stride));
-    array->Set(i, obj);
-  }
-  {
-    uint8_t i = planeCount;
-    Local<Object> obj = Nan::New<Object>();
-    unsigned int halfWidth = width / 2;
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), halfWidth * height * 4);
-    unsigned char *data = (unsigned char *)arrayBuffer->GetContents().Data();
-    windowsystem::ReadPixels(gl, fbo, 0, 0, halfWidth, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    obj->Set(JS_STR("data"), arrayBuffer);
-    obj->Set(JS_STR("width"), JS_INT(halfWidth));
-    obj->Set(JS_STR("height"), JS_INT(height));
-    obj->Set(JS_STR("bpp"), JS_INT(4));
-    obj->Set(JS_STR("stride"), JS_INT(halfWidth));
-    array->Set(i, obj);
-  }
-
+void CameraRequest::Poll() {
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
 
   Local<Function> cbFn = Nan::New(this->cbFn);
+
+  Local<Object> obj = Nan::New<Object>();
+  obj->Set(JS_STR("data"), Nan::New(data));
+  data.Reset();
+  obj->Set(JS_STR("width"), JS_INT(width));
+  obj->Set(JS_STR("height"), JS_INT(height));
+  // obj->Set(JS_STR("bpp"), JS_INT(bpp));
+  // obj->Set(JS_STR("stride"), JS_INT(stride));
+
   Local<Value> argv[] = {
-    array,
+    obj,
   };
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-MLContext::MLContext() : position{0, 0, 0}, rotation{0, 0, 0, 1} {}
+MLContext::MLContext() : window(nullptr), gl(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
 
 MLContext::~MLContext() {}
 
@@ -1374,6 +1305,108 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
   keyboardEvents.clear();
 }
 
+void RunCameraInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  if (!cameraConvertPending) {
+    MLHandle output;
+    MLResult result = MLCameraGetPreviewStream(&output);
+    if (result == MLResult_Ok) {    
+      ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+
+      MLContext *mlContext = application_context.mlContext;
+      NATIVEwindow *window = application_context.window;
+      WebGLRenderingContext *gl = application_context.gl;
+
+      EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
+
+      glBindVertexArray(mlContext->cameraVao);
+      glBindFramebuffer(GL_FRAMEBUFFER, mlContext->cameraFbo);
+      glUseProgram(mlContext->cameraProgram);
+
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
+      glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
+      glUniform1i(mlContext->cameraInTextureLocation, 0);
+
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, mlContext->contentTexture);
+      glUniform1i(mlContext->contentTextureLocation, 1);
+
+      glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+      eglDestroyImageKHR(window->display, yuv_img);
+
+      glReadPixels(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1], GL_RGB, GL_UNSIGNED_BYTE, cameraRequestRgb);
+
+      cameraConvertPending = true;
+      uv_sem_post(&cameraConvertSem);
+
+      if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+      } else {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+      }
+      if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+      } else {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+      }
+      if (gl->HasProgramBinding()) {
+        glUseProgram(gl->GetProgramBinding());
+      } else {
+        glUseProgram(0);
+      }
+      if (gl->viewportState.valid) {
+        glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+      } else {
+        glViewport(0, 0, 1280, 1024);
+      }
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
+      } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
+      }
+      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES)) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES));
+      } else {
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+      }
+      glActiveTexture(gl->activeTexture);
+    } else {
+      ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
+    }
+  }
+}
+
+void RunCameraConvertInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
+    c->Set(CAMERA_SIZE[0], CAMERA_SIZE[1], cameraRequestJpeg, cameraRequestSize);
+    c->Poll();
+  });
+
+  if (cameraRequestSize > 0) {
+    SjpegFreeBuffer(cameraRequestJpeg);
+  }
+
+  cameraConvertPending = false;
+}
+
 const char *meshVsh = "\
 #version 330\n\
 \n\
@@ -1395,6 +1428,50 @@ void main() {\n\
   fragColor = vec4(1.0);\n\
 }\n\
 ";
+const char *cameraVsh = "\
+#version 330\n\
+\n\
+in vec2 point;\n\
+in vec2 uv;\n\
+out vec2 vUvCamera;\n\
+out vec2 vUvContent;\n\
+\n\
+float cameraAspectRatio = 960.0/540.0;\n\
+float renderAspectRatio = 1280.0/960.0;\n\
+float xfactor = cameraAspectRatio/renderAspectRatio;\n\
+float factor = 1.4;\n\
+\n\
+void main() {\n\
+  vUvCamera = vec2(uv.x, 1.0 - uv.y);\n\
+  vUvContent = vec2(\n\
+    ((uv.x * 0.5) - 0.25) * xfactor*factor + 0.25,\n\
+    (uv.y - 0.5) * factor + 0.5\n\
+  );\n\
+  gl_Position = vec4(point, 1.0, 1.0);\n\
+}\n\
+";
+const char *cameraFsh = "\
+#version 330\n\
+#extension GL_OES_EGL_image_external : enable\n\
+\n\
+in vec2 vUvCamera;\n\
+in vec2 vUvContent;\n\
+out vec4 fragColor;\n\
+\n\
+uniform samplerExternalOES cameraInTexture;\n\
+uniform sampler2D contentTexture;\n\
+\n\
+void main() {\n\
+  vec4 cameraIn = texture2D(cameraInTexture, vUvCamera);\n\
+\n\
+  if (vUvContent.x >= 0.0 && vUvContent.x <= 0.5 && vUvContent.y >= 0.0 && vUvContent.y <= 1.0) {\n\
+    vec4 content = texture2D(contentTexture, vUvContent);\n\
+    fragColor = vec4((cameraIn.rgb * (1.0 - content.a)) + (content.rgb * content.a), 1.0);\n\
+  } else {\n\
+    fragColor = vec4(cameraIn.rgb, 1.0);\n\
+  }\n\
+}\n\
+";
 NAN_METHOD(MLContext::InitLifecycle) {
   if (info[0]->IsFunction() && info[1]->IsFunction()) {
     eventsCb.Reset(Local<Function>::Cast(info[0]));
@@ -1402,6 +1479,9 @@ NAN_METHOD(MLContext::InitLifecycle) {
 
     uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
     uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
+    uv_async_init(uv_default_loop(), &cameraAsync, RunCameraInMainThread);
+    uv_async_init(uv_default_loop(), &cameraConvertAsync, RunCameraConvertInMainThread);
+    uv_sem_init(&cameraConvertSem, 0);
 
     mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
     mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
@@ -1468,6 +1548,11 @@ NAN_METHOD(MLContext::DeinitLifecycle) {
 NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+
+  application_context.mlContext = mlContext;
+  application_context.window = window;
+  application_context.gl = gl;
 
   if (lifecycle_status != MLResult_Ok) {
     ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
@@ -1484,9 +1569,38 @@ NAN_METHOD(MLContext::Present) {
     return;
   }
 
+  MLGraphicsRenderTargetsInfo renderTargetsInfo;
+  if (MLGraphicsGetRenderTargets(mlContext->graphics_client, &renderTargetsInfo) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to get graphics render targets.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  unsigned int halfWidth = renderTargetsInfo.buffers[0].color.width;
+  unsigned int width = halfWidth * 2;
+  unsigned int height = renderTargetsInfo.buffers[0].color.height;
+  
+  // std::cout << "render info " << halfWidth << " " << height << std::endl;
+
+  GLuint fbo;
+  GLuint colorTex;
+  GLuint depthStencilTex;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
   {
+    bool ok = windowsystem::CreateRenderTarget(gl, width, height, 0, 0, 0, 0, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+    if (!ok) {
+      ML_LOG(Error, "%s: Failed to create ML present render context.", application_name);
+      info.GetReturnValue().Set(Nan::Null());
+      return;
+    }
+  }
+
+  {
+    // mesh shader
+
     glGenVertexArrays(1, &mlContext->meshVao);
-    // glBindVertexArray(meshVao);
 
     // vertex Shader
     mlContext->meshVertex = glCreateShader(GL_VERTEX_SHADER);
@@ -1499,7 +1613,7 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->meshVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML vertex shader compilation failed:\n" << infoLog << std::endl;
+      std::cout << "ML mesh vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -1513,7 +1627,7 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->meshFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML fragment shader compilation failed:\n" << infoLog << std::endl;
+      std::cout << "ML mesh fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -1528,23 +1642,23 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->meshProgram, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML program linking failed\n" << infoLog << std::endl;
+      std::cout << "ML mesh program linking failed\n" << infoLog << std::endl;
       return;
     }
 
     mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
     if (mlContext->positionLocation == -1) {
-      std::cout << "ML program failed to get attrib location for 'position'" << std::endl;
+      std::cout << "ML mesh program failed to get attrib location for 'position'" << std::endl;
       return;
     }
     mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
     if (mlContext->modelViewMatrixLocation == -1) {
-      std::cout << "ML program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      std::cout << "ML meshprogram failed to get uniform location for 'modelViewMatrix'" << std::endl;
       return;
     }
     mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
     if (mlContext->projectionMatrixLocation == -1) {
-      std::cout << "ML program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      std::cout << "ML mesh program failed to get uniform location for 'projectionMatrix'" << std::endl;
       return;
     }
 
@@ -1553,17 +1667,150 @@ NAN_METHOD(MLContext::Present) {
     glDeleteShader(mlContext->meshFragment);
   }
 
-  MLGraphicsRenderTargetsInfo renderTargetsInfo;
-  if (MLGraphicsGetRenderTargets(mlContext->graphics_client, &renderTargetsInfo) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to get graphics render targets.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
+  {
+    // camera shader
+
+    glGenVertexArrays(1, &mlContext->cameraVao);
+    glBindVertexArray(mlContext->cameraVao);
+
+    // vertex Shader
+    mlContext->cameraVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(mlContext->cameraVertex, 1, &cameraVsh, NULL);
+    glCompileShader(mlContext->cameraVertex);
+    GLint success;
+    glGetShaderiv(mlContext->cameraVertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraVertex, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera vertex shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // fragment Shader
+    mlContext->cameraFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(mlContext->cameraFragment, 1, &cameraFsh, NULL);
+    glCompileShader(mlContext->cameraFragment);
+    glGetShaderiv(mlContext->cameraFragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraFragment, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera fragment shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // shader Program
+    mlContext->cameraProgram = glCreateProgram();
+    glAttachShader(mlContext->cameraProgram, mlContext->cameraVertex);
+    glAttachShader(mlContext->cameraProgram, mlContext->cameraFragment);
+    glLinkProgram(mlContext->cameraProgram);
+    glGetProgramiv(mlContext->cameraProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraProgram, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera program linking failed\n" << infoLog << std::endl;
+      return;
+    }
+
+    mlContext->pointLocation = glGetAttribLocation(mlContext->cameraProgram, "point");
+    if (mlContext->pointLocation == -1) {
+      std::cout << "ML camera program failed to get attrib location for 'point'" << std::endl;
+      return;
+    }
+    mlContext->uvLocation = glGetAttribLocation(mlContext->cameraProgram, "uv");
+    if (mlContext->uvLocation == -1) {
+      std::cout << "ML camera program failed to get attrib location for 'uv'" << std::endl;
+      return;
+    }
+    mlContext->cameraInTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "cameraInTexture");
+    if (mlContext->cameraInTextureLocation == -1) {
+      std::cout << "ML camera program failed to get uniform location for 'cameraInTexture'" << std::endl;
+      return;
+    }
+    mlContext->contentTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "contentTexture");
+    if (mlContext->contentTextureLocation == -1) {
+      std::cout << "ML camera program failed to get uniform location for 'contentTexture'" << std::endl;
+      return;
+    }
+
+    // delete the shaders as they're linked into our program now and no longer necessery
+    glDeleteShader(mlContext->cameraVertex);
+    glDeleteShader(mlContext->cameraFragment);
+
+    glGenBuffers(1, &mlContext->pointBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, mlContext->pointBuffer);
+    static const GLfloat points[] = {
+      -1.0f, -1.0f,
+      1.0f, -1.0f,
+      -1.0f, 1.0f,
+      1.0f, 1.0f,
+    };
+    glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(mlContext->pointLocation);
+    glVertexAttribPointer(mlContext->pointLocation, 2, GL_FLOAT, false, 0, 0);
+
+    glGenBuffers(1, &mlContext->uvBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, mlContext->uvBuffer);
+    static const GLfloat uvs[] = {
+      0.0f, 1.0f,
+      1.0f, 1.0f,
+      0.0f, 0.0f,
+      1.0f, 0.0f,
+    };
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(mlContext->uvLocation);
+    glVertexAttribPointer(mlContext->uvLocation, 2, GL_FLOAT, false, 0, 0);
+
+    glGenTextures(1, &mlContext->cameraInTexture);
+    mlContext->contentTexture = colorTex;
+    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraInTexture);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glGenTextures(1, &mlContext->cameraOutTexture);
+    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
+    glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glGenFramebuffers(1, &mlContext->cameraFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraFbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mlContext->cameraOutTexture, 0);
+
+    {
+      GLenum result = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+      if (result != GL_FRAMEBUFFER_COMPLETE) {
+        ML_LOG(Error, "%s: Failed to create generate camera framebuffer: %x", application_name, result);
+      }
+    }
+
+    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasVertexArrayBinding()) {
+      glBindVertexArray(gl->GetVertexArrayBinding());
+    } else {
+      glBindVertexArray(gl->defaultVao);
+    }
+    if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+      glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+    } else {
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+      glBindFramebuffer(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+    } else {
+      glBindFramebuffer(GL_TEXTURE_2D, 0);
+    }
   }
-  /* if (renderTargetsInfo.num_virtual_cameras != 2) {
-    ML_LOG(Error, "Invalid graphics render targets num cameras: %u", renderTargetsInfo.num_virtual_cameras);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  } */
 
   // initialize perception system
   MLPerceptionSettings perception_settings;
@@ -1603,7 +1850,7 @@ NAN_METHOD(MLContext::Present) {
     MLResult result = MLInputSetKeyboardCallbacks(mlContext->inputTracker, &keyboardCallbacks, nullptr);
     if (result != MLResult_Ok) {
       ML_LOG(Error, "%s: failed to set keyboard callbacks %x", application_name, result);
-      Nan::ThrowError("MLContext::InitLifecycle failed to set keyboard callbacks");
+      Nan::ThrowError("MLContext::Present failed to set keyboard callbacks");
       return;
     }
   }
@@ -1646,7 +1893,7 @@ NAN_METHOD(MLContext::Present) {
     MLResult result = MLMeshingCreateClient(&meshTracker, &meshingSettings);
     if (result != MLResult_Ok) {
       ML_LOG(Error, "%s: failed to create mesh handle %x", application_name, result);
-      Nan::ThrowError("MLContext::InitLifecycle failed to create mesh handle");
+      Nan::ThrowError("MLContext::Present failed to create mesh handle");
       return;
     }
   }
@@ -1677,11 +1924,15 @@ NAN_METHOD(MLContext::Present) {
 
   glGenFramebuffers(1, &mlContext->framebuffer_id);
 
-  unsigned int width = renderTargetsInfo.buffers[0].color.width;
-  unsigned int height = renderTargetsInfo.buffers[0].color.height;
   Local<Object> result = Nan::New<Object>();
-  result->Set(JS_STR("width"), JS_INT(width));
+  result->Set(JS_STR("width"), JS_INT(halfWidth));
   result->Set(JS_STR("height"), JS_INT(height));
+  result->Set(JS_STR("fbo"), JS_INT(fbo));
+  result->Set(JS_STR("colorTex"), JS_INT(colorTex));
+  result->Set(JS_STR("depthStencilTex"), JS_INT(depthStencilTex));
+  result->Set(JS_STR("msFbo"), JS_INT(msFbo));
+  result->Set(JS_STR("msColorTex"), JS_INT(msColorTex));
+  result->Set(JS_STR("msDepthStencilTex"), JS_INT(msDepthStencilTex));
   info.GetReturnValue().Set(result);
 }
 
@@ -2009,23 +2260,19 @@ NAN_METHOD(MLContext::RequestCamera) {
   if (info[0]->IsFunction()) {
     if (!cameraConnected) {
       MLResult result = MLCameraConnect();
+
       if (result == MLResult_Ok) {
-        cameraRequestThread = std::thread([&]() -> void {
-          for (;;) {
-            std::unique_lock<std::mutex> lock(cameraRequestMutex);
-            cameraRequestConditionVariable.wait(lock);
-
-            MLResult result = MLCameraCaptureImageRaw();
-            if (result == MLResult_Ok) {
-              // nothing
-            } else {
-              ML_LOG(Error, "%s: Failed to capture image: %x", application_name, result);
-            }
-          }
-        });
-        cameraRequestThread.detach();
-
         cameraConnected = true;
+
+        std::thread([]() -> void {
+          for (;;) {
+            uv_sem_wait(&cameraConvertSem);
+
+            cameraRequestSize = SjpegCompress(cameraRequestRgb, CAMERA_SIZE[0], CAMERA_SIZE[1], 50.0f, &cameraRequestJpeg);
+
+            uv_async_send(&cameraConvertAsync);
+          }
+        }).detach();
       } else {
         ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
         Nan::ThrowError("failed to connect camera");
@@ -2034,35 +2281,11 @@ NAN_METHOD(MLContext::RequestCamera) {
     }
 
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
+    {
+      // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
 
-    MLResult result = MLCameraSetOutputFormat(MLCameraOutputFormat_YUV_420_888);
-    if (result == MLResult_Ok) {
-      MLHandle captureHandle;
-      MLResult result = MLCameraPrepareCapture(MLCameraCaptureType_ImageRaw, &captureHandle);
-      if (result == MLResult_Ok) {
-        {
-          std::unique_lock<std::mutex> lock(cameraRequestsMutex);
-          CameraRequest *cameraRequest = new CameraRequest(captureHandle, cbFn);
-          cameraRequests.push_back(cameraRequest);
-        }
-
-        /* MLResult result = MLCameraCaptureImageRaw();
-        if (result == MLResult_Ok) {
-          // XXX
-        } else {
-          ML_LOG(Error, "%s: Failed to capture image: %x", application_name, result);
-          Nan::ThrowError("failed to capture image");
-          return;
-        } */
-      } else {
-        ML_LOG(Error, "%s: Failed to prepare camera capture: %x", application_name, result);
-        Nan::ThrowError("failed to prepare camera capture");
-        return;
-      }
-    } else {
-      ML_LOG(Error, "%s: Failed to set camera output format: %x", application_name, result);
-      Nan::ThrowError("failed to prepare camera capture");
-      return;
+      CameraRequest *cameraRequest = new CameraRequest(cbFn);
+      cameraRequests.push_back(cameraRequest);
     }
   } else {
     Nan::ThrowError("invalid arguments");
@@ -2074,16 +2297,19 @@ NAN_METHOD(MLContext::CancelCamera) {
   if (info[0]->IsFunction()) {
     Local<Function> cbFn = Local<Function>::Cast(info[0]);
 
-    std::unique_lock<std::mutex> lock(cameraRequestsMutex);
-    cameraRequests.erase(std::remove_if(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) -> bool {
-      Local<Function> localCbFn = Nan::New(c->cbFn);
-      if (localCbFn->StrictEquals(cbFn)) {
-        delete c;
-        return true;
-      } else {
-        return false;
-      }
-    }), cameraRequests.end());
+    {
+      // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+
+      cameraRequests.erase(std::remove_if(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) -> bool {
+        Local<Function> localCbFn = Nan::New(c->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete c;
+          return true;
+        } else {
+          return false;
+        }
+      }), cameraRequests.end());
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }
@@ -2262,7 +2488,8 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 
   {
-    std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+    // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+
     if (cameraRequests.size() > 0) {
       cameraRequestConditionVariable.notify_one();
     }
@@ -2280,8 +2507,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
 
   GLuint fbo = info[2]->Uint32Value();
-  unsigned int width = info[3]->Uint32Value();
-  unsigned int height = info[4]->Uint32Value();
 
   if (meshInfoRequestPending) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
@@ -2387,7 +2612,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
       } else {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
       }
-      
+
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
         m->Poll();
       });
@@ -2420,17 +2645,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
       ML_LOG(Error, "%s: Planes request failed! %x", application_name, result);
 
       planesRequestPending = false;
-    }
-  }
-
-  {
-    std::unique_lock<std::mutex> lock(cameraRequestsMutex);
-
-    if (cameraRequests.size() > 0 && cameraResponsePending) {
-      std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
-        c->Poll(gl, fbo, width, height);
-      });
-      cameraResponsePending = false;
     }
   }
 }

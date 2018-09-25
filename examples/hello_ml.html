@@ -479,7 +479,7 @@
     })();
 
     (() => {
-      const framesData = [];
+      let cameraTracker = null;
 
       const server = window.browser.http.createServer((req, res) => {
         console.log('got request', req.url);
@@ -518,9 +518,7 @@
               res.statusCode = 500;
               res.end();
             });
-        } else if (match = req.url.match(/^\/frame\/([0-9]+)$/)) {
-          const frameId = parseInt(match[1], 10);
-          const frameData = framesData[frameId];
+        /* } else if (req.url === '/frame') {
           if (frameData) {
             console.log('send frame data', typeof frameData, frameData.constructor && frameData.constructor.name, frameData && frameData.length);
             res.setHeader('Content-Type', 'application/octet-stream');
@@ -528,7 +526,7 @@
           } else {
             res.statusCode = 404;
             res.end();
-          }
+          } */
         } else {
           res.statusCode = 404;
           res.end();
@@ -541,30 +539,34 @@
       wss.on('connection', (c, request) => {
         console.log('open connection');
 
-        const _onCameraFrame = a => {
-          console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
+        if (!cameraTracker) {
+          const _onCameraFrame = e => {
+            // console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
+            const frameData = Buffer.from(e.data);
+
+            for (let i = 0; i < cameraTracker.callbacks.length; i++) {
+              cameraTracker.callbacks[i](frameData);
+            }
+          };
+          window.browser.magicleap.RequestCamera(_onCameraFrame);
+
+          cameraTracker = {
+            callbacks: [],
+          };
+        }
+        
+        const _cameraTrackerCallback = frameData => {
           if (c.readyState === window.browser.ws.OPEN) {
-            const updates = a.map((e, i) => {
-              const {width, height, bpp, stride, data} = e;
-              framesData[i] = Buffer.from(data);
-              return {
-                index: i,
-                width,
-                height,
-                bpp,
-                stride,
-              };
-            });
-            c.send(JSON.stringify(updates));
+            c.send(frameData);
           }
         };
-        window.browser.magicleap.RequestCamera(_onCameraFrame);
+        cameraTracker.callbacks.push(_cameraTrackerCallback);
 
         c.on('close', () => {
           console.log('close connection 1');
-          framesData.length = 0;
+          cameraTracker.callbacks.splice(cameraTracker.callbacks.indexOf(_cameraTrackerCallback), 1);
           console.log('close connection 2');
-          window.browser.magicleap.CancelCamera(_onCameraFrame);
+          // window.browser.magicleap.CancelCamera(_onCameraFrame);
           console.log('close connection 3');
         });
       });

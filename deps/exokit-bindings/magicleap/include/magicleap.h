@@ -12,6 +12,7 @@
 #include <node.h>
 #include <nan.h>
 #include <defines.h>
+#include <dlfcn.h>
 #include <cmath>
 #include <vector>
 #include <thread>
@@ -19,7 +20,7 @@
 #include <condition_variable>
 #include <algorithm>
 #include <webgl.h>
-#include <egl.h>
+#include <egl/include/egl.h>
 #include <ml_graphics.h>
 #include <ml_head_tracking.h>
 #include <ml_hand_tracking.h>
@@ -35,6 +36,9 @@
 #include <ml_gesture.h>
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
+
+#include "ml-window.h"
+#include "sjpeg.h"
 
 using namespace v8;
 using namespace node;
@@ -74,6 +78,9 @@ class MLContext;
 
 struct application_context_t {
   int dummy_value;
+  MLContext *mlContext;
+  WebGLRenderingContext *gl;
+  NATIVEwindow *window;
 };
 
 class KeyboardEvent {
@@ -112,7 +119,7 @@ public:
 
   MLMesher();
   ~MLMesher();
-  
+
   static NAN_METHOD(New);
   static NAN_GETTER(OnMeshGetter);
   static NAN_SETTER(OnMeshSetter);
@@ -130,7 +137,7 @@ public:
 
   MLPlaneTracker();
   ~MLPlaneTracker();
-  
+
   static NAN_METHOD(New);
   static NAN_GETTER(OnPlanesGetter);
   static NAN_SETTER(OnPlanesSetter);
@@ -148,7 +155,7 @@ public:
 
   MLHandTracker();
   ~MLHandTracker();
-  
+
   static NAN_METHOD(New);
   static NAN_GETTER(OnHandsGetter);
   static NAN_SETTER(OnHandsSetter);
@@ -169,7 +176,7 @@ public:
 
   MLEyeTracker();
   ~MLEyeTracker();
-  
+
   static NAN_METHOD(New);
   static NAN_GETTER(FixationGetter);
   static NAN_GETTER(EyesGetter);
@@ -185,32 +192,17 @@ public:
   bool rightBlink;
 };
 
-class CameraRequestPlane {
-public:
-  CameraRequestPlane(uint32_t width, uint32_t height, uint8_t *data, uint32_t size, uint32_t bpp, uint32_t stride);
-  CameraRequestPlane(MLHandle output);
-  void set(uint32_t width, uint32_t height, uint8_t *data, uint32_t size, uint32_t bpp, uint32_t stride);
-  void set(MLHandle output);
-
-  uint32_t width;
-  uint32_t height;
-  uint8_t data[CAMERA_REQUEST_PLANE_BUFFER_SIZE];
-  uint32_t size;
-  uint32_t bpp;
-  uint32_t stride;
-};
-
 class CameraRequest {
 public:
-  CameraRequest(MLHandle request, Local<Function> cbFn);
-  void Set(const MLCameraOutput *output);
-  void Set(MLHandle output);
-  void Poll(WebGLRenderingContext *gl, GLuint fbo, unsigned int width, unsigned int height);
+  CameraRequest(Local<Function> cbFn);
+  void Set(int width, int height, uint8_t *data, size_t size);
+  void Poll();
 
 // protected:
-  MLHandle request;
   Nan::Persistent<Function> cbFn;
-  std::vector<CameraRequestPlane *> planes;
+  int width;
+  int height;
+  Nan::Persistent<ArrayBuffer> data;
 };
 
 class MLContext : public ObjectWrap {
@@ -242,6 +234,10 @@ public:
   static NAN_METHOD(PostPollEvents);
 
 // protected:
+  // EGL
+  NATIVEwindow *window;
+  WebGLRenderingContext *gl;
+
   // tracking
   MLHandle graphics_client;
   GLuint framebuffer_id;
@@ -267,6 +263,23 @@ public:
   // GLint normalLocation;
   GLint modelViewMatrixLocation;
   GLint projectionMatrixLocation;
+
+  // camera
+  GLuint cameraVao;
+  GLuint cameraVertex;
+  GLuint cameraFragment;
+  GLuint cameraProgram;
+  GLint pointLocation;
+  GLint uvLocation;
+  GLint cameraInTextureLocation;
+  GLint contentTextureLocation;
+  GLuint pointBuffer;
+  GLuint uvBuffer;
+
+  GLuint cameraInTexture;
+  GLuint contentTexture;
+  GLuint cameraOutTexture;
+  GLuint cameraFbo;
 
   // occlusion
   // MLHandle occlusionTracker;

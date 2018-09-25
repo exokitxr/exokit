@@ -15,23 +15,15 @@ void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   }
 }
 
-NAN_METHOD(CreateRenderTarget) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  int width = info[1]->Uint32Value();
-  int height = info[2]->Uint32Value();
-  GLuint sharedColorTex = info[3]->Uint32Value();
-  GLuint sharedDepthStencilTex = info[4]->Uint32Value();
-  GLuint sharedMsColorTex = info[5]->Uint32Value();
-  GLuint sharedMsDepthStencilTex = info[6]->Uint32Value();
-
+bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   const int samples = 4;
 
-  GLuint fbo;
-  GLuint colorTex;
-  GLuint depthStencilTex;
-  GLuint msFbo;
-  GLuint msColorTex;
-  GLuint msDepthStencilTex;
+  GLuint &fbo = *pfbo;
+  GLuint &colorTex = *pcolorTex;
+  GLuint &depthStencilTex = *pdepthStencilTex;
+  GLuint &msFbo = *pmsFbo;
+  GLuint &msColorTex = *pmsColorTex;
+  GLuint &msDepthStencilTex = *pmsDepthStencilTex;
 
   {
     glGenFramebuffers(1, &msFbo);
@@ -88,21 +80,7 @@ NAN_METHOD(CreateRenderTarget) {
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
   }
 
-  Local<Value> result;
-  GLenum framebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
-  if (framebufferStatus == GL_FRAMEBUFFER_COMPLETE) {
-    Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
-    array->Set(0, JS_NUM(fbo));
-    array->Set(1, JS_NUM(colorTex));
-    array->Set(2, JS_NUM(depthStencilTex));
-    array->Set(3, JS_NUM(msFbo));
-    array->Set(4, JS_NUM(msColorTex));
-    array->Set(5, JS_NUM(msDepthStencilTex));
-    result = array;
-  } else {
-    result = Null(Isolate::GetCurrent());
-  }
-  info.GetReturnValue().Set(result);
+  bool framebufferOk = (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
   if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
@@ -124,6 +102,41 @@ NAN_METHOD(CreateRenderTarget) {
   } else {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   }
+
+  return framebufferOk;
+}
+
+NAN_METHOD(CreateRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = info[1]->Uint32Value();
+  int height = info[2]->Uint32Value();
+  GLuint sharedColorTex = info[3]->Uint32Value();
+  GLuint sharedDepthStencilTex = info[4]->Uint32Value();
+  GLuint sharedMsColorTex = info[5]->Uint32Value();
+  GLuint sharedMsDepthStencilTex = info[6]->Uint32Value();
+
+  GLuint fbo;
+  GLuint colorTex;
+  GLuint depthStencilTex;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
+  bool ok = CreateRenderTarget(gl, width, height, sharedColorTex, sharedDepthStencilTex, sharedMsColorTex, sharedMsDepthStencilTex, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+
+  Local<Value> result;
+  if (ok) {
+    Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
+    array->Set(0, JS_NUM(fbo));
+    array->Set(1, JS_NUM(colorTex));
+    array->Set(2, JS_NUM(depthStencilTex));
+    array->Set(3, JS_NUM(msFbo));
+    array->Set(4, JS_NUM(msColorTex));
+    array->Set(5, JS_NUM(msDepthStencilTex));
+    result = array;
+  } else {
+    result = Null(Isolate::GetCurrent());
+  }
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(ResizeRenderTarget) {
@@ -253,7 +266,7 @@ void SetCurrentWindowContext(NATIVEwindow *window) {
 void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data) {
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-  
+
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
   } else {
@@ -386,7 +399,7 @@ NAN_METHOD(Create) {
 
   GLuint framebuffers[] = {0, 0};
   GLuint framebufferTextures[] = {0, 0, 0, 0};
-  
+
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
