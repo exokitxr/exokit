@@ -1257,6 +1257,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         }
         return nativeMl.RequestCamera.apply(nativeMl, arguments);
       },
+      RequestCameraMesh: nativeMl.RequestCameraMesh,
     } : null,
     monitors: new MonitorManager(),
   };
