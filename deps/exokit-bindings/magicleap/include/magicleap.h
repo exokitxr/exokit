@@ -15,6 +15,7 @@
 #include <dlfcn.h>
 #include <cmath>
 #include <vector>
+#include <map>
 #include <deque>
 #include <thread>
 #include <mutex>
@@ -105,10 +106,10 @@ public:
 
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint texture);
+  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> &uvs, bool isNew, bool isUnchanged);
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged);
 
   GLuint positionBuffer;
   GLuint normalBuffer;
@@ -243,6 +244,7 @@ public:
   static NAN_METHOD(RequestDepthPopulation);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
+  static NAN_METHOD(RequestCameraMesh);
   static NAN_METHOD(PrePollEvents);
   static NAN_METHOD(PostPollEvents);
 
@@ -269,13 +271,10 @@ public:
 
   // meshing
   GLuint meshVao;
-  GLuint meshVertex;
-  GLuint meshFragment;
   GLuint meshProgram;
-  GLint positionLocation;
-  // GLint normalLocation;
-  GLint modelViewMatrixLocation;
-  GLint projectionMatrixLocation;
+  GLint meshPositionLocation;
+  GLint meshModelViewMatrixLocation;
+  GLint meshProjectionMatrixLocation;
 
   // camera
   GLuint cameraVao;
