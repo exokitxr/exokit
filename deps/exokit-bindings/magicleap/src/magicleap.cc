@@ -1549,11 +1549,12 @@ const char *cameraMeshFsh2 = "\
 #version 330\n\
 #extension GL_OES_EGL_image_external : enable\n\
 \n\
+uniform sampler2D prevStageTexture;\n\
+uniform samplerExternalOES cameraInTexture;\n\
+\n\
 in vec2 vUv;\n\
 flat in uint vIndex;\n\
 out vec4 fragColor;\n\
-\n\
-uniform samplerExternalOES cameraInTexture;\n\
 \n\
 void main() {\n\
   vec4 indexFloat = texture2D(cameraMesh1Texture, vUv);\n\
