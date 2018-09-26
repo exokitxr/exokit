@@ -70,7 +70,7 @@ MLMeshingMeshRequest meshRequest;
 std::map<std::string, bool> meshRequestNewMap;
 std::map<std::string, bool> meshRequestRemovedMap;
 std::map<std::string, bool> meshRequestUnchangedMap;
-std::map<std::string, MLMeshingExtents> meshRequestExtentsMap;
+// std::map<std::string, MLMeshingExtents> meshRequestExtentsMap;
 MLHandle meshRequestHandle;
 MLMeshingMesh mesh;
 bool meshRequestsPending = false;
@@ -462,6 +462,10 @@ void MLMesher::Poll() {
             textureVal = Nan::Null();
           }
           obj->Set(JS_STR("texture"), textureVal);
+
+          Local<Object> textureObj2 = Nan::New<Object>();
+          textureObj2->Set(JS_STR("id"), JS_INT(application_context.mlContext->cameraMeshTexture));
+          obj->Set(JS_STR("texture2"), textureObj2);
 
           array->Set(numResults++, obj);
         } else {
@@ -1515,26 +1519,26 @@ uniform mat4 projectionMatrix;\n\
 uniform mat4 modelViewMatrix;\n\
 \n\
 in vec3 position;\n\
-// in uint index;\n\
-flat out uint vIndex;\n\
+out float vIndex;\n\
 \n\
 void main() {\n\
-  // vIndex = index;\n\
+  vIndex = float(gl_VertexID);\n\
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n\
 }\n\
 ";
 const char *cameraMeshFsh1 = "\
 #version 330\n\
 \n\
-// flat in uint vIndex;\n\
+in float vIndex;\n\
 out vec4 fragColor;\n\
 \n\
 void main() {\n\
-  /* float f = float(vIndex);\n\
+  float f = vIndex;\n\
   float b = floor(mod(f, 256.0));\n\
   f = (f - b) / 256.0;\n\
-  float g = floor(mod(f, 256.0)); */\n\
-  fragColor = vec4(1.0);\n\
+  float g = floor(mod(f, 256.0));\n\
+  fragColor = vec4(1.0, g/255.0, b/255.0, 1.0);\n\
+  // fragColor = vec4(1.0);\n\
 }\n\
 ";
 const char *cameraMeshVsh2 = "\
@@ -1545,13 +1549,12 @@ uniform mat4 modelViewMatrix;\n\
 \n\
 in vec3 position;\n\
 in vec2 uv;\n\
-// in uint index;\n\
 out vec2 vUv;\n\
-// flat out uint vIndex;\n\
+out float vIndex;\n\
 \n\
 void main() {\n\
   vUv = (projectionMatrix * modelViewMatrix * vec4(position, 1.0)).xy / 2.0 + 0.5;\n\
-  // vIndex = index;\n\
+  vIndex = float(gl_VertexID);\n\
   gl_Position = vec4((uv - 0.5) * 2.0, 0.0, 1.0);\n\
 }\n\
 ";
@@ -1563,14 +1566,14 @@ uniform sampler2D prevStageTexture;\n\
 uniform samplerExternalOES cameraInTexture;\n\
 \n\
 in vec2 vUv;\n\
-// flat in uint vIndex;\n\
+in float vIndex;\n\
 out vec4 fragColor;\n\
 \n\
 void main() {\n\
-  // vec4 indexFloat = texture2D(prevStageTexture, vUv);\n\
-  // uint index = uint(floor(indexFloat.g * 256.0 * 255.0)) + uint(floor(indexFloat.b  * 255.0));\n\
-  // if (index == vIndex) {\n\
-  if (texture2D(prevStageTexture, vUv).r > 0.0) {\n\
+  vec2 prevStageSample = texture2D(prevStageTexture, vUv).gb * 255.0;\n\
+  float prevStageIndex = prevStageSample.x*256.0 + prevStageSample.y;\n\
+  // if (texture2D(prevStageTexture, vUv).r > 0.0) {\n\
+  if (abs(vIndex - prevStageIndex) < 0.1) {\n\
     fragColor = texture2D(cameraInTexture, vUv);\n\
     fragColor.r += 0.1;\n\
   } else {\n\
@@ -2241,7 +2244,7 @@ NAN_METHOD(MLContext::Exit) {
 
     uv_sem_post(&cameraConvertSem);
     cameraThread.join();
-    
+
     MLResult result = MLCameraDisconnect();
     if (result != MLResult_Ok) {
       ML_LOG(Error, "%s: Failed to disconnect camera client: %x", application_name, result);
@@ -2860,6 +2863,7 @@ public:
   float radiusStart;
   float radiusEnd;
 };
+constexpr float SQRT2 = 1.41421356237;
 void sortConnectedVertices(MLVec3f *vertex, uint16_t vertexIndex, const MLVec3f &n, std::vector<uint16_t> &connectedVertices) {
   // std::cout << "sort vertices 1" << std::endl;
 
@@ -2885,7 +2889,7 @@ void sortConnectedVertices(MLVec3f *vertex, uint16_t vertexIndex, const MLVec3f 
 
   // std::cout << "sort vertices 2" << std::endl;
 }
-void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count, const MLMeshingExtents &extents, std::vector<Uv> *uvs) {
+void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count, std::vector<Uv> *uvs) {
   if (index_count > 0) {
     // std::cout << "get uvs 1" << std::endl;
 
@@ -2906,8 +2910,8 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
 
     std::vector<std::vector<uint16_t>> adjacentVertices(vertex_count); // vertex -> list of vertices
     std::vector<std::vector<uint16_t>> islands; // list of lists of connected vertices
-    float minDistSq = 1000.0f;
-    uint16_t minDistSqIndex = 0;
+    // float minDistSq = 1000.0f;
+    // uint16_t minDistSqIndex = 0;
     {
       std::vector<bool> vertexSeenIndex(vertex_count, false);
       for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
@@ -2962,7 +2966,7 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
             // sort connected vertices clockwise
             sortConnectedVertices(vertex, vertexIndex, vertexNormal, connectedVertices);
 
-            // compute min distance
+            /* // compute min distance
             const float dx = vertex[vertexIndex].x - extents.center.x;
             const float dy = vertex[vertexIndex].y - extents.center.y;
             const float dz = vertex[vertexIndex].z - extents.center.z;
@@ -2970,7 +2974,7 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
             if (distSq < minDistSq) {
               minDistSq = distSq;
               minDistSqIndex = vertexIndex;
-            }
+            } */
 
             vertexQueue.pop_front();
           }
@@ -2986,15 +2990,18 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
     if (islands.size() > 1) {
       const std::vector<uint16_t> &firstIsland = islands[0];
       const uint16_t &a = firstIsland.back();
-      const uint16_t &b = adjacentVertices[a].back();
+      const uint16_t &b = adjacentVertices[a].front();
       for (size_t i = 1; i < islands.size(); i++) {
         const std::vector<uint16_t> &island = islands[i];
         const uint16_t &c = island[0];
+        const uint16_t &d = adjacentVertices[c].front();
 
-        const MLVec3f faceNormal = getTriangleNormal(vertex[a], vertex[b], vertex[c]);
+        const MLVec3f faceNormalABC = getTriangleNormal(vertex[a], vertex[b], vertex[c]);
+        const MLVec3f faceNormalBDC = getTriangleNormal(vertex[b], vertex[d], vertex[c]);
+        // A to C
         {
           std::vector<uint16_t> &connectedVertices = adjacentVertices[a];
-          MLVec3f vertexNormal = faceNormal;
+          MLVec3f vertexNormal = faceNormalABC;
           for (size_t j = 0; j < connectedVertices.size(); j++) {
             const uint16_t &connectedVertex = connectedVertices[j];
             vertexNormal = addVectors(vertexNormal, faceNormals[connectedVertex]);
@@ -3004,21 +3011,24 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
           connectedVertices.push_back(c);
           sortConnectedVertices(vertex, a, vertexNormal, connectedVertices);
         }
+        // B to C, D
         {
           std::vector<uint16_t> &connectedVertices = adjacentVertices[b];
-          MLVec3f vertexNormal = faceNormal;
+          MLVec3f vertexNormal = addVectors(faceNormalABC, faceNormalBDC);
           for (size_t j = 0; j < connectedVertices.size(); j++) {
             const uint16_t &connectedVertex = connectedVertices[j];
             vertexNormal = addVectors(vertexNormal, faceNormals[connectedVertex]);
           }
-          vertexNormal = divideVector(vertexNormal, (float)(connectedVertices.size() + 1));
+          vertexNormal = divideVector(vertexNormal, (float)(connectedVertices.size() + 2));
 
           connectedVertices.push_back(c);
+          connectedVertices.push_back(d);
           sortConnectedVertices(vertex, b, vertexNormal, connectedVertices);
         }
+        // C to A, B
         {
           std::vector<uint16_t> &connectedVertices = adjacentVertices[c];
-          MLVec3f vertexNormal = addVectors(faceNormal, faceNormal);
+          MLVec3f vertexNormal = addVectors(faceNormalABC, faceNormalBDC);
           for (size_t j = 0; j < connectedVertices.size(); j++) {
             const uint16_t &connectedVertex = connectedVertices[j];
             vertexNormal = addVectors(vertexNormal, faceNormals[connectedVertex]);
@@ -3029,38 +3039,58 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
           connectedVertices.push_back(b);
           sortConnectedVertices(vertex, c, vertexNormal, connectedVertices);
         }
+        // D to B
+        {
+          std::vector<uint16_t> &connectedVertices = adjacentVertices[d];
+          MLVec3f vertexNormal = faceNormalBDC;
+          for (size_t j = 0; j < connectedVertices.size(); j++) {
+            const uint16_t &connectedVertex = connectedVertices[j];
+            vertexNormal = addVectors(vertexNormal, faceNormals[connectedVertex]);
+          }
+          vertexNormal = divideVector(vertexNormal, (float)(connectedVertices.size() + 1));
+
+          connectedVertices.push_back(b);
+          sortConnectedVertices(vertex, d, vertexNormal, connectedVertices);
+        }
       }
     }
 
     // std::cout << "get uvs 4" << std::endl;
 
-    // find max depth from center
-    unsigned int maxDepth = 0;
+    uint16_t centerIndex = 0;
+    int maxDepth = 1;
     {
-      std::deque<std::pair<uint16_t, uint16_t>> vertexQueue = {std::pair<uint16_t, unsigned int>(minDistSqIndex, 0)};
+      std::deque<std::pair<uint16_t, int>> leaves;
       std::vector<bool> vertexSeenIndex(vertex_count, false);
-      vertexSeenIndex[minDistSqIndex] = true;
-
-      while (vertexQueue.size() > 0) {
-        const std::pair<uint16_t, unsigned int> &entry = vertexQueue.front();
-        const uint16_t &vertexIndex = entry.first;
-        const unsigned int &depth = entry.second;
-
-        if (depth > maxDepth) {
-          maxDepth = depth;
+      for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
+        if (adjacentVertices[i].size() <= 2) {
+          leaves.push_back(std::pair<uint16_t, int>(i, 0));
+          vertexSeenIndex[i] = true;
         }
+      }
+      if (leaves.size() == 0) {
+        std::cerr << "warning: no leaves!" << std::endl;
+      }
+      while (leaves.size() > 1) {
+        const std::pair<uint16_t, int> &leaf = leaves.front();
+        const uint16_t &vertexIndex = leaf.first;
+        const int &depth = leaf.second;
 
-        const std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
-        for (size_t j = 0; j < connectedVertices.size(); j++) {
-          const uint16_t connectedVertex = connectedVertices[j];
-          if (!vertexSeenIndex[connectedVertex]) {
-            vertexQueue.push_back(std::pair<uint16_t, unsigned int>{connectedVertex, depth + 1});
-            vertexSeenIndex[connectedVertex] = true;
+        std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
+        for (size_t i = 0; i < connectedVertices.size(); i++) {
+          const uint16_t &nextVertexIndex = connectedVertices[i];
+          if (!vertexSeenIndex[nextVertexIndex]) {
+            leaves.push_back(std::pair<uint16_t, int>(nextVertexIndex, depth + 1));
+            vertexSeenIndex[nextVertexIndex] = true;
           }
         }
 
-        vertexQueue.pop_front();
+        leaves.pop_front();
       }
+
+      const std::pair<uint16_t, int> &lastLeaf = leaves.front();
+      centerIndex = lastLeaf.first;
+      maxDepth = lastLeaf.second;
     }
 
     // std::cout << "get uvs 5" << std::endl;
@@ -3068,10 +3098,10 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
     uvs->resize(vertex_count);
     {
       std::deque<LayerQueueEntry> vertexQueue = {
-        LayerQueueEntry{minDistSqIndex, 0, 0, 0, (float)M_PI*2.0f},
+        LayerQueueEntry{centerIndex, 0, 0, 0, (float)M_PI*2.0f},
       };
       std::vector<bool> vertexSeenIndex(vertex_count, false);
-      vertexSeenIndex[minDistSqIndex] = true;
+      vertexSeenIndex[centerIndex] = true;
       while (vertexQueue.size() > 0) {
         const LayerQueueEntry &entry = vertexQueue.front();
         const uint16_t &vertexIndex = entry.vertexIndex;
@@ -3089,10 +3119,22 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
         float angle = radiusStart + ((float)radialIndex/(float)(connectedVertices.size()-1)) * (radiusEnd - radiusStart);
         angle = -angle + (float)M_PI/2.0f;
 
-        (*uvs)[vertexIndex] = Uv{
-          0.5f + std::cos(angle) * (float)depth/(float)maxDepth / 2.0f,
-          0.5f + std::sin(angle) * (float)depth/(float)maxDepth / 2.0f
+        Uv uv = {
+          std::cos(angle) * (float)depth/(float)maxDepth,
+          std::sin(angle) * (float)depth/(float)maxDepth
         };
+        (*uvs)[vertexIndex] = {
+          0.5f + uv.u/2.0f,
+          0.5f + uv.v/2.0f
+        };
+        /* Uv uv2 = {
+          0.5f*sqrt( 2.0f + 2.0f*uv.u*SQRT2 + (uv.u*uv.u) - (uv.v*uv.v) ) - 0.5f*sqrt( 2.0f - 2.0f*uv.u*SQRT2 + (uv.u*uv.u) - (uv.v*uv.v) ),
+          0.5f*sqrt( 2.0f + 2.0f*uv.v*SQRT2 - (uv.u*uv.u) + (uv.v*uv.v) ) - 0.5f*sqrt( 2.0f - 2.0f*uv.v*SQRT2 - (uv.u*uv.u) + (uv.v*uv.v) )
+        };
+        (*uvs)[vertexIndex] = {
+          0.5f + uv2.u/2.0f,
+          0.5f + uv2.v/2.0f
+        }; */
 
         for (size_t j = 0; j < connectedVertices.size(); j++) {
           const uint16_t connectedVertex = connectedVertices[j];
@@ -3133,7 +3175,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
       meshRequestNewMap.clear();
       meshRequestRemovedMap.clear();
       meshRequestUnchangedMap.clear();
-      meshRequestExtentsMap.clear();
+      // meshRequestExtentsMap.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
         const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
         const MLMeshingMeshState &state = meshBlockInfo.state;
@@ -3148,7 +3190,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
         meshRequestRemovedMap[id] = (state == MLMeshingMeshState_Deleted);
         meshRequestUnchangedMap[id] = (state == MLMeshingMeshState_Unchanged);
-        meshRequestExtentsMap[id] = extents;
+        // meshRequestExtentsMap[id] = extents;
       }
       numMeshBlockRequests = dataCount;
 
@@ -3214,7 +3256,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
           }
 
           std::vector<Uv> &localUvs = uvs[i];
-          getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, meshRequestExtentsMap[id], &localUvs);
+          getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localUvs);
 
           // std::cout << "set buffers 1" << std::endl;
 
@@ -3329,11 +3371,25 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer->indexBuffer);
 
+                {
+                  GLuint error = glGetError();
+                  if (error) {
+                    std::cout << "error 5 " << error << std::endl;
+                  }
+                }
+
                 glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
                 glClearColor(0.2, 0.2, 0.2, 1); // XXX
                 glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
                 glClearColor(0, 0, 0, 1);
                 glDrawElements(GL_TRIANGLES, meshBuffer->numIndices, GL_UNSIGNED_SHORT, 0);
+
+                {
+                  GLuint error = glGetError();
+                  if (error) {
+                    std::cout << "error 6 " << error << std::endl;
+                  }
+                }
 
                 eglDestroyImageKHR(window->display, yuv_img);
               } else {
