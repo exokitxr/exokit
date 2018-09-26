@@ -299,7 +299,7 @@ public:
   GLuint cameraMeshVao1;
   GLuint cameraMeshProgram1;
   GLuint cameraMeshPositionLocation1;
-  GLuint cameraMeshIndexLocation1;
+  // GLuint cameraMeshIndexLocation1;
   GLuint cameraMeshModelViewMatrixLocation1;
   GLuint cameraMeshProjectionMatrixLocation1;
 
