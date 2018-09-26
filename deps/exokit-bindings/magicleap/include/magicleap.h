@@ -109,13 +109,14 @@ public:
   MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged);
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged, const MLVec3f &center);
 
   GLuint positionBuffer;
   GLuint normalBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;
   GLuint texture;
+  GLuint texture2;
   float *positions;
   uint32_t numPositions;
   float *normals;
@@ -125,6 +126,7 @@ public:
   uint32_t numUvs;
   bool isNew;
   bool isUnchanged;
+  MLVec3f center;
 };
 
 class MLMesher : public ObjectWrap {
@@ -293,7 +295,7 @@ public:
   GLuint cameraFbo;
 
   GLuint cameraMeshFbo;
-  GLuint cameraMeshTexture;
+  // GLuint cameraMeshTexture;
   GLuint cameraMeshDepthTexture;
 
   GLuint cameraMeshVao1;

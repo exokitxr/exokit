@@ -70,7 +70,7 @@ MLMeshingMeshRequest meshRequest;
 std::map<std::string, bool> meshRequestNewMap;
 std::map<std::string, bool> meshRequestRemovedMap;
 std::map<std::string, bool> meshRequestUnchangedMap;
-// std::map<std::string, MLMeshingExtents> meshRequestExtentsMap;
+std::map<std::string, MLVec3f> meshRequestCentersMap;
 MLHandle meshRequestHandle;
 MLMeshingMesh mesh;
 bool meshRequestsPending = false;
@@ -286,6 +286,7 @@ MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuff
   uvBuffer(uvBuffer),
   indexBuffer(indexBuffer),
   texture(0),
+  texture2(0),
   positions(nullptr),
   numPositions(0),
   normals(nullptr),
@@ -302,6 +303,7 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   uvBuffer = meshBuffer.uvBuffer;
   indexBuffer = meshBuffer.indexBuffer;
   texture = meshBuffer.texture;
+  texture2 = meshBuffer.texture2;
   positions = meshBuffer.positions;
   numPositions = meshBuffer.numPositions;
   normals = meshBuffer.normals;
@@ -312,9 +314,9 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   isNew = meshBuffer.isNew;
   isUnchanged = meshBuffer.isUnchanged;
 }
-MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), uvBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), uvs(nullptr), numUvs(0), isNew(true), isUnchanged(false) {}
+MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), uvBuffer(0), indexBuffer(0), texture(0), texture2(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), uvs(nullptr), numUvs(0), isNew(true), isUnchanged(false) {}
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged, const MLVec3f &center) {
   glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
@@ -336,6 +338,7 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->numUvs = uvs->size() * 2;
   this->isNew = isNew;
   this->isUnchanged = isUnchanged;
+  this->center = center;
 }
 
 // MLMesher
@@ -463,9 +466,21 @@ void MLMesher::Poll() {
           }
           obj->Set(JS_STR("texture"), textureVal);
 
-          Local<Object> textureObj2 = Nan::New<Object>();
+          Local<Value> texture2Val;
+          if (meshBuffer.texture2) {
+            Local<Object> texture2Obj = Nan::New<Object>();
+            texture2Obj->Set(JS_STR("id"), JS_INT(meshBuffer.texture2));
+            texture2Val = texture2Obj;
+          } else {
+            texture2Val = Nan::Null();
+          }
+          obj->Set(JS_STR("texture2"), texture2Val);
+          /* Local<Object> textureObj2 = Nan::New<Object>();
           textureObj2->Set(JS_STR("id"), JS_INT(application_context.mlContext->cameraMeshTexture));
-          obj->Set(JS_STR("texture2"), textureObj2);
+          obj->Set(JS_STR("texture2"), textureObj2); */
+          
+          Local<Float32Array> centerArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.center.values, 3 * sizeof(float)), 0, 3);
+          obj->Set(JS_STR("center"), centerArray);
 
           array->Set(numResults++, obj);
         } else {
@@ -1519,26 +1534,18 @@ uniform mat4 projectionMatrix;\n\
 uniform mat4 modelViewMatrix;\n\
 \n\
 in vec3 position;\n\
-out float vIndex;\n\
 \n\
 void main() {\n\
-  vIndex = float(gl_VertexID);\n\
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n\
 }\n\
 ";
 const char *cameraMeshFsh1 = "\
 #version 330\n\
 \n\
-in float vIndex;\n\
 out vec4 fragColor;\n\
 \n\
 void main() {\n\
-  float f = vIndex;\n\
-  float b = floor(mod(f, 256.0));\n\
-  f = (f - b) / 256.0;\n\
-  float g = floor(mod(f, 256.0));\n\
-  fragColor = vec4(1.0, g/255.0, b/255.0, 1.0);\n\
-  // fragColor = vec4(1.0);\n\
+  fragColor = vec4(gl_FragCoord.z, 0.5, 0.5, 1.0);\n\
 }\n\
 ";
 const char *cameraMeshVsh2 = "\
@@ -1549,13 +1556,15 @@ uniform mat4 modelViewMatrix;\n\
 \n\
 in vec3 position;\n\
 in vec2 uv;\n\
-out vec2 vUv;\n\
-out float vIndex;\n\
+out vec2 vScreen;\n\
+out vec2 vUv2;\n\
 \n\
 void main() {\n\
-  vUv = (projectionMatrix * modelViewMatrix * vec4(position, 1.0)).xy / 2.0 + 0.5;\n\
-  vIndex = float(gl_VertexID);\n\
-  gl_Position = vec4((uv - 0.5) * 2.0, 0.0, 1.0);\n\
+  vec4 screenPosition = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n\
+  vScreen = screenPosition.xy / 2.0 + 0.5;\n\
+  gl_Position = vec4((uv - 0.5) * 2.0, screenPosition.z, 1.0);\n\
+  // gl_Position = screenPosition;\n\
+  vUv2 = uv;\n\
 }\n\
 ";
 const char *cameraMeshFsh2 = "\
@@ -1565,20 +1574,24 @@ const char *cameraMeshFsh2 = "\
 uniform sampler2D prevStageTexture;\n\
 uniform samplerExternalOES cameraInTexture;\n\
 \n\
-in vec2 vUv;\n\
-in float vIndex;\n\
+in vec2 vScreen;\n\
+in vec2 vUv2;\n\
 out vec4 fragColor;\n\
 \n\
 void main() {\n\
-  vec2 prevStageSample = texture2D(prevStageTexture, vUv).gb * 255.0;\n\
-  float prevStageIndex = prevStageSample.x*256.0 + prevStageSample.y;\n\
-  // if (texture2D(prevStageTexture, vUv).r > 0.0) {\n\
-  if (abs(vIndex - prevStageIndex) < 0.1) {\n\
-    fragColor = texture2D(cameraInTexture, vUv);\n\
-    fragColor.r += 0.1;\n\
+  float depth = texture2D(prevStageTexture, vScreen).r;\n\
+  float depthDiff = abs(depth - gl_FragCoord.z);\n\
+  fragColor = texture2D(cameraInTexture, vec2(vScreen.x, 1.0-vScreen.y));\n\
+  fragColor.rgb = vec3(1.0)*depthDiff + fragColor.rgb*(1.0-depthDiff);\n\
+  /* if (depthDiff < 0.2) {\n\
+    fragColor = texture2D(cameraInTexture, vec2(vScreen.x, 1.0-vScreen.y));\n\
+    fragColor.rgb = vec3(1.0)*depthDiff + fragColor.rgb*(1.0-depthDiff);\n\
   } else {\n\
-    discard;\n\
-  }\n\
+    fragColor = vec4(vUv2.x, 0.0, vUv2.y, 1.0);\n\
+    // discard;\n\
+  } */\n\
+  // fragColor.r += texture2D(prevStageTexture, vUv2).r * 0.00001;\n\
+  // fragColor = vec4(vUv.x, (texture2D(prevStageTexture, vUv2).r + texture2D(cameraInTexture, vUv2).r) * 0.00001, vUv.y, 1.0);\n\
 }\n\
 ";
 NAN_METHOD(MLContext::InitLifecycle) {
@@ -1898,11 +1911,11 @@ NAN_METHOD(MLContext::Present) {
     }
   }
 
-  glGenTextures(1, &mlContext->cameraMeshTexture);
+  /* glGenTextures(1, &mlContext->cameraMeshTexture);
   glBindTexture(GL_TEXTURE_2D, mlContext->cameraMeshTexture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); */
 
   glGenTextures(1, &mlContext->cameraMeshDepthTexture);
   glBindTexture(GL_TEXTURE_2D, mlContext->cameraMeshDepthTexture);
@@ -1912,15 +1925,15 @@ NAN_METHOD(MLContext::Present) {
 
   glGenFramebuffers(1, &mlContext->cameraMeshFbo);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mlContext->cameraMeshTexture, 0);
+  // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mlContext->cameraMeshTexture, 0);
   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, mlContext->cameraMeshDepthTexture, 0);
 
-  {
+  /* {
     GLenum result = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
     if (result != GL_FRAMEBUFFER_COMPLETE) {
       ML_LOG(Error, "%s: Failed to create camera mesh framebuffer: %x", application_name, result);
     }
-  }
+  } */
 
   {
     // camera mesh shader 1
@@ -2910,8 +2923,6 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
 
     std::vector<std::vector<uint16_t>> adjacentVertices(vertex_count); // vertex -> list of vertices
     std::vector<std::vector<uint16_t>> islands; // list of lists of connected vertices
-    // float minDistSq = 1000.0f;
-    // uint16_t minDistSqIndex = 0;
     {
       std::vector<bool> vertexSeenIndex(vertex_count, false);
       for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
@@ -2965,16 +2976,6 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
 
             // sort connected vertices clockwise
             sortConnectedVertices(vertex, vertexIndex, vertexNormal, connectedVertices);
-
-            /* // compute min distance
-            const float dx = vertex[vertexIndex].x - extents.center.x;
-            const float dy = vertex[vertexIndex].y - extents.center.y;
-            const float dz = vertex[vertexIndex].z - extents.center.z;
-            const float distSq = (dx*dx) + (dy*dy) + (dz*dz);
-            if (distSq < minDistSq) {
-              minDistSq = distSq;
-              minDistSqIndex = vertexIndex;
-            } */
 
             vertexQueue.pop_front();
           }
@@ -3062,14 +3063,16 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
     {
       std::deque<std::pair<uint16_t, int>> leaves;
       std::vector<bool> vertexSeenIndex(vertex_count, false);
-      for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
-        if (adjacentVertices[i].size() <= 2) {
-          leaves.push_back(std::pair<uint16_t, int>(i, 0));
-          vertexSeenIndex[i] = true;
+      for (size_t tryNumLeaves = 2;; tryNumLeaves++) {
+        for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
+          if (adjacentVertices[i].size() <= tryNumLeaves) {
+            leaves.push_back(std::pair<uint16_t, int>(i, 0));
+            vertexSeenIndex[i] = true;
+          }
         }
-      }
-      if (leaves.size() == 0) {
-        std::cerr << "warning: no leaves!" << std::endl;
+        if (leaves.size() > 0) {
+          break;
+        }
       }
       while (leaves.size() > 1) {
         const std::pair<uint16_t, int> &leaf = leaves.front();
@@ -3175,7 +3178,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
       meshRequestNewMap.clear();
       meshRequestRemovedMap.clear();
       meshRequestUnchangedMap.clear();
-      // meshRequestExtentsMap.clear();
+      meshRequestCentersMap.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
         const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
         const MLMeshingMeshState &state = meshBlockInfo.state;
@@ -3190,7 +3193,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
         meshRequestRemovedMap[id] = (state == MLMeshingMeshState_Deleted);
         meshRequestUnchangedMap[id] = (state == MLMeshingMeshState_Unchanged);
-        // meshRequestExtentsMap[id] = extents;
+        meshRequestCentersMap[id] = extents.center;
       }
       numMeshBlockRequests = dataCount;
 
@@ -3260,143 +3263,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
           // std::cout << "set buffers 1" << std::endl;
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localUvs, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localUvs, meshRequestNewMap[id], meshRequestUnchangedMap[id], meshRequestCentersMap[id]);
 
           // std::cout << "set buffers 2" << std::endl;
-
-          if (cameraMeshEnabled && meshBuffers.find(id) == meshBuffers.begin()) {
-            {
-              GLuint error = glGetError();
-              if (error) {
-                std::cout << "error 1 " << error << std::endl;
-              }
-            }
-
-            {
-              glBindVertexArray(mlContext->cameraMeshVao1);
-              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo);
-              glUseProgram(mlContext->cameraMeshProgram1);
-
-              const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
-              const MLTransform &transform = cameraInfo.transform;
-              const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
-              glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation1, 1, false, modelView.matrix_colmajor);
-
-              const MLMat4f &projection = cameraInfo.projection;
-              glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation1, 1, false, projection.matrix_colmajor);
-
-              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->positionBuffer);
-              glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation1);
-              glVertexAttribPointer(mlContext->cameraMeshPositionLocation1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 2 " << error << std::endl;
-                }
-              }
-
-              // glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->indexBuffer);
-              // glEnableVertexAttribArray(mlContext->cameraMeshIndexLocation1);
-              // glVertexAttribIPointer(mlContext->cameraMeshIndexLocation1, 1, GL_UNSIGNED_SHORT, 0, 0);
-
-              glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer->indexBuffer);
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 3 " << error << std::endl;
-                }
-              }
-
-              glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
-              glClearColor(0, 0, 0, 1); // XXX
-              glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-              glDrawElements(GL_TRIANGLES, meshBuffer->numIndices, GL_UNSIGNED_SHORT, 0);
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 4 " << error << std::endl;
-                }
-              }
-            }
-
-            {
-              MLHandle output;
-              MLResult result = MLCameraGetPreviewStream(&output);
-              if (result == MLResult_Ok) {
-                ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
-
-                EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
-
-                glBindVertexArray(mlContext->cameraMeshVao2);
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo2);
-                if (!meshBuffer->texture) {
-                  glGenTextures(1, &meshBuffer->texture);
-                  glBindTexture(GL_TEXTURE_2D, meshBuffer->texture);
-                  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-                  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                } else {
-                  glBindTexture(GL_TEXTURE_2D, meshBuffer->texture);
-                }
-                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, meshBuffer->texture, 0);
-                glUseProgram(mlContext->cameraMeshProgram2);
-
-                const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
-                const MLTransform &transform = cameraInfo.transform;
-                const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
-                glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation2, 1, false, modelView.matrix_colmajor);
-
-                const MLMat4f &projection = cameraInfo.projection;
-                glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation2, 1, false, projection.matrix_colmajor);
-
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, mlContext->cameraMeshTexture);
-                glUniform1i(mlContext->cameraMeshPrevStageTextureLocation2, 0);
-
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
-                glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
-                glUniform1i(mlContext->cameraMeshCameraInTextureLocation2, 1);
-
-                glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->positionBuffer);
-                glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation2);
-                glVertexAttribPointer(mlContext->cameraMeshPositionLocation2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-                glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->uvBuffer);
-                glEnableVertexAttribArray(mlContext->cameraMeshUvLocation2);
-                glVertexAttribPointer(mlContext->cameraMeshUvLocation2, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer->indexBuffer);
-
-                {
-                  GLuint error = glGetError();
-                  if (error) {
-                    std::cout << "error 5 " << error << std::endl;
-                  }
-                }
-
-                glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
-                glClearColor(0.2, 0.2, 0.2, 1); // XXX
-                glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-                glClearColor(0, 0, 0, 1);
-                glDrawElements(GL_TRIANGLES, meshBuffer->numIndices, GL_UNSIGNED_SHORT, 0);
-
-                {
-                  GLuint error = glGetError();
-                  if (error) {
-                    std::cout << "error 6 " << error << std::endl;
-                  }
-                }
-
-                eglDestroyImageKHR(window->display, yuv_img);
-              } else {
-                ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
-              }
-            }
-          }
         } else {
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
@@ -3413,6 +3282,146 @@ NAN_METHOD(MLContext::PostPollEvents) {
             }
             meshBuffers.erase(iter);
           }
+        }
+      }
+
+      if (cameraMeshEnabled) {
+        MLHandle output;
+        MLResult result = MLCameraGetPreviewStream(&output);
+        if (result == MLResult_Ok) {
+          ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+
+          EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
+
+          glActiveTexture(GL_TEXTURE1);
+          glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
+          glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
+          glActiveTexture(GL_TEXTURE0);
+
+          {
+            GLuint error = glGetError();
+            if (error) {
+              std::cout << "error 1 " << error << std::endl;
+            }
+          }
+
+          for (std::map<std::string, MeshBuffer>::iterator iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+            MeshBuffer &meshBuffer = iter->second;
+
+            {
+              glBindVertexArray(mlContext->cameraMeshVao1);
+              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo);
+              if (!meshBuffer.texture) {
+                glGenTextures(1, &meshBuffer.texture);
+                glBindTexture(GL_TEXTURE_2D, meshBuffer.texture);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RED, GL_FLOAT, NULL);
+                
+                {
+                  GLuint error = glGetError();
+                  if (error) {
+                    std::cout << "error 2 " << error << std::endl;
+                  }
+                }
+                
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+              } else {
+                glBindTexture(GL_TEXTURE_2D, meshBuffer.texture);
+              }
+              
+              {
+                  GLuint error = glGetError();
+                  if (error) {
+                    std::cout << "error 3 " << error << std::endl;
+                  }
+                }
+              
+              glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, meshBuffer.texture, 0);
+              glUseProgram(mlContext->cameraMeshProgram1);
+
+              const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
+              const MLTransform &transform = cameraInfo.transform;
+              const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
+              glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation1, 1, false, modelView.matrix_colmajor);
+
+              const MLMat4f &projection = cameraInfo.projection;
+              glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation1, 1, false, projection.matrix_colmajor);
+
+              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
+              glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation1);
+              glVertexAttribPointer(mlContext->cameraMeshPositionLocation1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+              // glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.indexBuffer);
+              // glEnableVertexAttribArray(mlContext->cameraMeshIndexLocation1);
+              // glVertexAttribIPointer(mlContext->cameraMeshIndexLocation1, 1, GL_UNSIGNED_SHORT, 0, 0);
+
+              glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
+
+              glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+              glClearColor(0, 0, 0, 1); // XXX
+              glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+              glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
+            }
+
+            {
+              glBindVertexArray(mlContext->cameraMeshVao2);
+              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo2);
+              if (!meshBuffer.texture2) {
+                glGenTextures(1, &meshBuffer.texture2);
+                glBindTexture(GL_TEXTURE_2D, meshBuffer.texture2);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+              } else {
+                glBindTexture(GL_TEXTURE_2D, meshBuffer.texture2);
+              }
+              glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, meshBuffer.texture2, 0);
+              glUseProgram(mlContext->cameraMeshProgram2);
+
+              const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
+              const MLTransform &transform = cameraInfo.transform;
+              const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
+              glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation2, 1, false, modelView.matrix_colmajor);
+
+              const MLMat4f &projection = cameraInfo.projection;
+              glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation2, 1, false, projection.matrix_colmajor);
+
+              glActiveTexture(GL_TEXTURE0);
+              glBindTexture(GL_TEXTURE_2D, meshBuffer.texture);
+              glUniform1i(mlContext->cameraMeshPrevStageTextureLocation2, 0);
+
+              glActiveTexture(GL_TEXTURE1);
+              glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
+              glUniform1i(mlContext->cameraMeshCameraInTextureLocation2, 1);
+
+              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
+              glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation2);
+              glVertexAttribPointer(mlContext->cameraMeshPositionLocation2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.uvBuffer);
+              glEnableVertexAttribArray(mlContext->cameraMeshUvLocation2);
+              glVertexAttribPointer(mlContext->cameraMeshUvLocation2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+              glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
+
+              glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+              glClearColor(0.2, 0.2, 0.2, 1); // XXX
+              glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+              glClearColor(0, 0, 0, 1);
+              glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
+            }
+          }
+          
+          {
+            GLuint error = glGetError();
+            if (error) {
+              std::cout << "error 4 " << error << std::endl;
+            }
+          }
+
+          eglDestroyImageKHR(window->display, yuv_img);
+        } else {
+          ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
         }
       }
 
