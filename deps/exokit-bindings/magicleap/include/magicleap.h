@@ -309,7 +309,6 @@ public:
   GLuint cameraMeshProgram2;
   GLuint cameraMeshPositionLocation2;
   GLuint cameraMeshUvLocation2;
-  GLuint cameraMeshIndexLocation2;
   GLuint cameraMeshModelViewMatrixLocation2;
   GLuint cameraMeshProjectionMatrixLocation2;
   GLuint cameraMeshPrevStageTextureLocation2;
