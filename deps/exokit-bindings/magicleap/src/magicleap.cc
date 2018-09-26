@@ -2250,7 +2250,7 @@ NAN_METHOD(MLContext::Exit) {
   }
 
   if (MLGraphicsDestroyClient(&mlContext->graphics_client) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
+    ML_LOG(Error, "%s: Failed to create graphics client.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
