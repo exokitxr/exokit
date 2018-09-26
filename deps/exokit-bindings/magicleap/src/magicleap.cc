@@ -2826,35 +2826,71 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 }
 
-const std::vector<std::pair<int, int>> DIRECTIONS = {
-  {-1, 0},
-  {-1, -1},
-  {0, -1},
-  {1, -1},
-  {1, 0},
-  {1, 1},
-  {0, 1},
-  {-1, 1},
-};
-const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> BIDIRECTIONS = {
-  {{-1, 0}, {-1, -1}},
-  {{-1, -1}, {0, -1}},
-  {{0, -1}, {1, -1}},
-  {{1, -1}, {1, 0}},
-  {{1, 0}, {1, 1}},
-  {{1, 1}, {0, 1}},
-  {{0, 1}, {-1, 1}},
-  {{-1, 1}, {-1, 0}},
-};
-void absorb(const std::pair<int, int> &v, std::pair<int, int> &min, std::pair<int, int> &max) {
-  min.first = std::min(v.first, min.first);
-  min.second = std::min(v.second, min.second);
-  max.first = std::max(v.first, max.first);
-  max.second = std::max(v.second, max.second);
+const MLVec3f &I = {1,0,0};
+const MLVec3f &J = {0,1,0};
+const MLVec3f &K = {0,0,1};
+float approxAtan2(float y, float x) {
+  int o = 0;
+  if (y < 0) { x = -x; y = -y; o |= 4; }
+  if (x <= 0) { float t = x; x = y; y = -t; o |= 2; }
+  if (x <= y) { float t = y - x; x += y; y = t; o |= 1; }
+  return o + y / x;
 }
-void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count, std::vector<Uv> *uvs) {
+float getNormalSortKey(const MLVec3f &r, const MLVec3f &c, const MLVec3f &n, const MLVec3f &pp, const MLVec3f &qp) {
+  const MLVec3f &rmc = subVectors(r, c);
+  return approxAtan2(dotVectors(n, crossVectors(rmc, pp)), dotVectors(n, crossVectors(rmc, qp)));
+}
+const MLVec3f &longestVector(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) {
+  const float aLength = vectorLengthSq(a);
+  const float bLength = vectorLengthSq(b);
+  const float cLength = vectorLengthSq(c);
+  if (aLength >= bLength && aLength >= cLength) {
+    return a;
+  } else if (bLength >= aLength && bLength >= cLength) {
+    return b;
+  } else {
+    return c;
+  }
+}
+class LayerQueueEntry {
+public:
+  uint16_t vertexIndex;
+  unsigned int depth;
+  size_t radialIndex;
+  float radiusStart;
+  float radiusEnd;
+};
+void sortConnectedVertices(MLVec3f *vertex, uint16_t vertexIndex, const MLVec3f &n, std::vector<uint16_t> &connectedVertices) {
+  // std::cout << "sort vertices 1" << std::endl;
+
+  const MLVec3f &c = vertex[vertexIndex];
+  const MLVec3f &ni = crossVectors(n, I);
+  const MLVec3f &nj = crossVectors(n, J);
+  const MLVec3f &nk = crossVectors(n, K);
+  const MLVec3f &pp = longestVector(ni, nj, nk);
+  const MLVec3f &qp = crossVectors(n, pp);
+  std::vector<std::pair<uint16_t, float>> connectedVerticesSorts(connectedVertices.size());
+  for (size_t j = 0; j < connectedVertices.size(); j++) {
+    const uint16_t &vertexIndex = connectedVertices[j];
+    const MLVec3f &v = vertex[vertexIndex];
+    const float sortKey = getNormalSortKey(v, c, n, pp, qp);
+    connectedVerticesSorts[j] = std::pair<uint16_t, float>(vertexIndex, sortKey);
+  }
+  std::sort(connectedVerticesSorts.begin(), connectedVerticesSorts.end(), [](const std::pair<uint16_t, float> &a, const std::pair<uint16_t, float> &b) -> bool {
+    return a.second < b.second;
+  });
+  for (size_t j = 0; j < connectedVertices.size(); j++) {
+    connectedVertices[j] = connectedVerticesSorts[j].first;
+  }
+
+  // std::cout << "sort vertices 2" << std::endl;
+}
+void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count, const MLMeshingExtents &extents, std::vector<Uv> *uvs) {
   if (index_count > 0) {
+    // std::cout << "get uvs 1" << std::endl;
+
     std::vector<std::vector<uint16_t>> triangles(vertex_count); // vertex -> list of indices
+    std::vector<MLVec3f> faceNormals(index_count); // index -> face normal
     for (uint16_t i = 0; i < index_count / 3; i++) {
       const uint16_t &a = index[i * 3];
       triangles[a].push_back(i);
@@ -2862,510 +2898,221 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
       triangles[b].push_back(i);
       const uint16_t &c = index[i * 3 + 2];
       triangles[c].push_back(i);
+
+      faceNormals[i] = getTriangleNormal(vertex[a], vertex[b], vertex[c]);
     }
 
-    std::vector<std::pair<int, int>> map(vertex_count);
-    std::pair<int, int> min = {1000, 1000};
-    std::pair<int, int> max = {-1000, -1000};
-    std::map<std::pair<int, int>, uint16_t> reverseMap;
-    std::vector<bool> vertexSeenIndex(vertex_count, false);
-    for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
-      if (!vertexSeenIndex[i]) {
-        std::deque<uint16_t> vertexQueue = {i};
-        vertexSeenIndex[i] = true;
+    // std::cout << "get uvs 2" << std::endl;
 
-        while (vertexQueue.size() > 0) {
-          const uint16_t &vertexIndex = vertexQueue.front();
+    std::vector<std::vector<uint16_t>> adjacentVertices(vertex_count); // vertex -> list of vertices
+    std::vector<std::vector<uint16_t>> islands; // list of lists of connected vertices
+    float minDistSq = 1000.0f;
+    uint16_t minDistSqIndex = 0;
+    {
+      std::vector<bool> vertexSeenIndex(vertex_count, false);
+      for (uint16_t i = 0; i < (uint16_t)vertex_count; i++) {
+        if (!vertexSeenIndex[i]) {
+          std::vector<uint16_t> island;
+          island.reserve(128);
+          std::deque<uint16_t> vertexQueue = {i};
+          vertexSeenIndex[i] = true;
 
-          const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
-          for (size_t j = 0; j < connectedIndices.size(); j++) {
-            const uint16_t &connectedIndex = connectedIndices[j];
+          while (vertexQueue.size() > 0) {
+            const uint16_t &vertexIndex = vertexQueue.front();
 
-            std::vector<uint16_t> seen; seen.reserve(3);
-            std::vector<uint16_t> unseen; unseen.reserve(3);
+            // add current vertex to island
+            island.push_back(vertexIndex);
 
-            {
+            // get connected indices
+            std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
+            MLVec3f vertexNormal = {0,0,0};
+            const std::vector<uint16_t> &connectedIndices = triangles[vertexIndex];
+            for (size_t j = 0; j < connectedIndices.size(); j++) {
+              const uint16_t &connectedIndex = connectedIndices[j];
+
               const uint16_t &a = index[connectedIndex * 3];
-              if (vertexSeenIndex[a]) {
-                seen.push_back(a);
-              } else {
+              if (a != vertexIndex) {
+                connectedVertices.push_back(a);
+              }
+              if (!vertexSeenIndex[a]) {
                 vertexQueue.push_back(a);
                 vertexSeenIndex[a] = true;
-
-                unseen.push_back(a);
               }
               const uint16_t &b = index[connectedIndex * 3 + 1];
-              if (vertexSeenIndex[b]) {
-                seen.push_back(b);
-              } else {
+              if (b != vertexIndex) {
+                connectedVertices.push_back(b);
+              }
+              if (!vertexSeenIndex[b]) {
                 vertexQueue.push_back(b);
                 vertexSeenIndex[b] = true;
-
-                unseen.push_back(b);
               }
               const uint16_t &c = index[connectedIndex * 3 + 2];
-              if (vertexSeenIndex[c]) {
-                seen.push_back(c);
-              } else {
+              if (c != vertexIndex) {
+                connectedVertices.push_back(c);
+              }
+              if (!vertexSeenIndex[c]) {
                 vertexQueue.push_back(c);
                 vertexSeenIndex[c] = true;
-
-                unseen.push_back(c);
               }
+
+              vertexNormal = addVectors(vertexNormal, faceNormals[connectedIndex]);
+            }
+            vertexNormal = divideVector(vertexNormal, (float)connectedIndices.size());
+
+            // sort connected vertices clockwise
+            sortConnectedVertices(vertex, vertexIndex, vertexNormal, connectedVertices);
+
+            // compute min distance
+            const float dx = vertex[vertexIndex].x - extents.center.x;
+            const float dy = vertex[vertexIndex].y - extents.center.y;
+            const float dz = vertex[vertexIndex].z - extents.center.z;
+            const float distSq = (dx*dx) + (dy*dy) + (dz*dz);
+            if (distSq < minDistSq) {
+              minDistSq = distSq;
+              minDistSqIndex = vertexIndex;
             }
 
-            if (seen.size() == 0) {
-              bool done = false;
-              for (int j = 0;; j++) {
-                for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                  const std::pair<int, int> &direction = DIRECTIONS[k];
-                  const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                  const std::pair<int, int> aPos = {dPos.first, dPos.second};
-                  const std::pair<int, int> bPos = {dPos.first + 1, dPos.second};
-                  const std::pair<int, int> cPos = {dPos.first + 1, dPos.second + 1};
-
-                  if (
-                    reverseMap.find(aPos) == reverseMap.end() &&
-                    reverseMap.find(bPos) == reverseMap.end() &&
-                    reverseMap.find(cPos) == reverseMap.end()
-                  ) {
-                    map[unseen[0]] = aPos;
-                    reverseMap[aPos] = unseen[0];
-                    absorb(aPos, min, max);
-
-                    map[unseen[1]] = bPos;
-                    reverseMap[bPos] = unseen[1];
-                    absorb(bPos, min, max);
-
-                    map[unseen[2]] = cPos;
-                    reverseMap[cPos] = unseen[2];
-                    absorb(cPos, min, max);
-
-                    done = true;
-                  }
-                  if (done) {
-                    break;
-                  }
-                }
-                if (done) {
-                  break;
-                }
-              }
-            } else if (seen.size() == 1) {
-              const uint16_t &a = seen[0];
-              const std::pair<int, int> &aPos = map[a];
-
-              bool done = false;
-              for (size_t j = 0; j < BIDIRECTIONS.size(); j++) {
-                const std::pair<std::pair<int, int>, std::pair<int, int>> &bidirection = BIDIRECTIONS[j];
-                const std::pair<int, int> &bPos = bidirection.first;
-                const std::pair<int, int> &cPos = bidirection.second;
-
-                if (
-                  reverseMap.find(bPos) == reverseMap.end() &&
-                  reverseMap.find(cPos) == reverseMap.end()
-                ) {
-                  map[unseen[0]] = bPos;
-                  reverseMap[bPos] = unseen[0];
-                  absorb(bPos, min, max);
-
-                  map[unseen[1]] = cPos;
-                  reverseMap[cPos] = unseen[1];
-                  absorb(cPos, min, max);
-
-                  done = true;
-                }
-                if (done) {
-                  break;
-                }
-              }
-              if (!done) {
-                for (int j = 0;; j++) {
-                  for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                    const std::pair<int, int> &direction = DIRECTIONS[k];
-                    const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                    const std::pair<int, int> aPos = {dPos.first, dPos.second};
-                    const std::pair<int, int> bPos = {dPos.first + 1, dPos.second};
-
-                    if (
-                      reverseMap.find(aPos) == reverseMap.end() &&
-                      reverseMap.find(bPos) == reverseMap.end()
-                    ) {
-                      map[unseen[0]] = aPos;
-                      reverseMap[aPos] = unseen[0];
-                      absorb(aPos, min, max);
-
-                      map[unseen[1]] = bPos;
-                      reverseMap[bPos] = unseen[1];
-                      absorb(bPos, min, max);
-
-                      done = true;
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                  if (done) {
-                    break;
-                  }
-                }
-              }
-            } else if (seen.size() == 2) {
-              const std::pair<int, int> &aPos = map[seen[0]];
-              const std::pair<int, int> &bPos = map[seen[1]];
-              if (aPos.first - 1 == bPos.first && aPos.second == bPos.second) { // left
-                std::pair<int, int> dPos;
-
-                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second - 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second - 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second + 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second + 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else {
-                  bool done = false;
-                  for (int j = 0;; j++) {
-                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                      const std::pair<int, int> &direction = DIRECTIONS[k];
-                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                      if (reverseMap.find(dPos) == reverseMap.end()) {
-                        map[unseen[0]] = dPos;
-                        reverseMap[dPos] = unseen[0];
-                        absorb(dPos, min, max);
-
-                        done = true;
-                      }
-                      if (done) {
-                        break;
-                      }
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                }
-              } else if (aPos.first - 1 == bPos.first && aPos.second - 1 == bPos.second) { // top left
-                std::pair<int, int> dPos;
-
-                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second - 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else {
-                  bool done = false;
-                  for (int j = 0;; j++) {
-                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                      const std::pair<int, int> &direction = DIRECTIONS[k];
-                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                      if (reverseMap.find(dPos) == reverseMap.end()) {
-                        map[unseen[0]] = dPos;
-                        reverseMap[dPos] = unseen[0];
-                        absorb(dPos, min, max);
-
-                        done = true;
-                      }
-                      if (done) {
-                        break;
-                      }
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                }
-              } else if (aPos.first == bPos.first && aPos.second - 1 == bPos.second) { // top
-                std::pair<int, int> dPos;
-
-                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second - 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second - 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else {
-                  bool done = false;
-                  for (int j = 0;; j++) {
-                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                      const std::pair<int, int> &direction = DIRECTIONS[k];
-                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                      if (reverseMap.find(dPos) == reverseMap.end()) {
-                        map[unseen[0]] = dPos;
-                        reverseMap[dPos] = unseen[0];
-                        absorb(dPos, min, max);
-
-                        done = true;
-                      }
-                      if (done) {
-                        break;
-                      }
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                }
-              } else if (aPos.first + 1 == bPos.first && aPos.second - 1 == bPos.second) { // top right
-                std::pair<int, int> dPos;
-
-                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second - 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else {
-                  bool done = false;
-                  for (int j = 0;; j++) {
-                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                      const std::pair<int, int> &direction = DIRECTIONS[k];
-                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                      if (reverseMap.find(dPos) == reverseMap.end()) {
-                        map[unseen[0]] = dPos;
-                        reverseMap[dPos] = unseen[0];
-                        absorb(dPos, min, max);
-
-                        done = true;
-                      }
-                      if (done) {
-                        break;
-                      }
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                }
-              } else if (aPos.first + 1 == bPos.first && aPos.second == bPos.second) { // right
-                std::pair<int, int> dPos;
-
-                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second - 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second - 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second + 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second + 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else {
-                  bool done = false;
-                  for (int j = 0;; j++) {
-                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                      const std::pair<int, int> &direction = DIRECTIONS[k];
-                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                      if (reverseMap.find(dPos) == reverseMap.end()) {
-                        map[unseen[0]] = dPos;
-                        reverseMap[dPos] = unseen[0];
-                        absorb(dPos, min, max);
-
-                        done = true;
-                      }
-                      if (done) {
-                        break;
-                      }
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                }
-              } else if (aPos.first + 1 == bPos.first && aPos.second + 1 == bPos.second) { // bottom right
-                std::pair<int, int> dPos;
-
-                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos =  std::pair<int, int>(aPos.first, aPos.second + 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else {
-                  bool done = false;
-                  for (int j = 0;; j++) {
-                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                      const std::pair<int, int> &direction = DIRECTIONS[k];
-                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                      if (reverseMap.find(dPos) == reverseMap.end()) {
-                        map[unseen[0]] = dPos;
-                        reverseMap[dPos] = unseen[0];
-                        absorb(dPos, min, max);
-
-                        done = true;
-                      }
-                      if (done) {
-                        break;
-                      }
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                }
-              } else if (aPos.first == bPos.first && aPos.second + 1 == bPos.second) { // bottom
-                std::pair<int, int> dPos;
-
-                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first + 1, aPos.second + 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second + 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else {
-                  bool done = false;
-                  for (int j = 0;; j++) {
-                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                      const std::pair<int, int> &direction = DIRECTIONS[k];
-                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                      if (reverseMap.find(dPos) == reverseMap.end()) {
-                        map[unseen[0]] = dPos;
-                        reverseMap[dPos] = unseen[0];
-                        absorb(dPos, min, max);
-
-                        done = true;
-                      }
-                      if (done) {
-                        break;
-                      }
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                }
-              } else if (aPos.first - 1 == bPos.first && aPos.second + 1 == bPos.second) { // bottom left
-                std::pair<int, int> dPos;
-
-                if (reverseMap.find(dPos = std::pair<int, int>(aPos.first, aPos.second + 1)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else if (reverseMap.find(dPos = std::pair<int, int>(aPos.first - 1, aPos.second)) == reverseMap.end()) {
-                  map[unseen[0]] = dPos;
-                  reverseMap[dPos] = unseen[0];
-                  absorb(dPos, min, max);
-                } else {
-                  bool done = false;
-                  for (int j = 0;; j++) {
-                    for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                      const std::pair<int, int> &direction = DIRECTIONS[k];
-                      const std::pair<int, int> dPos = {direction.first * j, direction.second * j};
-
-                      if (reverseMap.find(dPos) == reverseMap.end()) {
-                        map[unseen[0]] = dPos;
-                        reverseMap[dPos] = unseen[0];
-                        absorb(dPos, min, max);
-
-                        done = true;
-                      }
-                      if (done) {
-                        break;
-                      }
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                }
-              } else { // none
-                bool done = false;
-                for (int j = 0;; j++) {
-                  for (size_t k = 0; k < DIRECTIONS.size(); k++) {
-                    const std::pair<int, int> &direction = DIRECTIONS[k];
-                    const std::pair<int, int> aPos = {direction.first * j, direction.second * j};
-
-                    if (
-                      reverseMap.find(aPos) == reverseMap.end()
-                    ) {
-                      map[unseen[0]] = aPos;
-                      reverseMap[aPos] = unseen[0];
-                      absorb(aPos, min, max);
-
-                      done = true;
-                    }
-                    if (done) {
-                      break;
-                    }
-                  }
-                  if (done) {
-                    break;
-                  }
-                }
-              }
-            } else { // seen.size() == 3
-              // nothing
-            }
+            vertexQueue.pop_front();
           }
 
-          vertexQueue.pop_front();
+          islands.push_back(std::move(island));
         }
       }
     }
 
-    {
-      uvs->resize(vertex_count);
+    // std::cout << "get uvs 3" << std::endl;
 
-      float uvWidth = (float)(max.first - min.first);
-      float uvHeight = (float)(max.second - min.second);
-      for (uint32_t i = 0; i < vertex_count; i++) {
-        std::pair<int, int> &v = map[i];
-        Uv &uv = (*uvs)[i];
-        uv.u = (float)(v.first - min.first) / uvWidth;
-        uv.v = (float)(v.second - min.second) / uvHeight;
+    // join islands
+    if (islands.size() > 1) {
+      const std::vector<uint16_t> &firstIsland = islands[0];
+      const uint16_t &a = firstIsland.back();
+      const uint16_t &b = adjacentVertices[a].back();
+      for (size_t i = 1; i < islands.size(); i++) {
+        const std::vector<uint16_t> &island = islands[i];
+        const uint16_t &c = island[0];
+
+        const MLVec3f faceNormal = getTriangleNormal(vertex[a], vertex[b], vertex[c]);
+        {
+          std::vector<uint16_t> &connectedVertices = adjacentVertices[a];
+          MLVec3f vertexNormal = faceNormal;
+          for (size_t j = 0; j < connectedVertices.size(); j++) {
+            const uint16_t &connectedVertex = connectedVertices[j];
+            vertexNormal = addVectors(vertexNormal, faceNormals[connectedVertex]);
+          }
+          vertexNormal = divideVector(vertexNormal, (float)(connectedVertices.size() + 1));
+
+          connectedVertices.push_back(c);
+          sortConnectedVertices(vertex, a, vertexNormal, connectedVertices);
+        }
+        {
+          std::vector<uint16_t> &connectedVertices = adjacentVertices[b];
+          MLVec3f vertexNormal = faceNormal;
+          for (size_t j = 0; j < connectedVertices.size(); j++) {
+            const uint16_t &connectedVertex = connectedVertices[j];
+            vertexNormal = addVectors(vertexNormal, faceNormals[connectedVertex]);
+          }
+          vertexNormal = divideVector(vertexNormal, (float)(connectedVertices.size() + 1));
+
+          connectedVertices.push_back(c);
+          sortConnectedVertices(vertex, b, vertexNormal, connectedVertices);
+        }
+        {
+          std::vector<uint16_t> &connectedVertices = adjacentVertices[c];
+          MLVec3f vertexNormal = addVectors(faceNormal, faceNormal);
+          for (size_t j = 0; j < connectedVertices.size(); j++) {
+            const uint16_t &connectedVertex = connectedVertices[j];
+            vertexNormal = addVectors(vertexNormal, faceNormals[connectedVertex]);
+          }
+          vertexNormal = divideVector(vertexNormal, (float)(connectedVertices.size() + 2));
+
+          connectedVertices.push_back(a);
+          connectedVertices.push_back(b);
+          sortConnectedVertices(vertex, c, vertexNormal, connectedVertices);
+        }
       }
     }
+
+    // std::cout << "get uvs 4" << std::endl;
+
+    // find max depth from center
+    unsigned int maxDepth = 0;
+    {
+      std::deque<std::pair<uint16_t, uint16_t>> vertexQueue = {std::pair<uint16_t, unsigned int>(minDistSqIndex, 0)};
+      std::vector<bool> vertexSeenIndex(vertex_count, false);
+      vertexSeenIndex[minDistSqIndex] = true;
+
+      while (vertexQueue.size() > 0) {
+        const std::pair<uint16_t, unsigned int> &entry = vertexQueue.front();
+        const uint16_t &vertexIndex = entry.first;
+        const unsigned int &depth = entry.second;
+
+        if (depth > maxDepth) {
+          maxDepth = depth;
+        }
+
+        const std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
+        for (size_t j = 0; j < connectedVertices.size(); j++) {
+          const uint16_t connectedVertex = connectedVertices[j];
+          if (!vertexSeenIndex[connectedVertex]) {
+            vertexQueue.push_back(std::pair<uint16_t, unsigned int>{connectedVertex, depth + 1});
+            vertexSeenIndex[connectedVertex] = true;
+          }
+        }
+
+        vertexQueue.pop_front();
+      }
+    }
+
+    // std::cout << "get uvs 5" << std::endl;
+
+    uvs->resize(vertex_count);
+    {
+      std::deque<LayerQueueEntry> vertexQueue = {
+        LayerQueueEntry{minDistSqIndex, 0, 0, 0, (float)M_PI*2.0f},
+      };
+      std::vector<bool> vertexSeenIndex(vertex_count, false);
+      vertexSeenIndex[minDistSqIndex] = true;
+      while (vertexQueue.size() > 0) {
+        const LayerQueueEntry &entry = vertexQueue.front();
+        const uint16_t &vertexIndex = entry.vertexIndex;
+        const unsigned int &depth = entry.depth;
+        const size_t &radialIndex = entry.radialIndex;
+        const float &radiusStart = entry.radiusStart;
+        float radiusEnd = entry.radiusEnd;
+
+        const std::vector<uint16_t> &connectedVertices = adjacentVertices[vertexIndex];
+        const float radiusSliceWidth = 1.0f/(float)(connectedVertices.size()-1) * (radiusEnd - radiusStart);
+        if (radiusSliceWidth > (float)M_PI/2.0f) {
+          radiusEnd = radiusStart + ((radiusEnd - radiusStart) / (radiusSliceWidth / (float)M_PI/2.0f));
+        }
+
+        float angle = radiusStart + ((float)radialIndex/(float)(connectedVertices.size()-1)) * (radiusEnd - radiusStart);
+        angle = -angle + (float)M_PI/2.0f;
+
+        (*uvs)[vertexIndex] = Uv{
+          0.5f + std::cos(angle) * (float)depth/(float)maxDepth / 2.0f,
+          0.5f + std::sin(angle) * (float)depth/(float)maxDepth / 2.0f
+        };
+
+        for (size_t j = 0; j < connectedVertices.size(); j++) {
+          const uint16_t connectedVertex = connectedVertices[j];
+          if (!vertexSeenIndex[connectedVertex]) {
+            vertexQueue.push_back(LayerQueueEntry{
+              connectedVertex,
+              depth + 1,
+              j,
+              radiusStart + (float)j / (float)(connectedVertices.size()-1) * (radiusEnd - radiusStart),
+              radiusStart + (float)(j+1) / (float)(connectedVertices.size()-1) * (radiusEnd - radiusStart)
+            });
+            vertexSeenIndex[connectedVertex] = true;
+          }
+        }
+
+        vertexQueue.pop_front();
+      }
+    }
+
+    // std::cout << "get uvs 6" << std::endl;
   } else {
     uvs->clear();
   }
@@ -3467,9 +3214,13 @@ NAN_METHOD(MLContext::PostPollEvents) {
           }
 
           std::vector<Uv> &localUvs = uvs[i];
-          getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localUvs);
+          getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, meshRequestExtentsMap[id], &localUvs);
+
+          // std::cout << "set buffers 1" << std::endl;
 
           meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localUvs, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
+
+          // std::cout << "set buffers 2" << std::endl;
 
           if (cameraMeshEnabled && meshBuffers.find(id) == meshBuffers.begin()) {
             {
@@ -3499,7 +3250,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               {
                 GLuint error = glGetError();
                 if (error) {
-                  std::cout << "error 8 " << error << std::endl;
+                  std::cout << "error 2 " << error << std::endl;
                 }
               }
 
@@ -3512,7 +3263,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               {
                 GLuint error = glGetError();
                 if (error) {
-                  std::cout << "error 10 " << error << std::endl;
+                  std::cout << "error 3 " << error << std::endl;
                 }
               }
 
@@ -3524,7 +3275,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               {
                 GLuint error = glGetError();
                 if (error) {
-                  std::cout << "error 11 " << error << std::endl;
+                  std::cout << "error 4 " << error << std::endl;
                 }
               }
             }
