@@ -3528,9 +3528,8 @@ NAN_METHOD(MLContext::PostPollEvents) {
               }
 
               glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
-              glClearColor(1, 1, 1, 1);
-              glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
               glClearColor(0, 0, 0, 1); // XXX
+              glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
               glDrawElements(GL_TRIANGLES, meshBuffer->numIndices, GL_UNSIGNED_SHORT, 0);
 
               {
