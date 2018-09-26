@@ -2062,11 +2062,6 @@ NAN_METHOD(MLContext::Present) {
       std::cout << "ML camera mesh 2 program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
-    /* mlContext->cameraMeshIndexLocation2 = glGetAttribLocation(mlContext->cameraMeshProgram2, "index");
-    if (mlContext->cameraMeshIndexLocation2 == -1) {
-      std::cout << "ML camera mesh 2 program failed to get attrib location for 'index'" << std::endl;
-      return;
-    } */
     mlContext->cameraMeshModelViewMatrixLocation2 = glGetUniformLocation(mlContext->cameraMeshProgram2, "modelViewMatrix");
     if (mlContext->cameraMeshModelViewMatrixLocation2 == -1) {
       std::cout << "ML camera mesh 2 program failed to get uniform location for 'modelViewMatrix'" << std::endl;
