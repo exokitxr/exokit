@@ -1515,26 +1515,26 @@ uniform mat4 projectionMatrix;\n\
 uniform mat4 modelViewMatrix;\n\
 \n\
 in vec3 position;\n\
-in uint index;\n\
+// in uint index;\n\
 flat out uint vIndex;\n\
 \n\
 void main() {\n\
-  vIndex = index;\n\
+  // vIndex = index;\n\
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n\
 }\n\
 ";
 const char *cameraMeshFsh1 = "\
 #version 330\n\
 \n\
-flat in uint vIndex;\n\
+// flat in uint vIndex;\n\
 out vec4 fragColor;\n\
 \n\
 void main() {\n\
-  float f = float(vIndex);\n\
+  /* float f = float(vIndex);\n\
   float b = floor(mod(f, 256.0));\n\
   f = (f - b) / 256.0;\n\
-  float g = floor(mod(f, 256.0));\n\
-  fragColor = vec4(0.0, g/255.0, b/255.0, 1.0);\n\
+  float g = floor(mod(f, 256.0)); */\n\
+  fragColor = vec4(1.0);\n\
 }\n\
 ";
 const char *cameraMeshVsh2 = "\
@@ -1572,6 +1572,7 @@ void main() {\n\
   // if (index == vIndex) {\n\
   if (texture2D(prevStageTexture, vUv).r > 0.0) {\n\
     fragColor = texture2D(cameraInTexture, vUv);\n\
+    fragColor.r += 0.1;\n\
   } else {\n\
     discard;\n\
   }\n\
@@ -1972,11 +1973,11 @@ NAN_METHOD(MLContext::Present) {
       std::cout << "ML camera mesh 1 program failed to get attrib location for 'position'" << std::endl;
       return;
     }
-    mlContext->cameraMeshIndexLocation1 = glGetAttribLocation(mlContext->cameraMeshProgram1, "index");
+    /* mlContext->cameraMeshIndexLocation1 = glGetAttribLocation(mlContext->cameraMeshProgram1, "index");
     if (mlContext->cameraMeshIndexLocation1 == -1) {
       std::cout << "ML camera mesh 1 program failed to get attrib location for 'index'" << std::endl;
       return;
-    }
+    } */
     mlContext->cameraMeshModelViewMatrixLocation1 = glGetUniformLocation(mlContext->cameraMeshProgram1, "modelViewMatrix");
     if (mlContext->cameraMeshModelViewMatrixLocation1 == -1) {
       std::cout << "ML camera mesh 1 program failed to get uniform location for 'modelViewMatrix'" << std::endl;
@@ -3502,16 +3503,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
                 }
               }
 
-              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->indexBuffer);
-              glEnableVertexAttribArray(mlContext->cameraMeshIndexLocation1);
-              glVertexAttribIPointer(mlContext->cameraMeshIndexLocation1, 1, GL_UNSIGNED_INT, 0, 0);
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 9 " << error << std::endl;
-                }
-              }
+              // glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->indexBuffer);
+              // glEnableVertexAttribArray(mlContext->cameraMeshIndexLocation1);
+              // glVertexAttribIPointer(mlContext->cameraMeshIndexLocation1, 1, GL_UNSIGNED_SHORT, 0, 0);
 
               glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer->indexBuffer);
 
