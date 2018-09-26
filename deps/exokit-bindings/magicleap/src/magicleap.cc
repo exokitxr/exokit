@@ -2243,8 +2243,8 @@ NAN_METHOD(MLContext::Exit) {
     cameraThread.join();
     
     MLResult result = MLCameraDisconnect();
-    if (result == MLResult_Ok) {
-      ML_LOG(Error, "%s: Failed to disconnect camera client.", application_name);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: Failed to disconnect camera client: %x", application_name, result);
       info.GetReturnValue().Set(Nan::Null());
       return;
     }
