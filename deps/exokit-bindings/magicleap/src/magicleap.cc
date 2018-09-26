@@ -70,6 +70,7 @@ MLMeshingMeshRequest meshRequest;
 std::map<std::string, bool> meshRequestNewMap;
 std::map<std::string, bool> meshRequestRemovedMap;
 std::map<std::string, bool> meshRequestUnchangedMap;
+std::map<std::string, MLMeshingExtents> meshRequestExtentsMap;
 MLHandle meshRequestHandle;
 MLMeshingMesh mesh;
 bool meshRequestsPending = false;
@@ -3389,9 +3390,11 @@ NAN_METHOD(MLContext::PostPollEvents) {
       meshRequestNewMap.clear();
       meshRequestRemovedMap.clear();
       meshRequestUnchangedMap.clear();
+      meshRequestExtentsMap.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
         const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
         const MLMeshingMeshState &state = meshBlockInfo.state;
+        const MLMeshingExtents &extents = meshBlockInfo.extents;
         MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
         meshBlockRequest.id = meshBlockInfo.id;
         // meshBlockRequest.level = MLMeshingLOD_Minimum;
@@ -3402,6 +3405,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
         meshRequestRemovedMap[id] = (state == MLMeshingMeshState_Deleted);
         meshRequestUnchangedMap[id] = (state == MLMeshingMeshState_Unchanged);
+        meshRequestExtentsMap[id] = extents;
       }
       numMeshBlockRequests = dataCount;
 
