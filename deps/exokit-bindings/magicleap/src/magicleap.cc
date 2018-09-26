@@ -36,6 +36,7 @@ Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
 
 bool cameraConnected = false;
+std::thread cameraThread;
 // std::mutex cameraRequestsMutex;
 // std::mutex cameraResponseMutex;
 std::vector<CameraRequest *> cameraRequests;
@@ -2238,6 +2239,20 @@ NAN_METHOD(MLContext::Present) {
 NAN_METHOD(MLContext::Exit) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
+  if (cameraConnected) {
+    cameraConnected = false;
+
+    uv_sem_post(&cameraConvertSem);
+    cameraThread.join();
+    
+    MLResult result = MLCameraDisconnect();
+    if (result == MLResult_Ok) {
+      ML_LOG(Error, "%s: Failed to disconnect camera client.", application_name);
+      info.GetReturnValue().Set(Nan::Null());
+      return;
+    }
+  }
+
   if (MLGraphicsDestroyClient(&mlContext->graphics_client) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
     info.GetReturnValue().Set(Nan::Null());
@@ -2559,15 +2574,19 @@ MLResult connectCamera() {
   if (result == MLResult_Ok) {
     cameraConnected = true;
 
-    std::thread([]() -> void {
+    cameraThread = std::thread([]() -> void {
       for (;;) {
         uv_sem_wait(&cameraConvertSem);
 
-        cameraRequestSize = SjpegCompress(cameraRequestRgb, CAMERA_SIZE[0], CAMERA_SIZE[1], 50.0f, &cameraRequestJpeg);
+        if (cameraConnected) {
+          cameraRequestSize = SjpegCompress(cameraRequestRgb, CAMERA_SIZE[0], CAMERA_SIZE[1], 50.0f, &cameraRequestJpeg);
 
-        uv_async_send(&cameraConvertAsync);
+          uv_async_send(&cameraConvertAsync);
+        } else {
+          break;
+        }
       }
-    }).detach();
+    });
   }
   return result;
 }
