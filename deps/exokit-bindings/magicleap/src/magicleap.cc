@@ -3481,60 +3481,16 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
             {
               glBindVertexArray(mlContext->cameraMeshVao1);
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 2 " << error << std::endl;
-                }
-              }
-
               glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraMeshFbo);
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 3 " << error << std::endl;
-                }
-              }
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 4 " << error << std::endl;
-                }
-              }
-
               glUseProgram(mlContext->cameraMeshProgram1);
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 5 " << error << std::endl;
-                }
-              }
 
               const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
               const MLTransform &transform = cameraInfo.transform;
               const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
               glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation1, 1, false, modelView.matrix_colmajor);
 
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 6 " << error << std::endl;
-                }
-              }
-
               const MLMat4f &projection = cameraInfo.projection;
               glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation1, 1, false, projection.matrix_colmajor);
-
-              {
-                GLuint error = glGetError();
-                if (error) {
-                  std::cout << "error 7 " << error << std::endl;
-                }
-              }
 
               glBindBuffer(GL_ARRAY_BUFFER, meshBuffer->positionBuffer);
               glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation1);
