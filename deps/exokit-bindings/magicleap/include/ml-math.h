@@ -18,6 +18,7 @@ MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b);
 float vectorLengthSq(const MLVec3f &v);
 float vectorLength(const MLVec3f &v);
 MLVec3f normalizeVector(const MLVec3f &v);
+MLVec3f applyVectorQuaternion(const MLVec3f &v, const MLQuaternionf &q);
 float quaternionLength(const MLQuaternionf &q);
 MLQuaternionf normalizeQuaternion(const MLQuaternionf &q);
 MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const MLVec3f &vTo);
