@@ -62,6 +62,23 @@ MLVec3f normalizeVector(const MLVec3f &v) {
   return divideVector(v, vectorLength(v));
 }
 
+MLVec3f applyVectorQuaternion(const MLVec3f &v, const MLQuaternionf &q) {
+  // calculate quat * vector
+
+  const float ix = q.w * v.x + q.y * v.z - q.z * v.y;
+  const float iy = q.w * v.y + q.z * v.x - q.x * v.z;
+  const float iz = q.w * v.z + q.x * v.y - q.y * v.x;
+  const float iw = -q.x * v.x - q.y * v.y - q.z * v.z;
+
+  // calculate result * inverse quat
+
+  return MLVec3f{
+    ix * q.w + iw * - q.x + iy * - q.z - iz * - q.y,
+    iy * q.w + iw * - q.y + iz * - q.x - ix * - q.z,
+    iz * q.w + iw * - q.z + ix * - q.y - iy * - q.x
+  };
+}
+
 float quaternionLength(const MLQuaternionf &q) {
   return sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
 }
