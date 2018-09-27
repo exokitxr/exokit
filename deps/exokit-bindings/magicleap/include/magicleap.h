@@ -55,6 +55,7 @@ using namespace std::chrono_literals;
 #define CONTROLLER_ENTRY_SIZE (3 + 4 + 6)
 #define CAMERA_REQUEST_PLANE_BUFFER_SIZE (5 * 1024 * 1024)
 constexpr milliseconds CAMERA_PREVIEW_DELAY = 150ms;
+constexpr milliseconds CAMERA_ADJUST_DELAY = CAMERA_PREVIEW_DELAY*2;
 
 namespace ml {
 
@@ -110,15 +111,18 @@ public:
 
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
+  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint vertexBuffer2, GLuint uvBuffer, GLuint uvBuffer2, GLuint indexBuffer, GLuint fbo, GLuint texture);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
   void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<MLVec3f> *vertices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged);
+  void swapBuffers();
 
   GLuint positionBuffer;
   GLuint normalBuffer;
   GLuint vertexBuffer;
+  GLuint vertexBuffer2;
   GLuint uvBuffer;
+  GLuint uvBuffer2;
   GLuint indexBuffer;
   GLuint fbo;
   GLuint texture;
@@ -131,8 +135,13 @@ public:
   uint32_t numVertices;
   float *uvs;
   uint32_t numUvs;
+  float *vertices2;
+  uint32_t numVertices2;
+  float *uvs2;
+  uint32_t numUvs2;
   bool isNew;
   bool isUnchanged;
+  bool dirtyVertices;
 };
 
 class MLMesher : public ObjectWrap {
@@ -148,6 +157,7 @@ public:
   static NAN_METHOD(Destroy);
 
   void Poll();
+  void Repoll();
 
 // protected:
   Nan::Persistent<Function> cb;
@@ -227,11 +237,16 @@ public:
   Nan::Persistent<ArrayBuffer> data;
 };
 
-class CameraMeshRequest {
+class CameraMeshPreviewRequest {
 public:
-  // EGLImageKHR yuv_img;
   MLMat4f modelView;
   MLMat4f projection;
+  milliseconds ms;
+};
+
+class CameraPosition {
+public:
+  MLVec3f position;
   milliseconds ms;
 };
 
