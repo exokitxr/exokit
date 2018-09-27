@@ -3120,7 +3120,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
           }
         }
 
-        if (stability > 0.0f && stability < 0.005f) {
+        if (stability > 0.0f && stability < 0.01f) {
           MLHandle output;
           MLResult result = MLCameraGetPreviewStream(&output);
           if (result == MLResult_Ok) {
