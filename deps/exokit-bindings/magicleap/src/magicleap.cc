@@ -1566,13 +1566,6 @@ void RunCameraInMainThread(uv_async_t *handle) {
     const milliseconds ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch()) + CAMERA_PREVIEW_DELAY;
 
     cameraMeshPreviewRequests.push_back(CameraMeshPreviewRequest{modelView, projection, ms});
-
-    cameraPositions.push_back(
-      CameraPosition{
-        addVectors(transform.position, applyVectorQuaternion(MLVec3f{0.0f, 0.0f, -1.0f}, transform.rotation)),
-        ms
-      }
-    );
   }
 }
 
@@ -2474,6 +2467,27 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           }
         }
 
+        {
+          const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
+          const MLTransform &transform = cameraInfo.transform;
+          const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+          cameraPositions.push_back(
+            CameraPosition{
+              addVectors(transform.position, applyVectorQuaternion(MLVec3f{0.0f, 0.0f, -1.0f}, transform.rotation)),
+              now
+            }
+          );
+
+          while (cameraPositions.size() > 0) {
+            const CameraPosition &cameraPosition = cameraPositions.front();
+            if (cameraPosition.ms < (now - CAMERA_ADJUST_DELAY)) {
+              cameraPositions.pop_front();
+            } else {
+              break;
+            }
+          }
+        }
+
         info.GetReturnValue().Set(JS_BOOL(true));
       } else {
         ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
@@ -3006,7 +3020,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-            
+
             glClearColor(0.1, 0.1, 0.1, 1.0);
             glClear(GL_COLOR_BUFFER_BIT);
             glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -3163,14 +3177,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
         }
 
         cameraMeshPreviewRequests.pop_front();
-      } else {
-        break;
-      }
-    }
-    while (cameraPositions.size() > 0) {
-      const CameraPosition &cameraPosition = cameraPositions.front();
-      if (cameraPosition.ms < (now - CAMERA_ADJUST_DELAY)) {
-        cameraPositions.pop_front();
       } else {
         break;
       }
