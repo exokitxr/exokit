@@ -21,6 +21,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <algorithm>
+#include <chrono>
 #include <webgl.h>
 #include <egl/include/egl.h>
 #include <ml_graphics.h>
@@ -46,11 +47,14 @@
 
 using namespace v8;
 using namespace node;
+using namespace std::chrono;
+using namespace std::chrono_literals;
 
 #define MAX_NUM_PLANES (32)
 #define PLANE_ENTRY_SIZE (3 + 4 + 2 + 1)
 #define CONTROLLER_ENTRY_SIZE (3 + 4 + 6)
 #define CAMERA_REQUEST_PLANE_BUFFER_SIZE (5 * 1024 * 1024)
+constexpr milliseconds CAMERA_PREVIEW_DELAY = 150ms;
 
 namespace ml {
 
@@ -106,27 +110,29 @@ public:
 
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint uvBuffer, GLuint indexBuffer);
+  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged, const MLVec3f &center);
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<MLVec3f> *vertices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged);
 
   GLuint positionBuffer;
   GLuint normalBuffer;
+  GLuint vertexBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;
+  GLuint fbo;
   GLuint texture;
-  GLuint texture2;
   float *positions;
   uint32_t numPositions;
   float *normals;
   uint16_t *indices;
   uint16_t numIndices;
+  float *vertices;
+  uint32_t numVertices;
   float *uvs;
   uint32_t numUvs;
   bool isNew;
   bool isUnchanged;
-  MLVec3f center;
 };
 
 class MLMesher : public ObjectWrap {
@@ -221,6 +227,14 @@ public:
   Nan::Persistent<ArrayBuffer> data;
 };
 
+class CameraMeshRequest {
+public:
+  // EGLImageKHR yuv_img;
+  MLMat4f modelView;
+  MLMat4f projection;
+  milliseconds ms;
+};
+
 class MLContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
@@ -294,26 +308,12 @@ public:
   GLuint cameraOutTexture;
   GLuint cameraFbo;
 
-  GLuint cameraMeshFbo;
-  // GLuint cameraMeshTexture;
-  GLuint cameraMeshDepthTexture;
-
-  GLuint cameraMeshVao1;
-  GLuint cameraMeshProgram1;
-  GLuint cameraMeshPositionLocation1;
-  // GLuint cameraMeshIndexLocation1;
-  GLuint cameraMeshModelViewMatrixLocation1;
-  GLuint cameraMeshProjectionMatrixLocation1;
-
-  GLuint cameraMeshFbo2;
-  GLuint cameraMeshDepthTexture2;
   GLuint cameraMeshVao2;
   GLuint cameraMeshProgram2;
   GLuint cameraMeshPositionLocation2;
   GLuint cameraMeshUvLocation2;
   GLuint cameraMeshModelViewMatrixLocation2;
   GLuint cameraMeshProjectionMatrixLocation2;
-  GLuint cameraMeshPrevStageTextureLocation2;
   GLuint cameraMeshCameraInTextureLocation2;
 
   // occlusion
