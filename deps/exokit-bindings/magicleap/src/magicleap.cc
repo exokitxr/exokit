@@ -1476,7 +1476,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
       NATIVEwindow *window = application_context.window;
       WebGLRenderingContext *gl = application_context.gl;
 
-      ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+      // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
       EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
 
       glBindVertexArray(mlContext->cameraVao);
@@ -2470,13 +2470,13 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         {
           const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
           const MLTransform &transform = cameraInfo.transform;
+          const MLVec3f &position = addVectors(transform.position, applyVectorQuaternion(MLVec3f{0.0f, 0.0f, -1.0f}, transform.rotation));
+          const MLQuaternionf &rotation = transform.rotation;
+          const MLMat4f &modelView = composeMatrix(position, rotation);
+          const MLMat4f &projection = cameraInfo.projection;
+          const MLFrustumf &frustum = makeFrustumFromMatrix(multiplyMatrices(projection, invertMatrix(modelView)));
           const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-          cameraPositions.push_back(
-            CameraPosition{
-              addVectors(transform.position, applyVectorQuaternion(MLVec3f{0.0f, 0.0f, -1.0f}, transform.rotation)),
-              now
-            }
-          );
+          cameraPositions.push_back(CameraPosition{position, frustum, now});
 
           while (cameraPositions.size() > 0) {
             const CameraPosition &cameraPosition = cameraPositions.front();
@@ -3120,11 +3120,11 @@ NAN_METHOD(MLContext::PostPollEvents) {
           }
         }
 
-        if (stability > 0.0f && stability < 0.01f) {
+        if (stability > 0.0f && stability < 0.03f) {
           MLHandle output;
           MLResult result = MLCameraGetPreviewStream(&output);
           if (result == MLResult_Ok) {
-            ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+            // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
             EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
 
             if (!meshed) {
