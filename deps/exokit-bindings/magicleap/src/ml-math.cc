@@ -113,6 +113,10 @@ MLQuaternionf multiplyQuaternions(const MLQuaternionf &qa, const MLQuaternionf &
   };
 }
 
+float dotQuaternions(const MLQuaternionf &a, const MLQuaternionf &b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
 MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const MLVec3f &vTo) {
   constexpr float EPS = 0.000001;
 
@@ -137,6 +141,14 @@ MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const MLVec3f &
     r
   };
   return normalizeQuaternion(result);
+}
+
+float clampf(float x, float upper, float lower) {
+  return std::min(upper, std::max(x, lower));
+}
+
+float getAngleBetweenQuaternions(const MLQuaternionf &from, const MLQuaternionf &to) {
+  return 2.0f * std::acos( std::abs( clampf( dotQuaternions( from, to ), -1.0f, 1.0f ) ) );
 }
 
 MLVec3f getTriangleNormal(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c) {
@@ -442,7 +454,7 @@ MLFrustumf makeFrustumFromMatrix(const MLMat4f &m) {
   return result;
 }
 
-bool frustumIntersectsSphere(const MLFrustumf &frustum, const MLSphere &sphere) {
+bool frustumIntersectsSphere(const MLFrustumf &frustum, const MLSpheref &sphere) {
   const MLPlanef *planes = frustum.planes;
   const MLVec3f &center = sphere.center;
   const float negRadius = -sphere.radius;
