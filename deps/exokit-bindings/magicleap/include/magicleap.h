@@ -264,6 +264,7 @@ public:
 class CameraPosition {
 public:
   MLVec3f position;
+  MLFrustumf frustum;
   milliseconds ms;
 };
 
