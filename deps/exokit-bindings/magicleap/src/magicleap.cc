@@ -3123,12 +3123,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glActiveTexture(GL_TEXTURE0);
             
             if (match != cameraMeshPreviewRequests.end()) {
-              glGenTextures(1, &cameraMeshPreviewRequest.texture);
-              glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
-              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            } else {
               // cameraMeshPreviewRequest.position = match->position;
               // cameraMeshPreviewRequest.rotation = match->rotation;
               // cameraMeshPreviewRequest.modelViewInverse = match->modelViewInverse;
@@ -3141,6 +3135,12 @@ NAN_METHOD(MLContext::PostPollEvents) {
               glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
               
               eraseList.push_back(match);
+            } else {
+              glGenTextures(1, &cameraMeshPreviewRequest.texture);
+              glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
+              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             }
 
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, cameraMeshPreviewRequest.texture, 0);
