@@ -263,6 +263,7 @@ public:
 
 class MeshRequestSpec {
 public:
+  MLVec3f center;
   bool isNew;
   bool isRemoved;
   bool isUnchanged;

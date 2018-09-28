@@ -3277,6 +3277,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
         const std::string &id = id2String(meshBlockInfo.id);
         meshRequestSpecMap[id] = {
+          extents.center,
           state == MLMeshingMeshState_New,
           state == MLMeshingMeshState_Deleted,
           state == MLMeshingMeshState_Unchanged
