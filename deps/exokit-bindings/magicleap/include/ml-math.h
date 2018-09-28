@@ -26,6 +26,7 @@ MLVec3f getTriangleNormal(const MLVec3f &a, const MLVec3f &b, const MLVec3f &c);
 void orthonormalizeVectors(MLVec3f &normal, MLVec3f &tangent);
 MLQuaternionf getLookAtQuaternion(const MLVec3f &lookAt, const MLVec3f &upDirection);
 MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m);
+MLMat4f multiplyMatrices(const MLMat4f &a, const MLMat4f &b);
 MLMat4f getLookAtMatrix(const MLVec3f &eye, const MLVec3f &target, const MLVec3f &up);
 MLMat4f composeMatrix(
   const MLVec3f &position = MLVec3f{0,0,0},
@@ -33,6 +34,11 @@ MLMat4f composeMatrix(
   const MLVec3f &scale = MLVec3f{1,1,1}
 );
 MLMat4f invertMatrix(const MLMat4f &matrix);
+MLPlanef makePlaneFromComponents(float x, float y, float z, float w);
+MLPlanef normalizePlane(const MLPlanef &p);
+float distanceFromPlaneToPoint(const MLPlanef &plane, const MLVec3f &point);
+MLFrustumf makeFrustumFromMatrix(const MLMat4f &m);
+bool frustumIntersectsSphere(const MLFrustumf &frustum, const MLSphere &sphere);
 
 // hands
 
