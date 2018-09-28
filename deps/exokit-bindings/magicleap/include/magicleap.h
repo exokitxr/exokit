@@ -56,6 +56,7 @@ using namespace std::chrono_literals;
 #define CAMERA_REQUEST_PLANE_BUFFER_SIZE (5 * 1024 * 1024)
 constexpr milliseconds CAMERA_PREVIEW_DELAY = 150ms;
 constexpr milliseconds CAMERA_ADJUST_DELAY = CAMERA_PREVIEW_DELAY;
+constexpr size_t MAX_CAMERA_MESH_TEXTURES = 10;
 
 namespace ml {
 
