@@ -70,9 +70,7 @@ std::vector<MLMeshingBlockRequest> meshBlockRequests(128);
 uint32_t numMeshBlockRequests = 0;
 uint32_t meshBlockRequestIndex = 0;
 MLMeshingMeshRequest meshRequest;
-std::map<std::string, bool> meshRequestNewMap;
-std::map<std::string, bool> meshRequestRemovedMap;
-std::map<std::string, bool> meshRequestUnchangedMap;
+std::map<std::string, MeshRequestSpec> meshRequestSpecMap;
 MLHandle meshRequestHandle;
 MLMeshingMesh mesh;
 bool meshRequestsPending = false;
@@ -282,13 +280,11 @@ static void onUnloadResources(void* application_context) {
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint vertexBuffer2, GLuint uvBuffer, GLuint uvBuffer2, GLuint indexBuffer, GLuint fbo, GLuint texture) :
+MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture) :
   positionBuffer(positionBuffer),
   normalBuffer(normalBuffer),
   vertexBuffer(vertexBuffer),
-  vertexBuffer2(vertexBuffer2),
   uvBuffer(uvBuffer),
-  uvBuffer2(uvBuffer2),
   indexBuffer(indexBuffer),
   fbo(fbo),
   texture(texture),
@@ -301,21 +297,14 @@ MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertex
   numVertices(0),
   uvs(nullptr),
   numUvs(0),
-  vertices2(nullptr),
-  numVertices2(0),
-  uvs2(nullptr),
-  numUvs2(0),
   isNew(true),
-  isUnchanged(false),
-  dirtyVertices(false)
+  isUnchanged(false)
   {}
 MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
   normalBuffer = meshBuffer.normalBuffer;
   vertexBuffer = meshBuffer.vertexBuffer;
-  vertexBuffer2 = meshBuffer.vertexBuffer2;
   uvBuffer = meshBuffer.uvBuffer;
-  uvBuffer2 = meshBuffer.uvBuffer2;
   indexBuffer = meshBuffer.indexBuffer;
   fbo = meshBuffer.fbo;
   texture = meshBuffer.texture;
@@ -328,13 +317,8 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   numVertices = meshBuffer.numVertices;
   uvs = meshBuffer.uvs;
   numUvs = meshBuffer.numUvs;
-  vertices2 = meshBuffer.vertices2;
-  numVertices2 = meshBuffer.numVertices2;
-  uvs2 = meshBuffer.uvs2;
-  numUvs2 = meshBuffer.numUvs2;
   isNew = meshBuffer.isNew;
   isUnchanged = meshBuffer.isUnchanged;
-  dirtyVertices = meshBuffer.dirtyVertices;
 }
 MeshBuffer::MeshBuffer() :
   positionBuffer(0),
@@ -353,23 +337,18 @@ MeshBuffer::MeshBuffer() :
   numVertices(0),
   uvs(nullptr),
   numUvs(0),
-  vertices2(nullptr),
-  numVertices2(0),
-  uvs2(nullptr),
-  numUvs2(0),
   isNew(true),
-  isUnchanged(false),
-  dirtyVertices(false)
+  isUnchanged(false)
   {}
 
 void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<MLVec3f> *vertices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged) {
   glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
-  glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer2);
+  glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer);
   glBufferData(GL_ARRAY_BUFFER, vertices->size() * 3 * sizeof(float), vertices->data(), GL_DYNAMIC_DRAW);
 
-  glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer2);
+  glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer);
   glBufferData(GL_ARRAY_BUFFER, uvs->size() * 2 * sizeof(float), uvs->data(), GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, this->normalBuffer);
@@ -383,32 +362,81 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->normals = normals;
   this->indices = indices;
   this->numIndices = numIndices;
-  this->vertices2 = (float *)vertices->data();
-  this->numVertices2 = vertices->size() * 3;
-  this->uvs2 = (float *)uvs->data();
-  this->numUvs2 = uvs->size() * 2;
+  this->vertices = (float *)vertices->data();
+  this->numVertices = vertices->size() * 3;
+  this->uvs = (float *)uvs->data();
+  this->numUvs = uvs->size() * 2;
   this->isNew = isNew;
   this->isUnchanged = isUnchanged;
-  this->dirtyVertices = true;
 }
-void MeshBuffer::swapBuffers() {
-  {
-    glBindBuffer(GL_COPY_READ_BUFFER, vertexBuffer2);
-    glBindBuffer(GL_COPY_WRITE_BUFFER, vertexBuffer);
-    glBufferData(GL_COPY_WRITE_BUFFER, numVertices2 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
-    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, numVertices2 * sizeof(float));
+void MeshBuffer::beginRenderCameraAll() {
+  MLContext *mlContext = application_context.mlContext;
+
+  glBindVertexArray(mlContext->cameraMeshVao2);
+  glUseProgram(mlContext->cameraMeshProgram2);
+
+  glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+}
+void MeshBuffer::beginRenderCamera() {
+  MLContext *mlContext = application_context.mlContext;
+
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->fbo);
+
+  glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer);
+  glVertexAttribPointer(mlContext->cameraMeshPositionLocation2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation2);
+
+  glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer);
+  glVertexAttribPointer(mlContext->cameraMeshUvLocation2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(mlContext->cameraMeshUvLocation2);
+}
+void MeshBuffer::renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewRequest) {
+  MLContext *mlContext = application_context.mlContext;
+
+  glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation2, 1, false, cameraMeshPreviewRequest.modelViewInverse.matrix_colmajor);
+  glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation2, 1, false, cameraMeshPreviewRequest.projection.matrix_colmajor);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
+  glUniform1i(mlContext->cameraMeshCameraSnapshotTextureLocation, 0);
+
+  glDrawArrays(GL_TRIANGLES, 0, this->numVertices);
+}
+void MeshBuffer::endRenderCamera() {
+  WebGLRenderingContext *gl = application_context.gl;
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   }
-  {
-    glBindBuffer(GL_COPY_READ_BUFFER, uvBuffer2);
-    glBindBuffer(GL_COPY_WRITE_BUFFER, uvBuffer);
-    glBufferData(GL_COPY_WRITE_BUFFER, numUvs2 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
-    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, numUvs2 * sizeof(float));
+  if (gl->HasProgramBinding()) {
+    glUseProgram(gl->GetProgramBinding());
+  } else {
+    glUseProgram(0);
   }
-  vertices = vertices2;
-  numVertices = numVertices2;
-  uvs = uvs2;
-  numUvs = numUvs2;
-  dirtyVertices = false;
+  if (gl->viewportState.valid) {
+    glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+  } else {
+    glViewport(0, 0, 1280, 1024);
+  }
+  if (gl->HasVertexArrayBinding()) {
+    glBindVertexArray(gl->GetVertexArrayBinding());
+  } else {
+    glBindVertexArray(gl->defaultVao);
+  }
+  if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+    glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+  } else {
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+  }
+  if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  glActiveTexture(gl->activeTexture);
 }
 
 // MLMesher
@@ -480,7 +508,7 @@ void MLMesher::Poll() {
       MLMeshingBlockMesh &blockMesh = blockMeshes[i];
       const std::string &id = id2String(blockMesh.id);
 
-      if (!meshRequestRemovedMap[id]) {
+      if (!meshRequestSpecMap[id].isRemoved) {
         auto iter = meshBuffers.find(id);
 
         if (iter != meshBuffers.end()) {
@@ -558,7 +586,7 @@ void MLMesher::Poll() {
   }
 }
 
-void MLMesher::Repoll() {
+/* void MLMesher::Repoll() {
   if (!this->cb.IsEmpty()) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Repoll");
@@ -611,7 +639,7 @@ void MLMesher::Repoll() {
     };
     asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
   }
-}
+} */
 
 NAN_METHOD(MLMesher::Destroy) {
   MLMesher *mlMesher = ObjectWrap::Unwrap<MLMesher>(info.This());
@@ -1311,7 +1339,7 @@ void CameraRequest::Poll() {
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-MLContext::MLContext() : window(nullptr), gl(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
+MLContext::MLContext() : window(nullptr), gl(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1} {}
 
 MLContext::~MLContext() {}
 
@@ -1479,18 +1507,18 @@ void RunCameraInMainThread(uv_async_t *handle) {
       // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
       EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
 
-      glBindVertexArray(mlContext->cameraVao);
-      glBindFramebuffer(GL_FRAMEBUFFER, mlContext->cameraFbo);
-      glUseProgram(mlContext->cameraProgram);
+      glBindVertexArray(mlContext->cameraContentVao);
+      glBindFramebuffer(GL_FRAMEBUFFER, mlContext->cameraContentFbo);
+      glUseProgram(mlContext->cameraContentProgram);
 
       glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
+      glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraContentCameraInTexture);
       glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
-      glUniform1i(mlContext->cameraInTextureLocation, 0);
+      glUniform1i(mlContext->cameraContentCameraInTextureLocation, 0);
 
       glActiveTexture(GL_TEXTURE1);
-      glBindTexture(GL_TEXTURE_2D, mlContext->contentTexture);
-      glUniform1i(mlContext->contentTextureLocation, 1);
+      glBindTexture(GL_TEXTURE_2D, mlContext->cameraContentContentTexture);
+      glUniform1i(mlContext->cameraContentContentTextureLocation, 1);
 
       glViewport(0, 0, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1554,18 +1582,19 @@ void RunCameraInMainThread(uv_async_t *handle) {
 
     const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
     const MLTransform &transform = cameraInfo.transform;
-    const MLMat4f &modelView = invertMatrix(
-      composeMatrix(
-        addVectors(transform.position, applyVectorQuaternion(MLVec3f{-0.03f, 0.0f, 0.0f}, transform.rotation)),
-        transform.rotation
-      )
+
+    const MLVec3f &position = transform.position;
+    const MLQuaternionf &rotation = transform.rotation;
+    const MLMat4f &modelView = composeMatrix(
+      addVectors(position, applyVectorQuaternion(MLVec3f{-0.03f, 0.0f, 0.0f}, rotation)),
+      rotation
     );
-
+    const MLMat4f &modelViewInverse = invertMatrix(modelView);
     const MLMat4f &projection = cameraInfo.projection;
-
+    const MLFrustumf &frustum = makeFrustumFromMatrix(multiplyMatrices(projection, modelView));
     const milliseconds ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch()) + CAMERA_PREVIEW_DELAY;
 
-    cameraMeshPreviewRequests.push_back(CameraMeshPreviewRequest{modelView, projection, ms});
+    cameraMeshPreviewRequests.push_back(CameraMeshPreviewRequest{position, rotation, modelViewInverse, projection, frustum, 0, ms});
   }
 }
 
@@ -1607,8 +1636,8 @@ void main() {\n\
 }\n\
 ";
 
-// camera stream shader
-const char *cameraVsh = "\
+// camera content shader
+const char *cameraContentVsh = "\
 #version 330\n\
 \n\
 in vec2 point;\n\
@@ -1630,7 +1659,7 @@ void main() {\n\
   gl_Position = vec4(point, 1.0, 1.0);\n\
 }\n\
 ";
-const char *cameraFsh = "\
+const char *cameraContentFsh = "\
 #version 330\n\
 #extension GL_OES_EGL_image_external : enable\n\
 \n\
@@ -1650,6 +1679,34 @@ void main() {\n\
   } else {\n\
     fragColor = vec4(cameraIn.rgb, 1.0);\n\
   }\n\
+}\n\
+";
+
+// camera raw shader
+const char *cameraRawVsh = "\
+#version 330\n\
+\n\
+in vec2 point;\n\
+in vec2 uv;\n\
+out vec2 vUvCamera;\n\
+\n\
+void main() {\n\
+  // vUvCamera = vec2(uv.x, 1.0 - uv.y);\n\
+  vUvCamera = uv;\n\
+  gl_Position = vec4(point, 1.0, 1.0);\n\
+}\n\
+";
+const char *cameraRawFsh = "\
+#version 330\n\
+#extension GL_OES_EGL_image_external : enable\n\
+\n\
+in vec2 vUvCamera;\n\
+out vec4 fragColor;\n\
+\n\
+uniform samplerExternalOES cameraInTexture;\n\
+\n\
+void main() {\n\
+  fragColor = texture2D(cameraInTexture, vUvCamera);\n\
 }\n\
 ";
 
@@ -1676,16 +1733,15 @@ void main() {\n\
   vScreen = screenPosition.xy / screenPosition.w;\n\
   vScreen = vec2(vScreen.x * xfactor, vScreen.y) * factor;\n\
   vScreen = vScreen / 2.0 + 0.5;\n\
-  vScreen.y = 1.0 - vScreen.y;\n\
+  // vScreen.y = 1.0 - vScreen.y;\n\
   vPosition = modelViewPosition.xyz;\n\
-  gl_Position = vec4((uv - 0.5) * 2.0, 0.0, 1.0);\n\
+  gl_Position = vec4((uv - 0.5) * 2.0, screenPosition.z/screenPosition.w, 1.0);\n\
 }\n\
 ";
 const char *cameraMeshFsh2 = "\
 #version 330\n\
-#extension GL_OES_EGL_image_external : enable\n\
 \n\
-uniform samplerExternalOES cameraInTexture;\n\
+uniform sampler2D cameraSnapshotTexture;\n\
 \n\
 in vec2 vScreen;\n\
 in vec3 vPosition;\n\
@@ -1693,10 +1749,9 @@ out vec4 fragColor;\n\
 \n\
 void main() {\n\
   if (vScreen.x >= 0.0 && vScreen.x <= 1.0 && vScreen.y >= 0.0 && vScreen.y <= 1.0) {\n\
-    // vec3 normal = normalize(cross(dFdx(vPosition), dFdy(vPosition)));\n\
     vec3 unnormalizedNormal = cross(dFdx(vPosition), dFdy(vPosition));\n\
     if (unnormalizedNormal.z <= 0) {\n\
-      fragColor = texture2D(cameraInTexture, vScreen);\n\
+      fragColor = texture2D(cameraSnapshotTexture, vScreen);\n\
     } else {\n\
       discard;\n\
     }\n\
@@ -1899,120 +1954,218 @@ NAN_METHOD(MLContext::Present) {
     glDeleteShader(meshFragment);
   }
 
+  // cameraa buffers
+  GLuint pointBuffer;
+  glGenBuffers(1, &pointBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, pointBuffer);
+  static const GLfloat points[] = {
+    -1.0f, -1.0f,
+    1.0f, -1.0f,
+    -1.0f, 1.0f,
+    1.0f, 1.0f,
+  };
+  glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+
+  GLuint uvBuffer;
+  glGenBuffers(1, &uvBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+  static const GLfloat uvs[] = {
+    0.0f, 1.0f,
+    1.0f, 1.0f,
+    0.0f, 0.0f,
+    1.0f, 0.0f,
+  };
+  glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
+
   {
-    // camera shader
-    glGenVertexArrays(1, &mlContext->cameraVao);
-    glBindVertexArray(mlContext->cameraVao);
+    // camera content shader
+    glGenVertexArrays(1, &mlContext->cameraContentVao);
+    glBindVertexArray(mlContext->cameraContentVao);
 
     // vertex Shader
-    GLuint cameraVertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(cameraVertex, 1, &cameraVsh, NULL);
-    glCompileShader(cameraVertex);
+    GLuint cameraContentVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(cameraContentVertex, 1, &cameraContentVsh, NULL);
+    glCompileShader(cameraContentVertex);
     GLint success;
-    glGetShaderiv(cameraVertex, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(cameraContentVertex, GL_COMPILE_STATUS, &success);
     if (!success) {
       char infoLog[4096];
       GLsizei length;
-      glGetShaderInfoLog(cameraVertex, sizeof(infoLog), &length, infoLog);
+      glGetShaderInfoLog(cameraContentVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML camera vertex shader compilation failed:\n" << infoLog << std::endl;
+      std::cout << "ML camera content vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
     // fragment Shader
-    GLuint cameraFragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(cameraFragment, 1, &cameraFsh, NULL);
-    glCompileShader(cameraFragment);
-    glGetShaderiv(cameraFragment, GL_COMPILE_STATUS, &success);
+    GLuint cameraContentFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(cameraContentFragment, 1, &cameraContentFsh, NULL);
+    glCompileShader(cameraContentFragment);
+    glGetShaderiv(cameraContentFragment, GL_COMPILE_STATUS, &success);
     if (!success) {
       char infoLog[4096];
       GLsizei length;
-      glGetShaderInfoLog(cameraFragment, sizeof(infoLog), &length, infoLog);
+      glGetShaderInfoLog(cameraContentFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML camera fragment shader compilation failed:\n" << infoLog << std::endl;
+      std::cout << "ML camera content fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
     // shader Program
-    mlContext->cameraProgram = glCreateProgram();
-    glAttachShader(mlContext->cameraProgram, cameraVertex);
-    glAttachShader(mlContext->cameraProgram, cameraFragment);
-    glLinkProgram(mlContext->cameraProgram);
-    glGetProgramiv(mlContext->cameraProgram, GL_LINK_STATUS, &success);
+    mlContext->cameraContentProgram = glCreateProgram();
+    glAttachShader(mlContext->cameraContentProgram, cameraContentVertex);
+    glAttachShader(mlContext->cameraContentProgram, cameraContentFragment);
+    glLinkProgram(mlContext->cameraContentProgram);
+    glGetProgramiv(mlContext->cameraContentProgram, GL_LINK_STATUS, &success);
     if (!success) {
       char infoLog[4096];
       GLsizei length;
-      glGetShaderInfoLog(mlContext->cameraProgram, sizeof(infoLog), &length, infoLog);
+      glGetShaderInfoLog(mlContext->cameraContentProgram, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML camera program linking failed\n" << infoLog << std::endl;
+      std::cout << "ML camera content program linking failed\n" << infoLog << std::endl;
       return;
     }
 
-    mlContext->cameraPointLocation = glGetAttribLocation(mlContext->cameraProgram, "point");
-    if (mlContext->cameraPointLocation == -1) {
-      std::cout << "ML camera program failed to get attrib location for 'point'" << std::endl;
+    mlContext->cameraContentPointLocation = glGetAttribLocation(mlContext->cameraContentProgram, "point");
+    if (mlContext->cameraContentPointLocation == -1) {
+      std::cout << "ML camera content program failed to get attrib location for 'point'" << std::endl;
       return;
     }
-    mlContext->cameraUvLocation = glGetAttribLocation(mlContext->cameraProgram, "uv");
-    if (mlContext->cameraUvLocation == -1) {
-      std::cout << "ML camera program failed to get attrib location for 'uv'" << std::endl;
+    mlContext->cameraContentUvLocation = glGetAttribLocation(mlContext->cameraContentProgram, "uv");
+    if (mlContext->cameraContentUvLocation == -1) {
+      std::cout << "ML camera content program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
-    mlContext->cameraInTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "cameraInTexture");
-    if (mlContext->cameraInTextureLocation == -1) {
-      std::cout << "ML camera program failed to get uniform location for 'cameraInTexture'" << std::endl;
+    mlContext->cameraContentCameraInTextureLocation = glGetUniformLocation(mlContext->cameraContentProgram, "cameraInTexture");
+    if (mlContext->cameraContentCameraInTextureLocation == -1) {
+      std::cout << "ML camera content program failed to get uniform location for 'cameraInTexture'" << std::endl;
       return;
     }
-    mlContext->contentTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "contentTexture");
-    if (mlContext->contentTextureLocation == -1) {
-      std::cout << "ML camera program failed to get uniform location for 'contentTexture'" << std::endl;
+    mlContext->cameraContentContentTextureLocation = glGetUniformLocation(mlContext->cameraContentProgram, "contentTexture");
+    if (mlContext->cameraContentContentTextureLocation == -1) {
+      std::cout << "ML camera content program failed to get uniform location for 'contentTexture'" << std::endl;
       return;
     }
 
     // delete the shaders as they're linked into our program now and no longer necessery
-    glDeleteShader(cameraVertex);
-    glDeleteShader(cameraFragment);
+    glDeleteShader(cameraContentVertex);
+    glDeleteShader(cameraContentFragment);
 
-    glGenBuffers(1, &mlContext->pointBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, mlContext->pointBuffer);
-    static const GLfloat points[] = {
-      -1.0f, -1.0f,
-      1.0f, -1.0f,
-      -1.0f, 1.0f,
-      1.0f, 1.0f,
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(mlContext->cameraPointLocation);
-    glVertexAttribPointer(mlContext->cameraPointLocation, 2, GL_FLOAT, false, 0, 0);
+    // set up buffers
+    glBindBuffer(GL_ARRAY_BUFFER, pointBuffer);
+    glEnableVertexAttribArray(mlContext->cameraContentPointLocation);
+    glVertexAttribPointer(mlContext->cameraContentPointLocation, 2, GL_FLOAT, false, 0, 0);
 
-    glGenBuffers(1, &mlContext->uvBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, mlContext->uvBuffer);
-    static const GLfloat uvs[] = {
-      0.0f, 1.0f,
-      1.0f, 1.0f,
-      0.0f, 0.0f,
-      1.0f, 0.0f,
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(mlContext->cameraUvLocation);
-    glVertexAttribPointer(mlContext->cameraUvLocation, 2, GL_FLOAT, false, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+    glEnableVertexAttribArray(mlContext->cameraContentUvLocation);
+    glVertexAttribPointer(mlContext->cameraContentUvLocation, 2, GL_FLOAT, false, 0, 0);
 
-    glGenTextures(1, &mlContext->cameraInTexture);
-    mlContext->contentTexture = colorTex;
-    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraInTexture);
+    glGenTextures(1, &mlContext->cameraContentCameraInTexture);
+    mlContext->cameraContentContentTexture = colorTex;
+    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraContentCameraInTexture);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    glGenTextures(1, &mlContext->cameraOutTexture);
-    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
-    glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
+    glGenTextures(1, &mlContext->cameraContentCameraOutTexture);
+    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraContentCameraOutTexture);
+    glBindTexture(GL_TEXTURE_2D, mlContext->cameraContentCameraOutTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    glGenFramebuffers(1, &mlContext->cameraFbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraFbo);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mlContext->cameraOutTexture, 0);
+    glGenFramebuffers(1, &mlContext->cameraContentFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraContentFbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mlContext->cameraContentCameraOutTexture, 0);
+
+    {
+      GLenum result = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+      if (result != GL_FRAMEBUFFER_COMPLETE) {
+        ML_LOG(Error, "%s: Failed to create camera content framebuffer: %x", application_name, result);
+      }
+    }
+  }
+
+  {
+    // camera raw shader
+    glGenVertexArrays(1, &mlContext->cameraRawVao);
+    glBindVertexArray(mlContext->cameraRawVao);
+
+    // vertex Shader
+    GLuint cameraRawVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(cameraRawVertex, 1, &cameraRawVsh, NULL);
+    glCompileShader(cameraRawVertex);
+    GLint success;
+    glGetShaderiv(cameraRawVertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(cameraRawVertex, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera raw vertex shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // fragment Shader
+    GLuint cameraRawFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(cameraRawFragment, 1, &cameraRawFsh, NULL);
+    glCompileShader(cameraRawFragment);
+    glGetShaderiv(cameraRawFragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(cameraRawFragment, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera raw fragment shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // shader Program
+    mlContext->cameraRawProgram = glCreateProgram();
+    glAttachShader(mlContext->cameraRawProgram, cameraRawVertex);
+    glAttachShader(mlContext->cameraRawProgram, cameraRawFragment);
+    glLinkProgram(mlContext->cameraRawProgram);
+    glGetProgramiv(mlContext->cameraRawProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraRawProgram, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera raw program linking failed\n" << infoLog << std::endl;
+      return;
+    }
+
+    mlContext->cameraRawPointLocation = glGetAttribLocation(mlContext->cameraRawProgram, "point");
+    if (mlContext->cameraRawPointLocation == -1) {
+      std::cout << "ML camera raw program failed to get attrib location for 'point'" << std::endl;
+      return;
+    }
+    mlContext->cameraRawUvLocation = glGetAttribLocation(mlContext->cameraRawProgram, "uv");
+    if (mlContext->cameraRawUvLocation == -1) {
+      std::cout << "ML camera raw program failed to get attrib location for 'uv'" << std::endl;
+      return;
+    }
+    mlContext->cameraRawCameraInTextureLocation = glGetUniformLocation(mlContext->cameraRawProgram, "cameraInTexture");
+    if (mlContext->cameraRawCameraInTextureLocation == -1) {
+      std::cout << "ML camera raw program failed to get uniform location for 'cameraInTexture'" << std::endl;
+      return;
+    }
+
+    // delete the shaders as they're linked into our program now and no longer necessery
+    glDeleteShader(cameraRawVertex);
+    glDeleteShader(cameraRawFragment);
+
+    glGenTextures(1, &mlContext->cameraRawCameraInTexture);
+
+    // set up buffers
+    glBindBuffer(GL_ARRAY_BUFFER, pointBuffer);
+    glEnableVertexAttribArray(mlContext->cameraRawPointLocation);
+    glVertexAttribPointer(mlContext->cameraRawPointLocation, 2, GL_FLOAT, false, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+    glEnableVertexAttribArray(mlContext->cameraRawUvLocation);
+    glVertexAttribPointer(mlContext->cameraRawUvLocation, 2, GL_FLOAT, false, 0, 0);
+
+    glGenFramebuffers(1, &mlContext->cameraRawFbo);
 
     {
       GLenum result = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
@@ -2090,9 +2243,9 @@ NAN_METHOD(MLContext::Present) {
       std::cout << "ML camera mesh 2 program failed to get uniform location for 'projectionMatrix'" << std::endl;
       return;
     }
-    mlContext->cameraMeshCameraInTextureLocation2 = glGetUniformLocation(mlContext->cameraMeshProgram2, "cameraInTexture");
-    if (mlContext->cameraMeshCameraInTextureLocation2 == -1) {
-      std::cout << "ML camera mesh 2 program failed to get uniform location for 'cameraInTexture'" << std::endl;
+    mlContext->cameraMeshCameraSnapshotTextureLocation = glGetUniformLocation(mlContext->cameraMeshProgram2, "cameraSnapshotTexture");
+    if (mlContext->cameraMeshCameraSnapshotTextureLocation == -1) {
+      std::cout << "ML camera mesh 2 program failed to get uniform location for 'cameraSnapshotTexture'" << std::endl;
       return;
     }
 
@@ -2471,12 +2624,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[0];
           const MLTransform &transform = cameraInfo.transform;
           const MLVec3f &position = addVectors(transform.position, applyVectorQuaternion(MLVec3f{0.0f, 0.0f, -1.0f}, transform.rotation));
-          const MLQuaternionf &rotation = transform.rotation;
-          const MLMat4f &modelView = composeMatrix(position, rotation);
-          const MLMat4f &projection = cameraInfo.projection;
-          const MLFrustumf &frustum = makeFrustumFromMatrix(multiplyMatrices(projection, invertMatrix(modelView)));
           const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-          cameraPositions.push_back(CameraPosition{position, frustum, now});
+          cameraPositions.push_back(CameraPosition{position, now});
 
           while (cameraPositions.size() > 0) {
             const CameraPosition &cameraPosition = cameraPositions.front();
@@ -2918,22 +3067,208 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
 NAN_METHOD(MLContext::PostPollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+  GLuint fbo = info[2]->Uint32Value();
   NATIVEwindow *window = application_context.window;
 
-  GLuint fbo = info[2]->Uint32Value();
+  if (cameraMeshEnabled) {
+    const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    std::vector<CameraMeshPreviewRequest *> renderList;
+    std::vector<std::deque<CameraMeshPreviewRequest>::iterator> eraseList;
+
+    for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
+      CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+
+      bool isStable = false;
+      {
+        float stability = 0;
+        bool first = true;
+        MLVec3f lastPosition;
+        for (auto iter : cameraPositions) {
+          if (iter.ms >= (cameraMeshPreviewRequest.ms - CAMERA_ADJUST_DELAY) && iter.ms < cameraMeshPreviewRequest.ms) {
+            if (first) {
+              first = false;
+            } else {
+              stability += vectorLength(subVectors(iter.position, lastPosition));
+            }
+            lastPosition = iter.position;
+          }
+        }
+        isStable = stability > 0.0f && stability < 0.03f;
+      }
+
+      if (cameraMeshPreviewRequest.texture == 0 && now >= cameraMeshPreviewRequest.ms) {
+        if (isStable) {
+          MLHandle output;
+          MLResult result = MLCameraGetPreviewStream(&output);
+          if (result == MLResult_Ok) {
+            // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+            EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
+
+            std::deque<CameraMeshPreviewRequest>::iterator match = cameraMeshPreviewRequests.end();
+            for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
+              CameraMeshPreviewRequest &cameraMeshPreviewRequest2 = *iter2;
+              if (
+                vectorLength(subVectors(cameraMeshPreviewRequest.position, cameraMeshPreviewRequest2.position)) < 0.03f &&
+                getAngleBetweenQuaternions(cameraMeshPreviewRequest.rotation, cameraMeshPreviewRequest2.rotation) < (float)M_PI/16.0f
+              ) {
+                match = iter2;
+                break;
+              }
+            }
+
+            glBindVertexArray(mlContext->cameraRawVao);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraRawFbo);
+            glUseProgram(mlContext->cameraRawProgram);
+
+            glActiveTexture(GL_TEXTURE0);
+            
+            if (match != cameraMeshPreviewRequests.end()) {
+              glGenTextures(1, &cameraMeshPreviewRequest.texture);
+              glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
+              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            } else {
+              // cameraMeshPreviewRequest.position = match->position;
+              // cameraMeshPreviewRequest.rotation = match->rotation;
+              // cameraMeshPreviewRequest.modelViewInverse = match->modelViewInverse;
+              // cameraMeshPreviewRequest.projection = match->projection;
+              // cameraMeshPreviewRequest.frustum = match->frustum;
+              cameraMeshPreviewRequest.texture = match->texture;
+              // cameraMeshPreviewRequest.ms = match->ms;
+              match->texture = 0;
+              
+              glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
+              
+              eraseList.push_back(match);
+            }
+
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, cameraMeshPreviewRequest.texture, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraRawCameraInTexture);
+            glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
+            glUniform1i(mlContext->cameraRawCameraInTextureLocation, 0);
+
+            glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+            eglDestroyImageKHR(window->display, yuv_img);
+
+            renderList.push_back(&cameraMeshPreviewRequest);
+          } else {
+            ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
+
+            eraseList.push_back(iter);
+          }
+        } else {
+          eraseList.push_back(iter);
+        }
+      }
+    }
+    // render camera mesh preview requests
+    if (renderList.size() > 0) {
+      MeshBuffer::beginRenderCameraAll();
+      for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+        MeshBuffer &meshBuffer = iter->second;
+        meshBuffer.beginRenderCamera();
+        for (auto iter2 = renderList.begin(); iter2 != renderList.end(); iter2++) {
+          CameraMeshPreviewRequest &cameraMeshPreviewRequest = **iter2;
+          if (cameraMeshPreviewRequest.texture != 0) {
+            meshBuffer.renderCamera(cameraMeshPreviewRequest);
+          }
+        }
+      }
+      MeshBuffer::endRenderCamera();
+    }
+    // remove overflowed camera mesh preview requests
+    {
+      size_t numValidCameras = 0;
+      constexpr size_t maxNumValidCameras = 10;
+      for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
+        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+        if (cameraMeshPreviewRequest.texture != 0) {
+          numValidCameras++;
+        }
+      }
+      if (numValidCameras > maxNumValidCameras) {
+        for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
+          CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+
+          if (cameraMeshPreviewRequest.texture != 0) {
+            glDeleteTextures(1, &cameraMeshPreviewRequest.texture);
+            eraseList.push_back(iter);
+
+            numValidCameras--;
+            if (numValidCameras <= maxNumValidCameras) {
+              break;
+            }
+          }
+        }
+      }
+    }
+    // erase queued camera mesh preview requests
+    for (auto iterIter = eraseList.begin(); iterIter != eraseList.end(); iterIter++) {
+      auto iter = *iterIter;
+      cameraMeshPreviewRequests.erase(iter);
+    }
+    if (renderList.size() > 0) {
+      if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+      } else {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+      }
+      if (gl->HasProgramBinding()) {
+        glUseProgram(gl->GetProgramBinding());
+      } else {
+        glUseProgram(0);
+      }
+      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
+      } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
+      }
+      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES)) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES));
+      } else {
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+      }
+      if (gl->viewportState.valid) {
+        glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+      } else {
+        glViewport(0, 0, 1280, 1024);
+      }
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+      glActiveTexture(gl->activeTexture);
+
+      /* std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
+        m->Repoll();
+      }); */
+    }
+  }
 
   if (meshInfoRequestPending) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
     if (result == MLResult_Ok) {
       uint32_t dataCount = meshInfo.data_count;
 
-      meshRequestNewMap.clear();
-      meshRequestRemovedMap.clear();
-      meshRequestUnchangedMap.clear();
+      meshRequestSpecMap.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
         const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
         const MLMeshingMeshState &state = meshBlockInfo.state;
-        // const MLMeshingExtents &extents = meshBlockInfo.extents;
+        const MLMeshingExtents &extents = meshBlockInfo.extents;
         MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
         meshBlockRequest.id = meshBlockInfo.id;
         // meshBlockRequest.level = MLMeshingLOD_Minimum;
@@ -2941,9 +3276,11 @@ NAN_METHOD(MLContext::PostPollEvents) {
         // meshBlockRequest.level = MLMeshingLOD_Maximum;
 
         const std::string &id = id2String(meshBlockInfo.id);
-        meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
-        meshRequestRemovedMap[id] = (state == MLMeshingMeshState_Deleted);
-        meshRequestUnchangedMap[id] = (state == MLMeshingMeshState_Unchanged);
+        meshRequestSpecMap[id] = {
+          state == MLMeshingMeshState_New,
+          state == MLMeshingMeshState_Deleted,
+          state == MLMeshingMeshState_Unchanged
+        };
       }
       numMeshBlockRequests = dataCount;
 
@@ -2992,22 +3329,28 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
       std::vector<std::vector<MLVec3f>>vertices(dataCount);
       std::vector<std::vector<Uv>> uvs(dataCount);
+      std::vector<MeshBuffer *> renderList;
 
       for (uint32_t i = 0; i < dataCount; i++) {
         MLMeshingBlockMesh &blockMesh = blockMeshes[i];
         const std::string &id = id2String(blockMesh.id);
 
-        const bool isRemoved = meshRequestRemovedMap[id];
-        if (!isRemoved) {
-          const bool isNew = meshRequestNewMap[id];
-          const bool isUnchanged = meshRequestUnchangedMap[id];
-
+        const MeshRequestSpec &meshRequestSpec = meshRequestSpecMap[id];
+        if (!meshRequestSpec.isRemoved) {
           MeshBuffer *meshBuffer;
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
             meshBuffer = &iter->second;
+
+            if (!meshRequestSpec.isUnchanged) {
+              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, meshBuffer->fbo);
+
+              glClearColor(0.1, 0.1, 0.1, 1.0);
+              glClear(GL_COLOR_BUFFER_BIT);
+              glClearColor(0.0, 0.0, 0.0, 1.0);
+            }
           } else {
-            GLuint buffers[7];
+            GLuint buffers[5];
             glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
             GLuint fbo;
             glGenFramebuffers(1, &fbo);
@@ -3025,7 +3368,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glClear(GL_COLOR_BUFFER_BIT);
             glClearColor(0.0, 0.0, 0.0, 1.0);
 
-            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2], buffers[3], buffers[4], buffers[5], buffers[6], fbo, texture);
+            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2], buffers[3], buffers[4], fbo, texture);
             meshBuffer = &meshBuffers[id];
           }
 
@@ -3033,11 +3376,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
           std::vector<Uv> &localUvs = uvs[i];
           getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localVertices, &localUvs);
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, isNew, isUnchanged);
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.isNew, meshRequestSpec.isUnchanged);
 
-          if (isNew) {
-            meshBuffer->swapBuffers();
-          }
+          renderList.push_back(meshBuffer);
         } else {
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
@@ -3046,9 +3387,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               meshBuffer->positionBuffer,
               meshBuffer->normalBuffer,
               meshBuffer->vertexBuffer,
-              meshBuffer->vertexBuffer2,
               meshBuffer->uvBuffer,
-              meshBuffer->uvBuffer2,
               meshBuffer->indexBuffer,
             };
             glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
@@ -3059,26 +3398,18 @@ NAN_METHOD(MLContext::PostPollEvents) {
         }
       }
 
-      if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-      } else {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+      MeshBuffer::beginRenderCameraAll();
+      for (auto iter = renderList.begin(); iter != renderList.end(); iter++) {
+        MeshBuffer &meshBuffer = **iter;
+        meshBuffer.beginRenderCamera();
+        for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
+          CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter2;
+          if (cameraMeshPreviewRequest.texture) {
+            meshBuffer.renderCamera(cameraMeshPreviewRequest);
+          }
+        }
       }
-      if (gl->HasBufferBinding(GL_COPY_READ_BUFFER)) {
-        glBindBuffer(GL_COPY_READ_BUFFER, gl->GetBufferBinding(GL_COPY_READ_BUFFER));
-      } else {
-        glBindBuffer(GL_COPY_READ_BUFFER, 0);
-      }
-      if (gl->HasBufferBinding(GL_COPY_WRITE_BUFFER)) {
-        glBindBuffer(GL_COPY_WRITE_BUFFER, gl->GetBufferBinding(GL_COPY_WRITE_BUFFER));
-      } else {
-        glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-      }
-      if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-      } else {
-        glBindTexture(GL_TEXTURE_2D, 0);
-      }
+      MeshBuffer::endRenderCamera();
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
         m->Poll();
@@ -3095,144 +3426,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
       meshRequestsPending = true;
       meshRequestPending = false;
-    }
-  }
-
-  if (cameraMeshEnabled) {
-    const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-
-    bool meshed = false;
-    while (cameraMeshPreviewRequests.size() > 0) {
-      const CameraMeshPreviewRequest &cameraMeshPreviewRequest = cameraMeshPreviewRequests.front();
-
-      if (now >= cameraMeshPreviewRequest.ms) {
-        float stability = 0;
-        bool first = true;
-        MLVec3f lastPosition;
-        for (auto iter : cameraPositions) {
-          if (iter.ms >= (cameraMeshPreviewRequest.ms - CAMERA_ADJUST_DELAY) && iter.ms < cameraMeshPreviewRequest.ms) {
-            if (first) {
-              first = false;
-            } else {
-              stability += vectorLength(subVectors(iter.position, lastPosition));
-            }
-            lastPosition = iter.position;
-          }
-        }
-
-        if (stability > 0.0f && stability < 0.03f) {
-          MLHandle output;
-          MLResult result = MLCameraGetPreviewStream(&output);
-          if (result == MLResult_Ok) {
-            // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
-            EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
-
-            if (!meshed) {
-              glBindVertexArray(mlContext->cameraMeshVao2);
-              glUseProgram(mlContext->cameraMeshProgram2);
-
-              glUniformMatrix4fv(mlContext->cameraMeshModelViewMatrixLocation2, 1, false, cameraMeshPreviewRequest.modelView.matrix_colmajor);
-              glUniformMatrix4fv(mlContext->cameraMeshProjectionMatrixLocation2, 1, false, cameraMeshPreviewRequest.projection.matrix_colmajor);
-              glActiveTexture(GL_TEXTURE0);
-              glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
-              glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
-              glUniform1i(mlContext->cameraMeshCameraInTextureLocation2, 0);
-
-              glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation2);
-              glEnableVertexAttribArray(mlContext->cameraMeshUvLocation2);
-
-              glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
-
-              meshed = true;
-            }
-
-            for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) { // XXX only do this for nearby meshes
-              MeshBuffer &meshBuffer = iter->second;
-
-              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, meshBuffer.fbo);
-
-              if (meshBuffer.dirtyVertices) {
-                glClearColor(0.1, 0.1, 0.1, 1.0);
-                glClear(GL_COLOR_BUFFER_BIT);
-                glClearColor(0.0, 0.0, 0.0, 1.0);
-              }
-
-              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.vertexBuffer2);
-              glVertexAttribPointer(mlContext->cameraMeshPositionLocation2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.uvBuffer2);
-              glVertexAttribPointer(mlContext->cameraMeshUvLocation2, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-              glDrawArrays(GL_TRIANGLES, 0, meshBuffer.numVertices2);
-
-              if (meshBuffer.dirtyVertices) {
-                meshBuffer.swapBuffers();
-              }
-            }
-
-            eglDestroyImageKHR(window->display, yuv_img);
-          } else {
-            ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
-          }
-        }
-
-        cameraMeshPreviewRequests.pop_front();
-      } else {
-        break;
-      }
-    }
-    if (meshed) {
-      for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) { // XXX only do this for changed meshes
-        MeshBuffer &meshBuffer = iter->second;
-        meshBuffer.swapBuffers();
-      }
-
-      if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-      } else {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
-      }
-      if (gl->HasProgramBinding()) {
-        glUseProgram(gl->GetProgramBinding());
-      } else {
-        glUseProgram(0);
-      }
-      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
-      } else {
-        glBindTexture(GL_TEXTURE_2D, 0);
-      }
-      if (gl->viewportState.valid) {
-        glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
-      } else {
-        glViewport(0, 0, 1280, 1024);
-      }
-      if (gl->HasVertexArrayBinding()) {
-        glBindVertexArray(gl->GetVertexArrayBinding());
-      } else {
-        glBindVertexArray(gl->defaultVao);
-      }
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      } else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-      }
-      if (gl->HasBufferBinding(GL_COPY_READ_BUFFER)) {
-        glBindBuffer(GL_COPY_READ_BUFFER, gl->GetBufferBinding(GL_COPY_READ_BUFFER));
-      } else {
-        glBindBuffer(GL_COPY_READ_BUFFER, 0);
-      }
-      if (gl->HasBufferBinding(GL_COPY_WRITE_BUFFER)) {
-        glBindBuffer(GL_COPY_WRITE_BUFFER, gl->GetBufferBinding(GL_COPY_WRITE_BUFFER));
-      } else {
-        glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-      }
-      glActiveTexture(gl->activeTexture);
-
-      std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
-        m->Repoll();
-      });
     }
   }
 

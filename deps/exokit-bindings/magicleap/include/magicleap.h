@@ -85,7 +85,7 @@ enum KeyboardEventType {
 
 class MLContext;
 
-class MLSphere {
+class MLSpheref {
 public:
   MLVec3f center;
   float radius;
@@ -125,21 +125,32 @@ public:
   float u;
   float v;
 };
+class CameraMeshPreviewRequest {
+public:
+  MLVec3f position;
+  MLQuaternionf rotation;
+  MLMat4f modelViewInverse;
+  MLMat4f projection;
+  MLFrustumf frustum;
+  GLuint texture;
+  milliseconds ms;
+};
 
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint vertexBuffer2, GLuint uvBuffer, GLuint uvBuffer2, GLuint indexBuffer, GLuint fbo, GLuint texture);
+  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
   MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
   void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<MLVec3f> *vertices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged);
-  void swapBuffers();
+  static void beginRenderCameraAll();
+  void beginRenderCamera();
+  void renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewRequest);
+  static void endRenderCamera();
 
   GLuint positionBuffer;
   GLuint normalBuffer;
   GLuint vertexBuffer;
-  GLuint vertexBuffer2;
   GLuint uvBuffer;
-  GLuint uvBuffer2;
   GLuint indexBuffer;
   GLuint fbo;
   GLuint texture;
@@ -152,13 +163,8 @@ public:
   uint32_t numVertices;
   float *uvs;
   uint32_t numUvs;
-  float *vertices2;
-  uint32_t numVertices2;
-  float *uvs2;
-  uint32_t numUvs2;
   bool isNew;
   bool isUnchanged;
-  bool dirtyVertices;
 };
 
 class MLMesher : public ObjectWrap {
@@ -174,7 +180,7 @@ public:
   static NAN_METHOD(Destroy);
 
   void Poll();
-  void Repoll();
+  // void Repoll();
 
 // protected:
   Nan::Persistent<Function> cb;
@@ -254,17 +260,16 @@ public:
   Nan::Persistent<ArrayBuffer> data;
 };
 
-class CameraMeshPreviewRequest {
+class MeshRequestSpec {
 public:
-  MLMat4f modelView;
-  MLMat4f projection;
-  milliseconds ms;
+  bool isNew;
+  bool isRemoved;
+  bool isUnchanged;
 };
 
 class CameraPosition {
 public:
   MLVec3f position;
-  MLFrustumf frustum;
   milliseconds ms;
 };
 
@@ -325,29 +330,35 @@ public:
   GLint meshModelViewMatrixLocation;
   GLint meshProjectionMatrixLocation;
 
-  // camera
-  GLuint cameraVao;
-  GLuint cameraVertex;
-  GLuint cameraProgram;
-  GLint cameraPointLocation;
-  GLint cameraUvLocation;
-  GLint cameraInTextureLocation;
-  GLint contentTextureLocation;
-  GLuint pointBuffer;
-  GLuint uvBuffer;
+  // camera content
+  GLuint cameraContentFbo;
+  GLuint cameraContentVao;
+  GLuint cameraContentProgram;
+  GLint cameraContentPointLocation;
+  GLint cameraContentUvLocation;
+  GLint cameraContentCameraInTextureLocation;
+  GLint cameraContentContentTextureLocation;
+  GLuint cameraContentCameraInTexture;
+  GLuint cameraContentContentTexture;
+  GLuint cameraContentCameraOutTexture;
 
-  GLuint cameraInTexture;
-  GLuint contentTexture;
-  GLuint cameraOutTexture;
-  GLuint cameraFbo;
+  // camera raw
+  GLuint cameraRawFbo;
+  GLuint cameraRawVao;
+  GLuint cameraRawProgram;
+  GLint cameraRawPointLocation;
+  GLint cameraRawUvLocation;
+  GLint cameraRawCameraInTextureLocation;
+  GLuint cameraRawCameraInTexture;
 
+  // camera mesh
   GLuint cameraMeshVao2;
   GLuint cameraMeshProgram2;
   GLuint cameraMeshPositionLocation2;
   GLuint cameraMeshUvLocation2;
   GLuint cameraMeshModelViewMatrixLocation2;
   GLuint cameraMeshProjectionMatrixLocation2;
-  GLuint cameraMeshCameraInTextureLocation2;
+  GLuint cameraMeshCameraSnapshotTextureLocation;
 
   // occlusion
   // MLHandle occlusionTracker;
