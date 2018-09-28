@@ -3185,15 +3185,14 @@ NAN_METHOD(MLContext::PostPollEvents) {
     }
     // remove overflowed camera mesh preview requests
     {
-      size_t numValidCameras = 0;
-      constexpr size_t maxNumValidCameras = 10;
+      size_t numCameraMeshTextures = 0;
       for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
         CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
         if (cameraMeshPreviewRequest.texture != 0) {
-          numValidCameras++;
+          numCameraMeshTextures++;
         }
       }
-      if (numValidCameras > maxNumValidCameras) {
+      if (numCameraMeshTextures > MAX_CAMERA_MESH_TEXTURES) {
         for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
           CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
 
@@ -3201,8 +3200,8 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glDeleteTextures(1, &cameraMeshPreviewRequest.texture);
             eraseList.push_back(iter);
 
-            numValidCameras--;
-            if (numValidCameras <= maxNumValidCameras) {
+            numCameraMeshTextures--;
+            if (numCameraMeshTextures <= MAX_CAMERA_MESH_TEXTURES) {
               break;
             }
           }
