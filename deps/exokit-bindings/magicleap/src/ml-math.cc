@@ -229,6 +229,46 @@ MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m) {
   }
 }
 
+MLMat4f multiplyMatrices(const MLMat4f &a, const MLMat4f &b) {
+  const float *ae = a.matrix_colmajor;
+  const float *be = b.matrix_colmajor;
+  
+  MLMat4f result;
+  float *te = result.matrix_colmajor;
+
+  const float a11 = ae[ 0 ], a12 = ae[ 4 ], a13 = ae[ 8 ], a14 = ae[ 12 ];
+  const float a21 = ae[ 1 ], a22 = ae[ 5 ], a23 = ae[ 9 ], a24 = ae[ 13 ];
+  const float a31 = ae[ 2 ], a32 = ae[ 6 ], a33 = ae[ 10 ], a34 = ae[ 14 ];
+  const float a41 = ae[ 3 ], a42 = ae[ 7 ], a43 = ae[ 11 ], a44 = ae[ 15 ];
+
+  const float b11 = be[ 0 ], b12 = be[ 4 ], b13 = be[ 8 ], b14 = be[ 12 ];
+  const float b21 = be[ 1 ], b22 = be[ 5 ], b23 = be[ 9 ], b24 = be[ 13 ];
+  const float b31 = be[ 2 ], b32 = be[ 6 ], b33 = be[ 10 ], b34 = be[ 14 ];
+  const float b41 = be[ 3 ], b42 = be[ 7 ], b43 = be[ 11 ], b44 = be[ 15 ];
+
+  te[ 0 ] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+  te[ 4 ] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+  te[ 8 ] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+  te[ 12 ] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+
+  te[ 1 ] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+  te[ 5 ] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+  te[ 9 ] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+  te[ 13 ] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+
+  te[ 2 ] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+  te[ 6 ] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+  te[ 10 ] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+  te[ 14 ] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+
+  te[ 3 ] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+  te[ 7 ] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+  te[ 11 ] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+  te[ 15 ] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+  
+  return result;
+}
+
 MLMat4f getLookAtMatrix(const MLVec3f &eye, const MLVec3f &target, const MLVec3f &up) {
   MLMat4f result;
   float *te = result.matrix_colmajor;
@@ -364,6 +404,56 @@ MLMat4f invertMatrix(const MLMat4f &matrix) {
   te[ 15 ] = ( n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33 ) * detInv;
 
   return result;
+}
+
+MLPlanef makePlaneFromComponents(float x, float y, float z, float w) {
+  return MLPlanef{
+    MLVec3f{x, y, z},
+    w
+  };
+}
+
+MLPlanef normalizePlane(const MLPlanef &p) {
+  float inverseNormalLength = 1.0f / vectorLength(p.normal);
+  return MLPlanef{
+    multiplyVector(p.normal, inverseNormalLength),
+    p.constant * inverseNormalLength
+  };
+}
+
+float distanceFromPlaneToPoint(const MLPlanef &plane, const MLVec3f &point) {
+  return dotVectors(plane.normal, point) + plane.constant;
+}
+
+MLFrustumf makeFrustumFromMatrix(const MLMat4f &m) {
+  const float *me = m.matrix_colmajor;
+  const float me0 = me[ 0 ], me1 = me[ 1 ], me2 = me[ 2 ], me3 = me[ 3 ];
+  const float me4 = me[ 4 ], me5 = me[ 5 ], me6 = me[ 6 ], me7 = me[ 7 ];
+  const float me8 = me[ 8 ], me9 = me[ 9 ], me10 = me[ 10 ], me11 = me[ 11 ];
+  const float me12 = me[ 12 ], me13 = me[ 13 ], me14 = me[ 14 ], me15 = me[ 15 ];
+
+  MLFrustumf result;
+  result.planes[ 0 ] = normalizePlane(makePlaneFromComponents( me3 - me0, me7 - me4, me11 - me8, me15 - me12 ));
+  result.planes[ 1 ] = normalizePlane(makePlaneFromComponents( me3 + me0, me7 + me4, me11 + me8, me15 + me12 ));
+  result.planes[ 2 ] = normalizePlane(makePlaneFromComponents( me3 + me1, me7 + me5, me11 + me9, me15 + me13 ));
+  result.planes[ 3 ] = normalizePlane(makePlaneFromComponents( me3 - me1, me7 - me5, me11 - me9, me15 - me13 ));
+  result.planes[ 4 ] = normalizePlane(makePlaneFromComponents( me3 - me2, me7 - me6, me11 - me10, me15 - me14 ));
+  result.planes[ 5 ] = normalizePlane(makePlaneFromComponents( me3 + me2, me7 + me6, me11 + me10, me15 + me14 ));
+  return result;
+}
+
+bool frustumIntersectsSphere(const MLFrustumf &frustum, const MLSphere &sphere) {
+  const MLPlanef *planes = frustum.planes;
+  const MLVec3f &center = sphere.center;
+  const float negRadius = -sphere.radius;
+
+  for (int i = 0; i < 6; i++) {
+    float distance = distanceFromPlaneToPoint(planes[i], center);
+    if (distance < negRadius) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // hands
