@@ -3108,6 +3108,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
             for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
               CameraMeshPreviewRequest &cameraMeshPreviewRequest2 = *iter2;
               if (
+                cameraMeshPreviewRequest2.texture != 0 &&
                 vectorLength(subVectors(cameraMeshPreviewRequest.position, cameraMeshPreviewRequest2.position)) < 0.03f &&
                 getAngleBetweenQuaternions(cameraMeshPreviewRequest.rotation, cameraMeshPreviewRequest2.rotation) < (float)M_PI/16.0f
               ) {
