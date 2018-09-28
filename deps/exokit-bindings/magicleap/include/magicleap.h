@@ -85,6 +85,23 @@ enum KeyboardEventType {
 
 class MLContext;
 
+class MLSphere {
+public:
+  MLVec3f center;
+  float radius;
+};
+
+class MLPlanef {
+public:
+  MLVec3f normal;
+  float constant;
+};
+
+class MLFrustumf {
+public:
+  MLPlanef planes[6];
+};
+
 struct application_context_t {
   int dummy_value;
   MLContext *mlContext;
