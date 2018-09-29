@@ -42,7 +42,7 @@ std::thread cameraThread;
 std::vector<CameraRequest *> cameraRequests;
 uv_async_t cameraAsync;
 bool cameraConvertPending = false;
-uint8_t cameraRequestRgb[CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 3];
+// uint8_t cameraRequestRgb[CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 3];
 // uint8_t *cameraRequestJpeg;
 // size_t cameraRequestSize;
 // uv_sem_t cameraConvertSem;
