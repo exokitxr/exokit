@@ -1985,7 +1985,7 @@ out vec4 fragColor;\n\
 void main() {\n\
   if (vScreen.x >= 0.0 && vScreen.x <= 1.0 && vScreen.y >= 0.0 && vScreen.y <= 1.0) {\n\
     vec3 unnormalizedNormal = cross(dFdx(vPosition), dFdy(vPosition));\n\
-    if (unnormalizedNormal.z <= 0) {\n\
+    if (unnormalizedNormal.z >= 0) {\n\
       fragColor = texture2D(cameraSnapshotTexture, vScreen);\n\
     } else {\n\
       discard;\n\
