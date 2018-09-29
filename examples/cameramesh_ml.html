@@ -12,7 +12,7 @@
   <script src="FBXLoader.js"></script> -->
   <script>
     let container, scene, camera, display;
-    let mesher = null, cameraMesher = null, cameraMeshTexture, cameraMeshTexture2/*, planeMesh, planeMesh2*/;
+    let mesher = null, cameraMesher = null;
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -189,28 +189,10 @@
 
       const terrainMeshes = [];
       const terrainMaterial = (() => {
-        /* const baseTexture = new THREE.Texture(
-          null,
-          THREE.UVMapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.NearestFilter,
-          THREE.NearestFilter,
-          THREE.RGBAFormat,
-          THREE.UnsignedByteType,
-          16
-        );
-        _requestImage('checkerboard.png')
-          .then(checkerboardImg => {
-            baseTexture.image = checkerboardImg;
-            baseTexture.needsUpdate = true;
-          }); */
-
         const material = new THREE.ShaderMaterial({
           uniforms: {
             map: {
               type: 't',
-              // value: baseTexture,
               value: null,
             },
           },
@@ -243,27 +225,6 @@
       const fakeArrayBuffer = new ArrayBuffer(3 * 4);
       const fakeFloat32Array = new Float32Array(fakeArrayBuffer, 0, 3);
       const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
-      const planeGeometry = new THREE.PlaneBufferGeometry(0.2, 0.2)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0));
-      const _makePlaneMesh = () => {
-        const geometry = planeGeometry;
-        const material = new THREE.ShaderMaterial({
-          vertexShader: `\
-            void main() {
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-          `,
-          fragmentShader: `\
-            void main() {
-              gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-            }
-          `,
-          // side: THREE.DoubleSide, // XXX this matters
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.frustumCulled = false;
-        return mesh;
-      };
       const _makeTerrainMesh = meshId => {
         const geometry = new THREE.BufferGeometry();
         const gl = renderer.getContext();
@@ -281,10 +242,13 @@
           THREE.ClampToEdgeWrapping,
           THREE.NearestFilter,
           THREE.NearestFilter,
-          THREE.RGBAFormat,
+          THREE.RGBFormat,
           THREE.UnsignedByteType,
           16
         );
+        /* const material = new THREE.MeshBasicMaterial({
+          map,
+        }); */
         const material = new THREE.ShaderMaterial({
           uniforms: {
             map: {
@@ -311,10 +275,6 @@
         const mesh = new THREE.Mesh(geometry, material);
         mesh.meshId = meshId;
         mesh.frustumCulled = false;
-
-        /* const planeMesh = _makePlaneMesh();
-        mesh.add(planeMesh);
-        mesh.planeMesh = planeMesh; */
 
         return mesh;
       };
@@ -380,75 +340,6 @@
           // _loadTerrainMesh(_getTerrainMesh(id), update); // XXX
         }
       };
-
-      cameraMeshTexture = new THREE.Texture(
-        null,
-        THREE.UVMapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.NearestFilter,
-        THREE.NearestFilter,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        16
-      );
-      cameraMeshTexture2 = new THREE.Texture(
-        null,
-        THREE.UVMapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.NearestFilter,
-        THREE.NearestFilter,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        16
-      );
-      /* const material = new THREE.ShaderMaterial({
-        uniforms: {
-          cameraMeshTexture: {
-            type: 't',
-            value: cameraMeshTexture,
-          },
-        },
-        vertexShader: `\
-          varying vec2 vUv;
-          // varying vec2 vPosition;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            // vPosition = vec2(mod(position.x, 0.1), mod(position.y, 0.1));
-          }
-        `,
-        fragmentShader: `\
-          uniform sampler2D cameraMeshTexture;
-          varying vec2 vUv;
-          // varying vec2 vPosition;
-          void main() {
-            // gl_FragColor = texture2D(cameraMeshTexture, vPosition);
-            gl_FragColor = texture2D(cameraMeshTexture, vUv);
-            // gl_FragColor = vec4(1.0, vUv.x, vUv.x, 1.0);
-          }
-        `,
-      }); */
-      /* planeMesh = new THREE.Mesh(
-        new THREE.PlaneBufferGeometry(0.2, 0.2)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0)),
-        new THREE.MeshBasicMaterial({
-          map: cameraMeshTexture,
-        })
-      );
-      planeMesh.frustumCulled = false;
-      scene.add(planeMesh);
-
-      planeMesh2 = new THREE.Mesh(
-        new THREE.PlaneBufferGeometry(0.2, 0.2)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0)),
-        new THREE.MeshBasicMaterial({
-          map: cameraMeshTexture2,
-        })
-      );
-      planeMesh2.frustumCulled = false;
-      scene.add(planeMesh2); */
 
       let enabled = false;
       const _enable = () => {
