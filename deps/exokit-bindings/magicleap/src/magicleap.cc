@@ -81,7 +81,7 @@ std::map<std::string, MeshBuffer> meshBuffers;
 
 std::vector<MLCameraMesher *> cameraMeshers;
 
-std::map<std::string, TextureEncodePbo> textureEncodePbos;
+std::map<std::string, GLuint> textureEncodePbos;
 std::deque<TextureEncodeRequestEntry *> textureEncodeRequestQueue;
 std::deque<TextureEncodeResponseEntry *> textureEncodeResponseQueue;
 std::mutex textureEncodeRequestMutex;
@@ -355,22 +355,8 @@ void MeshBuffer::renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewR
 
   this->textureDirty = true;
 }
-TextureEncodePbo MeshBuffer::getPixels() {
+GLuint MeshBuffer::getPixels() {
   glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
-
-  /* GLuint fbo;
-  glGenFramebuffers(1, &fbo);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-
-  GLuint texture;
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-
-  glBlitFramebuffer(0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], 0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo); */
 
   GLuint pbo;
   glGenBuffers(1, &pbo);
@@ -380,11 +366,7 @@ TextureEncodePbo MeshBuffer::getPixels() {
 
   this->textureDirty = false;
 
-  return TextureEncodePbo{
-    0,
-    0,
-    pbo,
-  };
+  return pbo;
 }
 void MeshBuffer::endRenderCamera() {
   WebGLRenderingContext *gl = application_context.gl;
@@ -3364,12 +3346,12 @@ NAN_METHOD(MLContext::PostPollEvents) {
     if (textureEncodePbos.size() > 0) {
       for (auto iter = textureEncodePbos.begin(); iter != textureEncodePbos.end(); iter++) {
         const std::string &id = iter->first;
-        TextureEncodePbo &textureEncodePbo = iter->second;
+        GLuint pbo = iter->second;
 
         // XXX
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, textureEncodePbo.pbo);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
         glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-        glDeleteBuffers(1, &textureEncodePbo.pbo);
+        glDeleteBuffers(1, &pbo);
         // glDeleteFramebuffers(1, &textureEncodePbo.fbo);
         // glDeleteTextures(1, &textureEncodePbo.texture);
         

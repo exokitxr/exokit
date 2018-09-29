@@ -137,13 +137,6 @@ public:
   milliseconds ms;
 };
 
-class TextureEncodePbo {
-public:
-  GLuint fbo;
-  GLuint texture;
-  GLuint pbo;
-};
-
 class MeshBuffer {
 public:
   // MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
@@ -153,7 +146,7 @@ public:
   static void beginRenderCameraAll();
   void beginRenderCamera();
   void renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewRequest);
-  TextureEncodePbo getPixels();
+  GLuint getPixels();
   static void endRenderCamera();
 
   GLuint positionBuffer;
