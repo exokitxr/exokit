@@ -415,22 +415,18 @@ void MeshBuffer::endRenderCamera() {
   glActiveTexture(gl->activeTexture);
 }
 
-TextureEncodeRequestEntry::TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, GLuint fbo, GLuint texture, GLuint pbo, uint8_t *data) :
+TextureEncodeRequestEntry::TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, GLuint pbo, uint8_t *data) :
   type(type),
   id(id),
   width(width),
   height(height),
-  fbo(fbo),
-  texture(texture),
   pbo(pbo),
   data(data)
   {}
 
-TextureEncodeResponseEntry::TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, GLuint fbo, GLuint texture, GLuint pbo, uint8_t *result, size_t resultSize) :
+TextureEncodeResponseEntry::TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, GLuint pbo, uint8_t *result, size_t resultSize) :
   type(type),
   id(id),
-  fbo(fbo),
-  texture(texture),
   pbo(pbo),
   result(result),
   resultSize(resultSize)
@@ -1496,17 +1492,17 @@ MLResult connectCamera() {
           uint8_t *result;
           size_t resultSize = SjpegCompress(requestEntry->data, requestEntry->width, requestEntry->height, 50.0f, &result);
 
-          if (resultSize > 0) {
-            TextureEncodeResponseEntry *responseEntry = new TextureEncodeResponseEntry(requestEntry->type, requestEntry->id, requestEntry->fbo, requestEntry->texture, requestEntry->pbo, result, resultSize);
-            {
-              std::lock_guard<mutex> lock(textureEncodeResponseMutex);
-              textureEncodeResponseQueue.push_back(responseEntry);
-            }
-
-            uv_async_send(&textureEncodeAsync);
-          } else {
+          if (resultSize == 0) {
             ML_LOG(Error, "%s: failed to encode jpeg: %x", application_name, resultSize);
           }
+          
+          TextureEncodeResponseEntry *responseEntry = new TextureEncodeResponseEntry(requestEntry->type, requestEntry->id, requestEntry->pbo, result, resultSize);
+          {
+            std::lock_guard<mutex> lock(textureEncodeResponseMutex);
+            textureEncodeResponseQueue.push_back(responseEntry);
+          }
+
+          uv_async_send(&textureEncodeAsync);
 
           delete requestEntry;
         } else {
@@ -1812,15 +1808,17 @@ void RunTextureEncodeInMainThread(uv_async_t *handle) {
 
     if (entry) {
       if (entry->type == TextureEncodeEntryType::MESH_BUFFER) {
-        const std::string &id = entry->id;
-        auto match = meshBuffers.find(id);
-        if (match != meshBuffers.end()) {
-          MeshBuffer &meshBuffer = match->second;
+        if (entry->resultSize > 0) {
+          const std::string &id = entry->id;
+          auto match = meshBuffers.find(id);
+          if (match != meshBuffers.end()) {
+            MeshBuffer &meshBuffer = match->second;
 
-          meshBuffer.textureData = entry->result;
-          meshBuffer.textureDataSize = entry->resultSize;
+            meshBuffer.textureData = entry->result;
+            meshBuffer.textureDataSize = entry->resultSize;
 
-          pollMeshBufferIdList.push_back(id);
+            pollMeshBufferIdList.push_back(id);
+          }
         }
       } else {
         ML_LOG(Error, "%s: unknown texture encode entry type: %x", application_name, entry->type);
@@ -1830,14 +1828,14 @@ void RunTextureEncodeInMainThread(uv_async_t *handle) {
       glBindBuffer(GL_PIXEL_PACK_BUFFER, entry->pbo);
       glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       glDeleteBuffers(1, &entry->pbo);
-      glDeleteFramebuffers(1, &entry->fbo);
-      glDeleteTextures(1, &entry->texture);
       if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
       } else {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
       }
-      SjpegFreeBuffer(entry->result);
+      if (entry->resultSize > 0) {
+        SjpegFreeBuffer(entry->result);
+      }
       delete entry;
     } else {
       break;
@@ -3358,7 +3356,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         /* glBindBuffer(GL_PIXEL_PACK_BUFFER, textureEncodePbo.pbo);
         uint8_t *textureDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3, GL_MAP_READ_BIT);
 
-        TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, CAMERA_SIZE[0], CAMERA_SIZE[1], textureEncodePbo.fbo, textureEncodePbo.texture, textureEncodePbo.pbo, textureDataRgb);
+        TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], pbo, textureDataRgb);
         {
           std::lock_guard<mutex> lock(textureEncodeRequestMutex);
           textureEncodeRequestQueue.push_back(requestEntry);
