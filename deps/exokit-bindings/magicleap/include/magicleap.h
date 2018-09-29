@@ -57,6 +57,7 @@ using namespace std::chrono_literals;
 constexpr milliseconds CAMERA_PREVIEW_DELAY = 150ms;
 constexpr milliseconds CAMERA_ADJUST_DELAY = CAMERA_PREVIEW_DELAY;
 constexpr size_t MAX_CAMERA_MESH_TEXTURES = 10;
+constexpr size_t MAX_TEXTURE_QUEUE_SIZE = 4;
 
 namespace ml {
 

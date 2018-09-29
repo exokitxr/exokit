@@ -81,7 +81,7 @@ std::map<std::string, MeshBuffer> meshBuffers;
 
 std::vector<MLCameraMesher *> cameraMeshers;
 
-std::map<std::string, GLuint> textureEncodePbos;
+std::deque<std::pair<std::string, GLuint>> textureEncodePbos;
 std::deque<TextureEncodeRequestEntry *> textureEncodeRequestQueue;
 std::deque<TextureEncodeResponseEntry *> textureEncodeResponseQueue;
 std::mutex textureEncodeRequestMutex;
@@ -1489,13 +1489,13 @@ MLResult connectCamera() {
             textureEncodeRequestQueue.pop_front();
           }
 
-          uint8_t *result;
+          uint8_t *result = nullptr;
           size_t resultSize = SjpegCompress(requestEntry->data, requestEntry->width, requestEntry->height, 50.0f, &result);
 
           if (resultSize == 0) {
             ML_LOG(Error, "%s: failed to encode jpeg: %x", application_name, resultSize);
           }
-          
+
           TextureEncodeResponseEntry *responseEntry = new TextureEncodeResponseEntry(requestEntry->type, requestEntry->id, requestEntry->pbo, result, resultSize);
           {
             std::lock_guard<mutex> lock(textureEncodeResponseMutex);
@@ -1841,6 +1841,7 @@ void RunTextureEncodeInMainThread(uv_async_t *handle) {
       break;
     }
   }
+
   if (pollMeshBufferIdList.size() > 0) {
     std::for_each(cameraMeshers.begin(), cameraMeshers.end(), [&](MLCameraMesher *m) {
       m->Poll(pollMeshBufferIdList);
@@ -3342,28 +3343,23 @@ NAN_METHOD(MLContext::PostPollEvents) {
   if (cameraMeshEnabled) {
     // read pixel buffers
     if (textureEncodePbos.size() > 0) {
-      for (auto iter = textureEncodePbos.begin(); iter != textureEncodePbos.end(); iter++) {
-        const std::string &id = iter->first;
-        GLuint pbo = iter->second;
+      while (textureEncodePbos.size() > 0 &&  textureEncodeRequestQueue.size() < MAX_TEXTURE_QUEUE_SIZE) {
+        const std::pair<std::string, GLuint> &iter = textureEncodePbos.front();
+        const std::string &id = iter.first;
+        GLuint pbo = iter.second;
 
-        // XXX
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-        glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-        glDeleteBuffers(1, &pbo);
-        // glDeleteFramebuffers(1, &textureEncodePbo.fbo);
-        // glDeleteTextures(1, &textureEncodePbo.texture);
-        
-        /* glBindBuffer(GL_PIXEL_PACK_BUFFER, textureEncodePbo.pbo);
-        uint8_t *textureDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3, GL_MAP_READ_BIT);
+        uint8_t *textureDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, MESH_TEXTURE_SIZE[0] * MESH_TEXTURE_SIZE[1] * 3, GL_MAP_READ_BIT);
 
         TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], pbo, textureDataRgb);
         {
           std::lock_guard<mutex> lock(textureEncodeRequestMutex);
           textureEncodeRequestQueue.push_back(requestEntry);
         }
-        uv_sem_post(&textureEncodeSem); */
+        uv_sem_post(&textureEncodeSem);
+
+        textureEncodePbos.pop_front();
       }
-      textureEncodePbos.clear();
 
       if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
@@ -3373,12 +3369,19 @@ NAN_METHOD(MLContext::PostPollEvents) {
     }
 
     // queue pixel buffers
-    for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
-      const std::string &id = iter->first;
-      MeshBuffer &meshBuffer = iter->second;
-      if (meshBuffer.textureDirty) {
-        textureEncodePbos[id] = meshBuffer.getPixels();
-        
+    {
+      bool queued = false;
+      for (auto iter = meshBuffers.begin(); iter != meshBuffers.end() && textureEncodePbos.size() < MAX_TEXTURE_QUEUE_SIZE; iter++) {
+        const std::string &id = iter->first;
+        MeshBuffer &meshBuffer = iter->second;
+
+        if (meshBuffer.textureDirty) {
+          GLuint pbo = meshBuffer.getPixels();
+          textureEncodePbos.push_back(std::pair<std::string, GLuint>(id, pbo));
+          queued = true;
+        }
+      }
+      if (queued) {
         if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
           glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
         } else {
@@ -3389,7 +3392,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
         } else {
           glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         }
-        break;
       }
     }
 
