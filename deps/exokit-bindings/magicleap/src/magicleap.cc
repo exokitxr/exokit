@@ -3245,12 +3245,12 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
           (float)y/(float)height
         };
         (*uvs)[i*3+1] = {
-          (float)x/(float)width,
-          (float)(y+1)/(float)height
-        };
-        (*uvs)[i*3+2] = {
           (float)(x+1)/(float)width,
           (float)y/(float)height
+        };
+        (*uvs)[i*3+2] = {
+          (float)x/(float)width,
+          (float)(y+1)/(float)height
         };
       } else {
         (*uvs)[i*3] = {
@@ -3259,11 +3259,11 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
         };
         (*uvs)[i*3+1] = {
           (float)(x+1)/(float)width,
-          (float)(y+1)/(float)height
+          (float)y/(float)height
         };
         (*uvs)[i*3+2] = {
           (float)(x+1)/(float)width,
-          (float)y/(float)height
+          (float)(y+1)/(float)height
         };
 
         x++;
