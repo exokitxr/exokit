@@ -3384,10 +3384,10 @@ NAN_METHOD(MLContext::PostPollEvents) {
         } else {
           glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
         }
-        if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+        if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+          glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
         } else {
-          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+          glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         }
         break;
       }
