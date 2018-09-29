@@ -34,19 +34,19 @@ Nan::Persistent<Function> mlMesherConstructor;
 Nan::Persistent<Function> mlPlaneTrackerConstructor;
 Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
+Nan::Persistent<Function> mlCameraMesherConstructor;
 
 bool cameraConnected = false;
 std::thread cameraThread;
 // std::mutex cameraRequestsMutex;
-// std::mutex cameraResponseMutex;
 std::vector<CameraRequest *> cameraRequests;
 uv_async_t cameraAsync;
 bool cameraConvertPending = false;
 uint8_t cameraRequestRgb[CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 3];
-uint8_t *cameraRequestJpeg;
-size_t cameraRequestSize;
-uv_sem_t cameraConvertSem;
-uv_async_t cameraConvertAsync;
+// uint8_t *cameraRequestJpeg;
+// size_t cameraRequestSize;
+// uv_sem_t cameraConvertSem;
+// uv_async_t cameraConvertAsync;
 
 std::deque<CameraMeshPreviewRequest> cameraMeshPreviewRequests;
 std::deque<CameraPosition> cameraPositions;
@@ -77,6 +77,15 @@ bool meshRequestsPending = false;
 bool meshRequestPending = false;
 
 std::map<std::string, MeshBuffer> meshBuffers;
+
+std::vector<MLCameraMesher *> cameraMeshers;
+
+std::deque<TextureEncodeRequestEntry *> textureEncodeRequestQueue;
+std::deque<TextureEncodeResponseEntry *> textureEncodeResponseQueue;
+std::mutex textureEncodeRequestMutex;
+std::mutex textureEncodeResponseMutex;
+uv_sem_t textureEncodeSem;
+uv_async_t textureEncodeAsync;
 
 MLHandle planesTracker;
 std::vector<MLPlaneTracker *> planeTrackers;
@@ -280,7 +289,7 @@ static void onUnloadResources(void* application_context) {
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture) :
+/* MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture) :
   positionBuffer(positionBuffer),
   normalBuffer(normalBuffer),
   vertexBuffer(vertexBuffer),
@@ -294,9 +303,7 @@ MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertex
   indices(nullptr),
   numIndices(0),
   vertices(nullptr),
-  numVertices(0),
   uvs(nullptr),
-  numUvs(0),
   isNew(true),
   isUnchanged(false)
   {}
@@ -314,9 +321,7 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   indices = meshBuffer.indices;
   numIndices = meshBuffer.numIndices;
   vertices = meshBuffer.vertices;
-  numVertices = meshBuffer.numVertices;
   uvs = meshBuffer.uvs;
-  numUvs = meshBuffer.numUvs;
   isNew = meshBuffer.isNew;
   isUnchanged = meshBuffer.isUnchanged;
 }
@@ -334,22 +339,14 @@ MeshBuffer::MeshBuffer() :
   indices(nullptr),
   numIndices(0),
   vertices(nullptr),
-  numVertices(0),
   uvs(nullptr),
-  numUvs(0),
   isNew(true),
   isUnchanged(false)
-  {}
+  {} */
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<MLVec3f> *vertices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, bool isNew, bool isUnchanged, bool textureDirty) {
   glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
-
-  glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer);
-  glBufferData(GL_ARRAY_BUFFER, vertices->size() * 3 * sizeof(float), vertices->data(), GL_DYNAMIC_DRAW);
-
-  glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer);
-  glBufferData(GL_ARRAY_BUFFER, uvs->size() * 2 * sizeof(float), uvs->data(), GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, this->normalBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(normals[0]), normals, GL_DYNAMIC_DRAW);
@@ -362,12 +359,20 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->normals = normals;
   this->indices = indices;
   this->numIndices = numIndices;
-  this->vertices = (float *)vertices->data();
-  this->numVertices = vertices->size() * 3;
-  this->uvs = (float *)uvs->data();
-  this->numUvs = uvs->size() * 2;
   this->isNew = isNew;
   this->isUnchanged = isUnchanged;
+  this->textureDirty = textureDirty;
+  
+  if (vertices->size() > 0 && uvs->size() > 0) {
+    glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, vertices->size() * 3 * sizeof(float), vertices->data(), GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer);
+    glBufferData(GL_ARRAY_BUFFER, uvs->size() * 2 * sizeof(float), uvs->data(), GL_DYNAMIC_DRAW);
+    
+    this->vertices = std::move(*vertices);
+    this->uvs = std::move(*uvs);
+  }
 }
 void MeshBuffer::beginRenderCameraAll() {
   MLContext *mlContext = application_context.mlContext;
@@ -400,7 +405,7 @@ void MeshBuffer::renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewR
   glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
   glUniform1i(mlContext->cameraMeshCameraSnapshotTextureLocation, 0);
 
-  glDrawArrays(GL_TRIANGLES, 0, this->numVertices);
+  glDrawArrays(GL_TRIANGLES, 0, this->vertices.size() * 3);
 }
 void MeshBuffer::endRenderCamera() {
   WebGLRenderingContext *gl = application_context.gl;
@@ -438,6 +443,21 @@ void MeshBuffer::endRenderCamera() {
   }
   glActiveTexture(gl->activeTexture);
 }
+
+TextureEncodeRequestEntry::TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, uint8_t *data) :
+  type(type),
+  id(id),
+  width(width),
+  height(height),
+  data(data)
+  {}
+
+TextureEncodeResponseEntry::TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, uint8_t *result, size_t resultSize) :
+  type(type),
+  id(id),
+  result(result),
+  resultSize(resultSize)
+  {}
 
 // MLMesher
 
@@ -543,16 +563,16 @@ void MLMesher::Poll() {
           Local<Object> vertexBuffer = Nan::New<Object>();
           vertexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.vertexBuffer));
           obj->Set(JS_STR("vertexBuffer"), vertexBuffer);
-          Local<Float32Array> vertexArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.vertices, meshBuffer.numVertices * sizeof(float)), 0, meshBuffer.numVertices);
-          obj->Set(JS_STR("vertexArray"), vertexArray);
-          obj->Set(JS_STR("vertexCount"), JS_INT(meshBuffer.numVertices));
+          Local<Float32Array> vertexArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.vertices.data(), meshBuffer.vertices.size() * 3 * sizeof(float)), 0, meshBuffer.vertices.size() * 3);
+      obj->Set(JS_STR("vertexArray"), vertexArray);
+          obj->Set(JS_STR("vertexCount"), JS_INT((uint32_t)meshBuffer.vertices.size() * 3));
 
           Local<Object> uvBuffer = Nan::New<Object>();
           uvBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.uvBuffer));
           obj->Set(JS_STR("uvBuffer"), uvBuffer);
-          Local<Float32Array> uvArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.uvs, meshBuffer.numUvs * sizeof(float)), 0, meshBuffer.numUvs);
-          obj->Set(JS_STR("uvArray"), uvArray);
-          obj->Set(JS_STR("uvCount"), JS_INT(meshBuffer.numUvs));
+          Local<Float32Array> uvArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.uvs.data(), meshBuffer.uvs.size() * 2 * sizeof(float)), 0, meshBuffer.uvs.size() * 2);
+      obj->Set(JS_STR("uvArray"), uvArray);
+          obj->Set(JS_STR("uvCount"), JS_INT((uint32_t)meshBuffer.uvs.size() * 2));
 
           Local<Object> indexBuffer = Nan::New<Object>();
           indexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
@@ -564,6 +584,15 @@ void MLMesher::Poll() {
           Local<Object> textureVal = Nan::New<Object>();
           textureVal->Set(JS_STR("id"), JS_INT(meshBuffer.texture));
           obj->Set(JS_STR("texture"), textureVal);
+
+          Local<Value> textureDataVal;
+          if (meshBuffer.textureData.size() > 0) {
+            Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData.data(), meshBuffer.textureData.size()), 0, meshBuffer.textureData.size());
+            textureDataVal = textureDataArray;
+          } else {
+            textureDataVal = Nan::Null();
+          }
+          obj->Set(JS_STR("textureData"), textureDataVal);
 
           array->Set(numResults++, obj);
         } else {
@@ -585,61 +614,6 @@ void MLMesher::Poll() {
     asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
   }
 }
-
-/* void MLMesher::Repoll() {
-  if (!this->cb.IsEmpty()) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Repoll");
-
-    Local<Array> array = Nan::New<Array>(meshBuffers.size());
-    uint32_t numResults = 0;
-    for (const auto &iter : meshBuffers) {
-      const std::string &id = iter.first;
-      const MeshBuffer &meshBuffer = iter.second;
-
-      Local<Object> obj = Nan::New<Object>();
-      obj->Set(JS_STR("id"), JS_STR(id));
-      obj->Set(JS_STR("type"), JS_STR("update"));
-
-      Local<Object> positionBuffer = Nan::New<Object>();
-      positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
-      obj->Set(JS_STR("positionBuffer"), positionBuffer);
-      obj->Set(JS_STR("positionCount"), JS_INT(meshBuffer.numPositions));
-
-      Local<Object> normalBuffer = Nan::New<Object>();
-      normalBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.normalBuffer));
-      obj->Set(JS_STR("normalBuffer"), normalBuffer);
-      obj->Set(JS_STR("normalCount"), JS_INT(meshBuffer.numPositions));
-
-      Local<Object> vertexBuffer = Nan::New<Object>();
-      vertexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.vertexBuffer));
-      obj->Set(JS_STR("vertexBuffer"), vertexBuffer);
-      obj->Set(JS_STR("vertexCount"), JS_INT(meshBuffer.numVertices));
-
-      Local<Object> uvBuffer = Nan::New<Object>();
-      uvBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.uvBuffer));
-      obj->Set(JS_STR("uvBuffer"), uvBuffer);
-      obj->Set(JS_STR("uvCount"), JS_INT(meshBuffer.numUvs));
-
-      Local<Object> indexBuffer = Nan::New<Object>();
-      indexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
-      obj->Set(JS_STR("indexBuffer"), indexBuffer);
-      obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
-
-      Local<Object> textureVal = Nan::New<Object>();
-      textureVal->Set(JS_STR("id"), JS_INT(meshBuffer.texture));
-      obj->Set(JS_STR("texture"), textureVal);
-
-      array->Set(numResults++, obj);
-    }
-
-    Local<Function> cbFn = Nan::New(this->cb);
-    Local<Value> argv[] = {
-      array,
-    };
-    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-  }
-} */
 
 NAN_METHOD(MLMesher::Destroy) {
   MLMesher *mlMesher = ObjectWrap::Unwrap<MLMesher>(info.This());
@@ -1223,6 +1197,178 @@ NAN_METHOD(MLEyeTracker::Destroy) {
   }));
 }
 
+// MLCameraMesher
+
+MLCameraMesher::MLCameraMesher() {}
+
+MLCameraMesher::~MLCameraMesher() {}
+
+NAN_METHOD(MLCameraMesher::New) {
+  MLCameraMesher *mlCameraMesher = new MLCameraMesher();
+  Local<Object> mlCameraMesherObj = info.This();
+  mlCameraMesher->Wrap(mlCameraMesherObj);
+
+  Nan::SetAccessor(mlCameraMesherObj, JS_STR("onmesh"), OnMeshGetter, OnMeshSetter);
+
+  info.GetReturnValue().Set(mlCameraMesherObj);
+
+  cameraMeshers.push_back(mlCameraMesher);
+}
+
+Local<Function> MLCameraMesher::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLCameraMesher"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLCameraMesher::OnMeshGetter) {
+  // Nan::HandleScope scope;
+  MLCameraMesher *mlCameraMesher = ObjectWrap::Unwrap<MLCameraMesher>(info.This());
+
+  Local<Function> cb = Nan::New(mlCameraMesher->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLCameraMesher::OnMeshSetter) {
+  // Nan::HandleScope scope;
+  MLCameraMesher *mlCameraMesher = ObjectWrap::Unwrap<MLCameraMesher>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlCameraMesher->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLCameraMesher::OnMeshSetter: invalid arguments");
+  }
+}
+
+void MLCameraMesher::Poll() {
+  if (!this->cb.IsEmpty()) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLCameraMesher::Poll()");
+
+    Local<Array> array = Nan::New<Array>(meshBuffers.size());
+    uint32_t numResults = 0;
+    for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+      const std::string &id = iter->first;
+      const MeshBuffer &meshBuffer = iter->second;
+
+      Local<Object> obj = Nan::New<Object>();
+      obj->Set(JS_STR("id"), JS_STR(id));
+
+      Local<Object> vertexBuffer = Nan::New<Object>();
+      vertexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.vertexBuffer));
+      obj->Set(JS_STR("vertexBuffer"), vertexBuffer);
+      Local<Float32Array> vertexArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.vertices.data(), meshBuffer.vertices.size() * 3 * sizeof(float)), 0, meshBuffer.vertices.size() * 3);
+      obj->Set(JS_STR("vertexArray"), vertexArray);
+      obj->Set(JS_STR("vertexCount"), JS_INT((uint32_t)meshBuffer.vertices.size() * 3));
+
+      Local<Object> uvBuffer = Nan::New<Object>();
+      uvBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.uvBuffer));
+      obj->Set(JS_STR("uvBuffer"), uvBuffer);
+      Local<Float32Array> uvArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.uvs.data(), meshBuffer.uvs.size() * 2 * sizeof(float)), 0, meshBuffer.uvs.size() * 2);
+      obj->Set(JS_STR("uvArray"), uvArray);
+      obj->Set(JS_STR("uvCount"), JS_INT((uint32_t)meshBuffer.uvs.size() * 2));
+
+      Local<Object> textureObj = Nan::New<Object>();
+      textureObj->Set(JS_STR("id"), JS_INT(meshBuffer.texture));
+      obj->Set(JS_STR("texture"), textureObj);
+
+      Local<Value> textureDataVal;
+      if (meshBuffer.textureData.size() > 0) {
+        Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData.data(), meshBuffer.textureData.size()), 0, meshBuffer.textureData.size());
+        textureDataVal = textureDataArray;
+      } else {
+        textureDataVal = Nan::Null();
+      }
+      obj->Set(JS_STR("textureData"), textureDataVal);
+
+      array->Set(numResults++, obj);
+    }
+
+    Local<Function> cbFn = Nan::New(this->cb);
+    Local<Value> argv[] = {
+      array,
+    };
+    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  }
+}
+
+void MLCameraMesher::Poll(const std::vector<std::string> &meshBufferIds) {
+  if (!this->cb.IsEmpty()) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLCameraMesher::Poll(meshBufferIds)");
+
+    Local<Array> array = Nan::New<Array>(meshBufferIds.size());
+    uint32_t numResults = 0;
+    for (auto iter = meshBufferIds.begin(); iter != meshBufferIds.end(); iter++) {
+      const std::string &id = *iter;
+      const MeshBuffer &meshBuffer = meshBuffers[id];
+
+      Local<Object> obj = Nan::New<Object>();
+      obj->Set(JS_STR("id"), JS_STR(id));
+
+      Local<Object> vertexBuffer = Nan::New<Object>();
+      vertexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.vertexBuffer));
+      obj->Set(JS_STR("vertexBuffer"), vertexBuffer);
+      Local<Float32Array> vertexArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.vertices.data(), meshBuffer.vertices.size() * 3 * sizeof(float)), 0, meshBuffer.vertices.size() * 3);
+      obj->Set(JS_STR("vertexArray"), vertexArray);
+      obj->Set(JS_STR("vertexCount"), JS_INT((uint32_t)meshBuffer.vertices.size() * 3));
+
+      Local<Object> uvBuffer = Nan::New<Object>();
+      uvBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.uvBuffer));
+      obj->Set(JS_STR("uvBuffer"), uvBuffer);
+      Local<Float32Array> uvArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.uvs.data(), meshBuffer.uvs.size() * 2 * sizeof(float)), 0, meshBuffer.uvs.size() * 2);
+      obj->Set(JS_STR("uvArray"), uvArray);
+      obj->Set(JS_STR("uvCount"), JS_INT((uint32_t)meshBuffer.uvs.size() * 2));
+
+      Local<Object> textureObj = Nan::New<Object>();
+      textureObj->Set(JS_STR("id"), JS_INT(meshBuffer.texture));
+      obj->Set(JS_STR("texture"), textureObj);
+
+      Local<Value> textureDataVal;
+      if (meshBuffer.textureData.size() > 0) {
+        Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData.data(), meshBuffer.textureData.size()), 0, meshBuffer.textureData.size());
+        textureDataVal = textureDataArray;
+      } else {
+        textureDataVal = Nan::Null();
+      }
+      obj->Set(JS_STR("textureData"), textureDataVal);
+
+      array->Set(numResults++, obj);
+    }
+
+    Local<Function> cbFn = Nan::New(this->cb);
+    Local<Value> argv[] = {
+      array,
+    };
+    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  }
+}
+
+NAN_METHOD(MLCameraMesher::Destroy) {
+  MLCameraMesher *mlCameraMesher = ObjectWrap::Unwrap<MLCameraMesher>(info.This());
+
+  cameraMeshers.erase(std::remove_if(cameraMeshers.begin(), cameraMeshers.end(), [&](MLCameraMesher *m) -> bool {
+    if (m == mlCameraMesher) {
+      delete m;
+      return true;
+    } else {
+      return false;
+    }
+  }), cameraMeshers.end());
+}
+
 // keyboard callbacks
 
 void onChar(uint32_t char_utf32, void *data) {
@@ -1339,6 +1485,63 @@ void CameraRequest::Poll() {
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
+
+MLResult connectCamera() {
+  MLResult result = MLCameraConnect();
+  if (result == MLResult_Ok) {
+    cameraConnected = true;
+
+    /* cameraThread = std::thread([]() -> void {
+      for (;;) {
+        uv_sem_wait(&cameraConvertSem);
+
+        if (cameraConnected) {
+          cameraRequestSize = SjpegCompress(cameraRequestRgb, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, 50.0f, &cameraRequestJpeg);
+
+          uv_async_send(&cameraConvertAsync);
+        } else {
+          break;
+        }
+      }
+    }); */
+    cameraThread = std::thread([]() -> void {
+      for (;;) {
+        uv_sem_wait(&textureEncodeSem);
+
+        if (cameraConnected) {
+          TextureEncodeRequestEntry *requestEntry;
+          {
+            std::lock_guard<mutex> lock(textureEncodeRequestMutex);
+            requestEntry = textureEncodeRequestQueue.front();
+            textureEncodeRequestQueue.pop_front();
+          }
+
+          uint8_t *result;
+          size_t resultSize = SjpegCompress(requestEntry->data, requestEntry->width, requestEntry->height, 50.0f, &result);
+
+          if (resultSize > 0) {
+            TextureEncodeResponseEntry *responseEntry = new TextureEncodeResponseEntry(requestEntry->type, requestEntry->id, result, resultSize);
+            {
+              std::lock_guard<mutex> lock(textureEncodeResponseMutex);
+              textureEncodeResponseQueue.push_back(responseEntry);
+            }
+
+            uv_async_send(&textureEncodeAsync);
+          } else {
+            ML_LOG(Error, "%s: failed to encode jpeg: %x", application_name, resultSize);
+          }
+
+          delete[] requestEntry->data;
+          delete requestEntry;
+        } else {
+          break;
+        }
+      }
+    });
+  }
+  return result;
+}
+
 MLContext::MLContext() : window(nullptr), gl(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1} {}
 
 MLContext::~MLContext() {}
@@ -1371,7 +1574,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
-  Nan::SetMethod(ctorFn, "RequestCameraMesh", RequestCameraMesh);
+  Nan::SetMethod(ctorFn, "RequestCameraMeshing", RequestCameraMeshing);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
   Nan::SetMethod(ctorFn, "PostPollEvents", PostPollEvents);
 
@@ -1496,7 +1699,7 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
 void RunCameraInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
-  if (cameraRequests.size() > 0 && !cameraConvertPending) {
+  /* if (cameraRequests.size() > 0 && !cameraConvertPending) { // XXX port to texture encode pipeline
     MLHandle output;
     MLResult result = MLCameraGetPreviewStream(&output);
     if (result == MLResult_Ok) {
@@ -1576,7 +1779,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
     } else {
       ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
     }
-  }
+  } */
   if (cameraMeshEnabled) {
     MLContext *mlContext = application_context.mlContext;
 
@@ -1598,7 +1801,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
   }
 }
 
-void RunCameraConvertInMainThread(uv_async_t *handle) {
+/* void RunCameraConvertInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
   std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
@@ -1611,6 +1814,52 @@ void RunCameraConvertInMainThread(uv_async_t *handle) {
   }
 
   cameraConvertPending = false;
+} */
+
+void RunTextureEncodeInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  std::vector<std::string> pollIdList;
+  for (;;) {
+    TextureEncodeResponseEntry *entry;
+    {
+      std::lock_guard<mutex> lock(textureEncodeResponseMutex);
+      if (textureEncodeResponseQueue.size() > 0) {
+        entry = textureEncodeResponseQueue.front();
+        textureEncodeResponseQueue.pop_front();
+      } else {
+        entry = nullptr;
+      }
+    }
+
+    if (entry) {
+      if (entry->type == TextureEncodeEntryType::MESH_BUFFER) {
+        const std::string &id = entry->id;
+        auto match = meshBuffers.find(id);
+        if (match != meshBuffers.end()) {
+          MeshBuffer &meshBuffer = match->second;
+
+          meshBuffer.textureData.clear();
+          meshBuffer.textureData.resize(entry->resultSize);
+          memcpy(meshBuffer.textureData.data(), entry->result, entry->resultSize);
+
+          pollIdList.push_back(id);
+        }
+      } else {
+        ML_LOG(Error, "%s: unknown texture encode entry type: %x", application_name, entry->type);
+      }
+
+      SjpegFreeBuffer(entry->result);
+      delete entry;
+    } else {
+      break;
+    }
+  }
+  if (pollIdList.size() > 0) {
+    std::for_each(cameraMeshers.begin(), cameraMeshers.end(), [&](MLCameraMesher *m) {
+      m->Poll(pollIdList);
+    });
+  }
 }
 
 // mesh depth shader
@@ -1768,13 +2017,16 @@ NAN_METHOD(MLContext::InitLifecycle) {
     uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
     uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
     uv_async_init(uv_default_loop(), &cameraAsync, RunCameraInMainThread);
-    uv_async_init(uv_default_loop(), &cameraConvertAsync, RunCameraConvertInMainThread);
-    uv_sem_init(&cameraConvertSem, 0);
+    // uv_async_init(uv_default_loop(), &cameraConvertAsync, RunCameraConvertInMainThread);
+    uv_async_init(uv_default_loop(), &textureEncodeAsync, RunTextureEncodeInMainThread);
+    // uv_sem_init(&cameraConvertSem, 0);
+    uv_sem_init(&textureEncodeSem, 0);
 
     mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
     mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
     mlHandTrackerConstructor.Reset(MLHandTracker::Initialize(Isolate::GetCurrent()));
     mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
+    mlCameraMesherConstructor.Reset(MLCameraMesher::Initialize(Isolate::GetCurrent()));
 
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
     lifecycle_callbacks.on_stop = onStop;
@@ -2254,6 +2506,7 @@ NAN_METHOD(MLContext::Present) {
     glDeleteShader(cameraMeshFragment);
   }
 
+  glGenFramebuffers(1, &mlContext->textureEncodeFbo);
 
   if (gl->HasVertexArrayBinding()) {
     glBindVertexArray(gl->GetVertexArrayBinding());
@@ -2400,8 +2653,10 @@ NAN_METHOD(MLContext::Exit) {
   if (cameraConnected) {
     cameraConnected = false;
 
-    uv_sem_post(&cameraConvertSem);
+    std::cout << "camera thread join 1" << std::endl;
+    uv_sem_post(&textureEncodeSem);
     cameraThread.join();
+    std::cout << "camera thread join 2" << std::endl;
 
     MLResult result = MLCameraDisconnect();
     if (result != MLResult_Ok) {
@@ -2736,34 +2991,29 @@ NAN_METHOD(MLContext::RequestEyeTracking) {
   info.GetReturnValue().Set(mlEyeTrackerObj);
 }
 
+NAN_METHOD(MLContext::RequestCameraMeshing) {
+  if (!cameraConnected) {
+    MLResult result = connectCamera();
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
+      Nan::ThrowError("failed to connect camera");
+      return;
+    }
+  }
+
+  Local<Function> mlCameraMesherCons = Nan::New(mlCameraMesherConstructor);
+  Local<Object> mlCameraMesherObj = mlCameraMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlCameraMesherObj);
+
+  cameraMeshEnabled = true;
+}
+
 NAN_METHOD(MLContext::RequestDepthPopulation) {
   if (info[0]->IsBoolean()) {
     depthEnabled = info[0]->BooleanValue();
   } else {
     Nan::ThrowError("invalid arguments");
   }
-}
-
-MLResult connectCamera() {
-  MLResult result = MLCameraConnect();
-  if (result == MLResult_Ok) {
-    cameraConnected = true;
-
-    cameraThread = std::thread([]() -> void {
-      for (;;) {
-        uv_sem_wait(&cameraConvertSem);
-
-        if (cameraConnected) {
-          cameraRequestSize = SjpegCompress(cameraRequestRgb, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, 50.0f, &cameraRequestJpeg);
-
-          uv_async_send(&cameraConvertAsync);
-        } else {
-          break;
-        }
-      }
-    });
-  }
-  return result;
 }
 
 NAN_METHOD(MLContext::RequestCamera) {
@@ -2810,19 +3060,6 @@ NAN_METHOD(MLContext::CancelCamera) {
   } else {
     Nan::ThrowError("invalid arguments");
   }
-}
-
-NAN_METHOD(MLContext::RequestCameraMesh) {
-  if (!cameraConnected) {
-    MLResult result = connectCamera();
-    if (result != MLResult_Ok) {
-      ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
-      Nan::ThrowError("failed to connect camera");
-      return;
-    }
-  }
-
-  cameraMeshEnabled = true;
 }
 
 void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]);
@@ -3004,17 +3241,13 @@ NAN_METHOD(MLContext::PrePollEvents) {
   }
 }
 
-void unwrapVertices(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count, std::vector<MLVec3f> *vertices) {
-  vertices->clear();
-  vertices->resize(index_count);
-
-  for (uint16_t i = 0; i < index_count; i++) {
-    (*vertices)[i] = vertex[index[i]];
-  }
-}
 void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t index_count, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs) {
   if (index_count > 0) {
-    unwrapVertices(vertex, vertex_count, index, index_count, vertices);
+    vertices->clear();
+    vertices->resize(index_count);
+    for (uint16_t i = 0; i < index_count; i++) {
+      (*vertices)[i] = vertex[index[i]];
+    }
 
     uvs->clear();
     uvs->resize(vertices->size());
@@ -3122,7 +3355,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glUseProgram(mlContext->cameraRawProgram);
 
             glActiveTexture(GL_TEXTURE0);
-            
+
             if (match != cameraMeshPreviewRequests.end()) {
               // cameraMeshPreviewRequest.position = match->position;
               // cameraMeshPreviewRequest.rotation = match->rotation;
@@ -3132,9 +3365,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
               cameraMeshPreviewRequest.texture = match->texture;
               // cameraMeshPreviewRequest.ms = match->ms;
               match->texture = 0;
-              
+
               glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
-              
+
               eraseList.push_back(match);
             } else {
               glGenTextures(1, &cameraMeshPreviewRequest.texture);
@@ -3252,10 +3485,37 @@ NAN_METHOD(MLContext::PostPollEvents) {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
       }
       glActiveTexture(gl->activeTexture);
+    }
+  }
 
-      /* std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
-        m->Repoll();
-      }); */
+  if (cameraMeshEnabled && meshBuffers.size() > 0) {
+    for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+      const std::string &id = iter->first;
+      MeshBuffer &meshBuffer = iter->second;
+
+      if (meshBuffer.textureDirty) {
+        // glBindFramebuffer(GL_READ_FRAMEBUFFER, mlContext->textureEncodeFbo);
+        // glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, meshBuffer.texture, 0);
+
+        uint8_t *textureDataRgb = new uint8_t[CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3];
+        memset(textureDataRgb, 0, CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3);
+        // glReadPixels(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1], GL_RGB, GL_UNSIGNED_BYTE, textureDataRgb);
+
+        TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, CAMERA_SIZE[0], CAMERA_SIZE[1], textureDataRgb);
+        {
+          std::lock_guard<mutex> lock(textureEncodeRequestMutex);
+          textureEncodeRequestQueue.push_back(requestEntry);
+        }
+        uv_sem_post(&textureEncodeSem);
+
+        meshBuffer.textureDirty = false;
+      }
+    }
+
+    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
     }
   }
 
@@ -3328,8 +3588,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
       MLMeshingBlockMesh *blockMeshes = mesh.data;
       uint32_t dataCount = mesh.data_count;
 
-      std::vector<std::vector<MLVec3f>>vertices(dataCount);
-      std::vector<std::vector<Uv>> uvs(dataCount);
       std::vector<MeshBuffer *> renderList;
 
       for (uint32_t i = 0; i < dataCount; i++) {
@@ -3338,12 +3596,14 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
         const MeshRequestSpec &meshRequestSpec = meshRequestSpecMap[id];
         if (!meshRequestSpec.isRemoved) {
+          const bool rerenderBlock = cameraMeshEnabled && !meshRequestSpec.isUnchanged;
+          
           MeshBuffer *meshBuffer;
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
             meshBuffer = &iter->second;
 
-            if (!meshRequestSpec.isUnchanged) {
+            if (rerenderBlock) {
               glBindFramebuffer(GL_DRAW_FRAMEBUFFER, meshBuffer->fbo);
 
               glClearColor(0.1, 0.1, 0.1, 1.0);
@@ -3369,17 +3629,40 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glClear(GL_COLOR_BUFFER_BIT);
             glClearColor(0.0, 0.0, 0.0, 1.0);
 
-            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2], buffers[3], buffers[4], fbo, texture);
+            meshBuffers[id] = MeshBuffer{
+              buffers[0],
+              buffers[1],
+              buffers[2],
+              buffers[3],
+              buffers[4],
+              fbo,
+              texture,
+              nullptr,
+              0,
+              nullptr,
+              nullptr,
+              0,
+              std::vector<MLVec3f>(),
+              std::vector<Uv>(),
+              std::vector<uint8_t>(),
+              true,
+              false,
+              false,
+            };
             meshBuffer = &meshBuffers[id];
           }
 
-          std::vector<MLVec3f> &localVertices = vertices[i];
-          std::vector<Uv> &localUvs = uvs[i];
-          getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localVertices, &localUvs);
+          std::vector<MLVec3f> localVertices;
+          std::vector<Uv> localUvs;
+          if (rerenderBlock) {
+            getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localVertices, &localUvs);
+          }
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.isNew, meshRequestSpec.isUnchanged);
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.isNew, meshRequestSpec.isUnchanged, rerenderBlock);
 
-          renderList.push_back(meshBuffer);
+          if (rerenderBlock) {
+            renderList.push_back(meshBuffer);
+          }
         } else {
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
@@ -3399,20 +3682,25 @@ NAN_METHOD(MLContext::PostPollEvents) {
         }
       }
 
-      MeshBuffer::beginRenderCameraAll();
-      for (auto iter = renderList.begin(); iter != renderList.end(); iter++) {
-        MeshBuffer &meshBuffer = **iter;
-        meshBuffer.beginRenderCamera();
-        for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
-          CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter2;
-          if (cameraMeshPreviewRequest.texture) {
-            meshBuffer.renderCamera(cameraMeshPreviewRequest);
+      if (renderList.size() > 0) {
+        MeshBuffer::beginRenderCameraAll();
+        for (auto iter = renderList.begin(); iter != renderList.end(); iter++) {
+          MeshBuffer &meshBuffer = **iter;
+          meshBuffer.beginRenderCamera();
+          for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
+            CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter2;
+            if (cameraMeshPreviewRequest.texture) {
+              meshBuffer.renderCamera(cameraMeshPreviewRequest);
+            }
           }
         }
+        MeshBuffer::endRenderCamera();
       }
-      MeshBuffer::endRenderCamera();
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
+        m->Poll();
+      });
+      std::for_each(cameraMeshers.begin(), cameraMeshers.end(), [&](MLCameraMesher *m) {
         m->Poll();
       });
 

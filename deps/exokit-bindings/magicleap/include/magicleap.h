@@ -139,10 +139,10 @@ public:
 
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
-  MeshBuffer(const MeshBuffer &meshBuffer);
-  MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, const std::vector<MLVec3f> *vertices, const std::vector<Uv> *uvs, bool isNew, bool isUnchanged);
+  // MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
+  // MeshBuffer(const MeshBuffer &meshBuffer);
+  // MeshBuffer();
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, bool isNew, bool isUnchanged, bool textureDirty);
   static void beginRenderCameraAll();
   void beginRenderCamera();
   void renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewRequest);
@@ -160,12 +160,37 @@ public:
   float *normals;
   uint16_t *indices;
   uint16_t numIndices;
-  float *vertices;
-  uint32_t numVertices;
-  float *uvs;
-  uint32_t numUvs;
+  std::vector<MLVec3f> vertices;
+  std::vector<Uv> uvs;
+  std::vector<uint8_t> textureData;
   bool isNew;
   bool isUnchanged;
+  bool textureDirty;
+};
+
+enum TextureEncodeEntryType {
+  MESH_BUFFER,
+};
+
+class TextureEncodeRequestEntry {
+public:
+  TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, uint8_t *data);
+
+  TextureEncodeEntryType type;
+  std::string id;
+  int width;
+  int height;
+  uint8_t *data;
+};
+
+class TextureEncodeResponseEntry {
+public:
+  TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, uint8_t *result, size_t resultSize);
+
+  TextureEncodeEntryType type;
+  std::string id;
+  uint8_t *result;
+  size_t resultSize;
 };
 
 class MLMesher : public ObjectWrap {
@@ -248,6 +273,26 @@ public:
   bool rightBlink;
 };
 
+class MLCameraMesher : public ObjectWrap {
+public:
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLCameraMesher();
+  ~MLCameraMesher();
+
+  static NAN_METHOD(New);
+  static NAN_GETTER(OnMeshGetter);
+  static NAN_SETTER(OnMeshSetter);
+  static NAN_METHOD(Destroy);
+
+  void Poll();
+  void Poll(const std::vector<std::string> &meshBufferIds);
+  // void Repoll();
+
+// protected:
+  Nan::Persistent<Function> cb;
+};
+
 class CameraRequest {
 public:
   CameraRequest(Local<Function> cbFn);
@@ -300,7 +345,7 @@ public:
   static NAN_METHOD(RequestDepthPopulation);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
-  static NAN_METHOD(RequestCameraMesh);
+  static NAN_METHOD(RequestCameraMeshing);
   static NAN_METHOD(PrePollEvents);
   static NAN_METHOD(PostPollEvents);
 
@@ -361,6 +406,9 @@ public:
   GLuint cameraMeshModelViewMatrixLocation2;
   GLuint cameraMeshProjectionMatrixLocation2;
   GLuint cameraMeshCameraSnapshotTextureLocation;
+
+  // texture encode
+  GLuint textureEncodeFbo;
 
   // occlusion
   // MLHandle occlusionTracker;
