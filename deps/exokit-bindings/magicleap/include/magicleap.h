@@ -176,26 +176,22 @@ enum TextureEncodeEntryType {
 
 class TextureEncodeRequestEntry {
 public:
-  TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, GLuint fbo, GLuint texture, GLuint pbo, uint8_t *data);
+  TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, GLuint pbo, uint8_t *data);
 
   TextureEncodeEntryType type;
   std::string id;
   int width;
   int height;
-  GLuint fbo;
-  GLuint texture;
   GLuint pbo;
   uint8_t *data;
 };
 
 class TextureEncodeResponseEntry {
 public:
-  TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, GLuint fbo, GLuint texture, GLuint pbo, uint8_t *result, size_t resultSize);
+  TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, GLuint pbo, uint8_t *result, size_t resultSize);
 
   TextureEncodeEntryType type;
   std::string id;
-  GLuint fbo;
-  GLuint texture;
   GLuint pbo;
   uint8_t *result;
   size_t resultSize;
