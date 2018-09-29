@@ -107,10 +107,10 @@
           THREE.UnsignedByteType,
           16
         );
-        /* const material = new THREE.MeshBasicMaterial({
+        const material = new THREE.MeshBasicMaterial({
           map,
-        }); */
-        const material = new THREE.ShaderMaterial({
+        });
+        /* const material = new THREE.ShaderMaterial({
           uniforms: {
             map: {
               type: 't',
@@ -131,7 +131,7 @@
               gl_FragColor = texture2D(map, vUv);
             }
           `,
-        });
+        }); */
 
         const mesh = new THREE.Mesh(geometry, material);
         mesh.meshId = meshId;
@@ -150,11 +150,11 @@
         geometry.attributes.uv.count = uvCount / 2;
 
         if (texture) {
-          const textureProperties1 = renderer.properties.get(terrainMesh.material.uniforms.map.value);
+          const textureProperties1 = renderer.properties.get(terrainMesh.material.map);
           textureProperties1.__webglInit = true;
           textureProperties1.__webglTexture = texture;
         } else {
-          const textureProperties1 = renderer.properties.get(terrainMesh.material.uniforms.map.value);
+          const textureProperties1 = renderer.properties.get(terrainMesh.material.map);
           textureProperties1.__webglInit = false;
           textureProperties1.__webglTexture = null;
         }
