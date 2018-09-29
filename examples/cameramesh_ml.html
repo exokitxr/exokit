@@ -12,7 +12,7 @@
   <script src="FBXLoader.js"></script> -->
   <script>
     let container, scene, camera, display;
-    let mesher = null, cameraMeshTexture, cameraMeshTexture2/*, planeMesh, planeMesh2*/;
+    let mesher = null, cameraMesher = null, cameraMeshTexture, cameraMeshTexture2/*, planeMesh, planeMesh2*/;
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -247,44 +247,18 @@
         .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0));
       const _makePlaneMesh = () => {
         const geometry = planeGeometry;
-        const cameraMeshTexture = new THREE.Texture(
-          null,
-          THREE.UVMapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.NearestFilter,
-          THREE.NearestFilter,
-          THREE.RGBAFormat,
-          THREE.UnsignedByteType,
-          16
-        );
         const material = new THREE.ShaderMaterial({
-          uniforms: {
-            cameraMeshTexture: {
-              type: 't',
-              value: cameraMeshTexture,
-            },
-          },
           vertexShader: `\
-            varying vec2 vUv;
-            // varying vec2 vPosition;
             void main() {
-              vUv = uv;
               gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-              // vPosition = vec2(mod(position.x, 0.1), mod(position.y, 0.1));
             }
           `,
           fragmentShader: `\
-            uniform sampler2D cameraMeshTexture;
-            varying vec2 vUv;
-            // varying vec2 vPosition;
             void main() {
-              // gl_FragColor = texture2D(cameraMeshTexture, vPosition);
-              gl_FragColor = texture2D(cameraMeshTexture, vUv);
-              // gl_FragColor = vec4(1.0, vUv.x, vUv.x, 1.0);
+              gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
             }
           `,
-          side: THREE.DoubleSide,
+          // side: THREE.DoubleSide, // XXX this matters
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.frustumCulled = false;
@@ -338,13 +312,13 @@
         mesh.meshId = meshId;
         mesh.frustumCulled = false;
 
-        const planeMesh = _makePlaneMesh();
+        /* const planeMesh = _makePlaneMesh();
         mesh.add(planeMesh);
-        mesh.planeMesh = planeMesh;
+        mesh.planeMesh = planeMesh; */
 
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, vertexBuffer, vertexCount, uvBuffer, uvCount, texture}) => {
+      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, vertexBuffer, vertexCount, uvBuffer, uvCount, texture, textureData}) => {
         const {geometry, material} = terrainMesh;
         const attributes = renderer.getAttributes();
 
@@ -358,25 +332,15 @@
           const textureProperties1 = renderer.properties.get(terrainMesh.material.uniforms.map.value);
           textureProperties1.__webglInit = true;
           textureProperties1.__webglTexture = texture;
-
-          /* const textureProperties2 = renderer.properties.get(terrainMesh.planeMesh.material.uniforms.cameraMeshTexture.value);
-          textureProperties2.__webglInit = true;
-          textureProperties2.__webglTexture = texture; */
         } else {
           const textureProperties1 = renderer.properties.get(terrainMesh.material.uniforms.map.value);
           textureProperties1.__webglInit = false;
           textureProperties1.__webglTexture = null;
-
-          /* const textureProperties2 = renderer.properties.get(terrainMesh.planeMesh.material.uniforms.cameraMeshTexture.value);
-          textureProperties2.__webglInit = false;
-          textureProperties2.__webglTexture = null; */
         }
-        /* terrainMesh.planeMesh2.matrix.compose(
-          terrainMesh.planeMesh2.position,
-          terrainMesh.planeMesh2.quaternion,
-          terrainMesh.planeMesh2.scale
-        );
-        terrainMesh.planeMesh2.updateMatrixWorld(true); */
+
+        if (textureData) {
+          console.log('got texture data', textureData.length);
+        }
       };
       const _removeTerrainMesh = terrainMesh => {
         scene.remove(terrainMesh);
@@ -406,6 +370,14 @@
               terrainMeshes.splice(index, 1);
             }
           }
+        }
+      };
+      const _onCameraMesh = updates => {
+        for (let i = 0; i < updates.length; i++) {
+          const update = updates[i];
+          const {id} = update;
+
+          // _loadTerrainMesh(_getTerrainMesh(id), update); // XXX
         }
       };
 
@@ -483,11 +455,16 @@
         mesher = window.browser.magicleap.RequestMeshing();
         mesher.onmesh = _onMesh;
 
+        cameraMesher = window.browser.magicleap.RequestCameraMeshing();
+        cameraMesher.onmesh = _onCameraMesh;
+
         enabled = true;
       };
       const _disable = () => {
         mesher.destroy();
         mesher = null;
+        cameraMesher.destroy();
+        cameraMesher = null;
         _clearTerrainMeshes();
 
         enabled = false;
@@ -574,8 +551,6 @@
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
-
-        window.browser.magicleap.RequestCameraMesh();
 
         console.log('running!');
       });
