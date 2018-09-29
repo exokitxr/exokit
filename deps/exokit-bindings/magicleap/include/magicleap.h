@@ -137,15 +137,23 @@ public:
   milliseconds ms;
 };
 
+class TextureEncodePbo {
+public:
+  GLuint fbo;
+  GLuint texture;
+  GLuint pbo;
+};
+
 class MeshBuffer {
 public:
   // MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
   // MeshBuffer(const MeshBuffer &meshBuffer);
   // MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, bool isNew, bool isUnchanged, bool textureDirty);
+  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, bool isNew, bool isUnchanged);
   static void beginRenderCameraAll();
   void beginRenderCamera();
   void renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewRequest);
+  TextureEncodePbo getPixels();
   static void endRenderCamera();
 
   GLuint positionBuffer;
@@ -162,7 +170,8 @@ public:
   uint16_t numIndices;
   std::vector<MLVec3f> vertices;
   std::vector<Uv> uvs;
-  std::vector<uint8_t> textureData;
+  uint8_t *textureData;
+  size_t textureDataSize;
   bool isNew;
   bool isUnchanged;
   bool textureDirty;
@@ -174,21 +183,27 @@ enum TextureEncodeEntryType {
 
 class TextureEncodeRequestEntry {
 public:
-  TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, uint8_t *data);
+  TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, GLuint fbo, GLuint texture, GLuint pbo, uint8_t *data);
 
   TextureEncodeEntryType type;
   std::string id;
   int width;
   int height;
+  GLuint fbo;
+  GLuint texture;
+  GLuint pbo;
   uint8_t *data;
 };
 
 class TextureEncodeResponseEntry {
 public:
-  TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, uint8_t *result, size_t resultSize);
+  TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, GLuint fbo, GLuint texture, GLuint pbo, uint8_t *result, size_t resultSize);
 
   TextureEncodeEntryType type;
   std::string id;
+  GLuint fbo;
+  GLuint texture;
+  GLuint pbo;
   uint8_t *result;
   size_t resultSize;
 };
@@ -406,9 +421,6 @@ public:
   GLuint cameraMeshModelViewMatrixLocation2;
   GLuint cameraMeshProjectionMatrixLocation2;
   GLuint cameraMeshCameraSnapshotTextureLocation;
-
-  // texture encode
-  GLuint textureEncodeFbo;
 
   // occlusion
   // MLHandle occlusionTracker;

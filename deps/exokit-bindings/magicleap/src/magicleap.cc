@@ -12,6 +12,7 @@ namespace ml {
 
 const char application_name[] = "com.exokit.app";
 constexpr int CAMERA_SIZE[] = {1920, 1080};
+constexpr int MESH_TEXTURE_SIZE[] = {512, 512};
 
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
@@ -80,6 +81,7 @@ std::map<std::string, MeshBuffer> meshBuffers;
 
 std::vector<MLCameraMesher *> cameraMeshers;
 
+std::map<std::string, TextureEncodePbo> textureEncodePbos;
 std::deque<TextureEncodeRequestEntry *> textureEncodeRequestQueue;
 std::deque<TextureEncodeResponseEntry *> textureEncodeResponseQueue;
 std::mutex textureEncodeRequestMutex;
@@ -289,62 +291,7 @@ static void onUnloadResources(void* application_context) {
 
 // MeshBuffer
 
-/* MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture) :
-  positionBuffer(positionBuffer),
-  normalBuffer(normalBuffer),
-  vertexBuffer(vertexBuffer),
-  uvBuffer(uvBuffer),
-  indexBuffer(indexBuffer),
-  fbo(fbo),
-  texture(texture),
-  positions(nullptr),
-  numPositions(0),
-  normals(nullptr),
-  indices(nullptr),
-  numIndices(0),
-  vertices(nullptr),
-  uvs(nullptr),
-  isNew(true),
-  isUnchanged(false)
-  {}
-MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
-  positionBuffer = meshBuffer.positionBuffer;
-  normalBuffer = meshBuffer.normalBuffer;
-  vertexBuffer = meshBuffer.vertexBuffer;
-  uvBuffer = meshBuffer.uvBuffer;
-  indexBuffer = meshBuffer.indexBuffer;
-  fbo = meshBuffer.fbo;
-  texture = meshBuffer.texture;
-  positions = meshBuffer.positions;
-  numPositions = meshBuffer.numPositions;
-  normals = meshBuffer.normals;
-  indices = meshBuffer.indices;
-  numIndices = meshBuffer.numIndices;
-  vertices = meshBuffer.vertices;
-  uvs = meshBuffer.uvs;
-  isNew = meshBuffer.isNew;
-  isUnchanged = meshBuffer.isUnchanged;
-}
-MeshBuffer::MeshBuffer() :
-  positionBuffer(0),
-  normalBuffer(0),
-  vertexBuffer(0),
-  uvBuffer(0),
-  indexBuffer(0),
-  fbo(0),
-  texture(0),
-  positions(nullptr),
-  numPositions(0),
-  normals(nullptr),
-  indices(nullptr),
-  numIndices(0),
-  vertices(nullptr),
-  uvs(nullptr),
-  isNew(true),
-  isUnchanged(false)
-  {} */
-
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, bool isNew, bool isUnchanged, bool textureDirty) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, bool isNew, bool isUnchanged) {
   glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
@@ -361,15 +308,14 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->numIndices = numIndices;
   this->isNew = isNew;
   this->isUnchanged = isUnchanged;
-  this->textureDirty = textureDirty;
-  
+
   if (vertices->size() > 0 && uvs->size() > 0) {
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, vertices->size() * 3 * sizeof(float), vertices->data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer);
     glBufferData(GL_ARRAY_BUFFER, uvs->size() * 2 * sizeof(float), uvs->data(), GL_DYNAMIC_DRAW);
-    
+
     this->vertices = std::move(*vertices);
     this->uvs = std::move(*uvs);
   }
@@ -380,7 +326,7 @@ void MeshBuffer::beginRenderCameraAll() {
   glBindVertexArray(mlContext->cameraMeshVao2);
   glUseProgram(mlContext->cameraMeshProgram2);
 
-  glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+  glViewport(0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1]);
 }
 void MeshBuffer::beginRenderCamera() {
   MLContext *mlContext = application_context.mlContext;
@@ -406,10 +352,48 @@ void MeshBuffer::renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewR
   glUniform1i(mlContext->cameraMeshCameraSnapshotTextureLocation, 0);
 
   glDrawArrays(GL_TRIANGLES, 0, this->vertices.size() * 3);
+
+  this->textureDirty = true;
+}
+TextureEncodePbo MeshBuffer::getPixels() {
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
+
+  /* GLuint fbo;
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+  GLuint texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+  glBlitFramebuffer(0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], 0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo); */
+
+  GLuint pbo;
+  glGenBuffers(1, &pbo);
+  glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+  glBufferData(GL_PIXEL_PACK_BUFFER, MESH_TEXTURE_SIZE[0] * MESH_TEXTURE_SIZE[1] * 3, 0, GL_STREAM_READ);
+  glReadPixels(0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+  this->textureDirty = false;
+
+  return TextureEncodePbo{
+    0,
+    0,
+    pbo,
+  };
 }
 void MeshBuffer::endRenderCamera() {
   WebGLRenderingContext *gl = application_context.gl;
 
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
   if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
   } else {
@@ -435,6 +419,11 @@ void MeshBuffer::endRenderCamera() {
   } else {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
+  if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+  } else {
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+  }
   if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
@@ -444,17 +433,23 @@ void MeshBuffer::endRenderCamera() {
   glActiveTexture(gl->activeTexture);
 }
 
-TextureEncodeRequestEntry::TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, uint8_t *data) :
+TextureEncodeRequestEntry::TextureEncodeRequestEntry(TextureEncodeEntryType type, const std::string id, int width, int height, GLuint fbo, GLuint texture, GLuint pbo, uint8_t *data) :
   type(type),
   id(id),
   width(width),
   height(height),
+  fbo(fbo),
+  texture(texture),
+  pbo(pbo),
   data(data)
   {}
 
-TextureEncodeResponseEntry::TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, uint8_t *result, size_t resultSize) :
+TextureEncodeResponseEntry::TextureEncodeResponseEntry(TextureEncodeEntryType type, const std::string id, GLuint fbo, GLuint texture, GLuint pbo, uint8_t *result, size_t resultSize) :
   type(type),
   id(id),
+  fbo(fbo),
+  texture(texture),
+  pbo(pbo),
   result(result),
   resultSize(resultSize)
   {}
@@ -586,8 +581,8 @@ void MLMesher::Poll() {
           obj->Set(JS_STR("texture"), textureVal);
 
           Local<Value> textureDataVal;
-          if (meshBuffer.textureData.size() > 0) {
-            Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData.data(), meshBuffer.textureData.size()), 0, meshBuffer.textureData.size());
+          if (meshBuffer.textureData) {
+            Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData, meshBuffer.textureDataSize), 0, meshBuffer.textureDataSize);
             textureDataVal = textureDataArray;
           } else {
             textureDataVal = Nan::Null();
@@ -1285,8 +1280,8 @@ void MLCameraMesher::Poll() {
       obj->Set(JS_STR("texture"), textureObj);
 
       Local<Value> textureDataVal;
-      if (meshBuffer.textureData.size() > 0) {
-        Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData.data(), meshBuffer.textureData.size()), 0, meshBuffer.textureData.size());
+      if (meshBuffer.textureData) {
+        Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData, meshBuffer.textureDataSize), 0, meshBuffer.textureDataSize);
         textureDataVal = textureDataArray;
       } else {
         textureDataVal = Nan::Null();
@@ -1337,8 +1332,8 @@ void MLCameraMesher::Poll(const std::vector<std::string> &meshBufferIds) {
       obj->Set(JS_STR("texture"), textureObj);
 
       Local<Value> textureDataVal;
-      if (meshBuffer.textureData.size() > 0) {
-        Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData.data(), meshBuffer.textureData.size()), 0, meshBuffer.textureData.size());
+      if (meshBuffer.textureData) {
+        Local<Uint8Array> textureDataArray = Uint8Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)meshBuffer.textureData, meshBuffer.textureDataSize), 0, meshBuffer.textureDataSize);
         textureDataVal = textureDataArray;
       } else {
         textureDataVal = Nan::Null();
@@ -1520,7 +1515,7 @@ MLResult connectCamera() {
           size_t resultSize = SjpegCompress(requestEntry->data, requestEntry->width, requestEntry->height, 50.0f, &result);
 
           if (resultSize > 0) {
-            TextureEncodeResponseEntry *responseEntry = new TextureEncodeResponseEntry(requestEntry->type, requestEntry->id, result, resultSize);
+            TextureEncodeResponseEntry *responseEntry = new TextureEncodeResponseEntry(requestEntry->type, requestEntry->id, requestEntry->fbo, requestEntry->texture, requestEntry->pbo, result, resultSize);
             {
               std::lock_guard<mutex> lock(textureEncodeResponseMutex);
               textureEncodeResponseQueue.push_back(responseEntry);
@@ -1531,7 +1526,6 @@ MLResult connectCamera() {
             ML_LOG(Error, "%s: failed to encode jpeg: %x", application_name, resultSize);
           }
 
-          delete[] requestEntry->data;
           delete requestEntry;
         } else {
           break;
@@ -1819,7 +1813,9 @@ void RunCameraInMainThread(uv_async_t *handle) {
 void RunTextureEncodeInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
-  std::vector<std::string> pollIdList;
+  WebGLRenderingContext *gl = application_context.gl;
+
+  std::vector<std::string> pollMeshBufferIdList;
   for (;;) {
     TextureEncodeResponseEntry *entry;
     {
@@ -1839,25 +1835,35 @@ void RunTextureEncodeInMainThread(uv_async_t *handle) {
         if (match != meshBuffers.end()) {
           MeshBuffer &meshBuffer = match->second;
 
-          meshBuffer.textureData.clear();
-          meshBuffer.textureData.resize(entry->resultSize);
-          memcpy(meshBuffer.textureData.data(), entry->result, entry->resultSize);
+          meshBuffer.textureData = entry->result;
+          meshBuffer.textureDataSize = entry->resultSize;
 
-          pollIdList.push_back(id);
+          pollMeshBufferIdList.push_back(id);
         }
       } else {
         ML_LOG(Error, "%s: unknown texture encode entry type: %x", application_name, entry->type);
       }
 
+      // cleanup
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, entry->pbo);
+      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      glDeleteBuffers(1, &entry->pbo);
+      glDeleteFramebuffers(1, &entry->fbo);
+      glDeleteTextures(1, &entry->texture);
+      if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+      } else {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      }
       SjpegFreeBuffer(entry->result);
       delete entry;
     } else {
       break;
     }
   }
-  if (pollIdList.size() > 0) {
+  if (pollMeshBufferIdList.size() > 0) {
     std::for_each(cameraMeshers.begin(), cameraMeshers.end(), [&](MLCameraMesher *m) {
-      m->Poll(pollIdList);
+      m->Poll(pollMeshBufferIdList);
     });
   }
 }
@@ -2506,8 +2512,6 @@ NAN_METHOD(MLContext::Present) {
     glDeleteShader(cameraMeshFragment);
   }
 
-  glGenFramebuffers(1, &mlContext->textureEncodeFbo);
-
   if (gl->HasVertexArrayBinding()) {
     glBindVertexArray(gl->GetVertexArrayBinding());
   } else {
@@ -2653,10 +2657,8 @@ NAN_METHOD(MLContext::Exit) {
   if (cameraConnected) {
     cameraConnected = false;
 
-    std::cout << "camera thread join 1" << std::endl;
     uv_sem_post(&textureEncodeSem);
     cameraThread.join();
-    std::cout << "camera thread join 2" << std::endl;
 
     MLResult result = MLCameraDisconnect();
     if (result != MLResult_Ok) {
@@ -3297,17 +3299,149 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
   }
 }
 
+void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const std::vector<CameraMeshPreviewRequest *> &cameraMeshPreviewRenderList) {
+  bool rendering = false;
+  if (meshBufferIdRenderList.size() > 0) {
+    for (auto iter = meshBufferIdRenderList.begin(); iter != meshBufferIdRenderList.end(); iter++) {
+      const std::string &id = *iter;
+      MeshBuffer &meshBuffer = meshBuffers[id];
+
+      if (!rendering) {
+        MeshBuffer::beginRenderCameraAll();
+        rendering = true;
+      }
+      meshBuffer.beginRenderCamera();
+
+      for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
+        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter2;
+
+        if (cameraMeshPreviewRequest.texture) {
+          meshBuffer.renderCamera(cameraMeshPreviewRequest);
+        }
+      }
+    }
+  }
+  if (cameraMeshPreviewRenderList.size() > 0) {
+    for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+      const std::string &id = iter->first;
+      MeshBuffer &meshBuffer = iter->second;
+
+      auto match = std::find(meshBufferIdRenderList.begin(), meshBufferIdRenderList.end(), id);
+      if (match == meshBufferIdRenderList.end()) {
+        if (!rendering) {
+          MeshBuffer::beginRenderCameraAll();
+          rendering = true;
+        }
+        meshBuffer.beginRenderCamera();
+
+        for (auto iter2 = cameraMeshPreviewRenderList.begin(); iter2 != cameraMeshPreviewRenderList.end(); iter2++) {
+          CameraMeshPreviewRequest &cameraMeshPreviewRequest = **iter2;
+
+          if (cameraMeshPreviewRequest.texture != 0) {
+            meshBuffer.renderCamera(cameraMeshPreviewRequest);
+          }
+        }
+      }
+    }
+  }
+
+  if (rendering) {
+    MeshBuffer::endRenderCamera();
+  }
+}
+
 NAN_METHOD(MLContext::PostPollEvents) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
   GLuint fbo = info[2]->Uint32Value();
   NATIVEwindow *window = application_context.window;
 
-  if (cameraMeshEnabled) {
-    const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-    std::vector<CameraMeshPreviewRequest *> renderList;
-    std::vector<std::deque<CameraMeshPreviewRequest>::iterator> eraseList;
+  std::vector<std::string> meshBufferIdRenderList;
+  std::vector<CameraMeshPreviewRequest *> cameraMeshPreviewRenderList;
 
+  if (cameraMeshEnabled) {
+    // read pixel buffers
+    if (textureEncodePbos.size() > 0) {
+      for (auto iter = textureEncodePbos.begin(); iter != textureEncodePbos.end(); iter++) {
+        const std::string &id = iter->first;
+        TextureEncodePbo &textureEncodePbo = iter->second;
+
+        // XXX
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, textureEncodePbo.pbo);
+        glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+        glDeleteBuffers(1, &textureEncodePbo.pbo);
+        // glDeleteFramebuffers(1, &textureEncodePbo.fbo);
+        // glDeleteTextures(1, &textureEncodePbo.texture);
+        
+        /* glBindBuffer(GL_PIXEL_PACK_BUFFER, textureEncodePbo.pbo);
+        uint8_t *textureDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3, GL_MAP_READ_BIT);
+
+        TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, CAMERA_SIZE[0], CAMERA_SIZE[1], textureEncodePbo.fbo, textureEncodePbo.texture, textureEncodePbo.pbo, textureDataRgb);
+        {
+          std::lock_guard<mutex> lock(textureEncodeRequestMutex);
+          textureEncodeRequestQueue.push_back(requestEntry);
+        }
+        uv_sem_post(&textureEncodeSem); */
+      }
+      textureEncodePbos.clear();
+
+      if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+      } else {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      }
+    }
+
+    // queue pixel buffers
+    for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+      const std::string &id = iter->first;
+      MeshBuffer &meshBuffer = iter->second;
+      if (meshBuffer.textureDirty) {
+        textureEncodePbos[id] = meshBuffer.getPixels();
+        
+        if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+          glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+        } else {
+          glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+        }
+        if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+        } else {
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+        }
+        break;
+      }
+    }
+
+    // remove overflowed camera mesh preview requests
+    std::vector<std::deque<CameraMeshPreviewRequest>::iterator> eraseList;
+    {
+      size_t numCameraMeshTextures = 0;
+      for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
+        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+        if (cameraMeshPreviewRequest.texture != 0) {
+          numCameraMeshTextures++;
+        }
+      }
+      if (numCameraMeshTextures > MAX_CAMERA_MESH_TEXTURES) {
+        for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
+          CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+
+          if (cameraMeshPreviewRequest.texture != 0) {
+            glDeleteTextures(1, &cameraMeshPreviewRequest.texture);
+            eraseList.push_back(iter);
+
+            numCameraMeshTextures--;
+            if (numCameraMeshTextures <= MAX_CAMERA_MESH_TEXTURES) {
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // capture camera
+    const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
       CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
 
@@ -3390,7 +3524,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
             eglDestroyImageKHR(window->display, yuv_img);
 
-            renderList.push_back(&cameraMeshPreviewRequest);
+            cameraMeshPreviewRenderList.push_back(&cameraMeshPreviewRequest);
           } else {
             ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
 
@@ -3401,121 +3535,10 @@ NAN_METHOD(MLContext::PostPollEvents) {
         }
       }
     }
-    // render camera mesh preview requests
-    if (renderList.size() > 0) {
-      MeshBuffer::beginRenderCameraAll();
-      for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
-        MeshBuffer &meshBuffer = iter->second;
-        meshBuffer.beginRenderCamera();
-        for (auto iter2 = renderList.begin(); iter2 != renderList.end(); iter2++) {
-          CameraMeshPreviewRequest &cameraMeshPreviewRequest = **iter2;
-          if (cameraMeshPreviewRequest.texture != 0) {
-            meshBuffer.renderCamera(cameraMeshPreviewRequest);
-          }
-        }
-      }
-      MeshBuffer::endRenderCamera();
-    }
-    // remove overflowed camera mesh preview requests
-    {
-      size_t numCameraMeshTextures = 0;
-      for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
-        if (cameraMeshPreviewRequest.texture != 0) {
-          numCameraMeshTextures++;
-        }
-      }
-      if (numCameraMeshTextures > MAX_CAMERA_MESH_TEXTURES) {
-        for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-          CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
-
-          if (cameraMeshPreviewRequest.texture != 0) {
-            glDeleteTextures(1, &cameraMeshPreviewRequest.texture);
-            eraseList.push_back(iter);
-
-            numCameraMeshTextures--;
-            if (numCameraMeshTextures <= MAX_CAMERA_MESH_TEXTURES) {
-              break;
-            }
-          }
-        }
-      }
-    }
     // erase queued camera mesh preview requests
     for (auto iterIter = eraseList.begin(); iterIter != eraseList.end(); iterIter++) {
       auto iter = *iterIter;
       cameraMeshPreviewRequests.erase(iter);
-    }
-    if (renderList.size() > 0) {
-      if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-      } else {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
-      }
-      if (gl->HasProgramBinding()) {
-        glUseProgram(gl->GetProgramBinding());
-      } else {
-        glUseProgram(0);
-      }
-      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
-      } else {
-        glBindTexture(GL_TEXTURE_2D, 0);
-      }
-      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES)) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES));
-      } else {
-        glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
-      }
-      if (gl->viewportState.valid) {
-        glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
-      } else {
-        glViewport(0, 0, 1280, 1024);
-      }
-      if (gl->HasVertexArrayBinding()) {
-        glBindVertexArray(gl->GetVertexArrayBinding());
-      } else {
-        glBindVertexArray(gl->defaultVao);
-      }
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      } else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-      }
-      glActiveTexture(gl->activeTexture);
-    }
-  }
-
-  if (cameraMeshEnabled && meshBuffers.size() > 0) {
-    for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
-      const std::string &id = iter->first;
-      MeshBuffer &meshBuffer = iter->second;
-
-      if (meshBuffer.textureDirty) {
-        // glBindFramebuffer(GL_READ_FRAMEBUFFER, mlContext->textureEncodeFbo);
-        // glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, meshBuffer.texture, 0);
-
-        uint8_t *textureDataRgb = new uint8_t[CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3];
-        memset(textureDataRgb, 0, CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3);
-        // glReadPixels(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1], GL_RGB, GL_UNSIGNED_BYTE, textureDataRgb);
-
-        TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, CAMERA_SIZE[0], CAMERA_SIZE[1], textureDataRgb);
-        {
-          std::lock_guard<mutex> lock(textureEncodeRequestMutex);
-          textureEncodeRequestQueue.push_back(requestEntry);
-        }
-        uv_sem_post(&textureEncodeSem);
-
-        meshBuffer.textureDirty = false;
-      }
-    }
-
-    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
-    } else {
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
     }
   }
 
@@ -3582,13 +3605,12 @@ NAN_METHOD(MLContext::PostPollEvents) {
       meshRequestPending = false;
     }
   }
+  bool rendered = false;
   if (meshRequestsPending && meshRequestPending) {
     MLResult result = MLMeshingGetMeshResult(meshTracker, meshRequestHandle, &mesh);
     if (result == MLResult_Ok) {
       MLMeshingBlockMesh *blockMeshes = mesh.data;
       uint32_t dataCount = mesh.data_count;
-
-      std::vector<MeshBuffer *> renderList;
 
       for (uint32_t i = 0; i < dataCount; i++) {
         MLMeshingBlockMesh &blockMesh = blockMeshes[i];
@@ -3597,7 +3619,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         const MeshRequestSpec &meshRequestSpec = meshRequestSpecMap[id];
         if (!meshRequestSpec.isRemoved) {
           const bool rerenderBlock = cameraMeshEnabled && !meshRequestSpec.isUnchanged;
-          
+
           MeshBuffer *meshBuffer;
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
@@ -3620,7 +3642,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
             glBindTexture(GL_TEXTURE_2D, texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
@@ -3644,7 +3666,8 @@ NAN_METHOD(MLContext::PostPollEvents) {
               0,
               std::vector<MLVec3f>(),
               std::vector<Uv>(),
-              std::vector<uint8_t>(),
+              nullptr,
+              0,
               true,
               false,
               false,
@@ -3658,10 +3681,10 @@ NAN_METHOD(MLContext::PostPollEvents) {
             getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localVertices, &localUvs);
           }
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.isNew, meshRequestSpec.isUnchanged, rerenderBlock);
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.isNew, meshRequestSpec.isUnchanged);
 
           if (rerenderBlock) {
-            renderList.push_back(meshBuffer);
+            meshBufferIdRenderList.push_back(id);
           }
         } else {
           auto iter = meshBuffers.find(id);
@@ -3677,25 +3700,16 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
             glDeleteFramebuffers(1, &meshBuffer->fbo);
             glDeleteTextures(1, &meshBuffer->texture);
+            if (meshBuffer->textureData) {
+              SjpegFreeBuffer(meshBuffer->textureData);
+            }
             meshBuffers.erase(iter);
           }
         }
       }
 
-      if (renderList.size() > 0) {
-        MeshBuffer::beginRenderCameraAll();
-        for (auto iter = renderList.begin(); iter != renderList.end(); iter++) {
-          MeshBuffer &meshBuffer = **iter;
-          meshBuffer.beginRenderCamera();
-          for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
-            CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter2;
-            if (cameraMeshPreviewRequest.texture) {
-              meshBuffer.renderCamera(cameraMeshPreviewRequest);
-            }
-          }
-        }
-        MeshBuffer::endRenderCamera();
-      }
+      renderCameras(meshBufferIdRenderList, cameraMeshPreviewRenderList);
+      rendered = true;
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
         m->Poll();
@@ -3716,6 +3730,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
       meshRequestsPending = true;
       meshRequestPending = false;
     }
+  }
+  if (!rendered) {
+    renderCameras(meshBufferIdRenderList, cameraMeshPreviewRenderList);
   }
 
   if (planesRequestPending) {
