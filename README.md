@@ -56,7 +56,7 @@ exokit https://emukit.webmr.io/ # start Emukit in Exokit
 ```
 mldb connect 192.168.0.10:1131 # mldb needs to be connected; see MLDB documentation
 mldb install -u exokit.mpk # downloaded or built package
-mldb launch com.webmr.exokit -v "ARGS=node . examples/hello_ml.html" # or URL to load
+mldb launch com.webmr.exokit -v "ARGS=node . file:///package/examples/hello_ml.html" # or URL to load
 mldb log exokit:*
 ```
 
@@ -65,7 +65,7 @@ mldb log exokit:*
 ```
 ls ./cert/app.{cert,privkey} # place Magic Leap certificate here
 ./scripts/build-ml.sh # run from Ubuntu bash on Windows
-"$MLSDK/tools/debug/debug.py" --deploy-mpk ./build/magicleap/exokit.mpk ./build/magicleap/program-device/release_lumin_clang-3.8_aarch64/program-device --env "ARGS=node . examples/hello_ml.html" # or URL to load
+"$MLSDK/tools/debug/debug.py" --deploy-mpk ./build/magicleap/exokit.mpk ./build/magicleap/program-device/release_lumin_clang-3.8_aarch64/program-device --env "ARGS=node . file:///package/examples/hello_ml.html" # or URL to load
 ```
 
 ## Manifesto
