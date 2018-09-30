@@ -1814,6 +1814,9 @@ void RunTextureEncodeInMainThread(uv_async_t *handle) {
           if (match != meshBuffers.end()) {
             MeshBuffer &meshBuffer = match->second;
 
+            if (meshBuffer.textureData) {
+              SjpegFreeBuffer(meshBuffer->textureData);
+            }
             meshBuffer.textureData = entry->result;
             meshBuffer.textureDataSize = entry->resultSize;
 
