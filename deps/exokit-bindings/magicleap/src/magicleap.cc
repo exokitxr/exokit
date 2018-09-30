@@ -1974,7 +1974,28 @@ void main() {\n\
   vScreen = vec2(vScreen.x * xfactor, vScreen.y) * factor;\n\
   vScreen = vScreen / 2.0 + 0.5;\n\
   vPosition = modelViewPosition.xyz;\n\
-  gl_Position = vec4((uv - 0.5) * 2.0, screenPosition.z/screenPosition.w, 1.0);\n\
+  vec2 uv2 = uv;\n\
+  int gvid = gl_VertexID % 6;\n\
+  if (gvid == 0) { // XXX can be an array\n\
+    uv2.x -= 0.5/512.0;\n\
+    uv2.y -= 0.5/512.0;\n\
+  } else if (gvid == 1) {\n\
+    uv2.x += 1.5/512.0;\n\
+    uv2.y -= 0.5/512.0;\n\
+  } else if (gvid == 2) {\n\
+    uv2.x -= 0.5/512.0;\n\
+    uv2.y += 0.5/512.0;\n\
+  } else if (gvid == 3) {\n\
+    uv2.x -= 1.5/512.0;\n\
+    uv2.y += 0.5/512.0;\n\
+  } else if (gvid == 4) {\n\
+    uv2.x += 0.5/512.0;\n\
+    uv2.y -= 0.5/512.0;\n\
+  } else /* if (gvid == 5) */ {\n\
+    uv2.x += 0.5/512.0;\n\
+    uv2.y += 0.5/512.0;\n\
+  }\n\
+  gl_Position = vec4((uv2 - 0.5) * 2.0, screenPosition.z/screenPosition.w, 1.0);\n\
 }\n\
 ";
 const char *cameraMeshFsh2 = "\
