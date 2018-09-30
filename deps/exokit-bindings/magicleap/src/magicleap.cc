@@ -3246,30 +3246,46 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
     size_t y = 0;
     for (size_t i = 0; i < vertices->size()/3; i++) {
       if ((i % 2) == 0) {
+        Uv topLeftPixel = {
+          (std::floor((float)x/(float)width*(float)(MESH_TEXTURE_SIZE[0]))+0.5f)/(float)(MESH_TEXTURE_SIZE[0]),
+          (std::floor((float)y/(float)height*(float)(MESH_TEXTURE_SIZE[1]))+0.5f)/(float)(MESH_TEXTURE_SIZE[1])
+        };
+        Uv bottomRightPixel = {
+          (std::floor((float)(x+1)/(float)width*(float)(MESH_TEXTURE_SIZE[0]))-1.5f)/(float)(MESH_TEXTURE_SIZE[0]),
+          (std::floor((float)(y+1)/(float)height*(float)(MESH_TEXTURE_SIZE[1]))-0.5f)/(float)(MESH_TEXTURE_SIZE[1])
+        };
         (*uvs)[i*3] = {
-          (float)x/(float)width,
-          (float)y/(float)height
+          topLeftPixel.u,
+          topLeftPixel.v
         };
         (*uvs)[i*3+1] = {
-          (float)(x+1)/(float)width,
-          (float)y/(float)height
+          bottomRightPixel.u,
+          topLeftPixel.v
         };
         (*uvs)[i*3+2] = {
-          (float)x/(float)width,
-          (float)(y+1)/(float)height
+          topLeftPixel.u,
+          bottomRightPixel.v
         };
       } else {
+        Uv topLeftPixel = {
+          (std::floor((float)x/(float)width*(float)(MESH_TEXTURE_SIZE[0]))+1.5f)/(float)(MESH_TEXTURE_SIZE[0]),
+          (std::floor((float)y/(float)height*(float)(MESH_TEXTURE_SIZE[1]))+0.5f)/(float)(MESH_TEXTURE_SIZE[1])
+        };
+        Uv bottomRightPixel = {
+          (std::floor((float)(x+1)/(float)width*(float)(MESH_TEXTURE_SIZE[0]))-0.5f)/(float)(MESH_TEXTURE_SIZE[0]),
+          (std::floor((float)(y+1)/(float)height*(float)(MESH_TEXTURE_SIZE[1]))-0.5f)/(float)(MESH_TEXTURE_SIZE[1])
+        };
         (*uvs)[i*3] = {
-          (float)x/(float)width,
-          (float)(y+1)/(float)height
+          topLeftPixel.u,
+          bottomRightPixel.v
         };
         (*uvs)[i*3+1] = {
-          (float)(x+1)/(float)width,
-          (float)y/(float)height
+          bottomRightPixel.u,
+          topLeftPixel.v
         };
         (*uvs)[i*3+2] = {
-          (float)(x+1)/(float)width,
-          (float)(y+1)/(float)height
+          bottomRightPixel.u,
+          bottomRightPixel.v
         };
 
         x++;
