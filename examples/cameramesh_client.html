@@ -1039,23 +1039,13 @@ connection.onopen = () => {
                 let i = 0;
                 const vertexCount = new Uint32Array(arrayBuffer, i, 1)[0];
                 i += Uint32Array.BYTES_PER_ELEMENT;
-                let vertexArray;
-                if (vertexCount > 0) {
-                  vertexArray = new Float32Array(arrayBuffer, i, vertexCount);
-                  i += Float32Array.BYTES_PER_ELEMENT * vertexCount;
-                } else {
-                  vertexArray = null;
-                }
+                const vertexArray = new Float32Array(arrayBuffer, i, vertexCount);
+                i += Float32Array.BYTES_PER_ELEMENT * vertexCount;
 
                 const uvCount = new Uint32Array(arrayBuffer, i, 1)[0];
                 i += Uint32Array.BYTES_PER_ELEMENT;
-                let uvArray;
-                if (uvCount > 0) {
-                  uvArray = new Float32Array(arrayBuffer, i, uvCount);
-                  i += Float32Array.BYTES_PER_ELEMENT * uvCount;
-                } else {
-                  uvCount = null;
-                }
+                const uvArray = new Float32Array(arrayBuffer, i, uvCount);
+                i += Float32Array.BYTES_PER_ELEMENT * uvCount;
 
                 const textureDataSize = new Uint32Array(arrayBuffer, i, 1)[0];
                 i += Uint32Array.BYTES_PER_ELEMENT;
