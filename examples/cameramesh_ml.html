@@ -11,8 +11,9 @@
   <!-- <script src="inflate.min.js"></script>
   <script src="FBXLoader.js"></script> -->
   <script>
+(() => {
     let container, scene, camera, display;
-    let mesher = null, cameraMesher = null;
+    let mesher = null, cameraMesher = null, connections = [], terrainMeshData = {};
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -107,10 +108,10 @@
           THREE.UnsignedByteType,
           16
         );
-        const material = new THREE.MeshBasicMaterial({
+        /* const material = new THREE.MeshBasicMaterial({
           map,
-        });
-        /* const material = new THREE.ShaderMaterial({
+        }); */
+        const material = new THREE.ShaderMaterial({
           uniforms: {
             map: {
               type: 't',
@@ -131,7 +132,7 @@
               gl_FragColor = texture2D(map, vUv);
             }
           `,
-        }); */
+        });
 
         const mesh = new THREE.Mesh(geometry, material);
         mesh.meshId = meshId;
@@ -139,7 +140,7 @@
 
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, vertexBuffer, vertexCount, uvBuffer, uvCount, texture, textureData}) => {
+      const _loadTerrainMesh = (terrainMesh, {vertexBuffer, vertexCount, uvBuffer, uvCount, texture, textureData}) => {
         const {geometry, material} = terrainMesh;
         const attributes = renderer.getAttributes();
 
@@ -150,11 +151,11 @@
         geometry.attributes.uv.count = uvCount / 2;
 
         if (texture) {
-          const textureProperties1 = renderer.properties.get(terrainMesh.material.map);
+          const textureProperties1 = renderer.properties.get(terrainMesh.material.uniforms.map.value);
           textureProperties1.__webglInit = true;
           textureProperties1.__webglTexture = texture;
         } else {
-          const textureProperties1 = renderer.properties.get(terrainMesh.material.map);
+          const textureProperties1 = renderer.properties.get(terrainMesh.material.uniforms.map.value);
           textureProperties1.__webglInit = false;
           textureProperties1.__webglTexture = null;
         }
@@ -174,6 +175,39 @@
         }
         terrainMeshes.length = 0;
       };
+      const _loadTerrainData = ({id, vertexArray, vertexCount, uvArray, uvCount, textureData}) => {
+        const dataArray = new ArrayBuffer(
+          Uint32Array.BYTES_PER_ELEMENT + vertexCount * Float32Array.BYTES_PER_ELEMENT +
+          Uint32Array.BYTES_PER_ELEMENT + uvCount * Float32Array.BYTES_PER_ELEMENT +
+          Uint32Array.BYTES_PER_ELEMENT + textureData.length * Uint8Array.BYTES_PER_ELEMENT
+        );
+
+        let i = 0;
+        new Uint32Array(dataArray, i, 1)[0] = vertexCount;
+        i += Uint32Array.BYTES_PER_ELEMENT;
+        new Float32Array(dataArray, i, vertexCount).set(vertexArray);
+        i += Float32Array.BYTES_PER_ELEMENT * vertexCount;
+
+        new Uint32Array(dataArray, i, 1)[0] = uvCount;
+        i += Uint32Array.BYTES_PER_ELEMENT;
+        new Float32Array(dataArray, i, uvCount).set(uvArray);
+        i += Float32Array.BYTES_PER_ELEMENT * uvCount;
+
+        if (textureData) {
+          new Uint32Array(dataArray, i, 1)[0] = textureData.length;
+          i += Uint32Array.BYTES_PER_ELEMENT;
+          new Uint8Array(dataArray, i, textureData.length).set(textureData);
+          i += Uint8Array.BYTES_PER_ELEMENT * textureData.length;
+        } else {
+          new Uint32Array(dataArray, i, 1)[0] = 0;
+          i += Uint32Array.BYTES_PER_ELEMENT;
+        }
+
+        terrainMeshData[id] = dataArray;
+      };
+      const _removeTerrainData = id => {
+        terrainMeshData[id] = null;
+      };
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
@@ -181,24 +215,94 @@
 
           if (type === 'new' || type === 'update') {
             _loadTerrainMesh(_getTerrainMesh(id), update);
+            _loadTerrainData(update);
+
+            if (connections.length > 0) {
+              const updateSpecs = [
+                JSON.stringify({
+                  method: 'mesh',
+                  type,
+                  id,
+                }),
+                terrainMeshData[id],
+              ];
+
+              for (let i = 0; i < connections.length; i++) {
+                const c = connections[i];
+
+                if (c.readyState === window.browser.ws.OPEN) {
+                  for (let j = 0; j < updateSpecs.length; j++) {
+                    c.send(updateSpecs[j]);
+                  }
+                }
+              }
+            }
           } else if (type === 'unchanged') {
             // nothing
-          } else {
+          } else if (type === 'remove') {
             const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
             if (index !== -1) {
               const terrainMesh = terrainMeshes[index];
               _removeTerrainMesh(terrainMesh);
               terrainMeshes.splice(index, 1);
+
+              _removeTerrainData(id);
+
+              if (connections.length > 0) {
+                const updateSpecs = [
+                  JSON.stringify({
+                    method: 'mesh',
+                    type: 'remove',
+                    id,
+                  }),
+                ];
+
+                for (let i = 0; i < connections.length; i++) {
+                  const c = connections[i];
+
+                  if (c.readyState === window.browser.ws.OPEN) {
+                    for (let j = 0; j < updateSpecs.length; j++) {
+                      c.send(updateSpecs[j]);
+                    }
+                  }
+                }
+              }
             }
+          } else {
+            console.warn('got invalid mesh type', method);
           }
         }
       };
       const _onCameraMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
-          const {id} = update;
+          const {id, textureData} = update;
 
-          // _loadTerrainMesh(_getTerrainMesh(id), update); // XXX
+          if (textureData) {
+            _loadTerrainMesh(_getTerrainMesh(id), update);
+            _loadTerrainData(update);
+
+            if (connections.length > 0) {
+              const updateSpecs = [
+                JSON.stringify({
+                  method: 'mesh',
+                  type: 'update',
+                  id,
+                }),
+                terrainMeshData[id],
+              ];
+
+              for (let i = 0; i < connections.length; i++) {
+                const c = connections[i];
+
+                if (c.readyState === window.browser.ws.OPEN) {
+                  for (let j = 0; j < updateSpecs.length; j++) {
+                    c.send(updateSpecs[j]);
+                  }
+                }
+              }
+            }
+          }
         }
       };
 
@@ -222,15 +326,6 @@
         enabled = false;
       };
       _enable();
-      window.addEventListener('keydown', e => {
-        if (e.keyCode === 13) { // enter
-          if (enabled) {
-            _disable();
-          } else {
-            _enable();
-          }
-        }
-      });
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -248,30 +343,6 @@
     }
 
     function animate(time, frame) {
-      /* if (renderer.vr.enabled) {
-        const inputSources = display.session.getInputSources();
-
-        for (let i = 0; i < inputSources.length; i++) {
-          const inputSource = inputSources[i];
-          const pose = frame.getInputPose(inputSource);
-
-          if (i === 0) { // left
-            planeMesh.matrix.fromArray(pose.pointerMatrix);
-            planeMesh.matrix.decompose(planeMesh.position, planeMesh.quaternion, planeMesh.scale);
-            planeMesh.updateMatrixWorld(true);
-
-            planeMesh2.matrix.fromArray(pose.pointerMatrix);
-            planeMesh2.matrix.decompose(planeMesh2.position, planeMesh2.quaternion, planeMesh2.scale);
-            planeMesh2.position.add(
-              localVector.set(0.2, 0, 0)
-                .applyQuaternion(planeMesh2.quaternion)
-            );
-            planeMesh2.matrix.compose(planeMesh2.position, planeMesh2.quaternion, planeMesh2.scale);
-            planeMesh2.updateMatrixWorld(true);
-          }
-        }
-      } */
-
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 
@@ -308,104 +379,247 @@
       });
     })();
 
-    /* (() => {
-      const framesData = [];
+    const server = window.browser.http.createServer((req, res) => {
+      console.log('got request', req.url);
 
-      const server = window.browser.http.createServer((req, res) => {
-        console.log('got request', req.url);
+      let match;
+      if (req.url === '/') {
+        res.statusCode = 302;
+        res.setHeader('Location', '/examples/cameramesh_client.html');
+        res.end();
+      } else if (match = req.url.match(/\.(html|js|png)$/)) {
+        fetch('file:///package' + req.url)
+          .then(proxyRes => {
+            if (proxyRes.ok) {
+              return proxyRes.arrayBuffer()
+                .then(arrayBuffer => {
+                  const type = (() => {
+                    switch (match[1]) {
+                      case 'html': return 'text/html';
+                      case 'js': return 'application/javascript';
+                      default: return 'text/plain';
+                    }
+                  })();
+                  res.setHeader('Content-Type', type);
 
-        let match;
-        if (req.url === '/') {
-          res.statusCode = 302;
-          res.setHeader('Location', '/examples/camera_client.html');
-          res.end();
-        } else if (match = req.url.match(/\.(html|js)$/)) {
-          fetch('file:///package' + req.url)
-            .then(proxyRes => {
-              if (proxyRes.ok) {
-                return proxyRes.arrayBuffer()
-                  .then(arrayBuffer => {
-                    const type = (() => {
-                      switch (match[1]) {
-                        case 'html': return 'text/html';
-                        case 'js': return 'application/javascript';
-                        default: return 'text/plain';
-                      }
-                    })();
-                    res.setHeader('Content-Type', type);
-
-                    const buffer = Buffer.from(arrayBuffer);
-                    res.end(buffer);
-                  });
-              } else {
-                res.statusCode = proxyRes.status;
-                res.end();
-                return null;
-              }
-            })
-            .catch(err => {
-              console.warn(err.stack);
-              res.statusCode = 500;
+                  const buffer = Buffer.from(arrayBuffer);
+                  res.end(buffer);
+                });
+            } else {
+              res.statusCode = proxyRes.status;
               res.end();
-            });
-        } else if (match = req.url.match(/^\/frame\/([0-9]+)$/)) {
-          const frameId = parseInt(match[1], 10);
-          const frameData = framesData[frameId];
-          if (frameData) {
-            console.log('send frame data', typeof frameData, frameData.constructor && frameData.constructor.name, frameData && frameData.length);
-            res.setHeader('Content-Type', 'application/octet-stream');
-            res.end(frameData);
-          } else {
-            res.statusCode = 404;
+              return null;
+            }
+          })
+          .catch(err => {
+            console.warn(err.stack);
+            res.statusCode = 500;
             res.end();
-          }
+          });
+      /* } else if (match = req.url.match(/^\/mesh\/(.+)$/)) {
+        const meshId = match[1];
+        let tmd = terrainMeshData[meshId];
+        if (tmd) {
+          tmd = Buffer.from(tmd);
+          res.setHeader('Content-Type', 'application/octet-stream');
+          res.end(tmd);
         } else {
           res.statusCode = 404;
           res.end();
+        } */
+      } else {
+        res.statusCode = 404;
+        res.end();
+      }
+    });
+
+    const wss = new window.browser.ws.Server({
+      server,
+    });
+    wss.on('connection', c => {
+      console.log('open connection');
+
+      c.mesh = _makePlayerMesh();
+      scene.add(c.mesh);
+
+      const _sendTerrains = () => {
+        const updateSpecs = [];
+        for (const id in terrainMeshData) {
+          const update = terrainMeshData[id];
+          if (update) {
+            updateSpecs.push(
+              JSON.stringify({
+                method: 'mesh',
+                type: 'new',
+                id,
+              }),
+              update
+            );
+          }
+        }
+        for (let i = 0; i < updateSpecs.length; i++) {
+          c.send(updateSpecs[i]);
+        }
+      };
+      const _sendPaints = () => {
+        for (let i = 0; i < paintMeshes.length; i++) {
+          const paintMesh = paintMeshes[i];
+          const updateSpecs = [
+            JSON.stringify({
+              method: 'paint',
+              meshId: paintMesh.meshId,
+            }),
+            paintMesh.getBuffer(),
+          ];
+
+          for (let j = 0; j < updateSpecs.length; j++) {
+            c.send(updateSpecs[j]);
+          }
+        }
+      };
+      _sendTerrains();
+      _sendPaints();
+
+      connections.push(c);
+
+      const _getOtherConnections = () => connections.filter(c2 => c2 !== c);
+
+      let pendingPaintMeshId = null;
+      c.on('message', data => {
+        if (typeof data === 'string') {
+          const message = JSON.parse(data);
+          const {method} = message;
+
+          switch (method) {
+            case 'transform': {
+              const {players} = message;
+              const player = players[0];
+              const {position, rotation, controllers} = player;
+              _loadPlayerMesh(c.mesh, player);
+
+              const otherConnections = _getOtherConnections();
+              if (otherConnections.length > 0) {
+                const updateSpec = {
+                  method: 'transform',
+                  players: [
+                    {
+                      type: 'update',
+                      id: c.mesh.meshId,
+                      position,
+                      rotation,
+                      controllers,
+                    },
+                  ],
+                };
+                const updateSpecString = JSON.stringify(updateSpec);
+
+                for (let i = 0; i < otherConnections.length; i++) {
+                  const c2 = otherConnections[i];
+
+                  if (c2 !== c && c2.readyState === window.browser.ws.OPEN) {
+                    c2.send(updateSpecString);
+                  }
+                }
+              }
+
+              break;
+            }
+            case 'paint': {
+              const {meshId} = message;
+              pendingPaintMeshId = meshId;
+              break;
+            }
+            case 'clear': {
+              _clearPaintMeshes();
+
+              paintMesh = null;
+              paintControllerIndex = -1;
+
+              const updateSpec = {
+                method: 'clear',
+              };
+              const updateSpecString = JSON.stringify(updateSpec);
+              for (let i = 0; i < connections.length; i++) {
+                const c = connections[i];
+
+                if (c.readyState === window.browser.ws.OPEN) {
+                  c.send(updateSpecString);
+                }
+              }
+              break;
+            }
+            default: {
+              console.warn('unknown client method', method);
+              break;
+            }
+          }
+        } else {
+          if (pendingPaintMeshId) {
+            const paintMesh = _getPaintMesh(pendingPaintMeshId);
+            paintMesh.load(data);
+
+            const otherConnections = _getOtherConnections();
+            if (otherConnections.length > 0) {
+              const updateSpecs = [
+                JSON.stringify({
+                  method: 'paint',
+                  meshId: pendingPaintMeshId,
+                }),
+                data,
+              ];
+
+              for (let i = 0; i < otherConnections.length; i++) {
+                const c2 = otherConnections[i];
+
+                if (c2 !== c && c2.readyState === window.browser.ws.OPEN) {
+                  c2.send(updateSpecString);
+                }
+              }
+            }
+
+            pendingPaintMeshId = null;
+          } else {
+            console.warn('out of order binary message', daata.byteLength);
+          }
         }
       });
+      c.on('close', () => {
+        console.log('close connection');
 
-      const wss = new window.browser.ws.Server({
-        server,
-      });
-      wss.on('connection', (c, request) => {
-        console.log('open connection');
+        scene.remove(c.mesh);
 
-        const _onCameraFrame = a => {
-          console.log('camera frame', a.length, c.readyState === window.browser.ws.OPEN);
-          if (c.readyState === window.browser.ws.OPEN) {
-            const updates = a.map((e, i) => {
-              const {width, height, bpp, stride, data} = e;
-              framesData[i] = Buffer.from(data);
-              return {
-                index: i,
-                width,
-                height,
-                bpp,
-                stride,
-              };
-            });
-            c.send(JSON.stringify(updates));
+        connections.splice(connections.indexOf(c), 1);
+
+        if (connections.length > 0) {
+          const updateSpec = {
+            method: 'transform',
+            players: [
+              {
+                type: 'remove',
+                id: c.playerId,
+              },
+            ],
+          };
+          const updateSpecString = JSON.stringify(updateSpec);
+
+          for (let i = 0; i < connections.length; i++) {
+            const c2 = connections[i];
+
+            if (c2 !== c && c2.readyState === window.browser.ws.OPEN) {
+              c2.send(updateSpecString);
+            }
           }
-        };
-        window.browser.magicleap.RequestCamera(_onCameraFrame);
+        }
+      });
+    });
 
-        c.on('close', () => {
-          console.log('close connection 1');
-          framesData.length = 0;
-          console.log('close connection 2');
-          window.browser.magicleap.CancelCamera(_onCameraFrame);
-          console.log('close connection 3');
-        });
-      });
-
-      server.listen(7999, '0.0.0.0', () => {
-        console.log('listening');
-      });
-      server.on('error', err => {
-        console.warn('server error', err.stack);
-      });
-    })(); */
+    server.listen(7999, '0.0.0.0', () => {
+      console.log('listening');
+    });
+    server.on('error', err => {
+      console.warn('server error', err.stack);
+    });
+})();
   </script>
   </body>
 </html>
