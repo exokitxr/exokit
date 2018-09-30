@@ -1051,10 +1051,18 @@ connection.onopen = () => {
                 let textureImagePromise;
                 if (textureData.length > 0) {
                   textureImagePromise = new Promise((accept, reject) => {
-                    textureImage = new Image();
-                    textureImage.onload = () => accept(textureImage);
+                    const objectUrl = URL.createObjectURL(new Blob([textureData], {type: 'image/jpeg'}));
+
+                    const textureImage = new Image();
+                    textureImage.onload = () => {
+                      createImageBitmap(textureImage)
+                        .then(accept, reject)
+                        .finally(() => {
+                          URL.revokeObjectURL(objectUrl);
+                        });
+                    };
                     textureImage.onerror = reject;
-                    textureImage.srcObject = new Blob([textureData], {type: 'image/jpeg'});
+                    textureImage.src = objectUrl;
                   });
                 } else {
                   textureImagePromise = Promise.resolve(null);
