@@ -499,12 +499,12 @@ const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
 const _makeTerrainMesh = meshId => {
   const geometry = new THREE.BufferGeometry();
   const gl = renderer.getContext();
-  const attributes = renderer.getAttributes();
+  // const attributes = renderer.getAttributes();
 
   geometry.addAttribute('position', new THREE.BufferAttribute(fakeFloat32Array, 3));
-  attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
+  // attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
   geometry.addAttribute('uv', new THREE.BufferAttribute(fakeFloat32Array, 2));
-  attributes.update(geometry.attributes.uv, gl.ARRAY_BUFFER);
+  // attributes.update(geometry.attributes.uv, gl.ARRAY_BUFFER);
 
   const map = new THREE.Texture(
     null,
@@ -558,15 +558,11 @@ const _makeTerrainMesh = meshId => {
 
   return mesh;
 };
-const _loadTerrainMesh = (terrainMesh, {vertexBuffer, vertexCount, uvBuffer, uvCount, textureImage}) => {
+const _loadTerrainMesh = (terrainMesh, {vertexArray, uvArray, textureImage}) => {
   const {geometry, material} = terrainMesh;
-  const attributes = renderer.getAttributes();
 
-  attributes.get(geometry.attributes.position).buffer = vertexBuffer;
-  geometry.attributes.position.count = vertexCount / 3;
-
-  attributes.get(geometry.attributes.uv).buffer = uvBuffer;
-  geometry.attributes.uv.count = uvCount / 2;
+  geometry.addAttribute('position', new THREE.BufferAttribute(vertexArray, 3));
+  geometry.addAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
 
   if (textureImage) {
     terrainMesh.material.uniforms.map.value.image = textureImage;
