@@ -553,17 +553,21 @@ const _makeTerrainMesh = meshId => {
   });
 
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.meshId = meshId;
+  mesh.visible = false;
   mesh.frustumCulled = false;
+  mesh.meshId = meshId;
 
   return mesh;
 };
 const _loadTerrainMesh = (terrainMesh, {vertexArray, uvArray, textureImage}) => {
   const {geometry, material} = terrainMesh;
 
-  geometry.addAttribute('position', new THREE.BufferAttribute(vertexArray, 3));
-  geometry.addAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
+  if (textureImage || terrainMesh.material.uniforms.mapValid.value === 0) {
+    geometry.addAttribute('position', new THREE.BufferAttribute(vertexArray, 3));
+    geometry.addAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
 
+    terrainMesh.visible = true;
+  }
   if (textureImage) {
     terrainMesh.material.uniforms.map.value.image = textureImage;
     terrainMesh.material.uniforms.map.value.needsUpdate = true;
