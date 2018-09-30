@@ -23,6 +23,7 @@
     const localVector3 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
+    const localMatrix = new THREE.Matrix4();
 
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
@@ -712,45 +713,55 @@
 
     let lastUpdateTime = Date.now();
     function animate(time, frame) {
-      const now = Date.now();
-      if ((now - lastUpdateTime) > (1000 / 30)) {
-        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
-        vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-        const position = localVector
-          .sub(scene2.position)
-          .toArray();
-        const rotation = localQuaternion.toArray();
-        const controllers = inputSources.map(inputSource => {
-          const pose = frame.getInputPose(inputSource);
-          localMatrix.fromArray(pose.pointerMatrix)
-            .decompose(localVector, localQuaternion, localVector2);
-
-          return {
-            position: localVector
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+        const now = Date.now();
+        if ((now - lastUpdateTime) > (1000 / 30)) {
+          if (connections.length > 0) {
+            const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+            vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+            const position = localVector
               .sub(scene2.position)
-              .toArray(),
-            rotation: localQuaternion.toArray(),
-          };
-        });
+              .toArray();
+            const rotation = localQuaternion.toArray();
+            const controllers = inputSources.map(inputSource => {
+              const pose = frame.getInputPose(inputSource);
+              localMatrix.fromArray(pose.pointerMatrix)
+                .decompose(localVector, localQuaternion, localVector2);
 
-        if (connection && connection.readyState === WebSocket.OPEN) {
-          const updateSpec = {
-            method: 'transform',
-            players: [
-              {
-                id: 'host',
-                type: 'update',
-                position,
-                rotation,
-                controllers,
-              },
-            ],
-          };
-          const updateSpecString = JSON.stringify(updateSpec);
-          connection.send(updateSpecString);
+              return {
+                position: localVector
+                  .sub(scene2.position)
+                  .toArray(),
+                rotation: localQuaternion.toArray(),
+              };
+            });
+
+            const updateSpec = {
+              method: 'transform',
+              players: [
+                {
+                  id: 'host',
+                  type: 'update',
+                  position,
+                  rotation,
+                  controllers,
+                },
+              ],
+            };
+            const updateSpecString = JSON.stringify(updateSpec);
+
+            for (let i = 0; i < connections.length; i++) {
+              const c = connections[i];
+
+              if (c.readyState === window.browser.ws.OPEN) {
+                c.send(updateSpecString);
+              }
+            }
+          }
+
+          lastUpdateTime = now;
         }
-
-        lastUpdateTime = now;
       }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
