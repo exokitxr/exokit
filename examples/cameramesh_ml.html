@@ -15,10 +15,14 @@
     let container, scene, camera, display;
     let mesher = null, cameraMesher = null, connections = [], terrainMeshData = {};
 
+    const MAX_NUM_POINTS = 1024;
+    const POINT_FRAME_RATE = 20;
+
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
-    const localMatrix = new THREE.Matrix4();
+    const localEuler = new THREE.Euler();
 
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
@@ -30,6 +34,365 @@
         reject(err);
       };
     });
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.01, 0.1);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 3, 1)
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0))
+      .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+        new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(0, 0, -1)
+        )
+      ));
+    const bodyGeometry = new THREE.BoxBufferGeometry(0.2, 0.5, 0.1)
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.5/2 - 0.1, 0));
+    const _makePlayerMesh = (meshId = Math.random().toString(36).substring(7)) => {
+      const mesh = (() => {
+        const object = new THREE.Object3D();
+
+        const headMesh = new THREE.Mesh(headGeometry, controllerMaterial);
+        // headMesh.matrixAutoUpdate = false;
+        headMesh.frustumCulled = false;
+        object.add(headMesh);
+        object.headMesh = headMesh;
+
+        const bodyMesh = new THREE.Mesh(bodyGeometry, controllerMaterial);
+        // bodyMesh.matrixAutoUpdate = false;
+        bodyMesh.frustumCulled = false;
+        object.add(bodyMesh);
+        object.bodyMesh = bodyMesh;
+
+        const controllerMeshes = Array(2);
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          const controllerMesh = _makeControllerMesh();
+          // controllerMesh.matrixAutoUpdate = false;
+          controllerMesh.frustumCulled = false;
+
+          controllerMeshes[i] = controllerMesh;
+          object.add(controllerMesh);
+        }
+        object.controllerMeshes = controllerMeshes;
+
+        return object;
+      })();
+      mesh.meshId = meshId;
+      // mesh.matrixAutoUpdate = false;
+      // mesh.frustumCulled = false;
+      return mesh;
+    };
+    const _loadPlayerMesh = (playerMesh, {position, rotation, controllers}) => {
+      const {headMesh, bodyMesh} = playerMesh;
+      headMesh.position.fromArray(position);
+      headMesh.quaternion.fromArray(rotation);
+      headMesh.updateMatrix();
+      headMesh.updateMatrixWorld();
+
+      bodyMesh.position.fromArray(position);
+      localEuler.setFromQuaternion(headMesh.quaternion, 'YXZ');
+      localEuler.x = 0;
+      bodyMesh.quaternion.setFromEuler(localEuler);
+      bodyMesh.updateMatrix();
+      bodyMesh.updateMatrixWorld();
+
+      for (let i = 0; i < controllers.length; i++) {
+        const controller = controllers[i];
+        const {position, rotation} = controller;
+        const controllerMesh = playerMesh.controllerMeshes[i];
+
+        controllerMesh.position.fromArray(position);
+        controllerMesh.quaternion.fromArray(rotation);
+        controllerMesh.updateMatrix();
+        controllerMesh.updateMatrixWorld();
+      }
+    };
+
+    let paintMesh = null;
+    let paintControllerIndex = -1;
+    const paintMaterial = (() => {
+      const texture = new THREE.Texture(
+        null,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        16
+      );
+      _requestImage('brush.png')
+        .then(brushImg => {
+          texture.image = brushImg;
+          texture.needsUpdate = true;
+        });
+
+      const material = new THREE.MeshPhongMaterial({
+        map: texture,
+        shininess: 0,
+        vertexColors: THREE.VertexColors,
+        // color: 0xFF0000,
+        side: THREE.DoubleSide,
+        transparent: true,
+        alphaTest: 0.5,
+      });
+      return material;
+    })();
+    const paintColor = new THREE.Color(0xe91e63);
+    const paintMeshes = [];
+    const _makePaintMesh = meshId => {
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(MAX_NUM_POINTS * 2 * 3);
+      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const normals = new Float32Array(MAX_NUM_POINTS * 2 * 3);
+      geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      const colors = new Float32Array(MAX_NUM_POINTS * 2 * 3);
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      const uvs = new Float32Array(MAX_NUM_POINTS * 2 * 2);
+      geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      geometry.setDrawRange(0, 0);
+
+      const mesh = new THREE.Mesh(geometry, paintMaterial);
+      mesh.drawMode = THREE.TriangleStripDrawMode;
+      mesh.frustumCulled = false;
+      mesh.meshId = meshId;
+      let lastPoint = 0;
+      let lastPointTime = 0;
+      mesh.getBuffer = (endPoint = lastPoint) => {
+        const positionSize = endPoint * 2 * 3;
+        const uvSize = endPoint * 2 * 2;
+        const array = new Float32Array(
+          positionSize + // position
+          positionSize + // normal
+          positionSize + // color
+          uvSize // uv
+        );
+        array.set(positions.slice(0, positionSize), 0); // position
+        array.set(normals.slice(0, positionSize), positionSize); // normal
+        array.set(colors.slice(0, positionSize), positionSize * 2); // color
+        array.set(uvs.slice(0, uvSize), positionSize * 3); // uv
+
+        return array.buffer;
+      };
+      const _getFrame = t => Math.floor(t / POINT_FRAME_RATE);
+      mesh.update = (position, rotation) => {
+        if (lastPoint < MAX_NUM_POINTS) {
+          const lastFrame = _getFrame(lastPointTime);
+          const currentPointTime = Date.now();
+          const currentFrame = _getFrame(currentPointTime);
+
+          if (currentFrame > lastFrame) {
+            const positionsAttribute = geometry.getAttribute('position');
+            const normalsAttribute = geometry.getAttribute('normal');
+            const colorsAttribute = geometry.getAttribute('color');
+            const uvsAttribute = geometry.getAttribute('uv');
+
+            const positions = positionsAttribute.array;
+            const normals = normalsAttribute.array;
+            const colors = colorsAttribute.array;
+            const uvs = uvsAttribute.array;
+
+            const paintbrushTipPosition = localVector.copy(position)
+              .add(
+                localVector2.set(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2))
+                  .applyQuaternion(rotation)
+            );
+
+            const brushSize = 0.025;
+            const direction = new THREE.Vector3(1, 0, 0)
+              .applyQuaternion(rotation);
+            const posA = paintbrushTipPosition.clone()
+              .add(direction.clone().multiplyScalar(brushSize / 2));
+            const posB = paintbrushTipPosition.clone()
+              .add(direction.clone().multiplyScalar(-brushSize / 2));
+
+            // positions
+            const basePositionIndex = lastPoint * 2 * 3;
+            positions[basePositionIndex + 0] = posA.x;
+            positions[basePositionIndex + 1] = posA.y;
+            positions[basePositionIndex + 2] = posA.z;
+            positions[basePositionIndex + 3] = posB.x;
+            positions[basePositionIndex + 4] = posB.y;
+            positions[basePositionIndex + 5] = posB.z;
+
+            // normals
+            (() => {
+              const pA = new THREE.Vector3();
+              const pB = new THREE.Vector3();
+              const pC = new THREE.Vector3();
+              const cb = new THREE.Vector3();
+              const ab = new THREE.Vector3();
+
+              const idx = lastPoint * 2 * 3;
+              for (let i = 0, il = idx; i < il; i++) {
+                normals[i] = 0;
+              }
+
+              let pair = true;
+              for (let i = 0, il = idx; i < il; i += 3) {
+                if (pair) {
+                  pA.fromArray(positions, i);
+                  pB.fromArray(positions, i + 3);
+                  pC.fromArray(positions, i + 6);
+                } else {
+                  pA.fromArray(positions, i + 3);
+                  pB.fromArray(positions, i);
+                  pC.fromArray(positions, i + 6);
+                }
+                pair = !pair;
+
+                cb.subVectors(pC, pB);
+                ab.subVectors(pA, pB);
+                cb.cross(ab);
+                cb.normalize();
+
+                normals[i] += cb.x;
+                normals[i + 1] += cb.y;
+                normals[i + 2] += cb.z;
+
+                normals[i + 3] += cb.x;
+                normals[i + 4] += cb.y;
+                normals[i + 5] += cb.z;
+
+                normals[i + 6] += cb.x;
+                normals[i + 7] += cb.y;
+                normals[i + 8] += cb.z;
+              }
+
+              /*
+              first and last vertice (0 and 8) belongs just to one triangle
+              second and penultimate (1 and 7) belongs to two triangles
+              the rest of the vertices belongs to three triangles
+                1_____3_____5_____7
+                /\    /\    /\    /\
+               /  \  /  \  /  \  /  \
+              /____\/____\/____\/____\
+              0    2     4     6     8
+              */
+
+              // Vertices that are shared across three triangles
+              for (let i = 2 * 3, il = idx - 2 * 3; i < il; i++) {
+                normals[i] = normals[i] / 3;
+              }
+
+              // Second and penultimate triangle, that shares just two triangles
+              normals[3] = normals[3] / 2;
+              normals[3 + 1] = normals[3 + 1] / 2;
+              normals[3 + 2] = normals[3 * 1 + 2] / 2;
+
+              normals[idx - 2 * 3] = normals[idx - 2 * 3] / 2;
+              normals[idx - 2 * 3 + 1] = normals[idx - 2 * 3 + 1] / 2;
+              normals[idx - 2 * 3 + 2] = normals[idx - 2 * 3 + 2] / 2;
+
+              mesh.geometry.normalizeNormals();
+            })();
+
+            // colors
+            for (let i = 0; i < 2; i++) {
+              const baseColorIndex = basePositionIndex + (i * 3);
+
+              colors[baseColorIndex + 0] = paintColor.r;
+              colors[baseColorIndex + 1] = paintColor.g;
+              colors[baseColorIndex + 2] = paintColor.b;
+            }
+
+            // uvs
+            for (let i = 0; i <= lastPoint; i++) {
+              const baseUvIndex = i * 2 * 2;
+
+              uvs[baseUvIndex + 0] = i / (lastPoint - 1);
+              uvs[baseUvIndex + 1] = 0;
+              uvs[baseUvIndex + 2] = i / (lastPoint - 1);
+              uvs[baseUvIndex + 3] = 1;
+            }
+
+            positionsAttribute.needsUpdate = true;
+            normalsAttribute.needsUpdate = true;
+            colorsAttribute.needsUpdate = true;
+            uvsAttribute.needsUpdate = true;
+
+            lastPoint++;
+            lastPointTime = currentPointTime;
+
+            geometry.setDrawRange(0, lastPoint * 2);
+
+            if (connections.length > 0) {
+              const updateSpecs = [
+                JSON.stringify({
+                  method: 'paint',
+                  meshId: mesh.meshId,
+                }),
+                mesh.getBuffer(lastPoint),
+              ];
+
+              for (let i = 0; i < connections.length; i++) {
+                const c = connections[i];
+
+                if (c.readyState === window.browser.ws.OPEN) {
+                  for (let j = 0; j < updateSpecs.length; j++) {
+                    c.send(updateSpecs[j]);
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+      mesh.load = buffer => {
+        const positionsAttribute = geometry.getAttribute('position');
+        const {array: positions} = positionsAttribute;
+        const normalsAttribute = geometry.getAttribute('normal');
+        const {array: normals} = normalsAttribute;
+        const colorsAttribute = geometry.getAttribute('color');
+        const {array: colors} = colorsAttribute;
+        const uvsAttribute = geometry.getAttribute('uv');
+        const {array: uvs} = uvsAttribute;
+
+        if ((buffer.byteOffset % 4) !== 0) {
+          const newBuffer = Buffer.from(new ArrayBuffer(buffer.length));
+          buffer.copy(newBuffer);
+          buffer = newBuffer;
+        }
+        const array = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Float32Array.BYTES_PER_ELEMENT);
+        const numPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
+        const dataPositionSize = numPoints * 2 * 3;
+        const dataUvSize = numPoints * 2 * 2;
+
+        const newPositions = array.slice(0, dataPositionSize);
+        const newNormals = array.slice(dataPositionSize, dataPositionSize * 2);
+        const newColors = array.slice(dataPositionSize * 2, dataPositionSize * 3);
+        const newUvs = array.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize);
+
+        positions.set(newPositions);
+        normals.set(newNormals);
+        colors.set(newColors);
+        uvs.set(newUvs);
+
+        positionsAttribute.needsUpdate = true;
+        normalsAttribute.needsUpdate = true;
+        colorsAttribute.needsUpdate = true;
+        uvsAttribute.needsUpdate = true;
+
+        // lastPoint = numPoints;
+
+        geometry.setDrawRange(0, numPoints * 2);
+      };
+
+      return mesh;
+    };
 
     function init() {
       container = document.createElement('div');
@@ -159,10 +522,6 @@
           textureProperties1.__webglInit = false;
           textureProperties1.__webglTexture = null;
         }
-
-        if (textureData) {
-          console.log('got texture data', textureData.length);
-        }
       };
       const _removeTerrainMesh = terrainMesh => {
         scene.remove(terrainMesh);
@@ -176,6 +535,8 @@
         terrainMeshes.length = 0;
       };
       const _loadTerrainData = ({id, vertexArray, vertexCount, uvArray, uvCount, textureData}) => {
+        textureData = textureData || new Uint8Array(0);
+
         const dataArray = new ArrayBuffer(
           Uint32Array.BYTES_PER_ELEMENT + vertexCount * Float32Array.BYTES_PER_ELEMENT +
           Uint32Array.BYTES_PER_ELEMENT + uvCount * Float32Array.BYTES_PER_ELEMENT +
@@ -193,15 +554,10 @@
         new Float32Array(dataArray, i, uvCount).set(uvArray);
         i += Float32Array.BYTES_PER_ELEMENT * uvCount;
 
-        if (textureData) {
-          new Uint32Array(dataArray, i, 1)[0] = textureData.length;
-          i += Uint32Array.BYTES_PER_ELEMENT;
-          new Uint8Array(dataArray, i, textureData.length).set(textureData);
-          i += Uint8Array.BYTES_PER_ELEMENT * textureData.length;
-        } else {
-          new Uint32Array(dataArray, i, 1)[0] = 0;
-          i += Uint32Array.BYTES_PER_ELEMENT;
-        }
+        new Uint32Array(dataArray, i, 1)[0] = textureData.length;
+        i += Uint32Array.BYTES_PER_ELEMENT;
+        new Uint8Array(dataArray, i, textureData.length).set(textureData);
+        i += Uint8Array.BYTES_PER_ELEMENT * textureData.length;
 
         terrainMeshData[id] = dataArray;
       };
