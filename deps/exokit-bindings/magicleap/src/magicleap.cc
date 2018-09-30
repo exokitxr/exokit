@@ -291,7 +291,7 @@ static void onUnloadResources(void* application_context) {
 
 // MeshBuffer
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, bool isNew, bool isUnchanged) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, const MLVec3f &center, bool isNew, bool isUnchanged) {
   glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
@@ -306,6 +306,7 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
   this->normals = normals;
   this->indices = indices;
   this->numIndices = numIndices;
+  this->center = center;
   this->isNew = isNew;
   this->isUnchanged = isUnchanged;
 
@@ -1771,7 +1772,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
     );
     const MLMat4f &modelViewInverse = invertMatrix(modelView);
     const MLMat4f &projection = cameraInfo.projection;
-    const MLFrustumf &frustum = makeFrustumFromMatrix(multiplyMatrices(projection, modelView));
+    const MLFrustumf &frustum = makeFrustumFromMatrix(multiplyMatrices(projection, modelViewInverse));
     const milliseconds ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch()) + CAMERA_PREVIEW_DELAY;
 
     cameraMeshPreviewRequests.push_back(CameraMeshPreviewRequest{position, rotation, modelViewInverse, projection, frustum, 0, ms});
@@ -3304,6 +3305,10 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
   }
 }
 
+bool frustumCheck(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, const MeshBuffer &meshBuffer) {
+  return frustumIntersectsSphere(cameraMeshPreviewRequest.frustum, MLSpheref{meshBuffer.center, 1});
+}
+
 void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const std::vector<CameraMeshPreviewRequest *> &cameraMeshPreviewRenderList) {
   bool rendering = false;
   if (meshBufferIdRenderList.size() > 0) {
@@ -3320,7 +3325,7 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
       for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
         CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter2;
 
-        if (cameraMeshPreviewRequest.texture) {
+        if (cameraMeshPreviewRequest.texture && frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
           meshBuffer.renderCamera(cameraMeshPreviewRequest);
         }
       }
@@ -3342,7 +3347,7 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
         for (auto iter2 = cameraMeshPreviewRenderList.begin(); iter2 != cameraMeshPreviewRenderList.end(); iter2++) {
           CameraMeshPreviewRequest &cameraMeshPreviewRequest = **iter2;
 
-          if (cameraMeshPreviewRequest.texture != 0) {
+          if (cameraMeshPreviewRequest.texture != 0 && frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
             meshBuffer.renderCamera(cameraMeshPreviewRequest);
           }
         }
@@ -3674,6 +3679,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               std::vector<Uv>(),
               nullptr,
               0,
+              MLVec3f{0, 0, 0},
               true,
               false,
               false,
@@ -3687,7 +3693,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
             getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localVertices, &localUvs);
           }
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.isNew, meshRequestSpec.isUnchanged);
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.center, meshRequestSpec.isNew, meshRequestSpec.isUnchanged);
 
           if (rerenderBlock) {
             meshBufferIdRenderList.push_back(id);
