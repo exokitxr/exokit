@@ -710,7 +710,49 @@
       renderer.setAnimationLoop(animate);
     }
 
+    let lastUpdateTime = Date.now();
     function animate(time, frame) {
+      const now = Date.now();
+      if ((now - lastUpdateTime) > (1000 / 30)) {
+        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+        vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+        const position = localVector
+          .sub(scene2.position)
+          .toArray();
+        const rotation = localQuaternion.toArray();
+        const controllers = inputSources.map(inputSource => {
+          const pose = frame.getInputPose(inputSource);
+          localMatrix.fromArray(pose.pointerMatrix)
+            .decompose(localVector, localQuaternion, localVector2);
+
+          return {
+            position: localVector
+              .sub(scene2.position)
+              .toArray(),
+            rotation: localQuaternion.toArray(),
+          };
+        });
+
+        if (connection && connection.readyState === WebSocket.OPEN) {
+          const updateSpec = {
+            method: 'transform',
+            players: [
+              {
+                id: 'host',
+                type: 'update',
+                position,
+                rotation,
+                controllers,
+              },
+            ],
+          };
+          const updateSpecString = JSON.stringify(updateSpec);
+          connection.send(updateSpecString);
+        }
+
+        lastUpdateTime = now;
+      }
+
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 
