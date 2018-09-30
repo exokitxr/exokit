@@ -12,7 +12,7 @@
   <script src="FBXLoader.js"></script> -->
   <script>
 (() => {
-    let container, scene, camera, display;
+    let container, scene, scene2, camera, display;
     let mesher = null, cameraMesher = null, connections = [], terrainMeshData = {};
 
     const MAX_NUM_POINTS = 1024;
@@ -411,6 +411,9 @@
       scene.matrixAutoUpdate = false;
       // scene.background = new THREE.Color(0x3B3961);
 
+      scene2 = new THREE.Object3D();
+      scene.add(scene2);
+
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
       // camera.position.set(0, 1, 0);
       camera.lookAt(new THREE.Vector3());
@@ -452,7 +455,7 @@
         if (!terrainMesh) {
           terrainMesh = _makeTerrainMesh(meshId);
           terrainMeshes.push(terrainMesh);
-          scene.add(terrainMesh);
+          scene2.add(terrainMesh);
         }
         return terrainMesh;
       };
@@ -533,7 +536,7 @@
         }
       };
       const _removeTerrainMesh = terrainMesh => {
-        scene.remove(terrainMesh);
+        scene2.remove(terrainMesh);
         // terrainMesh.geometry.dispose();
         terrainMesh.textureMaterial.dispose();
       };
@@ -805,7 +808,7 @@
       console.log('open connection');
 
       c.mesh = _makePlayerMesh();
-      scene.add(c.mesh);
+      scene2.add(c.mesh);
 
       const _sendTerrains = () => {
         const updateSpecs = [];
