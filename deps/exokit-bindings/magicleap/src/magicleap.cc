@@ -1932,7 +1932,6 @@ in vec2 uv;\n\
 out vec2 vUvCamera;\n\
 \n\
 void main() {\n\
-  // vUvCamera = vec2(uv.x, 1.0 - uv.y);\n\
   vUvCamera = uv;\n\
   gl_Position = vec4(point, 1.0, 1.0);\n\
 }\n\
@@ -1974,7 +1973,6 @@ void main() {\n\
   vScreen = screenPosition.xy / screenPosition.w;\n\
   vScreen = vec2(vScreen.x * xfactor, vScreen.y) * factor;\n\
   vScreen = vScreen / 2.0 + 0.5;\n\
-  // vScreen.y = 1.0 - vScreen.y;\n\
   vPosition = modelViewPosition.xyz;\n\
   gl_Position = vec4((uv - 0.5) * 2.0, screenPosition.z/screenPosition.w, 1.0);\n\
 }\n\
