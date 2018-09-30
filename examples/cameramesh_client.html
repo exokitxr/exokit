@@ -1028,6 +1028,7 @@ connection.onopen = () => {
       } else {
         if (pendingMessage) {
           const {method} = pendingMessage;
+          const message = data;
 
           switch (method) {
             case 'mesh': {
