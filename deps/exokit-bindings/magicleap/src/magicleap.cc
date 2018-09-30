@@ -353,6 +353,11 @@ void MeshBuffer::renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewR
 
   glDrawArrays(GL_TRIANGLES, 0, this->vertices.size() * 3);
 
+  if (this->textureData) {
+    SjpegFreeBuffer(this->textureData);
+    this->textureData = nullptr;
+    this->textureDataSize = 0;
+  }
   this->textureDirty = true;
 }
 GLuint MeshBuffer::getPixels() {
@@ -1815,7 +1820,7 @@ void RunTextureEncodeInMainThread(uv_async_t *handle) {
             MeshBuffer &meshBuffer = match->second;
 
             if (meshBuffer.textureData) {
-              SjpegFreeBuffer(meshBuffer->textureData);
+              SjpegFreeBuffer(meshBuffer.textureData);
             }
             meshBuffer.textureData = entry->result;
             meshBuffer.textureDataSize = entry->resultSize;
@@ -1835,9 +1840,6 @@ void RunTextureEncodeInMainThread(uv_async_t *handle) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
       } else {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-      }
-      if (entry->resultSize > 0) {
-        SjpegFreeBuffer(entry->result);
       }
       delete entry;
     } else {
