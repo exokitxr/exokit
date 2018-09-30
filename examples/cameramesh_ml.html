@@ -153,6 +153,15 @@
     })();
     const paintColor = new THREE.Color(0xe91e63);
     const paintMeshes = [];
+    const _getPaintMesh = (meshId = Math.random().toString(36).substring(7)) => {
+      let paintMesh = paintMeshes.find(paintMesh => paintMesh.meshId === meshId);
+      if (!paintMesh) {
+        paintMesh = _makePaintMesh(meshId);
+        paintMeshes.push(paintMesh);
+        scene2.add(paintMesh);
+      }
+      return paintMesh;
+    };
     const _makePaintMesh = meshId => {
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(MAX_NUM_POINTS * 2 * 3);
