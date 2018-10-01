@@ -10,7 +10,24 @@
 
 #include <nan.h>
 
-#if defined(_WIN32)
+#if defined(LUMIN) || defined(__ANDROID__)
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#endif
+#include <GLES3/gl32.h>
+#include <GLES2/gl2ext.h>
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#define GL_COMPRESSED_SRGB_S3TC_DXT1_EXT 0x8C4C
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 0x8C4D
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 0x8C4E
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
+#define GL_ETC1_RGB8_OES 0x8D64
+#define GL_VERTEX_PROGRAM_POINT_SIZE 0x8642
+
+#elif defined(_WIN32)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
@@ -38,31 +55,11 @@
 #error "Unknown Apple platform"
 #endif
 
-#elif defined(LUMIN)
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES
-#endif
-#include <GLES3/gl32.h>
-#include <GLES2/gl2ext.h>
-#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
-#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
-#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
-#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
-#define GL_COMPRESSED_SRGB_S3TC_DXT1_EXT 0x8C4C
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 0x8C4D
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 0x8C4E
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
-#define GL_ETC1_RGB8_OES 0x8D64
-#define GL_VERTEX_PROGRAM_POINT_SIZE 0x8642
-
 #elif defined(__linux__)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
 
-#elif defined(__ANDROID__)
-#include <GLES3/gl3.h>
-#include <GLES2/gl2ext.h>
 #endif
 
 #define UNPACK_FLIP_Y_WEBGL 0x9240
@@ -74,7 +71,7 @@
 
 #include <defines.h>
 
-#ifndef LUMIN
+#if !defined(LUMIN) && !defined(__ANDROID__)
 #include <glfw/include/glfw.h>
 #else
 #include <egl/include/egl.h>
