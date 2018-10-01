@@ -547,7 +547,10 @@
         }
         terrainMeshes.length = 0;
       };
+      let epochs = 0;
       const _loadTerrainData = ({id, vertexArray, vertexCount, uvArray, uvCount, textureData}) => {
+        const epoch = (epochs++) + '';
+
         const meshData = new ArrayBuffer(
           Uint32Array.BYTES_PER_ELEMENT + vertexCount * Float32Array.BYTES_PER_ELEMENT +
           Uint32Array.BYTES_PER_ELEMENT + uvCount * Float32Array.BYTES_PER_ELEMENT
@@ -573,9 +576,12 @@
         }
 
         terrainMeshData[id] = {
+          epoch,
           meshData,
           textureData,
         };
+
+        return epoch;
       };
       const _removeTerrainData = id => {
         terrainMeshData[id] = null;
@@ -587,7 +593,7 @@
 
           if (type === 'new' || type === 'update') {
             _loadTerrainMesh(_getTerrainMesh(id), update);
-            _loadTerrainData(update);
+            const epoch = _loadTerrainData(update);
 
             if (connections.length > 0) {
               const updateSpecs = [
@@ -595,6 +601,7 @@
                   method: 'mesh',
                   type,
                   id,
+                  epoch,
                   hasTextureData: !!update.textureData,
                 }),
               ];
@@ -652,7 +659,7 @@
 
           if (textureData) {
             _loadTerrainMesh(_getTerrainMesh(id), update);
-            _loadTerrainData(update);
+            const epoch = _loadTerrainData(update);
 
             if (connections.length > 0) {
               const updateSpecs = [
@@ -660,6 +667,7 @@
                   method: 'mesh',
                   type: 'update',
                   id,
+                  epoch,
                   hasTextureData: !!update.textureData,
                 }),
               ];
@@ -840,10 +848,11 @@
             res.statusCode = 500;
             res.end();
           });
-      } else if (match = req.url.match(/^\/mesh\/(.+)$/)) {
+      } else if (match = req.url.match(/^\/mesh\/(.+)\/(.+)$/)) {
         const meshId = match[1];
+        const epoch = match[2]
         const tmd = terrainMeshData[meshId];
-        if (tmd) {
+        if (tmd && tmd.epoch === epoch) {
           const meshData = Buffer.from(tmd.meshData);
           res.setHeader('Content-Type', 'application/octet-stream');
           res.end(meshData);
@@ -851,10 +860,11 @@
           res.statusCode = 404;
           res.end();
         }
-      } else if (match = req.url.match(/^\/texture\/(.+)$/)) {
+      } else if (match = req.url.match(/^\/texture\/(.+)\/(.+)$/)) {
         const meshId = match[1];
+        const epoch = match[2]
         const tmd = terrainMeshData[meshId];
-        if (tmd) {
+        if (tmd && tmd.epoch === epoch) {
           const textureData = Buffer.from(tmd.textureData);
           res.setHeader('Content-Type', 'image/jpeg');
           res.end(textureData);
