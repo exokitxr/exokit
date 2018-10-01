@@ -1026,7 +1026,7 @@ connection.onopen = () => {
                   .catch(err => {
                     console.warn(err.stack);
                   })
-              );
+                );
             } else {
               const {id} = message;
               const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
