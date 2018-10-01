@@ -577,8 +577,8 @@ const _loadTerrainMesh = (terrainMesh, {vertexArray, uvArray, textureImage}) => 
 const _removeTerrainMesh = terrainMesh => {
   scene2.remove(terrainMesh);
   // terrainMesh.geometry.dispose();
-  terrainMesh.textureMaterial.map.dispose();
-  terrainMesh.textureMaterial.dispose();
+  terrainMesh.material.uniforms.map.value.dispose();
+  terrainMesh.material.dispose();
 };
 
 const playerMeshes = [];
