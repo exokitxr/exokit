@@ -548,31 +548,34 @@
         terrainMeshes.length = 0;
       };
       const _loadTerrainData = ({id, vertexArray, vertexCount, uvArray, uvCount, textureData}) => {
-        textureData = textureData || new Uint8Array(0);
-
-        const dataArray = new ArrayBuffer(
+        const meshData = new ArrayBuffer(
           Uint32Array.BYTES_PER_ELEMENT + vertexCount * Float32Array.BYTES_PER_ELEMENT +
-          Uint32Array.BYTES_PER_ELEMENT + uvCount * Float32Array.BYTES_PER_ELEMENT +
-          Uint32Array.BYTES_PER_ELEMENT + textureData.length * Uint8Array.BYTES_PER_ELEMENT
+          Uint32Array.BYTES_PER_ELEMENT + uvCount * Float32Array.BYTES_PER_ELEMENT
         );
 
         let i = 0;
-        new Uint32Array(dataArray, i, 1)[0] = vertexCount;
+        new Uint32Array(meshData, i, 1)[0] = vertexCount;
         i += Uint32Array.BYTES_PER_ELEMENT;
-        new Float32Array(dataArray, i, vertexCount).set(vertexArray);
+        new Float32Array(meshData, i, vertexCount).set(vertexArray);
         i += Float32Array.BYTES_PER_ELEMENT * vertexCount;
 
-        new Uint32Array(dataArray, i, 1)[0] = uvCount;
+        new Uint32Array(meshData, i, 1)[0] = uvCount;
         i += Uint32Array.BYTES_PER_ELEMENT;
-        new Float32Array(dataArray, i, uvCount).set(uvArray);
+        new Float32Array(meshData, i, uvCount).set(uvArray);
         i += Float32Array.BYTES_PER_ELEMENT * uvCount;
 
-        new Uint32Array(dataArray, i, 1)[0] = textureData.length;
-        i += Uint32Array.BYTES_PER_ELEMENT;
-        new Uint8Array(dataArray, i, textureData.length).set(textureData);
-        i += Uint8Array.BYTES_PER_ELEMENT * textureData.length;
+        if (textureData) {
+          const newTextureData = new Uint8Array(new ArrayBuffer(textureData.length));
+          newTextureData.set(textureData);
+          textureData = newTextureData;
+        } else {
+          textureData = null;
+        }
 
-        terrainMeshData[id] = dataArray;
+        terrainMeshData[id] = {
+          meshData,
+          textureData,
+        };
       };
       const _removeTerrainData = id => {
         terrainMeshData[id] = null;
@@ -592,8 +595,8 @@
                   method: 'mesh',
                   type,
                   id,
+                  hasTextureData: !!update.textureData,
                 }),
-                terrainMeshData[id],
               ];
 
               for (let i = 0; i < connections.length; i++) {
@@ -657,8 +660,8 @@
                   method: 'mesh',
                   type: 'update',
                   id,
+                  hasTextureData: !!update.textureData,
                 }),
-                terrainMeshData[id],
               ];
 
               for (let i = 0; i < connections.length; i++) {
@@ -837,17 +840,28 @@
             res.statusCode = 500;
             res.end();
           });
-      /* } else if (match = req.url.match(/^\/mesh\/(.+)$/)) {
+      } else if (match = req.url.match(/^\/mesh\/(.+)$/)) {
         const meshId = match[1];
-        let tmd = terrainMeshData[meshId];
+        const tmd = terrainMeshData[meshId];
         if (tmd) {
-          tmd = Buffer.from(tmd);
+          const meshData = Buffer.from(tmd.meshData);
           res.setHeader('Content-Type', 'application/octet-stream');
-          res.end(tmd);
+          res.end(meshData);
         } else {
           res.statusCode = 404;
           res.end();
-        } */
+        }
+      } else if (match = req.url.match(/^\/texture\/(.+)$/)) {
+        const meshId = match[1];
+        const tmd = terrainMeshData[meshId];
+        if (tmd) {
+          const textureData = Buffer.from(tmd.textureData);
+          res.setHeader('Content-Type', 'image/jpeg');
+          res.end(textureData);
+        } else {
+          res.statusCode = 404;
+          res.end();
+        }
       } else {
         res.statusCode = 404;
         res.end();
@@ -873,8 +887,8 @@
                 method: 'mesh',
                 type: 'new',
                 id,
+                hasTextureData: !!update.textureData,
               }),
-              update
             );
           }
         }
