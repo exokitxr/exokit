@@ -35,6 +35,9 @@
         reject(err);
       };
     });
+    let dataIds = 0;
+    const _getDataId = () => (dataIds++) + '';
+    const dataQueue = new Map();
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.01, 0.1);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -587,13 +590,14 @@
             _loadTerrainData(update);
 
             if (connections.length > 0) {
+              const dataId = _getDataId();
               const updateSpecs = [
                 JSON.stringify({
                   method: 'mesh',
                   type,
                   id,
+                  dataId,
                 }),
-                terrainMeshData[id],
               ];
 
               for (let i = 0; i < connections.length; i++) {
@@ -605,6 +609,7 @@
                   }
                 }
               }
+              dataQueue.set(dataId, terrainMeshData[id]);
             }
           } else if (type === 'unchanged') {
             // nothing
@@ -652,13 +657,14 @@
             _loadTerrainData(update);
 
             if (connections.length > 0) {
+              const dataId = _getDataId();
               const updateSpecs = [
                 JSON.stringify({
                   method: 'mesh',
                   type: 'update',
                   id,
+                  dataId,
                 }),
-                terrainMeshData[id],
               ];
 
               for (let i = 0; i < connections.length; i++) {
@@ -670,6 +676,7 @@
                   }
                 }
               }
+              dataQueue.set(dataId, terrainMeshData[id]);
             }
           }
         }
@@ -837,6 +844,19 @@
             res.statusCode = 500;
             res.end();
           });
+      } else if (match = req.url.match(/^\/data\/(.+)$/)) {
+        const id = match[1];
+        let data = dataQueue.get(id);
+        if (data) {
+          data = Buffer.from(data);
+          res.setHeader('Content-Type', 'application/octet-stream');
+          res.end(data);
+
+          dataQueue.delete(id);
+        } else {
+          res.statusCode = 404;
+          res.end();
+        }
       /* } else if (match = req.url.match(/^\/mesh\/(.+)$/)) {
         const meshId = match[1];
         let tmd = terrainMeshData[meshId];
@@ -868,14 +888,16 @@
         for (const id in terrainMeshData) {
           const update = terrainMeshData[id];
           if (update) {
+            const dataId = _getDataId();
             updateSpecs.push(
               JSON.stringify({
                 method: 'mesh',
                 type: 'new',
                 id,
+                dataId,
               }),
-              update
             );
+            dataQueue.set(dataId, update);
           }
         }
         for (let i = 0; i < updateSpecs.length; i++) {
