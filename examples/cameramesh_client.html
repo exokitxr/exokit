@@ -562,7 +562,7 @@ const _makeTerrainMesh = meshId => {
 const _loadTerrainMesh = (terrainMesh, {vertexArray, uvArray, textureImage}) => {
   const {geometry, material} = terrainMesh;
 
-  if (textureImage || terrainMesh.material.uniforms.mapValid.value === 0) {
+  if (!terrainMesh.visible || textureImage) {
     geometry.addAttribute('position', new THREE.BufferAttribute(vertexArray, 3));
     geometry.addAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
 
@@ -572,8 +572,6 @@ const _loadTerrainMesh = (terrainMesh, {vertexArray, uvArray, textureImage}) => 
     terrainMesh.material.uniforms.map.value.image = textureImage;
     terrainMesh.material.uniforms.map.value.needsUpdate = true;
     terrainMesh.material.uniforms.mapValid.value = 1;
-  } else {
-    terrainMesh.material.uniforms.mapValid.value = 0;
   }
 };
 const _removeTerrainMesh = terrainMesh => {
