@@ -556,6 +556,7 @@ const _makeTerrainMesh = meshId => {
   mesh.visible = false;
   mesh.frustumCulled = false;
   mesh.meshId = meshId;
+  mesh.promise = Promise.resolve();
 
   return mesh;
 };
@@ -965,7 +966,64 @@ connection.onopen = () => {
             const {type} = message;
 
             if (type === 'new' || type === 'update') {
-              pendingMessage = message;
+              const {id, dataId} = message;
+
+              const terrainMesh = _getTerrainMesh(id);
+              terrainMesh.promise = terrainMesh.promise.finally(() =>
+                fetch('/data/' + dataId)
+                  .then(res => res.ok ? res.arrayBuffer() : Promise.reject(new Error('not ok')))
+                  .then(arrayBuffer => {
+                    let i = 0;
+                    const vertexCount = new Uint32Array(arrayBuffer, i, 1)[0];
+                    i += Uint32Array.BYTES_PER_ELEMENT;
+                    const vertexArray = new Float32Array(arrayBuffer, i, vertexCount);
+                    i += Float32Array.BYTES_PER_ELEMENT * vertexCount;
+
+                    const uvCount = new Uint32Array(arrayBuffer, i, 1)[0];
+                    i += Uint32Array.BYTES_PER_ELEMENT;
+                    const uvArray = new Float32Array(arrayBuffer, i, uvCount);
+                    i += Float32Array.BYTES_PER_ELEMENT * uvCount;
+
+                    const textureDataSize = new Uint32Array(arrayBuffer, i, 1)[0];
+                    i += Uint32Array.BYTES_PER_ELEMENT;
+                    const textureData = new Uint8Array(arrayBuffer, i, textureDataSize);
+                    i += Uint8Array.BYTES_PER_ELEMENT * textureDataSize;
+
+                    let textureImagePromise;
+                    if (textureData.length > 0) {
+                      return new Promise((accept, reject) => {
+                        const objectUrl = URL.createObjectURL(new Blob([textureData], {type: 'image/jpeg'}));
+
+                        const textureImage = new Image();
+                        textureImage.onload = () => {
+                          createImageBitmap(textureImage)
+                            .then(accept, reject)
+                            .finally(() => {
+                              URL.revokeObjectURL(objectUrl);
+                            });
+                        };
+                        textureImage.onerror = reject;
+                        textureImage.src = objectUrl;
+                      })
+                        .then(textureImage => {
+                          const update = {
+                            vertexArray,
+                            vertexCount,
+                            uvArray,
+                            uvCount,
+                            textureData,
+                            textureImage,
+                          };
+                          _loadTerrainMesh(terrainMesh, update);
+                        });
+                    } else {
+                      return Promise.resolve(null);
+                    }
+                  })
+                  .catch(err => {
+                    console.warn(err.stack);
+                  })
+              );
             } else {
               const {id} = message;
               const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
@@ -1029,70 +1087,6 @@ connection.onopen = () => {
           const message = data;
 
           switch (method) {
-            case 'mesh': {
-              const {id, type} = pendingMessage;
-              const arrayBuffer = message;
-
-              new Promise((accept, reject) => {
-                let i = 0;
-                const vertexCount = new Uint32Array(arrayBuffer, i, 1)[0];
-                i += Uint32Array.BYTES_PER_ELEMENT;
-                const vertexArray = new Float32Array(arrayBuffer, i, vertexCount);
-                i += Float32Array.BYTES_PER_ELEMENT * vertexCount;
-
-                const uvCount = new Uint32Array(arrayBuffer, i, 1)[0];
-                i += Uint32Array.BYTES_PER_ELEMENT;
-                const uvArray = new Float32Array(arrayBuffer, i, uvCount);
-                i += Float32Array.BYTES_PER_ELEMENT * uvCount;
-
-                const textureDataSize = new Uint32Array(arrayBuffer, i, 1)[0];
-                i += Uint32Array.BYTES_PER_ELEMENT;
-                const textureData = new Uint8Array(arrayBuffer, i, textureDataSize);
-                i += Uint8Array.BYTES_PER_ELEMENT * textureDataSize;
-
-                let textureImagePromise;
-                if (textureData.length > 0) {
-                  textureImagePromise = new Promise((accept, reject) => {
-                    const objectUrl = URL.createObjectURL(new Blob([textureData], {type: 'image/jpeg'}));
-
-                    const textureImage = new Image();
-                    textureImage.onload = () => {
-                      createImageBitmap(textureImage)
-                        .then(accept, reject)
-                        .finally(() => {
-                          URL.revokeObjectURL(objectUrl);
-                        });
-                    };
-                    textureImage.onerror = reject;
-                    textureImage.src = objectUrl;
-                  });
-                } else {
-                  textureImagePromise = Promise.resolve(null);
-                }
-
-                textureImagePromise
-                  .then(textureImage => {
-                    const update = {
-                      vertexArray,
-                      vertexCount,
-                      uvArray,
-                      uvCount,
-                      textureData,
-                      textureImage,
-                    };
-                    _loadTerrainMesh(_getTerrainMesh(id), update);
-
-                    accept();
-                  })
-                  .catch(reject);
-              })
-              .catch(err => {
-                console.warn(err.stack);
-              })
-              .finally(_next);
-
-              break;
-            }
             case 'paint': {
               const {meshId} = pendingMessage;
               const paintMesh = _getPaintMesh(meshId);
