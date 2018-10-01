@@ -966,12 +966,12 @@ connection.onopen = () => {
             const {type} = message;
 
             if (type === 'new' || type === 'update') {
-              const {id, hasTextureData} = message;
+              const {id, epoch, hasTextureData} = message;
 
               const terrainMesh = _getTerrainMesh(id);
               terrainMesh.promise = terrainMesh.promise
                 .finally(() => Promise.all([
-                  fetch('/mesh/' + id)
+                  fetch('/mesh/' + id + '/' + epoch)
                     .then(res => res.ok ? res.arrayBuffer() : Promise.reject(new Error('not ok')))
                     .then(arrayBuffer => {
                       let i = 0;
@@ -999,7 +999,7 @@ connection.onopen = () => {
                         accept(textureImage);
                       };
                       textureImage.onerror = reject;
-                      textureImage.src = '/texture/' + id;
+                      textureImage.src = '/texture/' + id + '/' + epoch;
                     } else {
                       accept(null);
                     }
