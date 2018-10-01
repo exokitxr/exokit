@@ -55,7 +55,7 @@ Root: HKCR; Subkey: "Exokit\shell\open\command"; ValueType: "string"; ValueData:
 
 [Icons]
 Name: "{group}\{#MyAppName}"; WorkingDir: "{%userprofile}"; Filename: "{app}\scripts\{#MyAppExeName}"; Parameters: "-h -l"; IconFilename: "{app}\metadata\{#MyIcon}"
-Name: "{group}\{#MyAppShortName} Engine CLI"; WorkingDir: "{%userprofile}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-l"; IconFilename: "{app}\metadata\{#MyIcon}"
+Name: "{group}\{#MyAppShortName} Engine CLI"; WorkingDir: "{%userprofile}"; Filename: "{app}\scripts\{#MyAppExeName}"; Parameters: "-l"; IconFilename: "{app}\metadata\{#MyIcon}"
 Name: "{group}\Uninstall {#MyAppShortName}"; Filename: "{uninstallexe}"
 
 [Code]
