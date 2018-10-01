@@ -556,6 +556,7 @@ const _makeTerrainMesh = meshId => {
   mesh.visible = false;
   mesh.frustumCulled = false;
   mesh.meshId = meshId;
+  mesh.promise = Promise.resolve();
 
   return mesh;
 };
@@ -967,62 +968,65 @@ connection.onopen = () => {
             if (type === 'new' || type === 'update') {
               const {id, hasTextureData} = message;
 
-              Promise.all([
-                fetch('/mesh/' + id)
-                  .then(res => res.ok ? res.arrayBuffer() : Promise.resolve(null))
-                  .then(arrayBuffer => {
-                    let i = 0;
-                    const vertexCount = new Uint32Array(arrayBuffer, i, 1)[0];
-                    i += Uint32Array.BYTES_PER_ELEMENT;
-                    const vertexArray = new Float32Array(arrayBuffer, i, vertexCount);
-                    i += Float32Array.BYTES_PER_ELEMENT * vertexCount;
+              const terrainMesh = _getTerrainMesh(id);
+              terrainMesh.promise = terrainMesh.promise
+                .finally(() => Promise.all([
+                  fetch('/mesh/' + id)
+                    .then(res => res.ok ? res.arrayBuffer() : Promise.reject(new Error('not ok')))
+                    .then(arrayBuffer => {
+                      let i = 0;
+                      const vertexCount = new Uint32Array(arrayBuffer, i, 1)[0];
+                      i += Uint32Array.BYTES_PER_ELEMENT;
+                      const vertexArray = new Float32Array(arrayBuffer, i, vertexCount);
+                      i += Float32Array.BYTES_PER_ELEMENT * vertexCount;
 
-                    const uvCount = new Uint32Array(arrayBuffer, i, 1)[0];
-                    i += Uint32Array.BYTES_PER_ELEMENT;
-                    const uvArray = new Float32Array(arrayBuffer, i, uvCount);
-                    i += Float32Array.BYTES_PER_ELEMENT * uvCount;
+                      const uvCount = new Uint32Array(arrayBuffer, i, 1)[0];
+                      i += Uint32Array.BYTES_PER_ELEMENT;
+                      const uvArray = new Float32Array(arrayBuffer, i, uvCount);
+                      i += Float32Array.BYTES_PER_ELEMENT * uvCount;
 
-                    return {
+                      return {
+                        vertexArray,
+                        vertexCount,
+                        uvArray,
+                        uvCount,
+                      };
+                    }),
+                  new Promise((accept, reject) => {
+                    if (hasTextureData) {
+                      const textureImage = new Image();
+                      textureImage.onload = () => {
+                        accept(textureImage);
+                      };
+                      textureImage.onerror = reject;
+                      textureImage.src = '/texture/' + id;
+                    } else {
+                      accept(null);
+                    }
+                  }),
+                ])
+                  .then(([
+                    {
                       vertexArray,
                       vertexCount,
                       uvArray,
                       uvCount,
-                    };
-                  }),
-                new Promise((accept, reject) => {
-                  if (hasTextureData) {
-                    const textureImage = new Image();
-                    textureImage.onload = () => {
-                      accept(textureImage);
-                    };
-                    textureImage.onerror = reject;
-                    textureImage.src = '/texture/' + id;
-                  } else {
-                    accept(null);
-                  }
-                }),
-              ])
-                .then(([
-                  {
-                    vertexArray,
-                    vertexCount,
-                    uvArray,
-                    uvCount,
-                  },
-                  textureImage,
-                ]) => {
-                  const update = {
-                    vertexArray,
-                    vertexCount,
-                    uvArray,
-                    uvCount,
+                    },
                     textureImage,
-                  };
-                  _loadTerrainMesh(_getTerrainMesh(id), update);
-                })
-                .catch(err => {
-                  console.warn(err.stack);
-                });
+                  ]) => {
+                    const update = {
+                      vertexArray,
+                      vertexCount,
+                      uvArray,
+                      uvCount,
+                      textureImage,
+                    };
+                    _loadTerrainMesh(terrainMesh, update);
+                  })
+                  .catch(err => {
+                    console.warn(err.stack);
+                  })
+              );
             } else {
               const {id} = message;
               const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
