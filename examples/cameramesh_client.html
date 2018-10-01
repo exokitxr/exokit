@@ -969,7 +969,7 @@ connection.onopen = () => {
               const arrayBuffer = message;
 
               Promise.all([
-                return fetch('/mesh/' + id)
+                fetch('/mesh/' + id)
                   .then(res => res.ok ? res.arrayBuffer() : Promise.resolve(null))
                   .then(arrayBuffer => {
                     let i = 0;
