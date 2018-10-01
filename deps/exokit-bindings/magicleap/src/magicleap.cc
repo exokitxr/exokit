@@ -291,7 +291,9 @@ static void onUnloadResources(void* application_context) {
 
 // MeshBuffer
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, const MLVec3f &center, bool isNew, bool isUnchanged) {
+void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, const MLVec3f &center, bool isNew, bool isUnchanged) {
+  WebGLRenderingContext *gl = application_context.gl;
+  
   glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
@@ -319,6 +321,84 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
 
     this->vertices = std::move(*vertices);
     this->uvs = std::move(*uvs);
+  }
+
+  {
+    auto match = std::find_if(textureEncodePbos.begin(), textureEncodePbos.end(), [&](std::pair<std::string, GLuint> &textureEncodePbo) -> bool {
+      return textureEncodePbo.first == id;
+    });
+    if (match != textureEncodePbos.end()) {
+      std::pair<std::string, GLuint> &textureEncodePbo = *match;
+      GLuint &pbo = textureEncodePbo.second;
+      
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+      glDeleteBuffers(1, &pbo);
+      if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+      } else {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      }
+      
+      textureEncodePbos.erase(match);
+    }
+  }
+  {
+    TextureEncodeRequestEntry *entry;
+    {
+      std::lock_guard<mutex> lock(textureEncodeRequestMutex);
+      auto match = std::find_if(textureEncodeRequestQueue.begin(), textureEncodeRequestQueue.end(), [&](TextureEncodeRequestEntry *textureEncodeRequest) -> bool {
+        return textureEncodeRequest->type == TextureEncodeEntryType::MESH_BUFFER && textureEncodeRequest->id == id;
+      });
+      if (match != textureEncodeRequestQueue.end()) {
+        entry = *match;
+        
+        textureEncodeRequestQueue.erase(match);
+      } else {
+        entry = nullptr;
+      }
+    }
+    if (entry) {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, entry->pbo);
+      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      glDeleteBuffers(1, &entry->pbo);
+      if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+      } else {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      }
+      
+      delete entry;
+    }
+  }
+  {
+    TextureEncodeResponseEntry *entry;
+    {
+      std::lock_guard<mutex> lock(textureEncodeResponseMutex);
+      auto match = std::find_if(textureEncodeResponseQueue.begin(), textureEncodeResponseQueue.end(), [&](TextureEncodeResponseEntry *textureEncodeResponse) -> bool {
+        return textureEncodeResponse->type == TextureEncodeEntryType::MESH_BUFFER && textureEncodeResponse->id == id;
+      });
+      if (match != textureEncodeResponseQueue.end()) {
+        entry = *match;
+
+        textureEncodeResponseQueue.erase(match);
+      } else {
+        entry = nullptr;
+      }
+    }
+    if (entry) {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, entry->pbo);
+      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      glDeleteBuffers(1, &entry->pbo);
+      if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+      } else {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      }
+      if (entry->result) {
+        SjpegFreeBuffer(entry->result);
+      }
+      delete entry;
+    }
   }
 }
 void MeshBuffer::beginRenderCameraAll() {
@@ -1491,26 +1571,32 @@ MLResult connectCamera() {
           TextureEncodeRequestEntry *requestEntry;
           {
             std::lock_guard<mutex> lock(textureEncodeRequestMutex);
-            requestEntry = textureEncodeRequestQueue.front();
-            textureEncodeRequestQueue.pop_front();
+            if (textureEncodeRequestQueue.size() > 0) {
+              requestEntry = textureEncodeRequestQueue.front();
+              textureEncodeRequestQueue.pop_front();
+            } else {
+              requestEntry = nullptr;
+            }
           }
 
-          uint8_t *result = nullptr;
-          size_t resultSize = SjpegCompress(requestEntry->data, requestEntry->width, requestEntry->height, 50.0f, &result);
+          if (requestEntry) {
+            uint8_t *result = nullptr;
+            size_t resultSize = SjpegCompress(requestEntry->data, requestEntry->width, requestEntry->height, 50.0f, &result);
 
-          if (resultSize == 0) {
-            ML_LOG(Error, "%s: failed to encode jpeg: %x", application_name, resultSize);
+            if (resultSize == 0) {
+              ML_LOG(Error, "%s: failed to encode jpeg: %x", application_name, resultSize);
+            }
+
+            TextureEncodeResponseEntry *responseEntry = new TextureEncodeResponseEntry(requestEntry->type, requestEntry->id, requestEntry->pbo, result, resultSize);
+            {
+              std::lock_guard<mutex> lock(textureEncodeResponseMutex);
+              textureEncodeResponseQueue.push_back(responseEntry);
+            }
+
+            uv_async_send(&textureEncodeAsync);
+
+            delete requestEntry;
           }
-
-          TextureEncodeResponseEntry *responseEntry = new TextureEncodeResponseEntry(requestEntry->type, requestEntry->id, requestEntry->pbo, result, resultSize);
-          {
-            std::lock_guard<mutex> lock(textureEncodeResponseMutex);
-            textureEncodeResponseQueue.push_back(responseEntry);
-          }
-
-          uv_async_send(&textureEncodeAsync);
-
-          delete requestEntry;
         } else {
           break;
         }
@@ -3372,7 +3458,12 @@ NAN_METHOD(MLContext::PostPollEvents) {
   if (cameraMeshEnabled) {
     // read pixel buffers
     if (textureEncodePbos.size() > 0) {
-      while (textureEncodePbos.size() > 0 &&  textureEncodeRequestQueue.size() < MAX_TEXTURE_QUEUE_SIZE) {
+      size_t textureEncodeRequestQueueSize;
+      {
+        std::lock_guard<mutex> lock(textureEncodeRequestMutex);
+        textureEncodeRequestQueueSize = textureEncodeRequestQueue.size();
+      }
+      while (textureEncodePbos.size() > 0 && textureEncodeRequestQueueSize < MAX_TEXTURE_QUEUE_SIZE) {
         const std::pair<std::string, GLuint> &iter = textureEncodePbos.front();
         const std::string &id = iter.first;
         GLuint pbo = iter.second;
@@ -3384,6 +3475,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         {
           std::lock_guard<mutex> lock(textureEncodeRequestMutex);
           textureEncodeRequestQueue.push_back(requestEntry);
+          textureEncodeRequestQueueSize = textureEncodeRequestQueue.size();
         }
         uv_sem_post(&textureEncodeSem);
 
@@ -3693,7 +3785,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
             getUvs(blockMesh.vertex, blockMesh.vertex_count, blockMesh.index, blockMesh.index_count, &localVertices, &localUvs);
           }
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.center, meshRequestSpec.isNew, meshRequestSpec.isUnchanged);
+          meshBuffer->setBuffers(id, (float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, &localVertices, &localUvs, meshRequestSpec.center, meshRequestSpec.isNew, meshRequestSpec.isUnchanged);
 
           if (rerenderBlock) {
             meshBufferIdRenderList.push_back(id);

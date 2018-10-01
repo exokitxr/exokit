@@ -143,7 +143,7 @@ public:
   // MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
   // MeshBuffer(const MeshBuffer &meshBuffer);
   // MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, const MLVec3f &center, bool isNew, bool isUnchanged);
+  void setBuffers(const std::string &id, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, const MLVec3f &center, bool isNew, bool isUnchanged);
   static void beginRenderCameraAll();
   void beginRenderCamera();
   void renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewRequest);
