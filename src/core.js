@@ -1187,6 +1187,23 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       for (const k in ws) {
         wsProxy[k] = ws[k];
       }
+      wsProxy.WebSocket = (OldWebSocket => function WebSocket() {
+        const c = Reflect.construct(OldWebSocket, arguments);
+        c.on = (on => function(e, cb) {
+          if (e === 'message' && cb) {
+            cb = (cb => function(m) {
+              m = utils._normalizePrototype(m, window);
+              return cb.apply(this, arguments);
+            })(cb);
+          }
+          return on.apply(this, arguments);
+        })(c.on);
+        c.send = (send => function(d) {
+          d = utils._normalizePrototype(d, global);
+          return send.apply(this, arguments);
+        })(c.send);
+        return c;
+      })(ws);
       wsProxy.Server = (OldServer => function Server() {
         const server = Reflect.construct(OldServer, arguments);
         server.on = (on => function(e, cb) {
@@ -1211,7 +1228,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return on.apply(this, arguments);
         })(server.on);
         return server;
-      })(wsProxy.Server);
+      })(ws.Server);
       return wsProxy;
     })(),
     electron,
