@@ -1676,6 +1676,8 @@ class HTMLMediaElement extends HTMLSrcableElement {
 
   play() {
     this._startTimestamp = Date.now();
+
+    return Promise.resolve();
   }
   pause() {}
   load() {}
@@ -2288,6 +2290,8 @@ class HTMLAudioElement extends HTMLMediaElement {
 
   play() {
     this.audio.play();
+
+    return Promise.resolve();
   }
   pause() {
     this.audio.pause();
@@ -2406,6 +2410,8 @@ class HTMLVideoElement extends HTMLMediaElement {
         _getOptions(this.video.constraints.facingMode)
       );
     }
+
+    return Promise.resolve();
   }
   pause() {
     if (this.video) {
@@ -2524,6 +2530,8 @@ class HTMLVideoElement extends HTMLMediaElement {
 
   play() {
     this.video.play();
+
+    return Promise.resolve();
   }
   pause() {
     this.video.pause();
