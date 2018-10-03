@@ -844,7 +844,13 @@ class Element extends Node {
   }
   querySelectorAll(s) {
     s = s + '';
-    return selector.find(this, s);
+    return selector.find({
+      traverse: fn => {
+        for (let i = 0; i < this.childNodes.length; i++) {
+          this.childNodes[i].traverse(fn);
+        }
+      },
+    }, s);
   }
   matches(s) {
     s = s + '';
