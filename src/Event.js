@@ -13,9 +13,13 @@ class EventTarget extends EventEmitter {
     });
   }
 
-  addEventListener(event, listener) {
+  addEventListener(event, listener, options) {
     if (typeof listener === 'function') {
-      this.on(event, listener);
+      if (options && options.once) {
+        this.once(event, listener);
+      } else {
+        this.on(event, listener);
+      }
     }
   }
   removeEventListener(event, listener) {
