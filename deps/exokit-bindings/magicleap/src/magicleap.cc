@@ -293,7 +293,7 @@ static void onUnloadResources(void* application_context) {
 
 void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, const MLVec3f &center, bool isNew, bool isUnchanged) {
   WebGLRenderingContext *gl = application_context.gl;
-  
+
   glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
   glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
 
@@ -330,7 +330,7 @@ void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t nu
     if (match != textureEncodePbos.end()) {
       std::pair<std::string, GLuint> &textureEncodePbo = *match;
       GLuint &pbo = textureEncodePbo.second;
-      
+
       glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
       glDeleteBuffers(1, &pbo);
       if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
@@ -338,7 +338,7 @@ void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t nu
       } else {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
       }
-      
+
       textureEncodePbos.erase(match);
     }
   }
@@ -351,7 +351,7 @@ void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t nu
       });
       if (match != textureEncodeRequestQueue.end()) {
         entry = *match;
-        
+
         textureEncodeRequestQueue.erase(match);
       } else {
         entry = nullptr;
@@ -366,7 +366,7 @@ void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t nu
       } else {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
       }
-      
+
       delete entry;
     }
   }
