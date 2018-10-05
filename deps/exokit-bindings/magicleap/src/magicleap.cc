@@ -1650,6 +1650,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "RequestCameraMeshing", RequestCameraMeshing);
+  Nan::SetMethod(ctorFn, "RequestCameraStream", RequestCameraStream);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
   Nan::SetMethod(ctorFn, "PostPollEvents", PostPollEvents);
 
@@ -3112,6 +3113,42 @@ NAN_METHOD(MLContext::RequestCameraMeshing) {
   info.GetReturnValue().Set(mlCameraMesherObj);
 
   cameraMeshEnabled = true;
+}
+
+NAN_METHOD(MLContext::RequestCameraStream) {
+  if (info[0]->IsString()) {
+    if (!cameraConnected) {
+      MLResult result = connectCamera();
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: Failed to connect camera stream: %x", application_name, result);
+        Nan::ThrowError("failed to connect camera stream");
+        return;
+      }
+    }
+
+    Local<String> url = Local<String>::Cast(info[0]);
+    String::Utf8Value urlValue(url);
+    {
+      // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+
+      MLStream *stream = new MLStream(
+        0,
+        20,
+        CAMERA_SIZE[0]/2,
+        CAMERA_SIZE[1]/2,
+        3500 * 1024,
+        // 1000 * 1024,
+        std::string("main"),
+        // std::string("high444"),
+        std::string(*urlValue, urlValue.length())
+      );
+      stream->start();
+      cameraStreams.push_back(stream);
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+    return;
+  }
 }
 
 NAN_METHOD(MLContext::RequestDepthPopulation) {

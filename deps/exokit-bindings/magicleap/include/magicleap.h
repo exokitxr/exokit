@@ -363,6 +363,7 @@ public:
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(RequestCameraMeshing);
+  static NAN_METHOD(RequestCameraStream);
   static NAN_METHOD(PrePollEvents);
   static NAN_METHOD(PostPollEvents);
 
