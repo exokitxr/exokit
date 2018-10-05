@@ -138,6 +138,17 @@ public:
   milliseconds ms;
 };
 
+class CameraStreamRequest {
+public:
+  GLuint texture;
+};
+
+class CameraStreamResponse {
+public:
+  GLuint texture;
+  GLuint pbo;
+};
+
 class MeshBuffer {
 public:
   // MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint vertexBuffer, GLuint uvBuffer, GLuint indexBuffer, GLuint fbo, GLuint texture);
@@ -384,16 +395,17 @@ public:
   GLint meshProjectionMatrixLocation;
 
   // camera content
-  GLuint cameraContentFbo;
+  GLuint cameraContentDrawFbo;
+  GLuint cameraContentReadFbo;
   GLuint cameraContentVao;
   GLuint cameraContentProgram;
   GLint cameraContentPointLocation;
   GLint cameraContentUvLocation;
   GLint cameraContentCameraInTextureLocation;
   GLint cameraContentContentTextureLocation;
-  GLuint cameraContentCameraInTexture;
+  // GLuint cameraContentCameraInTexture;
   GLuint cameraContentContentTexture;
-  GLuint cameraContentCameraOutTexture;
+  // GLuint cameraContentCameraOutTexture;
 
   // camera raw
   GLuint cameraRawFbo;
