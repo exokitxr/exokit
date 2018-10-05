@@ -159,7 +159,10 @@ STLIBS = node \
   avdevice \
   swscale \
   swresample \
-  opus
+  opus \
+  x264 \
+  mp3lame \
+  rtmp
 
 # shared libs to link in
 #
