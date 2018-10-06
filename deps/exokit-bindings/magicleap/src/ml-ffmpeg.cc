@@ -299,10 +299,8 @@ void MLStream::start() {
     }
 
     for (;;) {
-      std::cout << "tick 1" << "\n";
 
       this->tick();
-      std::cout << "tick 2" << "\n";
 
 
       const int64_t nowTime = av_gettime() - startTime;
