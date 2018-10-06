@@ -452,8 +452,8 @@ GLuint MeshBuffer::getPixels() {
   GLuint pbo;
   glGenBuffers(1, &pbo);
   glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-  glBufferData(GL_PIXEL_PACK_BUFFER, MESH_TEXTURE_SIZE[0] * MESH_TEXTURE_SIZE[1] * 3, 0, GL_STREAM_READ);
-  glReadPixels(0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glBufferData(GL_PIXEL_PACK_BUFFER, MESH_TEXTURE_SIZE[0] * MESH_TEXTURE_SIZE[1] * 4, 0, GL_STREAM_READ);
+  glReadPixels(0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
 
   this->textureDirty = false;
 
@@ -1591,8 +1591,21 @@ MLResult connectCamera() {
           }
 
           if (requestEntry) {
+            std::vector<uint8_t> rgb(requestEntry->width * requestEntry->height * 3);
+            uint8_t *src = requestEntry->data;
+            uint8_t *dst = rgb.data();
+            for (int i = 0; i < requestEntry->width * requestEntry->height; i++) {
+              uint8_t b = src[0];
+              uint8_t g = src[1];
+              uint8_t r = src[2];
+              dst[0] = r;
+              dst[1] = g;
+              dst[2] = b;
+              src += 4;
+              dst += 3;
+            }
             uint8_t *result = nullptr;
-            size_t resultSize = SjpegCompress(requestEntry->data, requestEntry->width, requestEntry->height, 50.0f, &result);
+            size_t resultSize = SjpegCompress(rgb.data(), requestEntry->width, requestEntry->height, 50.0f, &result);
 
             if (resultSize == 0) {
               ML_LOG(Error, "%s: failed to encode jpeg: %x", application_name, resultSize);
@@ -3437,7 +3450,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         GLuint pbo = iter.second;
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-        uint8_t *textureDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, MESH_TEXTURE_SIZE[0] * MESH_TEXTURE_SIZE[1] * 3, GL_MAP_READ_BIT);
+        uint8_t *textureDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, MESH_TEXTURE_SIZE[0] * MESH_TEXTURE_SIZE[1] * 4, GL_MAP_READ_BIT);
 
         TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], pbo, textureDataRgb);
         {
@@ -3517,17 +3530,13 @@ NAN_METHOD(MLContext::PostPollEvents) {
         CameraStreamResponse *cameraStreamResponse = *iter;
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, cameraStreamResponse->pbo);
-        uint8_t *framebufferDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 3, GL_MAP_READ_BIT);
 
         for (auto iter = cameraStreams.begin(); iter != cameraStreams.end(); iter++) {
           MLStream &stream = **iter;
-          stream.setFramebuffer(framebufferDataRgb);
+          stream.pushFramebuffer(cameraStreamResponse->pbo, framebufferDataRgb);
         }
 
-        glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-
         glDeleteTextures(1, &cameraStreamResponse->texture);
-        glDeleteBuffers(1, &cameraStreamResponse->pbo);
         delete cameraStreamResponse;
         
         if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
@@ -3548,8 +3557,8 @@ NAN_METHOD(MLContext::PostPollEvents) {
         GLuint pbo;
         glGenBuffers(1, &pbo);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-        glBufferData(GL_PIXEL_PACK_BUFFER, CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 3, 0, GL_STREAM_READ);
-        glReadPixels(0, 0, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glBufferData(GL_PIXEL_PACK_BUFFER, CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 4, 0, GL_STREAM_READ);
+        glReadPixels(0, 0, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
 
         CameraStreamResponse *cameraStreamResponse = new CameraStreamResponse{texture, pbo};
         cameraStreamResponses.push_back(cameraStreamResponse);
@@ -3638,7 +3647,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               } else {
                 glGenTextures(1, &cameraMeshPreviewRequest.texture);
                 glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
               }
@@ -3701,7 +3710,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               glGenTextures(1, &texture);
               glActiveTexture(GL_TEXTURE0);
               glBindTexture(GL_TEXTURE_2D, texture);
-              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
               glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
               glUseProgram(mlContext->cameraContentProgram);
@@ -3877,7 +3886,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
             glBindTexture(GL_TEXTURE_2D, texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
@@ -3998,6 +4007,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
 Handle<Object> makeMl() {
   Nan::EscapableHandleScope scope;
+  
+  ml::MLStream::Init();
+
   return scope.Escape(ml::MLContext::Initialize(Isolate::GetCurrent()));
 }
 

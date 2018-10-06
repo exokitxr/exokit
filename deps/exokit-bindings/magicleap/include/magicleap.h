@@ -61,6 +61,19 @@ constexpr size_t MAX_TEXTURE_QUEUE_SIZE = 4;
 
 namespace ml {
 
+class MLContext;
+  
+struct application_context_t {
+  int dummy_value;
+  MLContext *mlContext;
+  WebGLRenderingContext *gl;
+  NATIVEwindow *window;
+};
+
+// globals
+
+extern application_context_t application_context;
+
 // enums
 
 enum DummyValue {
@@ -85,8 +98,6 @@ enum KeyboardEventType {
 
 // classes
 
-class MLContext;
-
 class MLSpheref {
 public:
   MLVec3f center;
@@ -102,13 +113,6 @@ public:
 class MLFrustumf {
 public:
   MLPlanef planes[6];
-};
-
-struct application_context_t {
-  int dummy_value;
-  MLContext *mlContext;
-  WebGLRenderingContext *gl;
-  NATIVEwindow *window;
 };
 
 class KeyboardEvent {

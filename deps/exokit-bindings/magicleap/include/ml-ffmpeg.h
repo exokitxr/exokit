@@ -20,14 +20,27 @@ using namespace v8;
 
 namespace ml {
 
+class FramebufferRequest {
+public:
+  GLuint pbo;
+  uint8_t *framebufferDataRgb;
+};
+
+class FramebufferResponse {
+public:
+  GLuint pbo;
+};
+
 class MLStream {
 public:
   MLStream(int cameraID = 0, int fps = 20, int width = 1280, int height = 720, int bitrate = 3500 * 1024, const std::string &codec_profile = std::string("main"), const std::string &outputServer = std::string("rtmp://127.0.0.1:1935/live/lol"));
 
+  static void Init();
   void start();
   // void stop();
-  void setFramebuffer(uint8_t *framebufferDataRgb);
+  void pushFramebuffer(GLuint pbo, uint8_t *framebufferDataRgb);
   void tick();
+  static void RunResponseInMainThread(uv_async_t *handle);
 
 protected:
   int cameraID;
@@ -57,9 +70,14 @@ protected:
   SwsContext *swsctx;
   AVFrame *video_frame;
   AVFrame *audio_frame;
-  
+
   std::thread thread;
-  std::mutex mutex;
+  std::mutex requestMutex;
+  std::vector<FramebufferRequest> framebufferRequestQueue;
+
+  static std::mutex responseMutex;
+  static uv_async_t responseAsync;
+  static std::vector<FramebufferResponse> framebufferResponseQueue;
 };
 
 }

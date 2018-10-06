@@ -4,6 +4,10 @@
 
 namespace ml {
 
+std::mutex MLStream::responseMutex;
+uv_async_t MLStream::responseAsync;
+std::vector<FramebufferResponse> MLStream::framebufferResponseQueue;
+
 void initialize_avformat_context(AVFormatContext *&fctx, const char *format_name)
 {
   int ret = avformat_alloc_output_context2(&fctx, nullptr, format_name, nullptr);
@@ -298,8 +302,8 @@ void MLStream::start() {
       std::cout << "tick 1" << "\n";
 
       this->tick();
-      
       std::cout << "tick 2" << "\n";
+
 
       const int64_t nowTime = av_gettime() - startTime;
       int64_t videoPacketPts = av_rescale_q(video_frame->pts, video_cc->time_base, AVRational{1, AV_TIME_BASE});
@@ -312,6 +316,9 @@ void MLStream::start() {
     }
   });
 }
+void MLStream::Init() {
+  uv_async_init(uv_default_loop(), &responseAsync, RunResponseInMainThread);
+}
 /* void MLStream::stop() {
   av_write_trailer(oc);
 
@@ -322,16 +329,53 @@ void MLStream::start() {
   avio_close(oc->pb);
   avformat_free_context(oc);
 } */
-void MLStream::setFramebuffer(uint8_t *framebufferDataRgb) {
-  std::lock_guard<std::mutex> lock(mutex);
+void MLStream::pushFramebuffer(GLuint pbo, uint8_t *framebufferDataRgb) {
+  std::lock_guard<std::mutex> lock(requestMutex);
 
-  for (int i = 0; i < height; i++) {
-    memcpy(video_frame->data[0] + (i * video_frame->linesize[0]), framebufferDataRgb + (i * width * 3), video_frame->linesize[0]);
-  }
-  memset(audio_frame->data[0], 0, audio_frame->nb_samples * sizeof(uint16_t));
+  framebufferRequestQueue.push_back(FramebufferRequest{pbo, framebufferDataRgb});
 }
 void MLStream::tick() {
   int ret;
+
+  {
+    std::lock_guard<std::mutex> lock(requestMutex);
+
+    if (framebufferRequestQueue.size() > 0) {
+      std::cout << "tick 3" << std::endl;
+
+      // video
+      FramebufferRequest &entry = framebufferRequestQueue.back();
+      uint8_t *src = entry.framebufferDataRgb;
+      uint8_t *dst = video_frame->data[0];
+      for (int i = 0; i < height; i++) {
+        dst = video_frame->data[0] + (i * video_frame->linesize[0]);
+        for (int j = 0; j < width; j++) {
+          uint8_t b = src[0];
+          uint8_t g = src[1];
+          uint8_t r = src[2];
+          dst[0] = r;
+          dst[1] = g;
+          dst[2] = b;
+          src += 4;
+          dst += 3;
+        }
+      }
+
+      // audio
+      memset(audio_frame->data[0], 0, audio_frame->nb_samples * sizeof(uint16_t));
+
+      {
+        std::lock_guard<std::mutex> lock(responseMutex);
+
+        for (auto iter = framebufferRequestQueue.begin(); iter != framebufferRequestQueue.end(); iter++) {
+          framebufferResponseQueue.push_back(FramebufferResponse{iter->pbo});
+        }
+      }
+      framebufferRequestQueue.clear();
+
+      uv_async_send(&responseAsync);
+    }
+  }
 
   /* Compute current audio and video time. */
   double audio_time = audio_frame->pts * av_q2d(audio_cc->time_base);
@@ -366,18 +410,14 @@ void MLStream::tick() {
 
     // std::cout << "receive audio pkt 0 " << audio_frame->pts << " += " << av_rescale_q(audio_frame->nb_samples, timebase, audio_st->time_base) << " " << timebase.num << "/" << timebase.den << " " << audio_st->time_base.num << "/" << audio_st->time_base.den << std::endl;
 
-    {
-      std::lock_guard<std::mutex> lock(mutex);
-
-      ret = avcodec_send_frame(audio_cc, audio_frame);
-      // int got_packet;
-      // ret = avcodec_encode_audio2(audio_codec, &pkt, audio_frame, &got_packet);
-      if (ret < 0) {
-        fprintf(stderr, "Error encoding audio frame\n");
-        exit(1);
-      }
-      av_frame_make_writable(audio_frame);
+    ret = avcodec_send_frame(audio_cc, audio_frame);
+    // int got_packet;
+    // ret = avcodec_encode_audio2(audio_codec, &pkt, audio_frame, &got_packet);
+    if (ret < 0) {
+      fprintf(stderr, "Error encoding audio frame\n");
+      exit(1);
     }
+    av_frame_make_writable(audio_frame);
 
     // std::cout << "receive audio pkt 1" << std::endl;
 
@@ -441,17 +481,13 @@ void MLStream::tick() {
     // video_frame->pkt_dts = video_frame->pts;
     vts++;
 
+    ret = avcodec_send_frame(video_cc, video_frame);
+    if (ret < 0)
     {
-      std::lock_guard<std::mutex> lock(mutex);
-
-      ret = avcodec_send_frame(video_cc, video_frame);
-      if (ret < 0)
-      {
-        // std::cout << "Error sending frame to codec context!" << std::endl;
-        exit(1);
-      }
-      av_frame_make_writable(video_frame);
+      // std::cout << "Error sending frame to codec context!" << std::endl;
+      exit(1);
     }
+    av_frame_make_writable(video_frame);
 
     // std::cout << "receive video pkt 1" << std::endl;
 
@@ -487,6 +523,29 @@ void MLStream::tick() {
 
       av_packet_unref(&pkt);
     }
+  }
+}
+void MLStream::RunResponseInMainThread(uv_async_t *handle) {
+  WebGLRenderingContext *gl = application_context.gl;
+
+  {
+    std::lock_guard<std::mutex> lock(responseMutex);
+
+    for (auto iter = framebufferResponseQueue.begin(); iter != framebufferResponseQueue.end(); iter++) {
+      FramebufferResponse &entry = *iter;
+      GLuint &pbo = entry.pbo;
+
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      glDeleteBuffers(1, &pbo);
+    }
+    framebufferResponseQueue.clear();
+  }
+
+  if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+  } else {
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
   }
 }
 
