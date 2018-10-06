@@ -14,6 +14,7 @@ namespace ml {
 const char application_name[] = "com.exokit.app";
 constexpr int CAMERA_SIZE[] = {1920, 1080};
 constexpr int MESH_TEXTURE_SIZE[] = {512, 512};
+constexpr int CAMERA_STREAM_SIZE[] = {CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2};
 
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
@@ -3066,8 +3067,8 @@ NAN_METHOD(MLContext::RequestCameraStream) {
       MLStream *stream = new MLStream(
         0,
         20,
-        CAMERA_SIZE[0]/2,
-        CAMERA_SIZE[1]/2,
+        CAMERA_STREAM_SIZE[0],
+        CAMERA_STREAM_SIZE[1],
         3500 * 1024,
         // 1000 * 1024,
         std::string("main"),
@@ -3530,7 +3531,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         CameraStreamResponse *cameraStreamResponse = *iter;
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, cameraStreamResponse->pbo);
-        uint8_t *framebufferDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 4, GL_MAP_READ_BIT);
+        uint8_t *framebufferDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, CAMERA_STREAM_SIZE[0] * CAMERA_STREAM_SIZE[1] * 4, GL_MAP_READ_BIT);
 
         for (auto iter = cameraStreams.begin(); iter != cameraStreams.end(); iter++) {
           MLStream &stream = **iter;
@@ -3558,8 +3559,8 @@ NAN_METHOD(MLContext::PostPollEvents) {
         GLuint pbo;
         glGenBuffers(1, &pbo);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-        glBufferData(GL_PIXEL_PACK_BUFFER, CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 4, 0, GL_STREAM_READ);
-        glReadPixels(0, 0, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+        glBufferData(GL_PIXEL_PACK_BUFFER, CAMERA_STREAM_SIZE[0] * CAMERA_STREAM_SIZE[1] * 4, 0, GL_STREAM_READ);
+        glReadPixels(0, 0, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1], GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
 
         CameraStreamResponse *cameraStreamResponse = new CameraStreamResponse{texture, pbo};
         cameraStreamResponses.push_back(cameraStreamResponse);
@@ -3711,7 +3712,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               glGenTextures(1, &texture);
               glActiveTexture(GL_TEXTURE0);
               glBindTexture(GL_TEXTURE_2D, texture);
-              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1], 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
               glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
               glUseProgram(mlContext->cameraContentProgram);
@@ -3727,7 +3728,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               }
               glUniform1i(mlContext->cameraContentCameraInTextureLocation, 1);
 
-              glViewport(0, 0, CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2);
+              glViewport(0, 0, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1]);
               glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
               CameraStreamRequest *cameraStreamRequest = new CameraStreamRequest{texture};
