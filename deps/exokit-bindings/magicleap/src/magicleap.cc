@@ -3530,6 +3530,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         CameraStreamResponse *cameraStreamResponse = *iter;
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, cameraStreamResponse->pbo);
+        uint8_t *framebufferDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, CAMERA_SIZE[0]/2 * CAMERA_SIZE[1]/2 * 4, GL_MAP_READ_BIT);
 
         for (auto iter = cameraStreams.begin(); iter != cameraStreams.end(); iter++) {
           MLStream &stream = **iter;
