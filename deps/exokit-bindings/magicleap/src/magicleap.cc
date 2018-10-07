@@ -51,7 +51,7 @@ uv_async_t cameraAsync;
 // uv_sem_t cameraConvertSem;
 // uv_async_t cameraConvertAsync;
 
-std::deque<CameraMeshPreviewRequest> cameraMeshPreviewRequests;
+std::deque<CameraMeshPreviewRequest *> cameraMeshPreviewRequests;
 std::deque<CameraPosition> cameraPositions;
 
 std::vector<MLStream *> cameraStreams;
@@ -1909,7 +1909,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
     const MLFrustumf &frustum = makeFrustumFromMatrix(multiplyMatrices(projection, modelViewInverse));
     const milliseconds ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch()) + CAMERA_PREVIEW_DELAY;
 
-    cameraMeshPreviewRequests.push_back(CameraMeshPreviewRequest{position, rotation, modelViewInverse, projection, frustum, 0, ms});
+    cameraMeshPreviewRequests.push_back(new CameraMeshPreviewRequest{position, rotation, modelViewInverse, projection, frustum, 0, ms});
   }
 }
 
@@ -3502,9 +3502,9 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
       bool localRendering = false;
 
       for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
-        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter2;
+        CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter2;
 
-        if (cameraMeshPreviewRequest.texture && frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
+        if (cameraMeshPreviewRequest->texture != 0 && frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
           if (!rendering) {
             MeshBuffer::beginRenderCameraAll();
             rendering = true;
@@ -3513,8 +3513,8 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
             meshBuffer.beginRenderCamera();
             localRendering = true;
           }
-          
-          meshBuffer.renderCamera(cameraMeshPreviewRequest);
+
+          meshBuffer.renderCamera(*cameraMeshPreviewRequest);
         }
       }
     }
@@ -3529,9 +3529,9 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
         bool localRendering = false;
 
         for (auto iter2 = cameraMeshPreviewRenderList.begin(); iter2 != cameraMeshPreviewRenderList.end(); iter2++) {
-          CameraMeshPreviewRequest &cameraMeshPreviewRequest = **iter2;
+          CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter2;
 
-          if (cameraMeshPreviewRequest.texture != 0 && frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
+          if (cameraMeshPreviewRequest->texture != 0 && frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
             if (!rendering) {
               MeshBuffer::beginRenderCameraAll();
               rendering = true;
@@ -3541,7 +3541,7 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
               localRendering = true;
             }
 
-            meshBuffer.renderCamera(cameraMeshPreviewRequest);
+            meshBuffer.renderCamera(*cameraMeshPreviewRequest);
           }
         }
       }
@@ -3618,22 +3618,22 @@ NAN_METHOD(MLContext::PostPollEvents) {
     }
 
     // remove overflowed camera mesh preview requests
-    std::vector<std::deque<CameraMeshPreviewRequest>::iterator> eraseList;
+    std::vector<CameraMeshPreviewRequest *> eraseList;
     {
       size_t numCameraMeshTextures = 0;
       for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
-        if (cameraMeshPreviewRequest.texture != 0) {
+        CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter;
+        if (cameraMeshPreviewRequest->texture != 0) {
           numCameraMeshTextures++;
         }
       }
       if (numCameraMeshTextures > MAX_CAMERA_MESH_TEXTURES) {
         for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-          CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+          CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter;
 
-          if (cameraMeshPreviewRequest.texture != 0) {
-            glDeleteTextures(1, &cameraMeshPreviewRequest.texture);
-            eraseList.push_back(iter);
+          if (cameraMeshPreviewRequest->texture != 0) {
+            glDeleteTextures(1, &cameraMeshPreviewRequest->texture);
+            eraseList.push_back(cameraMeshPreviewRequest);
 
             numCameraMeshTextures--;
             if (numCameraMeshTextures <= MAX_CAMERA_MESH_TEXTURES) {
@@ -3643,10 +3643,15 @@ NAN_METHOD(MLContext::PostPollEvents) {
         }
       }
     }
-    for (auto iterIter = eraseList.begin(); iterIter != eraseList.end(); iterIter++) {
-      auto iter = *iterIter;
-      cameraMeshPreviewRequests.erase(iter);
-    }
+    cameraMeshPreviewRequests.erase(std::remove_if(cameraMeshPreviewRequests.begin(), cameraMeshPreviewRequests.end(), [&](CameraMeshPreviewRequest *cameraMeshPreviewRequest) -> bool {
+      for (size_t i = 0; i < eraseList.size(); i++) {
+        if (eraseList[i] == cameraMeshPreviewRequest) {
+          return true;
+        }
+      }
+      return false;
+    }), cameraMeshPreviewRequests.end());
+    eraseList.clear();
 
     // camera stream read
     {
@@ -3694,9 +3699,9 @@ NAN_METHOD(MLContext::PostPollEvents) {
     {
       int setIndex = 0;
       for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
-        if (now >= cameraMeshPreviewRequest.ms) {
-          cameraMeshSets[setIndex] = getMatchingMeshBufferIds(cameraMeshPreviewRequest, meshBuffers);
+        CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter;
+        if (now >= cameraMeshPreviewRequest->ms) {
+          cameraMeshSets[setIndex] = getMatchingMeshBufferIds(*cameraMeshPreviewRequest, meshBuffers);
         }
         setIndex++;
       }
@@ -3728,17 +3733,16 @@ NAN_METHOD(MLContext::PostPollEvents) {
     {
       int setIndex = 0;
       for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+        CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter;
 
-        if (cameraMeshPreviewRequest.texture == 0 && now >= cameraMeshPreviewRequest.ms) {
-          std::cout << "check camera mesh preview req" << std::endl;
+        if (cameraMeshPreviewRequest->texture == 0 && now >= cameraMeshPreviewRequest->ms) {
           bool isStable = false;
           {
             float stability = 0;
             bool first = true;
             MLVec3f lastPosition;
             for (auto iter : cameraPositions) {
-              if (iter.ms >= (cameraMeshPreviewRequest.ms - CAMERA_ADJUST_DELAY) && iter.ms < cameraMeshPreviewRequest.ms) {
+              if (iter.ms >= (cameraMeshPreviewRequest->ms - CAMERA_ADJUST_DELAY) && iter.ms < cameraMeshPreviewRequest->ms) {
                 if (first) {
                   first = false;
                 } else {
@@ -3780,34 +3784,40 @@ NAN_METHOD(MLContext::PostPollEvents) {
                     }
                   }
                 }
-                std::cout << "stable match " << (match != cameraMeshPreviewRequests.end()) << std::endl;
-
                 glBindVertexArray(mlContext->cameraRawVao);
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraRawFbo);
                 glUseProgram(mlContext->cameraRawProgram);
 
                 glActiveTexture(GL_TEXTURE0);
                 if (match != cameraMeshPreviewRequests.end()) {
-                  // cameraMeshPreviewRequest.position = match->position;
-                  // cameraMeshPreviewRequest.rotation = match->rotation;
-                  // cameraMeshPreviewRequest.modelViewInverse = match->modelViewInverse;
-                  // cameraMeshPreviewRequest.projection = match->projection;
-                  // cameraMeshPreviewRequest.frustum = match->frustum;
-                  cameraMeshPreviewRequest.texture = match->texture;
-                  // cameraMeshPreviewRequest.ms = match->ms;
-                  match->texture = 0;
+                  if ((*match)->texture != 0) {
+                    // cameraMeshPreviewRequest.position = match->position;
+                    // cameraMeshPreviewRequest.rotation = match->rotation;
+                    // cameraMeshPreviewRequest.modelViewInverse = match->modelViewInverse;
+                    // cameraMeshPreviewRequest.projection = match->projection;
+                    // cameraMeshPreviewRequest.frustum = match->frustum;
 
-                  glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
+                    cameraMeshPreviewRequest->texture = (*match)->texture;
+                    // cameraMeshPreviewRequest.ms = match->ms;
+                    (*match)->texture = 0;
+                    
+                    glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest->texture);
+                  } else {
+                    glGenTextures(1, &cameraMeshPreviewRequest->texture);
+                    glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest->texture);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                  }
 
-                  eraseList.push_back(match);
+                  eraseList.push_back(*match);
                 } else {
-                  glGenTextures(1, &cameraMeshPreviewRequest.texture);
-                  glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
+                  glGenTextures(1, &cameraMeshPreviewRequest->texture);
+                  glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest->texture);
                   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 }
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, cameraMeshPreviewRequest.texture, 0);
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, cameraMeshPreviewRequest->texture, 0);
 
                 if (!cameraRawInTextureBound) {
                   glActiveTexture(GL_TEXTURE1);
@@ -3820,7 +3830,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
                 glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-                cameraMeshPreviewRenderList.push_back(&cameraMeshPreviewRequest);
+                cameraMeshPreviewRenderList.push_back(cameraMeshPreviewRequest);
 
                 if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
                   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
@@ -3927,11 +3937,11 @@ NAN_METHOD(MLContext::PostPollEvents) {
             } else {
               ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
 
-              eraseList.push_back(iter);
+              eraseList.push_back(*iter);
             }
           }
           if (!isStable) {
-            eraseList.push_back(iter);
+            eraseList.push_back(*iter);
           }
         }
 
@@ -3939,10 +3949,14 @@ NAN_METHOD(MLContext::PostPollEvents) {
       }
     }
     // erase queued camera mesh preview requests
-    for (auto iterIter = eraseList.begin(); iterIter != eraseList.end(); iterIter++) {
-      auto iter = *iterIter;
-      cameraMeshPreviewRequests.erase(iter);
-    }
+    cameraMeshPreviewRequests.erase(std::remove_if(cameraMeshPreviewRequests.begin(), cameraMeshPreviewRequests.end(), [&](CameraMeshPreviewRequest *cameraMeshPreviewRequest) -> bool {
+      for (size_t i = 0; i < eraseList.size(); i++) {
+        if (eraseList[i] == cameraMeshPreviewRequest) {
+          return true;
+        }
+      }
+      return false;
+    }), cameraMeshPreviewRequests.end());
   }
 
   if (meshInfoRequestPending) {
