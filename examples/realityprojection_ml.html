@@ -668,7 +668,7 @@
             paintControllerIndex = -1;
 
             fetchQueued(() =>
-              fetch(c.url + '/paint', {
+              fetch(serverUrl + '/paint', {
                 method: 'DELETE',
               })
                 .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok')))
