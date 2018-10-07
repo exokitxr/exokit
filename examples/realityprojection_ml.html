@@ -35,6 +35,25 @@
         reject(err);
       };
     });
+    const fetchQueues = [];
+    let fetchesRunning = 0;
+    const maxConcurrentFetches = 3;
+    function fetchQueued(fn) {
+      if (fetchesRunning < maxConcurrentFetches) {
+        fetchesRunning++;
+
+        fn()
+          .finally(() => {
+            fetchesRunning--;
+
+            if (fetchQueues.length > 0 && fetchesRunning < maxConcurrentFetches) {
+              fetchQueued(fetchQueues.shift());
+            }
+          });
+      } else {
+        fetchQueues.push(fn);
+      }
+    }
     function parseQuery(queryString) {
       var query = {};
       var pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
@@ -616,14 +635,16 @@
             for (let i = 0; i < connections.length; i++) {
               const c = connections[i];
 
-              fetch(c.url + '/mesh/' + id, {
-                method: 'PUT',
-                body: terrainMeshData[id],
-              })
-                .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok')))
-                .catch(err => {
-                  console.warn(err.stack);
-                });
+              fetchQueued(() =>
+                fetch(c.url + '/mesh/' + id, {
+                  method: 'PUT',
+                  body: terrainMeshData[id],
+                })
+                  .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok')))
+                  .catch(err => {
+                    console.warn(err.stack);
+                  })
+              );
             }
           } else if (type === 'unchanged') {
             // nothing
