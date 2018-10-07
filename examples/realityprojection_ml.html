@@ -788,9 +788,10 @@
       });
     })();
 
-    const serverUrl = parseQuery(window.location.search)['s'];
+    const q = parseQuery(window.location.search);
+    const {serverUrl, rtmpUrl} = q;
     if (serverUrl && /^https?:\/\//.test(serverUrl)) {
-      console.warn('using server url', JSON.stringify(serverUrl));
+      console.log('using server url', JSON.stringify(serverUrl));
 
       const c = new window.browser.ws.WebSocket(serverUrl.replace(/^http/, 'ws') + '?host=true');
       c.url = serverUrl;
@@ -888,7 +889,7 @@
 
             pendingPaintMeshId = null;
           } else {
-            console.warn('out of order binary message', daata.byteLength);
+            console.warn('out of order binary message', data.byteLength);
           }
         }
       });
@@ -903,6 +904,14 @@
       });
     } else {
       console.warn('no server url', serverUrl);
+    }
+
+    if (rtmpUrl && /^rtmp:\/\//.test(rtmpUrl)) {
+      console.log('using rtpm url', JSON.stringify(rtmpUrl));
+
+      window.browser.magicleap.RequestCameraStream(rtmpUrl);
+    } else {
+      console.warn('no rtpm url', serverUrl);
     }
 })();
   </script>
