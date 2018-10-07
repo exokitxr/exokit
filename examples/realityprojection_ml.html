@@ -12,7 +12,7 @@
   <script src="FBXLoader.js"></script> -->
   <script>
 (() => {
-    let container, scene, scene2, camera, display;
+    let container, scene, scene2, camera, display, controllerMeshes, teleportMesh;
     let mesher = null, cameraMesher = null, connections = [], terrainMeshData = {};
 
     const MAX_NUM_POINTS = 1024;
@@ -21,9 +21,13 @@
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
+    const localVector4 = new THREE.Vector3();
+    const localVector5 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
+    const localRay = new THREE.Ray();
+    const localPlane = new THREE.Plane();
 
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
@@ -386,22 +390,21 @@
             geometry.setDrawRange(0, lastPoint * 2);
 
             if (connections.length > 0) {
-              const updateSpecs = [
-                JSON.stringify({
-                  method: 'paint',
-                  meshId: mesh.meshId,
-                }),
-                mesh.getBuffer(lastPoint),
-              ];
+              const paintBuffer = mesh.getBuffer(lastPoint);
 
               for (let i = 0; i < connections.length; i++) {
                 const c = connections[i];
 
-                if (c.readyState === window.browser.ws.OPEN) {
-                  for (let j = 0; j < updateSpecs.length; j++) {
-                    c.send(updateSpecs[j]);
-                  }
-                }
+                fetchQueued(() =>
+                  fetch(c.url + '/paint/' + mesh.meshId, {
+                    method: 'PUT',
+                    body: paintBuffer,
+                  })
+                    .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok')))
+                    .catch(err => {
+                      console.warn(err.stack);
+                    })
+                );
               }
             }
           }
@@ -449,6 +452,14 @@
 
       return mesh;
     };
+    const _clearPaintMeshes = () => {
+      for (let i = 0; i < paintMeshes.length; i++) {
+        const paintMesh = paintMeshes[i];
+        scene2.remove(paintMesh);
+        paintMesh.geometry.dispose();
+      }
+      paintMeshes.length = 0;
+    };
 
     function init() {
       container = document.createElement('div');
@@ -473,28 +484,32 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      /* (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
+
+      teleportMesh = (() => {
+        const geometry = new THREE.CylinderBufferGeometry(0.1, 0, 0.3, 3, 1)
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.3, 0));
+
         const material = new THREE.MeshPhongMaterial({
-          color: 0xE91E63,
+          color: 0xf44336,
         });
+
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 0.5;
-        // mesh.position.z = -1;
-        mesh.frustumCuled = false;
-        scene.add(mesh);
-      })();
-      (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x4CAF50,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 1 + 0.1;
-        // mesh.position.z = -1;
+        // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+        // mesh.updateMatrix();
+        // mesh.updateMatrixWorld();
+        // mesh.matrixAutoUpdate = false;
+        mesh.visible = false;
         mesh.frustumCulled = false;
-        scene.add(mesh);
-      })(); */
+        return mesh;
+      })();
+      scene.add(teleportMesh);
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -512,9 +527,153 @@
     }
 
     let lastUpdateTime = Date.now();
+    const lastPads = [false, false];
+    const lastGrabbeds = [false, false];
+    const lastMenus = [false, false];
     function animate(time, frame) {
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
+
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.updateMatrixWorld(true);
+        }
+
+        if (paintMesh) {
+          const inputSource = inputSources[paintControllerIndex];
+          const pose = frame.getInputPose(inputSource);
+
+          localMatrix.fromArray(pose.pointerMatrix)
+            .decompose(localVector, localQuaternion, localVector2);
+          localVector.sub(scene2.position);
+          paintMesh.update(localVector, localQuaternion);
+        }
+
+        const _teleportStart = (position, rotation) => {
+          const intersection = localRay
+            .set(
+              position,
+              localVector2.set(0, 0, -1)
+                .applyQuaternion(rotation)
+            )
+            .intersectPlane(
+              localPlane.setFromNormalAndCoplanarPoint(
+                localVector2.set(0, 1, 0),
+                localVector3.copy(position)
+                  .add(localVector4.set(0, -1, 0))
+              ),
+              localVector5
+            );
+
+          if (intersection) {
+            localVector2.copy(intersection)
+              .sub(position);
+            localVector2.y = 0;
+            if (localVector2.length() > 3) {
+              localVector2.normalize().multiplyScalar(3);
+            }
+            localVector2.y -= 1;
+            teleportMesh.position.copy(position)
+              .add(localVector2);
+          } else {
+            localEuler.setFromQuaternion(rotation, 'YXZ');
+            localEuler.x = 0;
+            localEuler.z = 0;
+            teleportMesh.position.copy(position)
+              .add(
+                localVector2.set(0, -1, -3)
+                  .applyEuler(localEuler)
+              );
+          }
+          teleportMesh.updateMatrix();
+          teleportMesh.updateMatrixWorld();
+          teleportMesh.visible = true;
+        };
+        const _teleportEnd = () => {
+          const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+          vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+
+          scene2.position.x += localVector.x - teleportMesh.position.x;
+          scene2.position.z += localVector.z - teleportMesh.position.z;
+          scene2.updateMatrix();
+          scene2.updateMatrixWorld();
+
+          teleportMesh.visible = false;
+        };
+
+        const gamepads = navigator.getGamepads();
+        for (let i = 0; i < gamepads.length; i++) {
+          const gamepad = gamepads[i];
+          const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
+
+          const pad = gamepad.buttons[0].pressed;
+          const lastPad = lastPads[controllerIndex];
+          if (pad) {
+            const inputSource = inputSources[controllerIndex];
+            const pose = frame.getInputPose(inputSource);
+
+            localMatrix.fromArray(pose.pointerMatrix)
+              .decompose(localVector, localQuaternion, localVector2);
+
+            _teleportStart(localVector, localQuaternion);
+          } else if (!pad && lastPad) {
+            _teleportEnd();
+          }
+          lastPads[controllerIndex] = pad;
+
+          const grabbed = gamepad.buttons[2].pressed;
+          const lastGrabbed = lastGrabbeds[controllerIndex];
+          if (grabbed && !lastGrabbed) {
+            _clearPaintMeshes();
+
+            paintMesh = null;
+            paintControllerIndex = -1;
+
+            if (connections.length > 0) {
+              for (let i = 0; i < connections.length; i++) {
+                const c = connections[i];
+
+                fetchQueued(() =>
+                  fetch(c.url + '/paint', {
+                    method: 'DELETE',
+                  })
+                    .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok')))
+                    .catch(err => {
+                      console.warn(err.stack);
+                    })
+                );
+              }
+            }
+
+            /* const updateSpec = {
+              method: 'clear',
+            };
+            const updateSpecString = JSON.stringify(updateSpec);
+            for (let j = 0; j < connections.length; j++) {
+              const c = connections[j];
+
+              if (c.readyState === window.browser.ws.OPEN) {
+                c.send(updateSpecString);
+              }
+            } */
+          }
+          lastGrabbeds[controllerIndex] = grabbed;
+
+          const menu = gamepad.buttons[3].pressed;
+          const lastMenu = lastMenus[controllerIndex];
+          if (menu && !lastMenu) {
+            terrainMeshesVisible = !terrainMeshesVisible;
+            for (let j = 0; j < terrainMeshes.length; j++) {
+              terrainMeshes[j].visible = terrainMeshesVisible;
+            }
+          }
+          lastMenus[controllerIndex] = menu;
+        }
+
         const now = Date.now();
         if ((now - lastUpdateTime) > (1000 / 30)) {
           if (connections.length > 0) {
@@ -781,6 +940,20 @@
       });
       display.session = session;
 
+      const _getControllerIndex = e => e.inputSource.handedness === 'left' ? 0 : 1;
+      session.onselectstart = e => {
+        if (!paintMesh) {
+          paintMesh = _getPaintMesh();
+          paintControllerIndex = _getControllerIndex(e);
+        }
+      };
+      session.onselectend = e => {
+        if (paintControllerIndex === _getControllerIndex(e)) {
+          paintMesh = null;
+          paintControllerIndex = -1;
+        }
+      };
+
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
         renderer.vr.setSession(session, {
@@ -827,7 +1000,6 @@
 
       const _getOtherConnections = () => connections.filter(c2 => c2 !== c);
 
-      let pendingPaintMeshId = null;
       c.on('message', data => {
         if (typeof data === 'string') {
           const message = JSON.parse(data);
@@ -857,27 +1029,29 @@
               break;
             }
             case 'paint': {
-              const {meshId} = message;
-              pendingPaintMeshId = meshId;
-              break;
-            }
-            case 'clear': {
-              _clearPaintMeshes();
+              const {type} = message;
 
-              paintMesh = null;
-              paintControllerIndex = -1;
+              if (type === 'update') {
+                const {id, dataId} = message;
 
-              const updateSpec = {
-                method: 'clear',
-              };
-              const updateSpecString = JSON.stringify(updateSpec);
-              for (let i = 0; i < connections.length; i++) {
-                const c = connections[i];
+                fetchQueued(() =>
+                  fetch('/data/' + dataId)
+                    .then(res => res.ok ? res.arrayBuffer() : Promise.reject(new Error('not ok')))
+                    .then(arrayBuffer => {
+                      const paintMesh = _getPaintMesh(meshId);
+                      paintMesh.load(data);
+                    })
+                    .catch(err => {
+                      console.warn(err.stack);
+                    })
+                );
+              } else {
+                _clearPaintMeshes();
 
-                if (c.readyState === window.browser.ws.OPEN) {
-                  c.send(updateSpecString);
-                }
+                paintMesh = null;
+                paintControllerIndex = -1;
               }
+
               break;
             }
             default: {
@@ -886,33 +1060,7 @@
             }
           }
         } else {
-          if (pendingPaintMeshId) {
-            const paintMesh = _getPaintMesh(pendingPaintMeshId);
-            paintMesh.load(data);
-
-            const otherConnections = _getOtherConnections();
-            if (otherConnections.length > 0) {
-              const updateSpecs = [
-                JSON.stringify({
-                  method: 'paint',
-                  meshId: pendingPaintMeshId,
-                }),
-                data,
-              ];
-
-              for (let i = 0; i < otherConnections.length; i++) {
-                const c2 = otherConnections[i];
-
-                if (c2 !== c && c2.readyState === window.browser.ws.OPEN) {
-                  c2.send(updateSpecString);
-                }
-              }
-            }
-
-            pendingPaintMeshId = null;
-          } else {
-            console.warn('out of order binary message', data.byteLength);
-          }
+          console.warn('binary messages nor implemented');
         }
       });
       c.on('open', () => {
