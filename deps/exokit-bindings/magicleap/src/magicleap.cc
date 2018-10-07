@@ -525,6 +525,10 @@ void MeshBuffer::beginRenderCamera() {
 
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->fbo);
 
+  glClearColor(0.1, 0.1, 0.1, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glClearColor(0.0, 0.0, 0.0, 1.0);
+  
   glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer);
   glVertexAttribPointer(mlContext->cameraMeshPositionLocation2, 3, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation2);
@@ -3518,23 +3522,29 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
       }
     }
   }
-  for (auto iter = cameraMeshPreviewRenderList.begin(); iter != cameraMeshPreviewRenderList.end(); iter++) {
-    CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter;
+  if (cameraMeshPreviewRenderList.size() > 0) {
+    for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+      const std::string &id = iter->first;
 
-    if (cameraMeshPreviewRequest->texture != 0) {
-      for (auto iter2 = meshBuffers.begin(); iter2 != meshBuffers.end(); iter2++) {
-        const std::string &id = iter2->first;
-
-        auto match = std::find(meshBufferIdRenderList.begin(), meshBufferIdRenderList.end(), id);
-        if (match == meshBufferIdRenderList.end()) {
-          MeshBuffer &meshBuffer = iter2->second;
+      auto match = std::find(meshBufferIdRenderList.begin(), meshBufferIdRenderList.end(), id);
+      if (match == meshBufferIdRenderList.end()) {
+        MeshBuffer &meshBuffer = iter->second;
         
-          if (frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
+        bool localRendering = false;
+
+        for (auto iter2 = cameraMeshPreviewRenderList.begin(); iter2 != cameraMeshPreviewRenderList.end(); iter2++) {
+          CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter2;
+
+          if (cameraMeshPreviewRequest->texture != 0 && frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
             if (!rendering) {
               MeshBuffer::beginRenderCameraAll();
               rendering = true;
             }
-            meshBuffer.beginRenderCamera();
+            if (!localRendering) {
+              meshBuffer.beginRenderCamera();
+              localRendering = true;
+            }
+
             meshBuffer.renderCamera(*cameraMeshPreviewRequest);
           }
         }
@@ -4035,14 +4045,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
             meshBuffer = &iter->second;
-
-            if (rerenderBlock) {
-              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, meshBuffer->fbo);
-
-              glClearColor(0.1, 0.1, 0.1, 1.0);
-              glClear(GL_COLOR_BUFFER_BIT);
-              glClearColor(0.0, 0.0, 0.0, 1.0);
-            }
           } else {
             GLuint buffers[5];
             glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
@@ -4057,10 +4059,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-
-            glClearColor(0.1, 0.1, 0.1, 1.0);
-            glClear(GL_COLOR_BUFFER_BIT);
-            glClearColor(0.0, 0.0, 0.0, 1.0);
 
             meshBuffers[id] = MeshBuffer{
               buffers[0],
