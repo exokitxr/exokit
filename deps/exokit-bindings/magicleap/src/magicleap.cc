@@ -3492,17 +3492,6 @@ std::set<std::string> getMatchingMeshBufferIds(const CameraMeshPreviewRequest &c
   return result;
 }
 
-/* int frustumCheckCount(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, const std::map<std::string, MeshBuffer> &meshBuffers) {
-  int result = 0;
-  for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
-    const MeshBuffer &meshBuffer = iter->second;
-    if (frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
-      result++;
-    }
-  }
-  return result;
-} */
-
 void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const std::vector<CameraMeshPreviewRequest *> &cameraMeshPreviewRenderList) {
   bool rendering = false;
   if (meshBufferIdRenderList.size() > 0) {
