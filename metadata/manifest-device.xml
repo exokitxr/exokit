@@ -27,7 +27,10 @@
 			ml:name=".fullscreen"
 			ml:visible_name="Exokit"
 			ml:binary_name="bin/program-device"
-			ml:type="Fullscreen">
+      ml:type="Fullscreen">
+      <icon
+        ml:model_folder="assets/magicleap/model/"
+        ml:portal_folder="assets/magicleap/portal/" />
 		</component>
 	</application>
 </manifest>
