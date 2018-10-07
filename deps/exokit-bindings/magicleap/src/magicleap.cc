@@ -14,7 +14,7 @@ namespace ml {
 const char application_name[] = "com.exokit.app";
 constexpr int CAMERA_SIZE[] = {1920, 1080};
 constexpr int MESH_TEXTURE_SIZE[] = {512, 512};
-constexpr int RENDER_SIZE[] = {1280.0, 960.0};
+constexpr int RENDER_SIZE[] = {1280, 960};
 constexpr int CAMERA_STREAM_SIZE[] = {RENDER_SIZE[0], RENDER_SIZE[1]};
 
 application_context_t application_context;
