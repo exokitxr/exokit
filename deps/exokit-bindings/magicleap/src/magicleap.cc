@@ -3631,6 +3631,10 @@ NAN_METHOD(MLContext::PostPollEvents) {
         }
       }
     }
+    for (auto iterIter = eraseList.begin(); iterIter != eraseList.end(); iterIter++) {
+      auto iter = *iterIter;
+      cameraMeshPreviewRequests.erase(iter);
+    }
 
     // camera stream read
     {
