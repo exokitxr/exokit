@@ -21,6 +21,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <algorithm>
+#include <functional>
 #include <chrono>
 #include <webgl.h>
 #include <egl/include/egl.h>
@@ -57,7 +58,7 @@ using namespace std::chrono_literals;
 constexpr milliseconds CAMERA_PREVIEW_DELAY = 150ms;
 constexpr milliseconds CAMERA_ADJUST_DELAY = CAMERA_PREVIEW_DELAY;
 constexpr size_t MAX_CAMERA_MESH_TEXTURES = 10;
-constexpr size_t MAX_TEXTURE_QUEUE_SIZE = 4;
+// constexpr size_t MAX_TEXTURE_QUEUE_SIZE = 4;
 
 namespace ml {
 
@@ -147,11 +148,11 @@ public:
   GLuint texture;
 };
 
-class CameraStreamResponse {
+/* class CameraStreamResponse {
 public:
   GLuint texture;
   GLuint pbo;
-};
+}; */
 
 class MeshBuffer {
 public:
@@ -162,9 +163,10 @@ public:
   static void beginRenderCameraAll();
   void beginRenderCamera();
   void renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewRequest);
-  GLuint getPixels();
+  void readPixels(std::function<void(GLuint, uint8_t *)> fn);
   static void endRenderCamera();
 
+  std::string id;
   GLuint positionBuffer;
   GLuint normalBuffer;
   GLuint vertexBuffer;

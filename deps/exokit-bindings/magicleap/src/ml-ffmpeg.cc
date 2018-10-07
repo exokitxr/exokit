@@ -339,8 +339,6 @@ void MLStream::tick() {
     std::lock_guard<std::mutex> lock(requestMutex);
 
     if (framebufferRequestQueue.size() > 0) {
-      std::cout << "tick 3" << std::endl;
-
       // video
       FramebufferRequest &entry = framebufferRequestQueue.back();
       uint8_t *src = entry.framebufferDataRgb;

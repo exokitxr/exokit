@@ -56,7 +56,7 @@ std::deque<CameraPosition> cameraPositions;
 
 std::vector<MLStream *> cameraStreams;
 std::vector<CameraStreamRequest *> cameraStreamRequests;
-std::vector<CameraStreamResponse *> cameraStreamResponses;
+// std::vector<CameraStreamResponse *> cameraStreamResponses;
 
 MLHandle handTracker;
 MLHandTrackingData handData;
@@ -87,7 +87,7 @@ std::map<std::string, MeshBuffer> meshBuffers;
 
 std::vector<MLCameraMesher *> cameraMeshers;
 
-std::deque<std::pair<std::string, GLuint>> textureEncodePbos;
+// std::deque<std::pair<std::string, GLuint>> textureEncodePbos;
 std::deque<TextureEncodeRequestEntry *> textureEncodeRequestQueue;
 std::deque<TextureEncodeResponseEntry *> textureEncodeResponseQueue;
 std::mutex textureEncodeRequestMutex;
@@ -295,6 +295,109 @@ static void onUnloadResources(void* application_context) {
   uv_async_send(&eventsAsync);
 }
 
+class PixelCb {
+public:
+  PixelCb(const std::string &id, int width, int height, GLuint texture, bool cleanup, std::function<void(GLuint, uint8_t *)> fn) : id(id), width(width), height(height), texture(texture), cleanup(cleanup), fn(fn) {}
+  PixelCb() = default;
+  PixelCb(const PixelCb &pixelCb) = default;
+  PixelCb(PixelCb &&pixelCb) = default;
+  PixelCb &operator=(const PixelCb &pixelCb) = default;
+  PixelCb &operator=(PixelCb &&pixelCb) = default;
+
+// protected:
+  std::string id;
+  int width;
+  int height;
+  GLuint texture;
+  bool cleanup;
+  std::function<void(GLuint, uint8_t *)> fn;
+
+  GLuint fbo;
+  GLuint pbo;
+  int currentHeight;
+};
+
+std::deque<PixelCb> pixelCbs;
+PixelCb currentGetPixels;
+bool currentGetPixelsValid = false;
+void tickGetPixelsRequest() {
+  WebGLRenderingContext *gl = application_context.gl;
+
+  if (!currentGetPixelsValid && pixelCbs.size() > 0) {
+    PixelCb &pixelCb = pixelCbs.front();
+
+    glGenFramebuffers(1, &pixelCb.fbo);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, pixelCb.fbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pixelCb.texture, 0);
+
+    glGenBuffers(1, &pixelCb.pbo);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, pixelCb.pbo);
+    glBufferData(GL_PIXEL_PACK_BUFFER, pixelCb.width * pixelCb.height * 4, 0, GL_STREAM_READ);
+    glReadPixels(0, 0, pixelCb.width, pixelCb.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+
+    currentGetPixels = std::move(pixelCb);
+    currentGetPixelsValid = true;
+    pixelCbs.pop_front();
+
+    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+    } else {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+    }
+  }
+}
+void tickGetPixelsResponse() {
+  WebGLRenderingContext *gl = application_context.gl;
+
+  if (currentGetPixelsValid) {
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, currentGetPixels.pbo);
+
+    uint8_t *textureDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, currentGetPixels.width * currentGetPixels.height * 4, GL_MAP_READ_BIT);
+
+    currentGetPixels.fn(currentGetPixels.pbo, textureDataRgb);
+
+    glDeleteFramebuffers(1, &currentGetPixels.fbo);
+    if (currentGetPixels.cleanup) {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, currentGetPixels.pbo);
+      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      glDeleteBuffers(1, &currentGetPixels.pbo);
+    }
+
+    currentGetPixelsValid = false;
+
+    if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
+    } else {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+    }
+  }
+
+  tickGetPixelsRequest();
+}
+void getPixels(const std::string &id, int width, int height, GLuint texture, bool cleanup, std::function<void(GLuint, uint8_t *)> fn) {
+  pixelCbs.push_back(PixelCb(id, width, height, texture, cleanup, fn));
+
+  tickGetPixelsRequest();
+}
+void cancelGetPixels(const std::string &id) {
+  if (currentGetPixelsValid && currentGetPixels.id == id) {
+    // XXX delete
+    currentGetPixelsValid = false;
+  }
+  auto match = std::find_if(pixelCbs.begin(), pixelCbs.end(), [&](const PixelCb &pixelCb) -> bool {
+    return pixelCb.id == id;
+  });
+  if (match != pixelCbs.end()) {
+    // XXX delete
+    pixelCbs.erase(match);
+  }
+}
+
 // MeshBuffer
 
 void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, std::vector<MLVec3f> *vertices, std::vector<Uv> *uvs, const MLVec3f &center, bool isNew, bool isUnchanged) {
@@ -329,7 +432,7 @@ void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t nu
     this->uvs = std::move(*uvs);
   }
 
-  {
+  /* {
     auto match = std::find_if(textureEncodePbos.begin(), textureEncodePbos.end(), [&](std::pair<std::string, GLuint> &textureEncodePbo) -> bool {
       return textureEncodePbo.first == id;
     });
@@ -347,6 +450,9 @@ void MeshBuffer::setBuffers(const std::string &id, float *positions, uint32_t nu
 
       textureEncodePbos.erase(match);
     }
+  } */
+  {
+    cancelGetPixels(id);
   }
   {
     TextureEncodeRequestEntry *entry;
@@ -447,18 +553,16 @@ void MeshBuffer::renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewR
   }
   this->textureDirty = true;
 }
-GLuint MeshBuffer::getPixels() {
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
+void MeshBuffer::readPixels(std::function<void(GLuint, uint8_t *)> fn) {
+  // glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
 
-  GLuint pbo;
-  glGenBuffers(1, &pbo);
-  glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-  glBufferData(GL_PIXEL_PACK_BUFFER, MESH_TEXTURE_SIZE[0] * MESH_TEXTURE_SIZE[1] * 4, 0, GL_STREAM_READ);
-  glReadPixels(0, 0, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+  // std::cout << "mesh buffer get pixels 1 1 " << texture << std::endl;
+
+  getPixels(id, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], texture, false, fn);
+
+  // std::cout << "mesh buffer get pixels 1 2" << std::endl;
 
   this->textureDirty = false;
-
-  return pbo;
 }
 void MeshBuffer::endRenderCamera() {
   WebGLRenderingContext *gl = application_context.gl;
@@ -3439,7 +3543,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
   if (cameraMeshEnabled) {
     // read pixel buffers
-    if (textureEncodePbos.size() > 0) {
+    /* if (textureEncodePbos.size() > 0) {
       size_t textureEncodeRequestQueueSize;
       {
         std::lock_guard<mutex> lock(textureEncodeRequestMutex);
@@ -3469,31 +3573,25 @@ NAN_METHOD(MLContext::PostPollEvents) {
       } else {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
       }
-    }
+    } */
+    tickGetPixelsResponse();
 
     // queue pixel buffers
     {
-      bool queued = false;
-      for (auto iter = meshBuffers.begin(); iter != meshBuffers.end() && textureEncodePbos.size() < MAX_TEXTURE_QUEUE_SIZE; iter++) {
+      for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
         const std::string &id = iter->first;
         MeshBuffer &meshBuffer = iter->second;
 
         if (meshBuffer.textureDirty) {
-          GLuint pbo = meshBuffer.getPixels();
-          textureEncodePbos.push_back(std::pair<std::string, GLuint>(id, pbo));
-          queued = true;
-        }
-      }
-      if (queued) {
-        if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
-          glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
-        } else {
-          glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
-        }
-        if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
-          glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
-        } else {
-          glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+          meshBuffer.readPixels([id](GLuint pbo, uint8_t *textureDataRgb) -> void {
+            TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], pbo, textureDataRgb);
+            {
+              std::lock_guard<mutex> lock(textureEncodeRequestMutex);
+              textureEncodeRequestQueue.push_back(requestEntry);
+            }
+
+            uv_sem_post(&textureEncodeSem);
+          });
         }
       }
     }
@@ -3527,47 +3625,31 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
     // camera stream read
     {
-      for (auto iter = cameraStreamResponses.begin(); iter != cameraStreamResponses.end(); iter++) {
-        CameraStreamResponse *cameraStreamResponse = *iter;
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, cameraStreamResponse->pbo);
-        uint8_t *framebufferDataRgb = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, CAMERA_STREAM_SIZE[0] * CAMERA_STREAM_SIZE[1] * 4, GL_MAP_READ_BIT);
-
-        for (auto iter = cameraStreams.begin(); iter != cameraStreams.end(); iter++) {
-          MLStream &stream = **iter;
-          stream.pushFramebuffer(cameraStreamResponse->pbo, framebufferDataRgb);
-        }
-
-        glDeleteTextures(1, &cameraStreamResponse->texture);
-        delete cameraStreamResponse;
-        
-        if (gl->HasBufferBinding(GL_PIXEL_PACK_BUFFER)) {
-          glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
-        } else {
-          glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        }
-      }
-      cameraStreamResponses.clear();
-
       for (auto iter = cameraStreamRequests.begin(); iter != cameraStreamRequests.end(); iter++) {
         CameraStreamRequest *cameraStreamRequest = *iter;
-        GLuint &texture = cameraStreamRequest->texture;
+        GLuint texture = cameraStreamRequest->texture;
 
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, mlContext->cameraContentReadFbo);
+        getPixels(std::string(), CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1], texture, false, [texture](GLuint pbo, uint8_t *framebufferDataRgb) -> void {
+          for (auto iter = cameraStreams.begin(); iter != cameraStreams.end(); iter++) {
+            MLStream &stream = **iter;
+            stream.pushFramebuffer(pbo, framebufferDataRgb);
+          }
+
+          glDeleteTextures(1, &texture);
+        }); // XXX
+
+        /* glBindFramebuffer(GL_READ_FRAMEBUFFER, mlContext->cameraContentReadFbo);
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
         GLuint pbo;
         glGenBuffers(1, &pbo);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
         glBufferData(GL_PIXEL_PACK_BUFFER, CAMERA_STREAM_SIZE[0] * CAMERA_STREAM_SIZE[1] * 4, 0, GL_STREAM_READ);
-        glReadPixels(0, 0, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1], GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-
-        CameraStreamResponse *cameraStreamResponse = new CameraStreamResponse{texture, pbo};
-        cameraStreamResponses.push_back(cameraStreamResponse);
+        glReadPixels(0, 0, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1], GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL); */
 
         delete cameraStreamRequest;
-        
-        if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+
+        /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
           glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
         } else {
           glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
@@ -3576,7 +3658,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
           glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->GetBufferBinding(GL_PIXEL_PACK_BUFFER));
         } else {
           glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        }
+        } */
       }
       cameraStreamRequests.clear();
     }
@@ -3667,7 +3749,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
               glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
               cameraMeshPreviewRenderList.push_back(&cameraMeshPreviewRequest);
-              
+
               if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
               } else {
@@ -3733,7 +3815,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
               CameraStreamRequest *cameraStreamRequest = new CameraStreamRequest{texture};
               cameraStreamRequests.push_back(cameraStreamRequest);
-              
+
               if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
               } else {
@@ -3898,6 +3980,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glClearColor(0.0, 0.0, 0.0, 1.0);
 
             meshBuffers[id] = MeshBuffer{
+              id,
               buffers[0],
               buffers[1],
               buffers[2],
@@ -4009,7 +4092,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
 Handle<Object> makeMl() {
   Nan::EscapableHandleScope scope;
-  
+
   ml::MLStream::Init();
 
   return scope.Escape(ml::MLContext::Initialize(Isolate::GetCurrent()));
