@@ -3494,53 +3494,46 @@ std::set<std::string> getMatchingMeshBufferIds(const CameraMeshPreviewRequest &c
 
 void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const std::vector<CameraMeshPreviewRequest *> &cameraMeshPreviewRenderList) {
   bool rendering = false;
-  if (meshBufferIdRenderList.size() > 0) {
-    for (auto iter = meshBufferIdRenderList.begin(); iter != meshBufferIdRenderList.end(); iter++) {
-      const std::string &id = *iter;
-      MeshBuffer &meshBuffer = meshBuffers[id];
+  for (auto iter = meshBufferIdRenderList.begin(); iter != meshBufferIdRenderList.end(); iter++) {
+    const std::string &id = *iter;
+    MeshBuffer &meshBuffer = meshBuffers[id];
 
-      bool localRendering = false;
+    bool localRendering = false;
 
-      for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
-        CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter2;
+    for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
+      CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter2;
 
-        if (cameraMeshPreviewRequest->texture != 0 && frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
-          if (!rendering) {
-            MeshBuffer::beginRenderCameraAll();
-            rendering = true;
-          }
-          if (!localRendering) {
-            meshBuffer.beginRenderCamera();
-            localRendering = true;
-          }
-
-          meshBuffer.renderCamera(*cameraMeshPreviewRequest);
+      if (cameraMeshPreviewRequest->texture != 0 && frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
+        if (!rendering) {
+          MeshBuffer::beginRenderCameraAll();
+          rendering = true;
         }
+        if (!localRendering) {
+          meshBuffer.beginRenderCamera();
+          localRendering = true;
+        }
+
+        meshBuffer.renderCamera(*cameraMeshPreviewRequest);
       }
     }
   }
-  if (cameraMeshPreviewRenderList.size() > 0) {
-    for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
-      const std::string &id = iter->first;
-      MeshBuffer &meshBuffer = iter->second;
+  for (auto iter = cameraMeshPreviewRenderList.begin(); iter != cameraMeshPreviewRenderList.end(); iter++) {
+    CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter;
 
-      auto match = std::find(meshBufferIdRenderList.begin(), meshBufferIdRenderList.end(), id);
-      if (match == meshBufferIdRenderList.end()) {
-        bool localRendering = false;
+    if (cameraMeshPreviewRequest->texture != 0) {
+      for (auto iter2 = meshBuffers.begin(); iter2 != meshBuffers.end(); iter2++) {
+        const std::string &id = iter2->first;
 
-        for (auto iter2 = cameraMeshPreviewRenderList.begin(); iter2 != cameraMeshPreviewRenderList.end(); iter2++) {
-          CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter2;
-
-          if (cameraMeshPreviewRequest->texture != 0 && frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
+        auto match = std::find(meshBufferIdRenderList.begin(), meshBufferIdRenderList.end(), id);
+        if (match == meshBufferIdRenderList.end()) {
+          MeshBuffer &meshBuffer = iter2->second;
+        
+          if (frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
             if (!rendering) {
               MeshBuffer::beginRenderCameraAll();
               rendering = true;
             }
-            if (!localRendering) {
-              meshBuffer.beginRenderCamera();
-              localRendering = true;
-            }
-
+            meshBuffer.beginRenderCamera();
             meshBuffer.renderCamera(*cameraMeshPreviewRequest);
           }
         }
