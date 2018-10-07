@@ -3477,7 +3477,8 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
 }
 
 bool frustumCheck(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, const MeshBuffer &meshBuffer) {
-  return vectorLengthSq(subVectors(cameraMeshPreviewRequest.position, meshBuffer.center)) <= (2.0f*2.0f) && frustumIntersectsSphere(cameraMeshPreviewRequest.frustum, MLSpheref{meshBuffer.center, 1});
+  return vectorLengthSq(subVectors(cameraMeshPreviewRequest.position, meshBuffer.center)) <= (3.0f*3.0f) && frustumIntersectsSphere(cameraMeshPreviewRequest.frustum, MLSpheref{meshBuffer.center, 1});
+  return frustumIntersectsSphere(cameraMeshPreviewRequest.frustum, MLSpheref{meshBuffer.center, 1});
 }
 
 std::set<std::string> getMatchingMeshBufferIds(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, const std::map<std::string, MeshBuffer> &meshBuffers) {
