@@ -3482,18 +3482,6 @@ bool frustumCheck(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, cons
   return frustumIntersectsSphere(cameraMeshPreviewRequest.frustum, MLSpheref{meshBuffer.center, 1});
 }
 
-std::set<std::string> getMatchingMeshBufferIds(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, const std::map<std::string, MeshBuffer> &meshBuffers) {
-  std::set<std::string> result;
-  for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
-    const std::string &id = iter->first;
-    const MeshBuffer &meshBuffer = iter->second;
-    if (frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
-      result.insert(id);
-    }
-  }
-  return result;
-}
-
 void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const std::vector<CameraMeshPreviewRequest *> &cameraMeshPreviewRenderList) {
   bool rendering = false;
   for (auto iter = meshBufferIdRenderList.begin(); iter != meshBufferIdRenderList.end(); iter++) {
@@ -3699,44 +3687,8 @@ NAN_METHOD(MLContext::PostPollEvents) {
     }
 
     // capture camera
-    const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-    std::vector<std::set<std::string>> cameraMeshSets(cameraMeshPreviewRequests.size());
     {
-      int setIndex = 0;
-      for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-        CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter;
-        if (now >= cameraMeshPreviewRequest->ms) {
-          cameraMeshSets[setIndex] = getMatchingMeshBufferIds(*cameraMeshPreviewRequest, meshBuffers);
-        }
-        setIndex++;
-      }
-    }
-    /* std::vector<std::vector<std::vector<std::string>>> cameraMeshIntersections(cameraMeshPreviewRequests.size());
-    {
-      int setIndex = 0;
-      for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
-
-        if (now >= cameraMeshPreviewRequest.ms) {
-          std::vector<std::vector<std::string>> &intersections = cameraMeshIntersections[setIndex2];
-          intersections.resize(cameraMeshPreviewRequests.size());
-
-          int setIndex2 = 0;
-          for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
-            CameraMeshPreviewRequest &cameraMeshPreviewRequest2 = *iter2;
-
-            if (now >= cameraMeshPreviewRequest.ms) {
-              std::vector<std::string> &intersections2 = intersections[setIndex2];
-              std::set_intersection(cameraMeshPreviewRequest.begin(), cameraMeshPreviewRequest.end(), cameraMeshPreviewRequest2.begin(), cameraMeshPreviewRequest2.end(), std::back_inserter(intersections2));
-            }
-            setIndex2++;
-          }
-        }
-        setIndex++;
-      }
-    } */
-    {
-      int setIndex = 0;
+      const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
       for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
         CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter;
 
@@ -3770,25 +3722,18 @@ NAN_METHOD(MLContext::PostPollEvents) {
               // camera mesh
               if (isStable) {
                 auto match = cameraMeshPreviewRequests.end();
-                {
-                  const std::set<std::string> &cameraMeshSet = cameraMeshSets[setIndex];
-                  if (cameraMeshSet.size() > 0) {
-                    int setIndex2 = 0;
-
-                    for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
-                      if (setIndex != setIndex2) {
-                        const std::set<std::string> &cameraMeshSet2 = cameraMeshSets[setIndex2];
-
-                        if (std::equal(cameraMeshSet.begin(), cameraMeshSet.end(), cameraMeshSet2.begin(), cameraMeshSet2.end())) {
-                          match = iter2;
-                          break;
-                        }
-                      }
-
-                      setIndex2++;
-                    }
+                for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
+                  CameraMeshPreviewRequest *cameraMeshPreviewRequest2 = *iter2;
+                  if (
+                    cameraMeshPreviewRequest2->texture != 0 &&
+                    vectorLength(subVectors(cameraMeshPreviewRequest->position, cameraMeshPreviewRequest2->position)) < 0.03f &&
+                    getAngleBetweenQuaternions(cameraMeshPreviewRequest->rotation, cameraMeshPreviewRequest2->rotation) < (float)M_PI/16.0f
+                  ) {
+                    match = iter2;
+                    break;
                   }
                 }
+
                 glBindVertexArray(mlContext->cameraRawVao);
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraRawFbo);
                 glUseProgram(mlContext->cameraRawProgram);
@@ -3949,8 +3894,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
             eraseList.push_back(*iter);
           }
         }
-
-        setIndex++;
       }
     }
     // erase queued camera mesh preview requests
