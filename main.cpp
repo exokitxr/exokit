@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
 
       const char *nodeString = "node";
       const char *dotString = ".";
-      const char *jsString = "examples/hello_ml.html";
+      const char *jsString = "examples/realityprojection_ml.html";
       char argsString[4096];
       int i = 0;
 
