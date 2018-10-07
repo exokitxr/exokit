@@ -3488,16 +3488,20 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
       const std::string &id = *iter;
       MeshBuffer &meshBuffer = meshBuffers[id];
 
-      if (!rendering) {
-        MeshBuffer::beginRenderCameraAll();
-        rendering = true;
-      }
-      meshBuffer.beginRenderCamera();
+      bool localRendering = false;
 
       for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
         CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter2;
 
         if (cameraMeshPreviewRequest.texture && frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
+          if (!rendering) {
+            MeshBuffer::beginRenderCameraAll();
+            rendering = true;
+          }
+          if (!localRendering) {
+            meshBuffer.beginRenderCamera();
+            localRendering = true;
+          }
           meshBuffer.renderCamera(cameraMeshPreviewRequest);
         }
       }
@@ -3510,16 +3514,20 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
 
       auto match = std::find(meshBufferIdRenderList.begin(), meshBufferIdRenderList.end(), id);
       if (match == meshBufferIdRenderList.end()) {
-        if (!rendering) {
-          MeshBuffer::beginRenderCameraAll();
-          rendering = true;
-        }
-        meshBuffer.beginRenderCamera();
+        bool localRendering = false;
 
         for (auto iter2 = cameraMeshPreviewRenderList.begin(); iter2 != cameraMeshPreviewRenderList.end(); iter2++) {
           CameraMeshPreviewRequest &cameraMeshPreviewRequest = **iter2;
 
           if (cameraMeshPreviewRequest.texture != 0 && frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
+            if (!rendering) {
+              MeshBuffer::beginRenderCameraAll();
+              rendering = true;
+            }
+            if (!localRendering) {
+              meshBuffer.beginRenderCamera();
+              localRendering = true;
+            }
             meshBuffer.renderCamera(cameraMeshPreviewRequest);
           }
         }
