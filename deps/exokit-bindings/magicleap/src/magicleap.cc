@@ -393,7 +393,6 @@ void cancelGetPixels(const std::string &id) {
     return pixelCb.id == id;
   });
   if (match != pixelCbs.end()) {
-    // XXX delete
     pixelCbs.erase(match);
   }
 }
@@ -3480,7 +3479,29 @@ void getUvs(MLVec3f *vertex, uint32_t vertex_count, uint16_t *index, uint16_t in
 bool frustumCheck(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, const MeshBuffer &meshBuffer) {
   return vectorLengthSq(subVectors(cameraMeshPreviewRequest.position, meshBuffer.center)) <= (2.0f*2.0f) && frustumIntersectsSphere(cameraMeshPreviewRequest.frustum, MLSpheref{meshBuffer.center, 1});
 }
+
+std::set<std::string> getMatchingMeshBufferIds(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, const std::map<std::string, MeshBuffer> &meshBuffers) {
+  std::set<std::string> result;
+  for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+    const std::string &id = iter->first;
+    const MeshBuffer &meshBuffer = iter->second;
+    if (frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
+      result.insert(id);
+    }
+  }
+  return result;
 }
+
+/* int frustumCheckCount(const CameraMeshPreviewRequest &cameraMeshPreviewRequest, const std::map<std::string, MeshBuffer> &meshBuffers) {
+  int result = 0;
+  for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+    const MeshBuffer &meshBuffer = iter->second;
+    if (frustumCheck(cameraMeshPreviewRequest, meshBuffer)) {
+      result++;
+    }
+  }
+  return result;
+} */
 
 void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const std::vector<CameraMeshPreviewRequest *> &cameraMeshPreviewRenderList) {
   bool rendering = false;
@@ -3503,6 +3524,7 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
             meshBuffer.beginRenderCamera();
             localRendering = true;
           }
+          
           meshBuffer.renderCamera(cameraMeshPreviewRequest);
         }
       }
@@ -3529,6 +3551,7 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
               meshBuffer.beginRenderCamera();
               localRendering = true;
             }
+
             meshBuffer.renderCamera(cameraMeshPreviewRequest);
           }
         }
@@ -3678,202 +3701,252 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
     // capture camera
     const milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-    for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
-      CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+    std::vector<std::set<std::string>> cameraMeshSets(cameraMeshPreviewRequests.size());
+    {
+      int setIndex = 0;
+      for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
+        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+        if (now >= cameraMeshPreviewRequest.ms) {
+          cameraMeshSets[setIndex] = getMatchingMeshBufferIds(cameraMeshPreviewRequest, meshBuffers);
+        }
+        setIndex++;
+      }
+    }
+    /* std::vector<std::vector<std::vector<std::string>>> cameraMeshIntersections(cameraMeshPreviewRequests.size());
+    {
+      int setIndex = 0;
+      for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
+        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
 
-      if (cameraMeshPreviewRequest.texture == 0 && now >= cameraMeshPreviewRequest.ms) {
-        bool isStable = false;
-        {
-          float stability = 0;
-          bool first = true;
-          MLVec3f lastPosition;
-          for (auto iter : cameraPositions) {
-            if (iter.ms >= (cameraMeshPreviewRequest.ms - CAMERA_ADJUST_DELAY) && iter.ms < cameraMeshPreviewRequest.ms) {
-              if (first) {
-                first = false;
-              } else {
-                stability += vectorLength(subVectors(iter.position, lastPosition));
+        if (now >= cameraMeshPreviewRequest.ms) {
+          std::vector<std::vector<std::string>> &intersections = cameraMeshIntersections[setIndex2];
+          intersections.resize(cameraMeshPreviewRequests.size());
+
+          int setIndex2 = 0;
+          for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
+            CameraMeshPreviewRequest &cameraMeshPreviewRequest2 = *iter2;
+
+            if (now >= cameraMeshPreviewRequest.ms) {
+              std::vector<std::string> &intersections2 = intersections[setIndex2];
+              std::set_intersection(cameraMeshPreviewRequest.begin(), cameraMeshPreviewRequest.end(), cameraMeshPreviewRequest2.begin(), cameraMeshPreviewRequest2.end(), std::back_inserter(intersections2));
+            }
+            setIndex2++;
+          }
+        }
+        setIndex++;
+      }
+    } */
+    {
+      int setIndex = 0;
+      for (auto iter = cameraMeshPreviewRequests.begin(); iter != cameraMeshPreviewRequests.end(); iter++) {
+        CameraMeshPreviewRequest &cameraMeshPreviewRequest = *iter;
+
+        if (cameraMeshPreviewRequest.texture == 0 && now >= cameraMeshPreviewRequest.ms) {
+          std::cout << "check camera mesh preview req" << std::endl;
+          bool isStable = false;
+          {
+            float stability = 0;
+            bool first = true;
+            MLVec3f lastPosition;
+            for (auto iter : cameraPositions) {
+              if (iter.ms >= (cameraMeshPreviewRequest.ms - CAMERA_ADJUST_DELAY) && iter.ms < cameraMeshPreviewRequest.ms) {
+                if (first) {
+                  first = false;
+                } else {
+                  stability += vectorLength(subVectors(iter.position, lastPosition));
+                }
+                lastPosition = iter.position;
               }
-              lastPosition = iter.position;
+            }
+            isStable = stability > 0.0f && stability < 0.03f;
+          }
+          bool isCameraStreamEnabled = cameraStreams.size() > 0;
+          if (isStable || isCameraStreamEnabled) {
+            MLHandle output;
+            MLResult result = MLCameraGetPreviewStream(&output);
+            if (result == MLResult_Ok) {
+              // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+              EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
+              bool cameraRawInTextureBound = false;
+
+              // camera mesh
+              if (isStable) {
+                auto match = cameraMeshPreviewRequests.end();
+                {
+                  const std::set<std::string> &cameraMeshSet = cameraMeshSets[setIndex];
+                  if (cameraMeshSet.size() > 0) {
+                    int setIndex2 = 0;
+
+                    for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
+                      if (setIndex != setIndex2) {
+                        const std::set<std::string> &cameraMeshSet2 = cameraMeshSets[setIndex2];
+
+                        if (std::equal(cameraMeshSet.begin(), cameraMeshSet.end(), cameraMeshSet2.begin(), cameraMeshSet2.end())) {
+                          match = iter2;
+                          break;
+                        }
+                      }
+
+                      setIndex2++;
+                    }
+                  }
+                }
+                std::cout << "stable match " << (match != cameraMeshPreviewRequests.end()) << std::endl;
+
+                glBindVertexArray(mlContext->cameraRawVao);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraRawFbo);
+                glUseProgram(mlContext->cameraRawProgram);
+
+                glActiveTexture(GL_TEXTURE0);
+                if (match != cameraMeshPreviewRequests.end()) {
+                  // cameraMeshPreviewRequest.position = match->position;
+                  // cameraMeshPreviewRequest.rotation = match->rotation;
+                  // cameraMeshPreviewRequest.modelViewInverse = match->modelViewInverse;
+                  // cameraMeshPreviewRequest.projection = match->projection;
+                  // cameraMeshPreviewRequest.frustum = match->frustum;
+                  cameraMeshPreviewRequest.texture = match->texture;
+                  // cameraMeshPreviewRequest.ms = match->ms;
+                  match->texture = 0;
+
+                  glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
+
+                  eraseList.push_back(match);
+                } else {
+                  glGenTextures(1, &cameraMeshPreviewRequest.texture);
+                  glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
+                  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                }
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, cameraMeshPreviewRequest.texture, 0);
+
+                if (!cameraRawInTextureBound) {
+                  glActiveTexture(GL_TEXTURE1);
+                  glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraRawCameraInTexture);
+                  glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
+                  cameraRawInTextureBound = true;
+                }
+                glUniform1i(mlContext->cameraRawCameraInTextureLocation, 1);
+
+                glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+                cameraMeshPreviewRenderList.push_back(&cameraMeshPreviewRequest);
+
+                if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+                  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+                } else {
+                  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+                }
+                if (gl->HasProgramBinding()) {
+                  glUseProgram(gl->GetProgramBinding());
+                } else {
+                  glUseProgram(0);
+                }
+                if (gl->viewportState.valid) {
+                  glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+                } else {
+                  glViewport(0, 0, 1280, 1024);
+                }
+                if (gl->HasVertexArrayBinding()) {
+                  glBindVertexArray(gl->GetVertexArrayBinding());
+                } else {
+                  glBindVertexArray(gl->defaultVao);
+                }
+                if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+                  glActiveTexture(GL_TEXTURE0);
+                  glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
+                } else {
+                  glBindTexture(GL_TEXTURE_2D, 0);
+                }
+                if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES)) {
+                  glActiveTexture(GL_TEXTURE1);
+                  glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES));
+                } else {
+                  glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+                }
+                glActiveTexture(gl->activeTexture);
+              }
+
+              // camera stream
+              if (isCameraStreamEnabled) {
+                glBindVertexArray(mlContext->cameraContentVao);
+
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraContentDrawFbo);
+                GLuint texture;
+                glGenTextures(1, &texture);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, texture);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1], 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+                glUseProgram(mlContext->cameraContentProgram);
+
+                glBindTexture(GL_TEXTURE_2D, mlContext->cameraContentContentTexture);
+                glUniform1i(mlContext->cameraContentContentTextureLocation, 0);
+
+                if (!cameraRawInTextureBound) {
+                  glActiveTexture(GL_TEXTURE1);
+                  glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraRawCameraInTexture);
+                  glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
+                  cameraRawInTextureBound = true;
+                }
+                glUniform1i(mlContext->cameraContentCameraInTextureLocation, 1);
+
+                glViewport(0, 0, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1]);
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+                CameraStreamRequest *cameraStreamRequest = new CameraStreamRequest{texture};
+                cameraStreamRequests.push_back(cameraStreamRequest);
+
+                if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+                  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+                } else {
+                  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+                }
+                if (gl->HasProgramBinding()) {
+                  glUseProgram(gl->GetProgramBinding());
+                } else {
+                  glUseProgram(0);
+                }
+                if (gl->viewportState.valid) {
+                  glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+                } else {
+                  glViewport(0, 0, 1280, 1024);
+                }
+                if (gl->HasVertexArrayBinding()) {
+                  glBindVertexArray(gl->GetVertexArrayBinding());
+                } else {
+                  glBindVertexArray(gl->defaultVao);
+                }
+                if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+                  glActiveTexture(GL_TEXTURE0);
+                  glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
+                } else {
+                  glBindTexture(GL_TEXTURE_2D, 0);
+                }
+                if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES)) {
+                  glActiveTexture(GL_TEXTURE1);
+                  glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES));
+                } else {
+                  glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+                }
+                glActiveTexture(gl->activeTexture);
+              }
+
+              eglDestroyImageKHR(window->display, yuv_img);
+            } else {
+              ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
+
+              eraseList.push_back(iter);
             }
           }
-          isStable = stability > 0.0f && stability < 0.03f;
-        }
-        bool isCameraStreamEnabled = cameraStreams.size() > 0;
-        if (isStable || isCameraStreamEnabled) {
-          MLHandle output;
-          MLResult result = MLCameraGetPreviewStream(&output);
-          if (result == MLResult_Ok) {
-            // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
-            EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
-            bool cameraRawInTextureBound = false;
-
-            // camera mesh
-            if (isStable) {
-              std::deque<CameraMeshPreviewRequest>::iterator match = cameraMeshPreviewRequests.end();
-              for (auto iter2 = cameraMeshPreviewRequests.begin(); iter2 != cameraMeshPreviewRequests.end(); iter2++) {
-                CameraMeshPreviewRequest &cameraMeshPreviewRequest2 = *iter2;
-                if (
-                  cameraMeshPreviewRequest2.texture != 0 &&
-                  vectorLength(subVectors(cameraMeshPreviewRequest.position, cameraMeshPreviewRequest2.position)) < 0.03f &&
-                  getAngleBetweenQuaternions(cameraMeshPreviewRequest.rotation, cameraMeshPreviewRequest2.rotation) < (float)M_PI/16.0f
-                ) {
-                  match = iter2;
-                  break;
-                }
-              }
-
-              glBindVertexArray(mlContext->cameraRawVao);
-              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraRawFbo);
-              glUseProgram(mlContext->cameraRawProgram);
-
-              glActiveTexture(GL_TEXTURE0);
-              if (match != cameraMeshPreviewRequests.end()) {
-                // cameraMeshPreviewRequest.position = match->position;
-                // cameraMeshPreviewRequest.rotation = match->rotation;
-                // cameraMeshPreviewRequest.modelViewInverse = match->modelViewInverse;
-                // cameraMeshPreviewRequest.projection = match->projection;
-                // cameraMeshPreviewRequest.frustum = match->frustum;
-                cameraMeshPreviewRequest.texture = match->texture;
-                // cameraMeshPreviewRequest.ms = match->ms;
-                match->texture = 0;
-
-                glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
-
-                eraseList.push_back(match);
-              } else {
-                glGenTextures(1, &cameraMeshPreviewRequest.texture);
-                glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest.texture);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-              }
-              glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, cameraMeshPreviewRequest.texture, 0);
-
-              if (!cameraRawInTextureBound) {
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraRawCameraInTexture);
-                glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
-                cameraRawInTextureBound = true;
-              }
-              glUniform1i(mlContext->cameraRawCameraInTextureLocation, 1);
-
-              glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
-              glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-              cameraMeshPreviewRenderList.push_back(&cameraMeshPreviewRequest);
-
-              if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-              } else {
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
-              }
-              if (gl->HasProgramBinding()) {
-                glUseProgram(gl->GetProgramBinding());
-              } else {
-                glUseProgram(0);
-              }
-              if (gl->viewportState.valid) {
-                glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
-              } else {
-                glViewport(0, 0, 1280, 1024);
-              }
-              if (gl->HasVertexArrayBinding()) {
-                glBindVertexArray(gl->GetVertexArrayBinding());
-              } else {
-                glBindVertexArray(gl->defaultVao);
-              }
-              if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
-              } else {
-                glBindTexture(GL_TEXTURE_2D, 0);
-              }
-              if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES)) {
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES));
-              } else {
-                glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
-              }
-              glActiveTexture(gl->activeTexture);
-            }
-
-            // camera stream
-            if (isCameraStreamEnabled) {
-              glBindVertexArray(mlContext->cameraContentVao);
-
-              glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraContentDrawFbo);
-              GLuint texture;
-              glGenTextures(1, &texture);
-              glActiveTexture(GL_TEXTURE0);
-              glBindTexture(GL_TEXTURE_2D, texture);
-              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1], 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-              glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-
-              glUseProgram(mlContext->cameraContentProgram);
-
-              glBindTexture(GL_TEXTURE_2D, mlContext->cameraContentContentTexture);
-              glUniform1i(mlContext->cameraContentContentTextureLocation, 0);
-
-              if (!cameraRawInTextureBound) {
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraRawCameraInTexture);
-                glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
-                cameraRawInTextureBound = true;
-              }
-              glUniform1i(mlContext->cameraContentCameraInTextureLocation, 1);
-
-              glViewport(0, 0, CAMERA_STREAM_SIZE[0], CAMERA_STREAM_SIZE[1]);
-              glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-              CameraStreamRequest *cameraStreamRequest = new CameraStreamRequest{texture};
-              cameraStreamRequests.push_back(cameraStreamRequest);
-
-              if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-              } else {
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
-              }
-              if (gl->HasProgramBinding()) {
-                glUseProgram(gl->GetProgramBinding());
-              } else {
-                glUseProgram(0);
-              }
-              if (gl->viewportState.valid) {
-                glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
-              } else {
-                glViewport(0, 0, 1280, 1024);
-              }
-              if (gl->HasVertexArrayBinding()) {
-                glBindVertexArray(gl->GetVertexArrayBinding());
-              } else {
-                glBindVertexArray(gl->defaultVao);
-              }
-              if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
-              } else {
-                glBindTexture(GL_TEXTURE_2D, 0);
-              }
-              if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES)) {
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES));
-              } else {
-                glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
-              }
-              glActiveTexture(gl->activeTexture);
-            }
-
-            eglDestroyImageKHR(window->display, yuv_img);
-          } else {
-            ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
-
+          if (!isStable) {
             eraseList.push_back(iter);
           }
         }
-        if (!isStable) {
-          eraseList.push_back(iter);
-        }
+
+        setIndex++;
       }
     }
     // erase queued camera mesh preview requests
