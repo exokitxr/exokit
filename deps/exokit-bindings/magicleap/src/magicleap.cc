@@ -3644,8 +3644,8 @@ NAN_METHOD(MLContext::PostPollEvents) {
             stream.pushFramebuffer(pbo, framebufferDataRgb);
           }
 
-          glDeleteTextures(1, &texture);
-        }); // XXX
+          glDeleteTextures(1, &texture); // XXX handle cleanup case
+        });
 
         /* glBindFramebuffer(GL_READ_FRAMEBUFFER, mlContext->cameraContentReadFbo);
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
