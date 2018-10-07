@@ -314,7 +314,6 @@ public:
 
   GLuint fbo;
   GLuint pbo;
-  int currentHeight;
 };
 
 std::deque<PixelCb> pixelCbs;
