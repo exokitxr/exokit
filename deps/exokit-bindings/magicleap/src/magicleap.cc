@@ -386,7 +386,8 @@ void getPixels(const std::string &id, int width, int height, GLuint texture, boo
 }
 void cancelGetPixels(const std::string &id) {
   if (currentGetPixelsValid && currentGetPixels.id == id) {
-    // XXX delete
+    glDeleteFramebuffers(1, &currentGetPixels.fbo);
+    glDeleteBuffers(1, &currentGetPixels.pbo);
     currentGetPixelsValid = false;
   }
   auto match = std::find_if(pixelCbs.begin(), pixelCbs.end(), [&](const PixelCb &pixelCb) -> bool {
