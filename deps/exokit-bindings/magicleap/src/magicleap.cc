@@ -14,7 +14,8 @@ namespace ml {
 const char application_name[] = "com.exokit.app";
 constexpr int CAMERA_SIZE[] = {1920, 1080};
 constexpr int MESH_TEXTURE_SIZE[] = {512, 512};
-constexpr int CAMERA_STREAM_SIZE[] = {CAMERA_SIZE[0]/2, CAMERA_SIZE[1]/2};
+constexpr int RENDER_SIZE[] = {1280.0, 960.0};
+constexpr int CAMERA_STREAM_SIZE[] = {RENDER_SIZE[0], RENDER_SIZE[1]};
 
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
@@ -2031,11 +2032,12 @@ float xfactor = cameraAspectRatio/renderAspectRatio;\n\
 float factor = 1.4;\n\
 \n\
 void main() {\n\
-  vUvCamera = vec2(uv.x, 1.0 - uv.y);\n\
-  vUvContent = vec2(\n\
-    ((uv.x * 0.5) - 0.25) * xfactor*factor + 0.25,\n\
-    (uv.y - 0.5) * factor + 0.5\n\
+  vUvCamera = vec2(\n\
+    (uv.x - 0.5) / (xfactor*factor) + 0.5,\n\
+    (uv.y - 0.5) / factor + 0.5\n\
   );\n\
+  vUvCamera.y = 1.0 - vUvCamera.y;\n\
+  vUvContent = vec2(uv.x * 0.5, uv.y);\n\
   gl_Position = vec4(point, 1.0, 1.0);\n\
 }\n\
 ";
@@ -2052,13 +2054,8 @@ uniform sampler2D contentTexture;\n\
 \n\
 void main() {\n\
   vec4 cameraIn = texture2D(cameraInTexture, vUvCamera);\n\
-\n\
-  if (vUvContent.x >= 0.0 && vUvContent.x <= 0.5 && vUvContent.y >= 0.0 && vUvContent.y <= 1.0) {\n\
-    vec4 content = texture2D(contentTexture, vUvContent);\n\
-    fragColor = vec4((cameraIn.rgb * (1.0 - content.a)) + (content.rgb * content.a), 1.0);\n\
-  } else {\n\
-    fragColor = vec4(cameraIn.rgb, 1.0);\n\
-  }\n\
+  vec4 content = texture2D(contentTexture, vUvContent);\n\
+  fragColor = vec4((cameraIn.rgb * (1.0 - content.a)) + (content.rgb * content.a), 1.0);\n\
 }\n\
 ";
 
