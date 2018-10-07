@@ -529,7 +529,7 @@ void MeshBuffer::beginRenderCamera() {
   glClearColor(0.1, 0.1, 0.1, 1.0);
   glClear(GL_COLOR_BUFFER_BIT);
   glClearColor(0.0, 0.0, 0.0, 1.0);
-  
+
   glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer);
   glVertexAttribPointer(mlContext->cameraMeshPositionLocation2, 3, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(mlContext->cameraMeshPositionLocation2);
@@ -3526,7 +3526,7 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
       auto match = std::find(meshBufferIdRenderList.begin(), meshBufferIdRenderList.end(), id);
       if (match == meshBufferIdRenderList.end()) {
         MeshBuffer &meshBuffer = iter->second;
-        
+
         bool localRendering = false;
 
         for (auto iter2 = cameraMeshPreviewRenderList.begin(); iter2 != cameraMeshPreviewRenderList.end(); iter2++) {
@@ -3805,7 +3805,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
                     cameraMeshPreviewRequest->texture = (*match)->texture;
                     // cameraMeshPreviewRequest.ms = match->ms;
                     (*match)->texture = 0;
-                    
+
                     glBindTexture(GL_TEXTURE_2D, cameraMeshPreviewRequest->texture);
                   } else {
                     glGenTextures(1, &cameraMeshPreviewRequest->texture);
