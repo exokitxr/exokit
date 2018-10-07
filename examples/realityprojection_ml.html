@@ -400,7 +400,7 @@
                     method: 'PUT',
                     body: paintBuffer,
                   })
-                    .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok')))
+                    .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok: ' + res.status)))
                     .catch(err => {
                       console.warn(err.stack);
                     })
@@ -410,7 +410,41 @@
           }
         }
       };
-      mesh.load = buffer => {
+      mesh.load = data => {
+        const positionsAttribute = geometry.getAttribute('position');
+        const {array: positions} = positionsAttribute;
+        const normalsAttribute = geometry.getAttribute('normal');
+        const {array: normals} = normalsAttribute;
+        const colorsAttribute = geometry.getAttribute('color');
+        const {array: colors} = colorsAttribute;
+        const uvsAttribute = geometry.getAttribute('uv');
+        const {array: uvs} = uvsAttribute;
+
+        const array = new Float32Array(data);
+        const numPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
+        const dataPositionSize = numPoints * 2 * 3;
+        const dataUvSize = numPoints * 2 * 2;
+
+        const newPositions = array.slice(0, dataPositionSize);
+        const newNormals = array.slice(dataPositionSize, dataPositionSize * 2);
+        const newColors = array.slice(dataPositionSize * 2, dataPositionSize * 3);
+        const newUvs = array.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize);
+
+        positions.set(newPositions);
+        normals.set(newNormals);
+        colors.set(newColors);
+        uvs.set(newUvs);
+
+        positionsAttribute.needsUpdate = true;
+        normalsAttribute.needsUpdate = true;
+        colorsAttribute.needsUpdate = true;
+        uvsAttribute.needsUpdate = true;
+
+        // lastPoint = numPoints;
+
+        geometry.setDrawRange(0, numPoints * 2);
+      };
+      /* mesh.load = buffer => {
         const positionsAttribute = geometry.getAttribute('position');
         const {array: positions} = positionsAttribute;
         const normalsAttribute = geometry.getAttribute('normal');
@@ -448,7 +482,7 @@
         // lastPoint = numPoints;
 
         geometry.setDrawRange(0, numPoints * 2);
-      };
+      }; */
 
       return mesh;
     };
@@ -633,21 +667,15 @@
             paintMesh = null;
             paintControllerIndex = -1;
 
-            if (connections.length > 0) {
-              for (let i = 0; i < connections.length; i++) {
-                const c = connections[i];
-
-                fetchQueued(() =>
-                  fetch(c.url + '/paint', {
-                    method: 'DELETE',
-                  })
-                    .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok')))
-                    .catch(err => {
-                      console.warn(err.stack);
-                    })
-                );
-              }
-            }
+            fetchQueued(() =>
+              fetch(c.url + '/paint', {
+                method: 'DELETE',
+              })
+                .then(res => res.ok ? Promise.resolve() : Promise.reject(new Error('not ok')))
+                .catch(err => {
+                  console.warn(err.stack);
+                })
+            );
 
             /* const updateSpec = {
               method: 'clear',
@@ -1035,11 +1063,11 @@
                 const {id, dataId} = message;
 
                 fetchQueued(() =>
-                  fetch('/data/' + dataId)
-                    .then(res => res.ok ? res.arrayBuffer() : Promise.reject(new Error('not ok')))
+                  fetch(serverUrl + '/data/' + dataId)
+                    .then(res => res.ok ? res.arrayBuffer() : Promise.reject(new Error('not ok: ' + res.status)))
                     .then(arrayBuffer => {
-                      const paintMesh = _getPaintMesh(meshId);
-                      paintMesh.load(data);
+                      const paintMesh = _getPaintMesh(id);
+                      paintMesh.load(arrayBuffer);
                     })
                     .catch(err => {
                       console.warn(err.stack);
