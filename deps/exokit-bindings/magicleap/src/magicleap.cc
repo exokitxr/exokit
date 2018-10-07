@@ -3536,16 +3536,20 @@ void renderCameras(const std::vector<std::string> &meshBufferIdRenderList, const
           CameraMeshPreviewRequest *cameraMeshPreviewRequest = *iter2;
 
           if (cameraMeshPreviewRequest->texture != 0 && frustumCheck(*cameraMeshPreviewRequest, meshBuffer)) {
-            if (!rendering) {
-              MeshBuffer::beginRenderCameraAll();
-              rendering = true;
-            }
-            if (!localRendering) {
-              meshBuffer.beginRenderCamera();
-              localRendering = true;
-            }
+            for (auto iter3 = cameraMeshPreviewRenderList.begin(); iter3 != cameraMeshPreviewRenderList.end(); iter3++) {
+              CameraMeshPreviewRequest *cameraMeshPreviewRequest2 = *iter3;
 
-            meshBuffer.renderCamera(*cameraMeshPreviewRequest);
+              if (!rendering) {
+                MeshBuffer::beginRenderCameraAll();
+                rendering = true;
+              }
+              if (!localRendering) {
+                meshBuffer.beginRenderCamera();
+                localRendering = true;
+              }
+
+              meshBuffer.renderCamera(*cameraMeshPreviewRequest2);
+            }
           }
         }
       }
