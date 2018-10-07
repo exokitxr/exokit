@@ -1713,7 +1713,7 @@ MLResult connectCamera() {
               dst += 3;
             }
             uint8_t *result = nullptr;
-            size_t resultSize = SjpegCompress(rgb.data(), requestEntry->width, requestEntry->height, 50.0f, &result);
+            size_t resultSize = SjpegCompress(rgb.data(), requestEntry->width, requestEntry->height, 90.0f, &result);
 
             if (resultSize == 0) {
               ML_LOG(Error, "%s: failed to encode jpeg: %x", application_name, resultSize);
