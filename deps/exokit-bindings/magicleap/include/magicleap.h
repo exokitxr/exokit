@@ -163,10 +163,9 @@ public:
   static void beginRenderCameraAll();
   void beginRenderCamera();
   void renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewRequest);
-  void readPixels(std::function<void(GLuint, uint8_t *)> fn);
+  void readPixels(const std::string &id, std::function<void(GLuint, uint8_t *)> fn);
   static void endRenderCamera();
 
-  std::string id;
   GLuint positionBuffer;
   GLuint normalBuffer;
   GLuint vertexBuffer;

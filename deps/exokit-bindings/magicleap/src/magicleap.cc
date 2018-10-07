@@ -553,7 +553,7 @@ void MeshBuffer::renderCamera(const CameraMeshPreviewRequest &cameraMeshPreviewR
   }
   this->textureDirty = true;
 }
-void MeshBuffer::readPixels(std::function<void(GLuint, uint8_t *)> fn) {
+void MeshBuffer::readPixels(const std::string &id, std::function<void(GLuint, uint8_t *)> fn) {
   // glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
 
   // std::cout << "mesh buffer get pixels 1 1 " << texture << std::endl;
@@ -3583,7 +3583,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         MeshBuffer &meshBuffer = iter->second;
 
         if (meshBuffer.textureDirty) {
-          meshBuffer.readPixels([id](GLuint pbo, uint8_t *textureDataRgb) -> void {
+          meshBuffer.readPixels(id, [id](GLuint pbo, uint8_t *textureDataRgb) -> void {
             TextureEncodeRequestEntry *requestEntry = new TextureEncodeRequestEntry(TextureEncodeEntryType::MESH_BUFFER, id, MESH_TEXTURE_SIZE[0], MESH_TEXTURE_SIZE[1], pbo, textureDataRgb);
             {
               std::lock_guard<mutex> lock(textureEncodeRequestMutex);
@@ -3980,7 +3980,6 @@ NAN_METHOD(MLContext::PostPollEvents) {
             glClearColor(0.0, 0.0, 0.0, 1.0);
 
             meshBuffers[id] = MeshBuffer{
-              id,
               buffers[0],
               buffers[1],
               buffers[2],
