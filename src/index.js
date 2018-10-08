@@ -28,7 +28,34 @@ const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics}
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
 
-const dataPath = path.join(os.homedir() || __dirname, '.exokit');
+const dataPath = (() => {
+  const candidatePathPrefixes = [
+    os.homedir(),
+    __dirname,
+    os.tmpdir(),
+    '/documents',
+  ];
+  for (let i = 0; i < candidatePathPrefixes.length; i++) {
+    const candidatePathPrefix = candidatePathPrefixes[i];
+    console.log('check file 1', i, candidatePathPrefix);
+    if (candidatePathPrefix) {
+      const ok = (() => {
+        try {
+         fs.accessSync(candidatePathPrefix, fs.constants.W_OK);
+         return true;
+        } catch(err) {
+          console.warn('failed to check access', err.stack);
+          return false;
+        }
+      })();
+      console.log('check file 2', i, candidatePathPrefix, ok);
+      if (ok) {
+        return path.join(candidatePathPrefix, '.exokit');
+      }
+    }
+  }
+  return null;
+})();
 const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
 const VR_FPS = 90;
 const ML_FPS = 60;
@@ -1470,6 +1497,7 @@ const _prepare = () => Promise.all([
     }
   })(),
   (() => {
+    return;
     let rootPath = null;
     let runtimePath = null;
     const platform = os.platform();
@@ -1490,8 +1518,12 @@ const _prepare = () => Promise.all([
       return new Promise((accept, reject) => {
         fs.lstat(openvrPathsPath, (err, stats) => {
           if (err) {
+            console.warn('got error', err.stack, err.code);
             if (err.code === 'ENOENT') {
               mkdirp(rootPath, err => {
+                if (err) {
+                  console.warn('got error 2', err.stack, err.code);
+                }
                 if (!err) {
                   const jsonString = JSON.stringify({
                     "config" : [ rootPath ],
@@ -1504,16 +1536,23 @@ const _prepare = () => Promise.all([
                     "version" : 1
                   }, null, 2);
                   fs.writeFile(openvrPathsPath, jsonString, err => {
+                    if (err) {
+                      console.warn('got error 3', err.stack, err.code);
+                    }
                     if (!err) {
                       accept();
                     } else {
                       reject(err);
                     }
                   });
+                } else if (err.code === 'EACCES') {
+                  accept();
                 } else {
                   reject(err);
                 }
               });
+            } else if (err.code === 'EACCES') {
+              accept();
             } else {
               reject(err);
             }
@@ -1527,13 +1566,17 @@ const _prepare = () => Promise.all([
     }
   })(),
   new Promise((accept, reject) => {
-    mkdirp(dataPath, err => {
-      if (!err) {
-        accept();
-      } else {
-        reject(err);
-      }
-    });
+    if (dataPath) {
+      mkdirp(dataPath, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    } else {
+      accept();
+    }
   }),
 ]);
 

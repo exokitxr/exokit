@@ -57,6 +57,7 @@
     "isolator": "0.0.9",
     "leapmotion": "0.0.4",
     "libnode.a": "0.0.1",
+    "localstorage-memory": "^1.0.2",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "nan": "^2.10.0",

@@ -17,7 +17,8 @@ const {Request, Response, Headers, Blob} = fetch;
 
 const WebSocket = require('ws/lib/websocket');
 
-const {LocalStorage} = require('node-localstorage');
+const {LocalStorage: LocalStorageDisk} = require('node-localstorage');
+const LocalStorageMemory = require('localstorage-memory');
 const indexedDB = require('fake-indexeddb');
 const {TextEncoder, TextDecoder} = require('window-text-encoding');
 const parseXml = require('@rgrove/parse-xml');
@@ -1077,7 +1078,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return WebSocket;
   })(WebSocket);
-  window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
+  window.localStorage = options.dataPath ?
+    new LocalStorageDisk(path.join(options.dataPath, '.localStorage'))
+  :
+    LocalStorageMemory;
   window.indexedDB = indexedDB;
   window.performance = performance;
   window.screen = new Screen(window);
