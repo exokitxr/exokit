@@ -162,8 +162,7 @@ STLIBS = node \
   opus \
   x264 \
   mp3lame \
-  rtmp \
-  curl
+  rtmp
 
 # shared libs to link in
 #
@@ -180,8 +179,7 @@ LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   ../node_modules/libnode.a \
   ../node_modules/native-canvas-deps/lib2/magicleap \
   ../node_modules/native-audio-deps/lib2/magicleap \
-  ../node_modules/native-video-deps/lib2/magicleap \
-  ../node_modules/libcurl.a/lib
+  ../node_modules/native-video-deps/lib2/magicleap
 
 # flags for C/C++/assembly preprocessing
 #
