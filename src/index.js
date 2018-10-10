@@ -1533,10 +1533,14 @@ const _prepare = () => Promise.all([
                       reject(err);
                     }
                   });
+                } else if (err.code === 'EACCES') {
+                  accept();
                 } else {
                   reject(err);
                 }
               });
+            } else if (err.code === 'EACCES') {
+              accept();
             } else {
               reject(err);
             }
