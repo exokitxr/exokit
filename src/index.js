@@ -1723,7 +1723,11 @@ if (require.main === module) {
   core.setNativeBindingsModule(nativeBindingsModulePath);
 
   _prepare()
-    .then(() => _start());
+    .then(() => _start())
+    .catch(err => {
+      console.warn(err.stack);
+      process.exit(1);
+    });
 } else {
   core.setNativeBindingsModule(nativeBindingsModulePath);
 }
