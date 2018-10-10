@@ -28,7 +28,30 @@ const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics}
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
 
-const dataPath = path.join(os.homedir() || __dirname, '.exokit');
+const dataPath = (() => {
+  const candidatePathPrefixes = [
+    os.homedir(),
+    __dirname,
+    os.tmpdir(),
+  ];
+  for (let i = 0; i < candidatePathPrefixes.length; i++) {
+    const candidatePathPrefix = candidatePathPrefixes[i];
+    if (candidatePathPrefix) {
+      const ok = (() => {
+        try {
+         fs.accessSync(candidatePathPrefix, fs.constants.W_OK);
+         return true;
+        } catch(err) {
+          return false;
+        }
+      })();
+      if (ok) {
+        return path.join(candidatePathPrefix, '.exokit');
+      }
+    }
+  }
+  return null;
+})();
 const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
 const VR_FPS = 90;
 const ML_FPS = 60;
@@ -1510,10 +1533,14 @@ const _prepare = () => Promise.all([
                       reject(err);
                     }
                   });
+                } else if (err.code === 'EACCES') {
+                  accept();
                 } else {
                   reject(err);
                 }
               });
+            } else if (err.code === 'EACCES') {
+              accept();
             } else {
               reject(err);
             }
@@ -1696,7 +1723,11 @@ if (require.main === module) {
   core.setNativeBindingsModule(nativeBindingsModulePath);
 
   _prepare()
-    .then(() => _start());
+    .then(() => _start())
+    .catch(err => {
+      console.warn(err.stack);
+      process.exit(1);
+    });
 } else {
   core.setNativeBindingsModule(nativeBindingsModulePath);
 }
