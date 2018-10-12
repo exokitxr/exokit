@@ -165,7 +165,8 @@ STLIBS = node \
 #
 # SHLIBS.win = ole32 winmm
 SHLIBS = ml_privileges \
-  ml_camera
+  ml_camera \
+  ml_audio
 
 # paths for finding libraries above
 #
