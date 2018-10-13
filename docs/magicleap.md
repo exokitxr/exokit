@@ -22,6 +22,12 @@ Returns an instance of `MLHandTracker`, which can be used to receive hand tracki
 
 Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data from the Magic Leap platform.
 
+#### `browser.magicleap.RequestImageTracking(HTMLImageElement image, float size) : MLImageTracker`
+
+Returns an instance of `MLImageTracker`, which can be used to receive image tracking updates from the Magic Leap platform.
+
+`image` should be an `HTMLImageElement` containing the image to track. `size` is the expected size of the widest dimension of the tracker (either X or Y) in meters. This is important for tracking depth.
+
 #### `browser.magicleap.RequestDepthPopulation(populateDepth : Boolean)`
 
 Sets whether the render loop will populate the depth buffer from the meshing system at the start of a frame. If you want natural AR occlusion without messing with mesh data, this is the easiest option.
@@ -290,3 +296,29 @@ The rotation of the eye origin as a world quaternion.
 ### `MLEye.blink : Boolean`
 
 Whether this eye is currently closed (`true`) or open (`false`).
+
+### `MLImageTracker`
+
+Used to receive image tracking updates for an image specification from the Magic Leap platform.
+
+#### `MLImageTracker.ontrack : function(MLTrackingUpdate?)`
+
+When set, `ontrack` will be called with either `MLHandUpdate` or `null`.
+
+If non-`null`, indicates that the image tracking has been updated, and provides the new state. If `null`, the image has lost tracking.
+
+### `MLTrackingUpdate`
+
+A single update to the tracked image state.
+
+### `MLTrackingUpdate.position : Float32Array(3)`
+
+The world position of the tracked image center as a vector.
+
+### `MLTrackingUpdate.rotation : Float32Array(4)`
+
+The rotation of the tracked image as a world quaternion.
+
+### `MLTrackingUpdate.size : float`
+
+The size of the largest dimension of the image (either X or Y), in meters.
