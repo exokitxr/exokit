@@ -3,6 +3,8 @@
 #include <magicleap.h>
 #include <ml-math.h>
 #include <windowsystem.h>
+#include <image-context.h>
+
 #include <uv.h>
 #include <iostream>
 
@@ -35,6 +37,7 @@ Nan::Persistent<Function> mlMesherConstructor;
 Nan::Persistent<Function> mlPlaneTrackerConstructor;
 Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
+Nan::Persistent<Function> mlImageTrackerConstructor;
 
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
@@ -49,6 +52,10 @@ uint8_t *cameraRequestJpeg;
 size_t cameraRequestSize;
 uv_sem_t cameraConvertSem;
 uv_async_t cameraConvertAsync;
+
+MLHandle imageTrackerHandle;
+MLImageTrackerSettings imageTrackerSettings;
+std::vector<MLImageTracker *> imageTrackers;
 
 MLHandle handTracker;
 MLHandTrackingData handData;
@@ -1153,6 +1160,205 @@ void CameraRequest::Poll() {
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
+// MLImageTracker
+
+bool imageTrackingEnabled = false;
+size_t numImageTrackers = 0;
+MLImageTracker::MLImageTracker(MLHandle trackerHandle, float size[2]) : trackerHandle(trackerHandle), valid(false) {
+  memcpy(this->size, size, sizeof(this->size));
+}
+
+MLImageTracker::~MLImageTracker() {}
+
+NAN_METHOD(MLImageTracker::New) {
+  if (!imageTrackingEnabled) {
+    imageTrackerSettings.enable_image_tracking = true;
+    imageTrackerSettings.max_simultaneous_targets = 2;
+
+    MLResult result = MLImageTrackerCreate(&imageTrackerSettings, &imageTrackerHandle);
+
+    if (result == MLResult_Ok) {
+      imageTrackingEnabled = true;
+    } else {
+      ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
+      Nan::ThrowError("failed to connect camera");
+    }
+  }
+  
+  Local<Object> imageObj = Local<Object>::Cast(info[0]);
+  Local<Number> dimensionNumber = Local<Number>::Cast(info[1]);
+
+  MLHandle trackerHandle;
+  MLImageTrackerTargetSettings trackerSettings;
+  trackerSettings.is_enabled = true;
+  trackerSettings.is_stationary = true;
+  float longerDimension = (float)dimensionNumber->NumberValue();
+  trackerSettings.longer_dimension = longerDimension;
+  char name[64];
+  sprintf(name, "tracker%u", numImageTrackers++);
+  trackerSettings.name = name;
+
+  Image *image = ObjectWrap::Unwrap<Image>(imageObj);
+  Local<Uint8ClampedArray> dataArray = Local<Uint8ClampedArray>::Cast(imageObj->Get(JS_STR("data")));
+  Local<ArrayBuffer> dataArrayBuffer = dataArray->Buffer();
+
+  uint32_t width = image->GetWidth();
+  uint32_t height = image->GetHeight();
+  MLResult result = MLImageTrackerAddTargetFromArray(
+    imageTrackerHandle,
+    &trackerSettings,
+    (uint8_t *)dataArrayBuffer->GetContents().Data() + dataArray->ByteOffset(),
+    width,
+    height,
+    MLImageTrackerImageFormat_RGBA,
+    &trackerHandle
+  );
+
+  if (result == MLResult_Ok) {
+    float size[2];
+    float &xSize = size[0];
+    float &ySize = size[1];
+    if (width >= height) {
+      xSize = longerDimension;
+      ySize = xSize / (float)height * (float)width;
+    } else {
+      ySize = longerDimension;
+      xSize = ySize / (float)width * (float)height;
+    }
+    MLImageTracker *mlImageTracker = new MLImageTracker(trackerHandle, size);
+    Local<Object> mlImageTrackerObj = info.This();
+    mlImageTracker->Wrap(mlImageTrackerObj);
+
+    Nan::SetAccessor(mlImageTrackerObj, JS_STR("ontrack"), OnTrackGetter, OnTrackSetter);
+
+    info.GetReturnValue().Set(mlImageTrackerObj);
+
+    imageTrackers.push_back(mlImageTracker);
+  } else {
+    Nan::ThrowError("MLContext::RequestImageTracking: failed to create tracker");
+  }
+}
+
+Local<Function> MLImageTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLImageTracker"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLImageTracker::OnTrackGetter) {
+  // Nan::HandleScope scope;
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  Local<Function> cb = Nan::New(mlImageTracker->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLImageTracker::OnTrackSetter) {
+  // Nan::HandleScope scope;
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlImageTracker->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLImageTracker::OnTrackSetter: invalid arguments");
+  }
+}
+
+void MLImageTracker::Poll(MLSnapshot *snapshot) {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker");
+
+  MLImageTrackerTargetResult trackerTargetResult;
+  MLResult result = MLImageTrackerGetTargetResult(
+    imageTrackerHandle,
+    trackerHandle,
+    &trackerTargetResult
+  );
+  if (result == MLResult_Ok) {
+    const bool &lastValid = valid;
+    MLImageTrackerTargetStatus &status = trackerTargetResult.status;
+    const bool newValid = (status == MLImageTrackerTargetStatus_Tracked || status == MLImageTrackerTargetStatus_Unreliable);
+
+    if (newValid) {
+      MLImageTrackerTargetStaticData trackerTargetStaticData;
+      MLResult result = MLImageTrackerGetTargetStaticData(
+        imageTrackerHandle,
+        trackerHandle,
+        &trackerTargetStaticData
+      );
+      if (result == MLResult_Ok) {
+        MLTransform transform;
+        MLResult result = MLSnapshotGetTransform(snapshot, &trackerTargetStaticData.coord_frame_target, &transform);
+
+        if (result == MLResult_Ok) {
+          Local<Function> cbFn = Nan::New(cb);
+          Local<Object> objVal = Nan::New<Object>();
+          objVal->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transform.position.values, 3 * sizeof(float)), 0, 3));
+          objVal->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transform.rotation.values, 4 * sizeof(float)), 0, 4));
+          objVal->Set(JS_STR("size"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)size, 2 * sizeof(float)), 0, 2));
+          Local<Value> argv[] = {
+            objVal,
+          };
+
+          asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+
+          valid = newValid;
+        } else {
+          ML_LOG(Error, "%s: ML failed to get eye fixation transform!", application_name);
+        }
+      } else {
+        ML_LOG(Error, "%s: Image tracker get static data failed! %x", application_name, result);
+      }
+    } else {
+      if (lastValid) {
+        Local<Function> cbFn = Nan::New(cb);
+        Local<Value> objVal = Nan::Null();
+        Local<Value> argv[] = {
+          objVal,
+        };
+
+        asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+      }
+
+      valid = newValid;
+    }
+  } else {
+    ML_LOG(Error, "%s: ML failed to get image tracker target result!", application_name);
+  }
+}
+
+NAN_METHOD(MLImageTracker::Destroy) {
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  imageTrackers.erase(std::remove_if(imageTrackers.begin(), imageTrackers.end(), [&](MLImageTracker *i) -> bool {
+    if (i == mlImageTracker) {
+      MLResult result = MLImageTrackerRemoveTarget(imageTrackerHandle, i->trackerHandle);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: ML failed to remove image tracker target!", application_name);
+      }
+      
+      delete i;
+      return true;
+    } else {
+      return false;
+    }
+  }));
+}
+
+// MLContext
+
 MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
 
 MLContext::~MLContext() {}
@@ -1185,6 +1391,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
+  Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
   Nan::SetMethod(ctorFn, "PostPollEvents", PostPollEvents);
 
@@ -1312,9 +1519,10 @@ void RunCameraInMainThread(uv_async_t *handle) {
   if (!cameraConvertPending) {
     MLHandle output;
     MLResult result = MLCameraGetPreviewStream(&output);
+
     if (result == MLResult_Ok) {    
       // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
-
+      //
       MLContext *mlContext = application_context.mlContext;
       NATIVEwindow *window = application_context.window;
       WebGLRenderingContext *gl = application_context.gl;
@@ -1499,6 +1707,7 @@ NAN_METHOD(MLContext::InitLifecycle) {
     mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
     mlHandTrackerConstructor.Reset(MLHandTracker::Initialize(Isolate::GetCurrent()));
     mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
+    mlImageTrackerConstructor.Reset(MLImageTracker::Initialize(Isolate::GetCurrent()));
 
     lifecycle_callbacks.on_new_initarg = onNewInitArg;
     lifecycle_callbacks.on_stop = onStop;
@@ -1591,7 +1800,7 @@ NAN_METHOD(MLContext::Present) {
   unsigned int halfWidth = renderTargetsInfo.buffers[0].color.width;
   unsigned int width = halfWidth * 2;
   unsigned int height = renderTargetsInfo.buffers[0].color.height;
-  
+
   // std::cout << "render info " << halfWidth << " " << height << std::endl;
 
   GLuint fbo;
@@ -1888,7 +2097,7 @@ NAN_METHOD(MLContext::Present) {
   }
   handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Ok] = false;
   handTrackingConfig.keypose_config[MLHandTrackingKeyPose_C] = false;
-  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false; 
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false;
   if (MLHandTrackingSetConfiguration(handTracker, &handTrackingConfig) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to set hand tracker config.", application_name);
     info.GetReturnValue().Set(Nan::Null());
@@ -2276,7 +2485,7 @@ NAN_METHOD(MLContext::RequestDepthPopulation) {
   if (info[0]->IsBoolean()) {
     depthEnabled = info[0]->BooleanValue();
   } else {
-    Nan::ThrowError("invalid arguments");
+    Nan::ThrowError("MLContext::RequestDepthPopulation: invalid arguments");
   }
 }
 
@@ -2313,7 +2522,7 @@ NAN_METHOD(MLContext::RequestCamera) {
       cameraRequests.push_back(cameraRequest);
     }
   } else {
-    Nan::ThrowError("invalid arguments");
+    Nan::ThrowError("MLContext::RequestCamera: invalid arguments");
     return;
   }
 }
@@ -2336,7 +2545,29 @@ NAN_METHOD(MLContext::CancelCamera) {
       }), cameraRequests.end());
     }
   } else {
-    Nan::ThrowError("invalid arguments");
+    Nan::ThrowError("MLContext::CancelCamera: invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::RequestImageTracking) {
+  if (info[0]->IsObject() && info[1]->IsNumber()) {
+    Local<Object> imageObj = Local<Object>::Cast(info[0]);
+
+    if (
+      imageObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement")) &&
+      imageObj->Get(JS_STR("image"))->IsObject() &&
+      imageObj->Get(JS_STR("image"))->ToObject()->Get(JS_STR("data"))->IsUint8ClampedArray()
+    ) {
+      Local<Function> mlImageTrackerCons = Nan::New(mlImageTrackerConstructor);
+      Local<Value> argv[] = {
+        imageObj->Get(JS_STR("image")),
+        info[1],
+      };
+      Local<Object> mlImageTrackerObj = mlImageTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+      info.GetReturnValue().Set(mlImageTrackerObj);
+    }
+  } else {
+    Nan::ThrowError("MLContext::RequestImageTracking: invalid arguments");
   }
 }
 
@@ -2464,6 +2695,17 @@ NAN_METHOD(MLContext::PrePollEvents) {
     }
     std::for_each(eyeTrackers.begin(), eyeTrackers.end(), [&](MLEyeTracker *e) {
       e->Poll(snapshot);
+    });
+  }
+
+  if (imageTrackers.size() > 0) {
+    if (!snapshot) {
+      if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
+        ML_LOG(Error, "%s: ML failed to get image tracking snapshot!", application_name);
+      }
+    }
+    std::for_each(imageTrackers.begin(), imageTrackers.end(), [&](MLImageTracker *i) {
+      i->Poll(snapshot);
     });
   }
 
