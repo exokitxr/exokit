@@ -9,7 +9,7 @@ set -e
 cd "$(dirname "$0")"
 
 export MLSDK=${MLSDK:-/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0}
-export MLSDK_WIN=$(echo "$MLSDK" | sed 's/^\/mnt\/c\//C:\\/' | sed 's/\//\\/g')
+export MLSDK_WIN=$(echo "$MLSDK" | sed 's/^\/mnt\/\([a-z]\)\//\1:\\/' | sed 's/\//\\/g')
 
 export CC="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang"
 export CXX="$MLSDK/tools/toolchains/bin/aarch64-linux-android-clang++"
