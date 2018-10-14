@@ -1164,9 +1164,7 @@ void CameraRequest::Poll() {
 
 bool imageTrackingEnabled = false;
 size_t numImageTrackers = 0;
-MLImageTracker::MLImageTracker(MLHandle trackerHandle, float size[2]) : trackerHandle(trackerHandle), valid(false) {
-  memcpy(this->size, size, sizeof(this->size));
-}
+MLImageTracker::MLImageTracker(MLHandle trackerHandle, float size) : trackerHandle(trackerHandle), size(size), valid(false) {}
 
 MLImageTracker::~MLImageTracker() {}
 
@@ -1215,17 +1213,7 @@ NAN_METHOD(MLImageTracker::New) {
   );
 
   if (result == MLResult_Ok) {
-    float size[2];
-    float &xSize = size[0];
-    float &ySize = size[1];
-    if (width >= height) {
-      xSize = longerDimension;
-      ySize = xSize / (float)height * (float)width;
-    } else {
-      ySize = longerDimension;
-      xSize = ySize / (float)width * (float)height;
-    }
-    MLImageTracker *mlImageTracker = new MLImageTracker(trackerHandle, size);
+    MLImageTracker *mlImageTracker = new MLImageTracker(trackerHandle, longerDimension);
     Local<Object> mlImageTrackerObj = info.This();
     mlImageTracker->Wrap(mlImageTrackerObj);
 
@@ -1307,7 +1295,7 @@ void MLImageTracker::Poll(MLSnapshot *snapshot) {
           Local<Object> objVal = Nan::New<Object>();
           objVal->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transform.position.values, 3 * sizeof(float)), 0, 3));
           objVal->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transform.rotation.values, 4 * sizeof(float)), 0, 4));
-          objVal->Set(JS_STR("size"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)size, 2 * sizeof(float)), 0, 2));
+          objVal->Set(JS_STR("size"), JS_NUM(size));
           Local<Value> argv[] = {
             objVal,
           };
