@@ -21,7 +21,7 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "load", Load);
   Nan::SetMethod(proto, "play", Play);
   Nan::SetMethod(proto, "pause", Pause);
-  Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter);
+  Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
   Nan::SetAccessor(proto, JS_STR("loop"), LoopGetter, LoopSetter);
 
@@ -107,6 +107,22 @@ NAN_GETTER(Audio::CurrentTimeGetter) {
   double currentTime = std::min<double>(std::max<double>(startTime - now, 0), duration);
 
   info.GetReturnValue().Set(JS_NUM(currentTime));
+}
+
+NAN_SETTER(Audio::CurrentTimeSetter) {
+  // Nan::HandleScope scope;
+
+  Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+
+  if (value->IsNumber()) {
+    double currentTime = value->NumberValue();
+    
+    std::cout << "set current time " << currentTime << std::endl;
+
+    audio->audioNode->setCurrentTime(currentTime);
+  } else {
+    Nan::ThrowError("loop: invalid arguments");
+  }
 }
 
 NAN_GETTER(Audio::DurationGetter) {
