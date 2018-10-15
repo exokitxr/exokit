@@ -36,6 +36,8 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 **Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 10.9.0 for Windows, Visual studio 2017, Python 2, Python 3
 
+*NOTE: Due to combined usage of Ubuntu and Windows tools, you must check out ExoKit to somewhere reachable from both; the easiest way is to do your `git clone` using Windows, since for example Ubuntu can reach `C:\ExoKit` as `/mnt/c/ExoKit`.*
+
 ### Procedure (signed)
 1. download Magic Leap Package Manager from https://creator.magicleap.com
 1. install Magic Leap Lumin SDK
