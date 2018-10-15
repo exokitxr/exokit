@@ -12,6 +12,7 @@ find.file(/\.node$/, dirname, files => {
     const file = files[i];
     if (!/obj\.target/.test(file)) {
       const match = file.match(/^(.+\/)([^\/]+)\.node$/);
+      if (!match) { continue; }
       const relpath = match[1].slice(dirname.length);
       const binName = match[2];
       const npmName = (() => {
