@@ -26,6 +26,7 @@ protected:
   static NAN_METHOD(Load);
   static NAN_METHOD(Play);
   static NAN_METHOD(Pause);
+  static NAN_GETTER(PausedGetter);
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);

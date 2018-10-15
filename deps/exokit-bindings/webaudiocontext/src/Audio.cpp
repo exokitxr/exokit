@@ -21,6 +21,7 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "load", Load);
   Nan::SetMethod(proto, "play", Play);
   Nan::SetMethod(proto, "pause", Pause);
+  Nan::SetAccessor(proto, JS_STR("paused"), PausedGetter);
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
   Nan::SetAccessor(proto, JS_STR("loop"), LoopGetter, LoopSetter);
@@ -94,6 +95,15 @@ NAN_METHOD(Audio::Play) {
 NAN_METHOD(Audio::Pause) {
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
   audio->Pause();
+}
+
+NAN_GETTER(Audio::PausedGetter) {
+  // Nan::HandleScope scope;
+
+  Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+  bool paused = !audio->audioNode->isPlayingOrScheduled();
+
+  info.GetReturnValue().Set(JS_BOOL(paused));
 }
 
 NAN_GETTER(Audio::CurrentTimeGetter) {
