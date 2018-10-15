@@ -2302,6 +2302,10 @@ class HTMLAudioElement extends HTMLMediaElement {
   pause() {
     this.audio.pause();
   }
+  
+  get paused() {
+    return this.audio ? this.audio.paused : true;
+  }
 
   get currentTime() {
     return this.audio && this.audio.currentTime;
