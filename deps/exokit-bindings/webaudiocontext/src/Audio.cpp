@@ -31,7 +31,7 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
 }
 
 NAN_METHOD(Audio::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Audio *audio = new Audio();
   Local<Object> audioObj = info.This();
@@ -97,7 +97,7 @@ NAN_METHOD(Audio::Pause) {
 }
 
 NAN_GETTER(Audio::CurrentTimeGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
@@ -110,7 +110,7 @@ NAN_GETTER(Audio::CurrentTimeGetter) {
 }
 
 NAN_GETTER(Audio::DurationGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
@@ -119,7 +119,7 @@ NAN_GETTER(Audio::DurationGetter) {
 }
 
 NAN_GETTER(Audio::LoopGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
@@ -128,7 +128,7 @@ NAN_GETTER(Audio::LoopGetter) {
 }
 
 NAN_SETTER(Audio::LoopSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsBoolean()) {
     bool loop = value->BooleanValue();
