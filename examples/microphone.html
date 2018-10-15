@@ -106,11 +106,17 @@
           frameOfReferenceType: 'stage',
         });
 
-        audio =  document.createElement('audio');
-        audio.onload = () => {
+        audio = document.createElement('audio');
+        audio.oncanplay = () => {
           console.log('audio loaded');
 
           session.onselect = () => {
+            console.log('audio play');
+
+            if (!audio.paused) {
+              audio.pause();
+            }
+            audio.currentTime = 0;
             audio.play();
           };
         };
