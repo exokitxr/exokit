@@ -12,17 +12,18 @@ find.file(/\.node$/, dirname, files => {
     const file = files[i];
     if (!/obj\.target/.test(file)) {
       const match = file.match(/^(.+\/)([^\/]+)\.node$/);
-      if (!match) { continue; }
-      const relpath = match[1].slice(dirname.length);
-      const binName = match[2];
-      const npmName = (() => {
-        const match = relpath.match(/\/node_modules\/([^\/]+)/);
-        return match && match[1];
-      })();
-      if (!npmName || npmName.replace(/-/g, '_') === binName) { // ignore incompatible modules
-        const registerName = `node_register_module_${binName}`;
-        decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
-        registers += `  dlibs["/package${relpath}${binName}.node"] = (void *)&${registerName};\n`;
+      if (match) {
+        const relpath = match[1].slice(dirname.length);
+        const binName = match[2];
+        const npmName = (() => {
+          const match = relpath.match(/\/node_modules\/([^\/]+)/);
+          return match && match[1];
+        })();
+        if (!npmName || npmName.replace(/-/g, '_') === binName) { // ignore incompatible modules
+          const registerName = `node_register_module_${binName}`;
+          decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
+          registers += `  dlibs["/package${relpath}${binName}.node"] = (void *)&${registerName};\n`;
+        }
       }
     }
   }
