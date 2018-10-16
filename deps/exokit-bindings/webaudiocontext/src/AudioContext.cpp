@@ -15,6 +15,10 @@ lab::AudioContext *getDefaultAudioContext(float sampleRate) {
   return _defaultAudioContext.get();
 }
 
+void deleteDefaultAudioContext() {
+  _defaultAudioContext.reset();
+}
+
 AudioContext::AudioContext(float sampleRate) {
   audioContext = getDefaultAudioContext(sampleRate);
 }
@@ -31,7 +35,6 @@ Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioList
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "close", Close);
   Nan::SetMethod(proto, "_decodeAudioDataSync", _DecodeAudioDataSync);
   Nan::SetMethod(proto, "createMediaElementSource", CreateMediaElementSource);
   Nan::SetMethod(proto, "createMediaStreamSource", CreateMediaStreamSource);
@@ -45,6 +48,9 @@ Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioList
   Nan::SetMethod(proto, "createBuffer", CreateBuffer);
   Nan::SetMethod(proto, "createBufferSource", CreateBufferSource);
   Nan::SetMethod(proto, "createScriptProcessor", CreateScriptProcessor);
+  Nan::SetMethod(proto, "suspend", Suspend);
+  Nan::SetMethod(proto, "resume", Resume);
+  Nan::SetMethod(proto, "close", Close);
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter);
   Nan::SetAccessor(proto, JS_STR("sampleRate"), SampleRateGetter);
 
@@ -66,10 +72,6 @@ Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioList
   ctorFn->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
 
   return scope.Escape(ctorFn);
-}
-
-void AudioContext::Close() {
-  Nan::ThrowError("AudioContext::Close: not implemented"); // TODO
 }
 
 Local<Object> AudioContext::CreateMediaElementSource(Local<Function> audioDestinationNodeConstructor, Local<Object> mediaElement, Local<Object> audioContextObj) {
@@ -215,15 +217,22 @@ Local<Object> AudioContext::CreateScriptProcessor(Local<Function> scriptProcesso
 }
 
 void AudioContext::Suspend() {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
-  Nan::ThrowError("AudioContext::Suspend: not implemented"); // TODO
+  audioContext->suspend();
 }
 
 void AudioContext::Resume() {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
-  Nan::ThrowError("AudioContext::Resume: not implemented"); // TODO
+  audioContext->resume();
+}
+
+void AudioContext::Close() {
+  // Nan::HandleScope scope;
+
+  audioContext = nullptr;
+  deleteDefaultAudioContext();
 }
 
 NAN_METHOD(AudioContext::New) {
@@ -262,13 +271,6 @@ NAN_METHOD(AudioContext::New) {
   audioContextObj->Set(JS_STR("listener"), audioListenerObj);
 
   info.GetReturnValue().Set(audioContextObj);
-}
-
-NAN_METHOD(AudioContext::Close) {
-  Nan::HandleScope scope;
-
-  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
-  audioContext->Close();
 }
 
 NAN_METHOD(AudioContext::_DecodeAudioDataSync) {
@@ -459,6 +461,13 @@ NAN_METHOD(AudioContext::Resume) {
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   audioContext->Resume();
+}
+
+NAN_METHOD(AudioContext::Close) {
+  Nan::HandleScope scope;
+
+  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
+  audioContext->Close();
 }
 
 NAN_GETTER(AudioContext::CurrentTimeGetter) {
