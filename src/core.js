@@ -1382,12 +1382,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
             const bindings = requireNative("nativeBindings");
             const smiggles = require("smiggles");
+            const events = require("events");
+            const {EventEmitter} = events;
 
             smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
 
             global.Image = bindings.nativeImage;
             global.ImageBitmap = bindings.nativeImageBitmap;
             global.createImageBitmap = ${createImageBitmap.toString()};
+            global.EventEmitter = EventEmitter;
+            global.EventTarget = ${EventTarget.toString()};
+            global.FileReader = ${FileReader.toString()};
           })();
         `;
       }
