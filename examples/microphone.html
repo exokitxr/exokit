@@ -111,7 +111,7 @@
           console.log('audio loaded');
 
           session.onselect = () => {
-            console.log('audio play');
+            console.log('audio play', audio.paused);
 
             if (!audio.paused) {
               audio.pause();
@@ -124,6 +124,20 @@
           console.warn('audio error', err.stack);
         };
         audio.src = 'ohno.mp3';
+
+        const audioCtx = new AudioContext();
+        navigator.mediaDevices.getUserMedia({
+          audio: true,
+        })
+          .then(mediaStream => {
+            console.log('connect microphone');
+
+            const mediaStreamSource = audioCtx.createMediaStreamSource(mediaStream);
+            mediaStreamSource.connect(audioCtx.destination);
+          })
+          .catch(err => {
+            console.warn('microphone error', err.stack);
+          });
 
         const viewport = session.baseLayer.getViewport(frame.views[0]);
         const width = viewport.width;
