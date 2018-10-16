@@ -49,6 +49,7 @@
     "cross-env": "^5.2.0",
     "css": "^2.2.3",
     "electron": "^2.0.6",
+    "events": "^3.0.0",
     "exokit-home": "0.0.70",
     "fake-indexeddb": "^2.0.4",
     "fault-zone": "0.0.20",
@@ -80,7 +81,7 @@
     "window-fetch": "0.0.9",
     "window-selector": "0.0.5",
     "window-text-encoding": "0.0.2",
-    "window-worker": "0.0.95",
+    "window-worker": "0.0.96",
     "window-xhr": "0.0.19",
     "ws": "^6.0.0"
   },
