@@ -321,7 +321,7 @@ NAN_METHOD(AudioContext::CreateMediaStreamSource) {
 
     info.GetReturnValue().Set(audioNodeObj);
   } else {
-    Nan::ThrowError("AudioContext::CreateMediaElementSource: invalid arguments");
+    Nan::ThrowError("AudioContext::CreateMediaStreamSource: invalid arguments");
   }
 }
 

@@ -1691,10 +1691,10 @@ class HTMLMediaElement extends HTMLSrcableElement {
   get paused() {
     return true;
   }
-  set paused(paused) {
+  /* set paused(paused) {
     this._startTime = this.currentTime;
     this._startTimestamp = null;
-  }
+  } */
   get currentTime() {
     return this._startTime + (this._startTimestamp !== null ? (Date.now() - this._startTimestamp) : 0);
   }
@@ -2301,6 +2301,10 @@ class HTMLAudioElement extends HTMLMediaElement {
   }
   pause() {
     this.audio.pause();
+  }
+  
+  get paused() {
+    return this.audio ? this.audio.paused : true;
   }
 
   get currentTime() {
