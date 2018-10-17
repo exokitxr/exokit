@@ -1373,15 +1373,25 @@ void RunCameraInMainThread(uv_async_t *handle) {
       } else {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
       }
+      glActiveTexture(GL_TEXTURE0);
       if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
-        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
       } else {
         glBindTexture(GL_TEXTURE_2D, 0);
       }
       if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES)) {
-        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES));
+      } else {
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+      }
+      glActiveTexture(GL_TEXTURE1);
+      if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_2D)) {
+        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_2D));
+      } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
+      }
+      if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES)) {
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES));
       } else {
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
       }
