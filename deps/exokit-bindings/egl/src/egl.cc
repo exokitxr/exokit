@@ -15,6 +15,21 @@ void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   }
 }
 
+void Initialize() {
+  EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
+  EGLint major = 4;
+  EGLint minor = 0;
+  eglInitialize(display, &major, &minor);
+  eglBindAPI(EGL_OPENGL_API);
+}
+
+void Uninitialize() {
+  EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
+  eglTerminate(display);
+}
+
 bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   const int samples = 4;
 
@@ -368,11 +383,6 @@ NAN_METHOD(Create) {
 
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
-  EGLint major = 4;
-  EGLint minor = 0;
-  eglInitialize(display, &major, &minor);
-  eglBindAPI(EGL_OPENGL_API);
-
   EGLint config_attribs[] = {
     EGL_RED_SIZE, 5,
     EGL_GREEN_SIZE, 6,
@@ -427,7 +437,6 @@ NAN_METHOD(Create) {
 NAN_METHOD(Destroy) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   eglDestroyContext(window->display, window->context);
-  eglTerminate(window->display);
   delete window;
 }
 
@@ -472,6 +481,8 @@ NAN_METHOD(SetClipboard) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Local<Object> makeWindow() {
+  egl::Initialize();
+
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
 
