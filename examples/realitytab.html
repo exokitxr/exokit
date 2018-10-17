@@ -1,16 +1,24 @@
 <!doctype html>
 <html>
   <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/96/three.js"></script>
+    <script src="three.js"></script>
     <script>
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.y = 1.6;
 
 const renderer = new THREE.WebGLRenderer( { antialias: true } );
 renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0x808080);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+directionalLight.position.set(1, 1, 1);
+scene.add(directionalLight);
 
 const cubeMesh = (() => {
   const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
@@ -18,7 +26,7 @@ const cubeMesh = (() => {
     color: 0xab47bc,
   });
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.y = 1.5;
+  mesh.position.y = 1.55;
   mesh.position.z = -1;
   mesh.rotation.order = 'YXZ';
   mesh.frustumCulled = false;
@@ -30,44 +38,52 @@ let lastTime = 0;
 function animate() {
   const now = Date.now();
   const timeDiff = now - lastTime;
-  cubeMesh.rotation.x = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI) % (Math.PI*2);
+  cubeMesh.rotation.y = (cubeMesh.rotation.y - timeDiff/1000 * Math.PI/2);
+  if (cubeMesh.rotation.y < -Math.PI*2) {
+    cubeMesh.rotation.y += Math.PI*2;
+  }
+  cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+  cubeMesh.rotation.z = (cubeMesh.rotation.z + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
-  requestAnimationFrame(animate);
   renderer.render(scene, camera);
 
   lastTime = now;
 }
 
-(async () => {
-  const display = await navigator.xr.requestDevice();
-  const session = await display.requestSession({
-    exclusive: true,
-  });
-  display.session = session;
-
-  session.onselect = e => {
-    console.log('select'); // XXX
-  };
-
-  // console.log('request first frame');
-  session.requestAnimationFrame((timestamp, frame) => {
-    renderer.vr.setSession(session, {
-      frameOfReferenceType: 'stage',
+if (navigator.xr) {
+  (async () => {
+    const display = await navigator.xr.requestDevice();
+    const session = await display.requestSession({
+      exclusive: true,
     });
+    display.session = session;
 
-    const viewport = session.baseLayer.getViewport(frame.views[0]);
-    const width = viewport.width;
-    const height = viewport.height;
+    session.onselect = e => {
+      console.log('select'); // XXX
+    };
 
-    renderer.setSize(width * 2, height);
+    // console.log('request first frame');
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
 
-    renderer.setAnimationLoop(null);
+      const viewport = session.baseLayer.getViewport(frame.views[0]);
+      const width = viewport.width;
+      const height = viewport.height;
 
-    renderer.vr.enabled = true;
-    renderer.vr.setDevice(display);
-    renderer.vr.setAnimationLoop(animate);
-  });
-})();
+      renderer.setSize(width * 2, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setDevice(display);
+      renderer.vr.setAnimationLoop(animate);
+    });
+  })();
+} else {
+  renderer.setAnimationLoop(animate);
+}
 
 console.log('loaded reality tab');
     </script>

@@ -1,20 +1,20 @@
 <!doctype html>
 <html>
   <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/96/three.js"></script>
+    <script src="three.js"></script>
     <script src="ScreenQuad.js"></script>
     <script>
-
 // helpers
 
 const FLOOR_SIZE = 20;
 
 const _makeRenderer = () => {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x7E57C2);
+  // scene.background = new THREE.Color(0x7E57C2);
 
-  const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.y = 1.6;
+  camera.position.z = 1;
 
   const renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setPixelRatio( window.devicePixelRatio );
@@ -90,8 +90,6 @@ const _openUrl = u => {
   iframe.src = u;
   iframe.hidden = true;
   iframe.addEventListener('framebuffer', newFramebuffer => {
-    console.log('got framebuffer', !!newFramebuffer);
-
     framebuffer = newFramebuffer;
 
     if (framebuffer) {
@@ -112,6 +110,8 @@ const _openUrl = u => {
       };
       depthProperties.__webglInit = true;
       screenQuad.material.uniforms.uDepth2.value = depthTexture;
+
+      console.log('init framebuffer', framebuffer); // XXX
     } else {
       screenQuad.material.uniforms.numTextures.value = 1;
       screenQuad.material.uniforms.uTexture2.value = null;
@@ -136,11 +136,11 @@ const _closeUrl = iframe => {
 
 // main
 
-(() => {
+/* (() => { // XXX
   const {scene, camera, renderer, destroy} = _makeRenderer();
   renderer.render(scene, camera);
   destroy();
-})();
+})(); */
 
 const {scene, camera, renderer, destroy} = _makeRenderer();
 
@@ -214,6 +214,7 @@ scene.add(cubeMesh);
 
 const compositeScene = new THREE.Scene();
 const renderTarget = _makeRenderTarget(renderer.domElement.width, renderer.domElement.height);
+console.log('render target', renderTarget.texture, renderTarget.depthTexture); // XXX
 const screenQuad = new ScreenQuad({
   texture1: renderTarget.texture,
   depth1: renderTarget.depthTexture,
@@ -225,7 +226,7 @@ let lastTime = 0;
 const _render = () => {
   const now = Date.now();
   const timeDiff = now - lastTime;
-  cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI) % (Math.PI*2);
+  cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
   if (framebuffer) {
     framebuffer.render();
@@ -242,11 +243,11 @@ const _render = () => {
 };
 
 function animate() {
-  requestAnimationFrame(animate);
   _render();
 }
 
 _openUrl('realitytab.html');
+// _openUrl('hello_xr.html');
 
 if (navigator.xr) {
   (async () => {
