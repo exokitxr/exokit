@@ -1,4 +1,4 @@
-#define MyAppName "Exokit Browser"
+#define MyAppName "Exokit"
 #define MyAppShortName "Exokit"
 #define MyAppLCShortName "exokit"
 #define MyAppPublisher "WebMR"
