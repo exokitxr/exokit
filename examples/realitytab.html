@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/96/three.js"></script>
+    <script>
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
+
+const renderer = new THREE.WebGLRenderer( { antialias: true } );
+renderer.setPixelRatio( window.devicePixelRatio );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild(renderer.domElement);
+
+const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+const material = new THREE.MeshPhongMaterial({
+  color: 0x9ccc65,
+});
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+(async () => {
+  console.log('request device');
+  const display = await navigator.xr.requestDevice();
+  console.log('request session');
+  const session = await display.requestSession({
+    exclusive: true,
+  });
+  display.session = session;
+
+  session.onselect = e => {
+    console.log('select'); // XXX
+  };
+
+  // console.log('request first frame');
+  session.requestAnimationFrame((timestamp, frame) => {
+    renderer.vr.setSession(session, {
+      frameOfReferenceType: 'stage',
+    });
+
+    const viewport = session.baseLayer.getViewport(frame.views[0]);
+    const width = viewport.width;
+    const height = viewport.height;
+
+    renderer.setSize(width * 2, height);
+
+    renderer.setAnimationLoop(null);
+
+    renderer.vr.enabled = true;
+    renderer.vr.setDevice(display);
+    renderer.vr.setAnimationLoop(animate);
+
+    console.log('running!');
+  });
+})();
+    </script>
+  </body>
+</html>

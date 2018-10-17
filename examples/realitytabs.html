@@ -1,0 +1,276 @@
+<!doctype html>
+<html>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/96/three.js"></script>
+    <script src="ScreenQuad.js"></script>
+    <script>
+
+// helpers
+
+const FLOOR_SIZE = 20;
+
+const _makeRenderer = () => {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x7E57C2);
+
+  const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
+
+  const renderer = new THREE.WebGLRenderer( { antialias: true } );
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild(renderer.domElement);
+
+  var geometry = new THREE.PlaneBufferGeometry( 1, height/width );
+  var material = new THREE.MeshBasicMaterial( {
+    map: texture,
+    side: THREE.DoubleSide,
+  } );
+  var mesh = new THREE.Mesh( geometry, material );
+  scene.add( mesh );
+
+  return {
+    scene,
+    camera,
+    renderer,
+    destroy() {
+      document.body.removeChild(renderer.domElement);
+    },
+  };
+};
+const _makeRenderTarget = (width, height) => {
+  const renderTarget = new THREE.WebGLRenderTarget(width, height);
+  renderTarget.depthTexture = new THREE.DepthTexture(
+    width,
+    height,
+    THREE.UnsignedInt248Type,
+    THREE.UVMapping,
+    THREE.ClampToEdgeWrapping,
+    THREE.ClampToEdgeWrapping,
+    THREE.NearestFilter,
+    THREE.NearestFilter,
+    1,
+    THREE.DepthStencilFormat
+  );
+  return renderTarget;
+};
+
+const iframes = [];
+const _openUrl = u => {
+  const _drawOk = () => {
+    console.log('Load ok: ' + u);
+  };
+  const _drawFail = () => {
+    console.log('Load error: ' + u);
+  };
+
+  const iframe = document.createElement('iframe');
+  iframe.onload = function() {
+    const contentDocument = (() => {
+      try {
+        if (this.contentDocument) { // this potentially throws
+          return this.contentDocument;
+        } else {
+          return null;
+        }
+      } catch(err) {
+        console.warn(err.stack);
+        return null;
+      }
+    })();
+    if (contentDocument) {
+      _drawOk();
+
+      floorMesh.visible = false;
+      // skyboxMesh.visible = false;
+      // scene.background = null;
+    } else {
+      _closeUrl(iframe);
+      iframes.splice(iframes.indexOf(iframe), 1);
+
+      const index = currentApps.indexOf(iframe.src);
+      if (index !== -1) {
+        currentApps.splice(index, 1);
+      }
+
+      _drawFail();
+    }
+  };
+  iframe.src = u;
+  iframe.hidden = true;
+  iframe.addEventListener('framebuffer', newFramebuffer => {
+    framebuffer = newFramebuffer;
+
+    if (framebuffer) {
+      screenQuad.material.uniforms.numTextures.value = 2;
+
+      const colorTexture = new THREE.Texture();
+      const colorProperties = renderer.properties.get(colorTexture);
+      colorProperties.__webglTexture = {
+        id: framebuffer.colorTexture,
+      };
+      colorProperties.__webglInit = true;
+      screenQuad.material.uniforms.uTexture2.value = colorTexture;
+
+      const depthTexture = new THREE.Texture();
+      const depthProperties = renderer.properties.get(depthTexture);
+      depthProperties.__webglTexture = {
+        id: framebuffer.depthStencilTexture,
+      };
+      depthProperties.__webglInit = true;
+      screenQuad.material.uniforms.uDepth2.value = depthTexture;
+    } else {
+      screenQuad.material.uniforms.numTextures.value = 1;
+      screenQuad.material.uniforms.uTexture2.value = null;
+      screenQuad.material.uniforms.uDepth2.value = null;
+    }
+  });
+  iframe.addEventListener('destroy', () => {
+    floorMesh.visible = true;
+    // skyboxMesh.visible = true;
+    // scene.background = _makeBackground();
+  });
+  container.appendChild(iframe);
+
+  return iframe;
+};
+const _closeUrl = iframe => {
+  if (iframe.destroy) {
+    iframe.destroy();
+  }
+
+  container.removeChild(iframe);
+};
+
+// main
+
+(() => {
+  const {scene, camera, renderer, destroy} = _makeRenderer();
+  renderer.render(scene, camera);
+  destroy();
+})();
+
+const {scene, camera, renderer, destroy} = _makeRenderer();
+
+const floorMesh = (() => {
+  const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
+    .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+      new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 0)
+      )
+    ));
+  const uvs = geometry.attributes.uv.array;
+  const numUvs = uvs.length / 2;
+  for (let i = 0; i < numUvs; i++) {
+    uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
+    uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
+  }
+
+  const texture = new THREE.Texture(
+    null,
+    THREE.UVMapping,
+    THREE.RepeatWrapping,
+    THREE.RepeatWrapping,
+    THREE.NearestFilter,
+    THREE.NearestFilter,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType,
+    1
+  );
+
+  const graphImg = new Image();
+  graphImg.crossOrigin = 'Anonymous';
+  graphImg.src = 'graphy.png';
+  graphImg.onload = () => {
+    texture.image = graphImg;
+    texture.needsUpdate = true;
+  };
+  graphImg.onerror = err => {
+    console.warn(err.stack);
+  };
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  // mesh.visible = false;
+  return mesh;
+})();
+scene.add(floorMesh);
+
+const compositeScene = new THREE.Scene();
+const renderTarget = _makeRenderTarget(renderer.domElement.width, renderer.domElement.height);
+const screenQuad = new ScreenQuad({
+  texture1: renderTarget.texture,
+  depth1: renderTarget.depthTexture,
+});
+let framebuffer = null;
+compositeScene.add(screenQuad);
+
+const _render = () => {
+  if (framebuffer) {
+    framebuffer.render();
+  }
+
+  const device = renderer.vr.getDevice();
+  if (device && device.constructor.name === 'FakeVRDisplay') {
+    camera.position.copy(device.position);
+    camera.quaternion.copy(device.quaternion);
+
+    renderer.render(scene, camera, renderTarget);
+  } else {
+    renderer.render(scene, camera, renderTarget);
+  }
+
+  renderer.vr.enabled = false;
+  renderer.render(compositeScene, camera);
+  renderer.vr.enabled = true;
+};
+
+function animate() {
+  requestAnimationFrame(animate);
+  _render();
+}
+
+_openUrl('realitytab.html');
+
+if (navigator.xr) {
+  (async () => {
+    console.log('request device');
+    const display = await navigator.xr.requestDevice();
+    console.log('request session');
+    const session = await display.requestSession({
+      exclusive: true,
+    });
+    display.session = session;
+
+    session.onselect = e => {
+      console.log('select'); // XXX
+    };
+
+    // console.log('request first frame');
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const viewport = session.baseLayer.getViewport(frame.views[0]);
+      const width = viewport.width;
+      const height = viewport.height;
+
+      renderer.setSize(width * 2, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setDevice(display);
+      renderer.vr.setAnimationLoop(animate);
+
+      console.log('running!');
+    });
+  })();
+}
+    </script>
+  </body>
+</html>
