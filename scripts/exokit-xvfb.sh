@@ -8,4 +8,4 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-xvfb-run -s "-screen 0 1280x1024x24" "$DIR/exokit.sh" "$@"
+xvfb-run -s "-screen 0 1280x1024x24" "$DIR/../exokit.sh" "$@"
