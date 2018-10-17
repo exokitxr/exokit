@@ -3,7 +3,6 @@
   <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/96/three.js"></script>
     <script>
-
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
@@ -13,22 +12,34 @@ renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild(renderer.domElement);
 
-const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-const material = new THREE.MeshPhongMaterial({
-  color: 0x9ccc65,
-});
-const mesh = new THREE.Mesh(geometry, material);
-scene.add(mesh);
+const cubeMesh = (() => {
+  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+  const material = new THREE.MeshPhongMaterial({
+    color: 0xab47bc,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.y = 1.5;
+  mesh.position.z = -1;
+  mesh.rotation.order = 'YXZ';
+  mesh.frustumCulled = false;
+  return mesh;
+})();
+scene.add(cubeMesh);
 
+let lastTime = 0;
 function animate() {
+  const now = Date.now();
+  const timeDiff = now - lastTime;
+  cubeMesh.rotation.x = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI) % (Math.PI*2);
+
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
+
+  lastTime = now;
 }
 
 (async () => {
-  console.log('request device');
   const display = await navigator.xr.requestDevice();
-  console.log('request session');
   const session = await display.requestSession({
     exclusive: true,
   });
@@ -55,10 +66,10 @@ function animate() {
     renderer.vr.enabled = true;
     renderer.vr.setDevice(display);
     renderer.vr.setAnimationLoop(animate);
-
-    console.log('running!');
   });
 })();
+
+console.log('loaded reality tab');
     </script>
   </body>
 </html>

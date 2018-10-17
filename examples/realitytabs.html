@@ -14,19 +14,12 @@ const _makeRenderer = () => {
   scene.background = new THREE.Color(0x7E57C2);
 
   const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
+  camera.position.y = 1.6;
 
   const renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
   document.body.appendChild(renderer.domElement);
-
-  var geometry = new THREE.PlaneBufferGeometry( 1, height/width );
-  var material = new THREE.MeshBasicMaterial( {
-    map: texture,
-    side: THREE.DoubleSide,
-  } );
-  var mesh = new THREE.Mesh( geometry, material );
-  scene.add( mesh );
 
   return {
     scene,
@@ -80,8 +73,7 @@ const _openUrl = u => {
     if (contentDocument) {
       _drawOk();
 
-      floorMesh.visible = false;
-      // skyboxMesh.visible = false;
+      // floorMesh.visible = false;
       // scene.background = null;
     } else {
       _closeUrl(iframe);
@@ -98,6 +90,8 @@ const _openUrl = u => {
   iframe.src = u;
   iframe.hidden = true;
   iframe.addEventListener('framebuffer', newFramebuffer => {
+    console.log('got framebuffer', !!newFramebuffer);
+
     framebuffer = newFramebuffer;
 
     if (framebuffer) {
@@ -125,11 +119,10 @@ const _openUrl = u => {
     }
   });
   iframe.addEventListener('destroy', () => {
-    floorMesh.visible = true;
-    // skyboxMesh.visible = true;
+    // floorMesh.visible = true;
     // scene.background = _makeBackground();
   });
-  container.appendChild(iframe);
+  document.body.appendChild(iframe);
 
   return iframe;
 };
@@ -138,7 +131,7 @@ const _closeUrl = iframe => {
     iframe.destroy();
   }
 
-  container.removeChild(iframe);
+  document.body.removeChild(iframe);
 };
 
 // main
@@ -150,6 +143,13 @@ const _closeUrl = iframe => {
 })();
 
 const {scene, camera, renderer, destroy} = _makeRenderer();
+
+const ambientLight = new THREE.AmbientLight(0x808080);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+directionalLight.position.set(1, 1, 1);
+scene.add(directionalLight);
 
 const floorMesh = (() => {
   const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
@@ -194,10 +194,23 @@ const floorMesh = (() => {
     side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(geometry, material);
-  // mesh.visible = false;
   return mesh;
 })();
 scene.add(floorMesh);
+
+const cubeMesh = (() => {
+  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+  const material = new THREE.MeshPhongMaterial({
+    color: 0x9ccc65,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.y = 1.5;
+  mesh.position.z = -1;
+  mesh.rotation.order = 'YXZ';
+  mesh.frustumCulled = false;
+  return mesh;
+})();
+scene.add(cubeMesh);
 
 const compositeScene = new THREE.Scene();
 const renderTarget = _makeRenderTarget(renderer.domElement.width, renderer.domElement.height);
@@ -208,24 +221,24 @@ const screenQuad = new ScreenQuad({
 let framebuffer = null;
 compositeScene.add(screenQuad);
 
+let lastTime = 0;
 const _render = () => {
+  const now = Date.now();
+  const timeDiff = now - lastTime;
+  cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI) % (Math.PI*2);
+
   if (framebuffer) {
     framebuffer.render();
   }
-
-  const device = renderer.vr.getDevice();
-  if (device && device.constructor.name === 'FakeVRDisplay') {
-    camera.position.copy(device.position);
-    camera.quaternion.copy(device.quaternion);
-
-    renderer.render(scene, camera, renderTarget);
-  } else {
-    renderer.render(scene, camera, renderTarget);
-  }
+  renderer.render(scene, camera, renderTarget);
 
   renderer.vr.enabled = false;
   renderer.render(compositeScene, camera);
   renderer.vr.enabled = true;
+
+  // renderer.render(scene, camera);
+
+  lastTime = now;
 };
 
 function animate() {
@@ -270,6 +283,8 @@ if (navigator.xr) {
       console.log('running!');
     });
   })();
+} else {
+  renderer.setAnimationLoop(animate);
 }
     </script>
   </body>
