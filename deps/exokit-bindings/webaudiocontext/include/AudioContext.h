@@ -48,7 +48,6 @@ public:
   Local<Object> CreateScriptProcessor(Local<Function> scriptProcessorNodeConstructor, uint32_t bufferSize, uint32_t numberOfInputChannels, uint32_t numberOfOutputChannels, Local<Object> audioContextObj);
   void Suspend();
   void Resume();
-  void Close();
 
 protected:
   static NAN_METHOD(New);
@@ -68,7 +67,6 @@ protected:
   static NAN_METHOD(CreateScriptProcessor);
   static NAN_METHOD(Suspend);
   static NAN_METHOD(Resume);
-  static NAN_METHOD(Close);
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_GETTER(SampleRateGetter);
 
