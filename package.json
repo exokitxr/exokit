@@ -61,7 +61,7 @@
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "nan": "^2.10.0",
-    "native-audio-deps": "0.0.52",
+    "native-audio-deps": "0.0.53",
     "native-canvas-deps": "0.0.48",
     "native-graphics-deps": "0.0.20",
     "native-openvr-deps": "0.0.17",
@@ -81,7 +81,7 @@
     "window-fetch": "0.0.9",
     "window-selector": "0.0.5",
     "window-text-encoding": "0.0.2",
-    "window-worker": "0.0.96",
+    "window-worker": "0.0.97",
     "window-xhr": "0.0.19",
     "ws": "^6.0.0"
   },
