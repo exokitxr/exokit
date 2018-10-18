@@ -89,8 +89,8 @@ const _openUrl = u => {
   };
   iframe.src = u;
   iframe.hidden = true;
-  iframe.addEventListener('framebuffer', newFramebuffer => {
-    framebuffer = newFramebuffer;
+  iframe.addEventListener('framebuffer', framebuffer => {
+    framebuffers.push(framebuffer);
 
     if (framebuffer) {
       // screenQuad.material.uniforms.numTextures.value = 2;
@@ -225,7 +225,7 @@ const screenQuad = new ScreenQuad({
   texture1: renderTarget.texture,
   depth1: renderTarget.depthTexture,
 });
-let framebuffer = null;
+const framebuffers = [];
 compositeScene.add(screenQuad);
 
 let lastTime = 0;
@@ -234,8 +234,8 @@ const _render = () => {
   const timeDiff = now - lastTime;
   cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
-  if (framebuffer) {
-    framebuffer.render();
+  for (let i = 0; i < framebuffers.length; i++) {
+    framebuffers[i].render();
   }
   renderer.render(scene, camera, renderTarget);
 
@@ -253,7 +253,7 @@ function animate() {
 }
 
 _openUrl('realitytab.html');
-// _openUrl('hello_xr.html');
+_openUrl('realitytab2.html');
 
 if (navigator.xr) {
   (async () => {
