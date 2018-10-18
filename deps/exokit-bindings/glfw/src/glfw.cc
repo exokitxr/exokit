@@ -1,4 +1,5 @@
 #include <glfw/include/glfw.h>
+#include <windowsystem.h>
 #include <webgl.h>
 
 namespace glfw {
@@ -1855,6 +1856,8 @@ NAN_METHOD(SetClipboard) {
 } */
 
 Local<Object> makeWindow() {
+  windowsystembase::Initialize();
+  
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
 
@@ -1892,6 +1895,8 @@ Local<Object> makeWindow() {
   // Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
+  
+  windowsystembase::Decorate(target);
 
   return scope.Escape(target);
 }
