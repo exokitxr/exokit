@@ -1,4 +1,5 @@
 #include <egl/include/egl.h>
+#include <windowsystem.h>
 #include <webgl.h>
 
 namespace egl {
@@ -482,6 +483,7 @@ NAN_METHOD(SetClipboard) {
 
 Local<Object> makeWindow() {
   egl::Initialize();
+  windowsystembase::Initialize();
 
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
@@ -516,6 +518,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "destroyRenderTarget", egl::DestroyRenderTarget);
   Nan::SetMethod(target, "blitFrameBuffer", egl::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", egl::SetCurrentWindowContext);
+  
+  windowsystembase::Decorate(target);
 
   return scope.Escape(target);
 }
