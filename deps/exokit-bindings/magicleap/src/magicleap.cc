@@ -1334,6 +1334,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
       glUniform1i(mlContext->contentTextureLocation, 1);
 
       glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+      glClear(GL_COLOR_BUFFER_BIT);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
       eglDestroyImageKHR(window->display, yuv_img);
