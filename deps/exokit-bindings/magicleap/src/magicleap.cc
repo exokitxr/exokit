@@ -1816,9 +1816,9 @@ NAN_METHOD(MLContext::Present) {
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
     if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-      glBindFramebuffer(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
     } else {
-      glBindFramebuffer(GL_TEXTURE_2D, 0);
+      glBindTexture(GL_TEXTURE_2D, 0);
     }
   }
 
