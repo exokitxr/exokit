@@ -1334,6 +1334,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
       glUniform1i(mlContext->contentTextureLocation, 1);
 
       glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+      glClear(GL_COLOR_BUFFER_BIT);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
       eglDestroyImageKHR(window->display, yuv_img);
@@ -1816,9 +1817,9 @@ NAN_METHOD(MLContext::Present) {
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
     if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-      glBindFramebuffer(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
     } else {
-      glBindFramebuffer(GL_TEXTURE_2D, 0);
+      glBindTexture(GL_TEXTURE_2D, 0);
     }
   }
 
