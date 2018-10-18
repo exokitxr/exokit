@@ -93,7 +93,7 @@ const _openUrl = u => {
     framebuffer = newFramebuffer;
 
     if (framebuffer) {
-      screenQuad.material.uniforms.numTextures.value = 2;
+      // screenQuad.material.uniforms.numTextures.value = 2;
 
       const colorTexture = new THREE.Texture();
       const colorProperties = renderer.properties.get(colorTexture);
@@ -101,7 +101,7 @@ const _openUrl = u => {
         id: framebuffer.colorTexture,
       };
       colorProperties.__webglInit = true;
-      screenQuad.material.uniforms.uTexture2.value = colorTexture;
+      // screenQuad.material.uniforms.uTexture2.value = colorTexture;
 
       const depthTexture = new THREE.Texture();
       const depthProperties = renderer.properties.get(depthTexture);
@@ -109,9 +109,15 @@ const _openUrl = u => {
         id: framebuffer.depthStencilTexture,
       };
       depthProperties.__webglInit = true;
-      screenQuad.material.uniforms.uDepth2.value = depthTexture;
+      // screenQuad.material.uniforms.uDepth2.value = depthTexture;
 
-      console.log('init framebuffer', framebuffer); // XXX
+      const screenQuad = new ScreenQuad({
+        texture1: colorTexture,
+        depth1: depthTexture,
+      });
+      compositeScene.add(screenQuad);
+
+      // console.log('init framebuffer', framebuffer); // XXX
     } else {
       screenQuad.material.uniforms.numTextures.value = 1;
       screenQuad.material.uniforms.uTexture2.value = null;
@@ -214,7 +220,7 @@ scene.add(cubeMesh);
 
 const compositeScene = new THREE.Scene();
 const renderTarget = _makeRenderTarget(renderer.domElement.width, renderer.domElement.height);
-console.log('render target', renderTarget.texture, renderTarget.depthTexture); // XXX
+// console.log('render target', renderTarget.texture, renderTarget.depthTexture); // XXX
 const screenQuad = new ScreenQuad({
   texture1: renderTarget.texture,
   depth1: renderTarget.depthTexture,
