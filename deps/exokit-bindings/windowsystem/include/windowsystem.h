@@ -1,10 +1,10 @@
 #ifndef _WINDOWSYSTEM_H_
 #define _WINDOWSYSTEM_H_
 
-#include <string>
-// #include <sstream>
-#indclude <vector>
-// #indclude <map>
+#include <webgl.h>
+
+#include <iostream>
+#include <vector>
 
 #include <v8.h>
 #include <nan.h>
@@ -14,6 +14,7 @@ using namespace v8;
 
 // class WebGLRenderingContext;
 typedef unsigned int GLuint;
+typedef int GLint;
 
 namespace windowsystembase {
 
@@ -32,24 +33,20 @@ public:
   std::unique_ptr<BlitSpec> blitSpec;
 };
 
-class WindowSystem {
-public:
-  WindowSystem();
-  ~WindowSystem();
-  
-protected:
-  void Initialize();
-  void Decorate(Local<Object> target);
-  void Compose(const std::vector<LayerSpec> &layers);  
-  NAN_METHOD(Compose);
+void Initialize();
+void Decorate(Local<Object> target);
+void Compose(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);  
+NAN_METHOD(Compose);
 
-  GLuint composeVao;
-  GLuint composeProgram;
-  GLint positionLocation;
-  GLint uvLocation;
-  GLint colorTexLocation;
-  GLint depthTexLocation;
-};
+extern GLuint composeVao;
+extern GLuint composeFbo;
+extern GLuint composeProgram;
+extern GLint positionLocation;
+extern GLint uvLocation;
+extern GLint colorTexLocation;
+extern GLint depthTexLocation;
+extern GLuint positionBuffer;
+extern GLuint uvBuffer;
 
 }
 
