@@ -21,6 +21,7 @@ const UPNG = require('upng-js');
 
 const {version} = require('../package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
+const symbols = require('./symbols');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
@@ -173,27 +174,25 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const {hidden} = document;
     if (hidden) {
-      const [framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
+      const [fbo, colorTexture, depthStencilTexture, msFbo, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
 
-      gl.setDefaultFramebuffer(msFramebuffer);
+      gl.setDefaultFramebuffer(msFbo);
 
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
+        nativeWindow.resizeRenderTarget(gl, width, height, fbo, colorTexture, depthStencilTexture, msFbo, msColorTexture, msDepthStencilTexture);
       };
 
-      document._emit('framebuffer', {
-        framebuffer,
+      const framebuffer = {
+        framebuffer: fbo,
         colorTexture,
         depthStencilTexture,
-        render() {
-          nativeWindow.setCurrentWindowContext(windowHandle);
-
-          // color blit is linear, depth/stencil is nearest
-          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, true, false, false);
-          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
-        },
-      });
+        msFramebuffer: msFbo,
+        msColorTexture,
+        msDepthStencilTexture,
+      };
+      document[symbols.framebufferSymbol] = framebuffer;
+      document._emit('framebuffer', framebuffer);
     } else {
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
@@ -924,6 +923,27 @@ const _bindWindow = (window, newWindowCb) => {
     console.dir({width, height, image: name, result: result.length});
     fs.writeFileSync(name, result);
   }
+  const _preblit = () => {
+    for (let i = 0; i < contexts.length; i++) {
+      const context = contexts[i];
+      const {canvas} = context;
+      const {ownerDocument: document} = canvas;
+
+      if (document.hidden) {
+        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+
+        // color blit is linear, depth/stencil is nearest
+        const {
+          [symbols.framebufferSymbol]: {
+            framebuffer,
+            msFramebuffer,
+          },
+        } = document;
+        nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, true, false, false);
+        nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
+      }
+    }
+  };
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -1421,6 +1441,7 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
+    _preblit();
     window.tickAnimationFrame();
     if (args.performance) {
       const now = Date.now();

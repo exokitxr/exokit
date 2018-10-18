@@ -3,6 +3,7 @@ module.exports.computedStyleSymbol = Symbol();
 module.exports.disabledEventsSymbol = Symbol();
 module.exports.elementSymbol = Symbol();
 module.exports.fullscreenElementSymbol = Symbol();
+module.exports.framebufferSymbol = Symbol();
 module.exports.htmlTagsSymbol = Symbol();
 module.exports.idSymbol = Symbol();
 module.exports.mrDisplaysSymbol = Symbol();
