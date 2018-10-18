@@ -3,6 +3,19 @@
   <body>
     <script src="three.js"></script>
     <script>
+function parseQuery(queryString) {
+  var query = {};
+  var pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+  for (var i = 0; i < pairs.length; i++) {
+    var pair = pairs[i].split('=');
+    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+  }
+  return query;
+}
+const query = parseQuery(window.location.search);
+
+console.log('got query', query);
+
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -23,9 +36,10 @@ scene.add(directionalLight);
 const cubeMesh = (() => {
   const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
   const material = new THREE.MeshPhongMaterial({
-    color: 0xab47bc,
+    color: parseInt(query.color, 16) || 0xab47bc,
   });
   const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.x = parseFloat(query.x) || 0;
   mesh.position.y = 1.55;
   mesh.position.z = -1;
   mesh.rotation.order = 'YXZ';
