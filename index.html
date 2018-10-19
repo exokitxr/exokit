@@ -1001,134 +1001,13 @@
             _setIntersectionDefault();
           }
 
-          const lastMenuPressed = lastMenuPresseds[i];
-          lastMenuPresseds[i] = menuPressed;
-          if (menuPressed && !lastMenuPressed) {
-            const opening = !menuOpen;
-            if (opening) {
-              localEuler.setFromQuaternion(camera.quaternion, localEuler.order);
-              localEuler.x = 0;
-              localEuler.z = 0;
-
-              keyboardMesh.position
-                .copy(camera.position)
-                .add(
-                  localVector
-                    .set(0, -0.5, -1)
-                    .applyEuler(localEuler)
-                );
-
-              menuMesh.position
-                .copy(camera.position)
-                .add(
-                  localVector
-                    .set(0, 0.5, -2)
-                    .applyEuler(localEuler)
-                );
-
-              controllerMeshes[i].rayMesh.visible = true;
-            } else {
-              controllerMeshes[i].rayMesh.visible = false;
-            }
-            menuOpen = opening;
-
-            if (opening) {
-              localEuler.setFromQuaternion(
-                localQuaternion
-                  .setFromUnitVectors(
-                    new THREE.Vector3(0, 0, -1),
-                    keyboardMesh.position.clone()
-                      .sub(camera.position)
-                      .normalize()
-                  ),
-                localEuler.order
-              );
-              localEuler.x = 0;
-              localEuler.z = 0;
-              keyboardMesh.rotation.copy(localEuler);
-              menuMesh.rotation.copy(localEuler);
-            }
-
-            const endValue = opening ? 1 : 0;
-            const now = Date.now();
-            keyboardMeshAnimation = {
-              startValue: keyboardMesh.planeMesh.scale.y,
-              endValue,
-              startTime: now,
-              endTime: now + 300,
-            };
-          }
-
-          const lastGrabbed = lastGrabbeds[i];
-          lastGrabbeds[i] = grabbed;
-          // console.log('check grabbed', {i, grabbed, lastGrabbed});
-          if (grabbed && !lastGrabbed) {
-            const targetObject = fileMeshes.find(objectMesh =>
-              objectMesh.position.distanceTo(controllerMesh.position) < 0.1
-            );
-            if (targetObject) {
-              grabbedObjects[i] = targetObject;
-            } else if (_isInBody(controllerMesh.position) && currentFileIndex !== -1) {
-              const currentFile = files[currentFileIndex];
-              const fileObject = _makeFileObject(currentFile);
-              scene.add(fileObject);
-              fileMeshes.push(fileObject);
-
-              grabbedObjects[i] = fileObject;
-            }
-          } else if (!grabbed && lastGrabbed) {
-            const grabbedObject = grabbedObjects[i];
-
-            if (grabbedObject) {
-              if (_isInBody(controllerMesh.position)) {
-                scene.remove(grabbedObject);
-                fileMeshes.splice(fileMeshes.indexOf(grabbedObject), 1);
-              }
-
-              grabbedObjects[i] = null;
-            }
-          }
-
           const lastPressed = lastPresseds[i];
           lastPresseds[i] = pressed;
           if (pressed && !lastPressed) {
-            if (gamepad.hapticActuators) {
-              for (let j = 0; j < gamepad.hapticActuators.length; j++) {
-                gamepad.hapticActuators[j].pulse(1, 100);
-              }
-            }
+
 
             const grabbedObject = grabbedObjects[i];
-            if (grabbedObject) {
-              const {file} = grabbedObject;
-
-              if (_isIdOpen()) {
-                Promise.all([
-                  xrid.set('_exokit.skin', file.url)
-                    .then(() => {
-                      if (_isMpOpen()) {
-                        return xrmp.localPlayerMesh.player.setState({
-                          _exokit: {
-                            username: xrid.user.username,
-                          },
-                        });
-                      } else {
-                        return Promise.resolve();
-                      }
-                    }),
-                  localSkinMesh.setSkinUrl(file.url),
-                  /* _requestSkinPreviewCanvas(file.url)
-                    .then(canvas => {
-                      skinPreviewCanvas = canvas;
-
-                      menuMesh.urlMesh.updateText();
-                    }), */
-                ])
-                  .catch(err => {
-                    console.warn(err);
-                  });
-              }
-            } else if (intersectionRect) {
+            if (intersectionRect) {
               if (intersectionRect.click) {
                 // console.log('eval click', intersectionRect.click); // XXX
                 _renderHtml(intersectionRect.click);
@@ -1150,7 +1029,7 @@
 
 
               menuMesh.urlMesh.updateText();
-            } 
+            }
           }
         }
       };
