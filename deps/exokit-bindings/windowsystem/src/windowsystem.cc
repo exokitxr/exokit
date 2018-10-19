@@ -196,6 +196,7 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, layer.depthTex);
     glUniform1i(composeSpec->depthTexLocation, 1);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
