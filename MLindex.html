@@ -1167,43 +1167,6 @@
         }
       }
     });
-
-
-    const _getFiles = dataTransfer => {
-      if (dataTransfer.items.length > 0) {
-        const entries = Array.from(items)
-          .map(item => item.webkitGetAsEntry())
-          .filter(entry => entry !== null);
-
-        const files = [];
-        const _recurseEntries = entries => Promise.all(entries.map(_recurseEntry));
-        const _recurseEntry = entry => new Promise((accept, reject) => {
-          if (entry.isFile) {
-            entry.file(file => {
-              file.path = entry.fullPath.slice(1);
-
-              files.push(file);
-
-              accept();
-            });
-          } else if (entry.isDirectory) {
-            const directoryReader = entry.createReader();
-            directoryReader.readEntries(entries => {
-              _recurseEntries(Array.from(entries))
-                .then(() => {
-                  accept();
-                });
-            });
-          } else {
-            accept();
-          }
-        });
-        return _recurseEntries(entries)
-          .then(() => files);
-      } else {
-        return Promise.resolve(dataTransfer.files);
-      }
-    };
 })();
   </script>
 </body>
