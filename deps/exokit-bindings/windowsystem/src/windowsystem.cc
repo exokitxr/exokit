@@ -279,7 +279,7 @@ NAN_METHOD(ComposeLayers) {
           return Nan::ThrowError("WindowSystem::Compose: invalid layer object properties");
         }
       } else {
-        return Nan::ThrowError("WindowSystem::Compose: invalid layers");
+        return Nan::ThrowError("WindowSystem::Compose: invalid layer object");
       }
     }
 
