@@ -1333,19 +1333,22 @@ NAN_METHOD(Create) {
   bool initialVisible = info[2]->BooleanValue();
   bool hidden = info[3]->BooleanValue();
   NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
-  WebGLRenderingContext *gl = info[5]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5])) : nullptr;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
+  WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
 
   glfwWindowHint(GLFW_VISIBLE, initialVisible);
 
   GLuint framebuffers[] = {0, 0};
   GLuint framebufferTextures[] = {0, 0, 0, 0};
-  bool shared = hidden && sharedWindow != nullptr && gl != nullptr;
+  bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
   if (shared) {
     SetCurrentWindowContext(sharedWindow);
 
     glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
   }
+  
+  windowsystembase::InitializeLocalGlState(gl);
 
   NATIVEwindow *windowHandle = glfwCreateWindow(width, height, "Exokit", nullptr, shared ? sharedWindow : nullptr);
 

@@ -380,7 +380,8 @@ NAN_METHOD(Create) {
   bool initialVisible = info[2]->BooleanValue();
   bool hidden = info[3]->BooleanValue();
   NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
-  WebGLRenderingContext *gl = info[5]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5])) : nullptr;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
+  WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
 
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
@@ -405,6 +406,8 @@ NAN_METHOD(Create) {
   EGLContext context = eglCreateContext(display, egl_config, EGL_NO_CONTEXT, context_attribs);
 
   eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context);
+  
+  windowsystembase::InitializeLocalGlState(gl);
 
   NATIVEwindow *windowHandle = new NATIVEwindow{display, context, width, height};
 

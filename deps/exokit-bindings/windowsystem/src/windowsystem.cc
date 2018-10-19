@@ -222,15 +222,6 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
   glActiveTexture(gl->activeTexture);
 }
 
-NAN_METHOD(InitializeLocalGlState) {
-  if (info[0]->IsObject()) {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    InitializeLocalGlState(gl);
-  } else {
-    Nan::ThrowError("WindowSystem::Compose: invalid arguments");
-  }
-}
-
 NAN_METHOD(ComposeLayers) {
   if (info[0]->IsObject() && info[1]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
@@ -293,7 +284,6 @@ NAN_METHOD(ComposeLayers) {
 }
 
 void Decorate(Local<Object> target) {
-  Nan::SetMethod(target, "initializeLocalGlState", InitializeLocalGlState);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
 }
 
