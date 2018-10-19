@@ -1214,6 +1214,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       })(wsProxy.Server);
       return wsProxy;
     })(),
+    composeLayers: (gl, layers) => {
+      nativeWindow.setCurrentWindowContext(gl.getWindowHandle());
+      nativeWindow.composeLayers(gl, layers);
+    },
     electron,
     magicleap: nativeMl ? {
       RequestMeshing() {
