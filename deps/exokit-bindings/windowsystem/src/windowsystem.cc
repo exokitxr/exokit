@@ -130,6 +130,8 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   glEnableVertexAttribArray(composeSpec->uvLocation);
   glVertexAttribPointer(composeSpec->uvLocation, 2, GL_FLOAT, false, 0, 0);
 
+  gl->keys[GlKey::GL_KEY_COMPOSE] = composeSpec;
+
   if (gl->HasVertexArrayBinding()) {
     glBindVertexArray(gl->GetVertexArrayBinding());
   } else {
