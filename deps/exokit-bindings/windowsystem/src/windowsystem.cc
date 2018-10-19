@@ -142,11 +142,6 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   } else {
     glBindVertexArray(gl->defaultVao);
   }
-  if (gl->HasProgramBinding()) {
-    glUseProgram(gl->GetProgramBinding());
-  } else {
-    glUseProgram(0);
-  }
   if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
     glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
   } else {
