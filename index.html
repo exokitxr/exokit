@@ -1150,170 +1150,14 @@
 
 
               menuMesh.urlMesh.updateText();
-            } else if (urlCoords) {
-              const [x, y] = urlCoords;
-              const textX = x - 10;
-
-              let closestIndex = -1;
-              let closestDistance = Infinity;
-              for (let i = 0; i < urlState.measures.length; i++) {
-                const urlMeasure = urlState.measures[i];
-                const distance = Math.abs(urlMeasure - textX);
-                if (distance < closestDistance) {
-                  closestIndex = i;
-                  closestDistance = distance;
-                }
-              }
-              if (closestIndex !== -1) {
-                urlState.cursor = closestIndex;
-                menuMesh.urlMesh.updateText();
-              }
-
-              keyboardState = urlState;
-            } else if (appIndex !== -1) {
-              const app = apps[appIndex];
-              const currentAppIndex = currentApps.indexOf(app);
-              if (currentAppIndex === -1) {
-                currentApps = [app];
-                _updateLocalApps();
-              } else {
-                currentApps.splice(currentAppIndex, 1);
-                _updateLocalApps();
-              }
-
-              if (_isMpOpen()) {
-                xrmp.updateRemoteApps();
-              }
-
-              menuMesh.urlMesh.updateText();
-            } else if (fileIndex !== -1) {
-              if (currentFileIndex === fileIndex && fileRemove) {
-                if (_isIdOpen()) {
-                  const file = files[fileIndex];
-                  files.splice(fileIndex, 1);
-                  fileMeshes = fileMeshes.filter(fileObject => {
-                    if (fileObject.file.url === file.url) {
-                      scene.remove(fileObject);
-                      return false;
-                    } else {
-                      return true;
-                    }
-                  });
-
-                  currentFileIndex = -1;
-
-                  xrid.remove(file.name)
-                    .catch(err => {
-                      console.warn(err.stack);
-                    });
-
-                  menuMesh.urlMesh.updateText();
-                }
-              } else {
-                currentFileIndex = fileIndex;
-
-                menuMesh.urlMesh.updateText();
-              }
-            } else if (serverIndex !== -1) {
-              if (currentServerIndex !== serverIndex) {
-                currentServerIndex = serverIndex;
-
-                _openMp(window.location.protocol.replace(/^http/, 'ws') + '//' + servers[serverIndex].url);
-              } else {
-                currentServerIndex = -1;
-
-                _closeMp();
-                voicechatEnabled = false;
-
-                currentApps = [];
-                _updateLocalApps();
-              }
-
-              menuMesh.urlMesh.updateText();
-            } else if (voicechatHovered) {
-              if (_isMpOpen()) {
-                if (!voicechatEnabled) {
-                  _openMic();
-                  voicechatEnabled = true;
-
-                  menuMesh.urlMesh.updateText();
-                } else {
-                  _closeMic();
-                  voicechatEnabled = false;
-
-                  menuMesh.urlMesh.updateText();
-                }
-              }
-            }
+            } 
           }
         }
       };
-      const _animateKeyboard = () => {
-        if (keyboardMeshAnimation) {
-          const now = Date.now();
-          const factor = Math.pow((now - keyboardMeshAnimation.startTime) / (keyboardMeshAnimation.endTime - keyboardMeshAnimation.startTime), 0.15);
 
-          if (factor < 1) {
-            const scaleY = keyboardMeshAnimation.startValue * (1 - factor) + keyboardMeshAnimation.endValue * factor;
-
-            keyboardMesh.planeMesh.scale.y = scaleY;
-            keyboardMesh.updateMatrixWorld();
-            keyboardMesh.visible = true;
-
-            menuMesh.scale.y = scaleY;
-            menuMesh.updateMatrixWorld();
-            menuMesh.visible = true;
-          } else {
-            const visible = keyboardMesh.planeMesh.scale.y > 0.5;
-            keyboardMesh.visible = visible;
-            menuMesh.visible = visible;
-
-            keyboardMeshAnimation = null;
-          }
-        }
-      };
-      const _animateControllers = () => {
-        const gamepads = _getGamepads();
-
-        const controllersVisible = menuOpen || iframes.length === 0;
-        for (let i = 0; i < gamepads.length; i++) {
-          const gamepad = gamepads[i];
-          const controllerMesh = controllerMeshes[i];
-          if (gamepad && controllersVisible) {
-            const {pressed} = gamepad.buttons[1];
-            controllerMesh.rayMesh.material.color.setHex(pressed ? RAY_HIGHLIGHT_COLOR : RAY_COLOR);
-            controllerMesh.visible = true;
-          } else {
-            controllerMesh.visible = false;
-          }
-        }
-
-        /* const loopTime = 1500;
-        for (let i = 0; i < controllerMeshes.length; i++) {
-          const controllerMesh = controllerMeshes[i];
-          localEuler.y = (i === 0 ? -1 : 1) * Math.sin((currentTime % loopTime) / loopTime * Math.PI * 2);
-          controllerMesh.quaternion.setFromUnitVectors(
-            localVector.set(0, 0, -1),
-            localVector2.set(0, -1, -1)
-              .normalize()
-              .applyEuler(
-                localEuler
-              )
-          );
-        } */
-      };
-
-      const _animateAnimations = () => {
-        for (let i = 0; i < animations.length; i++) {
-          animations[i]();
-        }
-      };
 
       _updateControllers();
       _updateIntersections();
-      _animateKeyboard();
-      _animateControllers();
-      _animateAnimations();
 
       if (window.requestAnimationFrame.length === 1) {
         _render();
@@ -1620,12 +1464,6 @@
               fakeDisplay.gamepads[controllerIndex].buttons[0].pressed = true;
               break;
             }
-            case 84: { // T
-              if (_isMpOpen() && !voicechatEnabled && !xrmp.localPlayerMesh.getMediaStream()) {
-                _openMic();
-              }
-              break;
-            }
             case 17: { // Ctrl
               keys.ctrl = true;
               break;
@@ -1741,14 +1579,6 @@
             }
             break;
           }
-          case 52: { // 4
-            console.log('enable stereo');
-
-            const newStereo = !fakeDisplay.getStereo();
-            fakeDisplay.setStereo(newStereo);
-            _enterFakeDisplay(newStereo);
-            break;
-          }
           default: {
             _handleDefaultKey();
             break;
@@ -1777,27 +1607,6 @@
             keys.right = false;
             break;
           }
-          case 69: { // E
-            fakeDisplay.gamepads[controllerIndex].buttons[3].value = 0;
-            fakeDisplay.gamepads[controllerIndex].buttons[3].pressed = false;
-            break;
-          }
-          case 70: { // F
-            fakeDisplay.gamepads[controllerIndex].buttons[2].value = 0;
-            fakeDisplay.gamepads[controllerIndex].buttons[2].pressed = false;
-            break;
-          }
-          case 81: { // Q
-            fakeDisplay.gamepads[controllerIndex].buttons[0].value = 0;
-            fakeDisplay.gamepads[controllerIndex].buttons[0].pressed = false;
-            break;
-          }
-          case 84: { // T
-            if (_isMpOpen() && !voicechatEnabled && xrmp.localPlayerMesh.getMediaStream()) {
-              _closeMic();
-            }
-            break;
-          }
           case 17: { // Ctrl
             keys.ctrl = false;
             break;
@@ -1812,7 +1621,8 @@
     window.addEventListener('mousedown', () => {
       if (!window.document.pointerLockElement) {
         renderer.domElement.requestPointerLock();
-      } else {
+      }
+      else {
         const gamepad = fakeDisplay.gamepads[1];
         if (gamepad) {
           fakeDisplay.gamepads[controllerIndex].buttons[1].value = 1;
