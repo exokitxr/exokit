@@ -276,20 +276,6 @@
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
-    const _isInBody = p => {
-      const hmdEuler = localEuler.setFromQuaternion(camera.quaternion, camera.rotation.order);
-      hmdEuler.x = 0;
-      hmdEuler.z = 0;
-      const hmdQuaternion = localQuaternion.setFromEuler(hmdEuler);
-      const bodyPosition = localVector.copy(camera.position)
-        .add(
-          localVector2.set(0, -0.4, 0.2)
-            .applyQuaternion(hmdQuaternion)
-        );
-      return p.distanceTo(bodyPosition) < 0.35;
-    };
-
-
     const controllerMeshes = [null, null];
     const lastPresseds = [false, false];
     const lastMenuPresseds = [false, false];
