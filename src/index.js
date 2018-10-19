@@ -174,23 +174,21 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const {hidden} = document;
     if (hidden) {
-      const [fbo, colorTexture, depthStencilTexture, msFbo, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
+      const [fbo, colorTex, depthTex, msFbo, msColorTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
 
       gl.setDefaultFramebuffer(msFbo);
 
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, fbo, colorTexture, depthStencilTexture, msFbo, msColorTexture, msDepthStencilTexture);
+        nativeWindow.resizeRenderTarget(gl, width, height, fbo, colorTex, depthTex, msFbo, msColorTex, msDepthTex);
       };
 
       const framebuffer = {
         canvas,
-        framebuffer: fbo,
-        colorTexture,
-        depthStencilTexture,
-        msFramebuffer: msFbo,
-        msColorTexture,
-        msDepthStencilTexture,
+        msColorTex,
+        msDepthTex,
+        colorTex,
+        depthTex,
       };
       document[symbols.framebufferSymbol] = framebuffer;
       document._emit('framebuffer', framebuffer);

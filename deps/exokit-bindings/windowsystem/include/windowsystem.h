@@ -20,8 +20,10 @@ namespace windowsystembase {
 
 class BlitSpec {
 public:
-  GLuint fbo;
-  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthTex;
+  GLuint colorTex;
+  GLuint depthTex;
   int width;
   int height;
 };
@@ -36,7 +38,8 @@ public:
 class ComposeSpec {
 public:
   GLuint composeVao;
-  // GLuint composeFbo;
+  GLuint composeReadFbo;
+  GLuint composeWriteFbo;
   GLuint composeProgram;
   GLint positionLocation;
   GLint uvLocation;

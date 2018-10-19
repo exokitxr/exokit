@@ -32,7 +32,8 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   // compose shader
   ComposeSpec *composeSpec = new ComposeSpec();
 
-  // glGenFramebuffers(1, &composeSpec->composeFbo);
+  glGenFramebuffers(1, &composeSpec->composeReadFbo);
+  glGenFramebuffers(1, &composeSpec->composeWriteFbo);
 
   glGenVertexArrays(1, &composeSpec->composeVao);
   glBindVertexArray(composeSpec->composeVao);
@@ -134,7 +135,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   static const uint16_t indices[] = {0, 2, 1, 2, 3, 1};
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, composeSpec->indexBuffer);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-  
+
   gl->keys[GlKey::GL_KEY_COMPOSE] = composeSpec;
 
   if (gl->HasVertexArrayBinding()) {
@@ -151,11 +152,11 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
-  
+
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   glBindVertexArray(composeSpec->composeVao);
   glUseProgram(composeSpec->composeProgram);
-  
+
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
   for (size_t i = 0; i < layers.size(); i++) {
@@ -164,8 +165,13 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
     if (layer.blitSpec) {
       const BlitSpec &blitSpec = *layer.blitSpec;
 
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, blitSpec.msFbo);
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, blitSpec.fbo);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->composeReadFbo);
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, blitSpec.msColorTex, 0);
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, blitSpec.msDepthTex, 0);
+
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeWriteFbo);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blitSpec.colorTex, 0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, blitSpec.depthTex, 0);
 
       glBlitFramebuffer(
         0, 0,
@@ -193,6 +199,7 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, layer.depthTex);
     glUniform1i(composeSpec->depthTexLocation, 1);
+
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   }
 
@@ -253,20 +260,26 @@ NAN_METHOD(ComposeLayers) {
           Local<Value> blitVal = elementObj->Get(JS_STR("blit"));
           if (blitVal->IsObject()) {
             Local<Object> blitObj = Local<Object>::Cast(blitVal);
-            Local<Value> fboVal = blitObj->Get(JS_STR("fbo"));
-            Local<Value> msFboVal = blitObj->Get(JS_STR("msFbo"));
+            Local<Value> msColorTexVal = blitObj->Get(JS_STR("msColorTex"));
+            Local<Value> msDepthTexVal = blitObj->Get(JS_STR("msDepthTex"));
+            Local<Value> colorTexVal = blitObj->Get(JS_STR("colorTex"));
+            Local<Value> depthTexVal = blitObj->Get(JS_STR("depthTex"));
             Local<Value> widthVal = blitObj->Get(JS_STR("width"));
             Local<Value> heightVal = blitObj->Get(JS_STR("height"));
 
-            if (fboVal->IsNumber() && msFboVal->IsNumber() && widthVal->IsNumber() && heightVal->IsNumber()) {
-              GLuint fbo = fboVal->Uint32Value();
-              GLuint msFbo = msFboVal->Uint32Value();
+            if (msColorTexVal->IsNumber() && msDepthTexVal->IsNumber() && colorTexVal->IsNumber() && depthTexVal->IsNumber() && widthVal->IsNumber() && heightVal->IsNumber()) {
+              GLuint msColorTex = msColorTexVal->Uint32Value();
+              GLuint msDepthTex = msDepthTexVal->Uint32Value();
+              GLuint colorTex = colorTexVal->Uint32Value();
+              GLuint depthTex = depthTexVal->Uint32Value();
               int width = widthVal->Int32Value();
               int height = heightVal->Int32Value();
-              
+
               blitSpec = new BlitSpec{
-                fbo,
-                msFbo,
+                msColorTex,
+                msDepthTex,
+                colorTex,
+                depthTex,
                 width,
                 height,
               };
