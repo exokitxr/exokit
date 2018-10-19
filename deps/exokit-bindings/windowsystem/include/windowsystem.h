@@ -44,6 +44,7 @@ public:
   GLint depthTexLocation;
   GLuint positionBuffer;
   GLuint uvBuffer;
+  GLuint indexBuffer;
 };
 
 void InitializeLocalGlState(WebGLRenderingContext *gl);

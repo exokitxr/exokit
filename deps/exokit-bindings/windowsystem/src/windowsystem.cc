@@ -130,6 +130,11 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   glEnableVertexAttribArray(composeSpec->uvLocation);
   glVertexAttribPointer(composeSpec->uvLocation, 2, GL_FLOAT, false, 0, 0);
 
+  glGenBuffers(1, &composeSpec->indexBuffer);
+  static const uint16_t indices[] = {0, 2, 1, 2, 3, 1};
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, composeSpec->indexBuffer);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+  
   gl->keys[GlKey::GL_KEY_COMPOSE] = composeSpec;
 
   if (gl->HasVertexArrayBinding()) {
