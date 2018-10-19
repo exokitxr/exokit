@@ -16,11 +16,8 @@
   <canvas id=canvas></canvas>
   <div id=container></div>
   <script src="js/three.js"></script>
-  <script src="js/OBJLoader.js"></script>
-  <script src="js/FBXLoader.js"></script>
-  <script src="js/inflate.min.js"></script>
   <script src="js/fetch-manager.js"></script>
-  <script src="js/vr-display.js"></script>
+  <!-- <script src="js/vr-display.js"></script> -->
   <script src="js/keycode.js"></script>
   <script src="js/svg-boundings.js"></script>
   <script>
@@ -31,7 +28,6 @@
     canvas.height = window.innerHeight;
 
     const DEFAULT_USER_HEIGHT = 1.6;
-    const SIDES = ['left', 'right'];
     const RAY_COLOR = 0x44c2ff;
     const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
     const rayDistance = 10;
@@ -40,7 +36,6 @@
     const menuWorldWidth = 2;
     const menuWorldHeight = menuWorldWidth * menuHeight / menuWidth;
     const urlBarWidth = menuWidth;
-    const tabWidth = 300;
     const urlBarHeight = 200;
     const urlBarOffset = urlBarHeight*1.4;
     const fontSize = 120;
@@ -350,19 +345,6 @@
       controllerMeshes[i] = controllerMesh;
     }
 
-    const controllerMeshLoader = new THREE.OBJLoader();
-    controllerMeshLoader.setPath('models/obj/vive-controller/');
-    controllerMeshLoader.load('vr_controller_vive_1_5.obj', object => {
-      const textureLoader = new THREE.TextureLoader();
-      textureLoader.setPath('models/obj/vive-controller/');
-
-      const controllerMesh = object.children[0];
-      controllerMesh.material.map = textureLoader.load('onepointfive_texture.png');
-      controllerMesh.material.specularMap = textureLoader.load('onepointfive_spec.png');
-
-      controllerMeshes[0].add(object.clone());
-      controllerMeshes[1].add(object.clone());
-    });
 
 
 
@@ -439,16 +421,6 @@
           ctx.fillStyle = '#EEE';
           ctx.fillRect(0, 0, menuWidth, menuHeight*2);
 
-          for (let i = 0; i < tabs.length; i++) {
-            ctx.fillStyle = '#333';
-            ctx.font = `${fontSize*0.7}px Arial`;
-            ctx.fillText(tabs[i], i * tabWidth, urlBarOffset);
-
-            if (i === currentTabIndex) {
-              ctx.fillStyle = '#e53935';
-              ctx.fillRect(i * tabWidth, urlBarOffset - 10, tabWidth, 0);
-            }
-          }
 
           const tab = _getTab();
           if (tab === 'URL') {
@@ -885,53 +857,6 @@
                 const y = yFactor * menuHeight;
 
                 const tab = _getTab();
-                if (menuMetrics) {
-                  intersectionRect = menuMetrics.find(rect => x >= rect.left && x < rect.right && y >= rect.top && y < rect.bottom);
-
-                  if (intersectionRect) {
-                    controllerMesh.rayMesh.scale.z = distance;
-                    controllerMesh.updateMatrixWorld();
-
-                    controllerMesh.rayDot.position.z = -distance;
-                    controllerMesh.updateMatrixWorld();
-                    controllerMesh.rayDot.visible = true;
-
-                    const anchorSize = localVector.set(intersectionRect.width/menuWidth*menuWorldWidth, intersectionRect.height/menuHeight*menuWorldHeight, 0.01);
-
-
-                  } else {
-                    intersectionPoint = null;
-                  }
-
-                  // intersectionRect && console.log('check rect', x, y, intersectionRect);
-                } else if (y < urlBarOffset) {
-                  const newTabIndex = Math.floor(x / tabWidth);
-                  if (newTabIndex < tabs.length) {
-                    tabIndex = newTabIndex;
-
-                    controllerMesh.rayMesh.scale.z = distance;
-                    controllerMesh.updateMatrixWorld();
-
-                    controllerMesh.rayDot.position.z = -distance;
-                    controllerMesh.updateMatrixWorld();
-                    controllerMesh.rayDot.visible = true;
-                  } else {
-                    const xLeft = menuWidth - 550;
-
-                    if (x > xLeft) {
-                      loginHovered = true;
-
-                      controllerMesh.rayMesh.scale.z = distance;
-                      controllerMesh.updateMatrixWorld();
-
-                      controllerMesh.rayDot.position.z = -distance;
-                      controllerMesh.updateMatrixWorld();
-                      controllerMesh.rayDot.visible = true;
-                    } else {
-                      intersectionPoint = null;
-                    }
-                  }
-                } else {
                   if (tab === 'URL') {
                     if (y < urlBarOffset*2) {
                       urlCoords = [x, y];
@@ -1066,7 +991,6 @@
                   } else {
                     intersectionPoint = null;
                   }
-                }
               } else {
                 intersectionPoint = null;
               }
