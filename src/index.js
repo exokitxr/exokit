@@ -183,15 +183,14 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         nativeWindow.resizeRenderTarget(gl, width, height, fbo, colorTex, depthTex, msFbo, msColorTex, msDepthTex);
       };
 
-      const framebuffer = {
+      // TODO: handle multiple child canvases
+      document.framebuffer = {
         canvas,
         msColorTex,
         msDepthTex,
         colorTex,
         depthTex,
       };
-      document[symbols.framebufferSymbol] = framebuffer;
-      document._emit('framebuffer', framebuffer);
     } else {
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
