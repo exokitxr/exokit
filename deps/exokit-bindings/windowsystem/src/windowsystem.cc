@@ -243,58 +243,68 @@ NAN_METHOD(ComposeLayers) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
     Local<Array> array = Local<Array>::Cast(info[1]);
 
-    std::vector<LayerSpec> layers(array->Length());
-    for (size_t i = 0; i < layers.size(); i++) {
+    std::vector<LayerSpec> layers;
+    layers.reserve(8);
+    for (size_t i = 0, size = array->Length(); i < size; i++) {
       Local<Value> element = array->Get(i);
 
       if (element->IsObject()) {
         Local<Object> elementObj = Local<Object>::Cast(element);
-        Local<Value> colorTexVal = elementObj->Get(JS_STR("colorTex"));
-        Local<Value> depthTexVal = elementObj->Get(JS_STR("depthTex"));
 
-        if (colorTexVal->IsNumber() && depthTexVal->IsNumber()) {
-          GLuint colorTex = colorTexVal->Uint32Value();
-          GLuint depthTex = depthTexVal->Uint32Value();
+        if (
+          elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))
+        ) {
+          if (
+            elementObj->Get(JS_STR("contentDocument"))->IsObject() &&
+            elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject()
+          ) {
+            Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer")));
+            GLuint colorTex = framebufferObj->Get(JS_STR("colorTex"))->Uint32Value();
+            GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
+            GLuint msColorTex = framebufferObj->Get(JS_STR("msColorTex"))->Uint32Value();
+            GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
+            int width = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
+            int height = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
 
-          BlitSpec *blitSpec = nullptr;
-          Local<Value> blitVal = elementObj->Get(JS_STR("blit"));
-          if (blitVal->IsObject()) {
-            Local<Object> blitObj = Local<Object>::Cast(blitVal);
-            Local<Value> msColorTexVal = blitObj->Get(JS_STR("msColorTex"));
-            Local<Value> msDepthTexVal = blitObj->Get(JS_STR("msDepthTex"));
-            Local<Value> colorTexVal = blitObj->Get(JS_STR("colorTex"));
-            Local<Value> depthTexVal = blitObj->Get(JS_STR("depthTex"));
-            Local<Value> widthVal = blitObj->Get(JS_STR("width"));
-            Local<Value> heightVal = blitObj->Get(JS_STR("height"));
-
-            if (msColorTexVal->IsNumber() && msDepthTexVal->IsNumber() && colorTexVal->IsNumber() && depthTexVal->IsNumber() && widthVal->IsNumber() && heightVal->IsNumber()) {
-              GLuint msColorTex = msColorTexVal->Uint32Value();
-              GLuint msDepthTex = msDepthTexVal->Uint32Value();
-              GLuint colorTex = colorTexVal->Uint32Value();
-              GLuint depthTex = depthTexVal->Uint32Value();
-              int width = widthVal->Int32Value();
-              int height = heightVal->Int32Value();
-
-              blitSpec = new BlitSpec{
+            layers.push_back(LayerSpec{
+              colorTex,
+              depthTex,
+              std::unique_ptr<BlitSpec>(new BlitSpec{
                 msColorTex,
                 msDepthTex,
                 colorTex,
                 depthTex,
                 width,
                 height,
-              };
-            } else {
-              return Nan::ThrowError("WindowSystem::Compose: invalid layer blit");
-            }
+              }),
+            });
+          } else { // iframe not ready
+            // nothing
           }
-
-          layers[i] = LayerSpec{
-            colorTex,
-            depthTex,
-            std::unique_ptr<BlitSpec>(blitSpec),
-          };
         } else {
-          return Nan::ThrowError("WindowSystem::Compose: invalid layer object properties");
+          Local<Value> colorTexVal = elementObj->Get(JS_STR("colorTex"));
+          Local<Value> depthTexVal = elementObj->Get(JS_STR("depthTex"));
+
+          if (
+            colorTexVal->IsObject() && colorTexVal->ToObject()->Get(JS_STR("id"))->IsNumber() &&
+            depthTexVal->IsObject() && depthTexVal->ToObject()->Get(JS_STR("id"))->IsNumber()
+          ) {
+            GLuint colorTex = colorTexVal->ToObject()->Get(JS_STR("id"))->Uint32Value();
+            GLuint depthTex = depthTexVal->ToObject()->Get(JS_STR("id"))->Uint32Value();
+
+            layers.push_back(LayerSpec{
+              colorTex,
+              depthTex,
+              std::unique_ptr<BlitSpec>(),
+            });
+          } else {
+            /* String::Utf8Value utf8Value(elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name")));
+            std::cout << "fail " << colorTexVal->IsObject() << " " << (colorTexVal->IsObject() && colorTexVal->ToObject()->Get(JS_STR("id"))->IsNumber()) << " " << *utf8Value << " " <<
+              elementObj->Get(JS_STR("contentDocument"))->IsObject() << " " <<
+              elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject() << " " <<
+              std::endl; */
+            return Nan::ThrowError("WindowSystem::Compose: invalid layer object properties");
+          }
         }
       } else {
         return Nan::ThrowError("WindowSystem::Compose: invalid layer object");
