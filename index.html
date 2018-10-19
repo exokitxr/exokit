@@ -1262,9 +1262,6 @@
                         renderer.vr.setAnimationLoop(animate);
 
                         renderTarget = _makeRenderTarget(width * 2, height);
-
-                        screenQuad.material.uniforms.uTexture1.value = renderTarget.texture;
-                        screenQuad.material.uniforms.uDepth1.value = renderTarget.depthTexture;
                       });
                     })
                 )
@@ -1311,8 +1308,6 @@
 
                         renderTarget = _makeRenderTarget(width * 2, height);
 
-                        screenQuad.material.uniforms.uTexture1.value = renderTarget.texture;
-                        screenQuad.material.uniforms.uDepth1.value = renderTarget.depthTexture;
                       });
                     })
                 )
