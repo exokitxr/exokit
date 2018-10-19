@@ -14,7 +14,7 @@ const _makeRenderer = () => {
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.y = 1.6;
-  camera.position.z = 1;
+  // camera.position.z = 1;
 
   const renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setPixelRatio( window.devicePixelRatio );
