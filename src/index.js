@@ -151,6 +151,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
 
+    nativeWindow.initializeLocalGlState(gl);
+
     gl.canvas = canvas;
 
     const document = canvas.ownerDocument;
@@ -490,7 +492,7 @@ if (nativeMl) {
           const width = halfWidth * 2;
           renderWidth = halfWidth;
           renderHeight = height;
-          
+
           mlFbo = fbo;
           mlTex = tex;
           mlDepthTex = depthStencilTex;
