@@ -2,7 +2,6 @@
 <html>
   <body>
     <script src="three.js"></script>
-    <script src="ScreenQuad.js"></script>
     <script>
 // helpers
 
@@ -92,7 +91,7 @@ const _openUrl = u => {
   iframe.addEventListener('framebuffer', framebuffer => {
     framebuffers.push(framebuffer);
 
-    if (framebuffer) {
+    /* if (framebuffer) {
       // screenQuad.material.uniforms.numTextures.value = 2;
 
       const colorTexture = new THREE.Texture();
@@ -111,18 +110,12 @@ const _openUrl = u => {
       depthProperties.__webglInit = true;
       // screenQuad.material.uniforms.uDepth2.value = depthTexture;
 
-      const screenQuad = new ScreenQuad({
-        texture1: colorTexture,
-        depth1: depthTexture,
-      });
-      compositeScene.add(screenQuad);
-
       // console.log('init framebuffer', framebuffer); // XXX
     } else {
       screenQuad.material.uniforms.numTextures.value = 1;
       screenQuad.material.uniforms.uTexture2.value = null;
       screenQuad.material.uniforms.uDepth2.value = null;
-    }
+    } */
   });
   iframe.addEventListener('destroy', () => {
     // floorMesh.visible = true;
@@ -218,15 +211,8 @@ const cubeMesh = (() => {
 })();
 scene.add(cubeMesh);
 
-const compositeScene = new THREE.Scene();
 const renderTarget = _makeRenderTarget(renderer.domElement.width, renderer.domElement.height);
-// console.log('render target', renderTarget.texture, renderTarget.depthTexture); // XXX
-const screenQuad = new ScreenQuad({
-  texture1: renderTarget.texture,
-  depth1: renderTarget.depthTexture,
-});
 const framebuffers = [];
-compositeScene.add(screenQuad);
 
 let lastTime = 0;
 const _render = () => {
@@ -234,16 +220,42 @@ const _render = () => {
   const timeDiff = now - lastTime;
   cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
-  for (let i = 0; i < framebuffers.length; i++) {
-    framebuffers[i].render();
-  }
   renderer.render(scene, camera, renderTarget);
+  renderer.setRenderTarget(null);
 
-  renderer.vr.enabled = false;
-  renderer.render(compositeScene, camera);
-  renderer.vr.enabled = true;
+  window.browser.composeLayers(
+    renderer.getContext(),
+    framebuffers.map(framebuffer => {
+      const {
+        canvas: {
+          width,
+          height,
+        },
+        msColorTex,
+        msDepthTex,
+        colorTex,
+        depthTex,
+      } = framebuffer;
 
-  // renderer.render(scene, camera);
+      return {
+        colorTex,
+        depthTex,
+        blit: {
+          msColorTex,
+          msDepthTex,
+          colorTex,
+          depthTex,
+          width,
+          height,
+        },
+      };
+    }).concat([
+      {
+        colorTex: renderTarget.texture.id,
+        depthTex: renderTarget.depthTexture.id,
+      },
+    ])
+  );
 
   lastTime = now;
 };
