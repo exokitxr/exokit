@@ -1347,8 +1347,6 @@ NAN_METHOD(Create) {
     glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
   }
-  
-  windowsystembase::InitializeLocalGlState(gl);
 
   NATIVEwindow *windowHandle = glfwCreateWindow(width, height, "Exokit", nullptr, shared ? sharedWindow : nullptr);
 
@@ -1391,7 +1389,9 @@ NAN_METHOD(Create) {
       glfwSetCursorPosCallback(windowHandle, cursorPosCB);
       glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
       glfwSetScrollCallback(windowHandle, scrollCB);
-
+      
+      windowsystembase::InitializeLocalGlState(gl);
+      
       GLuint vao;
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
