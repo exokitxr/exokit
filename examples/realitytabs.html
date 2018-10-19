@@ -72,25 +72,20 @@ const _openUrl = u => {
     if (contentDocument) {
       _drawOk();
 
+      iframes.push(iframe);
+
       // floorMesh.visible = false;
       // scene.background = null;
     } else {
-      _closeUrl(iframe);
-      iframes.splice(iframes.indexOf(iframe), 1);
-
-      const index = currentApps.indexOf(iframe.src);
-      if (index !== -1) {
-        currentApps.splice(index, 1);
-      }
-
       _drawFail();
+
+      _closeUrl(iframe);
+
+      iframes.splice(iframes.indexOf(iframe), 1);
     }
   };
   iframe.src = u;
   iframe.hidden = true;
-  iframe.addEventListener('framebuffer', framebuffer => {
-    framebuffers.push(framebuffer);
-  });
   iframe.addEventListener('destroy', () => {
     // floorMesh.visible = true;
     // scene.background = _makeBackground();
@@ -186,7 +181,6 @@ const cubeMesh = (() => {
 scene.add(cubeMesh);
 
 const renderTarget = _makeRenderTarget(renderer.domElement.width, renderer.domElement.height);
-const framebuffers = [];
 
 let lastTime = 0;
 const _render = () => {
@@ -199,34 +193,10 @@ const _render = () => {
 
   window.browser.composeLayers(
     renderer.getContext(),
-    framebuffers.map(framebuffer => {
-      const {
-        canvas: {
-          width,
-          height,
-        },
-        msColorTex,
-        msDepthTex,
-        colorTex,
-        depthTex,
-      } = framebuffer;
-
-      return {
-        colorTex,
-        depthTex,
-        blit: {
-          msColorTex,
-          msDepthTex,
-          colorTex,
-          depthTex,
-          width,
-          height,
-        },
-      };
-    }).concat([
+    iframes.concat([
       {
-        colorTex: renderTarget.texture.id,
-        depthTex: renderTarget.depthTexture.id,
+        colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
+        depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
       },
     ])
   );
