@@ -862,7 +862,13 @@
           let tabIndex = -1;
           let urlCoords = null;
           let intersectionRect = null;
-
+          let appIndex = -1;
+          let fileIndex = -1;
+          let fileRemove = false;
+          let serverIndex = -1;
+          let loginHovered = false;
+          let voicechatHovered = false;
+          let loginCoords = null;
           if (!intersectionPoint) {
             intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.urlMesh.plane, localVector) : null;
             if (intersectionPoint) {
