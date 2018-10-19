@@ -82,9 +82,9 @@
       text: 'https://docs.webmr.io/',
       cursor: -1,
       measures: [],
-      submit() {
-        _submitUrl(urlState.text);
-      },
+      // submit() {
+      //   _submitUrl(urlState.text);
+      // },
     };
     urlState.cursor = urlState.text.length;
     const loadingBarState = {
@@ -372,6 +372,7 @@
         });
     };
     // _renderHtml('menu.html?t=url');
+    let currentTabIndex = 0;
 
     const tabs = ['URL'];
     const cursorWidth = 10;
@@ -382,7 +383,6 @@
         return null;
       }
     };
-    let currentTabIndex = 0;
 
 
     const menuMesh = (() => {
@@ -421,62 +421,79 @@
           ctx.fillRect(0, 0, menuWidth, menuHeight*2);
 
 
-          const tab = _getTab();
-          if (tab === 'URL') {
-            ctx.fillStyle = '#563156';
-            ctx.fillRect(0, 0, urlBarWidth, 2048);
-            //                    .set(0, -0.5, -1)
+          ctx.fillStyle = '#563156';
+          ctx.fillRect(0, 0, urlBarWidth, 2048);
+          //                    .set(0, -0.5, -1)
 
 //            ctx.fillStyle = '#RFF';
 //            ctx.fillRect(5, urlBarOffset + 500, urlBarWidth - 10, urlBarHeight - 10);
 
-            if (loadingBarState.loading && !loadingBarState.error && !loadingBarState.loaded) {
-              ctx.fillStyle = '#e68e04';
-              ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
-              ctx.fillStyle = '#FFF';
-              ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
-              ctx.fillStyle = '#333';
-              ctx.font = `${fontSize}px Arial`;
-              ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
-            }
-            if (loadingBarState.loaded && loadingBarState.error) {
-              ctx.fillStyle = '#1dc008';
-              ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
-              ctx.fillStyle = '#FFF';
-              ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
-              ctx.fillStyle = '#333';
-              ctx.font = `${fontSize}px Arial`;
-              ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
-            }
-            if (loadingBarState.loading && loadingBarState.loaded && loadingBarState.error) {
-              ctx.fillStyle = '#ff1818';
-              ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
-              ctx.fillStyle = '#FFF';
-              ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
-              ctx.fillStyle = '#333';
-              ctx.font = `${fontSize}px Arial`;
-              ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
-            }
-
+          if (loadingBarState.loading && !loadingBarState.error && !loadingBarState.loaded) {
+            ctx.fillStyle = '#e68e04';
+            ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
             ctx.fillStyle = '#FFF';
+            ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
+            ctx.fillStyle = '#333';
             ctx.font = `${fontSize}px Arial`;
-            ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
+            ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
+          }
+          if (loadingBarState.loaded && loadingBarState.error) {
+            ctx.fillStyle = '#1dc008';
+            ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
+            ctx.fillStyle = '#333';
+            ctx.font = `${fontSize}px Arial`;
+            ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
+          }
+          if (loadingBarState.loading && loadingBarState.loaded && loadingBarState.error) {
+            ctx.fillStyle = '#ff1818';
+            ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
+            ctx.fillStyle = '#333';
+            ctx.font = `${fontSize}px Arial`;
+            ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
+          }
+
+          ctx.fillStyle = '#FFF';
+          // ctx.font = `${fontSize}px Arial`;
+          // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
+          //
+          // urlState.measures.length = 0;
+          // urlState.measures.push(0);
+          // const {width: barWidth} = ctx.measureText('[');
+          // for (let i = 1; i <= urlState.text.length; i++) {
+          //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+          //   urlState.measures.push(width - barWidth*2);
+          // }
+          //
+          // ctx.fillStyle = '#03a9f4';
+          // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
+
+//TEST
+            // ctx.font = `${fontSize}px Arial`;
+            // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
 
             urlState.measures.length = 0;
             urlState.measures.push(0);
-            const {width: barWidth} = ctx.measureText('[');
+            // const {width: barWidth} = ctx.measureText('[');
             for (let i = 1; i <= urlState.text.length; i++) {
-              const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+            //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+              const {width} = 4;
+              const {barWidth} = 4;
               urlState.measures.push(width - barWidth*2);
             }
 
             ctx.fillStyle = '#03a9f4';
             ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
 
-            if (menuImg) {
-              ctx.drawImage(menuImg, 0, menuHeight - menuImg.height, menuImg.width, menuImg.height);
-            }
+//END TEST
+
+          if (menuImg) {
+            ctx.drawImage(menuImg, 0, menuHeight - menuImg.height, menuImg.width, menuImg.height);
           }
+
 
 
 
@@ -690,20 +707,7 @@
     };
     const _render = () => {
 
-
-      const device = renderer.vr.getDevice();
-      if (device && device.constructor.name === 'FakeVRDisplay') {
-        camera.position.copy(device.position);
-        camera.quaternion.copy(device.quaternion);
-
-        renderer.render(scene, camera, renderTarget);
-      } else {
-        renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
-      }
-
-      renderer.vr.enabled = false;
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
-      renderer.vr.enabled = true;
     };
     function animate() {
       const currentTime = Date.now();
@@ -898,9 +902,7 @@
               currentTabIndex = tabIndex;
 
               const tab = _getTab();
-              if (tab === 'URL') {
-                keyboardState = urlState;
-              }
+              keyboardState = urlState;
 
 
               menuMesh.urlMesh.updateText();
@@ -912,6 +914,9 @@
 
       _updateControllers();
       _updateIntersections();
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+
 
     }
 
