@@ -3,6 +3,8 @@
 namespace windowsystembase {
 
 const char *composeVsh = "\
+#version 330\n\
+\n\
 in vec2 position;\n\
 in vec2 uv;\n\
 out vec2 vUv;\n\
@@ -13,6 +15,8 @@ void main() {\n\
 }\n\
 ";
 const char *composeFsh = "\
+#version 330\n\
+\n\
 in vec2 vUv;\n\
 out vec4 fragColor;\n\
 uniform sampler2D colorTex;\n\
