@@ -36,7 +36,7 @@ public:
 class ComposeSpec {
 public:
   GLuint composeVao;
-  GLuint composeFbo;
+  // GLuint composeFbo;
   GLuint composeProgram;
   GLint positionLocation;
   GLint uvLocation;

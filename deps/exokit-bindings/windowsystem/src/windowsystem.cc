@@ -32,7 +32,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   // compose shader
   ComposeSpec *composeSpec = new ComposeSpec();
 
-  glGenFramebuffers(1, &composeSpec->composeFbo);
+  // glGenFramebuffers(1, &composeSpec->composeFbo);
 
   glGenVertexArrays(1, &composeSpec->composeVao);
   glBindVertexArray(composeSpec->composeVao);
