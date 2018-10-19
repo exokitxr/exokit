@@ -1126,8 +1126,6 @@
         }
       };
 
-
-
       if (e.ctrlKey) {
         switch (e.which) {
           default: {
@@ -1169,72 +1167,8 @@
         }
       }
     });
-    window.addEventListener('mousedown', () => {
-      if (!window.document.pointerLockElement) {
-        renderer.domElement.requestPointerLock();
-      }
-      else {
-        const gamepad = fakeDisplay.gamepads[1];
-        if (gamepad) {
-          fakeDisplay.gamepads[controllerIndex].buttons[1].value = 1;
-          fakeDisplay.gamepads[controllerIndex].buttons[1].pressed = true;
-        }
-      }
-    });
-    window.addEventListener('mouseup', () => {
-      const gamepad = fakeDisplay.gamepads[controllerIndex];
-      if (gamepad) {
-        gamepad.buttons[1].value = 0;
-        gamepad.buttons[1].pressed = false;
-      }
-    });
-    window.addEventListener('mousemove', e => {
-      if (window.document.pointerLockElement) {
-        const {movementX, movementY} = e;
 
-        if (keys.ctrl) {
-          const controllerOffset = controllerOffsets[controllerIndex];
-          controllerOffset.x += movementX * 0.002;
-          controllerOffset.y -= movementY * 0.002;
-        } else if (keys.alt) {
-          const controllerOffset = controllerOffsets[controllerIndex];
-          controllerOffset.x += movementX * 0.002;
-          controllerOffset.z += movementY * 0.002;
-        } else {
-          localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
-          localEuler.y -= movementX * 0.01;
-          localEuler.x -= movementY * 0.01;
-          localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
-          fakeDisplay.quaternion.setFromEuler(localEuler);
 
-          fakeDisplay.update();
-        }
-
-        _updateGamepads();
-      }
-    });
-    window.document.addEventListener('pointerlockchange', e => {
-      if (!window.document.pointerLockElement) {
-        for (const k in keys) {
-          keys[k] = false;
-        }
-      }
-    });
-    window.document.addEventListener('paste', e => {
-      const {clipboardData} = e;
-      const items = Array.from(clipboardData.items);
-      const item = items.find(item => item.kind === 'string');
-      if (item) {
-        item.getAsString(s => {
-          keyboardState.text = keyboardState.text.slice(0, keyboardState.cursor) + s + keyboardState.text.slice(keyboardState.cursor);
-          keyboardState.cursor += s.length;
-          menuMesh.urlMesh.updateText();
-        });
-      }
-    });
-    window.addEventListener('dragover', e => {
-      e.preventDefault();
-    });
     const _getFiles = dataTransfer => {
       if (dataTransfer.items.length > 0) {
         const entries = Array.from(items)
