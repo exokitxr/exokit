@@ -377,8 +377,6 @@
     const _getTab = () => {
       if (currentTabIndex >= 0) {
         return tabs[currentTabIndex];
-      } else if (currentTabIndex === -2) {
-        return 'Login';
       } else {
         return null;
       }
@@ -870,7 +868,7 @@
                     } else {
                       intersectionPoint = null;
                     }
-                  } 
+                  }
                   else {
                     intersectionPoint = null;
                   }
