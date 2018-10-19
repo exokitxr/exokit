@@ -311,7 +311,9 @@ NAN_METHOD(ComposeLayers) {
       }
     }
 
-    ComposeLayers(gl, layers);
+    if (layers.size() > 0) {
+      ComposeLayers(gl, layers);
+    }
   } else {
     Nan::ThrowError("WindowSystem::Compose: invalid arguments");
   }
