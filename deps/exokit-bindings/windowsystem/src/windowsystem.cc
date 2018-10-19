@@ -150,7 +150,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
   
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeFbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   glBindVertexArray(composeSpec->composeVao);
   glUseProgram(composeSpec->composeProgram);
 
@@ -179,7 +179,7 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
         GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
         GL_NEAREST);
 
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeFbo);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
     }
 
     glActiveTexture(GL_TEXTURE0);
