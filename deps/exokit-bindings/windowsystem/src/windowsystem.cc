@@ -275,6 +275,8 @@ NAN_METHOD(ComposeLayers) {
             depthTex,
             std::unique_ptr<BlitSpec>(blitSpec),
           };
+        } else {
+          return Nan::ThrowError("WindowSystem::Compose: invalid layer object properties");
         }
       } else {
         return Nan::ThrowError("WindowSystem::Compose: invalid layers");
