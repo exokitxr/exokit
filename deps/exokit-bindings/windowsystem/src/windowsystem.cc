@@ -155,6 +155,8 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   glBindVertexArray(composeSpec->composeVao);
   glUseProgram(composeSpec->composeProgram);
+  
+  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
