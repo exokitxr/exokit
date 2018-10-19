@@ -46,9 +46,9 @@ public:
   GLuint uvBuffer;
 };
 
-void InitializeGl(WebGLRenderingContext *gl);
+void InitializeLocalGlState(WebGLRenderingContext *gl);
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);  
-NAN_METHOD(InitializeGl);
+NAN_METHOD(InitializeLocalGlState);
 NAN_METHOD(ComposeLayers);
 void Decorate(Local<Object> target);
 
