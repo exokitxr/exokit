@@ -80,6 +80,10 @@
 using namespace v8;
 using namespace node;
 
+enum GlKey {
+  GL_KEY_COMPOSE,
+};
+
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
 
 class ViewportState {
@@ -400,6 +404,7 @@ public:
   std::map<GLenum, GLuint> programBindings;
   ViewportState viewportState;
   ColorMaskState colorMaskState;
+  std::map<GlKey, void *> keys;
 };
 
 class WebGL2RenderingContext : public WebGLRenderingContext {

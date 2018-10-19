@@ -24,13 +24,14 @@ void main() {\n\
 }\n\
 ";
 
-void Initialize() {
+void InitializeGl(WebGLRenderingContext *gl) {
   // compose shader
+  ComposeSpec *composeSpec = new ComposeSpec();
 
-  glGenFramebuffers(1, &composeFbo);
+  glGenFramebuffers(1, &composeSpec->composeFbo);
 
-  glGenVertexArrays(1, &composeVao);
-  glBindVertexArray(composeVao);
+  glGenVertexArrays(1, &composeSpec->composeVao);
+  glBindVertexArray(composeSpec->composeVao);
 
   // vertex Shader
   GLuint composeVertex = glCreateShader(GL_VERTEX_SHADER);
@@ -62,37 +63,37 @@ void Initialize() {
   };
 
   // shader Program
-  composeProgram = glCreateProgram();
-  glAttachShader(composeProgram, composeVertex);
-  glAttachShader(composeProgram, composeFragment);
-  glLinkProgram(composeProgram);
-  glGetProgramiv(composeProgram, GL_LINK_STATUS, &success);
+  composeSpec->composeProgram = glCreateProgram();
+  glAttachShader(composeSpec->composeProgram, composeVertex);
+  glAttachShader(composeSpec->composeProgram, composeFragment);
+  glLinkProgram(composeSpec->composeProgram);
+  glGetProgramiv(composeSpec->composeProgram, GL_LINK_STATUS, &success);
   if (!success) {
     char infoLog[4096];
     GLsizei length;
-    glGetShaderInfoLog(composeProgram, sizeof(infoLog), &length, infoLog);
+    glGetShaderInfoLog(composeSpec->composeProgram, sizeof(infoLog), &length, infoLog);
     infoLog[length] = '\0';
     std::cout << "ML compose program linking failed\n" << infoLog << std::endl;
     return;
   }
 
-  positionLocation = glGetAttribLocation(composeProgram, "position");
-  if (positionLocation == -1) {
+  composeSpec->positionLocation = glGetAttribLocation(composeSpec->composeProgram, "position");
+  if (composeSpec->positionLocation == -1) {
     std::cout << "ML compose program failed to get attrib location for 'position'" << std::endl;
     return;
   }
-  uvLocation = glGetAttribLocation(composeProgram, "uv");
-  if (uvLocation == -1) {
+  composeSpec->uvLocation = glGetAttribLocation(composeSpec->composeProgram, "uv");
+  if (composeSpec->uvLocation == -1) {
     std::cout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
     return;
   }
-  colorTexLocation = glGetUniformLocation(composeProgram, "colorTex");
-  if (colorTexLocation == -1) {
+  composeSpec->colorTexLocation = glGetUniformLocation(composeSpec->composeProgram, "colorTex");
+  if (composeSpec->colorTexLocation == -1) {
     std::cout << "ML compose program failed to get uniform location for 'colorTex'" << std::endl;
     return;
   }
-  depthTexLocation = glGetUniformLocation(composeProgram, "depthTex");
-  if (depthTexLocation == -1) {
+  composeSpec->depthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "depthTex");
+  if (composeSpec->depthTexLocation == -1) {
     std::cout << "ML compose program failed to get uniform location for 'depthTex'" << std::endl;
     return;
   }
@@ -101,8 +102,8 @@ void Initialize() {
   glDeleteShader(composeVertex);
   glDeleteShader(composeFragment);
 
-  glGenBuffers(1, &positionBuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
+  glGenBuffers(1, &composeSpec->positionBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, composeSpec->positionBuffer);
   static const float positions[] = {
     -1.0f, 1.0f,
     1.0f, 1.0f,
@@ -110,11 +111,11 @@ void Initialize() {
     1.0f, -1.0f,
   };
   glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(positionLocation);
-  glVertexAttribPointer(positionLocation, 2, GL_FLOAT, false, 0, 0);
+  glEnableVertexAttribArray(composeSpec->positionLocation);
+  glVertexAttribPointer(composeSpec->positionLocation, 2, GL_FLOAT, false, 0, 0);
 
-  glGenBuffers(1, &uvBuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+  glGenBuffers(1, &composeSpec->uvBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, composeSpec->uvBuffer);
   static const float uvs[] = {
     0.0f, 1.0f,
     1.0f, 1.0f,
@@ -122,11 +123,10 @@ void Initialize() {
     1.0f, 0.0f,
   };
   glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(uvLocation);
-  glVertexAttribPointer(uvLocation, 2, GL_FLOAT, false, 0, 0);
+  glEnableVertexAttribArray(composeSpec->uvLocation);
+  glVertexAttribPointer(composeSpec->uvLocation, 2, GL_FLOAT, false, 0, 0);
 
-  // XXX need to do this per gl instance
-  /* if (gl->HasVertexArrayBinding()) {
+  if (gl->HasVertexArrayBinding()) {
     glBindVertexArray(gl->GetVertexArrayBinding());
   } else {
     glBindVertexArray(gl->defaultVao);
@@ -140,17 +140,15 @@ void Initialize() {
     glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
   } else {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-  } */
+  }
 }
 
-void Decorate(Local<Object> target) {
-  Nan::SetMethod(target, "compose", Compose);
-}
-
-void Compose(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers) {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeFbo);
-  glBindVertexArray(composeVao);
-  glUseProgram(composeProgram);
+void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers) {
+  ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
+  
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeFbo);
+  glBindVertexArray(composeSpec->composeVao);
+  glUseProgram(composeSpec->composeProgram);
 
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
@@ -177,16 +175,16 @@ void Compose(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers) {
         GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
         GL_NEAREST);
 
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeFbo);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeFbo);
     }
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, layer.colorTex);
-    glUniform1i(colorTexLocation, 0);
+    glUniform1i(composeSpec->colorTexLocation, 0);
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, layer.depthTex);
-    glUniform1i(depthTexLocation, 1);
+    glUniform1i(composeSpec->depthTexLocation, 1);
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -224,7 +222,16 @@ void Compose(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers) {
   glActiveTexture(gl->activeTexture);
 }
 
-NAN_METHOD(Compose) {
+NAN_METHOD(InitializeGl) {
+  if (info[0]->IsObject()) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    InitializeGl(gl);
+  } else {
+    Nan::ThrowError("WindowSystem::Compose: invalid arguments");
+  }
+}
+
+NAN_METHOD(ComposeLayers) {
   if (info[0]->IsObject() && info[1]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
     Local<Array> array = Local<Array>::Cast(info[1]);
@@ -279,20 +286,15 @@ NAN_METHOD(Compose) {
       }
     }
 
-    Compose(gl, layers);
+    ComposeLayers(gl, layers);
   } else {
     Nan::ThrowError("WindowSystem::Compose: invalid arguments");
   }
 }
 
-GLuint composeVao;
-GLuint composeFbo;
-GLuint composeProgram;
-GLint positionLocation;
-GLint uvLocation;
-GLint colorTexLocation;
-GLint depthTexLocation;
-GLuint positionBuffer;
-GLuint uvBuffer;
+void Decorate(Local<Object> target) {
+  Nan::SetMethod(target, "initializeGl", InitializeGl);
+  Nan::SetMethod(target, "composeLayers", ComposeLayers);
+}
 
 }

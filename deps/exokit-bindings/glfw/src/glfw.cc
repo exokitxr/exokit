@@ -1856,12 +1856,12 @@ NAN_METHOD(SetClipboard) {
 } */
 
 Local<Object> makeWindow() {
-  windowsystembase::Initialize();
-  
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
 
   Local<Object> target = Object::New(isolate);
+  
+  windowsystembase::Decorate(target);
 
   Nan::SetMethod(target, "create", glfw::Create);
   Nan::SetMethod(target, "destroy", glfw::Destroy);
@@ -1895,8 +1895,6 @@ Local<Object> makeWindow() {
   // Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
-  
-  windowsystembase::Decorate(target);
 
   return scope.Escape(target);
 }

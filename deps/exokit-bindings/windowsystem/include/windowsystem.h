@@ -33,20 +33,24 @@ public:
   std::unique_ptr<BlitSpec> blitSpec;
 };
 
-void Initialize();
-void Decorate(Local<Object> target);
-void Compose(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);  
-NAN_METHOD(Compose);
+class ComposeSpec {
+public:
+  GLuint composeVao;
+  GLuint composeFbo;
+  GLuint composeProgram;
+  GLint positionLocation;
+  GLint uvLocation;
+  GLint colorTexLocation;
+  GLint depthTexLocation;
+  GLuint positionBuffer;
+  GLuint uvBuffer;
+};
 
-extern GLuint composeVao;
-extern GLuint composeFbo;
-extern GLuint composeProgram;
-extern GLint positionLocation;
-extern GLint uvLocation;
-extern GLint colorTexLocation;
-extern GLint depthTexLocation;
-extern GLuint positionBuffer;
-extern GLuint uvBuffer;
+void InitializeGl(WebGLRenderingContext *gl);
+void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);  
+NAN_METHOD(InitializeGl);
+NAN_METHOD(ComposeLayers);
+void Decorate(Local<Object> target);
 
 }
 
