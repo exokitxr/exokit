@@ -924,27 +924,6 @@ const _bindWindow = (window, newWindowCb) => {
     console.dir({width, height, image: name, result: result.length});
     fs.writeFileSync(name, result);
   }
-  const _preblit = () => {
-    for (let i = 0; i < contexts.length; i++) {
-      const context = contexts[i];
-      const {canvas} = context;
-      const {ownerDocument: document} = canvas;
-
-      if (document.hidden) {
-        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-
-        // color blit is linear, depth/stencil is nearest
-        const {
-          [symbols.framebufferSymbol]: {
-            framebuffer,
-            msFramebuffer,
-          },
-        } = document;
-        nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, true, false, false);
-        nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
-      }
-    }
-  };
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -1442,7 +1421,6 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
-    _preblit();
     window.tickAnimationFrame();
     if (args.performance) {
       const now = Date.now();
