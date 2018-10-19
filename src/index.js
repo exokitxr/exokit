@@ -184,6 +184,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       };
 
       const framebuffer = {
+        canvas,
         framebuffer: fbo,
         colorTexture,
         depthStencilTexture,
