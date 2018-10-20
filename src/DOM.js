@@ -1820,9 +1820,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               this.contentWindow = contentWindow;
               this.contentDocument = contentDocument;
 
-              contentDocument.on('framebuffer', framebuffer => {
-                this._emit('framebuffer', framebuffer);
-              });
               contentWindow.on('destroy', e => {
                 parentWindow.emit('destroy', e);
               });
