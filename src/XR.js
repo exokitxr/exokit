@@ -286,13 +286,13 @@ class XRWebGLLayer {
       {
         width: context.drawingBufferWidth,
         height: context.drawingBufferHeight,
-        framebuffer: 0,
+        framebuffer: null,
       };
     const {width, height, framebuffer} = presentSpec;
 
-    this.framebuffer = {
+    this.framebuffer = framebuffer !== null ? {
       id: framebuffer,
-    };
+    } : null;
     this.framebufferWidth = width;
     this.framebufferHeight = height;
   }
