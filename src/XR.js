@@ -77,6 +77,10 @@ class XRDevice {
     for (const k in this) {
       o[k] = this[k];
     }
+    if (o.session) {
+      o.session = o.session.clone();
+      o.session.device = o;
+    }
     return o;
   }
 }
@@ -216,6 +220,13 @@ class XRSession extends EventTarget {
         }
       }
     }
+  }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    return o;
   }
   get onblur() {
     return _elementGetter(this, 'blur');
