@@ -9,7 +9,7 @@ const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0
 
 window._makeFakeDisplay = () => {
   const fakeDisplay = window.navigator.createVRDisplay();
-  fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
+  fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio * 2, window.innerHeight * window.devicePixelRatio);
   fakeDisplay.getEyeParameters = (getEyeParameters => function(eye) {
     if (!fakeDisplay.getStereo() && eye === 'right') {
       const result = getEyeParameters.call(this, 'right');
@@ -87,7 +87,7 @@ window._makeFakeDisplay = () => {
               _viewport: {
                 x: 0,
                 y: 0,
-                width: fakeDisplay._width * 2,
+                width: fakeDisplay._width,
                 height: fakeDisplay._height,
               },
             }] : [
@@ -97,7 +97,7 @@ window._makeFakeDisplay = () => {
                 _viewport: {
                   x: 0,
                   y: 0,
-                  width: fakeDisplay._width,
+                  width: fakeDisplay._width/2,
                   height: fakeDisplay._height,
                 },
               },
@@ -107,7 +107,7 @@ window._makeFakeDisplay = () => {
                 _viewport: {
                   x: fakeDisplay._width,
                   y: 0,
-                  width: fakeDisplay._width,
+                  width: fakeDisplay._width/2,
                   height: fakeDisplay._height,
                 },
               },
