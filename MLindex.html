@@ -27,26 +27,52 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const DEFAULT_USER_HEIGHT = 1.6;
     const RAY_COLOR = 0x44c2ff;
     const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
-    const rayDistance = 10;
-    const menuWidth = 2048;
-    const menuHeight = 256;
-    const menuWorldWidth = 2;
-    const menuWorldHeight = menuWorldWidth * menuHeight / menuWidth;
+    const rayDistance = 1;
+    // const menuWidth = 10;
+    // const menuHeight = 5;
+    // const menuWorldWidth = 1;
+    // const menuWorldHeight = menuWorldWidth * menuHeight / menuWidth;
+    // const urlBarWidth = menuWidth;
+    // const urlBarHeight = 200;
+    const menuWidth = 1;
+    const menuHeight = 1;
+    const menuWorldWidth = menuWidth;
+    const menuWorldHeight = menuHeight * .1;
+    const menuPositionHeight = .2;
     const urlBarWidth = menuWidth;
-    const urlBarHeight = 200;
-    const urlBarOffset = urlBarHeight*1.4;
-    const fontSize = 120;
-    const keyboardWidth = 2048;
-    const keyboardHeight = 716;
-    const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
+    const urlBarHeight = menuHeight;
+    const urlBarOffset = urlBarHeight;
+    const fontSize = 60;
+    const keyboardWidth = 262;
+    const keyboardHeight = 102;
+    const keyboardMatrix = [keyboardWidth * .25, keyboardHeight * .25];
+    // const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
     const loadingBarWidth = menuWidth;
     const loadingBarHeight = 200;
     const loadingBarOffset = loadingBarHeight*1.4 + 202;
     let menuOpen = true;
     const fetchManager = new FetchManager();
+
+    let controllerMeshes;
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+
 
     // const renderer = new THREE.WebGLRenderer({
     //   canvas,
@@ -82,9 +108,9 @@
       text: 'https://docs.webmr.io/',
       cursor: -1,
       measures: [],
-      // submit() {
-      //   _submitUrl(urlState.text);
-      // },
+      submit() {
+        _submitUrl(urlState.text);
+      },
     };
     urlState.cursor = urlState.text.length;
     const loadingBarState = {
@@ -140,6 +166,13 @@
     camera.lookAt(new THREE.Vector3());
     scene.add(camera);
 
+    controllerMeshes = [
+      _makeControllerMesh(-0.1),
+      _makeControllerMesh(0.1),
+    ];
+    controllerMeshes.forEach(controllerMesh => {
+      scene.add(controllerMesh);
+    });
 
     const fakeDisplay = window.navigator.createVRDisplay();
     fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
@@ -293,8 +326,8 @@
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
-    const controllerMeshes = [null, null];
-    const lastPresseds = [false, false];
+    // const controllerMeshes = [null, null];
+    // const lastPresseds = [false, false];
     const lastMenuPresseds = [false, false];
     const grabbedObjects = [null, null];
     for (let i = 0; i < 2; i++) {
@@ -356,21 +389,6 @@
     };
     const _angleDiff = (a, b) => _mod((b - a) + Math.PI, Math.PI * 2) - Math.PI;
 
-
-    let menuImg = null;
-    let menuMetrics = null;
-    const _renderHtml = u => {
-      window.drawWindow && window.drawWindow(`html/${u}`, menuWidth, menuHeight)
-        .then(({img, metrics}) => {
-          menuImg = img;
-          menuMetrics = metrics;
-
-          menuMesh.urlMesh.updateText();
-        })
-        .catch(err => {
-          console.warn(err.stack);
-        });
-    };
     // _renderHtml('menu.html?t=url');
     let currentTabIndex = 0;
 
@@ -387,7 +405,7 @@
 
     const menuMesh = (() => {
       const object = new THREE.Object3D();
-      object.position.copy(camera.position).add(new THREE.Vector3(0, 0.5, -2));
+      object.position.set(0, menuPositionHeight, 0);
 
       const urlMesh = (() => {
         const canvas = document.createElement('canvas');
@@ -490,9 +508,6 @@
 
 //END TEST
 
-          if (menuImg) {
-            ctx.drawImage(menuImg, 0, menuHeight - menuImg.height, menuImg.width, menuImg.height);
-          }
 
 
 
@@ -688,7 +703,6 @@
       });
 
 
-    let lastTime = Date.now();
     const _updateGamepads = () => {
       for (let i = 0; i < 2; i++) {
         const gamepad = fakeDisplay.gamepads[i];
@@ -705,15 +719,8 @@
         }
       }
     };
-    const _render = () => {
 
-      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
-    };
-    function animate() {
-      const currentTime = Date.now();
-      const timePassed = Math.max(currentTime - lastTime, 1);
-      lastTime = currentTime;
-
+    function animate(time, frame) {
       const _updateControllers = () => {
         const gamepads = _getGamepads();
 
@@ -880,34 +887,6 @@
             _setIntersectionDefault();
           }
 
-          const lastPressed = lastPresseds[i];
-          lastPresseds[i] = pressed;
-          if (pressed && !lastPressed) {
-
-
-            const grabbedObject = grabbedObjects[i];
-            if (intersectionRect) {
-              if (intersectionRect.click) {
-                // console.log('eval click', intersectionRect.click); // XXX
-                _renderHtml(intersectionRect.click);
-              } else if (intersectionRect.tagName === 'A' && intersectionRect.href) {
-                console.log('eval href', intersectionRect.href); // XXX
-              } else {
-                // nothing
-              }
-            } else if (intersectionKey) {
-              const code = keyCode(intersectionKey);
-              _handleKey(code, false);
-            } else if (tabIndex !== -1) {
-              currentTabIndex = tabIndex;
-
-              const tab = _getTab();
-              keyboardState = urlState;
-
-
-              menuMesh.urlMesh.updateText();
-            }
-          }
         }
       };
 
@@ -915,9 +894,21 @@
       _updateControllers();
       _updateIntersections();
 
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+        if(frame != null){
+          for (let i = 0; i < inputSources.length; i++) {
+            const inputSource = inputSources[i];
+            const pose = frame.getInputPose(inputSource);
+
+            const controllerMesh = controllerMeshes[i];
+            controllerMesh.matrix.fromArray(pose.pointerMatrix);
+            controllerMesh.updateMatrixWorld(true);
+          }
+        }
+
+      }
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
-
-
     }
 
     const _handleDefaultKey = (code, shiftKey) => {
@@ -1009,7 +1000,7 @@
       });
       display.session = session;
 
-      /* session.onselect = e => {
+      session.onselect = e => {
         const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
         const controllerMesh = controllerMeshes[controllerIndex];
         controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
@@ -1019,7 +1010,7 @@
           controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
         );
         scene.add(objectMesh);
-      }; */
+      };
 
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
