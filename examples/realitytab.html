@@ -40,8 +40,9 @@ const cubeMesh = (() => {
   });
   const mesh = new THREE.Mesh(geometry, material);
   // mesh.position.x = parseFloat(query.x) || 0;
+  mesh.position.x = 0.05;
   mesh.position.y = 1.55;
-  mesh.position.z = -1;
+  mesh.position.z = -1 + 0.05;
   mesh.rotation.order = 'YXZ';
   mesh.frustumCulled = false;
   return mesh;
@@ -52,14 +53,14 @@ let lastTime = 0;
 function animate() {
   const now = Date.now();
   const timeDiff = now - lastTime;
-  cubeMesh.rotation.y = (cubeMesh.rotation.y - timeDiff/1000 * Math.PI/2);
+  /* cubeMesh.rotation.y = (cubeMesh.rotation.y - timeDiff/1000 * Math.PI/2);
   if (cubeMesh.rotation.y < -Math.PI*2) {
     cubeMesh.rotation.y += Math.PI*2;
-  }
+  } */
   cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
-  cubeMesh.rotation.z = (cubeMesh.rotation.z + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+  // cubeMesh.rotation.z = (cubeMesh.rotation.z + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
-  renderer.render(scene, camera);
+  renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
 
   lastTime = now;
 }
@@ -86,7 +87,7 @@ if (navigator.xr) {
       const width = viewport.width;
       const height = viewport.height;
 
-      renderer.setSize(width * 2, height);
+      renderer.setSize(width, height);
 
       renderer.setAnimationLoop(null);
 

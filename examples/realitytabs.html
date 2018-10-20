@@ -200,9 +200,10 @@ let lastTime = 0;
 const _render = () => {
   const now = Date.now();
   const timeDiff = now - lastTime;
-  cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+  // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+  cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
-  renderer.render(scene, camera, renderTarget);
+  renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera, renderTarget);
   renderer.setRenderTarget(null);
 
   window.browser.composeLayers(
@@ -223,12 +224,30 @@ const _render = () => {
   lastTime = now;
 };
 
+let fakeDisplay = null;
+const startTime = Date.now();
 function animate() {
+  if (fakeDisplay) {
+    const now = Date.now();
+    const timeDiff = now - startTime;
+    const factor = timeDiff/1000 % (Math.PI*2);
+
+    fakeDisplay.position.set(Math.cos(factor), 1.6, -1 + Math.sin(factor));
+    fakeDisplay.quaternion.setFromRotationMatrix(
+      new THREE.Matrix4().lookAt(
+        fakeDisplay.position,
+        new THREE.Vector3(0, 1.6, -1),
+        new THREE.Vector3(0, 1, 0)
+      )
+    );
+    fakeDisplay.update();
+  }
+
   _render();
 }
 
 _openUrl('realitytab.html?color=29b6f6', new THREE.Vector3(0, 0, 0));
-_openUrl('realitytab.html?color=ab47bc', new THREE.Vector3(0.1, 0, 0));
+// _openUrl('realitytab.html?color=ab47bc', new THREE.Vector3(0.1, 0, 0));
 
 if (navigator.xr && !query.fake) {
   (async () => {
@@ -254,7 +273,7 @@ if (navigator.xr && !query.fake) {
       const width = viewport.width;
       const height = viewport.height;
 
-      renderer.setSize(width * 2, height);
+      renderer.setSize(width, height);
 
       renderer.setAnimationLoop(null);
 
@@ -269,9 +288,7 @@ if (navigator.xr && !query.fake) {
       console.warn(err.stack);
     });
 } else {
-  const fakeDisplay = _makeFakeDisplay();
-  fakeDisplay.position.copy(camera.position);
-  fakeDisplay.quaternion.copy(camera.quaternion);
+  fakeDisplay = _makeFakeDisplay();
   camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
   fakeDisplay.enter({

@@ -10,8 +10,8 @@ const _makeFakeDisplay = () => {
       return getEyeParameters.apply(this, arguments);
     }
   })(fakeDisplay.getEyeParameters);
-  fakeDisplay.stereo = false;
-  fakeDisplay.update();
+  // fakeDisplay.stereo = false;
+  // fakeDisplay.update();
   fakeDisplay.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
   fakeDisplay.onvrdisplaypresentchange = () => {
     setTimeout(() => {
@@ -30,52 +30,11 @@ const _makeFakeDisplay = () => {
 
     fakeDisplay.requestPresent([{source: canvas}])
       .then(() => {
+        renderer.vr.enabled = true;
         renderer.vr.setDevice(fakeDisplay);
         renderer.vr.setAnimationLoop(animate);
 
         if (navigator.xr) {
-          const views = !stereo ? [{
-            eye: 'left',
-            projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
-            _viewport: {
-              x: 0,
-              y: 0,
-              width: fakeDisplay._width,
-              height: fakeDisplay._height,
-            },
-          }] : [
-            {
-              eye: 'left',
-              projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
-              _viewport: {
-                x: 0,
-                y: 0,
-                width: fakeDisplay._width / 2,
-                height: fakeDisplay._height,
-              },
-            },
-            {
-              eye: 'right',
-              projectionMatrix: fakeDisplay._frameData.rightProjectionMatrix,
-              _viewport: {
-                x: fakeDisplay._width / 2,
-                y: 0,
-                width: fakeDisplay._width / 2,
-                height: fakeDisplay._height,
-              }
-            },
-          ];
-          const devicePose = {
-            getViewMatrix(view) {
-              return fakeDisplay._frameData[view.eye === 'left' ? 'leftViewMatrix' : 'rightViewMatrix'];
-            },
-          };
-          const frame = {
-            views,
-            getDevicePose() {
-              return devicePose;
-            },
-          };
           const onends = [];
           const session = {
             addEventListener(e, fn) {
@@ -84,16 +43,58 @@ const _makeFakeDisplay = () => {
               }
             },
             baseLayer: null,
+            _frame: {
+              views: !stereo ? [{
+                eye: 'left',
+                projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
+                _viewport: {
+                  x: 0,
+                  y: 0,
+                  width: fakeDisplay._width * 2,
+                  height: fakeDisplay._height,
+                },
+              }] : [
+                {
+                  eye: 'left',
+                  projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
+                  _viewport: {
+                    x: 0,
+                    y: 0,
+                    width: fakeDisplay._width,
+                    height: fakeDisplay._height,
+                  },
+                },
+                {
+                  eye: 'right',
+                  projectionMatrix: fakeDisplay._frameData.rightProjectionMatrix,
+                  _viewport: {
+                    x: fakeDisplay._width,
+                    y: 0,
+                    width: fakeDisplay._width,
+                    height: fakeDisplay._height,
+                  }
+                },
+              ],
+              _pose: {
+                getViewMatrix(view) {
+                  return fakeDisplay._frameData[view.eye === 'left' ? 'leftViewMatrix' : 'rightViewMatrix'];
+                },
+              },
+              getDevicePose() {
+                return this._pose;
+              },
+            },
             getInputSources() {
               return [];
             },
             requestFrameOfReference() {
-              return Promise.resolve(stereo ? {} : null);
+              return Promise.resolve({});
+              // return Promise.resolve(null);
             },
             device: fakeDisplay,
             requestAnimationFrame(fn) {
               return this.device.onrequestanimationframe(timestamp => {
-                fn(timestamp, frame);
+                fn(timestamp, this._frame);
               });
             },
             /* requestAnimationFrame: fn => {
