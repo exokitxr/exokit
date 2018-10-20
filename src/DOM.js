@@ -1800,7 +1800,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.contentWindow = null;
     this.contentDocument = null;
     this.live = true;
-    this[symbols.xrOffsetSymbol] = {
+    this.xrOffset = {
       position: new Float32Array(3),
       rotation: new Float32Array(4),
       scale: new Float32Array(3),
@@ -1837,7 +1837,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               }, parentWindow, parentWindow.top);
               const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
               contentDocument.hidden = this.hidden;
-              contentDocument[symbols.xrOffsetSymbol] = this[symbols.xrOffsetSymbol];
+              contentDocument.xrOffset = this.xrOffset;
 
               contentWindow.document = contentDocument;
 
@@ -1863,11 +1863,11 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       } else if (name === 'position' || name === 'rotation' || name === 'scale') {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
-          this[symbols.xrOffsetSymbol].position.set(v);
+          this.xrOffset.position.set(v);
         } else if (name === 'rotation' && v.length === 4) {
-          this[symbols.xrOffsetSymbol].rotation.set(v);
+          this.xrOffset.rotation.set(v);
         } else if (name === 'scale' && v.length === 3) {
-          this[symbols.xrOffsetSymbol].scale.set(v);
+          this.xrOffset.scale.set(v);
         }
       } else if (name === 'hidden') {
         if (this.contentDocument) {

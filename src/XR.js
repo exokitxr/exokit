@@ -398,7 +398,7 @@ class XRDevicePose {
   }
   getViewMatrix(view) {
     if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.ownerDocument) {
-      const xrOffset = this.frame.session.device.ownerDocument[symbols.xrOffset];
+      const {xrOffset} = this.frame.session.device.window.document;
       localMatrix
         .fromArray(this._viewMatrix)
         .getInverse(localMatrix)
