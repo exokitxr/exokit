@@ -8,6 +8,10 @@ const {_elementGetter, _elementSetter} = require('./utils');
 
 const _getXrDisplay = window => window[symbols.mrDisplaysSymbol].xrDisplay;
 const _getXmDisplay = window => window[symbols.mrDisplaysSymbol].xmDisplay;
+const _getFakeVrDisplay = window => {
+  const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
+  return fakeVrDisplay.isActive ? fakeVrDisplay : null;
+};
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -21,8 +25,11 @@ class XR extends EventEmitter {
     this._window = window;
   }
   requestDevice(name = null) {
-    if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
-      return Promise.resolve(_getXrDisplay(this._window));
+    const fakeVrDisplay = _getFakeVrDisplay(this._window);
+    if (fakeVrDisplay) {
+      return Promise.resolve(fakeVrDisplay);
+    } else if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
+      return Promise.resolve();
     } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
       return Promise.resolve(_getXmDisplay(this._window));
     } else {
