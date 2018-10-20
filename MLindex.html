@@ -1,16 +1,6 @@
 <!doctype html>
 <html>
 <head>
-<meta http-equiv="origin-trial" data-feature="WebXR Device API" data-expires="2018-08-26" content="AhMYH1xq+8ln8vrOHsCIac0my75vS5E/PVqxVDSxvXM7M1/zH5vSSODn2CxYJMPvTp2weqwUvlh/aAuT5RCYggIAAABgeyJvcmlnaW4iOiJodHRwczovL3dlYm1yLmlvOjQ0MyIsImZlYXR1cmUiOiJXZWJYUkRldmljZSIsImV4cGlyeSI6MTUzNTMyMzQzMCwiaXNTdWJkb21haW4iOnRydWV9">
-  <meta http-equiv="origin-trial" data-feature="WebXR Gamepad Support" data-expires="2018-08-26" content="Ap55gBYZbv4iGalsxU6jXz+KEHJPqFw/1TMCUelFSLprAGMrvdgW0OgsyeUDkmcSrmT+ccophP2RDNsg+Q8AWQcAAABoeyJvcmlnaW4iOiJodHRwczovL3dlYm1yLmlvOjQ0MyIsImZlYXR1cmUiOiJXZWJYUkdhbWVwYWRTdXBwb3J0IiwiZXhwaXJ5IjoxNTM1MzIzNDMwLCJpc1N1YmRvbWFpbiI6dHJ1ZX0=">
-  <style>
-    body {
-      display: flex;
-      margin: 0;
-      flex-direction: column;
-    }
-  </style>
-  </script>
 </head>
 <body>
   <canvas id=canvas></canvas>
@@ -52,7 +42,6 @@
     const loadingBarWidth = menuWidth;
     const loadingBarHeight = 200;
     const loadingBarOffset = loadingBarHeight*1.4 + 202;
-    let menuOpen = true;
     const fetchManager = new FetchManager();
 
     let controllerMeshes;
@@ -74,11 +63,6 @@
     };
 
 
-    // const renderer = new THREE.WebGLRenderer({
-    //   canvas,
-    // });
-    // renderer.setSize(window.innerWidth, window.innerHeight);
-    // renderer.setPixelRatio(window.devicePixelRatio);
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -92,36 +76,14 @@
     renderer.setAnimationLoop(animate);
 
 
-    const _submitUrl = u => {
-      currentApps = [u];
-      _updateLocalApps();
 
-
-      loadingBarState.loaded = false;
-      loadingBarState.loading = true;
-      loadingBarState.error = false;
-      loadingBarState.text = 'Loading...';
-
-      menuMesh.urlMesh.updateText();
-    };
     const urlState = {
       text: 'https://docs.webmr.io/',
       cursor: -1,
       measures: [],
-      submit() {
-        _submitUrl(urlState.text);
-      },
     };
     urlState.cursor = urlState.text.length;
-    const loadingBarState = {
-      text: '',
-      loading: false,
-      error: false,
-      loaded: false,
-      value: 0,
-      total: 0,
-      progress: 0,
-    };
+
     let keyboardState = urlState;
 
     let controllerIndex = 1;
@@ -330,33 +292,7 @@
 //            ctx.fillStyle = '#RFF';
 //            ctx.fillRect(5, urlBarOffset + 500, urlBarWidth - 10, urlBarHeight - 10);
 
-          if (loadingBarState.loading && !loadingBarState.error && !loadingBarState.loaded) {
-            ctx.fillStyle = '#e68e04';
-            ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
-            ctx.fillStyle = '#FFF';
-            ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
-            ctx.fillStyle = '#333';
-            ctx.font = `${fontSize}px Arial`;
-            ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
-          }
-          if (loadingBarState.loaded && loadingBarState.error) {
-            ctx.fillStyle = '#1dc008';
-            ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
-            ctx.fillStyle = '#FFF';
-            ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
-            ctx.fillStyle = '#333';
-            ctx.font = `${fontSize}px Arial`;
-            ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
-          }
-          if (loadingBarState.loading && loadingBarState.loaded && loadingBarState.error) {
-            ctx.fillStyle = '#ff1818';
-            ctx.fillRect(0, loadingBarOffset, loadingBarWidth, loadingBarHeight);
-            ctx.fillStyle = '#FFF';
-            ctx.fillRect(10, loadingBarOffset, loadingBarWidth -20, loadingBarHeight- 10);
-            ctx.fillStyle = '#333';
-            ctx.font = `${fontSize}px Arial`;
-            ctx.fillText(loadingBarState.text, 10, loadingBarOffset + loadingBarHeight - 10*2 - 30);
-          }
+
 
           ctx.fillStyle = '#FFF';
           // ctx.font = `${fontSize}px Arial`;
@@ -825,30 +761,6 @@
       }
     };
 
-
-
-    const resources = [];
-    const _resourcesUpdate = () => {
-      let value = 0;
-      let total =  0;
-      for (let i = 0; i < resources.length; i++) {
-        for (let j = 0; j < resources[i].resources.length; j++) {
-          const resource = resources[i].resources[j];
-          value += resource.value;
-          total += resource.total;
-        }
-      }
-      loadingBarState.value = value;
-      loadingBarState.total = total;
-      loadingBarState.progress = loadingBarState.total > 0 ? (loadingBarState.value/loadingBarState.total) : 0;
-      menuMesh.urlMesh.updateText();
-    };
-    if (window.document.resources) {
-      resources.push(window.document.resources);
-    }
-    for (let i = 0; i < resources.length; i++) {
-      window.document.resources.addEventListener('update', _resourcesUpdate);
-    }
     (async () => {
       console.log('request device');
       display = await navigator.xr.requestDevice();
