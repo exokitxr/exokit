@@ -400,8 +400,8 @@ class XRDevicePose {
     if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.window) {
       const {xrOffset} = this.frame.session.device.window.document;
       localMatrix
-        .fromArray(this._viewMatrix)
         .getInverse(localMatrix)
+        .fromArray(view._viewMatrix)
         .premultiply(
           localMatrix2.compose(
             localVector.fromArray(xrOffset.position),
@@ -410,11 +410,11 @@ class XRDevicePose {
           )
         )
         .getInverse(localMatrix)
-        .toArray(this._localViewMatrix);
+        .toArray(view._localViewMatrix);
     } else {
-      this._localViewMatrix.set(this._viewMatrix);
+      view._localViewMatrix.set(view._viewMatrix);
     }
-    return this._localViewMatrix;
+    return view._localViewMatrix;
   }
   clone() {
     const o = new this.constructor();
