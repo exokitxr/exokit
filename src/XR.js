@@ -49,6 +49,7 @@ class XRDevice {
   constructor(name = 'VR') {
     this.name = name; // non-standard
     this.session = null; // non-standard
+    this.ownerDocument = null; // non-standard
   }
   supportsSession({exclusive = false, outputContext = null} = {}) {
     return Promise.resolve(null);
