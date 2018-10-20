@@ -400,7 +400,6 @@ class XRDevicePose {
     if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.window) {
       const {xrOffset} = this.frame.session.device.window.document;
       localMatrix
-        .getInverse(localMatrix)
         .fromArray(view._viewMatrix)
         .premultiply(
           localMatrix2.compose(
@@ -409,7 +408,6 @@ class XRDevicePose {
             localVector2.fromArray(xrOffset.scale)
           )
         )
-        .getInverse(localMatrix)
         .toArray(view._localViewMatrix);
     } else {
       view._localViewMatrix.set(view._viewMatrix);
