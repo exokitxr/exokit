@@ -40,7 +40,7 @@
     const menuHeight = 1;
     const menuWorldWidth = menuWidth;
     const menuWorldHeight = menuHeight * .1;
-    const menuPositionHeight = .2;
+    const menuPositionHeight = .3;
     const urlBarWidth = menuWidth;
     const urlBarHeight = menuHeight;
     const urlBarOffset = urlBarHeight;
@@ -174,129 +174,13 @@
       scene.add(controllerMesh);
     });
 
-    const fakeDisplay = window.navigator.createVRDisplay();
-    fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
-    fakeDisplay.getEyeParameters = (getEyeParameters => function(eye) {
-      if (!fakeDisplay.getStereo() && eye === 'right') {
-        const result = getEyeParameters.call(this, 'right');
-        result.renderWidth = 0;
-        return result;
-      } else {
-        return getEyeParameters.apply(this, arguments);
-      }
-    })(fakeDisplay.getEyeParameters);
-    fakeDisplay.position.copy(camera.position);
-    fakeDisplay.quaternion.copy(camera.quaternion);
-    camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
-    camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
-    fakeDisplay.stereo = false;
-    fakeDisplay.update();
-    if (window.tickAnimationFrame) {
-      fakeDisplay.onrequestanimationframe = fn => window.tickAnimationFrame.window.requestAnimationFrame(fn, 1);
-    } else {
-      fakeDisplay.onrequestanimationframe = fn => window.requestAnimationFrame(fn, 1);
-    }
-    fakeDisplay.onvrdisplaypresentchange = () => {
-      setTimeout(() => {
-        const e = new Event('vrdisplaypresentchange');
-        e.display = fakeDisplay;
-        window.dispatchEvent(e);
-      });
-    };
-    const _enterFakeDisplay = (stereo = false) => {
-      if (fakeDisplay.session) {
-        fakeDisplay.session.end();
-      }
 
-      fakeDisplay.requestPresent([{source: canvas}])
-        .then(() => {
-          renderer.vr.setDevice(fakeDisplay);
-          renderer.vr.setAnimationLoop(animate);
 
-          if (navigator.xr) {
-            const views = !stereo ? [{
-              eye: 'left',
-              projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
-              _viewport: {
-                x: 0,
-                y: 0,
-                width: fakeDisplay._width,
-                height: fakeDisplay._height,
-              },
-            }] : [
-              {
-                eye: 'left',
-                projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
-                _viewport: {
-                  x: 0,
-                  y: 0,
-                  width: fakeDisplay._width / 2,
-                  height: fakeDisplay._height,
-                },
-              },
-              {
-                eye: 'right',
-                projectionMatrix: fakeDisplay._frameData.rightProjectionMatrix,
-                _viewport: {
-                  x: fakeDisplay._width / 2,
-                  y: 0,
-                  width: fakeDisplay._width / 2,
-                  height: fakeDisplay._height,
-                }
-              },
-            ];
-            const devicePose = {
-              getViewMatrix(view) {
-                return fakeDisplay._frameData[view.eye === 'left' ? 'leftViewMatrix' : 'rightViewMatrix'];
-              },
-            };
-            const frame = {
-              views,
-              getDevicePose() {
-                return devicePose;
-              },
-            };
-            const onends = [];
-            const session = {
-              addEventListener(e, fn) {
-                if (e === 'end') {
-                  onends.push(fn);
-                }
-              },
-              baseLayer: null,
-              requestFrameOfReference() {
-                return Promise.resolve(stereo ? {} : null);
-              },
-              device: fakeDisplay,
-              requestAnimationFrame: fn => window.requestAnimationFrame(timestamp => {
-                fn(timestamp, frame);
-              }, 1),
-              end() {
-                for (let i = 0; i < onends.length; i++) {
-                  onends[i]();
-                }
-                return fakeDisplay.exitPresent();
-              },
-            };
-            fakeDisplay.session = session;
-            renderer.vr.setSession(session, {
-              frameOfReferenceType: 'stage',
-            });
-          } else {
-            window.dispatchEvent(new Event('vrdisplaypresentchange'));
-          }
 
-          fakeDisplay.stereo = stereo;
-        });
-    };
-    _enterFakeDisplay();
+
 
     const _getGamepads = () => {
-      if (fakeDisplay.isPresenting) {
-        return fakeDisplay.gamepads;
-      } else {
         return navigator.getGamepads();
-      }
     };
 
     const _makeRenderTarget = (width, height) => {
@@ -623,7 +507,7 @@
 
       return object;
     })();
-    keyboardMesh.position.set(0, 0.5, 0);
+    keyboardMesh.position.set(0, 0, 0);
     scene.add(keyboardMesh);
 
     let keyboardMeshAnimation = null;
@@ -703,36 +587,25 @@
       });
 
 
-    const _updateGamepads = () => {
-      for (let i = 0; i < 2; i++) {
-        const gamepad = fakeDisplay.gamepads[i];
-        if (gamepad) {
-          const controllerOffset = controllerOffsets[i];
 
-          localVector.copy(fakeDisplay.position)
-            .add(
-              localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
-                .add(controllerOffset)
-                .applyQuaternion(fakeDisplay.quaternion)
-            ).toArray(gamepad.pose.position);
-          fakeDisplay.quaternion.toArray(fakeDisplay.gamepads[i].pose.orientation);
-        }
-      }
-    };
 
     function animate(time, frame) {
       const _updateControllers = () => {
-        const gamepads = _getGamepads();
+        if(frame != null){
+          if (renderer.vr.enabled) {
+            const inputSources = display.session.getInputSources();
 
-        for (let i = 0; i < gamepads.length; i++) {
-          const gamepad = gamepads[i];
-          if (gamepad) {
-            const controllerMesh = controllerMeshes[i];
-            controllerMesh.position.fromArray(gamepad.pose.position);
-            controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
-            controllerMesh.updateMatrixWorld();
+            for (let i = 0; i < inputSources.length; i++) {
+              const inputSource = inputSources[i];
+              const pose = frame.getInputPose(inputSource);
+
+              const controllerMesh = controllerMeshes[i];
+              controllerMesh.matrix.fromArray(pose.pointerMatrix);
+              controllerMesh.updateMatrixWorld(true);
+            }
           }
         }
+
       };
       const _updateIntersections = () => {
         keyboardMesh.update();
@@ -741,9 +614,7 @@
         const gamepads = _getGamepads();
 
         for (let i = 0; i < 2; i++) {
-          if (fakeDisplay.isPresenting && i !== controllerIndex) {
-            continue;
-          }
+
 
           const controllerMesh = controllerMeshes[i];
           controllerMesh.update();
@@ -894,20 +765,7 @@
       _updateControllers();
       _updateIntersections();
 
-      if (renderer.vr.enabled) {
-        const inputSources = display.session.getInputSources();
-        if(frame != null){
-          for (let i = 0; i < inputSources.length; i++) {
-            const inputSource = inputSources[i];
-            const pose = frame.getInputPose(inputSource);
 
-            const controllerMesh = controllerMeshes[i];
-            controllerMesh.matrix.fromArray(pose.pointerMatrix);
-            controllerMesh.updateMatrixWorld(true);
-          }
-        }
-
-      }
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 
