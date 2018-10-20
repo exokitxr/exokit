@@ -69,31 +69,35 @@
     const controllerMaterial = new THREE.MeshPhongMaterial({
       color: 0x4caf50,
     });
-    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
-      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-      mesh.position.set(x, y, z);
-      mesh.quaternion.set(qx, qy, qz, qw);
-      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-      mesh.updateMatrix();
-      mesh.updateMatrixWorld();
-      mesh.matrixAutoUpdate = false;
-      mesh.frustumCulled = false;
-      return mesh;
-    };
+
 
     controllerMeshes = [
-      _makeControllerMesh(-5),
-      _makeControllerMesh(2),
+      // _makeControllerMesh(-0.1),
+      // _makeControllerMesh(0.1),
     ];
-    // const controllerMesh = controllerMeshes[0];
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 1; i++) {
       const controllerMesh = new THREE.Object3D();
-      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
+      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
       controllerMesh.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 0, -1),
         new THREE.Vector3(0, -1, -1)
       );
+
+
+      const makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+        const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+        mesh.position.set(x, y, z);
+        mesh.quaternion.set(qx, qy, qz, qw);
+        // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+        mesh.updateMatrix();
+        mesh.updateMatrixWorld();
+        mesh.matrixAutoUpdate = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      controllerMesh.add(makeControllerMesh(-0.1));
+      controllerMesh.block = makeControllerMesh();
 
       const rayMesh = (() => {
         const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
@@ -104,7 +108,7 @@
         });
 
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = i === 1;
+        mesh.visible = true;
         return mesh;
       })();
       controllerMesh.add(rayMesh);
@@ -118,11 +122,13 @@
 
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.z = -1;
-        mesh.visible = false;
+        mesh.visible = true;
         return mesh;
       })();
       controllerMesh.add(rayDot);
       controllerMesh.rayDot = rayDot;
+
+
 
       controllerMesh.ray = new THREE.Ray();
       controllerMesh.update = () => {
@@ -135,12 +141,6 @@
       scene.add(controllerMesh);
       controllerMeshes[i] = controllerMesh;
     }
-
-
-
-    // controllerMeshes.forEach(controllerMesh => {
-    //   scene.add(controllerMesh);
-    // });
 
     renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -352,7 +352,7 @@
 
     let keyboardMeshAnimation = null;
 
-    for (let i = 0; i < controllerMeshes.length; i++) {
+    for (let i = 0; i < 1; i++) {
       const controllerMesh = controllerMeshes[i];
 
       const keyMesh = (() => {
@@ -440,12 +440,11 @@
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
 
-        for (let i = 0; i < inputSources.length; i++) {
+        for (let i = 0; i < 1; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
-
           const controllerMesh = controllerMeshes[i];
-          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.block.matrix.fromArray(pose.pointerMatrix);
           controllerMesh.updateMatrixWorld(true);
         }
       }
@@ -455,7 +454,7 @@
         menuMesh.urlMesh.update();
 
 
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < 1; i++) {
 
 
           const controllerMesh = controllerMeshes[i];
@@ -466,9 +465,9 @@
             controllerMesh.rayMesh.scale.z = rayDistance;
             controllerMesh.rayMesh.updateMatrixWorld();
 
-            controllerMesh.rayDot.visible = false;
-
-            controllerMesh.keyMesh.visible = false;
+            // controllerMesh.rayDot.visible = false;
+            //
+            // controllerMesh.keyMesh.visible = false;
 
           };
 
@@ -611,6 +610,8 @@
           let select = false;
           session.onselect = () => {
             console.log('onselect');
+            console.log(controllerMeshes[0].position);
+            controllerMeshes[0].translateX(.1);
             selected = true;
             // controllerMesh.rayMesh.material.color.setHex(selected ? RAY_HIGHLIGHT_COLOR : RAY_COLOR);
           };
