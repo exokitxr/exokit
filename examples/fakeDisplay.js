@@ -1,4 +1,13 @@
-const _makeFakeDisplay = () => {
+(() => {
+
+const localVector = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localVector2 = new THREE.Vector3();
+const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
+const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+
+window._makeFakeDisplay = () => {
   const fakeDisplay = window.navigator.createVRDisplay();
   fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
   fakeDisplay.getEyeParameters = (getEyeParameters => function(eye) {
@@ -10,8 +19,6 @@ const _makeFakeDisplay = () => {
       return getEyeParameters.apply(this, arguments);
     }
   })(fakeDisplay.getEyeParameters);
-  // fakeDisplay.stereo = false;
-  // fakeDisplay.update();
   fakeDisplay.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
   fakeDisplay.onvrdisplaypresentchange = () => {
     setTimeout(() => {
@@ -42,71 +49,20 @@ const _makeFakeDisplay = () => {
                 onends.push(fn);
               }
             },
+            device: fakeDisplay,
             baseLayer: null,
-            _frame: {
-              views: !stereo ? [{
-                eye: 'left',
-                projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
-                _viewport: {
-                  x: 0,
-                  y: 0,
-                  width: fakeDisplay._width * 2,
-                  height: fakeDisplay._height,
-                },
-              }] : [
-                {
-                  eye: 'left',
-                  projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
-                  _viewport: {
-                    x: 0,
-                    y: 0,
-                    width: fakeDisplay._width,
-                    height: fakeDisplay._height,
-                  },
-                },
-                {
-                  eye: 'right',
-                  projectionMatrix: fakeDisplay._frameData.rightProjectionMatrix,
-                  _viewport: {
-                    x: fakeDisplay._width,
-                    y: 0,
-                    width: fakeDisplay._width,
-                    height: fakeDisplay._height,
-                  }
-                },
-              ],
-              _pose: {
-                getViewMatrix(view) {
-                  return fakeDisplay._frameData[view.eye === 'left' ? 'leftViewMatrix' : 'rightViewMatrix'];
-                },
-              },
-              getDevicePose() {
-                return this._pose;
-              },
-            },
+            _frame: null, // defer
             getInputSources() {
               return [];
             },
             requestFrameOfReference() {
               return Promise.resolve({});
-              // return Promise.resolve(null);
             },
-            device: fakeDisplay,
             requestAnimationFrame(fn) {
               return this.device.onrequestanimationframe(timestamp => {
                 fn(timestamp, this._frame);
               });
             },
-            /* requestAnimationFrame: fn => {
-              const handler = timestamp => {
-                fn(timestamp, frame);
-              };
-              if (window.tickAnimationFrame && window.tickAnimationFrame.window) {
-                return window.tickAnimationFrame.window.requestAnimationFrame(handler);
-              } else {
-                return window.requestAnimationFrame(handler);
-              }
-            }, */
             end() {
               for (let i = 0; i < onends.length; i++) {
                 onends[i]();
@@ -118,9 +74,90 @@ const _makeFakeDisplay = () => {
               for (const k in this) {
                 o[k] = this[k];
               }
+              o._frame = o._frame.clone();
+              o._frame.session = o;
               return o;
             },
           };
+          const _frame = {
+            session,
+            views: !stereo ? [{
+              eye: 'left',
+              projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
+              _viewport: {
+                x: 0,
+                y: 0,
+                width: fakeDisplay._width * 2,
+                height: fakeDisplay._height,
+              },
+            }] : [
+              {
+                eye: 'left',
+                projectionMatrix: fakeDisplay._frameData.leftProjectionMatrix,
+                _viewport: {
+                  x: 0,
+                  y: 0,
+                  width: fakeDisplay._width,
+                  height: fakeDisplay._height,
+                },
+              },
+              {
+                eye: 'right',
+                projectionMatrix: fakeDisplay._frameData.rightProjectionMatrix,
+                _viewport: {
+                  x: fakeDisplay._width,
+                  y: 0,
+                  width: fakeDisplay._width,
+                  height: fakeDisplay._height,
+                },
+              },
+            ],
+            _pose: null, // defer
+            getDevicePose() {
+              return this._pose;
+            },
+            clone() {
+              const o = new this.constructor();
+              for (const k in this) {
+                o[k] = this[k];
+              }
+              o._pose = o._pose.clone();
+              o._pose.frame = o;
+              return o;
+            },
+          };
+          session._frame = _frame;
+          const _pose = {
+            frame: _frame,
+            getViewMatrix(view) {
+              const viewMatrix = this.frame.session.device._frameData[view.eye === 'left' ? 'leftViewMatrix' : 'rightViewMatrix'];
+
+              if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.window) {
+                const {xrOffset} = this.frame.session.device.window.document;
+                localMatrix
+                  .fromArray(viewMatrix)
+                  .multiply(
+                    localMatrix2.compose(
+                      localVector.fromArray(xrOffset.position),
+                      localQuaternion.fromArray(xrOffset.rotation),
+                      localVector2.fromArray(xrOffset.scale)
+                    )
+                  )
+                  .toArray(localViewMatrix);
+              } else {
+                localViewMatrix.set(viewMatrix);
+              }
+              return localViewMatrix;
+            },
+            clone() {
+              const o = new this.constructor();
+              for (const k in this) {
+                o[k] = this[k];
+              }
+              return o;
+            },
+          };
+          _frame._pose = _pose;
           fakeDisplay.session = session;
           renderer.vr.setSession(session, {
             frameOfReferenceType: 'stage',
@@ -135,3 +172,5 @@ const _makeFakeDisplay = () => {
 
   return fakeDisplay;
 };
+
+})();
