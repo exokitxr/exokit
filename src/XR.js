@@ -228,6 +228,8 @@ class XRSession extends EventTarget {
     for (const k in this) {
       o[k] = this[k];
     }
+    o._frame = o._frame.clone();
+    o._frame.session = o;
     return o;
   }
   get onblur() {
@@ -341,6 +343,15 @@ class XRPresentationFrame {
   getInputPose(inputSource, coordinateSystem) {
     return inputSource._pose;
   }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    o._pose = o._pose.clone();
+    o._pose.frame = o;
+    return o;
+  }
 }
 module.exports.XRPresentationFrame = XRPresentationFrame;
 
@@ -404,6 +415,13 @@ class XRDevicePose {
       this._localViewMatrix.set(this._viewMatrix);
     }
     return this._localViewMatrix;
+  }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    return o;
   }
 }
 module.exports.XRDevicePose = XRDevicePose;
