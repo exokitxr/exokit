@@ -491,7 +491,7 @@ Local<Object> makeWindow() {
   v8::EscapableHandleScope scope(isolate);
 
   Local<Object> target = Object::New(isolate);
-  
+
   windowsystembase::Decorate(target);
 
   Nan::SetMethod(target, "create", egl::Create);
