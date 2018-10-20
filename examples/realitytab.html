@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <body>
-    <script src="three.js"></script>
+    <script src="three.js?tab=bottom"></script>
     <script>
 function parseQuery(queryString) {
   var query = {};
@@ -14,7 +14,7 @@ function parseQuery(queryString) {
 }
 const query = parseQuery(window.location.search);
 
-console.log('got query', query);
+// console.log('got query', query);
 
 const scene = new THREE.Scene();
 
@@ -39,7 +39,7 @@ const cubeMesh = (() => {
     color: parseInt(query.color, 16) || 0xab47bc,
   });
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.x = parseFloat(query.x) || 0;
+  // mesh.position.x = parseFloat(query.x) || 0;
   mesh.position.y = 1.55;
   mesh.position.z = -1;
   mesh.rotation.order = 'YXZ';
@@ -93,13 +93,18 @@ if (navigator.xr) {
       renderer.vr.enabled = true;
       renderer.vr.setDevice(display);
       renderer.vr.setAnimationLoop(animate);
+
+      console.log('loaded reality tab in XR');
     });
-  })();
+  })()
+    .catch(err => {
+      console.warn(err.stack);
+    });
 } else {
   renderer.setAnimationLoop(animate);
-}
 
-console.log('loaded reality tab');
+  console.log('loaded reality tab in 2D');
+}
     </script>
   </body>
 </html>

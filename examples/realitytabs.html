@@ -1,10 +1,21 @@
 <!doctype html>
 <html>
   <body>
-    <script src="three.js"></script>
+    <script src="three.js?tab=top"></script>
+    <script src="fakeDisplay.js"></script>
     <script>
 // helpers
 
+function parseQuery(queryString) {
+  var query = {};
+  var pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+  for (var i = 0; i < pairs.length; i++) {
+    var pair = pairs[i].split('=');
+    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+  }
+  return query;
+}
+const query = parseQuery(window.location.search);
 const FLOOR_SIZE = 20;
 
 const _makeRenderer = () => {
@@ -47,7 +58,7 @@ const _makeRenderTarget = (width, height) => {
 };
 
 const iframes = [];
-const _openUrl = u => {
+const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1)) => {
   const _drawOk = () => {
     console.log('Load ok: ' + u);
   };
@@ -56,6 +67,9 @@ const _openUrl = u => {
   };
 
   const iframe = document.createElement('iframe');
+  iframe.position = position.toArray();
+  iframe.rotation = rotation.toArray();
+  iframe.scale = scale.toArray();
   iframe.onload = function() {
     const contentDocument = (() => {
       try {
@@ -199,6 +213,11 @@ const _render = () => {
         depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
       },
     ])
+    // iframes
+    /* [{
+      colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
+      depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
+    }] */
   );
 
   lastTime = now;
@@ -208,10 +227,10 @@ function animate() {
   _render();
 }
 
-_openUrl('realitytab.html?x=0&color=29b6f6');
-_openUrl('realitytab.html?x=0.1&color=ab47bc');
+_openUrl('realitytab.html?color=29b6f6', new THREE.Vector3(0, 0, 0));
+_openUrl('realitytab.html?color=ab47bc', new THREE.Vector3(0.1, 0, 0));
 
-if (navigator.xr) {
+if (navigator.xr && !query.fake) {
   (async () => {
     console.log('request device');
     const display = await navigator.xr.requestDevice();
@@ -245,9 +264,22 @@ if (navigator.xr) {
 
       console.log('running!');
     });
-  })();
+  })()
+    .catch(err => {
+      console.warn(err.stack);
+    });
 } else {
-  renderer.setAnimationLoop(animate);
+  const fakeDisplay = _makeFakeDisplay();
+  fakeDisplay.position.copy(camera.position);
+  fakeDisplay.quaternion.copy(camera.quaternion);
+  camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
+  camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
+  fakeDisplay.enter({
+    canvas: renderer.domElement,
+    animate,
+  });
+
+  // renderer.setAnimationLoop(animate);
 }
     </script>
   </body>
