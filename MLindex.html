@@ -7,7 +7,6 @@
   <div id=container></div>
   <script src="js/three.js"></script>
   <script src="js/fetch-manager.js"></script>
-  <!-- <script src="js/vr-display.js"></script> -->
   <script src="js/keycode.js"></script>
   <script src="js/svg-boundings.js"></script>
   <script>
@@ -43,6 +42,7 @@
     const loadingBarHeight = 200;
     const loadingBarOffset = loadingBarHeight*1.4 + 202;
     const fetchManager = new FetchManager();
+    const cursorWidth = 10;
 
     let controllerMeshes;
 
@@ -86,19 +86,6 @@
 
     let keyboardState = urlState;
 
-    let controllerIndex = 1;
-    const controllerOffsets = [
-      new THREE.Vector3(),
-      new THREE.Vector3(),
-    ];
-    const keys = {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-      ctrl: false,
-      alt: false,
-    };
 
     const upVector = new THREE.Vector3(0, 1, 0);
     const armQuaternionOffset = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, -1));
@@ -137,13 +124,6 @@
     });
 
 
-
-
-
-    const _getGamepads = () => {
-        return navigator.getGamepads();
-    };
-
     const _makeRenderTarget = (width, height) => {
       const renderTarget = new THREE.WebGLRenderTarget(width, height);
       renderTarget.depthTexture = new THREE.DepthTexture(
@@ -171,10 +151,7 @@
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
-    // const controllerMeshes = [null, null];
-    // const lastPresseds = [false, false];
-    const lastMenuPresseds = [false, false];
-    const grabbedObjects = [null, null];
+
     for (let i = 0; i < 2; i++) {
       const controllerMesh = new THREE.Object3D();
       controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
@@ -223,29 +200,6 @@
       scene.add(controllerMesh);
       controllerMeshes[i] = controllerMesh;
     }
-
-
-
-
-    const animations = [];
-    const _mod = (v, d) => {
-      const n = v % d;
-      return n < 0 ? (d + n) : n;
-    };
-    const _angleDiff = (a, b) => _mod((b - a) + Math.PI, Math.PI * 2) - Math.PI;
-
-    // _renderHtml('menu.html?t=url');
-    let currentTabIndex = 0;
-
-    const tabs = ['URL'];
-    const cursorWidth = 10;
-    const _getTab = () => {
-      if (currentTabIndex >= 0) {
-        return tabs[currentTabIndex];
-      } else {
-        return null;
-      }
-    };
 
 
     const menuMesh = (() => {
@@ -546,7 +500,6 @@
         keyboardMesh.update();
         menuMesh.urlMesh.update();
 
-        const gamepads = _getGamepads();
 
         for (let i = 0; i < 2; i++) {
 
@@ -554,19 +507,7 @@
           const controllerMesh = controllerMeshes[i];
           controllerMesh.update();
 
-          const gamepad = gamepads[i];
-          let pressed = false;
-          let grabbed = false;
-          let menuPressed = false;
-          let padPressed = null;
-          if (gamepad) {
-            pressed = gamepad.buttons[1].pressed;
-            grabbed = gamepad.buttons[2].pressed;
-            menuPressed = gamepad.buttons[3].pressed;
-            padPressed = gamepad.buttons[0].pressed ? _getGamepadDirection(gamepad) : null;
-          }
-
-          const _setIntersectionDefault = () => {
+            const _setIntersectionDefault = () => {
             controllerMesh.rayMesh.scale.z = rayDistance;
             controllerMesh.rayMesh.updateMatrixWorld();
 
@@ -665,24 +606,20 @@
                 const x = xFactor * menuWidth;
                 const y = yFactor * menuHeight;
 
-                const tab = _getTab();
-                  if (tab === 'URL') {
-                    if (y < urlBarOffset*2) {
-                      urlCoords = [x, y];
 
-                      controllerMesh.rayMesh.scale.z = distance;
-                      controllerMesh.updateMatrixWorld();
+                if (y < urlBarOffset*2) {
+                  urlCoords = [x, y];
 
-                      controllerMesh.rayDot.position.z = -distance;
-                      controllerMesh.updateMatrixWorld();
-                      controllerMesh.rayDot.visible = true;
-                    } else {
-                      intersectionPoint = null;
-                    }
-                  }
-                  else {
-                    intersectionPoint = null;
-                  }
+                  controllerMesh.rayMesh.scale.z = distance;
+                  controllerMesh.updateMatrixWorld();
+
+                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.updateMatrixWorld();
+                  controllerMesh.rayDot.visible = true;
+                } else {
+                  intersectionPoint = null;
+                }
+
               } else {
                 intersectionPoint = null;
               }
