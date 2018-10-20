@@ -401,7 +401,7 @@ class XRDevicePose {
       const {xrOffset} = this.frame.session.device.window.document;
       localMatrix
         .fromArray(view._viewMatrix)
-        .premultiply(
+        .multiply(
           localMatrix2.compose(
             localVector.fromArray(xrOffset.position),
             localQuaternion.fromArray(xrOffset.rotation),
