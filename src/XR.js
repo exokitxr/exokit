@@ -17,6 +17,7 @@ const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
 
 class XR extends EventEmitter {
   constructor(window) {
@@ -332,7 +333,7 @@ class XRPresentationFrame {
       new XRView('right'),
     ];
 
-    this._pose = new XRDevicePose();
+    this._pose = new XRDevicePose(this);
   }
   getDevicePose(coordinateSystem) {
     return this._pose;
@@ -358,6 +359,7 @@ class XRView {
 
     this._viewport = new XRViewport();
     this._viewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this._localViewMatrix = this._viewMatrix.slice();
   }
 }
 module.exports.XRView = XRView;
@@ -379,11 +381,29 @@ class XRViewport {
 module.exports.XRViewport = XRViewport;
 
 class XRDevicePose {
-  constructor() {
+  constructor(frame) {
+    this.frame = frame; // non-standard
     this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
   getViewMatrix(view) {
-    return view._viewMatrix;
+    if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.ownerDocument) {
+      const xrOffset = this.frame.session.device.ownerDocument[symbols.xrOffset];
+      localMatrix
+        .fromArray(this._viewMatrix)
+        .getInverse(localMatrix)
+        .premultiply(
+          localMatrix2.compose(
+            localVector.fromArray(xrOffset.position),
+            localQuaternion.fromArray(xrOffset.rotation),
+            localVector2.fromArray(xrOffset.scale)
+          )
+        )
+        .getInverse(localMatrix)
+        .toArray(this._localViewMatrix);
+    } else {
+      this._localViewMatrix.set(this._viewMatrix);
+    }
+    return this._localViewMatrix;
   }
 }
 module.exports.XRDevicePose = XRDevicePose;
