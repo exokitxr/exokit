@@ -740,7 +740,7 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   for (const k in mrDisplays) {
     const mrDisplayClone = mrDisplays[k].clone();
     mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    mrDisplayClone.ownerDocument = window.document;
+    mrDisplayClone.window = window;
     result[k] = mrDisplayClone;
   }
   return result;
