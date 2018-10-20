@@ -12,6 +12,9 @@
   <script>
     let container, scene, camera, renderer, display, controllerMeshes;
 
+    const RAY_COLOR = 0x44c2ff;
+    const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
+    const rayDistance = 1;
     const menuWidth = 1;
     const menuHeight = 1;
     const menuWorldWidth = menuWidth;
@@ -33,6 +36,31 @@
     urlState.cursor = urlState.text.length;
     const keyboardState = urlState;
 
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
+
+
+    container = document.createElement('div');
+    document.body.appendChild(container);
+
+    scene = new THREE.Scene();
+    scene.matrixAutoUpdate = false;
+    // scene.background = new THREE.Color(0x3B3961);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // camera.position.set(0, 1, 0);
+    // camera.lookAt(new THREE.Vector3());
+    scene.add(camera);
+
+    // const ambientLight = new THREE.AmbientLight(0x333333);
+    const ambientLight = new THREE.AmbientLight(0x808080);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0x808080, 1);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -50,325 +78,360 @@
       return mesh;
     };
 
-    function init() {
-      container = document.createElement('div');
-      document.body.appendChild(container);
+    controllerMeshes = [
+      _makeControllerMesh(-5),
+      _makeControllerMesh(2),
+    ];
+    // const controllerMesh = controllerMeshes[0];
 
-      scene = new THREE.Scene();
-      scene.matrixAutoUpdate = false;
-      // scene.background = new THREE.Color(0x3B3961);
+    for (let i = 0; i < 2; i++) {
+      const controllerMesh = new THREE.Object3D();
+      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 1, 0.5);
+      controllerMesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, -1, -1)
+      );
 
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      // camera.position.set(0, 1, 0);
-      // camera.lookAt(new THREE.Vector3());
-      scene.add(camera);
+      const rayMesh = (() => {
+        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+        const material = new THREE.MeshBasicMaterial({
+          color: RAY_COLOR,
+        });
 
-      // const ambientLight = new THREE.AmbientLight(0x333333);
-      const ambientLight = new THREE.AmbientLight(0x808080);
-      scene.add(ambientLight);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = i === 1;
+        return mesh;
+      })();
+      controllerMesh.add(rayMesh);
+      controllerMesh.rayMesh = rayMesh;
 
-      const directionalLight = new THREE.DirectionalLight(0x808080, 1);
-      directionalLight.position.set(1, 1, 1);
-      scene.add(directionalLight);
+      const rayDot = (() => {
+        const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
+        const material = new THREE.MeshBasicMaterial({
+          color: 0xe91e63,
+        });
 
-      controllerMeshes = [
-        _makeControllerMesh(-5),
-        _makeControllerMesh(2),
-      ];
-      scene.add(controllerMeshes[0]);
-      // controllerMeshes.forEach(controllerMesh => {
-      //   scene.add(controllerMesh);
-      // });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.z = -1;
+        mesh.visible = false;
+        return mesh;
+      })();
+      controllerMesh.add(rayDot);
+      controllerMesh.rayDot = rayDot;
 
-      renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true,
-      });
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      controllerMesh.ray = new THREE.Ray();
+      controllerMesh.update = () => {
+        controllerMesh.ray.origin.copy(controllerMesh.position);
+        controllerMesh.ray.direction
+          .set(0, 0, -1)
+          .applyQuaternion(controllerMesh.quaternion);
+      };
 
-      // window.browser.magicleap.RequestDepthPopulation(true);
-      // renderer.autoClearDepth = false;
-
-
-      const menuMesh = (() => {
-        const object = new THREE.Object3D();
-        object.position.set(0, menuPositionHeight, 0);
-
-        const urlMesh = (() => {
-          const canvas = document.createElement('canvas');
-          canvas.width = menuWidth;
-          canvas.height = menuHeight;
-          const ctx = canvas.getContext('2d');
-
-          const geometry = new THREE.PlaneBufferGeometry(menuWorldWidth, menuWorldHeight);
-          const texture = new THREE.Texture(
-            canvas,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.NearestFilter,
-            THREE.NearestFilter,
-            THREE.RGBAFormat,
-            THREE.UnsignedByteType,
-            1
-          );
-          texture.needsUpdate = true;
-          const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            side: THREE.DoubleSide,
-            transparent: true,
-            alphaTest: 0.9,
-          });
-          const mesh = new THREE.Mesh(geometry, material);
-
-          const _updateText = () => {
-            ctx.fillStyle = '#EEE';
-            ctx.fillRect(0, 0, menuWidth, menuHeight*2);
-
-
-            ctx.fillStyle = '#563156';
-            ctx.fillRect(0, 0, urlBarWidth, 2048);
-            //                    .set(0, -0.5, -1)
-
-  //            ctx.fillStyle = '#RFF';
-  //            ctx.fillRect(5, urlBarOffset + 500, urlBarWidth - 10, urlBarHeight - 10);
+      scene.add(controllerMesh);
+      controllerMeshes[i] = controllerMesh;
+    }
 
 
 
-            ctx.fillStyle = '#FFF';
+    // controllerMeshes.forEach(controllerMesh => {
+    //   scene.add(controllerMesh);
+    // });
+
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+    });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // window.browser.magicleap.RequestDepthPopulation(true);
+    // renderer.autoClearDepth = false;
+
+
+    const menuMesh = (() => {
+      const object = new THREE.Object3D();
+      object.position.set(0, menuPositionHeight, 0);
+
+      const urlMesh = (() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = menuWidth;
+        canvas.height = menuHeight;
+        const ctx = canvas.getContext('2d');
+
+        const geometry = new THREE.PlaneBufferGeometry(menuWorldWidth, menuWorldHeight);
+        const texture = new THREE.Texture(
+          canvas,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        texture.needsUpdate = true;
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+          alphaTest: 0.9,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        const _updateText = () => {
+          ctx.fillStyle = '#EEE';
+          ctx.fillRect(0, 0, menuWidth, menuHeight*2);
+
+
+          ctx.fillStyle = '#563156';
+          ctx.fillRect(0, 0, urlBarWidth, 2048);
+          //                    .set(0, -0.5, -1)
+
+//            ctx.fillStyle = '#RFF';
+//            ctx.fillRect(5, urlBarOffset + 500, urlBarWidth - 10, urlBarHeight - 10);
+
+
+
+          ctx.fillStyle = '#FFF';
+          // ctx.font = `${fontSize}px Arial`;
+          // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
+          //
+          // urlState.measures.length = 0;
+          // urlState.measures.push(0);
+          // const {width: barWidth} = ctx.measureText('[');
+          // for (let i = 1; i <= urlState.text.length; i++) {
+          //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+          //   urlState.measures.push(width - barWidth*2);
+          // }
+          //
+          // ctx.fillStyle = '#03a9f4';
+          // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
+
+//TEST
             // ctx.font = `${fontSize}px Arial`;
             // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
-            //
-            // urlState.measures.length = 0;
-            // urlState.measures.push(0);
+
+            urlState.measures.length = 0;
+            urlState.measures.push(0);
             // const {width: barWidth} = ctx.measureText('[');
-            // for (let i = 1; i <= urlState.text.length; i++) {
-            //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
-            //   urlState.measures.push(width - barWidth*2);
-            // }
-            //
-            // ctx.fillStyle = '#03a9f4';
-            // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
+            for (let i = 1; i <= urlState.text.length; i++) {
+              // const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+              const {width} = 4;
+              const {barWidth} = 4;
+              urlState.measures.push(width - barWidth*2);
+            }
 
-  //TEST
-              // ctx.font = `${fontSize}px Arial`;
-              // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
+            ctx.fillStyle = '#03a9f4';
+            ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
 
-              urlState.measures.length = 0;
-              urlState.measures.push(0);
-              // const {width: barWidth} = ctx.measureText('[');
-              for (let i = 1; i <= urlState.text.length; i++) {
-              //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
-                const {width} = 4;
-                const {barWidth} = 4;
-                urlState.measures.push(width - barWidth*2);
-              }
-
-              ctx.fillStyle = '#03a9f4';
-              ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
-
-  //END TEST
+//END TEST
 
 
 
 
 
-            texture.needsUpdate = true;
-          };
-          _updateText();
-          mesh.updateText = _updateText;
+          texture.needsUpdate = true;
+        };
+        _updateText();
+        mesh.updateText = _updateText;
 
-          mesh.plane = new THREE.Plane();
-          mesh.leftLine = new THREE.Line3();
-          mesh.topLine = new THREE.Line3();
-          mesh.update = () => {
-            mesh.leftLine.start
-              .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
-              .applyMatrix4(mesh.matrixWorld);
-            mesh.leftLine.end
-              .set(-menuWorldWidth/2, -menuWorldHeight/2, 0)
-              .applyMatrix4(mesh.matrixWorld);
+        mesh.plane = new THREE.Plane();
+        mesh.leftLine = new THREE.Line3();
+        mesh.topLine = new THREE.Line3();
+        mesh.update = () => {
+          mesh.leftLine.start
+            .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
+            .applyMatrix4(mesh.matrixWorld);
+          mesh.leftLine.end
+            .set(-menuWorldWidth/2, -menuWorldHeight/2, 0)
+            .applyMatrix4(mesh.matrixWorld);
 
-            mesh.topLine.start
-              .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
-              .applyMatrix4(mesh.matrixWorld);
+          mesh.topLine.start
+            .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
+            .applyMatrix4(mesh.matrixWorld);
+          mesh.topLine.end
+            .set(menuWorldWidth/2, menuWorldHeight / 2, 0)
+            .applyMatrix4(mesh.matrixWorld);
+
+          mesh.plane.setFromCoplanarPoints(
+            mesh.leftLine.start,
+            mesh.leftLine.end,
             mesh.topLine.end
-              .set(menuWorldWidth/2, menuWorldHeight / 2, 0)
-              .applyMatrix4(mesh.matrixWorld);
-
-            mesh.plane.setFromCoplanarPoints(
-              mesh.leftLine.start,
-              mesh.leftLine.end,
-              mesh.topLine.end
-            );
-          };
-
-          return mesh;
-        })();
-        object.add(urlMesh);
-        object.urlMesh = urlMesh;
-
-        return object;
-      })();
-      scene.add(menuMesh);
-
-
-
-      const keyboardMesh = (() => {
-        const object = new THREE.Object3D();
-
-        const planeMesh = (() => {
-          const img = new Image();
-          img.crossOrigin = 'Anonymous';
-          img.src = 'img/keyboard.png';
-          img.onload = () => {
-            texture.needsUpdate = true;
-          };
-          img.onerror = err => {
-            console.warn(err.stack);
-          };
-
-          const geometry = new THREE.PlaneBufferGeometry(1, keyboardHeight / keyboardWidth);
-          const texture = new THREE.Texture(
-            img,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.NearestFilter,
-            THREE.NearestFilter,
-            THREE.RGBAFormat,
-            THREE.UnsignedByteType,
-            1
-          );
-          const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            side: THREE.DoubleSide,
-            transparent: true,
-            alphaTest: 0.9,
-          });
-
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.quaternion.setFromUnitVectors(
-            new THREE.Vector3(0, 0, 1),
-            new THREE.Vector3(0, 1, 1).normalize()
-          );
-          return mesh;
-        })();
-        object.add(planeMesh);
-        object.planeMesh = planeMesh;
-
-        object.plane = new THREE.Plane();
-        object.leftLine = new THREE.Line3();
-        object.topLine = new THREE.Line3();
-        object.update = () => {
-          object.leftLine.start
-            .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
-            .applyMatrix4(planeMesh.matrixWorld);
-          object.leftLine.end
-            .set(-1/2, -keyboardHeight / keyboardWidth / 2, 0)
-            .applyMatrix4(planeMesh.matrixWorld);
-
-          object.topLine.start
-            .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
-            .applyMatrix4(planeMesh.matrixWorld);
-          object.topLine.end
-            .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
-            .applyMatrix4(planeMesh.matrixWorld);
-
-          object.plane.setFromCoplanarPoints(
-            object.leftLine.start,
-            object.leftLine.end,
-            object.topLine.end
           );
         };
 
-        return object;
+        return mesh;
       })();
-      keyboardMesh.position.set(0, 0, 0);
-      scene.add(keyboardMesh);
+      object.add(urlMesh);
+      object.urlMesh = urlMesh;
 
-      let keyboardMeshAnimation = null;
+      return object;
+    })();
+    scene.add(menuMesh);
 
-      for (let i = 0; i < controllerMeshes.length; i++) {
-        const controllerMesh = controllerMeshes[i];
 
-        const keyMesh = (() => {
-          const geometry = new THREE.PlaneBufferGeometry(1, 1);
-          const texture = new THREE.Texture(
-            null,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.NearestFilter,
-            THREE.NearestFilter,
-            THREE.RGBAFormat,
-            THREE.UnsignedByteType,
-            1
-          );
-          const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            side: THREE.DoubleSide,
-            transparent: true,
-          });
-          const mesh = new THREE.Mesh(geometry, material);
-          return mesh;
-        })();
-        keyboardMesh.planeMesh.add(keyMesh);
 
-        controllerMesh.keyMesh = keyMesh;
-      }
+    const keyboardMesh = (() => {
+      const object = new THREE.Object3D();
 
-      let keyboardHighlightCanvasCtx = null;
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.src = 'img/keyboard-hightlight.svg';
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        keyboardHighlightCanvasCtx = ctx;
-      };
-      img.onerror = err => {
-        console.log(err.stack);
-      };
-
-      const keyMap = [];
-      fetch('img/keyboard.svg')
-        .then(res => res.text())
-        .then(keyboardText => {
-          const div = document.createElement('div');
-          div.innerHTML = keyboardText;
-          const keyEls = div.querySelectorAll('svg > g[key]');
-          for (let i = 0; i < keyEls.length; i++) {
-            const keyEl = keyEls[i];
-            const key = keyEl.getAttribute('key');
-            const shapeEl = keyEl.children[0];
-            const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
-            const {
-              left,
-              right,
-              top,
-              bottom,
-            } = boundings;
-            const x1 = left * keyboardMatrix[0];
-            const x2 = right * keyboardMatrix[0];
-            const y1 = top * keyboardMatrix[1];
-            const y2 = bottom * keyboardMatrix[1];
-            keyMap.push([key, x1, y1, x2, y2]);
-          }
-        })
-        .catch(err => {
+      const planeMesh = (() => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.src = 'img/keyboard.png';
+        img.onload = () => {
+          texture.needsUpdate = true;
+        };
+        img.onerror = err => {
           console.warn(err.stack);
+        };
+
+        const geometry = new THREE.PlaneBufferGeometry(1, keyboardHeight / keyboardWidth);
+        const texture = new THREE.Texture(
+          img,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+          alphaTest: 0.9,
         });
 
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(0, 1, 1).normalize()
+        );
+        return mesh;
+      })();
+      object.add(planeMesh);
+      object.planeMesh = planeMesh;
 
-      container.appendChild(renderer.domElement);
+      object.plane = new THREE.Plane();
+      object.leftLine = new THREE.Line3();
+      object.topLine = new THREE.Line3();
+      object.update = () => {
+        object.leftLine.start
+          .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(planeMesh.matrixWorld);
+        object.leftLine.end
+          .set(-1/2, -keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(planeMesh.matrixWorld);
 
-      renderer.setAnimationLoop(animate);
+        object.topLine.start
+          .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(planeMesh.matrixWorld);
+        object.topLine.end
+          .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
+          .applyMatrix4(planeMesh.matrixWorld);
+
+        object.plane.setFromCoplanarPoints(
+          object.leftLine.start,
+          object.leftLine.end,
+          object.topLine.end
+        );
+      };
+
+      return object;
+    })();
+    keyboardMesh.position.set(0, 0, 0);
+    scene.add(keyboardMesh);
+
+    let keyboardMeshAnimation = null;
+
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      const controllerMesh = controllerMeshes[i];
+
+      const keyMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(1, 1);
+        const texture = new THREE.Texture(
+          null,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      keyboardMesh.planeMesh.add(keyMesh);
+
+      controllerMesh.keyMesh = keyMesh;
+
+
     }
+
+
+
+    let keyboardHighlightCanvasCtx = null;
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = 'img/keyboard-hightlight.svg';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      keyboardHighlightCanvasCtx = ctx;
+    };
+    img.onerror = err => {
+      console.log(err.stack);
+    };
+
+    const keyMap = [];
+    fetch('img/keyboard.svg')
+      .then(res => res.text())
+      .then(keyboardText => {
+        const div = document.createElement('div');
+        div.innerHTML = keyboardText;
+        const keyEls = div.querySelectorAll('svg > g[key]');
+        for (let i = 0; i < keyEls.length; i++) {
+          const keyEl = keyEls[i];
+          const key = keyEl.getAttribute('key');
+          const shapeEl = keyEl.children[0];
+          const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
+          const {
+            left,
+            right,
+            top,
+            bottom,
+          } = boundings;
+          const x1 = left * keyboardMatrix[0];
+          const x2 = right * keyboardMatrix[0];
+          const y1 = top * keyboardMatrix[1];
+          const y2 = bottom * keyboardMatrix[1];
+          keyMap.push([key, x1, y1, x2, y2]);
+        }
+      })
+      .catch(err => {
+        console.warn(err.stack);
+      });
+
+
+    container.appendChild(renderer.domElement);
+
+    renderer.setAnimationLoop(animate);
+
 
     function animate(time, frame) {
       if (renderer.vr.enabled) {
@@ -384,10 +447,146 @@
         }
       }
 
+      const _updateIntersections = () => {
+        keyboardMesh.update();
+        menuMesh.urlMesh.update();
+
+
+        for (let i = 0; i < 2; i++) {
+
+
+          const controllerMesh = controllerMeshes[i];
+
+            const _setIntersectionDefault = () => {
+            controllerMesh.rayMesh.scale.z = rayDistance;
+            controllerMesh.rayMesh.updateMatrixWorld();
+
+            controllerMesh.rayDot.visible = false;
+
+            controllerMesh.keyMesh.visible = false;
+
+          };
+
+          // keyboard
+          let intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
+          let intersectionKey = null;
+          if (intersectionPoint) {
+            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+            const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
+            const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+              const x = xFactor * keyboardWidth;
+              const y = yFactor * keyboardHeight;
+
+              controllerMesh.rayMesh.scale.z = distance;
+              controllerMesh.updateMatrixWorld();
+
+              controllerMesh.rayDot.position.z = -distance;
+              controllerMesh.updateMatrixWorld();
+              controllerMesh.rayDot.visible = true;
+
+              for (let i = 0; i < keyMap.length; i++) {
+                const [key, kx1, ky1, kx2, ky2] = keyMap[i];
+                if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
+                  if (keyboardHighlightCanvasCtx) {
+                    const width = kx2 - kx1;
+                    const height = ky2 - ky1;
+                    let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
+                    /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                      const canvas = document.createElement('canvas');
+                      canvas.width = imageData.width;
+                      canvas.height = imageData.height;
+
+                      const ctx = canvas.getContext('2d');
+                      ctx.putImageData(imageData, 0, 0);
+                      ctx.clearRect(0, 0, 80, 140);
+
+                      imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+                    } */
+
+                    controllerMesh.keyMesh.material.map.image = imageData;
+                    controllerMesh.keyMesh.material.map.needsUpdate = true;
+
+                    controllerMesh.keyMesh.position
+                      .set(
+                        -1/2 + ((width/2 + kx1) / keyboardWidth),
+                        (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
+                         0.01 * (1)
+                      );
+                    controllerMesh.keyMesh.scale.set(
+                      width / keyboardWidth,
+                      height / keyboardHeight * (keyboardHeight / keyboardWidth),
+                      1
+                    );
+                    controllerMesh.keyMesh.updateMatrixWorld();
+                    controllerMesh.keyMesh.visible = true;
+                  }
+
+                  intersectionKey = key;
+
+                  break;
+                }
+              }
+            } else {
+              intersectionPoint = null;
+            }
+          }
+
+          // menu mesh
+          let tabIndex = -1;
+          let urlCoords = null;
+          let intersectionRect = null;
+          if (!intersectionPoint) {
+            intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.urlMesh.plane, localVector) : null;
+            if (intersectionPoint) {
+              const leftIntersectionPoint = menuMesh.urlMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+              const topIntersectionPoint = menuMesh.urlMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+              const xFactor = topIntersectionPoint.distanceTo(menuMesh.urlMesh.topLine.start) / menuWorldWidth;
+              const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / menuWorldHeight;
+              const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+              if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+                const x = xFactor * menuWidth;
+                const y = yFactor * menuHeight;
+
+
+                if (y < urlBarOffset*2) {
+                  urlCoords = [x, y];
+
+                  controllerMesh.rayMesh.scale.z = distance;
+                  controllerMesh.updateMatrixWorld();
+
+                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.updateMatrixWorld();
+                  controllerMesh.rayDot.visible = true;
+                } else {
+                  intersectionPoint = null;
+                }
+
+              } else {
+                intersectionPoint = null;
+              }
+            }
+          }
+
+          if (!intersectionPoint) {
+            _setIntersectionDefault();
+          }
+
+        }
+      };
+
+      _updateIntersections();
+
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
-
-    init();
 
     (async () => {
       console.log('request device');
@@ -404,11 +603,13 @@
           frameOfReferenceType: 'stage',
         });
 
-
+          let select = false;
           session.onselect = () => {
             console.log('onselect');
+            selected = true;
+            // controllerMesh.rayMesh.material.color.setHex(selected ? RAY_HIGHLIGHT_COLOR : RAY_COLOR);
           };
-
+          select = false;
 
         const viewport = session.baseLayer.getViewport(frame.views[0]);
         const width = viewport.width;
