@@ -383,6 +383,16 @@ NAN_METHOD(Create) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
   WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
 
+  GLuint framebuffers[] = {0, 0};
+  GLuint framebufferTextures[] = {0, 0, 0, 0};
+  bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
+  if (shared) {
+    SetCurrentWindowContext(sharedWindow);
+
+    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+  }
+
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
   EGLint config_attribs[] = {
@@ -397,22 +407,19 @@ NAN_METHOD(Create) {
   EGLConfig egl_config = nullptr;
   EGLint config_size = 0;
   eglChooseConfig(display, config_attribs, &egl_config, 1, &config_size);
-
+  
   EGLint context_attribs[] = {
     EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
     EGL_CONTEXT_MINOR_VERSION_KHR, 2,
     EGL_NONE
   };
-  EGLContext context = eglCreateContext(display, egl_config, EGL_NO_CONTEXT, context_attribs);
+  EGLContext context = eglCreateContext(display, egl_config, shared ? GetGLContext(sharedWindow) : EGL_NO_CONTEXT, context_attribs);
 
   eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context);
-  
-  windowsystembase::InitializeLocalGlState(gl);
 
   NATIVEwindow *windowHandle = new NATIVEwindow{display, context, width, height};
 
-  GLuint framebuffers[] = {0, 0};
-  GLuint framebufferTextures[] = {0, 0, 0, 0};
+  windowsystembase::InitializeLocalGlState(gl);
 
   GLuint vao;
   glGenVertexArrays(1, &vao);
