@@ -480,20 +480,19 @@
 
     function animate(time, frame) {
       const _updateControllers = () => {
-        if(frame != null){
-          if (renderer.vr.enabled) {
-            const inputSources = display.session.getInputSources();
+        if (renderer.vr.enabled) {
+          const inputSources = display.session.getInputSources();
 
-            for (let i = 0; i < inputSources.length; i++) {
-              const inputSource = inputSources[i];
-              const pose = frame.getInputPose(inputSource);
+          for (let i = 0; i < inputSources.length; i++) {
+            const inputSource = inputSources[i];
+            const pose = frame.getInputPose(inputSource);
 
-              const controllerMesh = controllerMeshes[i];
-              controllerMesh.matrix.fromArray(pose.pointerMatrix);
-              controllerMesh.updateMatrixWorld(true);
-            }
+            const controllerMesh = controllerMeshes[i];
+            controllerMesh.matrix.fromArray(pose.pointerMatrix);
+            controllerMesh.updateMatrixWorld(true);
           }
         }
+
 
       };
       const _updateIntersections = () => {
