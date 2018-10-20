@@ -17,9 +17,12 @@ This project enables developers to build XR experiences using the same code that
 
 Exokit targets the following platforms:
 * Desktop VR (Steam compatible)
-* Mobile AR (ARKit / ARCore)
 * Magic Leap
-* Mobile VR (Daydream / Gear VR)
+* Mobile AR (ARKit / ARCore) *
+* Mobile VR (Daydream / Gear VR) *
+* Standalone VR (Oculus Quest/Go) *
+
+\* not supported yet
 
 Since Exokit supports anything that runs on the web, it powers experiences built with:
 * Three.js
