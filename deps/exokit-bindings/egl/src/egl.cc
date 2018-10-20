@@ -342,7 +342,7 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
-void *GetGLContext(NATIVEwindow *window) {
+EGLContext GetGLContext(NATIVEwindow *window) {
   return window->context;
 }
 
