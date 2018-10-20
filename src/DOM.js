@@ -1775,6 +1775,24 @@ module.exports.HTMLSourceElement = HTMLSourceElement;
 class SVGElement {}
 module.exports.SVGElement = SVGElement;
 
+const _parseVector = s => {
+  if (Array.isArray(s)) {
+    s = s.join(' ');
+  }
+  
+  const result = [];
+  const ss = s.split(' ');
+  for (let i = 0; i < ss.length; i++) {
+    const s = ss[i];
+    const n = parseFloat(s);
+    if (!isNaN(n)) {
+      result.push(n);
+    } else {
+      return null;
+    }
+  }
+  return result;
+};
 class HTMLIFrameElement extends HTMLSrcableElement {
   constructor(attrs = [], value = '', location = null) {
     super('IFRAME', attrs, value, location);
@@ -1782,6 +1800,11 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.contentWindow = null;
     this.contentDocument = null;
     this.live = true;
+    this[symbols.xrOffsetSymbol] = {
+      position: new Float32Array(3),
+      rotation: new Float32Array(4),
+      scale: new Float32Array(3),
+    };
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
@@ -1814,6 +1837,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               }, parentWindow, parentWindow.top);
               const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
               contentDocument.hidden = this.hidden;
+              contentDocument[symbols.xrOffsetSymbol] = this[symbols.xrOffsetSymbol];
 
               contentWindow.document = contentDocument;
 
@@ -1836,6 +1860,15 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               resource.setProgress(1);
             });
           });
+      } else if (name === 'position' || name === 'rotation' || name === 'scale') {
+        const v = _parseVector(value);
+        if (name === 'position' && v.length === 3) {
+          this[symbols.xrOffsetSymbol].position.set(v);
+        } else if (name === 'rotation' && v.length === 4) {
+          this[symbols.xrOffsetSymbol].rotation.set(v);
+        } else if (name === 'scale' && v.length === 3) {
+          this[symbols.xrOffsetSymbol].scale.set(v);
+        }
       } else if (name === 'hidden') {
         if (this.contentDocument) {
           this.contentDocument.hidden = value;
@@ -1849,6 +1882,36 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       }
       this.contentDocument = null;
     });
+  }
+  
+  get position() {
+    return this.getAttribute('position');
+  }
+  set position(position) {
+    if (Array.isArray(position)) {
+      position = position.join(' ');
+    }
+    this.setAttribute('position', position);
+  }
+  
+  get rotation() {
+    return this.getAttribute(rotation);
+  }
+  set rotation(rotation) {
+    if (Array.isArray(rotation)) {
+      rotation = rotation.join(' ');
+    }
+    this.setAttribute('rotation', rotation);
+  }
+  
+  get scale() {
+    return this.getAttribute('scale');
+  }
+  set scale(scale) {
+    if (Array.isArray(scale)) {
+      scale = scale.join(' ');
+    }
+    this.setAttribute('scale', scale);
   }
 
   get hidden() {

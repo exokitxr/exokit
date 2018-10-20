@@ -8,6 +8,7 @@ module.exports.idSymbol = Symbol();
 module.exports.mrDisplaysSymbol = Symbol();
 module.exports.optionsSymbol = Symbol();
 module.exports.pointerLockElementSymbol = Symbol();
+module.exports.xrOffsetSymbol = Symbol();
 module.exports.prioritySymbol = Symbol();
 module.exports.prototypesSymbol = Symbol();
 module.exports.runSymbol = Symbol();
