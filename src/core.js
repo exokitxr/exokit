@@ -1215,7 +1215,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return wsProxy;
     })(),
     composeLayers: (gl, layers) => {
-      nativeWindow.setCurrentWindowContext(gl.getWindowHandle());
+      nativeWindow.setCurrentWindowContext(gl.getWindowHandle()); // XXX make this native
       nativeWindow.composeLayers(gl, layers);
     },
     electron,
