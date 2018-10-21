@@ -41,6 +41,9 @@
 #   images/*.png : target/path/ \
 #   images/**/*.png : target/path/ \
 #   directory/of/goodies/ : target/contents/ \
+DATAS = \
+    fonts.xml : etc/fonts.xml \
+    fonts/ : etc/fonts/ \
 
 # Packages may use OPTIONS, but they only apply to this
 # package, so only items relevant to packages will be
@@ -94,4 +97,3 @@ OUT = ../build/magicleap/app-device
 # since these are not guaranteed to be stable over time.
 #
 # PKGFLAGS = debuggable=1
-
