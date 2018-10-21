@@ -41,6 +41,7 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
   GLuint &msColorTex = *pmsColorTex;
   GLuint &msDepthStencilTex = *pmsDepthStencilTex;
 
+  // NOTE: we create statically sized multisample textures because we cannot resize them later
   {
     glGenFramebuffers(1, &msFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
@@ -53,7 +54,7 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, GL_MAX_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE/2, true);
     // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, msDepthStencilTex, 0, samples);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
@@ -65,7 +66,7 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, GL_MAX_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE/2, true);
     // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, samples);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
   }
@@ -168,7 +169,7 @@ NAN_METHOD(ResizeRenderTarget) {
 
   const int samples = 4;
 
-  {
+  /* {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
 
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
@@ -180,7 +181,7 @@ NAN_METHOD(ResizeRenderTarget) {
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
     glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
-  }
+  } */
   {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
@@ -407,7 +408,7 @@ NAN_METHOD(Create) {
   EGLConfig egl_config = nullptr;
   EGLint config_size = 0;
   eglChooseConfig(display, config_attribs, &egl_config, 1, &config_size);
-  
+
   EGLint context_attribs[] = {
     EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
     EGL_CONTEXT_MINOR_VERSION_KHR, 2,
