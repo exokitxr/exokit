@@ -317,10 +317,17 @@ NAN_METHOD(GetWindowSize) {
   info.GetReturnValue().Set(result);
 }
 
+void SetWindowSize(NATIVEwindow *window, int width, int height) {
+  window->width = width;
+  window->height = height;
+}
+
 NAN_METHOD(SetWindowSize) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  window->width = info[1]->Uint32Value();
-  window->height = info[2]->Uint32Value();
+  int width = info[1]->Int32Value();
+  int height = info[2]->Int32Value();
+
+  SetWindowSize(window, width, height);
 }
 
 NAN_METHOD(SetWindowPos) {
