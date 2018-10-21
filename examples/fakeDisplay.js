@@ -30,6 +30,10 @@ window._makeFakeDisplay = () => {
   fakeDisplay.requestSession = function() {
     return Promise.resolve(this.session);
   };
+  fakeDisplay.update(); // initialize gamepads
+  for (let i = 0; i < fakeDisplay.gamepads.length; i++) {
+    fakeDisplay.gamepads[i].pose.pointerMatrix = new Float32Array(16);
+  }
   fakeDisplay.enter = ({canvas, animate, stereo = false}) => {
     if (fakeDisplay.session) {
       fakeDisplay.session.end();
@@ -53,7 +57,7 @@ window._makeFakeDisplay = () => {
             baseLayer: null,
             _frame: null, // defer
             getInputSources() {
-              return [];
+              return this.device.gamepads;
             },
             requestFrameOfReference() {
               return Promise.resolve({});
@@ -115,6 +119,9 @@ window._makeFakeDisplay = () => {
             _pose: null, // defer
             getDevicePose() {
               return this._pose;
+            },
+            getInputPose(inputSource, coordinateSystem) {
+              return inputSource.pose; // XXX or _pose
             },
             clone() {
               const o = new this.constructor();

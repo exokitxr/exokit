@@ -34,6 +34,8 @@ const keyboardState = urlState;
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
 
 function parseQuery(queryString) {
   var query = {};
@@ -233,7 +235,7 @@ const cubeMesh = (() => {
 scene.add(cubeMesh);
 
 for (let i = 0; i < 2; i++) {
-  const controllerMesh = new THREE.Object3D();
+  /* const controllerMesh = new THREE.Object3D();
   controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
   controllerMesh.quaternion.setFromUnitVectors(
     new THREE.Vector3(0, 0, -1),
@@ -292,7 +294,16 @@ for (let i = 0; i < 2; i++) {
     controllerMesh.ray.direction
       .set(0, 0, -1)
       .applyQuaternion(controllerMesh.quaternion);
-  };
+  }; */
+
+  const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+  // controllerMesh.position.set(x, y, z);
+  // controllerMesh.quaternion.set(qx, qy, qz, qw);
+  // controllerMesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+  // controllerMesh.updateMatrix();
+  // controllerMesh.updateMatrixWorld();
+  controllerMesh.matrixAutoUpdate = false;
+  controllerMesh.frustumCulled = false;
 
   scene.add(controllerMesh);
   controllerMeshes[i] = controllerMesh;
@@ -568,63 +579,59 @@ fetch('../assets/keyboard.svg')
   });
 
 let renderTarget = null;
+const startTime = Date.now();
 let lastTime = 0;
-const _render = () => {
+function animate(time, frame) {
   const now = Date.now();
   const timeDiff = now - lastTime;
-  // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
-  cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+  const startTimeDiff = now - startTime;
 
-  const {width, height} = renderer.getSize();
+  const _updateGamepads = () => {
+    if (fakeDisplay) {
+      const inputSources = display.session.getInputSources();
 
-  renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera, renderTarget);
-  renderer.setRenderTarget(null);
+      for (let i = 0; i < inputSources.length; i++) {
+        const gamepad = fakeDisplay.gamepads[i];
+        if (gamepad) {
+          // const controllerOffset = controllerOffsets[i];
 
-  window.browser.composeLayers(
-    renderer.getContext(),
-    width,
-    height,
-    iframes.concat([
-      {
-        colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
-        depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
-      },
-    ])
-  );
+          localVector.copy(fakeDisplay.position)
+            .add(
+              localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
+                // .add(controllerOffset)
+                .applyQuaternion(fakeDisplay.quaternion)
+            ).toArray(gamepad.pose.position);
+          fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
+        }
 
-  lastTime = now;
-};
-
-const startTime = Date.now();
-function animate(time, frame) {
-  if (fakeDisplay) {
-    const now = Date.now();
-    const timeDiff = now - startTime;
-    const factor = timeDiff/1000 % (Math.PI*2);
-
-    fakeDisplay.position.set(Math.cos(factor), 1.6, -1 + Math.sin(factor));
-    fakeDisplay.quaternion.setFromRotationMatrix(
-      new THREE.Matrix4().lookAt(
-        fakeDisplay.position,
-        new THREE.Vector3(0, 1.6, -1),
-        new THREE.Vector3(0, 1, 0)
-      )
-    );
-    fakeDisplay.update();
-  }
-  
-  if (renderer.vr.enabled) {
-    const inputSources = display.session.getInputSources();
-
-    for (let i = 0; i < inputSources.length; i++) {
-      const inputSource = inputSources[i];
-      const pose = frame.getInputPose(inputSource);
-      const controllerMesh = controllerMeshes[i];
-      console.log('set matrix', pose.pointerMatrix.join(','));
-      controllerMesh.matrix.fromArray(pose.pointerMatrix);
-      controllerMesh.updateMatrixWorld(true);
+        const inputSource = inputSources[i];
+        const pose = frame.getInputPose(inputSource);
+        localMatrix.compose(
+          localVector.fromArray(gamepad.pose.position),
+          localQuaternion.fromArray(gamepad.pose.orientation),
+          localVector2.set(1, 1, 1)
+        )
+          .toArray(pose.pointerMatrix);
+      }
     }
-  }
+  };
+  _updateGamepads();
+
+  const _updateControllerMeshes = () => {
+    if (renderer.vr.enabled) {
+      const inputSources = display.session.getInputSources();
+
+      for (let i = 0; i < inputSources.length; i++) {
+        const inputSource = inputSources[i];
+        const pose = frame.getInputPose(inputSource);
+        const controllerMesh = controllerMeshes[i];
+        // console.log('set matrix', pose.pointerMatrix.join(','));
+        controllerMesh.matrix.fromArray(pose.pointerMatrix);
+        controllerMesh.updateMatrixWorld(true);
+      }
+    }
+  };
+  _updateControllerMeshes();
 
   const _updateIntersections = () => {
     keyboardMesh.update();
@@ -763,9 +770,49 @@ function animate(time, frame) {
 
     }
   };
-  _updateIntersections();
+  // _updateIntersections();
 
+  const _render = () => {
+    // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+    cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+
+    const {width, height} = renderer.getSize();
+
+    renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera, renderTarget);
+    renderer.setRenderTarget(null);
+
+    window.browser.composeLayers(
+      renderer.getContext(),
+      width,
+      height,
+      iframes.concat([
+        {
+          colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
+          depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
+        },
+      ])
+    );
+  };
   _render();
+
+  const _updateFakeDisplay = () => {
+    if (fakeDisplay) {
+      const factor = startTimeDiff/1000 % (Math.PI*2);
+
+      fakeDisplay.position.set(Math.cos(factor), 1.6, -1 + Math.sin(factor));
+      fakeDisplay.quaternion.setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(
+          fakeDisplay.position,
+          new THREE.Vector3(0, 1.6, -1),
+          new THREE.Vector3(0, 1, 0)
+        )
+      );
+      fakeDisplay.update();
+    }
+  };
+  _updateFakeDisplay();
+
+  lastTime = now;
 }
 
 // reality tabs
@@ -830,6 +877,7 @@ if (navigator.xr && !query.fake) {
     animate,
   });
 
+  display = fakeDisplay;
   renderTarget = _makeRenderTarget(canvas.width * 2, canvas.height);
 
   console.log('loaded root in 2D');
