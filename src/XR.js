@@ -296,10 +296,6 @@ class XRWebGLLayer {
     this.alpha = alpha;
     this.multiview = multiview;
 
-    this.framebuffer = null;
-    this.framebufferWidth = 0;
-    this.framebufferHeight = 0;
-
     const presentSpec = session.device.onrequestpresent ?
       session.device.onrequestpresent([{
         source: context.canvas,
