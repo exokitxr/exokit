@@ -40,11 +40,11 @@ const _makeRenderer = () => {
     },
   };
 };
-const _makeRenderTarget = () => {
-  const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth*2, window.innerHeight);
+const _makeRenderTarget = (width, height) => {
+  const renderTarget = new THREE.WebGLRenderTarget(width, height);
   renderTarget.depthTexture = new THREE.DepthTexture(
-    window.innerWidth*2,
-    window.innerHeight,
+    width,
+    height,
     THREE.UnsignedInt248Type,
     THREE.UVMapping,
     THREE.ClampToEdgeWrapping,
@@ -194,8 +194,7 @@ const cubeMesh = (() => {
 })();
 scene.add(cubeMesh);
 
-const renderTarget = _makeRenderTarget();
-
+let renderTarget = null;
 let lastTime = 0;
 const _render = () => {
   const now = Date.now();
@@ -275,6 +274,8 @@ if (navigator.xr && !query.fake) {
 
       renderer.setSize(fullWidth, height);
 
+      renderTarget = _makeRenderTarget(fullWidth, height);
+
       renderer.setAnimationLoop(null);
 
       renderer.vr.enabled = true;
@@ -291,10 +292,13 @@ if (navigator.xr && !query.fake) {
   fakeDisplay = _makeFakeDisplay();
   camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
+  const canvas = renderer.domElement;
   fakeDisplay.enter({
-    canvas: renderer.domElement,
+    canvas,
     animate,
   });
+
+  renderTarget = _makeRenderTarget(canvas.width * 2, canvas.height);
 
   console.log('loaded root in 2D');
 }
