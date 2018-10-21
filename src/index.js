@@ -174,7 +174,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const {hidden} = document;
     if (hidden) {
-      const [fbo, colorTex, depthTex, msFbo, msColorTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
+      const [fbo, colorTex, depthTex, msFbo, msColorTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
 
       gl.setDefaultFramebuffer(msFbo);
 
