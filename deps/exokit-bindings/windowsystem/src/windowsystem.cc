@@ -312,11 +312,11 @@ NAN_METHOD(ComposeLayers) {
               elementObj->Get(JS_STR("contentDocument"))->IsObject() << " " <<
               elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject() << " " <<
               std::endl; */
-            return Nan::ThrowError("WindowSystem::Compose: invalid layer object properties");
+            return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object properties");
           }
         }
       } else {
-        return Nan::ThrowError("WindowSystem::Compose: invalid layer object");
+        return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object");
       }
     }
 
@@ -324,7 +324,7 @@ NAN_METHOD(ComposeLayers) {
       ComposeLayers(gl, width, height, layers);
     }
   } else {
-    Nan::ThrowError("WindowSystem::Compose: invalid arguments");
+    Nan::ThrowError("WindowSystem::ComposeLayers: invalid arguments");
   }
 }
 
