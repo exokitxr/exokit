@@ -202,11 +202,15 @@ const _render = () => {
   // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
   cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
+  const {width, height} = renderer.getSize();
+
   renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera, renderTarget);
   renderer.setRenderTarget(null);
 
   window.browser.composeLayers(
     renderer.getContext(),
+    width,
+    height,
     iframes.concat([
       {
         colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
