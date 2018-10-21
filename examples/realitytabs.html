@@ -35,6 +35,8 @@ const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
+const localEuler = new THREE.Euler();
+localEuler.order = 'YXZ';
 const localMatrix = new THREE.Matrix4();
 
 function parseQuery(queryString) {
@@ -578,6 +580,98 @@ fetch('../assets/keyboard.svg')
     console.warn(err.stack);
   });
 
+window.addEventListener('click', () => {
+  renderer.domElement.requestPointerLock();
+});
+window.addEventListener('mousemove', e => {
+  if (window.document.pointerLockElement) {
+    const {movementX, movementY} = e;
+
+    /* if (keys.ctrl) {
+      const controllerOffset = controllerOffsets[controllerIndex];
+      controllerOffset.x += movementX * 0.002;
+      controllerOffset.y -= movementY * 0.002;
+    } else if (keys.alt) {
+      const controllerOffset = controllerOffsets[controllerIndex];
+      controllerOffset.x += movementX * 0.002;
+      controllerOffset.z += movementY * 0.002;
+    } else { */
+      localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+      localEuler.y -= movementX * 0.01;
+      localEuler.x -= movementY * 0.01;
+      localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
+      fakeDisplay.quaternion.setFromEuler(localEuler);
+
+      fakeDisplay.update();
+    // }
+
+    // _updateGamepads();
+  }
+});
+
+const keys = {
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+};
+window.addEventListener('keydown', e => {
+  // if (window.document.pointerLockElement) {
+    switch (e.which) {
+      case 87: { // W
+        keys.up = true;
+        /* if (!window.document.pointerLockElement) {
+          renderer.domElement.requestPointerLock();
+        } */
+        break;
+      }
+      case 83: { // S
+        keys.down = true;
+        /* if (!window.document.pointerLockElement) {
+          renderer.domElement.requestPointerLock();
+        } */
+        break;
+      }
+      case 65: { // A
+        keys.left = true;
+        /* if (!window.document.pointerLockElement) {
+          renderer.domElement.requestPointerLock();
+        } */
+        break;
+      }
+      case 68: { // D
+        keys.right = true;
+        /* if (!window.document.pointerLockElement) {
+          renderer.domElement.requestPointerLock();
+        } */
+        break;
+      }
+    }
+  // }
+});
+window.addEventListener('keyup', e => {
+  // if (window.document.pointerLockElement) {
+    switch (e.which) {
+      case 87: { // W
+        keys.up = false;
+        break;
+      }
+      case 83: { // S
+        keys.down = false;
+        break;
+      }
+      case 65: { // A
+        keys.left = false;
+        break;
+      }
+      case 68: { // D
+        keys.right = false;
+        break;
+      }
+    }
+  // }
+});
+
 let renderTarget = null;
 const startTime = Date.now();
 let lastTime = 0;
@@ -795,11 +889,49 @@ function animate(time, frame) {
   };
   _render();
 
-  const _updateFakeDisplay = () => {
+  const _updateMovement = () => {
+    if (fakeDisplay) {
+      // if (window.document.pointerLockElement) {
+        // let moving = false;
+        const speed = 0.002;
+        const velocity = localVector.set(0, 0, 0);
+        if (keys.up) {
+          velocity.z -= speed * timeDiff;
+          // moving = true;
+        }
+        if (keys.down) {
+          velocity.z += speed * timeDiff;
+          // moving = true;
+        }
+        if (keys.left) {
+          velocity.x -= speed * timeDiff;
+          // moving = true;
+        }
+        if (keys.right) {
+          velocity.x += speed * timeDiff;
+          // moving = true;
+        }
+
+        // if (moving) {
+          // velocity.multiplyScalar(Math.pow(moving ? 0.98 : 0.91, timePassed / 5));
+          localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+          localEuler.x = 0;
+          fakeDisplay.position.add(
+            localVector.copy(velocity)
+              .applyEuler(localEuler)
+          );
+          fakeDisplay.update();
+        // }
+      // }
+    }
+  };
+  _updateMovement();
+
+  /* const _updateFakeDisplay = () => {
     if (fakeDisplay) {
       const factor = startTimeDiff/1000 % (Math.PI*2);
 
-      fakeDisplay.position.set(Math.cos(factor), 1.6, -1 + Math.sin(factor));
+      fakeDisplay.position.set(0, 1.6, 0);
       fakeDisplay.quaternion.setFromRotationMatrix(
         new THREE.Matrix4().lookAt(
           fakeDisplay.position,
@@ -810,7 +942,7 @@ function animate(time, frame) {
       fakeDisplay.update();
     }
   };
-  _updateFakeDisplay();
+  _updateFakeDisplay(); */
 
   lastTime = now;
 }
@@ -871,6 +1003,7 @@ if (navigator.xr && !query.fake) {
   fakeDisplay = _makeFakeDisplay();
   camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
+  fakeDisplay.position.set(0, 1.6, 0);
   const canvas = renderer.domElement;
   fakeDisplay.enter({
     canvas,
