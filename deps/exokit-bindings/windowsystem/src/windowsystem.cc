@@ -150,7 +150,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   }
 }
 
-void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers) {
+void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
 
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
@@ -200,6 +200,8 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
     glBindTexture(GL_TEXTURE_2D, layer.depthTex);
     glUniform1i(composeSpec->depthTexLocation, 1);
 
+    glViewport(0, 0, width, height);
+    // glScissor(0, 0, width, height);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   }
 
@@ -223,6 +225,11 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
   } else {
     glUseProgram(0);
   }
+  if (gl->viewportState.valid) {
+    glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+  } else {
+    glViewport(0, 0, 1280, 1024);
+  }
   glActiveTexture(GL_TEXTURE0);
   if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
@@ -239,9 +246,11 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
 }
 
 NAN_METHOD(ComposeLayers) {
-  if (info[0]->IsObject() && info[1]->IsArray()) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    Local<Array> array = Local<Array>::Cast(info[1]);
+    int width = info[1]->Int32Value();
+    int height = info[2]->Int32Value();
+    Local<Array> array = Local<Array>::Cast(info[3]);
 
     std::vector<LayerSpec> layers;
     layers.reserve(8);
@@ -312,7 +321,7 @@ NAN_METHOD(ComposeLayers) {
     }
 
     if (layers.size() > 0) {
-      ComposeLayers(gl, layers);
+      ComposeLayers(gl, width, height, layers);
     }
   } else {
     Nan::ThrowError("WindowSystem::Compose: invalid arguments");
