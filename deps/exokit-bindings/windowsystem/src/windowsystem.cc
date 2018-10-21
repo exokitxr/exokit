@@ -272,8 +272,8 @@ NAN_METHOD(ComposeLayers) {
             GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
             GLuint msColorTex = framebufferObj->Get(JS_STR("msColorTex"))->Uint32Value();
             GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
-            int width = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
-            int height = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
+            int canvasWidth = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
+            int canvasHeight = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
 
             layers.push_back(LayerSpec{
               colorTex,
@@ -283,8 +283,8 @@ NAN_METHOD(ComposeLayers) {
                 msDepthTex,
                 colorTex,
                 depthTex,
-                width,
-                height,
+                canvasWidth,
+                canvasHeight,
               }),
             });
           } else { // iframe not ready
