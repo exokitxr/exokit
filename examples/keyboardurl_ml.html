@@ -76,7 +76,7 @@
       // _makeControllerMesh(0.1),
     ];
 
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 2; i++) {
       const controllerMesh = new THREE.Object3D();
       controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
       controllerMesh.quaternion.setFromUnitVectors(
@@ -352,7 +352,7 @@
 
     let keyboardMeshAnimation = null;
 
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 2; i++) {
       const controllerMesh = controllerMeshes[i];
 
       const keyMesh = (() => {
@@ -440,11 +440,11 @@
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
 
-        for (let i = 0; i < 1; i++) {
+        for (let i = 0; i < 2; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
           const controllerMesh = controllerMeshes[i];
-          controllerMesh.block.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.matrix.fromArray(pose.pointerMatrix);
           controllerMesh.updateMatrixWorld(true);
         }
       }
@@ -454,7 +454,7 @@
         menuMesh.urlMesh.update();
 
 
-        for (let i = 0; i < 1; i++) {
+        for (let i = 0; i < 2; i++) {
 
 
           const controllerMesh = controllerMeshes[i];
