@@ -1,11 +1,16 @@
 {
   "name": "exokit-launcher",
   "version": "0.1.0",
+  "description": "Exokit Launcher | Settings, Updates and Current News.",
   "main": "App.js",
   "scripts": {
     "start": "electron ."
   },
-  "devDependencies": {
+  "dependencies": {
+    "pkg": "^4.3.4",
     "electron": "^3.0.5"
+  },
+  "devDependencies": {
+    "electron-packager": "^12.2.0"
   }
 }
