@@ -1,0 +1,11 @@
+{
+  "name": "exokit-launcher",
+  "version": "0.1.0",
+  "main": "App.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^3.0.5"
+  }
+}
