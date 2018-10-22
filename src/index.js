@@ -324,6 +324,7 @@ const vrPresentState = {
   hasPose: false,
   lmContext: null,
 };
+GlobalContext.vrPresentState = vrPresentState;
 let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
