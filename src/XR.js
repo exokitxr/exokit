@@ -98,7 +98,6 @@ class XRSession extends EventTarget {
 
     this.depthNear = 0.1;
     this.depthFar = 10000.0;
-    this.baseLayer = null;
 
     this._frame = new XRPresentationFrame(this);
     this._frameOfReference = new XRFrameOfReference();
@@ -106,8 +105,25 @@ class XRSession extends EventTarget {
       new XRInputSource('left', 'hand'),
       new XRInputSource('right', 'hand'),
     ];
+    this._layers = [];
     this._lastPresseds = [false, false];
     this._rafs = [];
+  }
+  get baseLayer() {
+    return this._layers[0];
+  }
+  set baseLayer(baseLayer) {
+    this._layers = [baseLayer];
+  }
+  get layers() {
+    return this._layers;
+  }
+  set layers(layers) {
+    this._layers = layers;
+
+    if (this.onlayers) {
+      this.onlayers(layers);
+    }
   }
   requestFrameOfReference(type, options = {}) {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
@@ -158,7 +174,7 @@ class XRSession extends EventTarget {
       this.depthFar = depthFar;
     }
     if (renderWidth !== undefined && renderHeight !== undefined) {
-      if (this.baseLayer) {
+      if (this.baseLayer) { // XXX potentially handle multiple layers
         const {context} = this.baseLayer;
 
         if (context.drawingBufferWidth !== renderWidth * 2) {
