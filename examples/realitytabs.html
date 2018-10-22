@@ -54,6 +54,7 @@ const FLOOR_SIZE = 20;
 const _makeRenderer = () => {
   const scene = new THREE.Scene();
   // scene.background = new THREE.Color(0x7E57C2);
+  scene.matrixAutoUpdate = false;
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.y = 1.6;
