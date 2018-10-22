@@ -625,6 +625,14 @@ const _closeRig = rig => {
   scene.remove(rig);
   rigs.splice(rigs.indexOf(rig), 1);
 };
+const _handleRig = (position, quaternion) => {
+  const rig = rigs.find(rig => rig.position.distanceTo(position) < 0.3);
+  if (rig) {
+    _closeRig(rig);
+  } else {
+    _openRig(position, quaternion);
+  }
+};
 
 window.addEventListener('click', () => {
   renderer.domElement.requestPointerLock();
@@ -661,9 +669,13 @@ const keys = {
   left: false,
   right: false,
 };
-let lastKeys = {
-  e: false,
-};
+const _makeButtons = () => ({
+  bumper: false,
+});
+const lastButtons = [
+  _makeButtons(),
+  _makeButtons(),
+];
 window.addEventListener('keydown', e => {
   // if (window.document.pointerLockElement) {
     switch (e.which) {
@@ -696,17 +708,7 @@ window.addEventListener('keydown', e => {
         break;
       }
       case 69: { // E
-        if (!lastKeys.e) {
-          const controllerMesh = controllerMeshes[1];
-          const rig = rigs.find(rig => rig.position.distanceTo(controllerMesh.position) < 0.3);
-          if (rig) {
-            _closeRig(rig);
-          } else {
-            _openRig(controllerMesh.position, controllerMesh.quaternion);
-          }
-        }
-
-        lastKeys.e = true;
+        fakeDisplay.gamepads[1].buttons[2].pressed = true;
         break;
       }
     }
@@ -732,7 +734,7 @@ window.addEventListener('keyup', e => {
         break;
       }
       case 69: { // E
-        lastKeys.e = false;
+        fakeDisplay.gamepads[1].buttons[2].pressed = false;
         break;
       }
     }
@@ -786,7 +788,6 @@ function animate(time, frame) {
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
         const controllerMesh = controllerMeshes[i];
-        // console.log('set matrix', pose.pointerMatrix.join(','));
         controllerMesh.matrix.fromArray(pose.pointerMatrix);
         controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
         controllerMesh.updateMatrixWorld(true);
@@ -933,6 +934,31 @@ function animate(time, frame) {
     }
   };
   // _updateIntersections();
+
+  const _updateButtons = () => {
+    if (display) {
+      const inputSources = display.session.getInputSources();
+      const gamepads = navigator.getGamepads();
+
+      for (let i = 0; i < inputSources.length; i++) {
+        const gamepad = gamepads[i];
+        const bumper = gamepad.buttons[2].pressed;
+        const lastBumper = lastButtons[i].bumper;
+
+        if (bumper && !lastBumper) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+          localMatrix.fromArray(pose.pointerMatrix)
+            .decompose(localVector, localQuaternion, localVector2);
+
+          _handleRig(localVector, localQuaternion);
+        }
+
+        lastButtons[i].bumper = bumper;
+      }
+    }
+  };
+  _updateButtons();
 
   const _render = () => {
     // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
