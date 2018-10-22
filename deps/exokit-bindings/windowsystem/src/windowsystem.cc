@@ -150,6 +150,20 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   }
 }
 
+void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, layer.colorTex);
+  glUniform1i(composeSpec->colorTexLocation, 0);
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, layer.depthTex);
+  glUniform1i(composeSpec->depthTexLocation, 1);
+
+  glViewport(0, 0, layer.width, layer.height);
+  // glScissor(0, 0, width, height);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+}
+
 void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
 
@@ -159,50 +173,55 @@ void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
+  // blit
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
 
-    if (layer.blitSpec) {
-      const BlitSpec &blitSpec = *layer.blitSpec;
-
+    if (layer.blit) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->composeReadFbo);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, blitSpec.msColorTex, 0);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, blitSpec.msDepthTex, 0);
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, layer.msColorTex, 0);
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex, 0);
 
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeWriteFbo);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blitSpec.colorTex, 0);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, blitSpec.depthTex, 0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, layer.colorTex, 0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, layer.depthTex, 0);
 
       glBlitFramebuffer(
         0, 0,
-        blitSpec.width, blitSpec.height,
+        layer.width, layer.height,
         0, 0,
-        blitSpec.width, blitSpec.height,
+        layer.width, layer.height,
         GL_COLOR_BUFFER_BIT,
         GL_LINEAR);
 
       glBlitFramebuffer(
         0, 0,
-        blitSpec.width, blitSpec.height,
+        layer.width, layer.height,
         0, 0,
-        blitSpec.width, blitSpec.height,
+        layer.width, layer.height,
         GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
         GL_NEAREST);
 
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
     }
+  }
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, layer.colorTex);
-    glUniform1i(composeSpec->colorTexLocation, 0);
+  // render unblitted
+  for (size_t i = 0; i < layers.size(); i++) {
+    const LayerSpec &layer = layers[i];
 
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, layer.depthTex);
-    glUniform1i(composeSpec->depthTexLocation, 1);
+    if (!layer.blit) {
+      ComposeLayer(composeSpec, layer);
+    }
+  }
 
-    glViewport(0, 0, width, height);
-    // glScissor(0, 0, width, height);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+  // render blitted
+  for (size_t i = 0; i < layers.size(); i++) {
+    const LayerSpec &layer = layers[i];
+
+    if (layer.blit) {
+      ComposeLayer(composeSpec, layer);
+    }
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -246,11 +265,9 @@ void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::
 }
 
 NAN_METHOD(ComposeLayers) {
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsArray()) {
+  if (info[0]->IsObject() && info[1]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    int width = info[1]->Int32Value();
-    int height = info[2]->Int32Value();
-    Local<Array> array = Local<Array>::Cast(info[3]);
+    Local<Array> array = Local<Array>::Cast(info[1]);
 
     std::vector<LayerSpec> layers;
     layers.reserve(8);
@@ -272,39 +289,46 @@ NAN_METHOD(ComposeLayers) {
             GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
             GLuint msColorTex = framebufferObj->Get(JS_STR("msColorTex"))->Uint32Value();
             GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
-            int canvasWidth = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
-            int canvasHeight = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
+            int width = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
+            int height = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
 
             layers.push_back(LayerSpec{
+              width,
+              height,
+              msColorTex,
+              msDepthTex,
               colorTex,
               depthTex,
-              std::unique_ptr<BlitSpec>(new BlitSpec{
-                msColorTex,
-                msDepthTex,
-                colorTex,
-                depthTex,
-                canvasWidth,
-                canvasHeight,
-              }),
+              true
             });
           } else { // iframe not ready
             // nothing
           }
         } else {
+          Local<Value> widthVal = elementObj->Get(JS_STR("width"));
+          Local<Value> heightVal = elementObj->Get(JS_STR("height"));
           Local<Value> colorTexVal = elementObj->Get(JS_STR("colorTex"));
           Local<Value> depthTexVal = elementObj->Get(JS_STR("depthTex"));
 
           if (
+            widthVal->IsNumber() &&
+            heightVal->IsNumber() &&
             colorTexVal->IsObject() && colorTexVal->ToObject()->Get(JS_STR("id"))->IsNumber() &&
             depthTexVal->IsObject() && depthTexVal->ToObject()->Get(JS_STR("id"))->IsNumber()
           ) {
+            int width = widthVal->Int32Value();
+            int width = heightVal->Int32Value();
             GLuint colorTex = colorTexVal->ToObject()->Get(JS_STR("id"))->Uint32Value();
             GLuint depthTex = depthTexVal->ToObject()->Get(JS_STR("id"))->Uint32Value();
 
             layers.push_back(LayerSpec{
+              width,
+              height,
+              0,
+              0,
               colorTex,
               depthTex,
-              std::unique_ptr<BlitSpec>(),
+              false
             });
           } else {
             /* String::Utf8Value utf8Value(elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name")));
@@ -321,7 +345,7 @@ NAN_METHOD(ComposeLayers) {
     }
 
     if (layers.size() > 0) {
-      ComposeLayers(gl, width, height, layers);
+      ComposeLayers(gl, layers);
     }
   } else {
     Nan::ThrowError("WindowSystem::ComposeLayers: invalid arguments");

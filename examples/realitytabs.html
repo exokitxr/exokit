@@ -1121,8 +1121,6 @@ function animate(time, frame) {
 
     window.browser.composeLayers(
       renderer.getContext(),
-      width,
-      height,
       layers
     );
   };
@@ -1226,6 +1224,8 @@ if (navigator.xr && !query.fake) {
 
       renderTarget = _makeRenderTarget(fullWidth, height);
       layers.push({
+        width: fullWidth,
+        height,
         colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
         depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
       });

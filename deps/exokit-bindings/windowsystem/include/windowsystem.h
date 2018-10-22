@@ -18,21 +18,15 @@ typedef int GLint;
 
 namespace windowsystembase {
 
-class BlitSpec {
+class LayerSpec {
 public:
+  int width;
+  int height;
   GLuint msColorTex;
   GLuint msDepthTex;
   GLuint colorTex;
   GLuint depthTex;
-  int width;
-  int height;
-};
-
-class LayerSpec {
-public:
-  GLuint colorTex;
-  GLuint depthTex;
-  std::unique_ptr<BlitSpec> blitSpec;
+  bool blit;
 };
 
 class ComposeSpec {
