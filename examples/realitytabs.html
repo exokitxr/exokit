@@ -167,6 +167,8 @@ const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
 directionalLight.position.set(1, 1, 1);
 scene.add(directionalLight);
 
+// controller meshes
+
 const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
 const controllerMaterial = new THREE.MeshPhongMaterial({
   color: 0x4caf50,
@@ -175,67 +177,6 @@ const controllerMeshes = [
   // _makeControllerMesh(-0.1),
   // _makeControllerMesh(0.1),
 ];
-
-const floorMesh = (() => {
-  const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
-    .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
-      new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 0, 1),
-        new THREE.Vector3(0, 1, 0)
-      )
-    ));
-  const uvs = geometry.attributes.uv.array;
-  const numUvs = uvs.length / 2;
-  for (let i = 0; i < numUvs; i++) {
-    uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
-    uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
-  }
-
-  const texture = new THREE.Texture(
-    null,
-    THREE.UVMapping,
-    THREE.RepeatWrapping,
-    THREE.RepeatWrapping,
-    THREE.NearestFilter,
-    THREE.NearestFilter,
-    THREE.RGBAFormat,
-    THREE.UnsignedByteType,
-    1
-  );
-
-  const graphImg = new Image();
-  graphImg.crossOrigin = 'Anonymous';
-  graphImg.src = 'graphy.png';
-  graphImg.onload = () => {
-    texture.image = graphImg;
-    texture.needsUpdate = true;
-  };
-  graphImg.onerror = err => {
-    console.warn(err.stack);
-  };
-
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
-    side: THREE.DoubleSide,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  return mesh;
-})();
-scene.add(floorMesh);
-
-const cubeMesh = (() => {
-  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-  const material = new THREE.MeshPhongMaterial({
-    color: 0x9ccc65,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.y = 1.5;
-  mesh.position.z = -1;
-  mesh.rotation.order = 'YXZ';
-  mesh.frustumCulled = false;
-  return mesh;
-})();
-scene.add(cubeMesh);
 
 for (let i = 0; i < 2; i++) {
   /* const controllerMesh = new THREE.Object3D();
@@ -312,274 +253,378 @@ for (let i = 0; i < 2; i++) {
   controllerMeshes[i] = controllerMesh;
 }
 
-const menuMesh = (() => {
-  const object = new THREE.Object3D();
-  object.position.set(0, menuPositionHeight, 0);
+// local scene
 
-  const urlMesh = (() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = menuWidth;
-    canvas.height = menuHeight;
-    const ctx = canvas.getContext('2d');
+const floorMesh = (() => {
+  const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
+    .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+      new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 0)
+      )
+    ));
+  const uvs = geometry.attributes.uv.array;
+  const numUvs = uvs.length / 2;
+  for (let i = 0; i < numUvs; i++) {
+    uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
+    uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
+  }
 
-    const geometry = new THREE.PlaneBufferGeometry(menuWorldWidth, menuWorldHeight);
-    const texture = new THREE.Texture(
-      canvas,
-      THREE.UVMapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.NearestFilter,
-      THREE.NearestFilter,
-      THREE.RGBAFormat,
-      THREE.UnsignedByteType,
-      1
-    );
+  const texture = new THREE.Texture(
+    null,
+    THREE.UVMapping,
+    THREE.RepeatWrapping,
+    THREE.RepeatWrapping,
+    THREE.NearestFilter,
+    THREE.NearestFilter,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType,
+    1
+  );
+
+  const graphImg = new Image();
+  graphImg.crossOrigin = 'Anonymous';
+  graphImg.src = 'graphy.png';
+  graphImg.onload = () => {
+    texture.image = graphImg;
     texture.needsUpdate = true;
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.DoubleSide,
-      transparent: true,
-      alphaTest: 0.9,
-    });
-    const mesh = new THREE.Mesh(geometry, material);
+  };
+  graphImg.onerror = err => {
+    console.warn(err.stack);
+  };
 
-    const _updateText = () => {
-      ctx.fillStyle = '#EEE';
-      ctx.fillRect(0, 0, menuWidth, menuHeight*2);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  return mesh;
+})();
+scene.add(floorMesh);
+
+const cubeMesh = (() => {
+  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+  const material = new THREE.MeshPhongMaterial({
+    color: 0x9ccc65,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.y = 1.5;
+  mesh.position.z = -1;
+  mesh.rotation.order = 'YXZ';
+  mesh.frustumCulled = false;
+  return mesh;
+})();
+scene.add(cubeMesh);
+
+// rig
+
+const _makeRig = () => {
+  const rig = new THREE.Object3D();
+
+  const menuMesh = (() => {
+    const object = new THREE.Object3D();
+    object.position.set(0, menuPositionHeight, 0);
+
+    const urlMesh = (() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = menuWidth;
+      canvas.height = menuHeight;
+      const ctx = canvas.getContext('2d');
+
+      const geometry = new THREE.PlaneBufferGeometry(menuWorldWidth, menuWorldHeight);
+      const texture = new THREE.Texture(
+        canvas,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      texture.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        alphaTest: 0.9,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.frustumCulled = false;
+
+      const _updateText = () => {
+        ctx.fillStyle = '#EEE';
+        ctx.fillRect(0, 0, menuWidth, menuHeight*2);
 
 
-      ctx.fillStyle = '#563156';
-      ctx.fillRect(0, 0, urlBarWidth, 2048);
-      //                    .set(0, -0.5, -1)
+        ctx.fillStyle = '#563156';
+        ctx.fillRect(0, 0, urlBarWidth, 2048);
+        //                    .set(0, -0.5, -1)
 
-//            ctx.fillStyle = '#RFF';
-//            ctx.fillRect(5, urlBarOffset + 500, urlBarWidth - 10, urlBarHeight - 10);
+  //            ctx.fillStyle = '#RFF';
+  //            ctx.fillRect(5, urlBarOffset + 500, urlBarWidth - 10, urlBarHeight - 10);
 
 
 
-      ctx.fillStyle = '#FFF';
-      // ctx.font = `${fontSize}px Arial`;
-      // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
-      //
-      // urlState.measures.length = 0;
-      // urlState.measures.push(0);
-      // const {width: barWidth} = ctx.measureText('[');
-      // for (let i = 1; i <= urlState.text.length; i++) {
-      //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
-      //   urlState.measures.push(width - barWidth*2);
-      // }
-      //
-      // ctx.fillStyle = '#03a9f4';
-      // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
-
-//TEST
+        ctx.fillStyle = '#FFF';
         // ctx.font = `${fontSize}px Arial`;
         // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
-
-        urlState.measures.length = 0;
-        urlState.measures.push(0);
+        //
+        // urlState.measures.length = 0;
+        // urlState.measures.push(0);
         // const {width: barWidth} = ctx.measureText('[');
-        for (let i = 1; i <= urlState.text.length; i++) {
-          // const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
-          const {width} = 4;
-          const {barWidth} = 4;
-          urlState.measures.push(width - barWidth*2);
-        }
+        // for (let i = 1; i <= urlState.text.length; i++) {
+        //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+        //   urlState.measures.push(width - barWidth*2);
+        // }
+        //
+        // ctx.fillStyle = '#03a9f4';
+        // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
 
-        ctx.fillStyle = '#03a9f4';
-        ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
+  //TEST
+          // ctx.font = `${fontSize}px Arial`;
+          // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
 
-//END TEST
+          urlState.measures.length = 0;
+          urlState.measures.push(0);
+          // const {width: barWidth} = ctx.measureText('[');
+          for (let i = 1; i <= urlState.text.length; i++) {
+            // const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+            const {width} = 4;
+            const {barWidth} = 4;
+            urlState.measures.push(width - barWidth*2);
+          }
+
+          ctx.fillStyle = '#03a9f4';
+          ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
+
+  //END TEST
 
 
 
 
 
-      texture.needsUpdate = true;
-    };
-    _updateText();
-    mesh.updateText = _updateText;
+        texture.needsUpdate = true;
+      };
+      _updateText();
+      mesh.updateText = _updateText;
 
-    mesh.plane = new THREE.Plane();
-    mesh.leftLine = new THREE.Line3();
-    mesh.topLine = new THREE.Line3();
-    mesh.update = () => {
-      mesh.leftLine.start
-        .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
-        .applyMatrix4(mesh.matrixWorld);
-      mesh.leftLine.end
-        .set(-menuWorldWidth/2, -menuWorldHeight/2, 0)
-        .applyMatrix4(mesh.matrixWorld);
+      mesh.plane = new THREE.Plane();
+      mesh.leftLine = new THREE.Line3();
+      mesh.topLine = new THREE.Line3();
+      mesh.update = () => {
+        mesh.leftLine.start
+          .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+        mesh.leftLine.end
+          .set(-menuWorldWidth/2, -menuWorldHeight/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
 
-      mesh.topLine.start
-        .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
-        .applyMatrix4(mesh.matrixWorld);
-      mesh.topLine.end
-        .set(menuWorldWidth/2, menuWorldHeight / 2, 0)
-        .applyMatrix4(mesh.matrixWorld);
-
-      mesh.plane.setFromCoplanarPoints(
-        mesh.leftLine.start,
-        mesh.leftLine.end,
+        mesh.topLine.start
+          .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
         mesh.topLine.end
+          .set(menuWorldWidth/2, menuWorldHeight / 2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+
+        mesh.plane.setFromCoplanarPoints(
+          mesh.leftLine.start,
+          mesh.leftLine.end,
+          mesh.topLine.end
+        );
+      };
+
+      return mesh;
+    })();
+    object.add(urlMesh);
+    object.urlMesh = urlMesh;
+
+    return object;
+  })();
+  rig.add(menuMesh);
+
+  const keyboardMesh = (() => {
+    const object = new THREE.Object3D();
+
+    const planeMesh = (() => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.src = '../assets/keyboard.png';
+      img.onload = () => {
+        texture.needsUpdate = true;
+      };
+      img.onerror = err => {
+        console.warn(err.stack);
+      };
+
+      const geometry = new THREE.PlaneBufferGeometry(1, keyboardHeight / keyboardWidth);
+      const texture = new THREE.Texture(
+        img,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        alphaTest: 0.9,
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.frustumCulled = false;
+      mesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 1).normalize()
+      );
+      return mesh;
+    })();
+    object.add(planeMesh);
+    object.planeMesh = planeMesh;
+
+    object.plane = new THREE.Plane();
+    object.leftLine = new THREE.Line3();
+    object.topLine = new THREE.Line3();
+    object.update = () => {
+      object.leftLine.start
+        .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+      object.leftLine.end
+        .set(-1/2, -keyboardHeight / keyboardWidth / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+
+      object.topLine.start
+        .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+      object.topLine.end
+        .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+
+      object.plane.setFromCoplanarPoints(
+        object.leftLine.start,
+        object.leftLine.end,
+        object.topLine.end
       );
     };
 
-    return mesh;
+    return object;
   })();
-  object.add(urlMesh);
-  object.urlMesh = urlMesh;
+  // keyboardMesh.position.set(0, 0, 0);
+  rig.add(keyboardMesh);
 
-  return object;
-})();
-scene.add(menuMesh);
+  for (let i = 0; i < 2; i++) {
+    // const controllerMesh = controllerMeshes[i];
 
-const keyboardMesh = (() => {
-  const object = new THREE.Object3D();
+    const keyMesh = (() => {
+      const geometry = new THREE.PlaneBufferGeometry(1, 1);
+      const texture = new THREE.Texture(
+        null,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.frustumCulled = false;
+      return mesh;
+    })();
+    keyboardMesh.planeMesh.add(keyMesh);
 
-  const planeMesh = (() => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.src = '../assets/keyboard.png';
-    img.onload = () => {
-      texture.needsUpdate = true;
-    };
-    img.onerror = err => {
-      console.warn(err.stack);
-    };
+    // controllerMesh.keyMesh = keyMesh;
+  }
 
-    const geometry = new THREE.PlaneBufferGeometry(1, keyboardHeight / keyboardWidth);
-    const texture = new THREE.Texture(
-      img,
-      THREE.UVMapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.NearestFilter,
-      THREE.NearestFilter,
-      THREE.RGBAFormat,
-      THREE.UnsignedByteType,
-      1
-    );
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.DoubleSide,
-      transparent: true,
-      alphaTest: 0.9,
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.quaternion.setFromUnitVectors(
-      new THREE.Vector3(0, 0, 1),
-      new THREE.Vector3(0, 1, 1).normalize()
-    );
-    return mesh;
-  })();
-  object.add(planeMesh);
-  object.planeMesh = planeMesh;
-
-  object.plane = new THREE.Plane();
-  object.leftLine = new THREE.Line3();
-  object.topLine = new THREE.Line3();
-  object.update = () => {
-    object.leftLine.start
-      .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
-      .applyMatrix4(planeMesh.matrixWorld);
-    object.leftLine.end
-      .set(-1/2, -keyboardHeight / keyboardWidth / 2, 0)
-      .applyMatrix4(planeMesh.matrixWorld);
-
-    object.topLine.start
-      .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
-      .applyMatrix4(planeMesh.matrixWorld);
-    object.topLine.end
-      .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
-      .applyMatrix4(planeMesh.matrixWorld);
-
-    object.plane.setFromCoplanarPoints(
-      object.leftLine.start,
-      object.leftLine.end,
-      object.topLine.end
-    );
+  let keyboardHighlightCanvasCtx = null;
+  const img = new Image();
+  img.crossOrigin = 'Anonymous';
+  img.src = '../assets/keyboard-hightlight.png';
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    keyboardHighlightCanvasCtx = ctx;
+  };
+  img.onerror = err => {
+    console.log(err.stack);
   };
 
-  return object;
-})();
-keyboardMesh.position.set(0, 0, 0);
-scene.add(keyboardMesh);
-
-for (let i = 0; i < 2; i++) {
-  const controllerMesh = controllerMeshes[i];
-
-  const keyMesh = (() => {
-    const geometry = new THREE.PlaneBufferGeometry(1, 1);
-    const texture = new THREE.Texture(
-      null,
-      THREE.UVMapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.NearestFilter,
-      THREE.NearestFilter,
-      THREE.RGBAFormat,
-      THREE.UnsignedByteType,
-      1
-    );
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.DoubleSide,
-      transparent: true,
+  const keyMap = [];
+  fetch('../assets/keyboard.svg')
+    .then(res => res.text())
+    .then(keyboardText => {
+      const div = document.createElement('div');
+      div.innerHTML = keyboardText;
+      const keyEls = div.querySelectorAll('svg > g[key]');
+      for (let i = 0; i < keyEls.length; i++) {
+        const keyEl = keyEls[i];
+        const key = keyEl.getAttribute('key');
+        const shapeEl = keyEl.children[0];
+        const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
+        const {
+          left,
+          right,
+          top,
+          bottom,
+        } = boundings;
+        const x1 = left * keyboardMatrix[0];
+        const x2 = right * keyboardMatrix[0];
+        const y1 = top * keyboardMatrix[1];
+        const y2 = bottom * keyboardMatrix[1];
+        keyMap.push([key, x1, y1, x2, y2]);
+      }
+    })
+    .catch(err => {
+      console.warn(err.stack);
     });
-    const mesh = new THREE.Mesh(geometry, material);
-    return mesh;
-  })();
-  keyboardMesh.planeMesh.add(keyMesh);
 
-  controllerMesh.keyMesh = keyMesh;
-}
-
-let keyboardHighlightCanvasCtx = null;
-const img = new Image();
-img.crossOrigin = 'Anonymous';
-img.src = '../assets/keyboard-hightlight.png';
-img.onload = () => {
-  const canvas = document.createElement('canvas');
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0);
-  keyboardHighlightCanvasCtx = ctx;
-};
-img.onerror = err => {
-  console.log(err.stack);
+  return rig;
 };
 
-const keyMap = [];
-fetch('../assets/keyboard.svg')
-  .then(res => res.text())
-  .then(keyboardText => {
-    const div = document.createElement('div');
-    div.innerHTML = keyboardText;
-    const keyEls = div.querySelectorAll('svg > g[key]');
-    for (let i = 0; i < keyEls.length; i++) {
-      const keyEl = keyEls[i];
-      const key = keyEl.getAttribute('key');
-      const shapeEl = keyEl.children[0];
-      const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
-      const {
-        left,
-        right,
-        top,
-        bottom,
-      } = boundings;
-      const x1 = left * keyboardMatrix[0];
-      const x2 = right * keyboardMatrix[0];
-      const y1 = top * keyboardMatrix[1];
-      const y2 = bottom * keyboardMatrix[1];
-      keyMap.push([key, x1, y1, x2, y2]);
-    }
-  })
-  .catch(err => {
-    console.warn(err.stack);
-  });
+const rigs = [];
+const _openRig = (position, quaternion) => {
+  const rig =  _makeRig();
+  // rig.position.set(0, 0.5, 0);
+  rig.position.copy(position);
+  rig.quaternion.copy(quaternion);
+
+  /* const _recurse = () => {
+    requestAnimationFrame(_recurse);
+
+    rig.position.y += 0.001;
+    rig.updateMatrix();
+    rig.updateMatrixWorld(true);
+  };
+  requestAnimationFrame(_recurse); */
+
+  // console.log('map 1', rig.position.toArray().join(','), rig.quaternion.toArray().join(','), rig.matrixWorld.toArray().join(','));
+  rig.updateMatrix();
+  rig.updateMatrixWorld(true);
+
+  // console.log('map 2', rig.matrixWorld.toArray().join(','), rig.children.map(child => child.matrixWorld.toArray().join(',')));
+
+  scene.add(rig);
+  rigs.push(rig);
+};
+const _closeRig = rig => {
+  scene.remove(rig);
+  rigs.splice(rigs.indexOf(rig), 1);
+};
 
 window.addEventListener('click', () => {
   renderer.domElement.requestPointerLock();
@@ -616,6 +661,9 @@ const keys = {
   left: false,
   right: false,
 };
+let lastKeys = {
+  e: false,
+};
 window.addEventListener('keydown', e => {
   // if (window.document.pointerLockElement) {
     switch (e.which) {
@@ -647,6 +695,20 @@ window.addEventListener('keydown', e => {
         } */
         break;
       }
+      case 69: { // E
+        if (!lastKeys.e) {
+          const controllerMesh = controllerMeshes[1];
+          const rig = rigs.find(rig => rig.position.distanceTo(controllerMesh.position) < 0.3);
+          if (rig) {
+            _closeRig(rig);
+          } else {
+            _openRig(controllerMesh.position, controllerMesh.quaternion);
+          }
+        }
+
+        lastKeys.e = true;
+        break;
+      }
     }
   // }
 });
@@ -667,6 +729,10 @@ window.addEventListener('keyup', e => {
       }
       case 68: { // D
         keys.right = false;
+        break;
+      }
+      case 69: { // E
+        lastKeys.e = false;
         break;
       }
     }
@@ -722,6 +788,7 @@ function animate(time, frame) {
         const controllerMesh = controllerMeshes[i];
         // console.log('set matrix', pose.pointerMatrix.join(','));
         controllerMesh.matrix.fromArray(pose.pointerMatrix);
+        controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
         controllerMesh.updateMatrixWorld(true);
       }
     }
@@ -950,8 +1017,8 @@ function animate(time, frame) {
 
 // reality tabs
 
-_openUrl('realitytab.html?color=29b6f6', new THREE.Vector3(0.05, 1.55, -1 + 0.05));
-_openUrl('realitytab.html?color=ab47bc', new THREE.Vector3(-0.05, 1.45, -1));
+// _openUrl('realitytab.html?color=29b6f6', new THREE.Vector3(0.05, 1.55, -1 + 0.05));
+// _openUrl('realitytab.html?color=ab47bc', new THREE.Vector3(-0.05, 1.45, -1));
 
 // bootstrap
 
