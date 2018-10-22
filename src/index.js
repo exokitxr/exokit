@@ -323,6 +323,7 @@ const vrPresentState = {
   cleanups: null,
   hasPose: false,
   lmContext: null,
+  layers: [],
 };
 GlobalContext.vrPresentState = vrPresentState;
 let renderWidth = 0;

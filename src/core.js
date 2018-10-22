@@ -1576,6 +1576,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
+    vrDisplay.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
 
     const xrDisplay = new XR.XRDevice('VR');
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
@@ -1592,11 +1595,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xrDisplay.requestSession);
+    xrDisplay.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
 
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
+    xrDisplay.onlayers = layers => {
+      GlobalContext.mlPresentState.layers = layers;
+    };
 
     const xmDisplay = new XR.XRDevice('AR');
     xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
@@ -1613,6 +1622,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xmDisplay.requestSession);
+    xmDisplay.onlayers = layers => {
+      GlobalContext.mlPresentState.layers = layers;
+    };
 
     window[symbols.mrDisplaysSymbol] = {
       fakeVrDisplay,
