@@ -273,10 +273,10 @@ void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 }
 
-void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::vector<LayerSpec> &layers) {
+void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
 
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
   glBindVertexArray(composeSpec->composeVao);
   glUseProgram(composeSpec->composeProgram);
 
@@ -311,7 +311,7 @@ void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::
         GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
         GL_NEAREST);
 
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
     }
   }
 
@@ -374,9 +374,10 @@ void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::
 }
 
 NAN_METHOD(ComposeLayers) {
-  if (info[0]->IsObject() && info[1]->IsArray()) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    Local<Array> array = Local<Array>::Cast(info[1]);
+    GLuint fbo = info[1]->Uint32Value();
+    Local<Array> array = Local<Array>::Cast(info[2]);
 
     std::vector<LayerSpec> layers;
     layers.reserve(8);
@@ -394,9 +395,9 @@ NAN_METHOD(ComposeLayers) {
             elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject()
           ) {
             Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer")));
-            GLuint colorTex = framebufferObj->Get(JS_STR("colorTex"))->Uint32Value();
+            GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
             GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
-            GLuint msColorTex = framebufferObj->Get(JS_STR("msColorTex"))->Uint32Value();
+            GLuint msTex = framebufferObj->Get(JS_STR("msTex"))->Uint32Value();
             GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
             int width = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
             int height = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
@@ -404,7 +405,7 @@ NAN_METHOD(ComposeLayers) {
             layers.push_back(LayerSpec{
               width,
               height,
-              msColorTex,
+              msTex,
               msDepthTex,
               colorTex,
               depthTex,
@@ -413,39 +414,31 @@ NAN_METHOD(ComposeLayers) {
           } else { // iframe not ready
             // nothing
           }
-        } else {
-          Local<Value> widthVal = elementObj->Get(JS_STR("width"));
-          Local<Value> heightVal = elementObj->Get(JS_STR("height"));
-          Local<Value> colorTexVal = elementObj->Get(JS_STR("colorTex"));
-          Local<Value> depthTexVal = elementObj->Get(JS_STR("depthTex"));
-
+        } else if (
+          elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))
+        ) {
           if (
-            widthVal->IsNumber() &&
-            heightVal->IsNumber() &&
-            colorTexVal->IsObject() && colorTexVal->ToObject()->Get(JS_STR("id"))->IsNumber() &&
-            depthTexVal->IsObject() && depthTexVal->ToObject()->Get(JS_STR("id"))->IsNumber()
+            elementObj->Get(JS_STR("framebuffer"))->IsObject() &&
           ) {
-            int width = widthVal->Int32Value();
-            int width = heightVal->Int32Value();
-            GLuint colorTex = colorTexVal->ToObject()->Get(JS_STR("id"))->Uint32Value();
-            GLuint depthTex = depthTexVal->ToObject()->Get(JS_STR("id"))->Uint32Value();
+            Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("framebuffer")));
+            GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
+            GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
+            GLuint msTex = framebufferObj->Get(JS_STR("msTex"))->Uint32Value();
+            GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
+            int width = elementObj->Get(JS_STR("width"))->Int32Value();
+            int height = elementObj->Get(JS_STR("height"))->Int32Value();
 
             layers.push_back(LayerSpec{
               width,
               height,
-              0,
-              0,
+              msTex,
+              msDepthTex,
               colorTex,
               depthTex,
               false
             });
-          } else {
-            /* String::Utf8Value utf8Value(elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name")));
-            std::cout << "fail " << colorTexVal->IsObject() << " " << (colorTexVal->IsObject() && colorTexVal->ToObject()->Get(JS_STR("id"))->IsNumber()) << " " << *utf8Value << " " <<
-              elementObj->Get(JS_STR("contentDocument"))->IsObject() << " " <<
-              elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject() << " " <<
-              std::endl; */
-            return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object properties");
+          } else { // iframe not ready
+            // nothing
           }
         }
       } else {
@@ -454,7 +447,7 @@ NAN_METHOD(ComposeLayers) {
     }
 
     if (layers.size() > 0) {
-      ComposeLayers(gl, layers);
+      ComposeLayers(gl, fbo, layers);
     }
   } else {
     Nan::ThrowError("WindowSystem::ComposeLayers: invalid arguments");

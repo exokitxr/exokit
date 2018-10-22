@@ -379,6 +379,13 @@ if (nativeVr) {
 
         vrPresentState.lmContext = lmContext;
 
+        canvas.framebuffer = {
+          msTex,
+          msDepthTex,
+          tex: 0,
+          depthTex: 0,
+        };
+
         const _attribute = (name, value) => {
           if (name === 'width' || name === 'height') {
             nativeWindow.setCurrentWindowContext(windowHandle);
@@ -512,6 +519,13 @@ if (nativeMl) {
           mlPresentState.mlMsFbo = msFbo;
           mlPresentState.mlMsTex = msTex;
           mlPresentState.mlMsDepthTex = msDepthTex;
+
+          canvas.framebuffer = {
+            msTex,
+            msDepthTex,
+            tex: 0,
+            depthTex: 0,
+          };
 
           const cleanups = [];
           mlPresentState.mlCleanups = cleanups;
@@ -961,14 +975,22 @@ const _bindWindow = (window, newWindowCb) => {
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
+            if (vrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
+            } else {
             nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
+            }
 
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
             vrPresentState.hasPose = false;
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
-          } else if (mlGlContext === context && mlHasPose) {
-            nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+          } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
+            if (mlPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+            }
 
             mlPresentState.mlContext.SubmitFrame(mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
             mlPresentState.mlHasPose = false;

@@ -22,9 +22,9 @@ class LayerSpec {
 public:
   int width;
   int height;
-  GLuint msColorTex;
+  GLuint msTex;
   GLuint msDepthTex;
-  GLuint colorTex;
+  GLuint tex;
   GLuint depthTex;
   bool blit;
 };
@@ -45,7 +45,7 @@ public:
 };
 
 void InitializeLocalGlState(WebGLRenderingContext *gl);
-void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);  
+void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
 NAN_METHOD(CreateRenderTarget);
 NAN_METHOD(ResizeRenderTarget);
 NAN_METHOD(DestroyRenderTarget);
