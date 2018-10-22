@@ -639,7 +639,7 @@ const _closeRig = rig => {
   scene.remove(rig);
   rigs.splice(rigs.indexOf(rig), 1);
 };
-const _findRig = position => rigs.find(rig => rig.position.distanceTo(position) < 0.5);
+/* const _findRig = position => rigs.find(rig => rig.position.distanceTo(position) < 0.5);
 const _handleRigToggle = (position, quaternion) => {
   const rig = _findRig(position);
   if (rig) {
@@ -647,7 +647,7 @@ const _handleRigToggle = (position, quaternion) => {
   } else {
     _openRig(position, quaternion);
   }
-};
+}; */
 
 window.addEventListener('click', () => {
   renderer.domElement.requestPointerLock();
@@ -702,7 +702,10 @@ const lastButtons = [
   _makeButtons(),
   _makeButtons(),
 ];
-let intersectionKey = null;
+const intersectionSpecs = [
+  null,
+  null,
+];
 window.addEventListener('keydown', e => {
   // if (window.document.pointerLockElement) {
     switch (e.which) {
@@ -836,6 +839,8 @@ function animate(time, frame) {
         for (let r = 0; r < rigs.length; r++) {
           rigs[r].keyboardMesh.planeMesh.keyMeshes[i].visible = false;
         }
+
+        intersectionSpecs[i] = null;
       };
 
       const intersectionPoints = [];
@@ -873,8 +878,8 @@ function animate(time, frame) {
                 controllerMesh.updateMatrixWorld();
                 controllerMesh.rayDot.visible = true;
 
-                for (let i = 0; i < keyMap.length; i++) {
-                  const [key, kx1, ky1, kx2, ky2] = keyMap[i];
+                for (let j = 0; j < keyMap.length; j++) {
+                  const [key, kx1, ky1, kx2, ky2] = keyMap[j];
                   if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
                     if (keyboardHighlightCanvasCtx) {
                       const width = kx2 - kx1;
@@ -910,7 +915,13 @@ function animate(time, frame) {
                       keyMesh.visible = true;
                     }
 
-                    intersectionKey = key;
+                    intersectionSpecs[i] = {
+                      type: 'key',
+                      data: {
+                        key,
+                        rig,
+                      },
+                    };
 
                     break;
                   }
@@ -950,7 +961,7 @@ function animate(time, frame) {
                   controllerMesh.updateMatrixWorld();
                   controllerMesh.rayDot.visible = true;
 
-                  intersectionKey = null;
+                  intersectionSpecs[i] = null;
                 });
               }
             }
@@ -988,20 +999,27 @@ function animate(time, frame) {
           const lastTrigger = lastButtons[i].trigger;
 
           if (trigger && !lastTrigger) {
-            const pose = frame.getInputPose(inputSource);
-            localMatrix.fromArray(pose.pointerMatrix)
-              .decompose(localVector, localQuaternion, localVector2);
+            const spec = intersectionSpecs[i];
+            if (spec && spec.type === 'key') {
+              const {data: {key, rig}} = spec;
 
-            const rig = _findRig(localVector);
-            // console.log('yes trigger', trigger, lastTrigger, !!rig);
-            if (rig) {
-               _openUrl('realitytab.html?color=29b6f6', rig.position, rig.quaternion);
+              switch (key) {
+                case 'enter': {
+                  const pose = frame.getInputPose(inputSource);
+                  localMatrix.fromArray(pose.pointerMatrix)
+                    .decompose(localVector, localQuaternion, localVector2);
 
-              _closeRig(rig);
+                  _openUrl('realitytab.html?color=29b6f6', rig.position, rig.quaternion);
+                  _closeRig(rig);
+                  break;
+                }
+                case 'backspace': {
+                  _closeRig(rig);
+                  break;
+                }
+              }
             }
-          } /* else if (!trigger && lastTrigger) {
-            console.log('no trigger', trigger, lastTrigger);
-          } */
+          }
 
           lastButtons[i].trigger = trigger;
         }
@@ -1014,7 +1032,8 @@ function animate(time, frame) {
             localMatrix.fromArray(pose.pointerMatrix)
               .decompose(localVector, localQuaternion, localVector2);
 
-            _handleRigToggle(localVector, localQuaternion);
+            // _handleRigToggle(localVector, localQuaternion);
+            _openRig(localVector, localQuaternion);
           }
 
           lastButtons[i].bumper = bumper;
