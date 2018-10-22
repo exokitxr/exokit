@@ -46,6 +46,9 @@ public:
 
 void InitializeLocalGlState(WebGLRenderingContext *gl);
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);  
+NAN_METHOD(CreateRenderTarget);
+NAN_METHOD(ResizeRenderTarget);
+NAN_METHOD(DestroyRenderTarget);
 NAN_METHOD(ComposeLayers);
 void Decorate(Local<Object> target);
 

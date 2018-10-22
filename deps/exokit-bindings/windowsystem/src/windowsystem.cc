@@ -150,6 +150,115 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   }
 }
 
+NAN_METHOD(CreateRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = info[1]->Uint32Value();
+  int height = info[2]->Uint32Value();
+  GLuint sharedColorTex = info[3]->Uint32Value();
+  GLuint sharedDepthStencilTex = info[4]->Uint32Value();
+  GLuint sharedMsColorTex = info[5]->Uint32Value();
+  GLuint sharedMsDepthStencilTex = info[6]->Uint32Value();
+
+  GLuint fbo;
+  GLuint colorTex;
+  GLuint depthStencilTex;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
+  bool ok = CreateRenderTarget(gl, width, height, sharedColorTex, sharedDepthStencilTex, sharedMsColorTex, sharedMsDepthStencilTex, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+
+  Local<Value> result;
+  if (ok) {
+    Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
+    array->Set(0, JS_NUM(fbo));
+    array->Set(1, JS_NUM(colorTex));
+    array->Set(2, JS_NUM(depthStencilTex));
+    array->Set(3, JS_NUM(msFbo));
+    array->Set(4, JS_NUM(msColorTex));
+    array->Set(5, JS_NUM(msDepthStencilTex));
+    result = array;
+  } else {
+    result = Null(Isolate::GetCurrent());
+  }
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(ResizeRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = info[1]->Uint32Value();
+  int height = info[2]->Uint32Value();
+  GLuint fbo = info[3]->Uint32Value();
+  GLuint colorTex = info[4]->Uint32Value();
+  GLuint depthStencilTex = info[5]->Uint32Value();
+  GLuint msFbo = info[6]->Uint32Value();
+  GLuint msColorTex = info[7]->Uint32Value();
+  GLuint msDepthStencilTex = info[8]->Uint32Value();
+
+  const int samples = 4;
+
+  /* {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
+
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+  } */
+  {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+    glBindTexture(GL_TEXTURE_2D, depthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+
+    glBindTexture(GL_TEXTURE_2D, colorTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+  }
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  } else {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
+  } else {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+  }
+}
+
+NAN_METHOD(DestroyRenderTarget) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
+    GLuint fbo = info[0]->Uint32Value();
+    GLuint tex = info[1]->Uint32Value();
+    GLuint depthTex = info[2]->Uint32Value();
+
+    glDeleteFramebuffers(1, &fbo);
+    glDeleteTextures(1, &tex);
+    glDeleteTextures(1, &depthTex);
+  } else {
+    Nan::ThrowError("DestroyRenderTarget: invalid arguments");
+  }
+}
+
 void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, layer.colorTex);
@@ -353,6 +462,9 @@ NAN_METHOD(ComposeLayers) {
 }
 
 void Decorate(Local<Object> target) {
+  Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
+  Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
+  Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
 }
 
