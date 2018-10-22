@@ -143,7 +143,7 @@ const _makeRenderTarget = (width, height) => {
   return renderTarget;
 };
 
-const iframes = [];
+const layers = [];
 const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1)) => {
   const _drawOk = () => {
     console.log('Load ok: ' + u);
@@ -172,7 +172,7 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
     if (contentDocument) {
       _drawOk();
 
-      iframes.push(iframe);
+      layers.push(iframe);
 
       // floorMesh.visible = false;
       // scene.background = null;
@@ -181,7 +181,7 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
 
       _closeUrl(iframe);
 
-      iframes.splice(iframes.indexOf(iframe), 1);
+      layers.splice(layers.indexOf(iframe), 1);
     }
   };
   iframe.src = u;
@@ -1123,12 +1123,7 @@ function animate(time, frame) {
       renderer.getContext(),
       width,
       height,
-      iframes.concat([
-        {
-          colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
-          depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
-        },
-      ])
+      layers
     );
   };
   _render();
@@ -1230,6 +1225,10 @@ if (navigator.xr && !query.fake) {
       renderer.setSize(fullWidth, height);
 
       renderTarget = _makeRenderTarget(fullWidth, height);
+      layers.push({
+        colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
+        depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
+      });
 
       renderer.setAnimationLoop(null);
 
@@ -1256,6 +1255,10 @@ if (navigator.xr && !query.fake) {
 
   display = fakeDisplay;
   renderTarget = _makeRenderTarget(canvas.width * 2, canvas.height);
+  layers.push({
+    colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
+    depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
+  });
 
   console.log('loaded root in 2D');
 }
