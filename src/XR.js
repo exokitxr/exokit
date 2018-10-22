@@ -8,11 +8,16 @@ const {_elementGetter, _elementSetter} = require('./utils');
 
 const _getXrDisplay = window => window[symbols.mrDisplaysSymbol].xrDisplay;
 const _getXmDisplay = window => window[symbols.mrDisplaysSymbol].xmDisplay;
+const _getFakeVrDisplay = window => {
+  const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
+  return fakeVrDisplay.isActive ? fakeVrDisplay : null;
+};
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
 
 class XR extends EventEmitter {
   constructor(window) {
@@ -21,8 +26,11 @@ class XR extends EventEmitter {
     this._window = window;
   }
   requestDevice(name = null) {
-    if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
-      return Promise.resolve(_getXrDisplay(this._window));
+    const fakeVrDisplay = _getFakeVrDisplay(this._window);
+    if (fakeVrDisplay) {
+      return Promise.resolve(fakeVrDisplay);
+    } else if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
+      return Promise.resolve();
     } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
       return Promise.resolve(_getXmDisplay(this._window));
     } else {
@@ -42,6 +50,7 @@ class XRDevice {
   constructor(name = 'VR') {
     this.name = name; // non-standard
     this.session = null; // non-standard
+    this.ownerDocument = null; // non-standard
   }
   supportsSession({exclusive = false, outputContext = null} = {}) {
     return Promise.resolve(null);
@@ -69,6 +78,10 @@ class XRDevice {
     const o = new this.constructor();
     for (const k in this) {
       o[k] = this[k];
+    }
+    if (o.session) {
+      o.session = o.session.clone();
+      o.session.device = o;
     }
     return o;
   }
@@ -210,6 +223,15 @@ class XRSession extends EventTarget {
       }
     }
   }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    o._frame = o._frame.clone();
+    o._frame.session = o;
+    return o;
+  }
   get onblur() {
     return _elementGetter(this, 'blur');
   }
@@ -274,10 +296,6 @@ class XRWebGLLayer {
     this.alpha = alpha;
     this.multiview = multiview;
 
-    this.framebuffer = null;
-    this.framebufferWidth = 0;
-    this.framebufferHeight = 0;
-
     const presentSpec = session.device.onrequestpresent ?
       session.device.onrequestpresent([{
         source: context.canvas,
@@ -286,13 +304,13 @@ class XRWebGLLayer {
       {
         width: context.drawingBufferWidth,
         height: context.drawingBufferHeight,
-        framebuffer: 0,
+        framebuffer: null,
       };
     const {width, height, framebuffer} = presentSpec;
 
-    this.framebuffer = {
+    this.framebuffer = framebuffer !== null ? {
       id: framebuffer,
-    };
+    } : null;
     this.framebufferWidth = width;
     this.framebufferHeight = height;
   }
@@ -313,13 +331,22 @@ class XRPresentationFrame {
       new XRView('right'),
     ];
 
-    this._pose = new XRDevicePose();
+    this._pose = new XRDevicePose(this);
   }
   getDevicePose(coordinateSystem) {
     return this._pose;
   }
   getInputPose(inputSource, coordinateSystem) {
     return inputSource._pose;
+  }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    o._pose = o._pose.clone();
+    o._pose.frame = o;
+    return o;
   }
 }
 module.exports.XRPresentationFrame = XRPresentationFrame;
@@ -339,6 +366,7 @@ class XRView {
 
     this._viewport = new XRViewport();
     this._viewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this._localViewMatrix = this._viewMatrix.slice();
   }
 }
 module.exports.XRView = XRView;
@@ -360,11 +388,34 @@ class XRViewport {
 module.exports.XRViewport = XRViewport;
 
 class XRDevicePose {
-  constructor() {
+  constructor(frame) {
+    this.frame = frame; // non-standard
     this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
   getViewMatrix(view) {
-    return view._viewMatrix;
+    if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.window) {
+      const {xrOffset} = this.frame.session.device.window.document;
+      localMatrix
+        .fromArray(view._viewMatrix)
+        .multiply(
+          localMatrix2.compose(
+            localVector.fromArray(xrOffset.position),
+            localQuaternion.fromArray(xrOffset.rotation),
+            localVector2.fromArray(xrOffset.scale)
+          )
+        )
+        .toArray(view._localViewMatrix);
+    } else {
+      view._localViewMatrix.set(view._viewMatrix);
+    }
+    return view._localViewMatrix;
+  }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    return o;
   }
 }
 module.exports.XRDevicePose = XRDevicePose;

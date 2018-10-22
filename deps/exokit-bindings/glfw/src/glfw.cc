@@ -1,4 +1,5 @@
 #include <glfw/include/glfw.h>
+#include <windowsystem.h>
 #include <webgl.h>
 
 namespace glfw {
@@ -1144,7 +1145,7 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
-void *GetGLContext(NATIVEwindow *window) {
+NATIVEwindow *GetGLContext(NATIVEwindow *window) {
   return window;
 }
 
@@ -1332,13 +1333,14 @@ NAN_METHOD(Create) {
   bool initialVisible = info[2]->BooleanValue();
   bool hidden = info[3]->BooleanValue();
   NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
-  WebGLRenderingContext *gl = info[5]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5])) : nullptr;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
+  WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
 
   glfwWindowHint(GLFW_VISIBLE, initialVisible);
 
   GLuint framebuffers[] = {0, 0};
   GLuint framebufferTextures[] = {0, 0, 0, 0};
-  bool shared = hidden && sharedWindow != nullptr && gl != nullptr;
+  bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
   if (shared) {
     SetCurrentWindowContext(sharedWindow);
 
@@ -1387,7 +1389,9 @@ NAN_METHOD(Create) {
       glfwSetCursorPosCallback(windowHandle, cursorPosCB);
       glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
       glfwSetScrollCallback(windowHandle, scrollCB);
-
+      
+      windowsystembase::InitializeLocalGlState(gl);
+      
       GLuint vao;
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
@@ -1859,6 +1863,8 @@ Local<Object> makeWindow() {
   v8::EscapableHandleScope scope(isolate);
 
   Local<Object> target = Object::New(isolate);
+  
+  windowsystembase::Decorate(target);
 
   Nan::SetMethod(target, "create", glfw::Create);
   Nan::SetMethod(target, "destroy", glfw::Destroy);

@@ -21,6 +21,7 @@ const UPNG = require('upng-js');
 
 const {version} = require('../package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
+const symbols = require('./symbols');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
@@ -137,7 +138,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       const {hidden} = canvas.ownerDocument;
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
       const firstGl = contexts.length > 0 ? contexts[0] : null;
-      return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden, hidden, firstWindowHandle, firstGl);
+      return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden, hidden, firstWindowHandle, gl, firstGl);
     } catch (err) {
       console.warn(err.message);
       return null;
@@ -173,27 +174,23 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const {hidden} = document;
     if (hidden) {
-      const [framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
+      const [fbo, colorTex, depthTex, msFbo, msColorTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
 
-      gl.setDefaultFramebuffer(msFramebuffer);
+      gl.setDefaultFramebuffer(msFbo);
 
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
+        nativeWindow.resizeRenderTarget(gl, width, height, fbo, colorTex, depthTex, msFbo, msColorTex, msDepthTex);
       };
 
-      document._emit('framebuffer', {
-        framebuffer,
-        colorTexture,
-        depthStencilTexture,
-        render() {
-          nativeWindow.setCurrentWindowContext(windowHandle);
-
-          // color blit is linear, depth/stencil is nearest
-          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, true, false, false);
-          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
-        },
-      });
+      // TODO: handle multiple child canvases
+      document.framebuffer = {
+        canvas,
+        msColorTex,
+        msDepthTex,
+        colorTex,
+        depthTex,
+      };
     } else {
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
@@ -491,7 +488,7 @@ if (nativeMl) {
           const width = halfWidth * 2;
           renderWidth = halfWidth;
           renderHeight = height;
-          
+
           mlFbo = fbo;
           mlTex = tex;
           mlDepthTex = depthStencilTex;

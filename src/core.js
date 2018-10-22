@@ -740,6 +740,7 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   for (const k in mrDisplays) {
     const mrDisplayClone = mrDisplays[k].clone();
     mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    mrDisplayClone.window = window;
     result[k] = mrDisplayClone;
   }
   return result;
@@ -1214,6 +1215,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       })(wsProxy.Server);
       return wsProxy;
     })(),
+    composeLayers: (gl, width, height, layers) => {
+      nativeWindow.setCurrentWindowContext(gl.getWindowHandle()); // XXX make this native
+      nativeWindow.composeLayers(gl, width, height, layers);
+    },
     electron,
     magicleap: nativeMl ? {
       RequestMeshing() {
