@@ -4,12 +4,17 @@
     <script src="three.js?tab=top"></script>
     <script src="fakeDisplay.js"></script>
     <script src="svg-boundings.js"></script>
+    <script src="keycode.js"></script>
     <script>
 let display, fakeDisplay;
+let intersectionKey = null;
+let intersectionPoint = null;
+
+
 
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
-const rayDistance = 1;
+const rayDistance = 10;
 const menuWidth = 1;
 const menuHeight = 1;
 const menuWorldWidth = menuWidth;
@@ -73,6 +78,18 @@ const _makeRenderer = () => {
     },
   };
 };
+
+const _handleDefaultKey = (code, shiftKey) => {
+  let c = String.fromCharCode(code);
+  if (shiftKey) {
+    c = c.toUpperCase();
+  }
+  keyboardState.text = keyboardState.text.slice(0, keyboardState.cursor) + c + keyboardState.text.slice(keyboardState.cursor);
+  keyboardState.cursor++;
+  console.log(keyboardState.text);
+  // menuMesh.urlMesh.updateText();
+};
+
 const _makeRenderTarget = (width, height) => {
   const renderTarget = new THREE.WebGLRenderTarget(width, height);
   renderTarget.depthTexture = new THREE.DepthTexture(
@@ -166,7 +183,7 @@ const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
 directionalLight.position.set(1, 1, 1);
 scene.add(directionalLight);
 
-const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01);
 const controllerMaterial = new THREE.MeshPhongMaterial({
   color: 0x4caf50,
 });
@@ -220,7 +237,7 @@ const floorMesh = (() => {
   const mesh = new THREE.Mesh(geometry, material);
   return mesh;
 })();
-scene.add(floorMesh);
+// scene.add(floorMesh);
 
 const cubeMesh = (() => {
   const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
@@ -236,8 +253,8 @@ const cubeMesh = (() => {
 })();
 scene.add(cubeMesh);
 
-for (let i = 0; i < 2; i++) {
-  /* const controllerMesh = new THREE.Object3D();
+for (let i = 0; i < 1; i++) {
+  const controllerMesh = new THREE.Object3D();
   controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
   controllerMesh.quaternion.setFromUnitVectors(
     new THREE.Vector3(0, 0, -1),
@@ -256,7 +273,7 @@ for (let i = 0; i < 2; i++) {
     mesh.frustumCulled = false;
     return mesh;
   };
-  controllerMesh.add(makeControllerMesh(-0.1));
+  controllerMesh.add(makeControllerMesh(0, -0.04, 0.04, -0.4));
   controllerMesh.block = makeControllerMesh();
 
   const rayMesh = (() => {
@@ -296,16 +313,16 @@ for (let i = 0; i < 2; i++) {
     controllerMesh.ray.direction
       .set(0, 0, -1)
       .applyQuaternion(controllerMesh.quaternion);
-  }; */
+  };
 
-  const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-  // controllerMesh.position.set(x, y, z);
-  // controllerMesh.quaternion.set(qx, qy, qz, qw);
-  // controllerMesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-  // controllerMesh.updateMatrix();
-  // controllerMesh.updateMatrixWorld();
+  // // const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+  // // controllerMesh.position.set(x, y, z);
+  // // controllerMesh.quaternion.set(qx, qy, qz, qw);
+  // // controllerMesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+  // // controllerMesh.updateMatrix();
+  // // controllerMesh.updateMatrixWorld();
   controllerMesh.matrixAutoUpdate = false;
-  controllerMesh.frustumCulled = false;
+  // controllerMesh.frustumCulled = false;
 
   scene.add(controllerMesh);
   controllerMeshes[i] = controllerMesh;
@@ -371,22 +388,23 @@ const menuMesh = (() => {
       // ctx.fillStyle = '#03a9f4';
       // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
 
-//TEST
-        // ctx.font = `${fontSize}px Arial`;
+//TEST - FONT DEBUGGING CRASH
+
+        // ctx.font = `12px arial`;
         // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
-
-        urlState.measures.length = 0;
-        urlState.measures.push(0);
+        //
+        // urlState.measures.length = 0;
+        // urlState.measures.push(0);
         // const {width: barWidth} = ctx.measureText('[');
-        for (let i = 1; i <= urlState.text.length; i++) {
-          // const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
-          const {width} = 4;
-          const {barWidth} = 4;
-          urlState.measures.push(width - barWidth*2);
-        }
-
-        ctx.fillStyle = '#03a9f4';
-        ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
+        // for (let i = 1; i <= urlState.text.length; i++) {
+        //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+        //   // const {width} = 4;
+        //   const {barWidth} = 4;
+        //   urlState.measures.push(width - barWidth*2);
+        // }
+        //
+        // ctx.fillStyle = '#03a9f4';
+        // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
 
 //END TEST
 
@@ -506,7 +524,7 @@ const keyboardMesh = (() => {
 keyboardMesh.position.set(0, 0, 0);
 scene.add(keyboardMesh);
 
-for (let i = 0; i < 2; i++) {
+for (let i = 0; i < 1; i++) {
   const controllerMesh = controllerMeshes[i];
 
   const keyMesh = (() => {
@@ -715,7 +733,7 @@ function animate(time, frame) {
     if (renderer.vr.enabled) {
       const inputSources = display.session.getInputSources();
 
-      for (let i = 0; i < inputSources.length; i++) {
+      for (let i = 0; i < 1; i++) {
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
         const controllerMesh = controllerMeshes[i];
@@ -732,7 +750,7 @@ function animate(time, frame) {
     menuMesh.urlMesh.update();
 
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 1; i++) {
 
 
       const controllerMesh = controllerMeshes[i];
@@ -743,15 +761,16 @@ function animate(time, frame) {
         controllerMesh.rayMesh.scale.z = rayDistance;
         controllerMesh.rayMesh.updateMatrixWorld();
 
-        // controllerMesh.rayDot.visible = false;
-        //
-        // controllerMesh.keyMesh.visible = false;
+        controllerMesh.rayDot.visible = false;
+
+        controllerMesh.keyMesh.visible = false;
 
       };
 
       // keyboard
-      let intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
-      let intersectionKey = null;
+      // let intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
+      let intersectionPoint = controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector);
+      intersectionKey = null;
       if (intersectionPoint) {
         const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
@@ -798,7 +817,7 @@ function animate(time, frame) {
                   .set(
                     -1/2 + ((width/2 + kx1) / keyboardWidth),
                     (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
-                     0.01 * (1)
+                     0.01 * (pressed ? 0.5 : 1)
                   );
                 controllerMesh.keyMesh.scale.set(
                   width / keyboardWidth,
@@ -864,7 +883,7 @@ function animate(time, frame) {
 
     }
   };
-  // _updateIntersections();
+  _updateIntersections();
 
   const _render = () => {
     // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
@@ -927,6 +946,8 @@ function animate(time, frame) {
   };
   _updateMovement();
 
+
+
   /* const _updateFakeDisplay = () => {
     if (fakeDisplay) {
       const factor = startTimeDiff/1000 % (Math.PI*2);
@@ -947,6 +968,8 @@ function animate(time, frame) {
   lastTime = now;
 }
 
+
+
 // reality tabs
 
 _openUrl('realitytab.html?color=29b6f6', new THREE.Vector3(0.05, 1.55, -1 + 0.05));
@@ -964,6 +987,12 @@ if (navigator.xr && !query.fake) {
 
     session.onselect = e => {
       console.log('select'); // XXX
+      console.log('intersectionPoint= ' + intersectionPoint);
+      if(intersectionKey){
+        const code = keyCode(intersectionKey);
+        _handleDefaultKey(code, false);
+        console.log('intersected: ' + code);
+      }
     };
 
     // console.log('request first frame');
