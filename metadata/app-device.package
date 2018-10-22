@@ -43,6 +43,8 @@
 #   directory/of/goodies/ : target/contents/ \
 DATAS = \
     fonts.xml : etc/fonts.xml \
+    system_fonts.xml : etc/system_fonts.xml \
+    fallback_fonts.xml : etc/fallback_fonts.xml \
     fonts/ : etc/fonts/ \
 
 # Packages may use OPTIONS, but they only apply to this

@@ -1,0 +1,19 @@
+<familyset>
+  <family name="sans-serif">
+    <font weight="300" style="normal">/package/etc/fonts/LominoUI_Lt.ttf</font>
+    <font weight="300" style="italic">/package/etc/fonts/LominoUI_LtIt.ttf</font>
+    <font weight="400" style="normal">/package/etc/fonts/LominoUI_Rg.ttf</font>
+    <font weight="400" style="italic">/package/etc/fonts/LominoUI_It.ttf</font>
+    <font weight="500" style="normal">/package/etc/fonts/LominoUI_Md.ttf</font>
+    <font weight="500" style="italic">/package/etc/fonts/LominoUI_MdIt.ttf</font>
+    <font weight="700" style="normal">/package/etc/fonts/LominoUI_Bd.ttf</font>
+    <font weight="700" style="italic">/package/etc/fonts/LominoUI_BdIt.ttf</font>
+    <font weight="900" style="normal">/package/etc/fonts/LominoUI_XBd.ttf</font>
+    <font weight="900" style="italic">/package/etc/fonts/LominoUI_XBdIt.ttf</font>
+  </family>
+
+  <alias name="arial" to="sans-serif" />
+  <alias name="helvetica" to="sans-serif" />
+  <alias name="tahoma" to="sans-serif" />
+  <alias name="verdana" to="sans-serif" />
+</familyset>
