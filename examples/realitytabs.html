@@ -3,6 +3,7 @@
   <body>
     <script src="three.js?tab=top"></script>
     <script src="fakeDisplay.js"></script>
+    <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script>
 let display, fakeDisplay;
@@ -23,13 +24,6 @@ const keyboardWidth = 2048;
 const keyboardHeight = 716;
 const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
 const cursorWidth = 10;
-const urlState = {
-  text: 'https://docs.webmr.io/',
-  cursor: -1,
-  measures: [],
-};
-urlState.cursor = urlState.text.length;
-const keyboardState = urlState;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -410,7 +404,17 @@ const _makeRig = () => {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.frustumCulled = false;
 
+      const text = 'https://';
+      const urlState = {
+        text,
+        cursor: text.length,
+        measures: [],
+      };
+      mesh.urlState = urlState;
+
       const _updateText = () => {
+        console.log('update text', urlState.text, urlState.cursor);
+
         ctx.fillStyle = '#EEE';
         ctx.fillRect(0, 0, menuWidth, menuHeight*2);
 
@@ -1013,8 +1017,70 @@ function animate(time, frame) {
                   _closeRig(rig);
                   break;
                 }
-                case 'backspace': {
-                  _closeRig(rig);
+                default: {
+                  const {menuMesh: {urlMesh}} = rig;
+
+                  const _handleDefaultKey = (code, shiftKey) => {
+                    let c = String.fromCharCode(code);
+                    if (!shiftKey) {
+                      c = c.toLowerCase();
+                    }
+                    urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + c + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
+                    urlMesh.urlState.cursor++;
+                    urlMesh.updateText();
+                  };
+                  const _handleKey = (code, shiftKey) => {
+                    if (code === 8) { // backspace
+                      if (urlMesh.urlState.cursor > 0) {
+                        urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor - 1) + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
+                        urlMesh.urlState.cursor--;
+                        urlMesh.updateText();
+                      } else {
+                        if (urlMesh.urlState.text.length === 0) {
+                          _closeRig(rig);
+                        }
+                      }
+                    } else if (code === 46) { // delete
+                      if (urlMesh.urlState.cursor < urlMesh.urlState.text.length) {
+                        urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + urlMesh.urlState.text.slice(urlMesh.urlState.cursor + 1);
+                        urlMesh.updateText();
+                      }
+                    } else if (code === 32) { // space
+                      urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + ' ' + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
+                      urlMesh.urlState.cursor++;
+                      urlMesh.updateText();
+                    } else if (code === 13) { // enter
+                      urlMesh.urlState.submit();
+                    } else if (
+                      code === 9 || // tab
+                      code === 16 || // shift
+                      code === 17 || // ctrl
+                      code === 18 || // alt
+                      code === 20 || // capslock
+                      code === 27 || // esc
+                      code === 91 // win
+                    ) {
+                      // nothing
+                    } else if (code === 37) { // left
+                      urlMesh.urlState.cursor = Math.max(urlMesh.urlState.cursor - 1, 0);
+                      urlMesh.updateText();
+                    } else if (code === 39) { // right
+                      urlMesh.urlState.cursor = Math.min(urlMesh.urlState.cursor + 1, urlMesh.urlState.text.length);
+                      urlMesh.updateText();
+                    } else if (code === 38) { // up
+                      urlMesh.urlState.cursor = 0;
+                      urlMesh.updateText();
+                    } else if (code === 40) { // down
+                      urlMesh.urlState.cursor = urlMesh.urlState.text.length;
+                      urlMesh.updateText();
+                    } else if (code === -1) {
+                      // nothing
+                    } else {
+                      _handleDefaultKey(code, shiftKey);
+                    }
+                  };
+                  const code = keyCode(key);
+                  _handleKey(code, false);
                   break;
                 }
               }
