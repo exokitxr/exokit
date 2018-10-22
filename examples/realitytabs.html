@@ -51,6 +51,63 @@ function parseQuery(queryString) {
 const query = parseQuery(window.location.search);
 const FLOOR_SIZE = 20;
 
+// load
+
+const keyMap = [];
+fetch('../assets/keyboard.svg')
+  .then(res => res.text())
+  .then(keyboardText => {
+    const div = document.createElement('div');
+    div.innerHTML = keyboardText;
+    const keyEls = div.querySelectorAll('svg > g[key]');
+    for (let i = 0; i < keyEls.length; i++) {
+      const keyEl = keyEls[i];
+      const key = keyEl.getAttribute('key');
+      const shapeEl = keyEl.children[0];
+      const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
+      const {
+        left,
+        right,
+        top,
+        bottom,
+      } = boundings;
+      const x1 = left * keyboardMatrix[0];
+      const x2 = right * keyboardMatrix[0];
+      const y1 = top * keyboardMatrix[1];
+      const y2 = bottom * keyboardMatrix[1];
+      keyMap.push([key, x1, y1, x2, y2]);
+    }
+  })
+  .catch(err => {
+    console.warn(err.stack);
+  });
+
+let keyboardHighlightCanvasCtx = null;
+new Promise((accept, reject) => {
+  const img = new Image();
+  img.crossOrigin = 'Anonymous';
+  img.src = '../assets/keyboard-hightlight.png';
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    accept(ctx);
+  };
+  img.onerror = err => {
+    reject(err);
+  };
+})
+  .then(ctx => {
+    keyboardHighlightCanvasCtx = ctx;
+  })
+  .catch(err => {
+    console.warn(err.stack);
+  });
+
+// helpers
+
 const _makeRenderer = () => {
   const scene = new THREE.Scene();
   // scene.background = new THREE.Color(0x7E57C2);
@@ -169,7 +226,7 @@ scene.add(directionalLight);
 
 // controller meshes
 
-const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01);
 const controllerMaterial = new THREE.MeshPhongMaterial({
   color: 0x4caf50,
 });
@@ -179,15 +236,14 @@ const controllerMeshes = [
 ];
 
 for (let i = 0; i < 2; i++) {
-  /* const controllerMesh = new THREE.Object3D();
+  const controllerMesh = new THREE.Object3D();
   controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
   controllerMesh.quaternion.setFromUnitVectors(
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(0, -1, -1)
   );
 
-
-  const makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+  const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
     const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
     mesh.position.set(x, y, z);
     mesh.quaternion.set(qx, qy, qz, qw);
@@ -198,8 +254,8 @@ for (let i = 0; i < 2; i++) {
     mesh.frustumCulled = false;
     return mesh;
   };
-  controllerMesh.add(makeControllerMesh(-0.1));
-  controllerMesh.block = makeControllerMesh();
+  const blockMesh = _makeBlockMesh();
+  controllerMesh.add(blockMesh);
 
   const rayMesh = (() => {
     const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
@@ -210,7 +266,8 @@ for (let i = 0; i < 2; i++) {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.visible = true;
+    // mesh.visible = true;
+    mesh.frustumCulled = false;
     return mesh;
   })();
   controllerMesh.add(rayMesh);
@@ -238,16 +295,16 @@ for (let i = 0; i < 2; i++) {
     controllerMesh.ray.direction
       .set(0, 0, -1)
       .applyQuaternion(controllerMesh.quaternion);
-  }; */
+  };
 
-  const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+  /* const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
   // controllerMesh.position.set(x, y, z);
   // controllerMesh.quaternion.set(qx, qy, qz, qw);
   // controllerMesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
   // controllerMesh.updateMatrix();
   // controllerMesh.updateMatrixWorld();
   controllerMesh.matrixAutoUpdate = false;
-  controllerMesh.frustumCulled = false;
+  controllerMesh.frustumCulled = false; */
 
   scene.add(controllerMesh);
   controllerMeshes[i] = controllerMesh;
@@ -443,6 +500,7 @@ const _makeRig = () => {
     return object;
   })();
   rig.add(menuMesh);
+  rig.menuMesh = menuMesh;
 
   const keyboardMesh = (() => {
     const object = new THREE.Object3D();
@@ -483,6 +541,37 @@ const _makeRig = () => {
         new THREE.Vector3(0, 0, 1),
         new THREE.Vector3(0, 1, 1).normalize()
       );
+
+      const keyMeshes = [];
+      for (let i = 0; i < 2; i++) {
+        const keyMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(1, 1);
+          const texture = new THREE.Texture(
+            null,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.NearestFilter,
+            THREE.NearestFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            1
+          );
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            transparent: true,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.frustumCulled = false;
+          return mesh;
+        })();
+        mesh.add(keyMesh);
+
+        keyMeshes.push(keyMesh);
+      }
+      mesh.keyMeshes = keyMeshes;
+
       return mesh;
     })();
     object.add(planeMesh);
@@ -515,83 +604,8 @@ const _makeRig = () => {
 
     return object;
   })();
-  // keyboardMesh.position.set(0, 0, 0);
   rig.add(keyboardMesh);
-
-  for (let i = 0; i < 2; i++) {
-    // const controllerMesh = controllerMeshes[i];
-
-    const keyMesh = (() => {
-      const geometry = new THREE.PlaneBufferGeometry(1, 1);
-      const texture = new THREE.Texture(
-        null,
-        THREE.UVMapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.NearestFilter,
-        THREE.NearestFilter,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        1
-      );
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-        transparent: true,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.frustumCulled = false;
-      return mesh;
-    })();
-    keyboardMesh.planeMesh.add(keyMesh);
-
-    // controllerMesh.keyMesh = keyMesh;
-  }
-
-  let keyboardHighlightCanvasCtx = null;
-  const img = new Image();
-  img.crossOrigin = 'Anonymous';
-  img.src = '../assets/keyboard-hightlight.png';
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    keyboardHighlightCanvasCtx = ctx;
-  };
-  img.onerror = err => {
-    console.log(err.stack);
-  };
-
-  const keyMap = [];
-  fetch('../assets/keyboard.svg')
-    .then(res => res.text())
-    .then(keyboardText => {
-      const div = document.createElement('div');
-      div.innerHTML = keyboardText;
-      const keyEls = div.querySelectorAll('svg > g[key]');
-      for (let i = 0; i < keyEls.length; i++) {
-        const keyEl = keyEls[i];
-        const key = keyEl.getAttribute('key');
-        const shapeEl = keyEl.children[0];
-        const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
-        const {
-          left,
-          right,
-          top,
-          bottom,
-        } = boundings;
-        const x1 = left * keyboardMatrix[0];
-        const x2 = right * keyboardMatrix[0];
-        const y1 = top * keyboardMatrix[1];
-        const y2 = bottom * keyboardMatrix[1];
-        keyMap.push([key, x1, y1, x2, y2]);
-      }
-    })
-    .catch(err => {
-      console.warn(err.stack);
-    });
+  rig.keyboardMesh = keyboardMesh;
 
   return rig;
 };
@@ -625,7 +639,7 @@ const _closeRig = rig => {
   scene.remove(rig);
   rigs.splice(rigs.indexOf(rig), 1);
 };
-const _findRig = position => rigs.find(rig => rig.position.distanceTo(position) < 0.3);
+const _findRig = position => rigs.find(rig => rig.position.distanceTo(position) < 0.5);
 const _handleRigToggle = (position, quaternion) => {
   const rig = _findRig(position);
   if (rig) {
@@ -688,6 +702,7 @@ const lastButtons = [
   _makeButtons(),
   _makeButtons(),
 ];
+let intersectionKey = null;
 window.addEventListener('keydown', e => {
   // if (window.document.pointerLockElement) {
     switch (e.which) {
@@ -809,143 +824,155 @@ function animate(time, frame) {
   _updateControllerMeshes();
 
   const _updateIntersections = () => {
-    keyboardMesh.update();
-    menuMesh.urlMesh.update();
-
-
     for (let i = 0; i < 2; i++) {
-
-
       const controllerMesh = controllerMeshes[i];
       controllerMesh.update();
 
-
-        const _setIntersectionDefault = () => {
+      const _setIntersectionDefault = () => {
         controllerMesh.rayMesh.scale.z = rayDistance;
         controllerMesh.rayMesh.updateMatrixWorld();
 
         // controllerMesh.rayDot.visible = false;
-        //
-        // controllerMesh.keyMesh.visible = false;
-
+        for (let r = 0; r < rigs.length; r++) {
+          rigs[r].keyboardMesh.planeMesh.keyMeshes[i].visible = false;
+        }
       };
 
-      // keyboard
-      let intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
-      let intersectionKey = null;
-      if (intersectionPoint) {
-        const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+      const intersectionPoints = [];
+      const intersectionCbs = [];
+      for (let r = 0; r < rigs.length; r++) {
+        const rig = rigs[r];
+        const {keyboardMesh, menuMesh} = rig;
+        const {planeMesh} = keyboardMesh;
+        const keyMesh = planeMesh.keyMeshes[i];
+        keyboardMesh.update();
+        menuMesh.urlMesh.update();
 
-        const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+        // keyboard
+        {
+          const intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
+          if (intersectionPoint) {
+            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-        const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
-        const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
-        const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
-        if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
-          const x = xFactor * keyboardWidth;
-          const y = yFactor * keyboardHeight;
+            const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
+            const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-          controllerMesh.rayMesh.scale.z = distance;
-          controllerMesh.updateMatrixWorld();
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+              const x = xFactor * keyboardWidth;
+              const y = yFactor * keyboardHeight;
 
-          controllerMesh.rayDot.position.z = -distance;
-          controllerMesh.updateMatrixWorld();
-          controllerMesh.rayDot.visible = true;
+              intersectionPoints.push(intersectionPoint.clone());
+              intersectionCbs.push(() => {
+                controllerMesh.rayMesh.scale.z = distance;
+                controllerMesh.updateMatrixWorld();
 
-          for (let i = 0; i < keyMap.length; i++) {
-            const [key, kx1, ky1, kx2, ky2] = keyMap[i];
-            if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
-              if (keyboardHighlightCanvasCtx) {
-                const width = kx2 - kx1;
-                const height = ky2 - ky1;
-                let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
-                /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
-                  const canvas = document.createElement('canvas');
-                  canvas.width = imageData.width;
-                  canvas.height = imageData.height;
+                controllerMesh.rayDot.position.z = -distance;
+                controllerMesh.updateMatrixWorld();
+                controllerMesh.rayDot.visible = true;
 
-                  const ctx = canvas.getContext('2d');
-                  ctx.putImageData(imageData, 0, 0);
-                  ctx.clearRect(0, 0, 80, 140);
+                for (let i = 0; i < keyMap.length; i++) {
+                  const [key, kx1, ky1, kx2, ky2] = keyMap[i];
+                  if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
+                    if (keyboardHighlightCanvasCtx) {
+                      const width = kx2 - kx1;
+                      const height = ky2 - ky1;
+                      let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
+                      /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                        const canvas = document.createElement('canvas');
+                        canvas.width = imageData.width;
+                        canvas.height = imageData.height;
 
-                  imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
-                } */
+                        const ctx = canvas.getContext('2d');
+                        ctx.putImageData(imageData, 0, 0);
+                        ctx.clearRect(0, 0, 80, 140);
 
-                controllerMesh.keyMesh.material.map.image = imageData;
-                controllerMesh.keyMesh.material.map.needsUpdate = true;
+                        imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+                      } */
 
-                controllerMesh.keyMesh.position
-                  .set(
-                    -1/2 + ((width/2 + kx1) / keyboardWidth),
-                    (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
-                     0.01 * (1)
-                  );
-                controllerMesh.keyMesh.scale.set(
-                  width / keyboardWidth,
-                  height / keyboardHeight * (keyboardHeight / keyboardWidth),
-                  1
-                );
-                controllerMesh.keyMesh.updateMatrixWorld();
-                controllerMesh.keyMesh.visible = true;
+                      keyMesh.material.map.image = imageData;
+                      keyMesh.material.map.needsUpdate = true;
+
+                      keyMesh.position
+                        .set(
+                          -1/2 + ((width/2 + kx1) / keyboardWidth),
+                          (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
+                           0.01 * (1)
+                        );
+                      keyMesh.scale.set(
+                        width / keyboardWidth,
+                        height / keyboardHeight * (keyboardHeight / keyboardWidth),
+                        1
+                      );
+                      keyMesh.updateMatrixWorld();
+                      keyMesh.visible = true;
+                    }
+
+                    intersectionKey = key;
+
+                    break;
+                  }
+                }
+              });
+            }
+          }
+        }
+
+        // menu mesh
+        {
+          // let urlCoords = null;
+          // let intersectionRect = null;
+          const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.urlMesh.plane, localVector) : null;
+          if (intersectionPoint) {
+            const leftIntersectionPoint = menuMesh.urlMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+            const topIntersectionPoint = menuMesh.urlMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+            const xFactor = topIntersectionPoint.distanceTo(menuMesh.urlMesh.topLine.start) / menuWorldWidth;
+            const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / menuWorldHeight;
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+              const x = xFactor * menuWidth;
+              const y = yFactor * menuHeight;
+
+              if (y < urlBarOffset*2) {
+                // urlCoords = [x, y];
+
+                intersectionPoints.push(intersectionPoint.clone());
+                intersectionCbs.push(() => {
+                  controllerMesh.rayMesh.scale.z = distance;
+                  controllerMesh.updateMatrixWorld();
+
+                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.updateMatrixWorld();
+                  controllerMesh.rayDot.visible = true;
+
+                  intersectionKey = null;
+                });
               }
-
-              intersectionKey = key;
-
-              break;
             }
-          }
-        } else {
-          intersectionPoint = null;
-        }
-      }
-
-      // menu mesh
-      let tabIndex = -1;
-      let urlCoords = null;
-      let intersectionRect = null;
-      if (!intersectionPoint) {
-        intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.urlMesh.plane, localVector) : null;
-        if (intersectionPoint) {
-          const leftIntersectionPoint = menuMesh.urlMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
-
-          const topIntersectionPoint = menuMesh.urlMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
-
-          const xFactor = topIntersectionPoint.distanceTo(menuMesh.urlMesh.topLine.start) / menuWorldWidth;
-          const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / menuWorldHeight;
-          const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
-
-          if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
-            const x = xFactor * menuWidth;
-            const y = yFactor * menuHeight;
-
-
-            if (y < urlBarOffset*2) {
-              urlCoords = [x, y];
-
-              controllerMesh.rayMesh.scale.z = distance;
-              controllerMesh.updateMatrixWorld();
-
-              controllerMesh.rayDot.position.z = -distance;
-              controllerMesh.updateMatrixWorld();
-              controllerMesh.rayDot.visible = true;
-            } else {
-              intersectionPoint = null;
-            }
-
-          } else {
-            intersectionPoint = null;
           }
         }
       }
 
-      if (!intersectionPoint) {
+
+      if (intersectionPoints.length > 0) {
+        const intersectionCb = intersectionPoints
+          .map((a, i) => ({
+            distance: a.distanceTo(controllerMesh.position),
+            cb: intersectionCbs[i],
+          }))
+          .sort((a, b) => a.distance - b.distance)[0].cb;
+        intersectionCb();
+      } else {
         _setIntersectionDefault();
       }
-
     }
   };
-  // _updateIntersections();
+  _updateIntersections();
 
   const _updateButtons = () => {
     if (display) {
@@ -966,15 +993,15 @@ function animate(time, frame) {
               .decompose(localVector, localQuaternion, localVector2);
 
             const rig = _findRig(localVector);
-            console.log('yes trigger', trigger, lastTrigger, !!rig);
+            // console.log('yes trigger', trigger, lastTrigger, !!rig);
             if (rig) {
                _openUrl('realitytab.html?color=29b6f6', rig.position, rig.quaternion);
 
               _closeRig(rig);
             }
-          } else if (!trigger && lastTrigger) {
+          } /* else if (!trigger && lastTrigger) {
             console.log('no trigger', trigger, lastTrigger);
-          }
+          } */
 
           lastButtons[i].trigger = trigger;
         }
