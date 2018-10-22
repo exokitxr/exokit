@@ -625,8 +625,9 @@ const _closeRig = rig => {
   scene.remove(rig);
   rigs.splice(rigs.indexOf(rig), 1);
 };
-const _handleRig = (position, quaternion) => {
-  const rig = rigs.find(rig => rig.position.distanceTo(position) < 0.3);
+const _findRig = position => rigs.find(rig => rig.position.distanceTo(position) < 0.3);
+const _handleRigToggle = (position, quaternion) => {
+  const rig = _findRig(position);
   if (rig) {
     _closeRig(rig);
   } else {
@@ -636,6 +637,16 @@ const _handleRig = (position, quaternion) => {
 
 window.addEventListener('click', () => {
   renderer.domElement.requestPointerLock();
+});
+window.addEventListener('mousedown', e => {
+  if (window.document.pointerLockElement) {
+    fakeDisplay.gamepads[1].buttons[1].pressed = true;
+  }
+});
+window.addEventListener('mouseup', e => {
+  if (window.document.pointerLockElement) {
+    fakeDisplay.gamepads[1].buttons[1].pressed = false;
+  }
 });
 window.addEventListener('mousemove', e => {
   if (window.document.pointerLockElement) {
@@ -670,6 +681,7 @@ const keys = {
   right: false,
 };
 const _makeButtons = () => ({
+  trigger: false,
   bumper: false,
 });
 const lastButtons = [
@@ -941,20 +953,45 @@ function animate(time, frame) {
       const gamepads = navigator.getGamepads();
 
       for (let i = 0; i < inputSources.length; i++) {
+        const inputSource = inputSources[i];
         const gamepad = gamepads[i];
-        const bumper = gamepad.buttons[2].pressed;
-        const lastBumper = lastButtons[i].bumper;
 
-        if (bumper && !lastBumper) {
-          const inputSource = inputSources[i];
-          const pose = frame.getInputPose(inputSource);
-          localMatrix.fromArray(pose.pointerMatrix)
-            .decompose(localVector, localQuaternion, localVector2);
+        {
+          const trigger = gamepad.buttons[1].pressed;
+          const lastTrigger = lastButtons[i].trigger;
 
-          _handleRig(localVector, localQuaternion);
+          if (trigger && !lastTrigger) {
+            const pose = frame.getInputPose(inputSource);
+            localMatrix.fromArray(pose.pointerMatrix)
+              .decompose(localVector, localQuaternion, localVector2);
+
+            const rig = _findRig(localVector);
+            console.log('yes trigger', trigger, lastTrigger, !!rig);
+            if (rig) {
+               _openUrl('realitytab.html?color=29b6f6', rig.position, rig.quaternion);
+
+              _closeRig(rig);
+            }
+          } else if (!trigger && lastTrigger) {
+            console.log('no trigger', trigger, lastTrigger);
+          }
+
+          lastButtons[i].trigger = trigger;
         }
+        {
+          const bumper = gamepad.buttons[2].pressed;
+          const lastBumper = lastButtons[i].bumper;
 
-        lastButtons[i].bumper = bumper;
+          if (bumper && !lastBumper) {
+            const pose = frame.getInputPose(inputSource);
+            localMatrix.fromArray(pose.pointerMatrix)
+              .decompose(localVector, localQuaternion, localVector2);
+
+            _handleRigToggle(localVector, localQuaternion);
+          }
+
+          lastButtons[i].bumper = bumper;
+        }
       }
     }
   };
