@@ -126,7 +126,7 @@ const _makeRenderer = () => {
     },
   };
 };
-const _makeRenderTarget = (width, height) => {
+/* const _makeRenderTarget = (width, height) => {
   const renderTarget = new THREE.WebGLRenderTarget(width, height);
   renderTarget.depthTexture = new THREE.DepthTexture(
     width,
@@ -141,9 +141,8 @@ const _makeRenderTarget = (width, height) => {
     THREE.DepthStencilFormat
   );
   return renderTarget;
-};
+}; */
 
-const layers = [];
 const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1)) => {
   const _drawOk = () => {
     console.log('Load ok: ' + u);
@@ -211,6 +210,7 @@ const _closeUrl = iframe => {
 })(); */
 
 const {scene, camera, renderer, destroy} = _makeRenderer();
+const layers = [render.domElement];
 
 const ambientLight = new THREE.AmbientLight(0x808080);
 scene.add(ambientLight);
@@ -776,7 +776,7 @@ window.addEventListener('keyup', e => {
   // }
 });
 
-let renderTarget = null;
+// let renderTarget = null;
 const startTime = Date.now();
 let lastTime = 0;
 function animate(time, frame) {
@@ -1116,8 +1116,7 @@ function animate(time, frame) {
 
     const {width, height} = renderer.getSize();
 
-    renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera, renderTarget);
-    renderer.setRenderTarget(null);
+    renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
 
     window.browser.composeLayers(
       renderer.getContext(),
@@ -1222,14 +1221,6 @@ if (navigator.xr && !query.fake) {
 
       renderer.setSize(fullWidth, height);
 
-      renderTarget = _makeRenderTarget(fullWidth, height);
-      layers.push({
-        width: fullWidth,
-        height,
-        colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
-        depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
-      });
-
       renderer.setAnimationLoop(null);
 
       renderer.vr.enabled = true;
@@ -1254,11 +1245,6 @@ if (navigator.xr && !query.fake) {
   });
 
   display = fakeDisplay;
-  renderTarget = _makeRenderTarget(canvas.width * 2, canvas.height);
-  layers.push({
-    colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
-    depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
-  });
 
   console.log('loaded root in 2D');
 }
