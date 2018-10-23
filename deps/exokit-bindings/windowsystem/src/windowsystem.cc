@@ -22,10 +22,11 @@ out vec4 fragColor;\n\
 int texSamples = 4;\n\
 uniform sampler2DMS msTex;\n\
 uniform sampler2DMS msDepthTex;\n\
+uniform vec2 texSize;\n\
 \n\
 vec4 textureMultisample(sampler2DMS sampler, vec2 uv) {\n\
-  ivec2 texSize = textureSize(sampler);\n\
-  ivec2 iUv = ivec2(uv * texSize);\n\
+  ivec2 fullTexSize = textureSize(sampler);\n\
+  ivec2 iUv = ivec2(uv * texSize * fullTexSize);\n\
 \n\
   vec4 color = vec4(0.0);\n\
   for (int i = 0; i < texSamples; i++) {\n\
@@ -113,6 +114,11 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   composeSpec->msDepthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msDepthTex");
   if (composeSpec->msDepthTexLocation == -1) {
     std::cout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
+    return;
+  }
+  composeSpec->texSizeLocation = glGetUniformLocation(composeSpec->composeProgram, "texSize");
+  if (composeSpec->texSizeLocation == -1) {
+    std::cout << "ML compose program failed to get uniform location for 'texSize'" << std::endl;
     return;
   }
 
@@ -372,6 +378,8 @@ void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
   glUniform1i(composeSpec->msDepthTexLocation, 1);
+
+  glUniform2f(composeSpec->texSizeLocation, 0.5f, 1.0f);
 
   glViewport(0, 0, layer.width, layer.height);
   // glScissor(0, 0, width, height);

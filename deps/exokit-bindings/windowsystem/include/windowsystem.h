@@ -39,6 +39,7 @@ public:
   GLint uvLocation;
   GLint msTexLocation;
   GLint msDepthTexLocation;
+  GLint texSizeLocation;
   GLuint positionBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;
