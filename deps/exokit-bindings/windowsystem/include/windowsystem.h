@@ -37,8 +37,8 @@ public:
   GLuint composeProgram;
   GLint positionLocation;
   GLint uvLocation;
-  GLint colorTexLocation;
-  GLint depthTexLocation;
+  GLint msTexLocation;
+  GLint msDepthTexLocation;
   GLuint positionBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;

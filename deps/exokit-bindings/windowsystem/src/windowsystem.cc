@@ -366,7 +366,7 @@ NAN_METHOD(DestroyRenderTarget) {
 
 void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msColorTex);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
   glUniform1i(composeSpec->msTexLocation, 0);
 
   glActiveTexture(GL_TEXTURE1);
@@ -517,7 +517,7 @@ NAN_METHOD(ComposeLayers) {
               height,
               msTex,
               msDepthTex,
-              colorTex,
+              msTex,
               depthTex,
               true
             });
@@ -543,7 +543,7 @@ NAN_METHOD(ComposeLayers) {
               height,
               msTex,
               msDepthTex,
-              colorTex,
+              msTex,
               depthTex,
               false
             });
