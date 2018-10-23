@@ -1600,7 +1600,7 @@ NAN_METHOD(MLContext::Present) {
   GLuint msColorTex;
   GLuint msDepthStencilTex;
   {
-    bool ok = windowsystem::CreateRenderTarget(gl, width, height, 0, 0, 0, 0, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+    bool ok = windowsystembase::CreateRenderTarget(gl, width, height, 0, 0, 0, 0, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
     if (!ok) {
       ML_LOG(Error, "%s: Failed to create ML present render context.", application_name);
       info.GetReturnValue().Set(Nan::Null());
