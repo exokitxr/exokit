@@ -528,7 +528,7 @@ NAN_METHOD(ComposeLayers) {
           elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))
         ) {
           if (
-            elementObj->Get(JS_STR("framebuffer"))->IsObject() &&
+            elementObj->Get(JS_STR("framebuffer"))->IsObject()
           ) {
             Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("framebuffer")));
             GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
