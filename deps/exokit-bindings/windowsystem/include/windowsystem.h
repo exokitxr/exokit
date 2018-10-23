@@ -45,10 +45,11 @@ public:
 };
 
 void InitializeLocalGlState(WebGLRenderingContext *gl);
-void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
+bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex);
 NAN_METHOD(CreateRenderTarget);
 NAN_METHOD(ResizeRenderTarget);
 NAN_METHOD(DestroyRenderTarget);
+void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
 NAN_METHOD(ComposeLayers);
 void Decorate(Local<Object> target);
 
