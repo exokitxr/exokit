@@ -18,5 +18,6 @@
   },
   "devDependencies": {
     "electron-packager": "^12.2.0"
-  }
+  },
+  "proxy": "http://127.0.0.1:9000"
 }

@@ -3,6 +3,61 @@ import logo from './logo.svg';
 import './App.css';
 
 class App extends Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+    };
+    this.launchTerminal = this.launchTerminal.bind(this);
+    this.launchExoHome = this.launchExoHome.bind(this);
+  }
+
+  async launchTerminal(){
+    const data1 = 'hello my dude';
+    let data = JSON.stringify({data: data1});
+
+    try{
+      let response = await fetch("http://localhost:9000/launchTerminal", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: data,
+        mode: 'no-cors'
+      });
+      if(response.ok){
+        console.log('launch success')
+      }
+      else{
+        console.log('launch failed')
+      }
+    }
+    catch (e) {
+      console.log(e);
+    }
+  }
+
+  async launchExoHome(){
+    const data1 = 'hello my dude';
+    let data = JSON.stringify({data: data1});
+
+    try{
+      let response = await fetch("http://localhost:9000/launchExoHome", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: data,
+        mode: 'no-cors'
+      });
+      if(response.ok){
+        console.log('launch success')
+      }
+      else{
+        console.log('launch failed')
+      }
+    }
+    catch (e) {
+      console.log(e);
+    }
+  }
+
   render() {
     return (
       <div className="App">
@@ -83,8 +138,8 @@ class App extends Component {
             <small>75%</small>
           </div>
           <div className="col-4">
-            <button type="submit" className="btn btn-primary">Launch Terminal</button>
-            <button type="submit" className="btn btn-primary">Launch Exo-Home</button>
+            <button type="submit" className="btn btn-primary" onClick={() => this.launchTerminal('launch')}>Launch Terminal</button>
+            <button type="submit" className="btn btn-primary" onClick={() => this.launchExoHome('launch')}>Launch Exo-Home</button>
           </div>
         </div>
       </div>
