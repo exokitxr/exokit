@@ -19,12 +19,25 @@ const char *composeFsh = "\
 \n\
 in vec2 vUv;\n\
 out vec4 fragColor;\n\
-uniform sampler2D colorTex;\n\
-uniform sampler2D depthTex;\n\
+int texSamples = 4;\n\
+uniform sampler2DMS msTex;\n\
+uniform sampler2DMS msDepthTex;\n\
+\n\
+vec4 textureMultisample(sampler2DMS sampler, vec2 uv) {\n\
+  ivec2 texSize = textureSize(sampler, 0);\n\
+  ivec2 iUv = ivec2(uv * texSize);\n\
+\n\
+  vec4 color = vec4(0.0);\n\
+  for (int i = 0; i < texSamples; i++) {\n\
+    color += texelFetch(sampler, iUv, i);\n\
+  }\n\
+  color /= float(texSamples);\n\
+  return color;\n\
+}\n\
 \n\
 void main() {\n\
-  fragColor = texture2D(colorTex, vUv);\n\
-  gl_FragDepth = texture2D(depthTex, vUv).r;\n\
+  fragColor = textureMultisample(msTex, vUv);\n\
+  gl_FragDepth = textureMultisample(msDepthTex, vUv).r;\n\
 }\n\
 ";
 
@@ -92,14 +105,14 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
     std::cout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
     return;
   }
-  composeSpec->colorTexLocation = glGetUniformLocation(composeSpec->composeProgram, "colorTex");
-  if (composeSpec->colorTexLocation == -1) {
-    std::cout << "ML compose program failed to get uniform location for 'colorTex'" << std::endl;
+  composeSpec->msTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msTex");
+  if (composeSpec->msTexLocation == -1) {
+    std::cout << "ML compose program failed to get uniform location for 'msTex'" << std::endl;
     return;
   }
-  composeSpec->depthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "depthTex");
-  if (composeSpec->depthTexLocation == -1) {
-    std::cout << "ML compose program failed to get uniform location for 'depthTex'" << std::endl;
+  composeSpec->msDepthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msDepthTex");
+  if (composeSpec->msDepthTexLocation == -1) {
+    std::cout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
     return;
   }
 
@@ -261,12 +274,12 @@ NAN_METHOD(DestroyRenderTarget) {
 
 void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, layer.colorTex);
-  glUniform1i(composeSpec->colorTexLocation, 0);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msColorTex);
+  glUniform1i(composeSpec->msTexLocation, 0);
 
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, layer.depthTex);
-  glUniform1i(composeSpec->depthTexLocation, 1);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
+  glUniform1i(composeSpec->msDepthTexLocation, 1);
 
   glViewport(0, 0, layer.width, layer.height);
   // glScissor(0, 0, width, height);
@@ -282,7 +295,7 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-  // blit
+  /* // blit
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
 
@@ -331,6 +344,11 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
     if (layer.blit) {
       ComposeLayer(composeSpec, layer);
     }
+  } */
+
+  for (size_t i = 0; i < layers.size(); i++) {
+    const LayerSpec &layer = layers[i];
+    ComposeLayer(composeSpec, layer);
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
