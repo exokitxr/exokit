@@ -11,7 +11,10 @@
     "electron": "^3.0.5",
     "jquery": "^3.3.1",
     "pkg": "^4.3.4",
-    "popper.js": "^1.14.4"
+    "popper.js": "^1.14.4",
+    "react": "^16.4.2",
+    "react-dom": "^16.4.2",
+    "react-scripts": "1.1.4"
   },
   "devDependencies": {
     "electron-packager": "^12.2.0"
