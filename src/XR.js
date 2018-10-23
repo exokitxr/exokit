@@ -327,7 +327,7 @@ class XRWebGLLayer {
         tex: 0,
         depthTex: 0,
       };
-    const {width, height, framebuffer} = presentSpec;
+    const {width, height, msFbo} = presentSpec;
 
     this.framebuffer = msFbo !== null ? {
       id: msFbo,
