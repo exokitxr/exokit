@@ -9,14 +9,16 @@ lab::AudioContext *getDefaultAudioContext(float sampleRate) {
     _defaultAudioContext = lab::MakeRealtimeAudioContext(sampleRate);
 
     atexit([]() {
-      _defaultAudioContext.reset();
+      // NOTE: There was no reset method for AudioContext!
+      //_defaultAudioContext.reset();
     });
   }
   return _defaultAudioContext.get();
 }
 
 void deleteDefaultAudioContext() {
-  _defaultAudioContext.reset();
+  // NOTE: There was no reset method for AudioContext!
+  //_defaultAudioContext.reset();
 }
 
 AudioContext::AudioContext(float sampleRate) {
