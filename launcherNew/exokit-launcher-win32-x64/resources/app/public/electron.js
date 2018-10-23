@@ -9,10 +9,12 @@ const isDev = require('electron-is-dev');
 
 let window = null;
 
+
+
 // Wait until the app is ready
 app.once('ready', () => {
 
-  spawn('C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\scripts\\exokit.cmd', ['-h'], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+  spawn('node', ['C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\launcherNew\\public\\server.js'], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
 
   // Create a new window
   window = new BrowserWindow({
