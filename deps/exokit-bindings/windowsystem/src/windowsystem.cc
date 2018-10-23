@@ -547,7 +547,7 @@ NAN_METHOD(ComposeLayers) {
               depthTex,
               false
             });
-          } else { // iframe not ready
+          } else { // canvas not ready
             // nothing
           }
         }
