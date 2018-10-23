@@ -1567,6 +1567,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
     const fakeVrDisplay = new FakeVRDisplay();
     fakeVrDisplay.isActive = false;
+    fakeVrDisplay.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
 
     const vrDisplay = new VRDisplay();
     _bindMRDisplay(vrDisplay);
