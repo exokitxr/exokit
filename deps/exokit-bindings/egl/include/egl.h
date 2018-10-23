@@ -30,7 +30,6 @@ public:
 #define windowsystem egl
 
 namespace egl {
-  bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex);
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   EGLContext GetGLContext(NATIVEwindow *window);
   NATIVEwindow *GetCurrentWindowContext();
