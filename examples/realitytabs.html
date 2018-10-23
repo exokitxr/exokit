@@ -210,7 +210,7 @@ const _closeUrl = iframe => {
 })(); */
 
 const {scene, camera, renderer, destroy} = _makeRenderer();
-const layers = [render.domElement];
+const layers = [renderer.domElement];
 
 const ambientLight = new THREE.AmbientLight(0x808080);
 scene.add(ambientLight);
