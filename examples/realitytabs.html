@@ -1117,6 +1117,8 @@ function animate(time, frame) {
     const {width, height} = renderer.getSize();
 
     renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+
+    window.browser.composeLayers(renderer.getContext(), 0, layers);
   };
   _render();
 
@@ -1234,7 +1236,6 @@ if (navigator.xr && !query.fake) {
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
   fakeDisplay.position.set(0, 1.6, 0);
   const canvas = renderer.domElement;
-  fakeDisplay.layers = layers;
   fakeDisplay.enter({
     canvas,
     animate,
