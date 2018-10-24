@@ -32,12 +32,17 @@ protected:
   static NAN_GETTER(DurationGetter);
   static NAN_GETTER(LoopGetter);
   static NAN_SETTER(LoopSetter);
+  static NAN_GETTER(OnEndedGetter);
+  static NAN_SETTER(OnEndedSetter);
+  static void ProcessInMainThread(Audio *self);
+
+  Nan::Persistent<Function> onended;
 
   Audio();
   ~Audio();
 
 private:
-  shared_ptr<lab::SampledAudioNode> audioNode;
+  shared_ptr<lab::FinishableSourceNode> audioNode;
 
   friend class AudioSourceNode;
 };

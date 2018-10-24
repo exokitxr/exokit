@@ -2396,6 +2396,16 @@ class HTMLAudioElement extends HTMLMediaElement {
     return new TimeRanges([0, this.duration]);
   }
   set buffered(buffered) {}
+
+  get onended() {
+    return this.audio && this.audio.onended;
+  }
+  set onended(onended) {
+    if (this.audio) {
+      this.audio.onended = onended;
+    }
+  }
+
 };
 module.exports.HTMLAudioElement = HTMLAudioElement;
 
