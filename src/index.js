@@ -360,7 +360,7 @@ if (nativeVr) {
 
         const cleanups = [];
 
-        const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
         context.setDefaultFramebuffer(msFbo);
 
@@ -371,10 +371,10 @@ if (nativeVr) {
         vrPresentState.glContext = context;
         vrPresentState.msFbo = msFbo;
         vrPresentState.msTex = msTex;
-        vrPresentState.msDepthTex = msDepthStencilTex;
+        vrPresentState.msDepthTex = msDepthTex;
         vrPresentState.fbo = fbo;
         vrPresentState.tex = tex;
-        vrPresentState.depthTex = depthStencilTex;
+        vrPresentState.depthTex = depthTex;
         vrPresentState.cleanups = cleanups;
 
         vrPresentState.lmContext = lmContext;
@@ -390,7 +390,7 @@ if (nativeVr) {
           if (name === 'width' || name === 'height') {
             nativeWindow.setCurrentWindowContext(windowHandle);
 
-            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
           }
         };
         canvas.on('attribute', _attribute);
