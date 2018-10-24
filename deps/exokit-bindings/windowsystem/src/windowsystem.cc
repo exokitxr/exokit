@@ -565,9 +565,11 @@ NAN_METHOD(ComposeLayers) {
           } else { // canvas not ready
             // nothing
           }
+        } else {
+          return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object");
         }
       } else {
-        return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object");
+        return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer element");
       }
     }
 
