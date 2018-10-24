@@ -5,6 +5,8 @@ const { spawn } = require('child_process');
 const path = require('path');
 const url = require('url');
 
+const exokitPath = 'C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\scripts\\exokit.cmd'; // have to make this relative
+
 let window = null;
 
 // Wait until the app is ready
@@ -42,11 +44,11 @@ app.once('ready', () => {
 ipcMain.on('synchronous-message', (event, arg) => {
   switch (arg) {
     case 'terminal':
-      spawn('C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\scripts\\exokit.cmd', [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+      spawn(exokitPath, [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
       event.returnValue = 'Launching Terminal...';
       break;
     case 'exohome':
-      spawn('C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\scripts\\exokit.cmd', ['-h'], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+      spawn(exokitPath, ['-h'], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
       event.returnValue = 'Launching ExoHome... ';
       break;
     default:
