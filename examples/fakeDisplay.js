@@ -34,10 +34,12 @@ window._makeFakeDisplay = () => {
   for (let i = 0; i < fakeDisplay.gamepads.length; i++) {
     fakeDisplay.gamepads[i].pose.pointerMatrix = new Float32Array(16);
   }
-  fakeDisplay.enter = ({canvas, animate, stereo = false}) => {
+  fakeDisplay.enter = ({renderer, animate, stereo = false}) => {
     if (fakeDisplay.session) {
       fakeDisplay.session.end();
     }
+
+    const canvas = renderer.domElement;
 
     fakeDisplay.requestPresent([{source: canvas}])
       .then(() => {
@@ -169,6 +171,16 @@ window._makeFakeDisplay = () => {
           renderer.vr.setSession(session, {
             frameOfReferenceType: 'stage',
           });
+
+          const context = renderer.getContext();
+          const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = window.browser.createRenderTarget(context, canvas.width, canvas.height, 0, 0, 0, 0);
+          context.setDefaultFramebuffer(msFbo);
+          canvas.framebuffer = {
+            msTex,
+            msDepthTex,
+            tex: 0,
+            depthTex: 0,
+          };
         } else {
           window.dispatchEvent(new Event('vrdisplaypresentchange'));
         }
