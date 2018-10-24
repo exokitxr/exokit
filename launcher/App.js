@@ -108,7 +108,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
       });
       break;
     default:
-      event.returnValue = 'message does not make sense to electron backend';
+      event.sender.send('asynchronous-reply', 'message does not make sense to electron backend');
       break;
   }
 });

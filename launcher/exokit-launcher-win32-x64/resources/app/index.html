@@ -6,107 +6,160 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
   <link rel="stylesheet" href="App.css">
 
+  <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
   <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
 
   <!-- <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script> -->
 
-  <script>
-    const {ipcRenderer} = require('electron');
-
-    function launchTerminal(){
-      console.log(ipcRenderer.sendSync('synchronous-message', 'terminal')) // Launch Terminal from Node
-    }
-
-    function launchExoHome(){
-      console.log(ipcRenderer.sendSync('synchronous-message', 'exohome')) // Launch ExoHome from Node
-    }
-
-  </script>
 </head>
+
 <body>
 
 <script src="renderer.js"></script>
+<div id="app"></div>
 
+<script type="text/babel">
+  const {ipcRenderer} = require('electron');
 
+  class App extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        progress: 0
+      };
+      this.launchTerminal = this.launchTerminal.bind(this);
+      this.launchExoHome = this.launchExoHome.bind(this);
+      this.checkVersion = this.checkVersion.bind(this);
+    }
 
-<div class="row p-3">
-  <div class="col-12 text-center mx-auto">
-    <h1 class="mx-auto">Welcome To Exokit!</h1>
-  </div>
-  <div class="col-12 text-center mx-auto">
-    <img src="https://docs.webmr.io/img/ExokitLogo.png" height="100" width="100" class="mx-auto">
-  </div>
-</div>
+    launchTerminal(){
+      ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        console.log(arg)
+      });
+      ipcRenderer.send('asynchronous-message', 'terminal') // Launch Terminal from Node
+    }
 
-<div class="row p-3">
-  <div class="col-6">
-    <h3>Settings/Flags</h3>
-    <form>
-      <div class="form-group">
-        <div class="custom-control custom-checkbox">
-          <input type="checkbox" class="custom-control-input" id="customCheck1">
-          <label class="custom-control-label" for="customCheck1"><code>-u</code> | Uncap FPS</label>
-        </div>
-        <div class="custom-control custom-checkbox">
-          <input type="checkbox" class="custom-control-input" id="customCheck2">
-          <label class="custom-control-label" for="customCheck2"><code>-p</code> | Performance Log to Console</label>
-        </div>
-        <div class="custom-control custom-checkbox">
-          <input type="checkbox" class="custom-control-input" id="customCheck3">
-          <label class="custom-control-label" for="customCheck3"><code>-x</code> | WebXR</label>
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary">Save</button>
-      <button type="submit" class="btn btn-primary">Defaults</button>
-    </form>
-  </div>
+    launchExoHome(){
+      ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        console.log(arg)
+      });
+      ipcRenderer.send('asynchronous-message', 'exohome') // Launch ExoHome from Node
+    }
 
-  <div class="col-6">
-    <h3>News</h3>
-    <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
-      <ol class="carousel-indicators">
-        <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
-        <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
-        <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
-      </ol>
-      <div class="carousel-inner">
-        <div class="carousel-item active">
-          <img class="d-block text-center mx-auto" src="https://i.ytimg.com/vi/1NpBvrDMYIo/maxresdefault.jpg" alt="First slide">
-        </div>
-        <div class="carousel-item">
-          <img class="d-block text-center mx-auto" src="https://i.ytimg.com/vi/prOh9OOY-M4/maxresdefault.jpg" alt="Second slide">
-        </div>
-        <div class="carousel-item">
-          <img class="d-block text-center mx-auto" src="https://cdn-images-1.medium.com/max/2000/1*XdsMp25hIwODAA2O2Ef1TQ.png" alt="Third slide">
-        </div>
-      </div>
-      <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-        <span class="sr-only">Previous</span>
-      </a>
-      <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-        <span class="sr-only">Next</span>
-      </a>
-    </div>
-  </div>
-</div>
+    checkVersion(){
+      let progress = 0;
+      ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        progress = (arg * 100).toFixed(0);
+        this.setState({ progress: progress });
+        console.log('Progress: ', progress);
+      });
+      ipcRenderer.send('asynchronous-message', 'version')
+    }
 
-<div class="row pt-5 p-3">
-  <div class="col-8">
-    <h5>Updates/Progress</h5>
-    <div class="progress">
-      <div class="progress-bar progress-bar-striped bg-info" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-    </div>
-    <small>75%</small>
-  </div>
-  <div class="col-4">
-    <button type="submit" class="btn btn-primary" onclick="launchTerminal()">Launch Terminal</button>
-    <button type="submit" class="btn btn-primary" onclick="launchExoHome()">Launch Exo-Home</button>
-  </div>
-</div>
+    render() {
+
+      return (
+        <div>
+          <div className="row p-3">
+            <div className="col-12 text-center mx-auto">
+              <h1 className="mx-auto">Welcome To Exokit!</h1>
+            </div>
+            <div className="col-12 text-center mx-auto">
+              <img src="https://docs.webmr.io/img/ExokitLogo.png" height="100" width="100" className="mx-auto"/>
+            </div>
+          </div>
+
+          <div className="row p-3">
+            <div className="col-6">
+              <h3>Settings/Flags</h3>
+              <form>
+                <div className="form-group">
+                  <div className="custom-control custom-checkbox">
+                    <input type="checkbox" className="custom-control-input" id="customCheck1"/>
+                      <label className="custom-control-label" htmlFor="customCheck1"><code>-u</code> | Uncap FPS</label>
+                  </div>
+                  <div className="custom-control custom-checkbox">
+                    <input type="checkbox" className="custom-control-input" id="customCheck2"/>
+                      <label className="custom-control-label" htmlFor="customCheck2"><code>-p</code> | Performance Log to
+                        Console</label>
+                  </div>
+                  <div className="custom-control custom-checkbox">
+                    <input type="checkbox" className="custom-control-input" id="customCheck3"/>
+                      <label className="custom-control-label" htmlFor="customCheck3"><code>-x</code> | WebXR</label>
+                  </div>
+                </div>
+                <button type="submit" className="btn btn-primary">Save</button>
+                <button type="submit" className="btn btn-primary">Defaults</button>
+              </form>
+            </div>
+
+            <div className="col-6">
+              <h3>News</h3>
+              <div id="carouselExampleIndicators" className="carousel slide" data-ride="carousel">
+                <ol className="carousel-indicators">
+                  <li data-target="#carouselExampleIndicators" data-slide-to="0" className="active"/>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="1"/>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="2"/>
+                </ol>
+                <div className="carousel-inner">
+                  <div className="carousel-item active">
+                    <img className="d-block text-center mx-auto"
+                         src="https://i.ytimg.com/vi/1NpBvrDMYIo/maxresdefault.jpg" alt="First slide"/>
+                  </div>
+                  <div className="carousel-item">
+                    <img className="d-block text-center mx-auto"
+                         src="https://i.ytimg.com/vi/prOh9OOY-M4/maxresdefault.jpg" alt="Second slide"/>
+                  </div>
+                  <div className="carousel-item">
+                    <img className="d-block text-center mx-auto"
+                         src="https://cdn-images-1.medium.com/max/2000/1*XdsMp25hIwODAA2O2Ef1TQ.png" alt="Third slide"/>
+                  </div>
+                </div>
+                <a className="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+                  <span className="carousel-control-prev-icon" aria-hidden="true"/>
+                  <span className="sr-only">Previous</span>
+                </a>
+                <a className="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+                  <span className="carousel-control-next-icon" aria-hidden="true"/>
+                  <span className="sr-only">Next</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+            <div className="row pt-5 p-3">
+              <div className="col-8">
+                <h5>Updates/Progress</h5>
+                <div className="progress">
+                  <div className="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style={{"width": this.state.progress + "%"}}
+                       aria-valuenow={this.state.progress} aria-valuemin="0" aria-valuemax="100"/>
+                </div>
+                <small>{this.state.progress}</small>
+              </div>
+              <div className="col-4">
+                <button type="submit" className="btn btn-primary" onClick={() => this.launchTerminal()}>Launch Terminal</button>
+                <button type="submit" className="btn btn-secondary" onClick={() => this.launchExoHome()}>Launch Exo-Home</button>
+                <button type="submit" className="btn btn-warning" onClick={() => this.checkVersion()}>Check Version</button>
+
+              </div>
+            </div>
+
+        </div>
+      );
+    }
+  }
+
+  ReactDOM.render(
+    <div>
+      <App/>
+    </div>,
+    document.getElementById('app')
+  )
+
+</script>
 
 </body>
 </html>
