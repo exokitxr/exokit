@@ -1,9 +1,7 @@
 const {BrowserWindow} = require('electron');
 const {app} = require('electron');
 const {ipcMain} = require('electron');
-
 const { spawn } = require('child_process');
-
 const path = require('path');
 const url = require('url');
 
@@ -11,8 +9,6 @@ let window = null;
 
 // Wait until the app is ready
 app.once('ready', () => {
-
-  // spawn('C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\scripts\\exokit.cmd', ['-h'], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
 
   // Create a new window
   window = new BrowserWindow({

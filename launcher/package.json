@@ -7,6 +7,7 @@
     "start": "electron ."
   },
   "dependencies": {
+    "ajv": "^6.5.4",
     "bootstrap": "^4.1.3",
     "electron": "^3.0.5",
     "jquery": "^3.3.1",
@@ -18,6 +19,5 @@
   },
   "devDependencies": {
     "electron-packager": "^12.2.0"
-  },
-  "proxy": "http://127.0.0.1:9000"
+  }
 }
