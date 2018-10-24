@@ -14,18 +14,6 @@
   <!-- <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script> -->
 
-  <script>
-    const {ipcRenderer} = require('electron');
-
-    function launchTerminal(){
-      console.log(ipcRenderer.sendSync('synchronous-message', 'terminal')) // Launch Terminal from Node
-    }
-
-    function launchExoHome(){
-      console.log(ipcRenderer.sendSync('synchronous-message', 'exohome')) // Launch ExoHome from Node
-    }
-
-  </script>
 </head>
 
 <body>
@@ -34,9 +22,45 @@
 <div id="app"></div>
 
 <script type="text/babel">
+  const {ipcRenderer} = require('electron');
 
   class App extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        progress: 0
+      };
+      this.launchTerminal = this.launchTerminal.bind(this);
+      this.launchExoHome = this.launchExoHome.bind(this);
+      this.checkVersion = this.checkVersion.bind(this);
+    }
+
+    launchTerminal(){
+      ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        console.log(arg)
+      });
+      ipcRenderer.send('asynchronous-message', 'terminal') // Launch Terminal from Node
+    }
+
+    launchExoHome(){
+      ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        console.log(arg)
+      });
+      ipcRenderer.send('asynchronous-message', 'exohome') // Launch ExoHome from Node
+    }
+
+    checkVersion(){
+      let progress = 0;
+      ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        progress = (arg * 100).toFixed(0);
+        this.setState({ progress: progress });
+        console.log('Progress: ', progress);
+      });
+      ipcRenderer.send('asynchronous-message', 'version')
+    }
+
     render() {
+
       return (
         <div>
           <div className="row p-3">
@@ -76,9 +100,9 @@
               <h3>News</h3>
               <div id="carouselExampleIndicators" className="carousel slide" data-ride="carousel">
                 <ol className="carousel-indicators">
-                  <li data-target="#carouselExampleIndicators" data-slide-to="0" className="active"></li>
-                  <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
-                  <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="0" className="active"/>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="1"/>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="2"/>
                 </ol>
                 <div className="carousel-inner">
                   <div className="carousel-item active">
@@ -110,14 +134,16 @@
               <div className="col-8">
                 <h5>Updates/Progress</h5>
                 <div className="progress">
-                  <div className="progress-bar progress-bar-striped bg-info" role="progressbar" style={{"width": 50 + "%"}}
-                       aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"/>
+                  <div className="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style={{"width": this.state.progress + "%"}}
+                       aria-valuenow={this.state.progress} aria-valuemin="0" aria-valuemax="100"/>
                 </div>
-                <small>75%</small>
+                <small>{this.state.progress}</small>
               </div>
               <div className="col-4">
-                <button type="submit" className="btn btn-primary" onClick={() => launchTerminal()}>Launch Terminal</button>
-                <button type="submit" className="btn btn-primary" onClick={() => launchTerminal()}>Launch Exo-Home</button>
+                <button type="submit" className="btn btn-primary" onClick={() => this.launchTerminal()}>Launch Terminal</button>
+                <button type="submit" className="btn btn-secondary" onClick={() => this.launchExoHome()}>Launch Exo-Home</button>
+                <button type="submit" className="btn btn-warning" onClick={() => this.checkVersion()}>Check Version</button>
+
               </div>
             </div>
 
