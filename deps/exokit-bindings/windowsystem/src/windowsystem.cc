@@ -25,7 +25,6 @@ uniform sampler2DMS msDepthTex;\n\
 uniform vec2 texSize;\n\
 \n\
 vec4 textureMultisample(sampler2DMS sampler, vec2 uv) {\n\
-  ivec2 fullTexSize = textureSize(sampler);\n\
   ivec2 iUv = ivec2(uv * texSize);\n\
 \n\
   vec4 color = vec4(0.0);\n\
