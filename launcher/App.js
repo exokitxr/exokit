@@ -68,77 +68,74 @@ ipcMain.on('asynchronous-message', (event, arg) => {
       });
 
       version.once('exit', function() {
-        event.sender.send('asynchronous-reply', stdout.slice(0, 7));
-      });
+        // Send the userVersion to Frontend
+        event.sender.send('asynchronous-reply', '0.0.491');
 
-      https.get('https://get.webmr.io/version', (res) => {
-        console.log('Checking Version...');
-        let data = '';
-        res.on('data', (d) => {
-          data += String(d);
-        });
-
-        res.on('end', () => {
-          const json = JSON.parse(data);
-          let version = json['version'];
-          version = version.slice(1, 8);
-          console.log('upstream version = ', version);
-          event.sender.send('asynchronous-reply', version);
-        });
-
-      }).on('error', (e) => {
-        console.error(e);
-      });
-      break;
-
-    case 'update':
-
-      version.once('exit', function(){
-        event.sender.send('asynchronous-reply', stdout);
-
-        let writeStream = fs.createWriteStream('C:\\Users\\ceddy\\Downloads\\exokit-installer.exe');
-
-        let url = '';
-
-        console.log('Detected OS:', process.platform);
-
-        switch (process.platform) {
-          case 'win32':
-            url = 'https://get.webmr.io/windows';
-            break;
-          case 'darwin':
-            url = 'https://get.webmr.io/macos';
-            break;
-          case 'linux':
-            url = 'https://get.webmr.io/linux';
-            break;
-        }
-
-        https.get(url, (res) => {
-
-          console.log('Downloading Exokit...');
-
-          const downloadSize = res.headers['content-length' ];
-          let chunkSize = 0;
-
+        https.get('https://get.webmr.io/version', (res) => {
+          console.log('Checking Version...');
+          let data = '';
           res.on('data', (d) => {
-            chunkSize += d.length;
-            writeStream.write(d);
-            event.sender.send('asynchronous-reply', chunkSize / downloadSize);
+            data += String(d);
           });
 
           res.on('end', () => {
-            console.log('Download complete!');
-            writeStream.close();
+            const json = JSON.parse(data);
+            let version = json['version'];
+            version = version.slice(1, 8);
+            console.log('upstream version = ', version);
+            // Send the upstreamVersion to Frontend
+            event.sender.send('asynchronous-reply', version);
           });
 
         }).on('error', (e) => {
           console.error(e);
         });
+      });
+      break;
 
-        writeStream.on('finish', () => {
-          launchInstaller();
+    case 'update':
+      let writeStream = fs.createWriteStream('C:\\Users\\ceddy\\Downloads\\exokit-installer.exe');
+
+      let url = '';
+
+      console.log('Detected OS:', process.platform);
+
+      switch (process.platform) {
+        case 'win32':
+          url = 'https://get.webmr.io/windows';
+          break;
+        case 'darwin':
+          url = 'https://get.webmr.io/macos';
+          break;
+        case 'linux':
+          url = 'https://get.webmr.io/linux';
+          break;
+      }
+
+      https.get(url, (res) => {
+
+        console.log('Downloading Exokit...');
+
+        const downloadSize = res.headers['content-length' ];
+        let chunkSize = 0;
+
+        res.on('data', (d) => {
+          chunkSize += d.length;
+          writeStream.write(d);
+          event.sender.send('asynchronous-reply', chunkSize / downloadSize);
         });
+
+        res.on('end', () => {
+          console.log('Download complete!');
+          writeStream.close();
+        });
+
+      }).on('error', (e) => {
+        console.error(e);
+      });
+
+      writeStream.on('finish', () => {
+        launchInstaller();
       });
       break;
 

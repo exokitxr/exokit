@@ -30,11 +30,21 @@
     constructor(props) {
       super(props);
       this.state = {
-        progress: 0
+        progress: 0,
+        needsUpdate: false,
+        userVersion: '',
+        upstreamVersion: ''
       };
       this.launchTerminal = this.launchTerminal.bind(this);
       this.launchExoHome = this.launchExoHome.bind(this);
       this.checkVersion = this.checkVersion.bind(this);
+    }
+
+    componentDidMount(){
+      document.getElementById('defaultUpdate').hidden = false;
+      document.getElementById('needsUpdate').hidden = true;
+      document.getElementById('downloadingUpdate').hidden = true;
+      this.checkVersion();
     }
 
     launchTerminal(){
@@ -56,24 +66,35 @@
       ipcRenderer.on('asynchronous-reply', (event, arg) => {
         progress = (arg * 100).toFixed(0);
         this.setState({ progress: progress });
-        console.log('Progress: ', progress);
       });
-      ipcRenderer.send('asynchronous-message', 'update')
+      ipcRenderer.send('asynchronous-message', 'update');
+      document.getElementById('defaultUpdate').hidden = true;
+      document.getElementById('needsUpdate').hidden = true;
+      document.getElementById('downloadingUpdate').hidden = false;
     }
 
     checkVersion(){
       let versions = [];
       ipcRenderer.on('asynchronous-reply', (event, arg) => {
-        console.log(arg);
         versions.push(arg);
         if(versions.length === 2){
           if(versions[0] !== versions[1]){
-            console.log(versions[0], versions[1]);
-            console.log(versions[0].length, versions[1].length);
             console.log('Your version is out of date');
+            this.setState({ needsUpdate: true });
+            this.setState({ userVersion: versions[0] });
+            this.setState({ upstreamVersion: versions[1] });
+            document.getElementById('defaultUpdate').hidden = true;
+            document.getElementById('needsUpdate').hidden = false;
+            ipcRenderer.removeAllListeners('asynchronous-reply');
           }
           else if(versions[0] === versions[1]){
-            console.log('Your version is up-to date')
+            console.log('Your version is up-to date');
+            document.getElementById('defaultUpdate').hidden = false;
+            document.getElementById('needsUpdate').hidden = true;
+            this.setState({ needsUpdate: false });
+            this.setState({ userVersion: versions[0] });
+            this.setState({ upstreamVersion: versions[1] });
+            ipcRenderer.removeAllListeners('asynchronous-reply');
           }
         }
       });
@@ -200,16 +221,30 @@
           </div>
 
             <div className="row pt-3 pr-2 pl-2 fixed-bottom">
-              <div className="col-8">
-                <button type="submit" className="btn d-inline mb-2 btnThird btn-sm" onClick={() => this.checkVersion()}>Check Version</button>
-                <h5 className="">Updates</h5>
+
+              <div className="col-8" id='defaultUpdate'>
+                <h5 className="">Updates - <span style={{"color": "#00b490"}}><small>You are up-to date!</small></span></h5>
+                <p>Your Version: <span style={{"color": "#00b490"}}>{this.state.userVersion}</span></p>
+                <p>Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
+              </div>
+
+              <div className="col-8 mb-2" id='needsUpdate'>
+                <h5 className="">Updates - <span style={{"color": "orange"}}><small>Update Available</small></span></h5>
+                <p>Your Version: <span style={{"color": "orange"}}>{this.state.userVersion}</span></p>
+                <p className="d-inline">Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
+                <button type="submit" className="btn btn-sm ml-2" onClick={() => this.updateExokit()}>Update</button>
+              </div>
+
+              <div className="col-8" id='downloadingUpdate'>
+                <h5 className="">Updates - <span style={{"color": "#00b490"}}><small>Downloading version: {this.state.upstreamVersion}</small></span></h5>
                 <div className="progress">
                   <div className="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style={{"width": this.state.progress + "%"}}
                        aria-valuenow={this.state.progress} aria-valuemin="0" aria-valuemax="100"/>
                 </div>
                 <p className="text-center">{this.state.progress}%</p>
               </div>
-              <div className="col-4">
+
+              <div className="col-4 mb-3">
                 <h5>Launch</h5>
                 <button type="submit" className="btn m-2" onClick={() => this.launchTerminal()}>Terminal</button>
                 <button type="submit" className="btn m-2" onClick={() => this.launchExoHome()}>Exo-Home</button>
