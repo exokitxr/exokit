@@ -16,10 +16,13 @@ app.once('ready', () => {
 
   // Create a new window
   window = new BrowserWindow({
-    // Set the initial width to 800px
-    width: 1200,
-    // Set the initial height to 600px
-    height: 800,
+    center: true,
+    height: 600,
+    width: 1000,
+    minHeight: 600,
+    minWidth: 1000,
+    maxHeight: 600,
+    maxWidth: 1000,
     // Set the default background color of the window to match the CSS
     // background color of the page, this prevents any white flickering
     backgroundColor: '#D6D8DC',
@@ -45,20 +48,51 @@ app.once('ready', () => {
 // Accept communication from frontend
 ipcMain.on('asynchronous-message', (event, arg) => {
   switch (arg) {
+
     case 'terminal':
       spawn(exokitPath, [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-      event.returnValue = 'Launching Terminal...';
+      event.sender.send('asynchronous-reply', 'Launching Terminal...');
       break;
+
     case 'exohome':
       spawn(exokitPath, ['-h'], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-      event.returnValue = 'Launching ExoHome... ';
+      event.sender.send('asynchronous-reply', 'Launching ExoHome...');
       break;
+
     case 'version':
+
       const version = spawn(exokitPath, ['-v']);
       let stdout = '';
       version.stdout.on('data', (data) => {
         stdout += String(data);
       });
+
+      version.once('exit', function() {
+        event.sender.send('asynchronous-reply', stdout.slice(0, 7));
+      });
+
+      https.get('https://get.webmr.io/version', (res) => {
+        console.log('Checking Version...');
+        let data = '';
+        res.on('data', (d) => {
+          data += String(d);
+        });
+
+        res.on('end', () => {
+          const json = JSON.parse(data);
+          let version = json['version'];
+          version = version.slice(1, 8);
+          console.log('upstream version = ', version);
+          event.sender.send('asynchronous-reply', version);
+        });
+
+      }).on('error', (e) => {
+        console.error(e);
+      });
+      break;
+
+    case 'update':
+
       version.once('exit', function(){
         event.sender.send('asynchronous-reply', stdout);
 
@@ -107,6 +141,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
         });
       });
       break;
+
     default:
       event.sender.send('asynchronous-reply', 'message does not make sense to electron backend');
       break;
