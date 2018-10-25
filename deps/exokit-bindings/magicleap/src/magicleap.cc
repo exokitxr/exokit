@@ -2,6 +2,7 @@
 
 #include <magicleap.h>
 #include <ml-math.h>
+#include <windowsystem.h>
 #include <uv.h>
 #include <iostream>
 
