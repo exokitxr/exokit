@@ -745,6 +745,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "useProgram", glCallWrap<UseProgram>);
   Nan::SetMethod(proto, "createFramebuffer", glCallWrap<CreateFramebuffer>);
   Nan::SetMethod(proto, "bindFramebuffer", glCallWrap<BindFramebuffer>);
+  Nan::SetMethod(proto, "bindFramebufferRaw", glCallWrap<BindFramebufferRaw>);
   Nan::SetMethod(proto, "framebufferTexture2D", glCallWrap<FramebufferTexture2D>);
   Nan::SetMethod(proto, "blitFramebuffer", glCallWrap<BlitFramebuffer>);
   Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
@@ -2842,6 +2843,14 @@ NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::BindFramebufferRaw) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  GLenum target = info[0]->Uint32Value();
+  GLuint framebuffer = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glBindFramebuffer(target, framebuffer);
+}
 
 NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
   GLenum target = info[0]->Uint32Value();
