@@ -871,6 +871,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), DrawingBufferWidthGetter);
   Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), DrawingBufferHeightGetter);
 
+  Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>);
 
   setGlConstants(proto);
@@ -2095,6 +2096,20 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
   windowsystem::GetWindowSize(gl->windowHandle, &width, &height);
 
   info.GetReturnValue().Set(JS_INT(height));
+}
+
+NAN_METHOD(WebGLRenderingContext::GetFramebuffer) {
+  Local<Object> glObj = info.This();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+
+  GLuint target = info[0]->Uint32Value();
+  if (gl->HasFramebufferBinding(target)) {
+    Local<Object> fboObject = Nan::New<Object>();
+    fboObject->Set(JS_STR("id"), JS_INT(gl->GetFramebufferBinding(target)));
+    info.GetReturnValue().Set(fboObject);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {

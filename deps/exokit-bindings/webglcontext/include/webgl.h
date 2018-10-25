@@ -324,6 +324,7 @@ public:
   static NAN_GETTER(DrawingBufferWidthGetter);
   static NAN_GETTER(DrawingBufferHeightGetter);
 
+  static NAN_METHOD(GetFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
 
   void SetVertexArrayBinding(GLuint vao) {
