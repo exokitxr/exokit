@@ -235,7 +235,6 @@ public:
 // protected:
   // EGL
   NATIVEwindow *window;
-  WebGLRenderingContext *gl;
 
   // tracking
   MLHandle graphics_client;

@@ -1153,7 +1153,7 @@ void CameraRequest::Poll() {
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-MLContext::MLContext() : window(nullptr), gl(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
+MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
 
 MLContext::~MLContext() {}
 
