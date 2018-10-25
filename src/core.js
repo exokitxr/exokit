@@ -1606,7 +1606,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
-    xrDisplay.onlayers = layers => {
+    mlDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
 
