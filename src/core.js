@@ -1215,10 +1215,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       })(wsProxy.Server);
       return wsProxy;
     })(),
-    createRenderTarget(gl) {
-      nativeWindow.setCurrentWindowContext(gl.getWindowHandle()); // XXX make this native
-      return nativeWindow.createRenderTarget.apply(this, arguments);
-    },
     composeLayers(gl) {
       nativeWindow.setCurrentWindowContext(gl.getWindowHandle()); // XXX make this native
       return nativeWindow.composeLayers.apply(this, arguments);
