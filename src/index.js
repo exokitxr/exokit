@@ -523,8 +523,8 @@ if (nativeMl) {
           canvas.framebuffer = {
             msTex,
             msDepthTex,
-            tex: 0,
-            depthTex: 0,
+            tex,
+            depthTex,
           };
 
           const cleanups = [];
