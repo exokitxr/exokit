@@ -1312,7 +1312,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
     MLHandle output;
     MLResult result = MLCameraGetPreviewStream(&output);
     if (result == MLResult_Ok) {    
-      ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+      // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
 
       MLContext *mlContext = application_context.mlContext;
       NATIVEwindow *window = application_context.window;

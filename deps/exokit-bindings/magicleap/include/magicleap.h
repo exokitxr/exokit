@@ -37,7 +37,6 @@
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
 
-#include "ml-window.h"
 #include "sjpeg.h"
 
 using namespace v8;
