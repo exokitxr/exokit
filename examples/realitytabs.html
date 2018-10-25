@@ -1115,8 +1115,6 @@ function animate(time, frame) {
     cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
     renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
-
-    window.browser.composeLayers(renderer.getContext(), 0, layers);
   };
   _render();
 
@@ -1237,6 +1235,7 @@ if (navigator.xr && !query.fake) {
   fakeDisplay.enter({
     renderer,
     animate,
+    layers,
   });
 
   display = fakeDisplay;

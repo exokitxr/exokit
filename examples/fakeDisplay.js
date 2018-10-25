@@ -34,7 +34,7 @@ window._makeFakeDisplay = () => {
   for (let i = 0; i < fakeDisplay.gamepads.length; i++) {
     fakeDisplay.gamepads[i].pose.pointerMatrix = new Float32Array(16);
   }
-  fakeDisplay.enter = ({renderer, animate, stereo = false}) => {
+  fakeDisplay.enter = ({renderer, animate, layers, stereo = false}) => {
     if (fakeDisplay.session) {
       fakeDisplay.session.end();
     }
@@ -57,6 +57,7 @@ window._makeFakeDisplay = () => {
             },
             device: fakeDisplay,
             baseLayer: null,
+            layers,
             _frame: null, // defer
             getInputSources() {
               return this.device.gamepads;
@@ -168,6 +169,7 @@ window._makeFakeDisplay = () => {
           };
           _frame._pose = _pose;
           fakeDisplay.session = session;
+          fakeDisplay.onlayers(layers);
           renderer.vr.setSession(session, {
             frameOfReferenceType: 'stage',
           });
