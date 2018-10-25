@@ -994,7 +994,7 @@ const _bindWindow = (window, newWindowCb) => {
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
-            if (mlPresentState.layers.length > 0) {
+            if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
               nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
             } else {
               nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
