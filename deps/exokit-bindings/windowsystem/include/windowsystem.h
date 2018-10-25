@@ -18,21 +18,15 @@ typedef int GLint;
 
 namespace windowsystembase {
 
-class BlitSpec {
-public:
-  GLuint msColorTex;
-  GLuint msDepthTex;
-  GLuint colorTex;
-  GLuint depthTex;
-  int width;
-  int height;
-};
-
 class LayerSpec {
 public:
-  GLuint colorTex;
+  int width;
+  int height;
+  GLuint msTex;
+  GLuint msDepthTex;
+  GLuint tex;
   GLuint depthTex;
-  std::unique_ptr<BlitSpec> blitSpec;
+  bool blit;
 };
 
 class ComposeSpec {
@@ -43,15 +37,20 @@ public:
   GLuint composeProgram;
   GLint positionLocation;
   GLint uvLocation;
-  GLint colorTexLocation;
-  GLint depthTexLocation;
+  GLint msTexLocation;
+  GLint msDepthTexLocation;
+  GLint texSizeLocation;
   GLuint positionBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;
 };
 
 void InitializeLocalGlState(WebGLRenderingContext *gl);
-void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);  
+bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex);
+NAN_METHOD(CreateRenderTarget);
+NAN_METHOD(ResizeRenderTarget);
+NAN_METHOD(DestroyRenderTarget);
+void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
 NAN_METHOD(ComposeLayers);
 void Decorate(Local<Object> target);
 

@@ -126,7 +126,7 @@ const _makeRenderer = () => {
     },
   };
 };
-const _makeRenderTarget = (width, height) => {
+/* const _makeRenderTarget = (width, height) => {
   const renderTarget = new THREE.WebGLRenderTarget(width, height);
   renderTarget.depthTexture = new THREE.DepthTexture(
     width,
@@ -141,9 +141,8 @@ const _makeRenderTarget = (width, height) => {
     THREE.DepthStencilFormat
   );
   return renderTarget;
-};
+}; */
 
-const iframes = [];
 const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1)) => {
   const _drawOk = () => {
     console.log('Load ok: ' + u);
@@ -172,7 +171,7 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
     if (contentDocument) {
       _drawOk();
 
-      iframes.push(iframe);
+      layers.push(iframe);
 
       // floorMesh.visible = false;
       // scene.background = null;
@@ -181,7 +180,7 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
 
       _closeUrl(iframe);
 
-      iframes.splice(iframes.indexOf(iframe), 1);
+      layers.splice(layers.indexOf(iframe), 1);
     }
   };
   iframe.src = u;
@@ -211,6 +210,7 @@ const _closeUrl = iframe => {
 })(); */
 
 const {scene, camera, renderer, destroy} = _makeRenderer();
+const layers = [renderer.domElement];
 
 const ambientLight = new THREE.AmbientLight(0x808080);
 scene.add(ambientLight);
@@ -776,7 +776,7 @@ window.addEventListener('keyup', e => {
   // }
 });
 
-let renderTarget = null;
+// let renderTarget = null;
 const startTime = Date.now();
 let lastTime = 0;
 function animate(time, frame) {
@@ -1114,22 +1114,7 @@ function animate(time, frame) {
     // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
     cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
 
-    const {width, height} = renderer.getSize();
-
-    renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera, renderTarget);
-    renderer.setRenderTarget(null);
-
-    window.browser.composeLayers(
-      renderer.getContext(),
-      width,
-      height,
-      iframes.concat([
-        {
-          colorTex: renderer.properties.get(renderTarget.texture).__webglTexture,
-          depthTex: renderer.properties.get(renderTarget.depthTexture).__webglTexture,
-        },
-      ])
-    );
+    renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
   };
   _render();
 
@@ -1206,6 +1191,8 @@ if (navigator.xr && !query.fake) {
     });
     display.session = session;
 
+    session.layers = layers;
+
     session.onselect = e => {
       console.log('select'); // XXX
     };
@@ -1229,8 +1216,6 @@ if (navigator.xr && !query.fake) {
 
       renderer.setSize(fullWidth, height);
 
-      renderTarget = _makeRenderTarget(fullWidth, height);
-
       renderer.setAnimationLoop(null);
 
       renderer.vr.enabled = true;
@@ -1248,14 +1233,14 @@ if (navigator.xr && !query.fake) {
   camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
   fakeDisplay.position.set(0, 1.6, 0);
-  const canvas = renderer.domElement;
+  // const canvas = renderer.domElement;
   fakeDisplay.enter({
-    canvas,
+    renderer,
     animate,
+    layers,
   });
 
   display = fakeDisplay;
-  renderTarget = _makeRenderTarget(canvas.width * 2, canvas.height);
 
   console.log('loaded root in 2D');
 }

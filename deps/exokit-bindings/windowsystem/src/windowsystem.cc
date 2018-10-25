@@ -19,12 +19,25 @@ const char *composeFsh = "\
 \n\
 in vec2 vUv;\n\
 out vec4 fragColor;\n\
-uniform sampler2D colorTex;\n\
-uniform sampler2D depthTex;\n\
+int texSamples = 4;\n\
+uniform sampler2DMS msTex;\n\
+uniform sampler2DMS msDepthTex;\n\
+uniform vec2 texSize;\n\
+\n\
+vec4 textureMultisample(sampler2DMS sampler, vec2 uv) {\n\
+  ivec2 iUv = ivec2(uv * texSize);\n\
+\n\
+  vec4 color = vec4(0.0);\n\
+  for (int i = 0; i < texSamples; i++) {\n\
+    color += texelFetch(sampler, iUv, i);\n\
+  }\n\
+  color /= float(texSamples);\n\
+  return color;\n\
+}\n\
 \n\
 void main() {\n\
-  fragColor = texture2D(colorTex, vUv);\n\
-  gl_FragDepth = texture2D(depthTex, vUv).r;\n\
+  fragColor = textureMultisample(msTex, vUv);\n\
+  gl_FragDepth = textureMultisample(msDepthTex, vUv).r;\n\
 }\n\
 ";
 
@@ -92,14 +105,19 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
     std::cout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
     return;
   }
-  composeSpec->colorTexLocation = glGetUniformLocation(composeSpec->composeProgram, "colorTex");
-  if (composeSpec->colorTexLocation == -1) {
-    std::cout << "ML compose program failed to get uniform location for 'colorTex'" << std::endl;
+  composeSpec->msTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msTex");
+  if (composeSpec->msTexLocation == -1) {
+    std::cout << "ML compose program failed to get uniform location for 'msTex'" << std::endl;
     return;
   }
-  composeSpec->depthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "depthTex");
-  if (composeSpec->depthTexLocation == -1) {
-    std::cout << "ML compose program failed to get uniform location for 'depthTex'" << std::endl;
+  composeSpec->msDepthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msDepthTex");
+  if (composeSpec->msDepthTexLocation == -1) {
+    std::cout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
+    return;
+  }
+  composeSpec->texSizeLocation = glGetUniformLocation(composeSpec->composeProgram, "texSize");
+  if (composeSpec->texSizeLocation == -1) {
+    std::cout << "ML compose program failed to get uniform location for 'texSize'" << std::endl;
     return;
   }
 
@@ -150,59 +168,294 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   }
 }
 
-void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::vector<LayerSpec> &layers) {
+bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
+  const int samples = 4;
+
+  GLuint &fbo = *pfbo;
+  GLuint &colorTex = *pcolorTex;
+  GLuint &depthStencilTex = *pdepthStencilTex;
+  GLuint &msFbo = *pmsFbo;
+  GLuint &msColorTex = *pmsColorTex;
+  GLuint &msDepthStencilTex = *pmsDepthStencilTex;
+
+  // NOTE: we create statically sized multisample textures because we cannot resize them later
+  {
+    glGenFramebuffers(1, &msFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
+
+    if (!sharedMsDepthStencilTex) {
+      glGenTextures(1, &msDepthStencilTex);
+    } else {
+      msDepthStencilTex = sharedMsDepthStencilTex;
+    }
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#ifndef LUMIN
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, GL_MAX_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE/2, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, GL_MAX_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE/2, true);
+#endif
+    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, msDepthStencilTex, 0, samples);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+
+    if (!sharedMsColorTex) {
+      glGenTextures(1, &msColorTex);
+    } else {
+      msColorTex = sharedMsColorTex;
+    }
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#ifndef LUMIN
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, GL_MAX_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE/2, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, GL_MAX_TEXTURE_SIZE, GL_MAX_TEXTURE_SIZE/2, true);
+#endif
+    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, samples);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+  }
+  {
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+    if (!sharedDepthStencilTex) {
+      glGenTextures(1, &depthStencilTex);
+    } else {
+      depthStencilTex = sharedDepthStencilTex;
+    }
+    glBindTexture(GL_TEXTURE_2D, depthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+
+    if (!sharedColorTex) {
+      glGenTextures(1, &colorTex);
+    } else {
+      colorTex = sharedColorTex;
+    }
+    glBindTexture(GL_TEXTURE_2D, colorTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+  }
+
+  bool framebufferOk = (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  } else {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
+  } else {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+  }
+
+  return framebufferOk;
+}
+
+NAN_METHOD(CreateRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = info[1]->Uint32Value();
+  int height = info[2]->Uint32Value();
+  GLuint sharedColorTex = info[3]->Uint32Value();
+  GLuint sharedDepthStencilTex = info[4]->Uint32Value();
+  GLuint sharedMsColorTex = info[5]->Uint32Value();
+  GLuint sharedMsDepthStencilTex = info[6]->Uint32Value();
+
+  GLuint fbo;
+  GLuint colorTex;
+  GLuint depthStencilTex;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
+  bool ok = CreateRenderTarget(gl, width, height, sharedColorTex, sharedDepthStencilTex, sharedMsColorTex, sharedMsDepthStencilTex, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+
+  Local<Value> result;
+  if (ok) {
+    Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
+    array->Set(0, JS_NUM(fbo));
+    array->Set(1, JS_NUM(colorTex));
+    array->Set(2, JS_NUM(depthStencilTex));
+    array->Set(3, JS_NUM(msFbo));
+    array->Set(4, JS_NUM(msColorTex));
+    array->Set(5, JS_NUM(msDepthStencilTex));
+    result = array;
+  } else {
+    result = Null(Isolate::GetCurrent());
+  }
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(ResizeRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = info[1]->Uint32Value();
+  int height = info[2]->Uint32Value();
+  GLuint fbo = info[3]->Uint32Value();
+  GLuint colorTex = info[4]->Uint32Value();
+  GLuint depthStencilTex = info[5]->Uint32Value();
+  GLuint msFbo = info[6]->Uint32Value();
+  GLuint msColorTex = info[7]->Uint32Value();
+  GLuint msDepthStencilTex = info[8]->Uint32Value();
+
+  const int samples = 4;
+
+  /* {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
+
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+  } */
+  {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+    glBindTexture(GL_TEXTURE_2D, depthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+
+    glBindTexture(GL_TEXTURE_2D, colorTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+  }
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  } else {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
+  } else {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+  }
+}
+
+NAN_METHOD(DestroyRenderTarget) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
+    GLuint fbo = info[0]->Uint32Value();
+    GLuint tex = info[1]->Uint32Value();
+    GLuint depthTex = info[2]->Uint32Value();
+
+    glDeleteFramebuffers(1, &fbo);
+    glDeleteTextures(1, &tex);
+    glDeleteTextures(1, &depthTex);
+  } else {
+    Nan::ThrowError("DestroyRenderTarget: invalid arguments");
+  }
+}
+
+void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
+  glUniform1i(composeSpec->msTexLocation, 0);
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
+  glUniform1i(composeSpec->msDepthTexLocation, 1);
+
+  glUniform2f(composeSpec->texSizeLocation, layer.width, layer.height);
+
+  glViewport(0, 0, layer.width, layer.height);
+  // glScissor(0, 0, width, height);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+}
+
+void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
 
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
   glBindVertexArray(composeSpec->composeVao);
   glUseProgram(composeSpec->composeProgram);
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
+  /* // blit
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
 
-    if (layer.blitSpec) {
-      const BlitSpec &blitSpec = *layer.blitSpec;
-
+    if (layer.blit) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->composeReadFbo);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, blitSpec.msColorTex, 0);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, blitSpec.msDepthTex, 0);
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, layer.msColorTex, 0);
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex, 0);
 
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeWriteFbo);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blitSpec.colorTex, 0);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, blitSpec.depthTex, 0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, layer.colorTex, 0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, layer.depthTex, 0);
 
       glBlitFramebuffer(
         0, 0,
-        blitSpec.width, blitSpec.height,
+        layer.width, layer.height,
         0, 0,
-        blitSpec.width, blitSpec.height,
+        layer.width, layer.height,
         GL_COLOR_BUFFER_BIT,
         GL_LINEAR);
 
       glBlitFramebuffer(
         0, 0,
-        blitSpec.width, blitSpec.height,
+        layer.width, layer.height,
         0, 0,
-        blitSpec.width, blitSpec.height,
+        layer.width, layer.height,
         GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
         GL_NEAREST);
 
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
     }
+  }
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, layer.colorTex);
-    glUniform1i(composeSpec->colorTexLocation, 0);
+  // render unblitted
+  for (size_t i = 0; i < layers.size(); i++) {
+    const LayerSpec &layer = layers[i];
 
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, layer.depthTex);
-    glUniform1i(composeSpec->depthTexLocation, 1);
+    if (!layer.blit) {
+      ComposeLayer(composeSpec, layer);
+    }
+  }
 
-    glViewport(0, 0, width, height);
-    // glScissor(0, 0, width, height);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+  // render blitted
+  for (size_t i = 0; i < layers.size(); i++) {
+    const LayerSpec &layer = layers[i];
+
+    if (layer.blit) {
+      ComposeLayer(composeSpec, layer);
+    }
+  } */
+
+  for (size_t i = 0; i < layers.size(); i++) {
+    const LayerSpec &layer = layers[i];
+    ComposeLayer(composeSpec, layer);
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -246,11 +499,10 @@ void ComposeLayers(WebGLRenderingContext *gl, int width, int height, const std::
 }
 
 NAN_METHOD(ComposeLayers) {
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsArray()) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    int width = info[1]->Int32Value();
-    int height = info[2]->Int32Value();
-    Local<Array> array = Local<Array>::Cast(info[3]);
+    GLuint fbo = info[1]->Uint32Value();
+    Local<Array> array = Local<Array>::Cast(info[2]);
 
     std::vector<LayerSpec> layers;
     layers.reserve(8);
@@ -268,60 +520,61 @@ NAN_METHOD(ComposeLayers) {
             elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject()
           ) {
             Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer")));
-            GLuint colorTex = framebufferObj->Get(JS_STR("colorTex"))->Uint32Value();
+            GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
             GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
-            GLuint msColorTex = framebufferObj->Get(JS_STR("msColorTex"))->Uint32Value();
+            GLuint msTex = framebufferObj->Get(JS_STR("msTex"))->Uint32Value();
             GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
-            int canvasWidth = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
-            int canvasHeight = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
+            int width = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
+            int height = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
 
             layers.push_back(LayerSpec{
-              colorTex,
+              width,
+              height,
+              msTex,
+              msDepthTex,
+              tex,
               depthTex,
-              std::unique_ptr<BlitSpec>(new BlitSpec{
-                msColorTex,
-                msDepthTex,
-                colorTex,
-                depthTex,
-                canvasWidth,
-                canvasHeight,
-              }),
+              true
             });
           } else { // iframe not ready
             // nothing
           }
-        } else {
-          Local<Value> colorTexVal = elementObj->Get(JS_STR("colorTex"));
-          Local<Value> depthTexVal = elementObj->Get(JS_STR("depthTex"));
-
+        } else if (
+          elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))
+        ) {
           if (
-            colorTexVal->IsObject() && colorTexVal->ToObject()->Get(JS_STR("id"))->IsNumber() &&
-            depthTexVal->IsObject() && depthTexVal->ToObject()->Get(JS_STR("id"))->IsNumber()
+            elementObj->Get(JS_STR("framebuffer"))->IsObject()
           ) {
-            GLuint colorTex = colorTexVal->ToObject()->Get(JS_STR("id"))->Uint32Value();
-            GLuint depthTex = depthTexVal->ToObject()->Get(JS_STR("id"))->Uint32Value();
+            Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("framebuffer")));
+            GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
+            GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
+            GLuint msTex = framebufferObj->Get(JS_STR("msTex"))->Uint32Value();
+            GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
+            int width = elementObj->Get(JS_STR("width"))->Int32Value();
+            int height = elementObj->Get(JS_STR("height"))->Int32Value();
 
             layers.push_back(LayerSpec{
-              colorTex,
+              width,
+              height,
+              msTex,
+              msDepthTex,
+              tex,
               depthTex,
-              std::unique_ptr<BlitSpec>(),
+              false
             });
-          } else {
-            /* String::Utf8Value utf8Value(elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name")));
-            std::cout << "fail " << colorTexVal->IsObject() << " " << (colorTexVal->IsObject() && colorTexVal->ToObject()->Get(JS_STR("id"))->IsNumber()) << " " << *utf8Value << " " <<
-              elementObj->Get(JS_STR("contentDocument"))->IsObject() << " " <<
-              elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject() << " " <<
-              std::endl; */
-            return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object properties");
+          } else { // canvas not ready
+            // nothing
           }
+        } else {
+          return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object");
         }
       } else {
-        return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object");
+        return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer element");
       }
     }
 
     if (layers.size() > 0) {
-      ComposeLayers(gl, width, height, layers);
+      ComposeLayers(gl, fbo, layers);
     }
   } else {
     Nan::ThrowError("WindowSystem::ComposeLayers: invalid arguments");
@@ -329,6 +582,9 @@ NAN_METHOD(ComposeLayers) {
 }
 
 void Decorate(Local<Object> target) {
+  Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
+  Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
+  Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
 }
 

@@ -200,6 +200,7 @@ public:
   static NAN_METHOD(BindBufferBase);
   static NAN_METHOD(CreateFramebuffer);
   static NAN_METHOD(BindFramebuffer);
+  static NAN_METHOD(BindFramebufferRaw);
   static NAN_METHOD(FramebufferTexture2D);
   static NAN_METHOD(BlitFramebuffer);
   static NAN_METHOD(BufferData);
@@ -324,6 +325,7 @@ public:
   static NAN_GETTER(DrawingBufferWidthGetter);
   static NAN_GETTER(DrawingBufferHeightGetter);
 
+  static NAN_METHOD(GetFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
 
   void SetVertexArrayBinding(GLuint vao) {

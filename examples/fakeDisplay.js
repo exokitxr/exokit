@@ -9,7 +9,7 @@ const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0
 
 window._makeFakeDisplay = () => {
   const fakeDisplay = window.navigator.createVRDisplay();
-  fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio * 2, window.innerHeight * window.devicePixelRatio);
+  fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
   fakeDisplay.getEyeParameters = (getEyeParameters => function(eye) {
     if (!fakeDisplay.getStereo() && eye === 'right') {
       const result = getEyeParameters.call(this, 'right');
@@ -34,10 +34,12 @@ window._makeFakeDisplay = () => {
   for (let i = 0; i < fakeDisplay.gamepads.length; i++) {
     fakeDisplay.gamepads[i].pose.pointerMatrix = new Float32Array(16);
   }
-  fakeDisplay.enter = ({canvas, animate, stereo = false}) => {
+  fakeDisplay.enter = ({renderer, animate, layers, stereo = false}) => {
     if (fakeDisplay.session) {
       fakeDisplay.session.end();
     }
+
+    const canvas = renderer.domElement;
 
     fakeDisplay.requestPresent([{source: canvas}])
       .then(() => {
@@ -55,6 +57,7 @@ window._makeFakeDisplay = () => {
             },
             device: fakeDisplay,
             baseLayer: null,
+            layers,
             _frame: null, // defer
             getInputSources() {
               return this.device.gamepads;
@@ -166,9 +169,20 @@ window._makeFakeDisplay = () => {
           };
           _frame._pose = _pose;
           fakeDisplay.session = session;
+          fakeDisplay.onlayers(layers);
           renderer.vr.setSession(session, {
             frameOfReferenceType: 'stage',
           });
+
+          const context = renderer.getContext();
+          const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = window.browser.createRenderTarget(context, canvas.width, canvas.height, 0, 0, 0, 0);
+          context.setDefaultFramebuffer(msFbo);
+          canvas.framebuffer = {
+            msTex,
+            msDepthTex,
+            tex,
+            depthTex,
+          };
         } else {
           window.dispatchEvent(new Event('vrdisplaypresentchange'));
         }
