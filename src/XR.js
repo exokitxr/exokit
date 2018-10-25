@@ -51,6 +51,8 @@ class XRDevice {
     this.name = name; // non-standard
     this.session = null; // non-standard
     this.ownerDocument = null; // non-standard
+    
+    this._layers = [];
   }
   supportsSession({exclusive = false, outputContext = null} = {}) {
     return Promise.resolve(null);
@@ -72,6 +74,16 @@ class XRDevice {
   update(update) {
     if (this.session) {
       this.session.update(update);
+    }
+  }
+  get layers() {
+    return this._layers;
+  }
+  set layers(layers) {
+    this._layers = layers;
+
+    if (this.onlayers) {
+      this.onlayers(layers);
     }
   }
   clone() {
@@ -98,6 +110,7 @@ class XRSession extends EventTarget {
 
     this.depthNear = 0.1;
     this.depthFar = 10000.0;
+    this.baseLayer = null;
 
     this._frame = new XRPresentationFrame(this);
     this._frameOfReference = new XRFrameOfReference();
@@ -105,25 +118,14 @@ class XRSession extends EventTarget {
       new XRInputSource('left', 'hand'),
       new XRInputSource('right', 'hand'),
     ];
-    this._layers = [];
     this._lastPresseds = [false, false];
     this._rafs = [];
   }
-  get baseLayer() {
-    return this._layers[0];
-  }
-  set baseLayer(baseLayer) {
-    this._layers = [baseLayer];
-  }
   get layers() {
-    return this._layers;
+    return this.device.layers;
   }
   set layers(layers) {
-    this._layers = layers;
-
-    if (this.onlayers) {
-      this.onlayers(layers);
-    }
+    this.device.layers = layers;
   }
   requestFrameOfReference(type, options = {}) {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
