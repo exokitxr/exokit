@@ -2188,13 +2188,12 @@ NAN_METHOD(MLContext::SubmitFrame) {
 
     for (int i = 0; i < 2; i++) {
       MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
-
-      glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
-      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
-      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
-
+      
       glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
+
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
+      glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+      // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
 
       glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
         i == 0 ? width/2 : width, height,
