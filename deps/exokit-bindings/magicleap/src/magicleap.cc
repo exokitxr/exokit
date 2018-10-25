@@ -2202,7 +2202,16 @@ NAN_METHOD(MLContext::SubmitFrame) {
         GL_COLOR_BUFFER_BIT,
         GL_LINEAR);
 
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      /* glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+      
+      glBlitFramebuffer(0, 0,
+        width, height,
+        0, 0,
+        width, height,
+        GL_COLOR_BUFFER_BIT,
+        GL_LINEAR);
+        
+      glBindFramebuffer(GL_FRAMEBUFFER, 0); */
 
       MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
       if (result != MLResult_Ok) {
