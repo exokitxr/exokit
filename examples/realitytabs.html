@@ -1233,7 +1233,7 @@ if (navigator.xr && !query.fake) {
   camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
   fakeDisplay.position.set(0, 1.6, 0);
-  const canvas = renderer.domElement;
+  // const canvas = renderer.domElement;
   fakeDisplay.enter({
     renderer,
     animate,
