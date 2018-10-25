@@ -33,11 +33,14 @@
         progress: 0,
         needsUpdate: false,
         userVersion: '',
-        upstreamVersion: ''
+        upstreamVersion: '',
+        url: '',
+        flags: ''
       };
       this.launchTerminal = this.launchTerminal.bind(this);
       this.launchExoHome = this.launchExoHome.bind(this);
       this.checkVersion = this.checkVersion.bind(this);
+      this.onSettingsSave = this.onSettingsSave.bind(this);
     }
 
     componentDidMount(){
@@ -47,16 +50,55 @@
       this.checkVersion();
     }
 
+    onURLChange = (e) => {
+      this.setState({ url: e.target.value });
+      console.log(this.state.url);
+    };
+
+    onSettingsSave = (e) => {
+      e.preventDefault();
+      let flags = '';
+      if(document.getElementById("-u").checked){
+        flags += 'u'
+      }
+      if(document.getElementById("-p").checked){
+        flags += 'p'
+      }
+      if(document.getElementById("-x").checked){
+        flags += 'x'
+      }
+      if(document.getElementById("-t").checked){
+        flags += 't'
+      }
+      if(document.getElementById("-m").checked){
+        flags += 'm'
+      }
+      if(document.getElementById("-w").checked){
+        flags += 'w'
+      }
+      this.setState({ flags: flags });
+    };
+
+    openSocial(url){
+      ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        console.log(arg);
+        ipcRenderer.removeAllListeners('asynchronous-reply');
+      });
+      ipcRenderer.send('asynchronous-message', 'social', url) // Launch Terminal from Node
+    }
+
     launchTerminal(){
       ipcRenderer.on('asynchronous-reply', (event, arg) => {
-        console.log(arg)
+        console.log(arg);
+        ipcRenderer.removeAllListeners('asynchronous-reply');
       });
-      ipcRenderer.send('asynchronous-message', 'terminal') // Launch Terminal from Node
+      ipcRenderer.send('asynchronous-message', 'terminal', this.state.url, this.state.flags) // Launch Terminal from Node
     }
 
     launchExoHome(){
       ipcRenderer.on('asynchronous-reply', (event, arg) => {
-        console.log(arg)
+        console.log(arg);
+        ipcRenderer.removeAllListeners('asynchronous-reply');
       });
       ipcRenderer.send('asynchronous-message', 'exohome') // Launch ExoHome from Node
     }
@@ -66,6 +108,9 @@
       ipcRenderer.on('asynchronous-reply', (event, arg) => {
         progress = (arg * 100).toFixed(0);
         this.setState({ progress: progress });
+        if(this.state.progress === 100){
+          ipcRenderer.removeAllListeners('asynchronous-reply');
+        }
       });
       ipcRenderer.send('asynchronous-message', 'update');
       document.getElementById('defaultUpdate').hidden = true;
@@ -107,20 +152,20 @@
         <div>
           <div className="row p-2">
             <div className="col-4">
-              <a href='https://twitter.com/webmixedreality'>
+              <a onClick={() => this.openSocial('https://twitter.com/webmixedreality')}>
                 <i className="fab fa-twitter m-2"/>
               </a>
-              <a href='https://medium.com/@avaerkazmer'>
+              <a onClick={() => this.openSocial('https://medium.com/@avaerkazmer')}>
                 <i className="fab fa-medium-m m-2"/>
               </a>
-              <a href='https://www.instagram.com/exokitbrowser/'>
-                <i className="fab fa-instagram m-2"/>
-              </a>
-              <a href='https://www.facebook.com/webmixedreality/'>
-                <i className="fab fa-facebook m-2"/>
-              </a>
-              <a href='https://github.com/webmixedreality/emukit'>
+              <a onClick={() => this.openSocial('https://github.com/webmixedreality/exokit')}>
                 <i className="fab fa-github m-2"/>
+              </a>
+              <a onClick={() => this.openSocial('https://discordapp.com/invite/Apk6cZN')}>
+                <i className="fab fa-discord m-2"/>
+              </a>
+              <a onClick={() => this.openSocial('https://exokit.slack.com/join/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q')}>
+                <i className="fab fa-slack m-2"/>
               </a>
             </div>
             <div className="col-4 text-center mx-auto">
@@ -139,35 +184,35 @@
               <form>
                 <div className="form-group">
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="customCheck1"/>
-                      <label className="custom-control-label" htmlFor="customCheck1"><code>-u</code> | Uncap FPS</label>
+                    <input type="checkbox" className="custom-control-input" id="-u"/>
+                      <label className="custom-control-label" htmlFor="-u"><code>-u</code> | Uncap FPS</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="customCheck2"/>
-                      <label className="custom-control-label" htmlFor="customCheck2"><code>-p</code> | Performance Log to
+                    <input type="checkbox" className="custom-control-input" id="-p"/>
+                      <label className="custom-control-label" htmlFor="-p"><code>-p</code> | Performance Log to
                         Console</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="customCheck3"/>
-                      <label className="custom-control-label" htmlFor="customCheck3"><code>-x</code> | WebXR</label>
+                    <input type="checkbox" className="custom-control-input" id="-x"/>
+                      <label className="custom-control-label" htmlFor="-x"><code>-x</code> | WebXR</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="customCheck4"/>
-                    <label className="custom-control-label" htmlFor="customCheck4"><code>-t</code> | Reality Tab</label>
+                    <input type="checkbox" className="custom-control-input" id="-t"/>
+                    <label className="custom-control-label" htmlFor="-t"><code>-t</code> | Reality Tab</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="customCheck5"/>
-                    <label className="custom-control-label" htmlFor="customCheck5"><code>-m</code> | Minimal Frame	</label>
+                    <input type="checkbox" className="custom-control-input" id="-m"/>
+                    <label className="custom-control-label" htmlFor="-m"><code>-m</code> | Minimal Frame	</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="customCheck6"/>
-                    <label className="custom-control-label" htmlFor="customCheck6"><code>-w</code> | WebGL	</label>
+                    <input type="checkbox" className="custom-control-input" id="-w"/>
+                    <label className="custom-control-label" htmlFor="-w"><code>-w</code> | WebGL	</label>
                   </div>
                 </div>
                 <div className="form-inline d-inline">
-                  <input type="text" className="form-control" id="formGroupExampleInput" placeholder="Run with custom URL"/>
+                  <input onChange={this.onURLChange} type="text" className="form-control" id="formGroupExampleInput" placeholder="Run with custom URL"/>
                 </div>
-                <button type="submit" className="btn btn-sm btnSecondary m-2 p-2">Save</button>
+                <button onClick={(e) => this.onSettingsSave(e)} className="btn btn-sm btnSecondary m-2 p-2">Save</button>
               </form>
             </div>
 
@@ -220,12 +265,12 @@
             </div>
           </div>
 
-            <div className="row pt-3 pr-2 pl-2 fixed-bottom">
+            <div className="row pt-3 pl-4 pb-4 fixed-bottom">
 
               <div className="col-8" id='defaultUpdate'>
                 <h5 className="">Updates - <span style={{"color": "#00b490"}}><small>You are up-to date!</small></span></h5>
                 <p>Your Version: <span style={{"color": "#00b490"}}>{this.state.userVersion}</span></p>
-                <p>Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
+                <p className="pt-0">Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
               </div>
 
               <div className="col-8 mb-2" id='needsUpdate'>
@@ -244,10 +289,10 @@
                 <p className="text-center">{this.state.progress}%</p>
               </div>
 
-              <div className="col-4 mb-3">
+              <div className="col-4">
                 <h5>Launch</h5>
-                <button type="submit" className="btn m-2" onClick={() => this.launchTerminal()}>Terminal</button>
-                <button type="submit" className="btn m-2" onClick={() => this.launchExoHome()}>Exo-Home</button>
+                <button className="btn m-2" onClick={() => this.launchTerminal()}>Terminal</button>
+                <button className="btn m-2" onClick={() => this.launchExoHome()}>Exo-Home</button>
               </div>
             </div>
 

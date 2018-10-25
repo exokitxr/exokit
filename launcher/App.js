@@ -6,6 +6,8 @@ const path = require('path');
 const url = require('url');
 const https = require('https');
 const fs = require('fs');
+const opn = require('opn');
+
 
 const exokitPath = 'C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\scripts\\exokit.cmd'; // have to make this relative
 
@@ -45,12 +47,18 @@ app.once('ready', () => {
   });
 });
 
-// Accept communication from frontend
-ipcMain.on('asynchronous-message', (event, arg) => {
-  switch (arg) {
+// Accept communication from frontend, arg1 will always be the key to the function... arg2/arg3 is for extra data like a URL/flags.
+ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
+  switch (arg1) {
+
+    case 'social':
+      opn(arg2);
+      break;
 
     case 'terminal':
-      spawn(exokitPath, [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+      // arg2 is flags, arg3 is url, they can be empty or filled.
+      console.log(arg2, arg3);
+      spawn(exokitPath, [arg2, '-' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
       event.sender.send('asynchronous-reply', 'Launching Terminal...');
       break;
 
@@ -69,7 +77,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 
       version.once('exit', function() {
         // Send the userVersion to Frontend
-        event.sender.send('asynchronous-reply', '0.0.491');
+        event.sender.send('asynchronous-reply', stdout);
 
         https.get('https://get.webmr.io/version', (res) => {
           console.log('Checking Version...');
