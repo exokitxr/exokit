@@ -9,7 +9,7 @@ const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0
 
 window._makeFakeDisplay = () => {
   const fakeDisplay = window.navigator.createVRDisplay();
-  fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio * 2, window.innerHeight * window.devicePixelRatio);
+  fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
   fakeDisplay.getEyeParameters = (getEyeParameters => function(eye) {
     if (!fakeDisplay.getStereo() && eye === 'right') {
       const result = getEyeParameters.call(this, 'right');
