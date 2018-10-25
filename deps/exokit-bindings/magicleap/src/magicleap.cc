@@ -2179,10 +2179,11 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
-    GLuint src_framebuffer_id = info[0]->Uint32Value();
-    unsigned int width = info[1]->Uint32Value();
-    unsigned int height = info[2]->Uint32Value();
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    GLuint src_framebuffer_id = info[1]->Uint32Value();
+    unsigned int width = info[2]->Uint32Value();
+    unsigned int height = info[3]->Uint32Value();
 
     const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
 
@@ -2223,6 +2224,19 @@ NAN_METHOD(MLContext::SubmitFrame) {
     if (result != MLResult_Ok) {
       ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
     }
+    
+    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+  } else {
+    Nan::ThrowError("MLContext::SubmitFrame: invalid arguments");
   }
 }
 
