@@ -2074,7 +2074,7 @@ NAN_METHOD(WebGLRenderingContext::IsContextLost) {
 }
 
 NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
@@ -2086,7 +2086,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
 }
 
 NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
