@@ -2231,7 +2231,7 @@ NAN_METHOD(MLContext::OnPresentChange) {
     Local<Function> initCbFn = Local<Function>::Cast(info[0]);
     initCb.Reset(initCbFn);
   } else {
-    Nan::ThrowError("invalid arguments");
+    Nan::ThrowError("MLContext::OnPresentChange: invalid arguments");
   }
 }
 
