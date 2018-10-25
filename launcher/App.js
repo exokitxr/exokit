@@ -56,15 +56,12 @@ ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
       break;
 
     case 'terminal':
-      // arg2 is flags, arg3 is url, they can be empty or filled.
-      console.log(arg2, arg3);
+      // arg2 is url, arg3 is flags, they can be empty or filled.
       spawn(exokitPath, [arg2, '-' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-      event.sender.send('asynchronous-reply', 'Launching Terminal...');
       break;
 
     case 'exohome':
-      spawn(exokitPath, ['-h'], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-      event.sender.send('asynchronous-reply', 'Launching ExoHome...');
+      spawn(exokitPath, [arg2, '-' + 'h' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
       break;
 
     case 'version':
@@ -77,7 +74,7 @@ ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
 
       version.once('exit', function() {
         // Send the userVersion to Frontend
-        event.sender.send('asynchronous-reply', stdout);
+        event.sender.send('asynchronous-reply', stdout.slice(0, 7));
 
         https.get('https://get.webmr.io/version', (res) => {
           console.log('Checking Version...');

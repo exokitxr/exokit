@@ -6,6 +6,8 @@ const path = require('path');
 const url = require('url');
 const https = require('https');
 const fs = require('fs');
+const opn = require('opn');
+
 
 const exokitPath = 'C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\scripts\\exokit.cmd'; // have to make this relative
 
@@ -16,10 +18,13 @@ app.once('ready', () => {
 
   // Create a new window
   window = new BrowserWindow({
-    // Set the initial width to 800px
-    width: 1200,
-    // Set the initial height to 600px
-    height: 800,
+    center: true,
+    height: 600,
+    width: 1000,
+    minHeight: 600,
+    minWidth: 1000,
+    maxHeight: 600,
+    maxWidth: 1000,
     // Set the default background color of the window to match the CSS
     // background color of the page, this prevents any white flickering
     backgroundColor: '#D6D8DC',
@@ -42,73 +47,105 @@ app.once('ready', () => {
   });
 });
 
-// Accept communication from frontend
-ipcMain.on('asynchronous-message', (event, arg) => {
-  switch (arg) {
+// Accept communication from frontend, arg1 will always be the key to the function... arg2/arg3 is for extra data like a URL/flags.
+ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
+  switch (arg1) {
+
+    case 'social':
+      opn(arg2);
+      break;
+
     case 'terminal':
-      spawn(exokitPath, [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-      event.returnValue = 'Launching Terminal...';
+      // arg2 is url, arg3 is flags, they can be empty or filled.
+      spawn(exokitPath, [arg2, '-' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
       break;
+
     case 'exohome':
-      spawn(exokitPath, ['-h'], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-      event.returnValue = 'Launching ExoHome... ';
+      spawn(exokitPath, [arg2, '-' + 'h' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
       break;
+
     case 'version':
+
       const version = spawn(exokitPath, ['-v']);
       let stdout = '';
       version.stdout.on('data', (data) => {
         stdout += String(data);
       });
-      version.once('exit', function(){
-        event.sender.send('asynchronous-reply', stdout);
 
-        let writeStream = fs.createWriteStream('C:\\Users\\ceddy\\Downloads\\exokit-installer.exe');
+      version.once('exit', function() {
+        // Send the userVersion to Frontend
+        event.sender.send('asynchronous-reply', stdout.slice(0, 7));
 
-        let url = '';
-
-        console.log('Detected OS:', process.platform);
-
-        switch (process.platform) {
-          case 'win32':
-            url = 'https://get.webmr.io/windows';
-            break;
-          case 'darwin':
-            url = 'https://get.webmr.io/macos';
-            break;
-          case 'linux':
-            url = 'https://get.webmr.io/linux';
-            break;
-        }
-
-        https.get(url, (res) => {
-
-          console.log('Downloading Exokit...');
-
-          const downloadSize = res.headers['content-length' ];
-          let chunkSize = 0;
-
+        https.get('https://get.webmr.io/version', (res) => {
+          console.log('Checking Version...');
+          let data = '';
           res.on('data', (d) => {
-            chunkSize += d.length;
-            writeStream.write(d);
-            event.sender.send('asynchronous-reply', chunkSize / downloadSize);
+            data += String(d);
           });
 
           res.on('end', () => {
-            console.log('Download complete!');
-            writeStream.close();
+            const json = JSON.parse(data);
+            let version = json['version'];
+            version = version.slice(1, 8);
+            console.log('upstream version = ', version);
+            // Send the upstreamVersion to Frontend
+            event.sender.send('asynchronous-reply', version);
           });
 
         }).on('error', (e) => {
           console.error(e);
         });
-
-        writeStream.on('finish', () => {
-          launchInstaller();
-        });
       });
       break;
+
+    case 'update':
+      let writeStream = fs.createWriteStream('C:\\Users\\ceddy\\Downloads\\exokit-installer.exe');
+
+      let url = '';
+
+      console.log('Detected OS:', process.platform);
+
+      switch (process.platform) {
+        case 'win32':
+          url = 'https://get.webmr.io/windows';
+          break;
+        case 'darwin':
+          url = 'https://get.webmr.io/macos';
+          break;
+        case 'linux':
+          url = 'https://get.webmr.io/linux';
+          break;
+      }
+
+      https.get(url, (res) => {
+
+        console.log('Downloading Exokit...');
+
+        const downloadSize = res.headers['content-length' ];
+        let chunkSize = 0;
+
+        res.on('data', (d) => {
+          chunkSize += d.length;
+          writeStream.write(d);
+          event.sender.send('asynchronous-reply', chunkSize / downloadSize);
+        });
+
+        res.on('end', () => {
+          console.log('Download complete!');
+          writeStream.close();
+        });
+
+      }).on('error', (e) => {
+        console.error(e);
+      });
+
+      writeStream.on('finish', () => {
+        launchInstaller();
+      });
+      break;
+
     default:
-      event.returnValue = 'message does not make sense to electron backend';
+      event.sender.send('asynchronous-reply', 'message does not make sense to electron backend');
       break;
   }
 });

@@ -80,27 +80,15 @@
     };
 
     openSocial(url){
-      ipcRenderer.on('asynchronous-reply', (event, arg) => {
-        console.log(arg);
-        ipcRenderer.removeAllListeners('asynchronous-reply');
-      });
       ipcRenderer.send('asynchronous-message', 'social', url) // Launch Terminal from Node
     }
 
     launchTerminal(){
-      ipcRenderer.on('asynchronous-reply', (event, arg) => {
-        console.log(arg);
-        ipcRenderer.removeAllListeners('asynchronous-reply');
-      });
       ipcRenderer.send('asynchronous-message', 'terminal', this.state.url, this.state.flags) // Launch Terminal from Node
     }
 
     launchExoHome(){
-      ipcRenderer.on('asynchronous-reply', (event, arg) => {
-        console.log(arg);
-        ipcRenderer.removeAllListeners('asynchronous-reply');
-      });
-      ipcRenderer.send('asynchronous-message', 'exohome') // Launch ExoHome from Node
+      ipcRenderer.send('asynchronous-message', 'exohome', this.state.url, this.state.flags) // Launch ExoHome from Node
     }
 
     updateExokit(){
@@ -121,8 +109,10 @@
     checkVersion(){
       let versions = [];
       ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        console.log(arg);
         versions.push(arg);
         if(versions.length === 2){
+          console.log(versions[0].length, versions[1].length);
           if(versions[0] !== versions[1]){
             console.log('Your version is out of date');
             this.setState({ needsUpdate: true });
