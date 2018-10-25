@@ -840,6 +840,7 @@ let innerHeight = 1024;
 let fps = DEFAULT_FPS;
 const _getFrameTimeMax = () => ~~(1000 / fps);
 const _getFrameTimeMin = () => 0;
+const isMac = os.platform() === 'darwin';
 
 const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
@@ -970,7 +971,9 @@ const _bindWindow = (window, newWindowCb) => {
       const isDirty = context.isDirty() || mlPresentState.mlGlContext === context;
       if (isDirty) {
         nativeWindow.setCurrentWindowContext(windowHandle);
-        context.flush();
+        if (isMac) {
+          context.flush();
+        }
 
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
@@ -999,7 +1002,21 @@ const _bindWindow = (window, newWindowCb) => {
           }
         }
 
+        if (isMac) {
+          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+        }
         nativeWindow.swapBuffers(windowHandle);
+        if (isMac) {
+          const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+          if (drawFramebuffer) {
+            context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+          }
+
+          const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+          if (readFramebuffer) {
+            context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+          }
+        }
 
         numDirtyFrames++;
         _checkDirtyFrameTimeout();
