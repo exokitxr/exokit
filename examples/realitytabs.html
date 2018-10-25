@@ -1191,6 +1191,8 @@ if (navigator.xr && !query.fake) {
     });
     display.session = session;
 
+    session.layers = layers;
+
     session.onselect = e => {
       console.log('select'); // XXX
     };
