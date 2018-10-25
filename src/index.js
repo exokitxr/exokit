@@ -689,6 +689,11 @@ if (nativeMl) {
   }
 }
 
+const fakePresentState = {
+  layers: [],
+};
+GlobalContext.fakePresentState = fakePresentState;
+
 nativeWindow.setEventHandler((type, data) => {
   const {windowHandle} = data;
   const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), windowHandle));
@@ -999,6 +1004,8 @@ const _bindWindow = (window, newWindowCb) => {
             mlPresentState.mlHasPose = false;
 
             // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false); // XXX
+          } else if (fakePresentState.layers.length > 0) {
+            nativeWindow.composeLayers(context, 0, fakePresentState.layers);
           }
         }
 
