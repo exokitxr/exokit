@@ -532,7 +532,7 @@ NAN_METHOD(ComposeLayers) {
               height,
               msTex,
               msDepthTex,
-              msTex,
+              tex,
               depthTex,
               true
             });
