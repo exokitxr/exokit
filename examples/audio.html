@@ -101,6 +101,9 @@
         audio.play();
       }, 1000);
     };
+    audio.onended = () => {
+      console.log('on ended');
+    };
     audio.onerror = err => {
       console.warn('audio error', err.stack);
     };

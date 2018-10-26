@@ -1737,6 +1737,13 @@ class HTMLMediaElement extends HTMLSrcableElement {
     _elementSetter(this, 'error', onerror);
   }
 
+  get onended() {
+    return _elementGetter(this, 'ended');
+  }
+  set onended(onended) {
+    _elementSetter(this, 'ended', onended);
+  }
+
   get HAVE_NOTHING() {
     return HTMLMediaElement.HAVE_NOTHING;
   }
@@ -2389,6 +2396,16 @@ class HTMLAudioElement extends HTMLMediaElement {
     return new TimeRanges([0, this.duration]);
   }
   set buffered(buffered) {}
+
+  get onended() {
+    return this.audio && this.audio.onended;
+  }
+  set onended(onended) {
+    if (this.audio) {
+      this.audio.onended = onended;
+    }
+  }
+
 };
 module.exports.HTMLAudioElement = HTMLAudioElement;
 
