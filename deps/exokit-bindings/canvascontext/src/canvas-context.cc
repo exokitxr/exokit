@@ -1,7 +1,22 @@
 #include <canvascontext/include/canvas-context.h>
 
+
+#include "gl/GrGLInterface.h"
+#include "GLFW/glfw3.h"
+#include "GrBackendSurface.h"
+#include "GrContext.h"
+#include "SkCanvas.h"
+#include "SkColorSpace.h"
+#include "SkSurface.h"
+#include <stdio.h>
+#include <stdlib.h>
+
 using namespace v8;
 using namespace node;
+
+
+GrContext* sContext = nullptr;
+SkSurface* sSurface = nullptr;
 
 bool isImageValue(Local<Value> arg) {
   if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
@@ -1389,9 +1404,38 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   }
 }
 
+
 CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
-  SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  surface = SkSurface::MakeRaster(info); // XXX can optimize this to not allocate until a width/height is set
+	
+	
+	GrContextOptions options;
+	//options.fRequireDecodeDisableForSRGB = false;
+	sContext = GrContext::MakeGL(nullptr, options).release();
+
+	GrGLFramebufferInfo framebufferInfo;
+	framebufferInfo.fFBOID = 0; // assume default framebuffer
+	// We are always using OpenGL and we use RGBA8 internal format for both RGBA and BGRA configs in OpenGL.
+	framebufferInfo.fFormat = GL_SRGB8_ALPHA8;
+
+	SkColorType colorType;
+	if (kRGBA_8888_GrPixelConfig == kSkia8888_GrPixelConfig) {
+		colorType = kRGBA_8888_SkColorType;
+	}else {
+		colorType = kBGRA_8888_SkColorType;
+	}
+	GrBackendRenderTarget backendRenderTarget(width, height,
+		0, // sample count
+		0, // stencil bits
+		framebufferInfo);
+
+	surface = SkSurface::MakeFromBackendRenderTarget(sContext, backendRenderTarget, kBottomLeft_GrSurfaceOrigin, colorType, SkColorSpace::MakeSRGB(), nullptr);//.release();
+	
+	
+
+  // SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+  // surface = SkSurface::MakeRaster(info); 
+  
+  // XXX can optimize this to not allocate until a width/height is set
   // flipCanvasY(surface->getCanvas());
 
   strokePaint.setTextSize(12);
