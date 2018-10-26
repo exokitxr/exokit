@@ -131,8 +131,6 @@ NAN_SETTER(Audio::CurrentTimeSetter) {
 
   if (value->IsNumber()) {
     double currentTime = value->NumberValue();
-    
-    std::cout << "set current time " << currentTime << std::endl;
 
     audio->audioNode->setCurrentTime(currentTime);
   } else {
