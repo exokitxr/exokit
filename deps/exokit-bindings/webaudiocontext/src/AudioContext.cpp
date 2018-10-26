@@ -26,6 +26,14 @@ AudioContext::AudioContext(float sampleRate) {
 AudioContext::~AudioContext() {}
 
 Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+  uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
+  uv_sem_init(&threadSemaphore, 0);
+
+  /* atexit([]{
+    uv_close((uv_handle_t *)&threadAsync, nullptr);
+    uv_sem_destroy(&threadSemaphore);
+  }); */
+  
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -236,18 +244,6 @@ void AudioContext::Close() {
 }
 
 NAN_METHOD(AudioContext::New) {
-  if (!threadInitialized) {
-    uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
-    uv_sem_init(&threadSemaphore, 0);
-
-    atexit([]{
-      uv_close((uv_handle_t *)&threadAsync, nullptr);
-      uv_sem_destroy(&threadSemaphore);
-    });
-
-    threadInitialized = true;
-  }
-
   Local<Object> options = info[0]->IsObject() ? Local<Object>::Cast(info[0]) : Nan::New<Object>();
   Local<Value> sampleRateValue = options->Get(JS_STR("sampleRate"));
   float sampleRate = sampleRateValue->IsNumber() ? sampleRateValue->NumberValue() : lab::DefaultSampleRate;
@@ -484,10 +480,6 @@ NAN_GETTER(AudioContext::SampleRateGetter) {
   info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->sampleRate()));
 }
 
-function<void()> threadFn;
-uv_async_t threadAsync;
-uv_sem_t threadSemaphore;
-bool threadInitialized = false;
 void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn) {
   threadFn = std::move(newThreadFn);
 
@@ -503,5 +495,9 @@ void RunInMainThread(uv_async_t *handle) {
   threadFn();
   uv_sem_post(&threadSemaphore);
 }
+
+function<void()> threadFn;
+uv_async_t threadAsync;
+uv_sem_t threadSemaphore;
 
 }
