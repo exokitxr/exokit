@@ -7,14 +7,18 @@
     </style>
   </head>
   <body>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.js"></script>
+  <script src="three.js"></script>
+  <script src="inflate.min.js"></script>
+  <script src="FBXLoader.js"></script>
   <script>
+    let model;
+
     function init() {
       container = document.createElement('div');
       document.body.appendChild(container);
 
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 1, 0);
+      camera.position.set(0, 0, 1);
       camera.lookAt(new THREE.Vector3());
 
       scene = new THREE.Scene();
@@ -28,7 +32,7 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      (() => {
+      /* (() => {
         const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
         const material = new THREE.MeshPhongMaterial({
           color: 0xE91E63,
@@ -54,11 +58,36 @@
           color: 0x29B6F6,
         });
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 0.1;
-        mesh.position.z = -0.5;
+        // mesh.position.y = 0.1;
+        // mesh.position.z = -0.5;
         mesh.frustumCulled = false;
         scene.add(mesh);
-      })();
+      })(); */
+
+      // console.log('load model 1');
+      const loader = new THREE.FBXLoader();
+      loader.load('exokit.fbx', object => {
+        // console.log('load model 2', !!object);
+
+        /* object.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(0.5, 0, 1).normalize()
+        ); */
+        object.scale.multiplyScalar(0.001);
+        object.matrix.compose(object.position, object.quaternion, object.scale);
+        object.updateMatrixWorld(true);
+        // object.frustumCulled = false;
+
+        object.traverse(child => {
+          child.frustumCulled = false;
+        });
+
+        // console.log(object);
+
+        model = object;
+
+        scene.add(object);
+      });
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
@@ -69,6 +98,16 @@
     }
 
     function animate() {
+      if (model) {
+        const animationTime = 4000;
+        const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
+        model.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
+        );
+        model.updateMatrixWorld();
+      }
+
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 

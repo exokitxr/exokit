@@ -175,6 +175,25 @@ class Node extends EventTarget {
   cloneNode(deep = false) {
     return _cloneNode(deep, this);
   }
+
+  _dispatchEventOnDocumentReady() {
+    if (this.ownerDocument.readyState === 'complete') {
+      this.dispatchEvent.apply(this, arguments);
+    } else {
+      const args = Array.from(arguments);
+
+      const _readystatechange = () => {
+        if (this.ownerDocument.readyState === 'complete') {
+          this.ownerDocument.removeEventListener('readystatechange', _readystatechange);
+
+          process.nextTick(() => {
+            this.dispatchEvent.apply(this, args);
+          });
+        }
+      };
+      this.ownerDocument.addEventListener('readystatechange', _readystatechange);
+    }
+  }
 }
 
 /**
@@ -825,7 +844,13 @@ class Element extends Node {
   }
   querySelectorAll(s) {
     s = s + '';
-    return selector.find(this, s);
+    return selector.find({
+      traverse: fn => {
+        for (let i = 0; i < this.childNodes.length; i++) {
+          this.childNodes[i].traverse(fn);
+        }
+      },
+    }, s);
   }
   matches(s) {
     s = s + '';
@@ -884,7 +909,7 @@ class Element extends Node {
           return true;
         }
 			});
-      return result;
+      return result / this.ownerDocument.defaultView.devicePixelRatio;
     }
   }
   set clientWidth(clientWidth) {}
@@ -901,7 +926,7 @@ class Element extends Node {
       }
     };
     _recurse(this);
-    return result;
+    return result / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientHeight(clientHeight) {}
 
@@ -995,31 +1020,10 @@ class Element extends Node {
     _elementSetter(this, 'mouseup', onmouseup);
   }
 
-  requestPointerLock() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.pointerLockElementSymbol] === null) {
-      topDocument[symbols.pointerLockElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
-      });
-    }
-  }
-  requestFullscreen() {
-    return; // XXX
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.fullscreenElementSymbol] === null) {
-      topDocument[symbols.fullscreenElementSymbol] = this;
-
-      process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
-      });
-    }
-  }
-
-  [util.inspect.custom]() {
+  /**
+   * Also the output when logging to console or debugger.
+   */
+  get outerHTML() {
     const _getIndent = depth => Array(depth*2 + 1).join(' ');
     const _recurse = (el, depth = 0) => {
       let result = '';
@@ -1074,6 +1078,37 @@ class Element extends Node {
       return result;
     };
     return _recurse(this);
+  }
+
+  requestPointerLock() {
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[symbols.pointerLockElementSymbol] === null) {
+      topDocument[symbols.pointerLockElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('pointerlockchange');
+      });
+    }
+  }
+
+  requestFullscreen() {
+    const topDocument = this.ownerDocument.defaultView.top.document;
+
+    if (topDocument[symbols.fullscreenElementSymbol] === null) {
+      topDocument[symbols.fullscreenElementSymbol] = this;
+
+      process.nextTick(() => {
+        topDocument._emit('fullscreenchange');
+      });
+    }
+  }
+
+  /**
+   * For logging to console or debugger.
+   */
+  [util.inspect.custom]() {
+    return this.outerHTML;
   }
 
   traverse(fn) {
@@ -1180,6 +1215,10 @@ class HTMLElement extends Element {
 }
 module.exports.HTMLElement = HTMLElement;
 
+function getAnchorUrl(anchorEl) {
+  return new url.URL(anchorEl.href, anchorEl.ownerDocument.defaultView.location.toString());
+}
+
 class HTMLAnchorElement extends HTMLElement {
   constructor(attrs = [], value = '', location = null) {
     super('A', attrs, value, location);
@@ -1193,92 +1232,92 @@ class HTMLAnchorElement extends HTMLElement {
     this.setAttribute('href', href);
   }
   get hash() {
-    return new url.URL(this.href).hash || '';
+    return getAnchorUrl(this).hash || '';
   }
   set hash(hash) {
     hash = hash + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.hash = hash;
     this.href = u.href;
   }
   get host() {
-    return new url.URL(this.href).host || '';
+    return getAnchorUrl(this).host || '';
   }
   set host(host) {
     host = host + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.host = host;
     this.href = u.href;
   }
   get hostname() {
-    return new url.URL(this.href).hostname || '';
+    return getAnchorUrl(this).hostname || '';
   }
   set hostname(hostname) {
     hostname = hostname + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.hostname = hostname;
     this.href = u.href;
   }
   get password() {
-    return new url.URL(this.href).password || '';
+    return getAnchorUrl(this).password || '';
   }
   set password(password) {
     password = password + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.password = password;
     this.href = u.href;
   }
   get origin() {
-    return new url.URL(this.href).origin || '';
+    return getAnchorUrl(this).origin || '';
   }
   set origin(origin) {
     origin = origin + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.origin = origin;
     this.href = u.href;
   }
   get pathname() {
-    return new url.URL(this.href).pathname || '';
+    return getAnchorUrl(this).pathname || '';
   }
   set pathname(pathname) {
     pathname = pathname + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.pathname = pathname;
     this.href = u.href;
   }
   get port() {
-    return new url.URL(this.href).port || '';
+    return getAnchorUrl(this).port || '';
   }
   set port(port) {
     port = port + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.port = port;
     this.href = u.href;
   }
   get protocol() {
-    return new url.URL(this.href).protocol || '';
+    return getAnchorUrl(this).protocol || '';
   }
   set protocol(protocol) {
     protocol = protocol + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.protocol = protocol;
     this.href = u.href;
   }
   get search() {
-    return new url.URL(this.href).search || '';
+    return getAnchorUrl(this).search || '';
   }
   set search(search) {
     search = search + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.search = search;
     this.href = u.href;
   }
   get username() {
-    return new url.URL(this.href).username || '';
+    return getAnchorUrl(this).username || '';
   }
   set username(username) {
     username = username + '';
-    const u = new url.URL(this.href);
+    const u = getAnchorUrl(this);
     u.username = username;
     this.href = u.href;
   }
@@ -1546,7 +1585,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const {type} = this;
     return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
   }
-  
+
   loadRunNow() {
     const resource = this.ownerDocument.resources.addResource();
 
@@ -1580,7 +1619,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
         });
       });
   }
-  
+
   runNow() {
     const innerHTML = this.childNodes[0].value;
     const window = this.ownerDocument.defaultView;
@@ -1643,6 +1682,8 @@ class HTMLMediaElement extends HTMLSrcableElement {
 
   play() {
     this._startTimestamp = Date.now();
+
+    return Promise.resolve();
   }
   pause() {}
   load() {}
@@ -1650,10 +1691,10 @@ class HTMLMediaElement extends HTMLSrcableElement {
   get paused() {
     return true;
   }
-  set paused(paused) {
+  /* set paused(paused) {
     this._startTime = this.currentTime;
     this._startTimestamp = null;
-  }
+  } */
   get currentTime() {
     return this._startTime + (this._startTimestamp !== null ? (Date.now() - this._startTimestamp) : 0);
   }
@@ -1696,6 +1737,13 @@ class HTMLMediaElement extends HTMLSrcableElement {
     _elementSetter(this, 'error', onerror);
   }
 
+  get onended() {
+    return _elementGetter(this, 'ended');
+  }
+  set onended(onended) {
+    _elementSetter(this, 'ended', onended);
+  }
+
   get HAVE_NOTHING() {
     return HTMLMediaElement.HAVE_NOTHING;
   }
@@ -1734,6 +1782,24 @@ module.exports.HTMLSourceElement = HTMLSourceElement;
 class SVGElement {}
 module.exports.SVGElement = SVGElement;
 
+const _parseVector = s => {
+  if (Array.isArray(s)) {
+    s = s.join(' ');
+  }
+  
+  const result = [];
+  const ss = s.split(' ');
+  for (let i = 0; i < ss.length; i++) {
+    const s = ss[i];
+    const n = parseFloat(s);
+    if (!isNaN(n)) {
+      result.push(n);
+    } else {
+      return null;
+    }
+  }
+  return result;
+};
 class HTMLIFrameElement extends HTMLSrcableElement {
   constructor(attrs = [], value = '', location = null) {
     super('IFRAME', attrs, value, location);
@@ -1741,9 +1807,14 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.contentWindow = null;
     this.contentDocument = null;
     this.live = true;
+    this.xrOffset = {
+      position: new Float32Array(3),
+      rotation: new Float32Array(4),
+      scale: new Float32Array(3),
+    };
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         let url = value;
         const match = url.match(/^javascript:(.+)$/); // XXX should support this for regular fetches too
         if (match) {
@@ -1773,15 +1844,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               }, parentWindow, parentWindow.top);
               const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
               contentDocument.hidden = this.hidden;
+              contentDocument.xrOffset = this.xrOffset;
 
               contentWindow.document = contentDocument;
 
               this.contentWindow = contentWindow;
               this.contentDocument = contentDocument;
 
-              contentDocument.on('framebuffer', framebuffer => {
-                this._emit('framebuffer', framebuffer);
-              });
               contentWindow.on('destroy', e => {
                 parentWindow.emit('destroy', e);
               });
@@ -1798,6 +1867,15 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               resource.setProgress(1);
             });
           });
+      } else if (name === 'position' || name === 'rotation' || name === 'scale') {
+        const v = _parseVector(value);
+        if (name === 'position' && v.length === 3) {
+          this.xrOffset.position.set(v);
+        } else if (name === 'rotation' && v.length === 4) {
+          this.xrOffset.rotation.set(v);
+        } else if (name === 'scale' && v.length === 3) {
+          this.xrOffset.scale.set(v);
+        }
       } else if (name === 'hidden') {
         if (this.contentDocument) {
           this.contentDocument.hidden = value;
@@ -1811,6 +1889,36 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       }
       this.contentDocument = null;
     });
+  }
+  
+  get position() {
+    return this.getAttribute('position');
+  }
+  set position(position) {
+    if (Array.isArray(position)) {
+      position = position.join(' ');
+    }
+    this.setAttribute('position', position);
+  }
+  
+  get rotation() {
+    return this.getAttribute(rotation);
+  }
+  set rotation(rotation) {
+    if (Array.isArray(rotation)) {
+      rotation = rotation.join(' ');
+    }
+    this.setAttribute('rotation', rotation);
+  }
+  
+  get scale() {
+    return this.getAttribute('scale');
+  }
+  set scale(scale) {
+    if (Array.isArray(scale)) {
+      scale = scale.join(' ');
+    }
+    this.setAttribute('scale', scale);
   }
 
   get hidden() {
@@ -1862,11 +1970,11 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get clientWidth() {
-    return this.width;
+    return this.width / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    return this.height;
+    return this.height / this.ownerDocument.defaultView.devicePixelRatio;
   }
   set clientHeight(clientHeight) {}
 
@@ -1914,7 +2022,7 @@ class HTMLCanvasElement extends HTMLElement {
     }
     return this._context;
   }
-  
+
   toDataURL() {
     if (!this._context) {
       this.getContext('2d');
@@ -1936,9 +2044,9 @@ class HTMLTemplateElement extends HTMLElement {
   }
 
   get content() {
-    const content = new DocumentFragment();
+    const content = new GlobalContext.DocumentFragment();
     content.ownerDocument = this.ownerDocument;
-    content.childNodes = new NodeList(this.childNodes);
+    content.childNodes = new NodeList(this._childNodes);
     return content;
   }
   set content(content) {}
@@ -2084,7 +2192,7 @@ class HTMLImageElement extends HTMLSrcableElement {
     this.image = new bindings.nativeImage();
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         const src = value;
 
         const resource = this.ownerDocument.resources.addResource();
@@ -2107,7 +2215,7 @@ class HTMLImageElement extends HTMLSrcableElement {
             });
           }))
           .then(() => {
-            this.dispatchEvent(new Event('load', {target: this}));
+            this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
           })
           .catch(err => {
             console.warn('failed to load image:', src);
@@ -2115,7 +2223,7 @@ class HTMLImageElement extends HTMLSrcableElement {
             const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
-            this.dispatchEvent(e);
+            this._dispatchEventOnDocumentReady(e);
           })
           .finally(() => {
             setImmediate(() => {
@@ -2176,6 +2284,26 @@ class HTMLImageElement extends HTMLSrcableElement {
 };
 module.exports.HTMLImageElement = HTMLImageElement;
 
+class TimeRanges {
+  constructor(ranges) {
+    this._ranges = ranges;
+  }
+
+  start(i) {
+    return this._ranges[i][0];
+  }
+
+  end(i) {
+    return this._ranges[i][1];
+  }
+
+  get length() {
+    return this._ranges.length;
+  }
+  set length(length) {}
+}
+module.exports.TimeRanges = TimeRanges;
+
 class HTMLAudioElement extends HTMLMediaElement {
   constructor(attrs = [], value = '') {
     super('AUDIO', attrs, value);
@@ -2184,7 +2312,7 @@ class HTMLAudioElement extends HTMLMediaElement {
     this.audio = new bindings.nativeAudio.Audio();
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         const src = value;
 
         const resource = this.ownerDocument.resources.addResource();
@@ -2206,8 +2334,15 @@ class HTMLAudioElement extends HTMLMediaElement {
           })
           .then(() => {
             this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
-            this._emit('canplay');
-            this._emit('canplaythrough');
+
+            const progressEvent = new Event('progress', {target: this});
+            progressEvent.loaded = 1;
+            progressEvent.total = 1;
+            progressEvent.lengthComputable = true;
+            this._emit(progressEvent);
+
+            this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
+            this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
           })
           .catch(err => {
             console.warn('failed to load audio:', src);
@@ -2215,7 +2350,7 @@ class HTMLAudioElement extends HTMLMediaElement {
             const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
-            this.dispatchEvent(e);
+            this._dispatchEventOnDocumentReady(e);
           })
           .finally(() => {
             setImmediate(() => {
@@ -2228,9 +2363,15 @@ class HTMLAudioElement extends HTMLMediaElement {
 
   play() {
     this.audio.play();
+
+    return Promise.resolve();
   }
   pause() {
     this.audio.pause();
+  }
+  
+  get paused() {
+    return this.audio ? this.audio.paused : true;
   }
 
   get currentTime() {
@@ -2250,6 +2391,21 @@ class HTMLAudioElement extends HTMLMediaElement {
       this.audio.duration = duration;
     }
   }
+
+  get buffered() {
+    return new TimeRanges([0, this.duration]);
+  }
+  set buffered(buffered) {}
+
+  get onended() {
+    return this.audio && this.audio.onended;
+  }
+  set onended(onended) {
+    if (this.audio) {
+      this.audio.onended = onended;
+    }
+  }
+
 };
 module.exports.HTMLAudioElement = HTMLAudioElement;
 
@@ -2261,7 +2417,9 @@ class HTMLVideoElement extends HTMLMediaElement {
     this.data = new Uint8Array(0);
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
+        const src = value;
+
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
         if (urls.has(value)) {
@@ -2274,8 +2432,14 @@ class HTMLVideoElement extends HTMLMediaElement {
         const resource = this.ownerDocument.resources.addResource();
 
         setImmediate(() => {
-          this.dispatchEvent(new Event('canplay', {target: this}));
-          this.dispatchEvent(new Event('canplaythrough', {target: this}));
+          const progressEvent = new Event('progress', {target: this});
+          progressEvent.loaded = 1;
+          progressEvent.total = 1;
+          progressEvent.lengthComputable = true;
+          this._emit(progressEvent);
+
+          this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
+          this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 
           resource.setProgress(1);
         });
@@ -2333,12 +2497,20 @@ class HTMLVideoElement extends HTMLMediaElement {
         _getOptions(this.video.constraints.facingMode)
       );
     }
+
+    return Promise.resolve();
   }
   pause() {
     if (this.video) {
       this.video.close();
     }
   }
+
+  get buffered() {
+    return new TimeRanges([0, this.duration]);
+  }
+  set buffered(buffered) {}
+
   update() {
     if (this.video) {
       this.video.update();
@@ -2356,9 +2528,10 @@ class HTMLVideoElement extends HTMLMediaElement {
     this.video = new bindings.nativeVideo.Video();
 
     this.on('attribute', (name, value) => {
-      if (name === 'src') {
+      if (name === 'src' && value) {
         console.log('video downloading...');
         const src = value;
+
         this.ownerDocument.defaultView.fetch(src)
           .then(res => {
             console.log('video download res');
@@ -2444,6 +2617,8 @@ class HTMLVideoElement extends HTMLMediaElement {
 
   play() {
     this.video.play();
+
+    return Promise.resolve();
   }
   pause() {
     this.video.pause();

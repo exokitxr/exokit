@@ -1,7 +1,7 @@
 #ifndef _OPENVR_IVRCOMPOSITOR_H_
 #define _OPENVR_IVRCOMPOSITOR_H_
 
-#include <nan/nan.h>
+#include <nan.h>
 #include <v8.h>
 
 #include <webgl.h>

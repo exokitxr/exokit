@@ -6,7 +6,7 @@
 #include <map>
 
 #include <v8.h>
-#include <nan/nan.h>
+#include <nan.h>
 #include <defines.h>
 
 #include <GL/glew.h>
@@ -15,12 +15,21 @@
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
 
-#include <webgl.h>
+// #include <webgl.h>
 
 using namespace v8;
 
+class WebGLRenderingContext;
+
+typedef GLFWwindow NATIVEwindow;
+#define windowsystem glfw
+
 namespace glfw {
-  void SetCurrentWindowContext(GLFWwindow *window);
+  void GetWindowSize(NATIVEwindow *window, int *width, int *height);
+  NATIVEwindow *GetGLContext(NATIVEwindow *window);
+  NATIVEwindow *GetCurrentWindowContext();
+  void SetCurrentWindowContext(NATIVEwindow *window);
+  void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data);
 }
 
 // Local<Object> makeGlfw();

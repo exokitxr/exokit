@@ -2,7 +2,7 @@
 #define _CANVASCONTEXT_IMAGEBITMAP_H_
 
 #include <v8.h>
-#include <nan/nan.h>
+#include <nan.h>
 #include <defines.h>
 #include <canvas/include/Context.h>
 #include <canvas/include/ImageData.h>

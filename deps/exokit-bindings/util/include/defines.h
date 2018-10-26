@@ -2,7 +2,7 @@
 #define _DEFINES_H_
 
 #include <v8.h>
-#include <nan/nan.h>
+#include <nan.h>
 
 using namespace v8;
 

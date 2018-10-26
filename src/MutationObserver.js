@@ -23,14 +23,14 @@ class MutationObserver {
     this.callback = callback;
 
     this.element = null;
-    this.options = null;
+    this.options = {};
     this.queue = [];
     this.bindings = new WeakMap();
   }
 
   observe(element, options) {
     this.element = element;
-    this.options = options;
+    this.options = options || {};
 
     this.bind(element);
   }
@@ -39,7 +39,7 @@ class MutationObserver {
     this.unbind(this.element);
 
     this.element = null;
-    this.options = null;
+    this.options = {};
   }
 
   takeRecords() {
@@ -131,6 +131,9 @@ class MutationObserver {
   }
 
   handleAttribute(el, name, value, oldValue) {
+    // If observing document, only queue mutations if element is part of the DOM (#361).
+    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
+
     // Respect attribute filter.
     if (this.options.attributeFilter && !this.options.attributeFilter.includes(name)) {
       return;
@@ -138,19 +141,25 @@ class MutationObserver {
 
     this.queue.push(new MutationRecord('attributes', el, emptyNodeList, emptyNodeList,
                                        null, null, name, null, oldValue));
-    setImmediate(() => { this.flush(); });
+    process.nextTick(() => { this.flush(); });
   }
 
   handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
+    // If observing document, only queue mutations if element is part of the DOM (#361).
+    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
+
     this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes,
                                        previousSibling, nextSibling, null, null, null));
-    setImmediate(() => { this.flush(); });
+    process.nextTick(() => { this.flush(); });
   }
 
   handleValue(el) {
+    // If observing document, only queue mutations if element is part of the DOM (#361).
+    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
+
     this.queue.push(new MutationRecord('characterData', el, emptyNodeList, emptyNodeList,
                                        null, null, null, null, null));
-    setImmediate(() => { this.flush(); });
+    process.nextTick(() => { this.flush(); });
   }
 }
 module.exports.MutationObserver = MutationObserver;

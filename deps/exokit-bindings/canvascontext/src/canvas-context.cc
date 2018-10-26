@@ -1226,7 +1226,7 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
 
     context->surface->getCanvas()->restore();
-    
+
     context->dataArray.Reset();
   } else {
     unsigned int sw = imageData->GetWidth();
@@ -1241,7 +1241,7 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     context->DrawImage(image.get(), 0, 0, sw, sh, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
 
     context->surface->getCanvas()->restore();
-    
+
     context->dataArray.Reset();
   }
 }
@@ -1279,7 +1279,7 @@ NAN_METHOD(CanvasRenderingContext2D::ToDataURL) {
     type = "image/png";
     format = SkEncodedImageFormat::kPNG;
   }
-  
+
   int quality = 90;
   if (info[1]->IsNumber()) {
     double d = std::min<double>(std::max<double>(info[1]->NumberValue(), 0), 1);
@@ -1300,7 +1300,7 @@ NAN_METHOD(CanvasRenderingContext2D::ToDataURL) {
   i += sizeof(DATA_URL_SUFFIX)-1;
   memcpy(s.data() + i, data->data(), data->size());
   i += data->size();
-  
+
   Local<String> result = Nan::New<String>(s.data(), s.size()).ToLocalChecked();
   info.GetReturnValue().Set(result);
 }
@@ -1363,14 +1363,15 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(otherContextObj));
 
       int w, h;
-      glfwGetWindowSize(gl->windowHandle, &w, &h);
+      windowsystem::GetWindowSize(gl->windowHandle, &w, &h);
 
       SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
       SkBitmap bitmap;
       bool ok = bitmap.tryAllocPixels(info);
       if (ok) {
+        windowsystem::SetCurrentWindowContext(gl->windowHandle);
+
         unique_ptr<char[]> pixels(new char[w * h * 4]);
-        glfw::SetCurrentWindowContext(gl->windowHandle);
         glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
 
         flipImageData((char *)bitmap.getPixels(), pixels.get(), w, h, 4);

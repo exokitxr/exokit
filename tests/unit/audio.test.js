@@ -1,7 +1,7 @@
-/* global assert, it */
+/* global afterEach, beforeEach, assert, it */
 const fs = require('fs');
 const path = require('path');
-const exokit = require('../../index');
+const exokit = require('../../src/index');
 const helpers = require('./helpers');
 
 let testBuffer = fs.readFileSync(path.resolve(__dirname, './data/test.ogg'));
@@ -9,14 +9,14 @@ testBuffer = new Uint8Array(testBuffer).buffer;
 
 helpers.describeSkipCI('audio', () => {
   var window;
-  
+
   beforeEach(() => {
     const o = exokit();
     window = o.window;
-    
+
     window.navigator.getVRDisplaysSync = () => [];
   });
-  
+
   afterEach(() => {
     window.destroy();
   });

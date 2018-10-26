@@ -1,0 +1,14 @@
+<html>
+  <body>
+  <script>
+    const w = new Worker(window.location.pathname.split('/').slice(0,-1).join('/') + '/worker.js');
+    w.postMessage({hello: true});
+    w.onmessage = m => {
+      console.log('parent got message', m.data);
+    };
+    w.onerror = err => {
+      console.warn(err.stack);
+    };
+  </script>
+  </body>
+</html>

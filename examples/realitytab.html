@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+  <body>
+    <script src="three.js?tab=bottom"></script>
+    <script>
+function parseQuery(queryString) {
+  var query = {};
+  var pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+  for (var i = 0; i < pairs.length; i++) {
+    var pair = pairs[i].split('=');
+    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+  }
+  return query;
+}
+const query = parseQuery(window.location.search);
+
+// console.log('got query', query);
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.y = 1.6;
+
+const renderer = new THREE.WebGLRenderer( { antialias: true } );
+renderer.setPixelRatio( window.devicePixelRatio );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0x808080);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+directionalLight.position.set(1, 1, 1);
+scene.add(directionalLight);
+
+const cubeMesh = (() => {
+  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+  const material = new THREE.MeshPhongMaterial({
+    color: parseInt(query.color, 16) || 0xab47bc,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  // mesh.position.x = parseFloat(query.x) || 0;
+  /* mesh.position.x = 0.05;
+  mesh.position.y = 1.55;
+  mesh.position.z = -1 + 0.05; */
+  mesh.rotation.order = 'YXZ';
+  mesh.frustumCulled = false;
+  return mesh;
+})();
+scene.add(cubeMesh);
+
+let lastTime = 0;
+function animate() {
+  const now = Date.now();
+  const timeDiff = now - lastTime;
+  /* cubeMesh.rotation.y = (cubeMesh.rotation.y - timeDiff/1000 * Math.PI/2);
+  if (cubeMesh.rotation.y < -Math.PI*2) {
+    cubeMesh.rotation.y += Math.PI*2;
+  } */
+  cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+  // cubeMesh.rotation.z = (cubeMesh.rotation.z + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+
+  renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+
+  lastTime = now;
+}
+
+if (navigator.xr) {
+  (async () => {
+    const display = await navigator.xr.requestDevice();
+    const session = await display.requestSession({
+      exclusive: true,
+    });
+    display.session = session;
+
+    session.onselect = e => {
+      console.log('select'); // XXX
+    };
+
+    // console.log('request first frame');
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const viewport = session.baseLayer.getViewport(frame.views[0]);
+      // const width = viewport.width;
+      const height = viewport.height;
+      const fullWidth = (() => {
+        let result = 0;
+        for (let i = 0; i < frame.views.length; i++) {
+          result += session.baseLayer.getViewport(frame.views[i]).width;
+        }
+        return result;
+      })();
+
+      renderer.setSize(fullWidth, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setDevice(display);
+      renderer.vr.setAnimationLoop(animate);
+
+      console.log('loaded reality tab in XR');
+    });
+  })()
+    .catch(err => {
+      console.warn(err.stack);
+    });
+} else {
+  renderer.setAnimationLoop(animate);
+
+  console.log('loaded reality tab in 2D');
+}
+    </script>
+  </body>
+</html>

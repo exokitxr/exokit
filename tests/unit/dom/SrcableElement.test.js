@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const helpers = require('../helpers');
-const exokit = require('../../../index');
+const exokit = require('../../../src/index');
 
 const imageData = fs.readFileSync(path.resolve(__dirname, '../data/test.png'), 'base64');
 const imageDataUri = `data:image/img;base64,${imageData}`;
@@ -25,7 +25,7 @@ describe('HTMLSrcableElement', () => {
     window.navigator.getVRDisplaysSync = () => [];
     document = o.document;
   });
-  
+
   afterEach(() => {
     window.destroy();
   });
@@ -43,6 +43,13 @@ describe('HTMLSrcableElement', () => {
       el.onload = () => { done(); };
       el.onerror = err => { done(err); };
       el.src = `${TEST_URL}/test.png`;
+    });
+
+    it('can set empty src', done => {
+      el = document.createElement('img');
+      el.setAttribute('src', '');
+      document.body.appendChild(el);
+      setTimeout(() => { done(); });
     });
 
     it('works with data url', done => {
@@ -65,7 +72,7 @@ describe('HTMLSrcableElement', () => {
       let passed = false;
       el.onload = () => {
         if (passed) {
-          done(); 
+          done();
         } else {
           done(new Error('seems sync'));
         }
@@ -95,6 +102,13 @@ describe('HTMLSrcableElement', () => {
       el.src = `${TEST_URL}/test.ogg`;
     });
 
+    it('can set empty src', done => {
+      el = document.createElement('audio');
+      el.setAttribute('src', '');
+      document.body.appendChild(el);
+      setTimeout(() => { done(); });
+    });
+
     it('works with data url', done => {
       el = document.createElement('audio');
       el.oncanplay = () => { done(); };
@@ -115,7 +129,7 @@ describe('HTMLSrcableElement', () => {
       let passed = false;
       el.oncanplay = () => {
         if (passed) {
-          done(); 
+          done();
         } else {
           done(new Error('seems sync'));
         }
@@ -144,7 +158,14 @@ describe('HTMLSrcableElement', () => {
       el.onerror = err => { done(err); };
       el.src = `${TEST_URL}/test.mp4`;
     })
-    
+
+    it('can set empty src', done => {
+      el = document.createElement('video');
+      el.setAttribute('src', '');
+      document.body.appendChild(el);
+      setTimeout(() => { done(); });
+    });
+
     it('works with data url', done => {
       el = document.createElement('video');
       el.oncanplay = () => { done(); };
@@ -165,7 +186,7 @@ describe('HTMLSrcableElement', () => {
       let passed = false;
       el.oncanplay = () => {
         if (passed) {
-          done(); 
+          done();
         } else {
           done(new Error('seems sync'));
         }

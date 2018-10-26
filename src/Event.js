@@ -13,9 +13,13 @@ class EventTarget extends EventEmitter {
     });
   }
 
-  addEventListener(event, listener) {
+  addEventListener(event, listener, options) {
     if (typeof listener === 'function') {
-      this.on(event, listener);
+      if (options && options.once) {
+        this.once(event, listener);
+      } else {
+        this.on(event, listener);
+      }
     }
   }
   removeEventListener(event, listener) {
@@ -164,6 +168,8 @@ class MouseEvent extends Event {
     this.clientY = init.clientY !== undefined ? init.clientY : 0;
     this.pageX = init.pageX !== undefined ? init.pageX : 0;
     this.pageY = init.pageY !== undefined ? init.pageY : 0;
+    this.offsetX = init.offsetX !== undefined ? init.offsetX : 0;
+    this.offsetY = init.offsetY !== undefined ? init.offsetY : 0;
     this.movementX = init.movementX !== undefined ? init.movementX : 0;
     this.movementY = init.movementY !== undefined ? init.movementY : 0;
     this.ctrlKey = init.ctrlKey !== undefined ? init.ctrlKey : false;
@@ -239,6 +245,13 @@ class ErrorEvent extends Event {
   }
 }
 module.exports.ErrorEvent = ErrorEvent;
+
+class PromiseRejectionEvent extends Event {
+  constructor(type, init = {}) {
+    super(type, init);
+  }
+}
+module.exports.PromiseRejectionEvent = PromiseRejectionEvent;
 
 class CustomEvent extends Event {
   constructor(type, init = {}) {

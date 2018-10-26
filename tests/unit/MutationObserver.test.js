@@ -1,5 +1,5 @@
-/* global assert, beforeEach, describe, it */
-const exokit = require('../../index');
+/* global afterEach, assert, beforeEach, describe, it */
+const exokit = require('../../src/index');
 
 describe('MutationObserver', () => {
   var childEl;
@@ -8,24 +8,24 @@ describe('MutationObserver', () => {
   var document;
   var MutationObserver;
 
-  before(() => {
+  beforeEach(done => {
     const o = exokit();
     window = o.window;
     window.navigator.getVRDisplaysSync = () => [];
     document = o.document;
     MutationObserver = window.MutationObserver;
-  });
-  
-  after(() => {
-    window.destroy();
-  });
 
-  beforeEach(() => {
     el = document.createElement('div');
     el.id = 'parent';
     el.setAttribute('foo', 'foo');
     childEl = document.createElement('p');
     childEl.id = 'child';
+
+    setTimeout(() => { done(); });
+  });
+
+  afterEach(() => {
+    window.destroy();
   });
 
   describe('attributes', () => {
@@ -262,24 +262,54 @@ describe('MutationObserver', () => {
     });
   });
 
-  it('can observe document', done => {
-    document.body.appendChild(el);
+  describe('characterData', () => {
+    it('detects text node characterData change', done => {
+      const textNode = document.createTextNode('');
+      const observer = new MutationObserver(mutations => {
+        const mutation = mutations[0];
+        assert.equal(mutations.length, 1);
+        assert.equal(mutation.type , 'characterData');
+        done();
+      });
+      observer.observe(textNode, {characterData: true});
+      textNode.data = 'zol';
+    });
+  });
 
-    const observerHelper = cb => {
-      const observer = new MutationObserver(cb);
-      observer.observe(document, {attributes: false, childList: true, subtree: true});
-      return observer;
-    };
+  describe('document observation', () => {
+    it('can observe document', done => {
+      document.body.appendChild(el);
 
-    observerHelper(mutations => {
-      const mutation = mutations[0];
-      assert.equal(mutations.length, 1);
-      assert.equal(mutation.addedNodes.length, 1);
-      assert.equal(mutation.addedNodes[0].id, 'child');
-      assert.equal(mutation.type , 'childList');
-      done();
+      const observerHelper = cb => {
+        const observer = new MutationObserver(cb);
+        observer.observe(document, {attributes: false, childList: true, subtree: true});
+        return observer;
+      };
+
+      observerHelper(mutations => {
+        const mutation = mutations[0];
+        assert.equal(mutations.length, 1);
+        assert.equal(mutation.addedNodes.length, 1);
+        assert.equal(mutation.addedNodes[0].id, 'child');
+        assert.equal(mutation.type , 'childList');
+        done();
+      });
+
+      setTimeout(() => { el.appendChild(childEl); });
     });
 
-    el.appendChild(childEl);
+    it('does not mutate on non-attached elements when listening to document', done => {
+      const observer = new MutationObserver(() => {
+        assert.equal(1, 0, 'Should not have triggered');
+      });
+      observer.observe(document, {attributes: false, childList: true, subtree: true});
+
+      // el is not part of document.
+      el.appendChild(childEl);
+      el.setAttribute('data-foo', 'foo');
+      childEl.setAttribute('data-bar', 'bar');
+
+      done();
+    });
   });
 });

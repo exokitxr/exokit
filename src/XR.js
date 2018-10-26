@@ -8,11 +8,16 @@ const {_elementGetter, _elementSetter} = require('./utils');
 
 const _getXrDisplay = window => window[symbols.mrDisplaysSymbol].xrDisplay;
 const _getXmDisplay = window => window[symbols.mrDisplaysSymbol].xmDisplay;
+const _getFakeVrDisplay = window => {
+  const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
+  return fakeVrDisplay.isActive ? fakeVrDisplay : null;
+};
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
 
 class XR extends EventEmitter {
   constructor(window) {
@@ -20,10 +25,13 @@ class XR extends EventEmitter {
 
     this._window = window;
   }
-  requestDevice(name = 'VR') {
-    if (name === 'VR' && GlobalContext.nativeVr.VR_IsHmdPresent()) {
-      return Promise.resolve(_getXrDisplay(this._window));
-    } else if (name === 'AR' && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
+  requestDevice(name = null) {
+    const fakeVrDisplay = _getFakeVrDisplay(this._window);
+    if (fakeVrDisplay) {
+      return Promise.resolve(fakeVrDisplay);
+    } else if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
+      return Promise.resolve();
+    } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
       return Promise.resolve(_getXmDisplay(this._window));
     } else {
       return Promise.resolve(null);
@@ -42,6 +50,9 @@ class XRDevice {
   constructor(name = 'VR') {
     this.name = name; // non-standard
     this.session = null; // non-standard
+    this.ownerDocument = null; // non-standard
+    
+    this._layers = [];
   }
   supportsSession({exclusive = false, outputContext = null} = {}) {
     return Promise.resolve(null);
@@ -65,10 +76,24 @@ class XRDevice {
       this.session.update(update);
     }
   }
+  get layers() {
+    return this._layers;
+  }
+  set layers(layers) {
+    this._layers = layers;
+
+    if (this.onlayers) {
+      this.onlayers(layers);
+    }
+  }
   clone() {
     const o = new this.constructor();
     for (const k in this) {
       o[k] = this[k];
+    }
+    if (o.session) {
+      o.session = o.session.clone();
+      o.session.device = o;
     }
     return o;
   }
@@ -95,6 +120,12 @@ class XRSession extends EventTarget {
     ];
     this._lastPresseds = [false, false];
     this._rafs = [];
+  }
+  get layers() {
+    return this.device.layers;
+  }
+  set layers(layers) {
+    this.device.layers = layers;
   }
   requestFrameOfReference(type, options = {}) {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
@@ -145,7 +176,7 @@ class XRSession extends EventTarget {
       this.depthFar = depthFar;
     }
     if (renderWidth !== undefined && renderHeight !== undefined) {
-      if (this.baseLayer) {
+      if (this.baseLayer) { // XXX potentially handle multiple layers
         const {context} = this.baseLayer;
 
         if (context.drawingBufferWidth !== renderWidth * 2) {
@@ -209,6 +240,15 @@ class XRSession extends EventTarget {
         }
       }
     }
+  }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    o._frame = o._frame.clone();
+    o._frame.session = o;
+    return o;
   }
   get onblur() {
     return _elementGetter(this, 'blur');
@@ -274,10 +314,6 @@ class XRWebGLLayer {
     this.alpha = alpha;
     this.multiview = multiview;
 
-    this.framebuffer = null;
-    this.framebufferWidth = 0;
-    this.framebufferHeight = 0;
-
     const presentSpec = session.device.onrequestpresent ?
       session.device.onrequestpresent([{
         source: context.canvas,
@@ -286,13 +322,18 @@ class XRWebGLLayer {
       {
         width: context.drawingBufferWidth,
         height: context.drawingBufferHeight,
-        framebuffer: 0,
+        msFbo: null,
+        msTex: 0,
+        msDepthTex: 0,
+        fbo: null,
+        tex: 0,
+        depthTex: 0,
       };
-    const {width, height, framebuffer} = presentSpec;
+    const {width, height, msFbo} = presentSpec;
 
-    this.framebuffer = {
-      id: framebuffer,
-    };
+    this.framebuffer = msFbo !== null ? {
+      id: msFbo,
+    } : null;
     this.framebufferWidth = width;
     this.framebufferHeight = height;
   }
@@ -313,13 +354,22 @@ class XRPresentationFrame {
       new XRView('right'),
     ];
 
-    this._pose = new XRDevicePose();
+    this._pose = new XRDevicePose(this);
   }
   getDevicePose(coordinateSystem) {
     return this._pose;
   }
   getInputPose(inputSource, coordinateSystem) {
     return inputSource._pose;
+  }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    o._pose = o._pose.clone();
+    o._pose.frame = o;
+    return o;
   }
 }
 module.exports.XRPresentationFrame = XRPresentationFrame;
@@ -339,6 +389,7 @@ class XRView {
 
     this._viewport = new XRViewport();
     this._viewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this._localViewMatrix = this._viewMatrix.slice();
   }
 }
 module.exports.XRView = XRView;
@@ -360,11 +411,34 @@ class XRViewport {
 module.exports.XRViewport = XRViewport;
 
 class XRDevicePose {
-  constructor() {
+  constructor(frame) {
+    this.frame = frame; // non-standard
     this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
   getViewMatrix(view) {
-    return view._viewMatrix;
+    if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.window) {
+      const {xrOffset} = this.frame.session.device.window.document;
+      localMatrix
+        .fromArray(view._viewMatrix)
+        .multiply(
+          localMatrix2.compose(
+            localVector.fromArray(xrOffset.position),
+            localQuaternion.fromArray(xrOffset.rotation),
+            localVector2.fromArray(xrOffset.scale)
+          )
+        )
+        .toArray(view._localViewMatrix);
+    } else {
+      view._localViewMatrix.set(view._viewMatrix);
+    }
+    return view._localViewMatrix;
+  }
+  clone() {
+    const o = new this.constructor();
+    for (const k in this) {
+      o[k] = this[k];
+    }
+    return o;
   }
 }
 module.exports.XRDevicePose = XRDevicePose;

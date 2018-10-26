@@ -8,15 +8,31 @@
 #ifndef _WEBGLCONTEXT_WEBGL_H_
 #define _WEBGLCONTEXT_WEBGL_H_
 
-#include <nan/nan.h>
+#include <nan.h>
 
-#if _WIN32
+#if defined(LUMIN) || defined(__ANDROID__)
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#endif
+#include <GLES3/gl32.h>
+#include <GLES2/gl2ext.h>
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#define GL_COMPRESSED_SRGB_S3TC_DXT1_EXT 0x8C4C
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 0x8C4D
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 0x8C4E
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
+#define GL_ETC1_RGB8_OES 0x8D64
+#define GL_VERTEX_PROGRAM_POINT_SIZE 0x8642
+
+#elif defined(_WIN32)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
-#endif
 
-#if __APPLE__
+#elif defined(__APPLE__)
 #if TARGET_OS_IPHONE
 #include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>
@@ -38,17 +54,12 @@
 #else
 #error "Unknown Apple platform"
 #endif
-#endif
 
-#if __linux__
+#elif defined(__linux__)
 #include <GL/glew.h>
 #include <GLES2/gl2platform.h>
 #include <GLES2/gl2ext.h>
-#endif
 
-#if __ANDROID__
-#include <GLES3/gl3.h>
-#include <GLES2/gl2ext.h>
 #endif
 
 #define UNPACK_FLIP_Y_WEBGL 0x9240
@@ -59,12 +70,45 @@
 #define MAX_CLIENT_WAIT_TIMEOUT_WEBGL ((uint32_t)2e7)
 
 #include <defines.h>
-#include <glfw.h>
+
+#if !defined(LUMIN) && !defined(__ANDROID__)
+#include <glfw/include/glfw.h>
+#else
+#include <egl/include/egl.h>
+#endif
 
 using namespace v8;
 using namespace node;
 
+enum GlKey {
+  GL_KEY_COMPOSE,
+};
+
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
+
+class ViewportState {
+public:
+  ViewportState(GLint x = 0, GLint y = 0, GLsizei w = 0, GLsizei h = 0, bool valid = false);
+  ViewportState &operator=(const ViewportState &viewportState);
+
+  GLint x;
+  GLint y;
+  GLsizei w;
+  GLsizei h;
+  bool valid;
+};
+
+class ColorMaskState {
+public:
+  ColorMaskState(GLboolean r = true, GLboolean g = true, GLboolean b = true, GLboolean a = true, bool valid = false);
+  ColorMaskState &operator=(const ColorMaskState &colorMaskState);
+
+  GLboolean r;
+  GLboolean g;
+  GLboolean b;
+  GLboolean a;
+  bool valid;
+};
 
 class WebGLRenderingContext : public ObjectWrap {
 public:
@@ -121,6 +165,7 @@ public:
   static NAN_METHOD(GetError);
   static NAN_METHOD(DrawArrays);
   static NAN_METHOD(DrawArraysInstanced);
+  static NAN_METHOD(DrawArraysInstancedANGLE);
   static NAN_METHOD(GenerateMipmap);
   static NAN_METHOD(GetAttribLocation);
   static NAN_METHOD(DepthFunc);
@@ -155,6 +200,7 @@ public:
   static NAN_METHOD(BindBufferBase);
   static NAN_METHOD(CreateFramebuffer);
   static NAN_METHOD(BindFramebuffer);
+  static NAN_METHOD(BindFramebufferRaw);
   static NAN_METHOD(FramebufferTexture2D);
   static NAN_METHOD(BlitFramebuffer);
   static NAN_METHOD(BufferData);
@@ -167,6 +213,7 @@ public:
   static NAN_METHOD(ActiveTexture);
   static NAN_METHOD(DrawElements);
   static NAN_METHOD(DrawElementsInstanced);
+  static NAN_METHOD(DrawElementsInstancedANGLE);
   static NAN_METHOD(DrawRangeElements);
   static NAN_METHOD(Flush);
   static NAN_METHOD(Finish);
@@ -179,14 +226,16 @@ public:
   static NAN_METHOD(VertexAttrib2fv);
   static NAN_METHOD(VertexAttrib3fv);
   static NAN_METHOD(VertexAttrib4fv);
-  
+
   static NAN_METHOD(VertexAttribI4i);
   static NAN_METHOD(VertexAttribI4iv);
   static NAN_METHOD(VertexAttribI4ui);
   static NAN_METHOD(VertexAttribI4uiv);
-  
+
   static NAN_METHOD(VertexAttribDivisor);
+  static NAN_METHOD(VertexAttribDivisorANGLE);
   static NAN_METHOD(DrawBuffers);
+  static NAN_METHOD(DrawBuffersWEBGL);
 
   static NAN_METHOD(BlendColor);
   static NAN_METHOD(BlendEquationSeparate);
@@ -261,6 +310,7 @@ public:
   static NAN_METHOD(CreateVertexArray);
   static NAN_METHOD(DeleteVertexArray);
   static NAN_METHOD(BindVertexArray);
+  static NAN_METHOD(BindVertexArrayOES);
 
   static NAN_METHOD(FenceSync);
   static NAN_METHOD(DeleteSync);
@@ -275,7 +325,18 @@ public:
   static NAN_GETTER(DrawingBufferWidthGetter);
   static NAN_GETTER(DrawingBufferHeightGetter);
 
+  static NAN_METHOD(GetFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
+
+  void SetVertexArrayBinding(GLuint vao) {
+    vertexArrayBindings[GL_VERTEX_SHADER] = vao;
+  }
+  GLuint GetVertexArrayBinding() {
+    return vertexArrayBindings[GL_VERTEX_SHADER];
+  }
+  bool HasVertexArrayBinding() {
+    return vertexArrayBindings.find(GL_VERTEX_SHADER) != vertexArrayBindings.end();
+  }
 
   void SetFramebufferBinding(GLenum target, GLuint framebuffer) {
     framebufferBindings[target] = framebuffer;
@@ -297,6 +358,16 @@ public:
     return renderbufferBindings.find(target) != renderbufferBindings.end();
   }
 
+  void SetBufferBinding(GLenum target, GLuint buffer) {
+    bufferBindings[target] = buffer;
+  }
+  GLuint GetBufferBinding(GLenum target) {
+    return bufferBindings[target];
+  }
+  bool HasBufferBinding(GLenum target) {
+    return bufferBindings.find(target) != bufferBindings.end();
+  }
+
   void SetTextureBinding(GLenum framebuffer, GLenum target, GLuint texture) {
     textureBindings[std::make_pair(framebuffer, target)] = texture;
   }
@@ -307,8 +378,18 @@ public:
     return textureBindings.find(std::make_pair(framebuffer, target)) != textureBindings.end();
   }
 
+  void SetProgramBinding(GLuint program) {
+    programBindings[GL_VERTEX_SHADER] = program;
+  }
+  GLuint GetProgramBinding() {
+    return programBindings[GL_VERTEX_SHADER];
+  }
+  bool HasProgramBinding() {
+    return programBindings.find(GL_VERTEX_SHADER) != programBindings.end();
+  }
+
   bool live;
-  GLFWwindow *windowHandle;
+  NATIVEwindow *windowHandle;
   GLuint defaultVao;
   bool dirty;
   GLuint defaultFramebuffer;
@@ -317,9 +398,15 @@ public:
   GLint packAlignment;
   GLint unpackAlignment;
   GLuint activeTexture;
+  std::map<GLenum, GLuint> vertexArrayBindings;
   std::map<GLenum, GLuint> framebufferBindings;
   std::map<GLenum, GLuint> renderbufferBindings;
+  std::map<GLenum, GLuint> bufferBindings;
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
+  std::map<GLenum, GLuint> programBindings;
+  ViewportState viewportState;
+  ColorMaskState colorMaskState;
+  std::map<GlKey, void *> keys;
 };
 
 class WebGL2RenderingContext : public WebGLRenderingContext {

@@ -3,7 +3,7 @@
 
 #include <v8.h>
 #include <node.h>
-#include <nan/nan.h>
+#include <nan.h>
 #include "LabSound/extended/LabSound.h"
 #include <defines.h>
 #include <AudioContext.h>
@@ -26,16 +26,23 @@ protected:
   static NAN_METHOD(Load);
   static NAN_METHOD(Play);
   static NAN_METHOD(Pause);
+  static NAN_GETTER(PausedGetter);
   static NAN_GETTER(CurrentTimeGetter);
+  static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);
   static NAN_GETTER(LoopGetter);
   static NAN_SETTER(LoopSetter);
+  static NAN_GETTER(OnEndedGetter);
+  static NAN_SETTER(OnEndedSetter);
+  static void ProcessInMainThread(Audio *self);
+
+  Nan::Persistent<Function> onended;
 
   Audio();
   ~Audio();
 
 private:
-  shared_ptr<lab::SampledAudioNode> audioNode;
+  shared_ptr<lab::FinishableSourceNode> audioNode;
 
   friend class AudioSourceNode;
 };

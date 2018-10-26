@@ -3,7 +3,7 @@
 
 #include <v8.h>
 #include <node.h>
-#include <nan/nan.h>
+#include <nan.h>
 #include "LabSound/extended/LabSound.h"
 #include <defines.h>
 #include <Audio.h>
@@ -88,12 +88,12 @@ protected:
   friend class ScriptProcessorNode;
 };
 
+void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
+void RunInMainThread(uv_async_t *handle);
+
 extern function<void()> threadFn;
 extern uv_async_t threadAsync;
 extern uv_sem_t threadSemaphore;
-extern bool threadInitialized;
-void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
-void RunInMainThread(uv_async_t *handle);
 
 }
 

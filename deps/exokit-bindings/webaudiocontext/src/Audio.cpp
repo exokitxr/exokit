@@ -4,7 +4,11 @@
 
 namespace webaudio {
 
-Audio::Audio() : audioNode(new lab::SampledAudioNode()) {}
+Audio::Audio() : audioNode(new lab::FinishableSourceNode(
+  [this](lab::ContextRenderLock &r){
+    QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
+  }
+)) {}
 
 Audio::~Audio() {}
 
@@ -21,9 +25,11 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "load", Load);
   Nan::SetMethod(proto, "play", Play);
   Nan::SetMethod(proto, "pause", Pause);
-  Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter);
+  Nan::SetAccessor(proto, JS_STR("paused"), PausedGetter);
+  Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
   Nan::SetAccessor(proto, JS_STR("loop"), LoopGetter, LoopSetter);
+  Nan::SetAccessor(proto, JS_STR("onended"), OnEndedGetter, OnEndedSetter);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
@@ -31,7 +37,7 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
 }
 
 NAN_METHOD(Audio::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Audio *audio = new Audio();
   Local<Object> audioObj = info.This();
@@ -96,8 +102,17 @@ NAN_METHOD(Audio::Pause) {
   audio->Pause();
 }
 
+NAN_GETTER(Audio::PausedGetter) {
+  // Nan::HandleScope scope;
+
+  Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+  bool paused = !audio->audioNode->isPlayingOrScheduled();
+
+  info.GetReturnValue().Set(JS_BOOL(paused));
+}
+
 NAN_GETTER(Audio::CurrentTimeGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
@@ -109,8 +124,22 @@ NAN_GETTER(Audio::CurrentTimeGetter) {
   info.GetReturnValue().Set(JS_NUM(currentTime));
 }
 
+NAN_SETTER(Audio::CurrentTimeSetter) {
+  // Nan::HandleScope scope;
+
+  Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+
+  if (value->IsNumber()) {
+    double currentTime = value->NumberValue();
+
+    audio->audioNode->setCurrentTime(currentTime);
+  } else {
+    Nan::ThrowError("loop: invalid arguments");
+  }
+}
+
 NAN_GETTER(Audio::DurationGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
@@ -119,7 +148,7 @@ NAN_GETTER(Audio::DurationGetter) {
 }
 
 NAN_GETTER(Audio::LoopGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
@@ -128,7 +157,7 @@ NAN_GETTER(Audio::LoopGetter) {
 }
 
 NAN_SETTER(Audio::LoopSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (value->IsBoolean()) {
     bool loop = value->BooleanValue();
@@ -138,6 +167,34 @@ NAN_SETTER(Audio::LoopSetter) {
     audio->audioNode->setLoop(loop);
   } else {
     Nan::ThrowError("loop: invalid arguments");
+  }
+}
+
+NAN_GETTER(Audio::OnEndedGetter) {
+  // Nan::HandleScope scope;
+
+  Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+  Local<Function> onended = Nan::New(audio->onended);
+  info.GetReturnValue().Set(onended);
+}
+NAN_SETTER(Audio::OnEndedSetter) {
+  // Nan::HandleScope scope;
+
+  Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> onended = Local<Function>::Cast(value);
+    audio->onended.Reset(onended);
+  } else {
+    audio->onended.Reset();
+  }
+}
+void Audio::ProcessInMainThread(Audio *self) {
+  Nan::HandleScope scope;
+
+  if (!self->onended.IsEmpty()) {
+    Local<Function> onended = Nan::New(self->onended);
+    onended->Call(Nan::Null(), 0, nullptr);
   }
 }
 

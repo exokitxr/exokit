@@ -1,30 +1,125 @@
-#ifdef MAGICLEAP
+#if defined(LUMIN)
 
 #include <magicleap.h>
+#include <ml-math.h>
+#include <windowsystem.h>
 #include <uv.h>
+#include <iostream>
 
 using namespace v8;
 using namespace std;
 
 namespace ml {
 
-enum DummyValue {
-  STOPPED = 0,
-  RUNNING,
-  PAUSED,
-};
-
 const char application_name[] = "com.exokit.app";
+constexpr int CAMERA_SIZE[] = {960, 540};
+
 application_context_t application_context;
-MLLifecycleCallbacks lifecycle_callbacks = {};
 MLResult lifecycle_status = MLResult_Pending;
 Nan::Persistent<Function> initCb;
+
+MLLifecycleCallbacks lifecycle_callbacks;
+MLInputKeyboardCallbacks keyboardCallbacks;
+MLCameraDeviceStatusCallbacks cameraDeviceStatusCallbacks;
+MLCameraCaptureCallbacks cameraCaptureCallbacks;
+
+Nan::Persistent<Function> eventsCb;
+std::vector<Event> events;
+uv_async_t eventsAsync;
+
+Nan::Persistent<Function> keyboardEventsCb;
+std::vector<KeyboardEvent> keyboardEvents;
+uv_async_t keyboardEventsAsync;
+
+Nan::Persistent<Function> mlMesherConstructor;
+Nan::Persistent<Function> mlPlaneTrackerConstructor;
+Nan::Persistent<Function> mlHandTrackerConstructor;
+Nan::Persistent<Function> mlEyeTrackerConstructor;
+
+std::thread cameraRequestThread;
+std::mutex cameraRequestMutex;
+std::condition_variable  cameraRequestConditionVariable;
+// std::mutex cameraRequestsMutex;
+// std::mutex cameraResponseMutex;
+std::vector<CameraRequest *> cameraRequests;
+uv_async_t cameraAsync;
+bool cameraConvertPending = false;
+uint8_t cameraRequestRgb[CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3];
+uint8_t *cameraRequestJpeg;
+size_t cameraRequestSize;
+uv_sem_t cameraConvertSem;
+uv_async_t cameraConvertAsync;
+
+MLHandle handTracker;
+MLHandTrackingData handData;
+MLHandTrackingKeyPose lastKeyposeLeft = MLHandTrackingKeyPose_NoHand;
+MLHandTrackingKeyPose lastKeyposeRight = MLHandTrackingKeyPose_NoHand;
+MLHandTrackingStaticData handStaticData;
+std::vector<MLHandTracker *> handTrackers;
+float wristBones[2][4][1 + 3];
+float fingerBones[2][5][4][1 + 3];
+
+MLHandle meshTracker;
+std::vector<MLMesher *> meshers;
+MLMeshingExtents meshExtents;
+MLHandle meshInfoRequestHandle;
+MLMeshingMeshInfo meshInfo;
+bool meshInfoRequestPending = false;
+std::vector<MLMeshingBlockRequest> meshBlockRequests(128);
+uint32_t numMeshBlockRequests = 0;
+uint32_t meshBlockRequestIndex = 0;
+MLMeshingMeshRequest meshRequest;
+std::map<std::string, bool> meshRequestNewMap;
+std::map<std::string, bool> meshRequestRemovedMap;
+std::map<std::string, bool> meshRequestUnchangedMap;
+MLHandle meshRequestHandle;
+MLMeshingMesh mesh;
+bool meshRequestsPending = false;
+bool meshRequestPending = false;
+
+std::map<std::string, MeshBuffer> meshBuffers;
+
+MLHandle planesTracker;
+std::vector<MLPlaneTracker *> planeTrackers;
+MLPlanesQuery planesRequest;
+MLHandle planesRequestHandle;
+MLPlane planeResults[MAX_NUM_PLANES];
+uint32_t numPlanesResults;
+bool planesRequestPending = false;
+
+MLHandle eyeTracker;
+std::vector<MLEyeTracker *> eyeTrackers;
+MLEyeTrackingState eyeState;
+MLEyeTrackingStaticData eyeStaticData;
+
+bool depthEnabled = false;
 
 bool isPresent() {
   return lifecycle_status == MLResult_Ok;
 }
 
-void makePlanesQueryer(MLHandle &planesHandle) {
+bool isSimulated() {
+#ifdef LUMIN
+  return false;
+#else
+  return true;
+#endif
+}
+
+std::string id2String(const MLCoordinateFrameUID &id) {
+  uint64_t id1 = id.data[0];
+  uint64_t id2 = id.data[1];
+  char idbuf[16*2 + 1];
+  sprintf(idbuf, "%016llx%016llx", id1, id2);
+  return std::string(idbuf);
+}
+std::string id2String(const uint64_t &id) {
+  char idbuf[16 + 1];
+  sprintf(idbuf, "%016llx", id);
+  return std::string(idbuf);
+}
+
+/* void makePlanesQueryer(MLHandle &planesHandle) {
   if (MLPlanesCreate(&planesHandle) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
   }
@@ -33,8 +128,8 @@ void beginPlanesQuery(const MLVec3f &position, const MLQuaternionf &rotation, ML
   if (!MLHandleIsValid(planesQueryHandle)) {
     MLPlanesQuery query;
     query.flags = flags;
-    /* query.bounds_center = position;
-    query.bounds_rotation = rotation; */
+    // query.bounds_center = position;
+    // query.bounds_rotation = rotation;
     query.bounds_center.x = 0;
     query.bounds_center.y = 0;
     query.bounds_center.z = 0;
@@ -71,7 +166,7 @@ void endPlanesQuery(MLHandle &planesHandle, MLHandle &planesQueryHandle, MLPlane
   }
 }
 void readPlanesQuery(MLPlane *planes, uint32_t numPlanes, int planeType, Local<Float32Array> &planesArray, uint32_t *planesIndex) {
-  for (int i = 0; i < numPlanes; i++) {
+  for (uint32_t i = 0; i < numPlanes; i++) {
     const MLPlane &plane = planes[i];
     uint32_t baseIndex = (*planesIndex) * PLANE_ENTRY_SIZE;
     planesArray->Set(baseIndex + 0, JS_NUM(plane.position.x));
@@ -88,7 +183,7 @@ void readPlanesQuery(MLPlane *planes, uint32_t numPlanes, int planeType, Local<F
    (*planesIndex)++;
   }
 }
-int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
+inline int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
   if (gesture & MLGestureStaticHandState_NoHand) {
     return 0;
   } else if (gesture & MLGestureStaticHandState_Finger) {
@@ -110,113 +205,955 @@ int gestureCategoryToIndex(MLGestureStaticHandState gesture) {
   } else {
     return -1;
   }
+} */
+inline const char *gestureCategoryToDescriptor(MLHandTrackingKeyPose keyPose) {
+  switch (keyPose) {
+    case MLGestureStaticHandState_NoHand:
+      return nullptr;
+    case MLGestureStaticHandState_Finger:
+      return "finger";
+    case MLGestureStaticHandState_Fist:
+      return "fist";
+    case MLGestureStaticHandState_Pinch:
+      return "pinch";
+    case MLGestureStaticHandState_Thumb:
+      return "thumb";
+    case MLGestureStaticHandState_L:
+      return "l";
+    case MLGestureStaticHandState_OpenHandBack:
+      return "openHandBack";
+    case MLGestureStaticHandState_Ok:
+      return "ok";
+    case MLGestureStaticHandState_C:
+      return "c";
+    default:
+      return nullptr;
+  }
+}
+inline Local<Value> gestureCategoryToJsValue(MLHandTrackingKeyPose keyPose) {
+  const char *gesture = gestureCategoryToDescriptor(keyPose);
+  if (gesture) {
+    return JS_STR(gesture);
+  } else {
+    return Nan::Null();
+  }
 }
 
 static void onNewInitArg(void* application_context) {
   MLLifecycleInitArgList *args;
   MLLifecycleGetInitArgList(&args);
 
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On new init arg called %x.", application_name, args);
+
+  events.push_back(Event::NEW_INIT_ARG);
+  uv_async_send(&eventsAsync);
 }
 
 static void onStop(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On stop called.", application_name);
+  events.push_back(Event::STOP);
+  uv_async_send(&eventsAsync);
 }
 
 static void onPause(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
   ML_LOG(Info, "%s: On pause called.", application_name);
+  events.push_back(Event::PAUSE);
+  uv_async_send(&eventsAsync);
 }
 
 static void onResume(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On resume called.", application_name);
+  events.push_back(Event::RESUME);
+  uv_async_send(&eventsAsync);
 }
 
 static void onUnloadResources(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
+  // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On unload resources called.", application_name);
+  events.push_back(Event::UNLOAD_RESOURCES);
+  uv_async_send(&eventsAsync);
 }
 
-MLStageGeometry::MLStageGeometry(MLContext *mlContext) : mlContext(mlContext) {}
+// MeshBuffer
 
-MLStageGeometry::~MLStageGeometry() {}
+MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) :
+  positionBuffer(positionBuffer),
+  normalBuffer(normalBuffer),
+  indexBuffer(indexBuffer),
+  positions(nullptr),
+  numPositions(0),
+  normals(nullptr),
+  indices(nullptr),
+  numIndices(0),
+  isNew(true),
+  isUnchanged(false)
+  {}
+MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
+  positionBuffer = meshBuffer.positionBuffer;
+  normalBuffer = meshBuffer.normalBuffer;
+  indexBuffer = meshBuffer.indexBuffer;
+  positions = meshBuffer.positions;
+  numPositions = meshBuffer.numPositions;
+  normals = meshBuffer.normals;
+  indices = meshBuffer.indices;
+  numIndices = meshBuffer.numIndices;
+  isNew = meshBuffer.isNew;
+  isUnchanged = meshBuffer.isUnchanged;
+}
+MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), isNew(true), isUnchanged(false) {}
 
-Handle<Object> MLStageGeometry::Initialize(Isolate *isolate) {
+void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged) {
+  glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
+  glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
+
+  glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
+  glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(normals[0]), normals, GL_DYNAMIC_DRAW);
+
+  glBindBuffer(GL_ARRAY_BUFFER, indexBuffer);
+  glBufferData(GL_ARRAY_BUFFER, numIndices * sizeof(indices[0]), indices, GL_DYNAMIC_DRAW);
+
+  this->positions = positions;
+  this->numPositions = numPositions;
+  this->normals = normals;
+  this->indices = indices;
+  this->numIndices = numIndices;
+  this->isNew = isNew;
+  this->isUnchanged = isUnchanged;
+}
+
+// MLMesher
+
+MLMesher::MLMesher() {}
+
+MLMesher::~MLMesher() {}
+
+NAN_METHOD(MLMesher::New) {
+  MLMesher *mlMesher = new MLMesher();
+  Local<Object> mlMesherObj = info.This();
+  mlMesher->Wrap(mlMesherObj);
+
+  Nan::SetAccessor(mlMesherObj, JS_STR("onmesh"), OnMeshGetter, OnMeshSetter);
+
+  info.GetReturnValue().Set(mlMesherObj);
+
+  meshers.push_back(mlMesher);
+}
+
+Local<Function> MLMesher::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
-  ctor->SetClassName(JS_STR("MLStageGeometry"));
+  ctor->SetClassName(JS_STR("MLMesher"));
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "getGeometry", GetGeometry);
+  Nan::SetMethod(proto, "destroy", Destroy);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
   return scope.Escape(ctorFn);
 }
 
-NAN_METHOD(MLStageGeometry::New) {
-  if (info[0]->IsObject()) {
-    Local<Object> mlContextObj = Local<Object>::Cast(info[0]);
-    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(mlContextObj);
+NAN_GETTER(MLMesher::OnMeshGetter) {
+  // Nan::HandleScope scope;
+  MLMesher *mlMesher = ObjectWrap::Unwrap<MLMesher>(info.This());
 
-    Local<Object> mlStageGeometryObj = info.This();
-    MLStageGeometry *mlStageGeometry = new MLStageGeometry(mlContext);
-    mlStageGeometry->Wrap(mlStageGeometryObj);
+  Local<Function> cb = Nan::New(mlMesher->cb);
+  info.GetReturnValue().Set(cb);
+}
 
-    info.GetReturnValue().Set(mlStageGeometryObj);
+NAN_SETTER(MLMesher::OnMeshSetter) {
+  // Nan::HandleScope scope;
+  MLMesher *mlMesher = ObjectWrap::Unwrap<MLMesher>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlMesher->cb.Reset(localCb);
   } else {
-    Nan::ThrowError("MLStageGeometry::New: invalid arguments");
+    Nan::ThrowError("MLMesher::OnMeshSetter: invalid arguments");
   }
 }
 
-NAN_METHOD(MLStageGeometry::GetGeometry) {
-  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsUint32Array() && info[3]->IsArray()) {
-    MLStageGeometry *mlStageGeometry = ObjectWrap::Unwrap<MLStageGeometry>(info.This());
-    MLContext *mlContext = mlStageGeometry->mlContext;
+void MLMesher::Poll() {
+  if (!this->cb.IsEmpty()) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Poll");
 
-    Local<Float32Array> positionsArray = Local<Float32Array>::Cast(info[0]);
-    Local<Float32Array> normalsArray = Local<Float32Array>::Cast(info[1]);
-    Local<Uint32Array> trianglesArray = Local<Uint32Array>::Cast(info[2]);
+    MLMeshingBlockMesh *blockMeshes = mesh.data;
+    uint32_t dataCount = mesh.data_count;
 
-    if (
-      positionsArray->ByteLength() >= mlContext->positions.size() &&
-      normalsArray->ByteLength() >= mlContext->normals.size() &&
-      trianglesArray->ByteLength() >= mlContext->triangles.size()
-    ) {
-      memcpy((uint8_t *)positionsArray->Buffer()->GetContents().Data() + positionsArray->ByteOffset(), mlContext->positions.data(), mlContext->positions.size());
-      memcpy((uint8_t *)normalsArray->Buffer()->GetContents().Data() + normalsArray->ByteOffset(), mlContext->normals.data(), mlContext->normals.size());
-      memcpy((uint8_t *)trianglesArray->Buffer()->GetContents().Data() + trianglesArray->ByteOffset(), mlContext->triangles.data(), mlContext->triangles.size());
+    Local<Array> array = Nan::New<Array>();
+    uint32_t numResults = 0;
+    for (uint32_t i = 0; i < dataCount; i++) {
+      MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+      const std::string &id = id2String(blockMesh.id);
 
-      Local<Array> metrics = Local<Array>::Cast(info[3]);
-      metrics->Set(0, JS_INT((unsigned int)(mlContext->positions.size() / sizeof(float))));
-      metrics->Set(1, JS_INT((unsigned int)(mlContext->normals.size() / sizeof(float))));
-      metrics->Set(2, JS_INT((unsigned int)(mlContext->triangles.size() / sizeof(uint32_t))));
-    } else {
-      Nan::ThrowError("MLStageGeometry::GetGeometry: insufficient buffer sizes");
+      if (!meshRequestRemovedMap[id]) {
+        auto iter = meshBuffers.find(id);
+
+        if (iter != meshBuffers.end()) {
+          const MeshBuffer &meshBuffer = iter->second;
+
+          Local<Object> obj = Nan::New<Object>();
+          obj->Set(JS_STR("id"), JS_STR(id));
+          const char *type;
+          if (meshBuffer.isNew) {
+            type = "new";
+          } else if (meshBuffer.isUnchanged) {
+            type = "unchanged";
+          } else {
+            type = "update";
+          }
+          obj->Set(JS_STR("type"), JS_STR(type));
+
+          Local<Object> positionBuffer = Nan::New<Object>();
+          positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
+
+          obj->Set(JS_STR("positionBuffer"), positionBuffer);
+          Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.positions, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
+          obj->Set(JS_STR("positionArray"), positionArray);
+          obj->Set(JS_STR("positionCount"), JS_INT(meshBuffer.numPositions));
+
+          Local<Object> normalBuffer = Nan::New<Object>();
+          normalBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.normalBuffer));
+          obj->Set(JS_STR("normalBuffer"), normalBuffer);
+          Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.normals, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
+          obj->Set(JS_STR("normalArray"), normalArray);
+          obj->Set(JS_STR("normalCount"), JS_INT(meshBuffer.numPositions));
+
+          Local<Object> indexBuffer = Nan::New<Object>();
+          indexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
+          obj->Set(JS_STR("indexBuffer"), indexBuffer);
+          Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.indices, meshBuffer.numIndices * sizeof(uint16_t)), 0, meshBuffer.numIndices);
+          obj->Set(JS_STR("indexArray"), indexArray);
+          obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
+
+          array->Set(numResults++, obj);
+        } else {
+          ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, id.c_str());
+        }
+      } else {
+        Local<Object> obj = Nan::New<Object>();
+        obj->Set(JS_STR("id"), JS_STR(id));
+        obj->Set(JS_STR("type"), JS_STR("remove"));
+
+        array->Set(numResults++, obj);
+      }
     }
-  } else {
-    Nan::ThrowError("MLStageGeometry::GetGeometry: invalid arguments");
+
+    Local<Function> cbFn = Nan::New(this->cb);
+    Local<Value> argv[] = {
+      array,
+    };
+    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
   }
 }
 
-MLContext::MLContext() :
-  position{0, 0, 0},
-  rotation{0, 0, 0, 1},
-  haveMeshStaticData(false),
-  planesFloorQueryHandle(ML_INVALID_HANDLE),
-  planesWallQueryHandle(ML_INVALID_HANDLE),
-  planesCeilingQueryHandle(ML_INVALID_HANDLE),
-  numFloorPlanes(0),
-  numWallPlanes(0),
-  numCeilingPlanes(0)
-  {}
+NAN_METHOD(MLMesher::Destroy) {
+  MLMesher *mlMesher = ObjectWrap::Unwrap<MLMesher>(info.This());
+
+  meshers.erase(std::remove_if(meshers.begin(), meshers.end(), [&](MLMesher *m) -> bool {
+    if (m == mlMesher) {
+      delete m;
+      return true;
+    } else {
+      return false;
+    }
+  }), meshers.end());
+}
+
+// MLPlaneTracker
+
+MLPlaneTracker::MLPlaneTracker() {}
+
+MLPlaneTracker::~MLPlaneTracker() {}
+
+NAN_METHOD(MLPlaneTracker::New) {
+  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker();
+  Local<Object> mlPlaneTrackerObj = info.This();
+  mlPlaneTracker->Wrap(mlPlaneTrackerObj);
+
+  Nan::SetAccessor(mlPlaneTrackerObj, JS_STR("onplanes"), OnPlanesGetter, OnPlanesSetter);
+
+  info.GetReturnValue().Set(mlPlaneTrackerObj);
+
+  planeTrackers.push_back(mlPlaneTracker);
+}
+
+Local<Function> MLPlaneTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLPlaneTracker"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLPlaneTracker::OnPlanesGetter) {
+  // Nan::HandleScope scope;
+  MLPlaneTracker *mlPlaneTracker = ObjectWrap::Unwrap<MLPlaneTracker>(info.This());
+
+  Local<Function> cb = Nan::New(mlPlaneTracker->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLPlaneTracker::OnPlanesSetter) {
+  // Nan::HandleScope scope;
+  MLPlaneTracker *mlPlaneTracker = ObjectWrap::Unwrap<MLPlaneTracker>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlPlaneTracker->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLPlaneTracker::OnPlaneSetter: invalid arguments");
+  }
+}
+
+void MLPlaneTracker::Poll() {
+  if (!this->cb.IsEmpty()) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
+
+    Local<Array> array = Nan::New<Array>(numPlanesResults);
+    for (uint32_t i = 0; i < numPlanesResults; i++) {
+      MLPlane &plane = planeResults[i];
+
+      Local<Object> obj = Nan::New<Object>();
+
+      uint64_t planeId = (uint64_t)plane.id;
+      // uint32_t flags = plane.flags;
+      float width = plane.width;
+      float height = plane.height;
+      MLVec3f &position = plane.position;
+      MLQuaternionf &rotation = plane.rotation;
+
+      const std::string &id = id2String(planeId);
+      obj->Set(JS_STR("id"), JS_STR(id));
+
+      Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
+      positionArray->Set(0, JS_NUM(position.x));
+      positionArray->Set(1, JS_NUM(position.y));
+      positionArray->Set(2, JS_NUM(position.z));
+      obj->Set(JS_STR("position"), positionArray);
+
+      Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
+      rotationArray->Set(0, JS_NUM(rotation.x));
+      rotationArray->Set(1, JS_NUM(rotation.y));
+      rotationArray->Set(2, JS_NUM(rotation.z));
+      rotationArray->Set(3, JS_NUM(rotation.w));
+      obj->Set(JS_STR("rotation"), rotationArray);
+
+      Local<Float32Array> sizeArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 2 * sizeof(float)), 0, 2);
+      sizeArray->Set(0, JS_NUM(width));
+      sizeArray->Set(1, JS_NUM(height));
+      obj->Set(JS_STR("size"), sizeArray);
+
+      array->Set(i, obj);
+    }
+
+    Local<Function> cb = Nan::New(this->cb);
+    Local<Value> argv[] = {
+      array,
+    };
+    asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+  }
+}
+
+NAN_METHOD(MLPlaneTracker::Destroy) {
+  MLPlaneTracker *mlPlaneTracker = ObjectWrap::Unwrap<MLPlaneTracker>(info.This());
+
+  planeTrackers.erase(std::remove_if(planeTrackers.begin(), planeTrackers.end(), [&](MLPlaneTracker *p) -> bool {
+    if (p == mlPlaneTracker) {
+      delete p;
+      return true;
+    } else {
+      return false;
+    }
+  }), planeTrackers.end());
+}
+
+// MLHandTracker
+
+MLHandTracker::MLHandTracker() {}
+
+MLHandTracker::~MLHandTracker() {}
+
+NAN_METHOD(MLHandTracker::New) {
+  MLHandTracker *mlHandTracker = new MLHandTracker();
+  Local<Object> mlHandTrackerObj = info.This();
+  mlHandTracker->Wrap(mlHandTrackerObj);
+
+  Nan::SetAccessor(mlHandTrackerObj, JS_STR("onhands"), OnHandsGetter, OnHandsSetter);
+  Nan::SetAccessor(mlHandTrackerObj, JS_STR("ongesture"), OnGestureGetter, OnGestureSetter);
+
+  info.GetReturnValue().Set(mlHandTrackerObj);
+
+  handTrackers.push_back(mlHandTracker);
+}
+
+Local<Function> MLHandTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLHandTracker"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLHandTracker::OnHandsGetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  Local<Function> cb = Nan::New(mlHandTracker->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLHandTracker::OnHandsSetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlHandTracker->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLHandTracker::OnHandsSetter: invalid arguments");
+  }
+}
+
+NAN_GETTER(MLHandTracker::OnGestureGetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  Local<Function> ongesture = Nan::New(mlHandTracker->ongesture);
+  info.GetReturnValue().Set(ongesture);
+}
+
+NAN_SETTER(MLHandTracker::OnGestureSetter) {
+  // Nan::HandleScope scope;
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localOngesture = Local<Function>::Cast(value);
+    mlHandTracker->ongesture.Reset(localOngesture);
+  } else {
+    Nan::ThrowError("MLHandTracker::OnGestureSetter: invalid arguments");
+  }
+}
+
+void MLHandTracker::Poll() {
+  if (!this->cb.IsEmpty()) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
+
+    Local<Array> array = Nan::New<Array>();
+    uint32_t numResults = 0;
+
+    MLVec3f leftHandCenter;
+    MLVec3f leftHandNormal;
+    bool leftHandTransformValid;
+    MLTransform leftPointerTransform;
+    bool leftPointerTransformValid;
+    MLTransform leftGripTransform;
+    bool leftGripTransformValid;
+
+    MLVec3f rightHandCenter;
+    MLVec3f rightHandNormal;
+    bool rightHandTransformValid;
+    MLTransform rightPointerTransform;
+    bool rightPointerTransformValid;
+    MLTransform rightGripTransform;
+    bool rightGripTransformValid;
+
+    if (getHandBone(leftHandCenter, 0, wristBones, fingerBones)) {
+      Local<Object> obj = Nan::New<Object>();
+
+      obj->Set(JS_STR("hand"), JS_STR("left"));
+
+      leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0], true);
+      if (leftHandTransformValid) {
+        obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandCenter.values, 3 * sizeof(float)), 0, 3));
+        obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandNormal.values, 3 * sizeof(float)), 0, 3));
+      } else {
+        leftHandNormal = {0, 1, 0};
+      }
+
+      leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0], leftHandNormal);
+      if (leftPointerTransformValid) {
+        Local<Object> pointerObj = Nan::New<Object>();
+        pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
+        pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
+        obj->Set(JS_STR("pointer"), pointerObj);
+      } else {
+        obj->Set(JS_STR("pointer"), Nan::Null());
+      }
+      leftGripTransformValid = getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0], leftHandNormal);
+      if (leftGripTransformValid) {
+        Local<Object> gripObj = Nan::New<Object>();
+        gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.position.values, 3 * sizeof(float)), 0, 3));
+        gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
+        obj->Set(JS_STR("grip"), gripObj);
+      } else {
+        obj->Set(JS_STR("grip"), Nan::Null());
+      }
+
+      Local<Array> wristArray = Nan::New<Array>(4);
+      for (size_t i = 0; i < 4; i++) {
+        Local<Value> boneVal;
+
+        if (*(uint32_t *)&wristBones[0][i][0]) {
+          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&wristBones[0][i][1], 3 * sizeof(float)), 0, 3);
+        } else {
+          boneVal = Nan::Null();
+        }
+
+        wristArray->Set(i, boneVal);
+      }
+      obj->Set(JS_STR("wrist"), wristArray);
+
+      Local<Array> fingersArray = Nan::New<Array>(5);
+      for (size_t i = 0; i < 5; i++) {
+        Local<Array> bonesArray = Nan::New<Array>(4);
+
+        for (size_t j = 0; j < 4; j++) {
+          Local<Value> boneVal;
+
+          if (*(uint32_t *)&fingerBones[0][i][j][0]) {
+            boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&fingerBones[0][i][j][1], 3 * sizeof(float)), 0, 3);
+          } else {
+            boneVal = Nan::Null();
+          }
+
+          bonesArray->Set(j, boneVal);
+        }
+
+        fingersArray->Set(i, bonesArray);
+      }
+      obj->Set(JS_STR("fingers"), fingersArray);
+
+      Local<Value> gestureVal = gestureCategoryToJsValue(handData.left_hand_state.keypose);
+      obj->Set(JS_STR("gesture"), gestureVal);
+
+      if (handData.left_hand_state.keypose != lastKeyposeLeft && !this->ongesture.IsEmpty()) {
+        Local<Object> gestureObj = Nan::New<Object>();
+
+        gestureObj->Set(JS_STR("hand"), JS_STR("left"));
+
+        Local<Value> gesturePositionObj;
+        Local<Value> gestureRotationObj;
+        if (leftPointerTransformValid) {
+          gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.position.values, 3 * sizeof(float)), 0, 3);
+          gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4);
+        } else if (leftGripTransformValid) {
+          gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.position.values, 3 * sizeof(float)), 0, 3);
+          gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftGripTransform.rotation.values, 4 * sizeof(float)), 0, 4);
+        } else {
+          gesturePositionObj = Nan::Null();
+          gestureRotationObj = Nan::Null();
+        }
+        gestureObj->Set(JS_STR("position"), gesturePositionObj);
+        gestureObj->Set(JS_STR("rotation"), gestureRotationObj);
+
+        gestureObj->Set(JS_STR("gesture"), gestureVal);
+        gestureObj->Set(JS_STR("lastGesture"), gestureCategoryToJsValue(lastKeyposeLeft));
+
+        Local<Function> ongesture = Nan::New(this->ongesture);
+        Local<Value> argv[] = {
+          gestureObj,
+        };
+        asyncResource.MakeCallback(ongesture, sizeof(argv)/sizeof(argv[0]), argv);
+      }
+      lastKeyposeLeft = handData.left_hand_state.keypose;
+
+      array->Set(JS_INT(numResults++), obj);
+    }
+
+    if (getHandBone(rightHandCenter, 1, wristBones, fingerBones)) {
+      Local<Object> obj = Nan::New<Object>();
+
+      obj->Set(JS_STR("hand"), JS_STR("right"));
+
+      rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false);
+      if (rightHandTransformValid) {
+        obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandCenter.values, 3 * sizeof(float)), 0, 3));
+        obj->Set(JS_STR("normal"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandNormal.values, 3 * sizeof(float)), 0, 3));
+      } else {
+        rightHandNormal = {0, 1, 0};
+      }
+
+      rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1], rightHandNormal);
+      if (rightPointerTransformValid) {
+        Local<Object> pointerObj = Nan::New<Object>();
+        pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
+        pointerObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4));
+        obj->Set(JS_STR("pointer"), pointerObj);
+      } else {
+        obj->Set(JS_STR("pointer"), Nan::Null());
+      }
+      rightGripTransformValid = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1], rightHandNormal);
+      if (rightGripTransformValid) {
+        Local<Object> gripObj = Nan::New<Object>();
+        gripObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.position.values, 3 * sizeof(float)), 0, 3));
+        gripObj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.rotation.values, 4 * sizeof(float)), 0, 4));
+        obj->Set(JS_STR("grip"), gripObj);
+      } else {
+        obj->Set(JS_STR("grip"), Nan::Null());
+      }
+
+      Local<Array> wristArray = Nan::New<Array>(4);
+      for (size_t i = 0; i < 4; i++) {
+        Local<Value> boneVal;
+
+        if (*(uint32_t *)&wristBones[1][i][0]) {
+          boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&wristBones[1][i][1], 3 * sizeof(float)), 0, 3);
+        } else {
+          boneVal = Nan::Null();
+        }
+
+        wristArray->Set(i, boneVal);
+      }
+      obj->Set(JS_STR("wrist"), wristArray);
+
+      Local<Array> fingersArray = Nan::New<Array>(5);
+      for (size_t i = 0; i < 5; i++) {
+        Local<Array> bonesArray = Nan::New<Array>(4);
+
+        for (size_t j = 0; j < 4; j++) {
+          Local<Value> boneVal;
+
+          if (*(uint32_t *)&fingerBones[1][i][j][0]) {
+            boneVal = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)&fingerBones[1][i][j][1], 3 * sizeof(float)), 0, 3);
+          } else {
+            boneVal = Nan::Null();
+          }
+
+          bonesArray->Set(j, boneVal);
+        }
+
+        fingersArray->Set(i, bonesArray);
+      }
+      obj->Set(JS_STR("fingers"), fingersArray);
+
+      Local<Value> gestureVal = gestureCategoryToJsValue(handData.right_hand_state.keypose);
+      obj->Set(JS_STR("gesture"), gestureVal);
+
+      if (handData.right_hand_state.keypose != lastKeyposeRight && !this->ongesture.IsEmpty()) {
+        Local<Object> gestureObj = Nan::New<Object>();
+
+        gestureObj->Set(JS_STR("hand"), JS_STR("right"));
+
+        Local<Value> gesturePositionObj;
+        Local<Value> gestureRotationObj;
+        if (rightPointerTransformValid) {
+          gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3);
+          gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.rotation.values, 4 * sizeof(float)), 0, 4);
+        } else if (rightGripTransformValid) {
+          gesturePositionObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.position.values, 3 * sizeof(float)), 0, 3);
+          gestureRotationObj = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightGripTransform.rotation.values, 4 * sizeof(float)), 0, 4);
+        } else {
+          gesturePositionObj = Nan::Null();
+          gestureRotationObj = Nan::Null();
+        }
+        gestureObj->Set(JS_STR("position"), gesturePositionObj);
+        gestureObj->Set(JS_STR("rotation"), gestureRotationObj);
+
+        gestureObj->Set(JS_STR("gesture"), gestureVal);
+        gestureObj->Set(JS_STR("lastGesture"), gestureCategoryToJsValue(lastKeyposeRight));
+
+        Local<Function> ongesture = Nan::New(this->ongesture);
+        Local<Value> argv[] = {
+          gestureObj,
+        };
+        asyncResource.MakeCallback(ongesture, sizeof(argv)/sizeof(argv[0]), argv);
+      }
+      lastKeyposeRight = handData.right_hand_state.keypose;
+
+      array->Set(JS_INT(numResults++), obj);
+    }
+
+    Local<Function> cb = Nan::New(this->cb);
+    Local<Value> argv[] = {
+      array,
+    };
+    asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+  }
+}
+
+NAN_METHOD(MLHandTracker::Destroy) {
+  MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
+
+  handTrackers.erase(std::remove_if(handTrackers.begin(), handTrackers.end(), [&](MLHandTracker *h) -> bool {
+    if (h == mlHandTracker) {
+      delete h;
+      return true;
+    } else {
+      return false;
+    }
+  }), handTrackers.end());
+}
+
+// MLEyeTracker
+
+MLEyeTracker::MLEyeTracker() {}
+
+MLEyeTracker::~MLEyeTracker() {}
+
+NAN_METHOD(MLEyeTracker::New) {
+  MLEyeTracker *mlEyeTracker = new MLEyeTracker();
+  Local<Object> mlEyeTrackerObj = info.This();
+  mlEyeTracker->Wrap(mlEyeTrackerObj);
+
+  Nan::SetAccessor(mlEyeTrackerObj, JS_STR("fixation"), FixationGetter);
+  Nan::SetAccessor(mlEyeTrackerObj, JS_STR("eyes"), EyesGetter);
+
+  info.GetReturnValue().Set(mlEyeTrackerObj);
+
+  eyeTrackers.push_back(mlEyeTracker);
+}
+
+Local<Function> MLEyeTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLEyeTracker"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLEyeTracker::FixationGetter) {
+  // Nan::HandleScope scope;
+  MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+
+  Local<Object> obj = Nan::New<Object>();
+
+  Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
+  positionArray->Set(0, JS_NUM(mlEyeTracker->transform.position.x));
+  positionArray->Set(1, JS_NUM(mlEyeTracker->transform.position.y));
+  positionArray->Set(2, JS_NUM(mlEyeTracker->transform.position.z));
+  obj->Set(JS_STR("position"), positionArray);
+
+  Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
+  rotationArray->Set(0, JS_NUM(mlEyeTracker->transform.rotation.x));
+  rotationArray->Set(1, JS_NUM(mlEyeTracker->transform.rotation.y));
+  rotationArray->Set(2, JS_NUM(mlEyeTracker->transform.rotation.z));
+  rotationArray->Set(3, JS_NUM(mlEyeTracker->transform.rotation.w));
+  obj->Set(JS_STR("rotation"), rotationArray);
+
+  info.GetReturnValue().Set(obj);
+}
+
+NAN_GETTER(MLEyeTracker::EyesGetter) {
+  // Nan::HandleScope scope;
+  MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+
+  Local<Array> array = Nan::New<Array>(2);
+  for (size_t i = 0; i < 2; i++) {
+    Local<Object> obj = Nan::New<Object>();
+
+    const MLTransform &eyeTransform = i == 0 ? mlEyeTracker->leftTransform : mlEyeTracker->rightTransform;
+    Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
+    positionArray->Set(0, JS_NUM(eyeTransform.position.x));
+    positionArray->Set(1, JS_NUM(eyeTransform.position.y));
+    positionArray->Set(2, JS_NUM(eyeTransform.position.z));
+    obj->Set(JS_STR("position"), positionArray);
+
+    Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
+    rotationArray->Set(0, JS_NUM(eyeTransform.rotation.x));
+    rotationArray->Set(1, JS_NUM(eyeTransform.rotation.y));
+    rotationArray->Set(2, JS_NUM(eyeTransform.rotation.z));
+    rotationArray->Set(3, JS_NUM(eyeTransform.rotation.w));
+    obj->Set(JS_STR("rotation"), rotationArray);
+
+    const bool &eyeBlink = i == 0 ? mlEyeTracker->leftBlink : mlEyeTracker->rightBlink;
+    obj->Set(JS_STR("blink"), JS_BOOL(eyeBlink));
+
+    array->Set(i, obj);
+  }
+
+  info.GetReturnValue().Set(array);
+}
+
+void MLEyeTracker::Poll(MLSnapshot *snapshot) {
+  if (MLSnapshotGetTransform(snapshot, &eyeStaticData.fixation, &this->transform) == MLResult_Ok) {
+    // nothing
+  } else {
+    ML_LOG(Error, "%s: ML failed to get eye fixation transform!", application_name);
+  }
+
+  if (MLSnapshotGetTransform(snapshot, &eyeStaticData.left_center, &this->leftTransform) == MLResult_Ok) {
+    // nothing
+  } else {
+    ML_LOG(Error, "%s: ML failed to get left eye center transform!", application_name);
+  }
+  this->leftBlink = eyeState.left_blink;
+
+  if (MLSnapshotGetTransform(snapshot, &eyeStaticData.right_center, &this->rightTransform) == MLResult_Ok) {
+    // nothing
+  } else {
+    ML_LOG(Error, "%s: ML failed to get right eye center transform!", application_name);
+  }
+  this->rightBlink = eyeState.right_blink;
+}
+
+NAN_METHOD(MLEyeTracker::Destroy) {
+  MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
+
+  eyeTrackers.erase(std::remove_if(eyeTrackers.begin(), eyeTrackers.end(), [&](MLEyeTracker *e) -> bool {
+    if (e == mlEyeTracker) {
+      delete e;
+      return true;
+    } else {
+      return false;
+    }
+  }));
+}
+
+// keyboard callbacks
+
+void onChar(uint32_t char_utf32, void *data) {
+  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::CHAR, char_utf32));
+  uv_async_send(&keyboardEventsAsync);
+}
+void onKeyDown(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
+  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::KEY_DOWN, key_code, modifier_mask));
+  uv_async_send(&keyboardEventsAsync);
+}
+void onKeyUp(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
+  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::KEY_UP, key_code, modifier_mask));
+  uv_async_send(&keyboardEventsAsync);
+}
+
+// KeyboardEvent
+
+KeyboardEvent::KeyboardEvent(KeyboardEventType type, uint32_t char_utf32) : type(type), char_utf32(char_utf32), key_code(MLKEYCODE_UNKNOWN), modifier_mask(0) {}
+KeyboardEvent::KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask) : type(type), char_utf32(0), key_code(key_code), modifier_mask(modifier_mask) {}
+
+// camera device status callbacks
+
+void cameraOnDeviceAvailable(void *data) {
+  // XXX
+}
+void cameraOnDeviceUnavailable(void *data) {
+  // XXX
+}
+void cameraOnDeviceOpened(void *data) {
+  // XXX
+}
+void cameraOnDeviceClosed(void *data) {
+  // XXX
+}
+void cameraOnDeviceDisconnected(void *data) {
+  // XXX
+}
+void cameraOnDeviceError(MLCameraError error, void *data) {
+  // XXX
+}
+void cameraOnPreviewBufferAvailable(MLHandle output, void *data) {
+  uv_async_send(&cameraAsync);
+}
+
+// camera capture callbacks
+
+void cameraOnCaptureStarted(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureFailed(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureBufferLost(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureProgressed(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
+  /* if (!cameraResponsePending) {
+    {
+      std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+      std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
+        c->Set(output);
+      });
+    }
+    cameraResponsePending = true;
+  } */
+}
+
+// CameraRequest
+
+CameraRequest::CameraRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+
+void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
+  this->width = width;
+  this->height = height;
+  // this->stride = stride;
+
+  Local<ArrayBuffer> arrayBuffer;
+  if (size > 0) {
+    // std::cout << "got jpeg " << size << std::endl;
+
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), size);
+    memcpy(arrayBuffer->GetContents().Data(), data, size);
+  } else {
+    // std::cout << "failed to get jpeg " << size << std::endl;
+
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), 4);
+  }
+  this->data.Reset(arrayBuffer);
+}
+
+void CameraRequest::Poll() {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
+
+  Local<Function> cbFn = Nan::New(this->cbFn);
+
+  Local<Object> obj = Nan::New<Object>();
+  obj->Set(JS_STR("data"), Nan::New(data));
+  data.Reset();
+  obj->Set(JS_STR("width"), JS_INT(width));
+  obj->Set(JS_STR("height"), JS_INT(height));
+  // obj->Set(JS_STR("bpp"), JS_INT(bpp));
+  // obj->Set(JS_STR("stride"), JS_INT(stride));
+
+  Local<Value> argv[] = {
+    obj,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+}
+
+MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
 
 MLContext::~MLContext() {}
 
@@ -230,17 +1167,26 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "Present", Present);
+  Nan::SetMethod(proto, "Exit", Exit);
   Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
-  Local<Object> stageGeometryCons = MLStageGeometry::Initialize(isolate);
-  ctorFn->Set(JS_STR("MLStageGeometry"), stageGeometryCons);
-
   Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
+  Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
+  Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
+  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
+  Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
+  Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
+  Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
+  Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
+  Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
+  Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
+  Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
+  Nan::SetMethod(ctorFn, "PostPollEvents", PostPollEvents);
 
   return scope.Escape(ctorFn);
 }
@@ -250,97 +1196,654 @@ NAN_METHOD(MLContext::New) {
   MLContext *mlContext = new MLContext();
   mlContext->Wrap(mlContextObj);
 
-  Local<Function> stageGeometryCons = Local<Function>::Cast(mlContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("MLStageGeometry")));
-  Local<Value> argv[] = {
-    mlContextObj,
-  };
-  Local<Object> stageGeometryObj = stageGeometryCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
-  mlContextObj->Set(JS_STR("stageGeometry"), stageGeometryObj);
-
   info.GetReturnValue().Set(mlContextObj);
 }
 
-NAN_METHOD(MLContext::InitLifecycle) {
-  lifecycle_callbacks.on_new_initarg = onNewInitArg;
-  lifecycle_callbacks.on_stop = onStop;
-  lifecycle_callbacks.on_pause = onPause;
-  lifecycle_callbacks.on_resume = onResume;
-  lifecycle_callbacks.on_unload_resources = onUnloadResources;
-  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
+void RunEventsInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
 
-  // HACK: prevent exit hang
-  std::atexit([]() {
-    quick_exit(0);
+  for (const auto &event : events) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
+
+    Local<Value> arg;
+    switch (event) {
+      case Event::NEW_INIT_ARG: {
+        arg = JS_STR("newInitArg");
+        break;
+      }
+      case Event::STOP: {
+        arg = JS_STR("stop");
+        break;
+      }
+      case Event::PAUSE: {
+        arg = JS_STR("pause");
+        break;
+      }
+      case Event::RESUME: {
+        arg = JS_STR("resume");
+        break;
+      }
+      case Event::UNLOAD_RESOURCES: {
+        arg = JS_STR("unloadResources");
+        break;
+      }
+      default: {
+        arg = Nan::Null();
+        break;
+      }
+    }
+
+    Local<Function> eventsCbFn = Nan::New(eventsCb);
+    Local<Value> argv[] = {
+      arg,
+    };
+    asyncResource.MakeCallback(eventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  }
+  events.clear();
+}
+
+inline uint32_t normalizeMLKeyCode(MLKeyCode mlKeyCode) {
+  switch (mlKeyCode) {
+    case MLKEYCODE_ENTER: return 13;
+    case MLKEYCODE_ESCAPE: return 27;
+    case MLKEYCODE_DEL: return 8;
+    case MLKEYCODE_FORWARD_DEL: return 46;
+    default: return (uint32_t)mlKeyCode;
+  }
+}
+
+void RunKeyboardEventsInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  for (const auto &keyboardEvent : keyboardEvents) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "keyboardEvents");
+
+    Local<Object> obj = Nan::New<Object>();
+
+    Local<Value> typeArg;
+    switch (keyboardEvent.type) {
+      case KeyboardEventType::CHAR: {
+        typeArg = JS_STR("keypresss");
+        break;
+      }
+      case KeyboardEventType::KEY_DOWN: {
+        typeArg = JS_STR("keydown");
+        break;
+      }
+      case KeyboardEventType::KEY_UP: {
+        typeArg = JS_STR("keyup");
+        break;
+      }
+      default: {
+        typeArg = Nan::Null();
+        break;
+      }
+    }
+    obj->Set(JS_STR("type"), typeArg);
+    uint32_t charCode = (uint32_t)keyboardEvent.char_utf32;
+    uint32_t keyCode = normalizeMLKeyCode(keyboardEvent.key_code);
+    obj->Set(JS_STR("charCode"), JS_INT(charCode));
+    obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
+    obj->Set(JS_STR("which"), JS_INT(keyCode));
+    obj->Set(JS_STR("shiftKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SHIFT));
+    obj->Set(JS_STR("altKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_ALT));
+    obj->Set(JS_STR("ctrlKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CTRL));
+    obj->Set(JS_STR("metaKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_META));
+    // obj->Set(JS_STR("sym"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SYM));
+    // obj->Set(JS_STR("function"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_FUNCTION));
+    // obj->Set(JS_STR("capsLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
+    // obj->Set(JS_STR("numLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_NUM_LOCK));
+    // obj->Set(JS_STR("scrollLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
+
+    Local<Function> keyboardEventsCbFn = Nan::New(keyboardEventsCb);
+    Local<Value> argv[] = {
+      obj,
+    };
+    asyncResource.MakeCallback(keyboardEventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  }
+  keyboardEvents.clear();
+}
+
+void RunCameraInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  if (!cameraConvertPending) {
+    MLHandle output;
+    MLResult result = MLCameraGetPreviewStream(&output);
+    if (result == MLResult_Ok) {    
+      // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+
+      MLContext *mlContext = application_context.mlContext;
+      NATIVEwindow *window = application_context.window;
+      WebGLRenderingContext *gl = application_context.gl;
+
+      EGLImageKHR yuv_img = eglCreateImageKHR(window->display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, (EGLClientBuffer)(void*)output, nullptr);
+
+      glBindVertexArray(mlContext->cameraVao);
+      glBindFramebuffer(GL_FRAMEBUFFER, mlContext->cameraFbo);
+      glUseProgram(mlContext->cameraProgram);
+
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_EXTERNAL_OES, mlContext->cameraInTexture);
+      glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, yuv_img);
+      glUniform1i(mlContext->cameraInTextureLocation, 0);
+
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, mlContext->contentTexture);
+      glUniform1i(mlContext->contentTextureLocation, 1);
+
+      glViewport(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1]);
+      glClear(GL_COLOR_BUFFER_BIT);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+      eglDestroyImageKHR(window->display, yuv_img);
+
+      glReadPixels(0, 0, CAMERA_SIZE[0], CAMERA_SIZE[1], GL_RGB, GL_UNSIGNED_BYTE, cameraRequestRgb);
+
+      cameraConvertPending = true;
+      uv_sem_post(&cameraConvertSem);
+
+      if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+      } else {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+      }
+      if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+      } else {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+      }
+      if (gl->HasProgramBinding()) {
+        glUseProgram(gl->GetProgramBinding());
+      } else {
+        glUseProgram(0);
+      }
+      if (gl->viewportState.valid) {
+        glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+      } else {
+        glViewport(0, 0, 1280, 1024);
+      }
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+      glActiveTexture(GL_TEXTURE0);
+      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
+      } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
+      }
+      if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES)) {
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_EXTERNAL_OES));
+      } else {
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+      }
+      glActiveTexture(GL_TEXTURE1);
+      if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_2D)) {
+        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_2D));
+      } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
+      }
+      if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES)) {
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_EXTERNAL_OES));
+      } else {
+        glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+      }
+      glActiveTexture(gl->activeTexture);
+    } else {
+      ML_LOG(Error, "%s: failed to get camera preview stream %x", application_name, result);
+    }
+  }
+}
+
+void RunCameraConvertInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
+    c->Set(CAMERA_SIZE[0], CAMERA_SIZE[1], cameraRequestJpeg, cameraRequestSize);
+    c->Poll();
   });
 
+  if (cameraRequestSize > 0) {
+    SjpegFreeBuffer(cameraRequestJpeg);
+  }
+
+  cameraConvertPending = false;
+}
+
+const char *meshVsh = "\
+#version 330\n\
+\n\
+in vec3 position;\n\
+\n\
+uniform mat4 projectionMatrix;\n\
+uniform mat4 modelViewMatrix;\n\
+\n\
+void main() {\n\
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n\
+}\n\
+";
+const char *meshFsh = "\
+#version 330\n\
+\n\
+out vec4 fragColor;\n\
+\n\
+void main() {\n\
+  fragColor = vec4(1.0);\n\
+}\n\
+";
+const char *cameraVsh = "\
+#version 330\n\
+\n\
+in vec2 point;\n\
+in vec2 uv;\n\
+out vec2 vUvCamera;\n\
+out vec2 vUvContent;\n\
+\n\
+float cameraAspectRatio = 960.0/540.0;\n\
+float renderAspectRatio = 1280.0/960.0;\n\
+float xfactor = cameraAspectRatio/renderAspectRatio;\n\
+float factor = 1.4;\n\
+\n\
+void main() {\n\
+  vUvCamera = vec2(uv.x, 1.0 - uv.y);\n\
+  vUvContent = vec2(\n\
+    ((uv.x * 0.5) - 0.25) * xfactor*factor + 0.25,\n\
+    (uv.y - 0.5) * factor + 0.5\n\
+  );\n\
+  gl_Position = vec4(point, 1.0, 1.0);\n\
+}\n\
+";
+const char *cameraFsh = "\
+#version 330\n\
+#extension GL_OES_EGL_image_external : enable\n\
+\n\
+in vec2 vUvCamera;\n\
+in vec2 vUvContent;\n\
+out vec4 fragColor;\n\
+\n\
+uniform samplerExternalOES cameraInTexture;\n\
+uniform sampler2D contentTexture;\n\
+\n\
+void main() {\n\
+  vec4 cameraIn = texture2D(cameraInTexture, vUvCamera);\n\
+\n\
+  if (vUvContent.x >= 0.0 && vUvContent.x <= 0.5 && vUvContent.y >= 0.0 && vUvContent.y <= 1.0) {\n\
+    vec4 content = texture2D(contentTexture, vUvContent);\n\
+    fragColor = vec4((cameraIn.rgb * (1.0 - content.a)) + (content.rgb * content.a), 1.0);\n\
+  } else {\n\
+    fragColor = vec4(cameraIn.rgb, 1.0);\n\
+  }\n\
+}\n\
+";
+NAN_METHOD(MLContext::InitLifecycle) {
+  if (info[0]->IsFunction() && info[1]->IsFunction()) {
+    eventsCb.Reset(Local<Function>::Cast(info[0]));
+    keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
+
+    uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
+    uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
+    uv_async_init(uv_default_loop(), &cameraAsync, RunCameraInMainThread);
+    uv_async_init(uv_default_loop(), &cameraConvertAsync, RunCameraConvertInMainThread);
+    uv_sem_init(&cameraConvertSem, 0);
+
+    mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
+    mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
+    mlHandTrackerConstructor.Reset(MLHandTracker::Initialize(Isolate::GetCurrent()));
+    mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
+
+    lifecycle_callbacks.on_new_initarg = onNewInitArg;
+    lifecycle_callbacks.on_stop = onStop;
+    lifecycle_callbacks.on_pause = onPause;
+    lifecycle_callbacks.on_resume = onResume;
+    lifecycle_callbacks.on_unload_resources = onUnloadResources;
+    lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void *)(&application_context));
+    if (lifecycle_status != MLResult_Ok) {
+      Nan::ThrowError("MLContext::InitLifecycle failed to initialize lifecycle");
+      return;
+    }
+
+    {
+      cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
+      cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
+      cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
+      cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
+      cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
+      cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
+      cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
+      MLResult result = MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+        Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+        return;
+      }
+    }
+
+    {
+      cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
+      cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
+      cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
+      cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
+      cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
+      cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
+      MLResult result = MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+        Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+        return;
+      }
+    }
+
+    // HACK: prevent exit hang
+    std::atexit([]() {
+      quick_exit(0);
+    });
+
+    application_context.dummy_value = DummyValue::STOPPED;
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::DeinitLifecycle) {
   application_context.dummy_value = DummyValue::STOPPED;
 }
 
 NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
 
-  GLFWwindow *window = (GLFWwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  application_context.mlContext = mlContext;
+  application_context.window = window;
+  application_context.gl = gl;
 
   if (lifecycle_status != MLResult_Ok) {
-    ML_LOG(Error, "%s: Lifecycle not initialized.", application_name);
-    info.GetReturnValue().Set(JS_BOOL(false));
+    ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
     return;
   }
 
-  MLResult privilege_init_status = MLPrivilegesStartup();
-  if (privilege_init_status != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to initialize privilege system.", application_name);
-    info.GetReturnValue().Set(JS_BOOL(false));
+  MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
+  MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(window));
+  mlContext->graphics_client = ML_INVALID_HANDLE;
+  if (MLGraphicsCreateClientGL(&graphics_options, opengl_context, &mlContext->graphics_client) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
     return;
+  }
+
+  MLGraphicsRenderTargetsInfo renderTargetsInfo;
+  if (MLGraphicsGetRenderTargets(mlContext->graphics_client, &renderTargetsInfo) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to get graphics render targets.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  unsigned int halfWidth = renderTargetsInfo.buffers[0].color.width;
+  unsigned int width = halfWidth * 2;
+  unsigned int height = renderTargetsInfo.buffers[0].color.height;
+  
+  // std::cout << "render info " << halfWidth << " " << height << std::endl;
+
+  GLuint fbo;
+  GLuint colorTex;
+  GLuint depthStencilTex;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
+  {
+    bool ok = windowsystembase::CreateRenderTarget(gl, width, height, 0, 0, 0, 0, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+    if (!ok) {
+      ML_LOG(Error, "%s: Failed to create ML present render context.", application_name);
+      info.GetReturnValue().Set(Nan::Null());
+      return;
+    }
+  }
+
+  {
+    // mesh shader
+
+    glGenVertexArrays(1, &mlContext->meshVao);
+
+    // vertex Shader
+    mlContext->meshVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(mlContext->meshVertex, 1, &meshVsh, NULL);
+    glCompileShader(mlContext->meshVertex);
+    GLint success;
+    glGetShaderiv(mlContext->meshVertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->meshVertex, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML mesh vertex shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // fragment Shader
+    mlContext->meshFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(mlContext->meshFragment, 1, &meshFsh, NULL);
+    glCompileShader(mlContext->meshFragment);
+    glGetShaderiv(mlContext->meshFragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->meshFragment, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML mesh fragment shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // shader Program
+    mlContext->meshProgram = glCreateProgram();
+    glAttachShader(mlContext->meshProgram, mlContext->meshVertex);
+    glAttachShader(mlContext->meshProgram, mlContext->meshFragment);
+    glLinkProgram(mlContext->meshProgram);
+    glGetProgramiv(mlContext->meshProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->meshProgram, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML mesh program linking failed\n" << infoLog << std::endl;
+      return;
+    }
+
+    mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
+    if (mlContext->positionLocation == -1) {
+      std::cout << "ML mesh program failed to get attrib location for 'position'" << std::endl;
+      return;
+    }
+    mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
+    if (mlContext->modelViewMatrixLocation == -1) {
+      std::cout << "ML meshprogram failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      return;
+    }
+    mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
+    if (mlContext->projectionMatrixLocation == -1) {
+      std::cout << "ML mesh program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      return;
+    }
+
+    // delete the shaders as they're linked into our program now and no longer necessery
+    glDeleteShader(mlContext->meshVertex);
+    glDeleteShader(mlContext->meshFragment);
+  }
+
+  {
+    // camera shader
+
+    glGenVertexArrays(1, &mlContext->cameraVao);
+    glBindVertexArray(mlContext->cameraVao);
+
+    // vertex Shader
+    mlContext->cameraVertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(mlContext->cameraVertex, 1, &cameraVsh, NULL);
+    glCompileShader(mlContext->cameraVertex);
+    GLint success;
+    glGetShaderiv(mlContext->cameraVertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraVertex, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera vertex shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // fragment Shader
+    mlContext->cameraFragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(mlContext->cameraFragment, 1, &cameraFsh, NULL);
+    glCompileShader(mlContext->cameraFragment);
+    glGetShaderiv(mlContext->cameraFragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraFragment, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera fragment shader compilation failed:\n" << infoLog << std::endl;
+      return;
+    };
+
+    // shader Program
+    mlContext->cameraProgram = glCreateProgram();
+    glAttachShader(mlContext->cameraProgram, mlContext->cameraVertex);
+    glAttachShader(mlContext->cameraProgram, mlContext->cameraFragment);
+    glLinkProgram(mlContext->cameraProgram);
+    glGetProgramiv(mlContext->cameraProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+      char infoLog[4096];
+      GLsizei length;
+      glGetShaderInfoLog(mlContext->cameraProgram, sizeof(infoLog), &length, infoLog);
+      infoLog[length] = '\0';
+      std::cout << "ML camera program linking failed\n" << infoLog << std::endl;
+      return;
+    }
+
+    mlContext->pointLocation = glGetAttribLocation(mlContext->cameraProgram, "point");
+    if (mlContext->pointLocation == -1) {
+      std::cout << "ML camera program failed to get attrib location for 'point'" << std::endl;
+      return;
+    }
+    mlContext->uvLocation = glGetAttribLocation(mlContext->cameraProgram, "uv");
+    if (mlContext->uvLocation == -1) {
+      std::cout << "ML camera program failed to get attrib location for 'uv'" << std::endl;
+      return;
+    }
+    mlContext->cameraInTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "cameraInTexture");
+    if (mlContext->cameraInTextureLocation == -1) {
+      std::cout << "ML camera program failed to get uniform location for 'cameraInTexture'" << std::endl;
+      return;
+    }
+    mlContext->contentTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "contentTexture");
+    if (mlContext->contentTextureLocation == -1) {
+      std::cout << "ML camera program failed to get uniform location for 'contentTexture'" << std::endl;
+      return;
+    }
+
+    // delete the shaders as they're linked into our program now and no longer necessery
+    glDeleteShader(mlContext->cameraVertex);
+    glDeleteShader(mlContext->cameraFragment);
+
+    glGenBuffers(1, &mlContext->pointBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, mlContext->pointBuffer);
+    static const GLfloat points[] = {
+      -1.0f, -1.0f,
+      1.0f, -1.0f,
+      -1.0f, 1.0f,
+      1.0f, 1.0f,
+    };
+    glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(mlContext->pointLocation);
+    glVertexAttribPointer(mlContext->pointLocation, 2, GL_FLOAT, false, 0, 0);
+
+    glGenBuffers(1, &mlContext->uvBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, mlContext->uvBuffer);
+    static const GLfloat uvs[] = {
+      0.0f, 1.0f,
+      1.0f, 1.0f,
+      0.0f, 0.0f,
+      1.0f, 0.0f,
+    };
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(mlContext->uvLocation);
+    glVertexAttribPointer(mlContext->uvLocation, 2, GL_FLOAT, false, 0, 0);
+
+    glGenTextures(1, &mlContext->cameraInTexture);
+    mlContext->contentTexture = colorTex;
+    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraInTexture);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glGenTextures(1, &mlContext->cameraOutTexture);
+    // glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
+    glBindTexture(GL_TEXTURE_2D, mlContext->cameraOutTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CAMERA_SIZE[0], CAMERA_SIZE[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glGenFramebuffers(1, &mlContext->cameraFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->cameraFbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mlContext->cameraOutTexture, 0);
+
+    {
+      GLenum result = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+      if (result != GL_FRAMEBUFFER_COMPLETE) {
+        ML_LOG(Error, "%s: Failed to create generate camera framebuffer: %x", application_name, result);
+      }
+    }
+
+    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasVertexArrayBinding()) {
+      glBindVertexArray(gl->GetVertexArrayBinding());
+    } else {
+      glBindVertexArray(gl->defaultVao);
+    }
+    if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+      glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+    } else {
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+    } else {
+      glBindTexture(GL_TEXTURE_2D, 0);
+    }
   }
 
   // initialize perception system
   MLPerceptionSettings perception_settings;
 
-  MLResult perception_init_status = MLPerceptionInitSettings(&perception_settings);
-  if (perception_init_status != MLResult_Ok) {
+  if (MLPerceptionInitSettings(&perception_settings) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to initialize perception.", application_name);
-    info.GetReturnValue().Set(JS_BOOL(false));
+    info.GetReturnValue().Set(Nan::Null());
     return;
   }
 
-  MLResult perception_startup_status = MLPerceptionStartup(&perception_settings);
-  if (perception_startup_status != MLResult_Ok) {
+  if (MLPerceptionStartup(&perception_settings) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to startup perception.", application_name);
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
   }
 
-  MLGraphicsOptions graphics_options = { MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float };
-  MLHandle opengl_context = reinterpret_cast<MLHandle>(window);
-  mlContext->graphics_client = ML_INVALID_HANDLE;
-  MLResult graphics_create_status = MLGraphicsCreateClientGL(&graphics_options, opengl_context, &mlContext->graphics_client);
-
-  // Now that graphics is connected, the app is ready to go
-  if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
-    info.GetReturnValue().Set(JS_BOOL(false));
+  if (MLHeadTrackingCreate(&mlContext->head_tracker) != MLResult_Ok || MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to create head tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
     return;
   }
-
-  // HACK: force the app to be "running"
-  application_context.dummy_value = DummyValue::RUNNING;
-
-  if (MLHeadTrackingCreate(&mlContext->head_tracker) == MLResult_Ok) {
-    if (MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data) != MLResult_Ok) {
-      ML_LOG(Error, "%s: Failed to get head tracker static data.", application_name);
-    }
-  } else {
-    ML_LOG(Error, "%s: Failed to create head tracker.", application_name);
-  }
-
-  ML_LOG(Info, "%s: Start loop.", application_name);
-
-  glGenFramebuffers(1, &mlContext->framebuffer_id);
-
-  makePlanesQueryer(mlContext->planesFloorHandle);
-  makePlanesQueryer(mlContext->planesWallHandle);
-  makePlanesQueryer(mlContext->planesCeilingHandle);
 
   MLInputConfiguration inputConfiguration;
   for (int i = 0; i < MLInput_MaxControllers; i++) {
@@ -348,100 +1851,177 @@ NAN_METHOD(MLContext::Present) {
   }
   if (MLInputCreate(&inputConfiguration, &mlContext->inputTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create input tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
   }
 
-  if (MLGestureTrackingCreate(&mlContext->gestureTracker) != MLResult_Ok) {
+  {
+    keyboardCallbacks.on_char = onChar;
+    keyboardCallbacks.on_key_down = onKeyDown;
+    keyboardCallbacks.on_key_up = onKeyUp;
+    MLResult result = MLInputSetKeyboardCallbacks(mlContext->inputTracker, &keyboardCallbacks, nullptr);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to set keyboard callbacks %x", application_name, result);
+      Nan::ThrowError("MLContext::Present failed to set keyboard callbacks");
+      return;
+    }
+  }
+
+  /* if (MLGestureTrackingCreate(&mlContext->gestureTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
-  }
-
-  /* std::thread([mlContext]() {
-    MLMeshingSettings meshingSettings;
-    // meshingSettings.bounds_center = mlContext->position;
-    // meshingSettings.bounds_rotation = mlContext->rotation;
-    meshingSettings.bounds_center.x = 0;
-    meshingSettings.bounds_center.y = 0;
-    meshingSettings.bounds_center.z = 0;
-    meshingSettings.bounds_rotation.x = 0;
-    meshingSettings.bounds_rotation.y = 0;
-    meshingSettings.bounds_rotation.z = 0;
-    meshingSettings.bounds_rotation.w = 1;
-    meshingSettings.bounds_extents.x = 10;
-    meshingSettings.bounds_extents.y = 10;
-    meshingSettings.bounds_extents.z = 10;
-    meshingSettings.compute_normals = true;
-    meshingSettings.disconnected_component_area = 0.1;
-    meshingSettings.enable_meshing = true;
-    meshingSettings.fill_hole_length = 0.1;
-    meshingSettings.fill_holes = false;
-    meshingSettings.index_order_ccw = false;
-    // meshingSettings.mesh_type = MLMeshingType_PointCloud;
-    meshingSettings.mesh_type = MLMeshingType_Blocks;
-    // meshingSettings.meshing_poll_time = 1e9;
-    meshingSettings.meshing_poll_time = 0;
-    meshingSettings.planarize = false;
-    meshingSettings.remove_disconnected_components = false;
-    meshingSettings.remove_mesh_skirt = false;
-    meshingSettings.request_vertex_confidence = false;
-    meshingSettings.target_number_triangles_per_block = 0;
-    if (MLMeshingCreate(&meshingSettings, &mlContext->meshTracker) != MLResult_Ok) {
-      ML_LOG(Error, "%s: Failed to create mesh handle.", application_name);
-    }
-
-    MLDataArrayInitDiff(&mlContext->meshesDataDiff);
-    MLDataArrayInitDiff(&mlContext->meshesDataDiff2);
-
-    std::mutex mesherCvMutex;
-    for (;;) {
-      std::unique_lock<std::mutex> uniqueLock(mesherCvMutex);
-      mlContext->mesherCv.wait(uniqueLock);
-
-      {
-        std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
-
-        meshingSettings.bounds_center = mlContext->position;
-        meshingSettings.bounds_rotation = mlContext->rotation;
-      }
-
-      MLResult meshingUpdateResult = MLMeshingUpdate(mlContext->meshTracker, &meshingSettings);
-      if (meshingUpdateResult != MLResult_Ok) {
-        ML_LOG(Error, "MLMeshingUpdate failed: %s", application_name);
-      }
-
-      MLResult meshingStaticDataResult = MLMeshingGetStaticData(mlContext->meshTracker, &mlContext->meshStaticData);
-      if (meshingStaticDataResult == MLResult_Ok) {
-        std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
-        mlContext->haveMeshStaticData = true;
-      } else {
-        ML_LOG(Error, "MLMeshingGetStaticData failed: %s", application_name);
-      }
-    }
-  }); */
-
-  /* if (MLOcclusionCreateClient(&mlContext->occlusionTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to create occlusion tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
   } */
 
-  info.GetReturnValue().Set(JS_BOOL(true));
+  if (MLHandTrackingCreate(&handTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to create hand tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  MLHandTrackingConfiguration handTrackingConfig;
+  handTrackingConfig.handtracking_pipeline_enabled = true;
+  handTrackingConfig.keypoints_filter_level = MLKeypointFilterLevel_1;
+  handTrackingConfig.pose_filter_level = MLPoseFilterLevel_1;
+  for (int i = 0; i < MLHandTrackingKeyPose_Count; i++) {
+    handTrackingConfig.keypose_config[i] = true;
+  }
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Ok] = false;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_C] = false;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false; 
+  if (MLHandTrackingSetConfiguration(handTracker, &handTrackingConfig) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to set hand tracker config.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  MLMeshingSettings meshingSettings;
+  if (MLMeshingInitSettings(&meshingSettings) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to initialize meshing settings", application_name);
+  }
+  meshingSettings.flags |= MLMeshingFlags_ComputeNormals;
+  // meshingSettings.flags |= MLMeshingFlags_Planarize;
+  {
+    MLResult result = MLMeshingCreateClient(&meshTracker, &meshingSettings);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to create mesh handle %x", application_name, result);
+      Nan::ThrowError("MLContext::Present failed to create mesh handle");
+      return;
+    }
+  }
+
+  if (MLPlanesCreate(&planesTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create planes handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLEyeTrackingCreate(&eyeTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create eye handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  // Now that graphics is connected, the app is ready to go
+  if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  // HACK: force the app to be "running"
+  application_context.dummy_value = DummyValue::RUNNING;
+
+  ML_LOG(Info, "%s: Start loop.", application_name);
+
+  glGenFramebuffers(1, &mlContext->framebuffer_id);
+
+  Local<Object> result = Nan::New<Object>();
+  result->Set(JS_STR("width"), JS_INT(halfWidth));
+  result->Set(JS_STR("height"), JS_INT(height));
+  result->Set(JS_STR("fbo"), JS_INT(fbo));
+  result->Set(JS_STR("colorTex"), JS_INT(colorTex));
+  result->Set(JS_STR("depthStencilTex"), JS_INT(depthStencilTex));
+  result->Set(JS_STR("msFbo"), JS_INT(msFbo));
+  result->Set(JS_STR("msColorTex"), JS_INT(msColorTex));
+  result->Set(JS_STR("msDepthStencilTex"), JS_INT(msDepthStencilTex));
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(MLContext::Exit) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+
+  if (MLGraphicsDestroyClient(&mlContext->graphics_client) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  // destroy perception system
+  if (MLHeadTrackingDestroy(mlContext->head_tracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to destroy head tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLInputDestroy(mlContext->inputTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to destroy input tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLHandTrackingDestroy(handTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to destroy hand tracker.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLMeshingDestroyClient(&meshTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to destroy mesh handle", application_name);
+    return;
+  }
+
+  if (MLPlanesDestroy(planesTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to destroy planes handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLEyeTrackingDestroy(eyeTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create eye handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLPerceptionShutdown() != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to stop perception.", application_name);
+    info.GetReturnValue().Set(JS_BOOL(false));
+    return;
+  }
+
+  // HACK: force the app to be "stopped"
+  application_context.dummy_value = DummyValue::STOPPED;
+
+  glDeleteFramebuffers(1, &mlContext->framebuffer_id);
 }
 
 NAN_METHOD(MLContext::WaitGetPoses) {
-  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-
-  if (info[0]->IsUint32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsUint32Array() && info[4]->IsFloat32Array() && info[5]->IsUint32Array() && info[6]->IsFloat32Array() && info[7]->IsFloat32Array()) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsFloat32Array() && info[5]->IsFloat32Array() && info[6]->IsFloat32Array()) {
     if (application_context.dummy_value == DummyValue::RUNNING) {
-      Local<Uint32Array> framebufferArray = Local<Uint32Array>::Cast(info[0]);
-      Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[1]);
-      Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[2]);
-      Local<Uint32Array> viewportArray = Local<Uint32Array>::Cast(info[3]);
-      Local<Float32Array> planesArray = Local<Float32Array>::Cast(info[4]);
-      Local<Uint32Array> numPlanesArray = Local<Uint32Array>::Cast(info[5]);
+      MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+      WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+
+      GLuint framebuffer = info[1]->Uint32Value();
+      GLuint width = info[2]->Uint32Value();
+      GLuint height = info[3]->Uint32Value();
+      Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[4]);
+      Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[5]);
       Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[6]);
-      Local<Float32Array> gesturesArray = Local<Float32Array>::Cast(info[7]);
 
       MLGraphicsFrameParams frame_params;
       MLResult result = MLGraphicsInitFrameParams(&frame_params);
       if (result != MLResult_Ok) {
-        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
+        ML_LOG(Error, "MLGraphicsInitFrameParams complained: %d", result);
       }
       frame_params.surface_scale = 1.0f;
       frame_params.projection_type = MLGraphicsProjectionType_Default;
@@ -450,184 +2030,142 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       frame_params.focus_distance = 1.0f;
 
       result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
-      }
 
-      // framebuffer
-      framebufferArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
-      framebufferArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
-
-      // transform
-      for (int i = 0; i < 2; i++) {
-        const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
-        const MLTransform &transform = cameraInfo.transform;
-        transformArray->Set(i*7 + 0, JS_NUM(transform.position.x));
-        transformArray->Set(i*7 + 1, JS_NUM(transform.position.y));
-        transformArray->Set(i*7 + 2, JS_NUM(transform.position.z));
-        transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
-        transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
-        transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
-        transformArray->Set(i*7 + 6, JS_NUM(transform.rotation.w));
-
-        const MLMat4f &projection = cameraInfo.projection;
-        for (int j = 0; j < 16; j++) {
-          projectionArray->Set(i*16 + j, JS_NUM(projection.matrix_colmajor[j]));
-        }
-      }
-
-      // position
-      {
-        std::unique_lock<std::mutex> uniqueLock(mlContext->positionMutex);
-
-        const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
-
-        mlContext->position = leftCameraTransform.position;
-        mlContext->rotation = leftCameraTransform.rotation;
-      }
-
-      // viewport
-      const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
-      viewportArray->Set(0, JS_INT((int)viewport.x));
-      viewportArray->Set(1, JS_INT((int)viewport.y));
-      viewportArray->Set(2, JS_INT((unsigned int)viewport.w));
-      viewportArray->Set(3, JS_INT((unsigned int)viewport.h));
-
-      // planes
-      endPlanesQuery(mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, mlContext->floorPlanes, &mlContext->numFloorPlanes);
-      endPlanesQuery(mlContext->planesWallHandle, mlContext->planesWallQueryHandle, mlContext->wallPlanes, &mlContext->numWallPlanes);
-      endPlanesQuery(mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, mlContext->ceilingPlanes, &mlContext->numCeilingPlanes);
-
-      uint32_t planesIndex = 0;
-      readPlanesQuery(mlContext->floorPlanes, mlContext->numFloorPlanes, 0, planesArray, &planesIndex);
-      readPlanesQuery(mlContext->wallPlanes, mlContext->numWallPlanes, 1, planesArray, &planesIndex);
-      readPlanesQuery(mlContext->ceilingPlanes, mlContext->numCeilingPlanes, 2, planesArray, &planesIndex);
-      numPlanesArray->Set(0, JS_INT((int)planesIndex));
-
-      // controllers
-      MLInputControllerState controllerStates[MLInput_MaxControllers];
-      result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
       if (result == MLResult_Ok) {
-        for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
-          MLInputControllerState &controllerState = controllerStates[i];
-          MLVec3f &position = controllerState.position;
-          MLQuaternionf &orientation = controllerState.orientation;
-          float trigger = controllerState.trigger_normalized;
+        // transform
+        for (int i = 0; i < 2; i++) {
+          const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
+          const MLTransform &transform = cameraInfo.transform;
+          transformArray->Set(i*7 + 0, JS_NUM(transform.position.x));
+          transformArray->Set(i*7 + 1, JS_NUM(transform.position.y));
+          transformArray->Set(i*7 + 2, JS_NUM(transform.position.z));
+          transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
+          transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
+          transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
+          transformArray->Set(i*7 + 6, JS_NUM(transform.rotation.w));
 
-          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
-          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 1, JS_NUM(position.y));
-          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 2, JS_NUM(position.z));
-          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 3, JS_NUM(orientation.x));
-          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 4, JS_NUM(orientation.y));
-          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 5, JS_NUM(orientation.z));
-          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 6, JS_NUM(orientation.w));
-          controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 7, JS_NUM(trigger));
+          const MLMat4f &projection = cameraInfo.projection;
+          for (int j = 0; j < 16; j++) {
+            projectionArray->Set(i*16 + j, JS_NUM(projection.matrix_colmajor[j]));
+          }
         }
-      } else {
-        ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
-      }
 
-      // gestures
-      MLGestureData gestureData;
-      result = MLGestureGetData(mlContext->gestureTracker, &gestureData);
-      if (result == MLResult_Ok) {
-        MLGestureOneHandedState &leftHand = gestureData.left_hand_state;
-        MLVec3f &leftCenter = leftHand.hand_center_normalized;
-        gesturesArray->Set(0*4 + 0, JS_NUM(leftCenter.x));
-        gesturesArray->Set(0*4 + 1, JS_NUM(leftCenter.y));
-        gesturesArray->Set(0*4 + 2, JS_NUM(leftCenter.z));
-        gesturesArray->Set(0*4 + 3, JS_NUM(gestureCategoryToIndex(leftHand.static_gesture_category)));
+        // position
+        {
+          // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
-        MLGestureOneHandedState &rightHand = gestureData.right_hand_state;
-        MLVec3f &rightCenter = rightHand.hand_center_normalized;
-        gesturesArray->Set(1*4 + 0, JS_NUM(rightCenter.x));
-        gesturesArray->Set(1*4 + 1, JS_NUM(rightCenter.y));
-        gesturesArray->Set(1*4 + 2, JS_NUM(rightCenter.z));
-        gesturesArray->Set(1*4 + 3, JS_NUM(gestureCategoryToIndex(rightHand.static_gesture_category)));
-      } else {
-        ML_LOG(Error, "MLGestureGetData failed: %s", application_name);
-      }
+          const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
+          mlContext->position = leftCameraTransform.position;
+          mlContext->rotation = leftCameraTransform.rotation;
+        }
 
-      // meshing
-      {
-        std::unique_lock<std::mutex> uniqueLock(mlContext->mesherMutex);
+        // controllers
+        MLInputControllerState controllerStates[MLInput_MaxControllers];
+        result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
+        if (result == MLResult_Ok) {
+          for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
+            MLInputControllerState &controllerState = controllerStates[i];
+            MLVec3f &position = controllerState.position;
+            MLQuaternionf &orientation = controllerState.orientation;
+            float trigger = controllerState.trigger_normalized;
+            float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
+            float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
+            MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
 
-        if (mlContext->haveMeshStaticData) {
-          // MLCoordinateFrameUID coordinateFrame = mlContext->meshStaticData.frame;
-          MLDataArrayHandle &meshesHandle = mlContext->meshStaticData.meshes;
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 1, JS_NUM(position.y));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 2, JS_NUM(position.z));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 3, JS_NUM(orientation.x));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 4, JS_NUM(orientation.y));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 5, JS_NUM(orientation.z));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 6, JS_NUM(orientation.w));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 7, JS_NUM(trigger));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 8, JS_NUM(bumper));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 9, JS_NUM(home));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 10, JS_NUM(touchPosAndForce.x));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 11, JS_NUM(touchPosAndForce.y));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 12, JS_NUM(touchPosAndForce.z));
+          }
+        } else {
+          ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
+        }
 
-          MLResult lockResult = MLDataArrayTryLock(meshesHandle, &mlContext->meshData, &mlContext->meshesDataDiff);
-          if (lockResult == MLResult_Ok) {
-            if (mlContext->meshData.stream_count > 0) {
-              MLDataArrayStream &handleStream = mlContext->meshData.streams[0];
+        if (depthEnabled) {
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
 
-              if (handleStream.type == MLDataArrayType_Handle) {
-                MLDataArrayHandle &meshesHandle2 = *handleStream.handle_array;
+          glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+          glClearColor(0.0, 0.0, 0.0, 1.0);
+          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+          glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-                MLResult lockResult2 = MLDataArrayTryLock(meshesHandle2, &mlContext->meshData2, &mlContext->meshesDataDiff2);
-                if (lockResult2 == MLResult_Ok) {
-                  uint32_t positionIndex = mlContext->meshStaticData.position_stream_index;
-                  MLDataArrayStream &positionStream = mlContext->meshData2.streams[positionIndex];
-                  uint32_t numPositionPoints = positionStream.count;
-                  uint32_t positionsSize = numPositionPoints * positionStream.data_size;
-                  mlContext->positions.resize(positionsSize);
-                  memcpy(mlContext->positions.data(), positionStream.custom_array, positionsSize);
+          glBindVertexArray(mlContext->meshVao);
 
-                  uint32_t normalIndex = mlContext->meshStaticData.normal_stream_index;
-                  MLDataArrayStream &normalStream = mlContext->meshData2.streams[normalIndex];
-                  uint32_t numNormalPoints = normalStream.count;
-                  uint32_t normalsSize = numNormalPoints * normalStream.data_size;
-                  mlContext->normals.resize(normalsSize);
-                  memcpy(mlContext->normals.data(), normalStream.custom_array, normalsSize);
+          glUseProgram(mlContext->meshProgram);
 
-                  uint32_t triangleIndex = mlContext->meshStaticData.triangle_index_stream_index;
-                  MLDataArrayStream &triangleStream = mlContext->meshData2.streams[triangleIndex];
-                  uint32_t numTriangles = triangleStream.count;
-                  uint32_t trianglesSize = numTriangles * triangleStream.data_size;
-                  mlContext->triangles.resize(trianglesSize);
-                  memcpy(mlContext->triangles.data(), triangleStream.custom_array, trianglesSize);
+          for (const auto &iter : meshBuffers) {
+            const MeshBuffer &meshBuffer = iter.second;
 
-                  MLDataArrayUnlock(meshesHandle2);
-                } else if (lockResult2 == MLResult_Pending) {
-                  // nothing
-                } else if (lockResult2 == MLResult_Locked) {
-                  ML_LOG(Error, "MLDataArrayTryLock inner already locked: %d", lockResult2);
-                } else {
-                  ML_LOG(Error, "MLDataArrayTryLock inner failed: %d", lockResult2);
-                }
-              } else {
-                ML_LOG(Error, "invalid handle stream type: %d", handleStream.type);
+            if (meshBuffer.numIndices > 0) {
+              glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
+              glEnableVertexAttribArray(mlContext->positionLocation);
+              glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+              glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
+
+              for (int side = 0; side < 2; side++) {
+                const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
+                const MLTransform &transform = cameraInfo.transform;
+                const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
+                glUniformMatrix4fv(mlContext->modelViewMatrixLocation, 1, false, modelView.matrix_colmajor);
+
+                const MLMat4f &projection = cameraInfo.projection;
+                glUniformMatrix4fv(mlContext->projectionMatrixLocation, 1, false, projection.matrix_colmajor);
+
+                glViewport(side * width/2, 0, width/2, height);
+
+                glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
               }
-            } else {
-              ML_LOG(Error, "invalid stream count: %d", mlContext->meshData.stream_count);
             }
-
-            MLDataArrayUnlock(meshesHandle);
-          } else if (lockResult == MLResult_Pending) {
-            // nothing
-          } else if (lockResult == MLResult_Locked) {
-            ML_LOG(Error, "MLDataArrayTryLock outer already locked: %d", lockResult);
-          } else {
-            ML_LOG(Error, "MLDataArrayTryLock outer failed: %d", lockResult);
           }
 
-          mlContext->haveMeshStaticData = false;
+          if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+          } else {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+          }
+          if (gl->HasProgramBinding()) {
+            glUseProgram(gl->GetProgramBinding());
+          } else {
+            glUseProgram(0);
+          }
+          if (gl->viewportState.valid) {
+            glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+          } else {
+            glViewport(0, 0, 1280, 1024);
+          }
+          if (gl->HasVertexArrayBinding()) {
+            glBindVertexArray(gl->GetVertexArrayBinding());
+          } else {
+            glBindVertexArray(gl->defaultVao);
+          }
+          if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+            glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+          } else {
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+          }
+          if (gl->colorMaskState.valid) {
+            glColorMask(gl->colorMaskState.r, gl->colorMaskState.g, gl->colorMaskState.b, gl->colorMaskState.a);
+          } else {
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+          }
         }
-      }
 
-      /* // occlusion
-      MLOcclusionDepthBufferInfo occlusionBuffer;
-      for (size_t i = 0; i < 2; i++) {
-        occlusionBuffer.buffers[i].projection = mlContext->virtual_camera_array.virtual_cameras[i].projection;
-        occlusionBuffer.buffers[i].transform = mlContext->virtual_camera_array.virtual_cameras[i].transform;
+        info.GetReturnValue().Set(JS_BOOL(true));
+      } else {
+        ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
+
+        info.GetReturnValue().Set(JS_BOOL(false));
       }
-      occlusionBuffer.projection_type = MLGraphicsProjectionType_Default;
-      occlusionBuffer.num_buffers = 2;
-      occlusionBuffer.viewport = viewport;
-      MLResult result = MLOcclusionPopulateDepth(mlContext->occlusionTracker, &occlusionBuffer);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "MLOcclusionPopulateDepth outer failed: %d", result);
-      } */
     } else if (application_context.dummy_value == DummyValue::RUNNING) {
       Nan::ThrowError("MLContext::WaitGetPoses called for paused app");
     } else {
@@ -641,54 +2179,62 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  // blit
-  GLuint src_framebuffer_id = info[0]->Uint32Value();
-  unsigned int width = info[1]->Uint32Value();
-  unsigned int height = info[2]->Uint32Value();
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    GLuint src_framebuffer_id = info[1]->Uint32Value();
+    unsigned int width = info[2]->Uint32Value();
+    unsigned int height = info[3]->Uint32Value();
 
-  const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
+    const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
 
-  for (int i = 0; i < 2; i++) {
-    MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
+    for (int i = 0; i < 2; i++) {
+      MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
+      
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
+      glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+      // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
+      glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
+        i == 0 ? width/2 : width, height,
+        viewport.x, viewport.y,
+        viewport.w, viewport.h,
+        GL_COLOR_BUFFER_BIT,
+        GL_LINEAR);
 
-    glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
-      i == 0 ? width/2 : width, height,
-      viewport.x, viewport.y,
-      viewport.w, viewport.h,
-      GL_COLOR_BUFFER_BIT,
-      GL_LINEAR);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
-    if (result != MLResult_Ok) {
-      ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
+      MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
+      }
     }
+
+    MLResult result = MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+    }
+    
+    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+  } else {
+    Nan::ThrowError("MLContext::SubmitFrame: invalid arguments");
   }
-
-  MLResult result = MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle);
-  if (result != MLResult_Ok) {
-    ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
-  }
-
-  // planes
-  /* beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesFloorHandle, mlContext->planesFloorQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor));
-  beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesWallHandle, mlContext->planesWallQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Wall));
-  beginPlanesQuery(mlContext->position, mlContext->rotation, mlContext->planesCeilingHandle, mlContext->planesCeilingQueryHandle, static_cast<MLPlanesQueryFlags>(MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Ceiling));
-
-  // meshing
-  mlContext->mesherCv.notify_one(); */
 }
 
 NAN_METHOD(MLContext::IsPresent) {
   info.GetReturnValue().Set(JS_BOOL(isPresent()));
+}
+
+NAN_METHOD(MLContext::IsSimulated) {
+  info.GetReturnValue().Set(JS_BOOL(isSimulated()));
 }
 
 NAN_METHOD(MLContext::OnPresentChange) {
@@ -696,7 +2242,433 @@ NAN_METHOD(MLContext::OnPresentChange) {
     Local<Function> initCbFn = Local<Function>::Cast(info[0]);
     initCb.Reset(initCbFn);
   } else {
-    Nan::ThrowError("not implemented");
+    Nan::ThrowError("MLContext::OnPresentChange: invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::RequestMeshing) {
+  Local<Function> mlMesherCons = Nan::New(mlMesherConstructor);
+  Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlMesherObj);
+}
+
+NAN_METHOD(MLContext::RequestPlaneTracking) {
+  Local<Function> mlPlaneTrackerCons = Nan::New(mlPlaneTrackerConstructor);
+  Local<Object> mlPlaneTrackerObj = mlPlaneTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlPlaneTrackerObj);
+}
+
+NAN_METHOD(MLContext::RequestHandTracking) {
+  Local<Function> mlHandTrackerCons = Nan::New(mlHandTrackerConstructor);
+  Local<Object> mlHandTrackerObj = mlHandTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlHandTrackerObj);
+}
+
+NAN_METHOD(MLContext::RequestEyeTracking) {
+  Local<Function> mlEyeTrackerCons = Nan::New(mlEyeTrackerConstructor);
+  Local<Object> mlEyeTrackerObj = mlEyeTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(mlEyeTrackerObj);
+}
+
+NAN_METHOD(MLContext::RequestDepthPopulation) {
+  if (info[0]->IsBoolean()) {
+    depthEnabled = info[0]->BooleanValue();
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+bool cameraConnected = false;
+NAN_METHOD(MLContext::RequestCamera) {
+  if (info[0]->IsFunction()) {
+    if (!cameraConnected) {
+      MLResult result = MLCameraConnect();
+
+      if (result == MLResult_Ok) {
+        cameraConnected = true;
+
+        std::thread([]() -> void {
+          for (;;) {
+            uv_sem_wait(&cameraConvertSem);
+
+            cameraRequestSize = SjpegCompress(cameraRequestRgb, CAMERA_SIZE[0], CAMERA_SIZE[1], 50.0f, &cameraRequestJpeg);
+
+            uv_async_send(&cameraConvertAsync);
+          }
+        }).detach();
+      } else {
+        ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
+        Nan::ThrowError("failed to connect camera");
+        return;
+      }
+    }
+
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+    {
+      // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+
+      CameraRequest *cameraRequest = new CameraRequest(cbFn);
+      cameraRequests.push_back(cameraRequest);
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+    return;
+  }
+}
+
+NAN_METHOD(MLContext::CancelCamera) {
+  if (info[0]->IsFunction()) {
+    Local<Function> cbFn = Local<Function>::Cast(info[0]);
+
+    {
+      // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+
+      cameraRequests.erase(std::remove_if(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) -> bool {
+        Local<Function> localCbFn = Nan::New(c->cbFn);
+        if (localCbFn->StrictEquals(cbFn)) {
+          delete c;
+          return true;
+        } else {
+          return false;
+        }
+      }), cameraRequests.end());
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]);
+void setFingerValue(const MLThumbState &thumbState, MLSnapshot *snapshot, float data[4][1 + 3]);
+void setFingerValue(const MLFingerState &fingerState, MLSnapshot *snapshot, float data[4][1 + 3]);
+void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, float data[1 + 3]);
+void setFingerValue(float data[1 + 3]);
+
+void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]) {
+  setFingerValue(wristState.radial, snapshot, data[0]);
+  setFingerValue(wristState.ulnar, snapshot, data[1]);
+  setFingerValue(wristState.center, snapshot, data[2]);
+  setFingerValue(data[3]);
+}
+void setFingerValue(const MLThumbState &thumbState, MLSnapshot *snapshot, float data[4][1 + 3]) {
+  setFingerValue(thumbState.cmc, snapshot, data[0]);
+  setFingerValue(thumbState.mcp, snapshot, data[1]);
+  setFingerValue(thumbState.ip, snapshot, data[2]);
+  setFingerValue(thumbState.tip, snapshot, data[3]);
+}
+void setFingerValue(const MLFingerState &fingerState, MLSnapshot *snapshot, float data[4][1 + 3]) {
+  setFingerValue(fingerState.mcp, snapshot, data[0]);
+  setFingerValue(fingerState.pip, snapshot, data[1]);
+  setFingerValue(fingerState.dip, snapshot, data[2]);
+  setFingerValue(fingerState.tip, snapshot, data[3]);
+}
+void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, float data[1 + 3]) {
+  uint32_t *uint32Data = (uint32_t *)data;
+  float *floatData = (float *)data;
+
+  if (keyPointState.is_valid) {
+    MLTransform transform;
+    MLResult result = MLSnapshotGetTransform(snapshot, &keyPointState.frame_id, &transform);
+    if (result == MLResult_Ok) {
+      // ML_LOG(Info, "%s: ML keypoint ok", application_name);
+
+      uint32Data[0] = true;
+      floatData[1] = transform.position.x;
+      floatData[2] = transform.position.y;
+      floatData[3] = transform.position.z;
+    } else {
+      // ML_LOG(Error, "%s: ML failed to get finger transform: %s", application_name, MLSnapshotGetResultString(result));
+
+      uint32Data[0] = false;
+      const MLVec3f &position = MLVec3f{0, 0, 0};
+      floatData[1] = position.x;
+      floatData[2] = position.y;
+      floatData[3] = position.z;
+    }
+  } else {
+    uint32Data[0] = false;
+    const MLVec3f &position = MLVec3f{0, 0, 0};
+    floatData[1] = position.x;
+    floatData[2] = position.y;
+    floatData[3] = position.z;
+  }
+}
+void setFingerValue(float data[1 + 3]) {
+  uint32_t *uint32Data = (uint32_t *)data;
+  float *floatData = (float *)data;
+
+  uint32Data[0] = false;
+  const MLVec3f &position = MLVec3f{0, 0, 0};
+  floatData[1] = position.x;
+  floatData[2] = position.y;
+  floatData[3] = position.z;
+}
+
+NAN_METHOD(MLContext::PrePollEvents) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+  MLSnapshot *snapshot = nullptr;
+
+  if (handTrackers.size() > 0) {
+    MLResult result = MLHandTrackingGetData(handTracker, &handData);
+    if (result == MLResult_Ok) {
+      MLResult result = MLHandTrackingGetStaticData(handTracker, &handStaticData);
+      if (result == MLResult_Ok) {
+        if (!snapshot) {
+          if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
+            ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
+          }
+        }
+
+        // setFingerValue(handData.left_hand_state, handBones[0][0]);
+        setFingerValue(handStaticData.left.wrist, snapshot, wristBones[0]);
+        setFingerValue(handStaticData.left.thumb, snapshot, fingerBones[0][0]);
+        setFingerValue(handStaticData.left.index, snapshot, fingerBones[0][1]);
+        setFingerValue(handStaticData.left.middle, snapshot, fingerBones[0][2]);
+        setFingerValue(handStaticData.left.ring, snapshot, fingerBones[0][3]);
+        setFingerValue(handStaticData.left.pinky, snapshot, fingerBones[0][4]);
+
+        // setFingerValue(handData.left_hand_state, handBones[1][0]);
+        setFingerValue(handStaticData.right.wrist, snapshot, wristBones[1]);
+        setFingerValue(handStaticData.right.thumb, snapshot, fingerBones[1][0]);
+        setFingerValue(handStaticData.right.index, snapshot, fingerBones[1][1]);
+        setFingerValue(handStaticData.right.middle, snapshot, fingerBones[1][2]);
+        setFingerValue(handStaticData.right.ring, snapshot, fingerBones[1][3]);
+        setFingerValue(handStaticData.right.pinky, snapshot, fingerBones[1][4]);
+
+        std::for_each(handTrackers.begin(), handTrackers.end(), [&](MLHandTracker *h) {
+          h->Poll();
+        });
+      } else {
+        ML_LOG(Error, "%s: Hand static data get failed! %x", application_name, result);
+      }
+    } else {
+      ML_LOG(Error, "%s: Hand data get failed! %x", application_name, result);
+    }
+  }
+
+  if (eyeTrackers.size() > 0) {
+    if (MLEyeTrackingGetState(eyeTracker, &eyeState) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Eye get state failed!", application_name);
+    }
+
+    if (MLEyeTrackingGetStaticData(eyeTracker, &eyeStaticData) != MLResult_Ok) {
+      ML_LOG(Error, "%s: Eye get static data failed!", application_name);
+    }
+
+    if (!snapshot) {
+      if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
+        ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
+      }
+    }
+    std::for_each(eyeTrackers.begin(), eyeTrackers.end(), [&](MLEyeTracker *e) {
+      e->Poll(snapshot);
+    });
+  }
+
+  if ((meshers.size() > 0 || depthEnabled) && !meshInfoRequestPending && !meshRequestsPending) {
+    {
+      // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+
+      meshExtents.center = mlContext->position;
+      // meshExtents.rotation =  mlContext->rotation;
+      meshExtents.rotation = {0, 0, 0, 1};
+    }
+    meshExtents.extents.x = 3;
+    meshExtents.extents.y = 3;
+    meshExtents.extents.z = 3;
+
+    MLResult result = MLMeshingRequestMeshInfo(meshTracker, &meshExtents, &meshInfoRequestHandle);
+    if (result == MLResult_Ok) {
+      meshInfoRequestPending = true;
+    } else {
+      ML_LOG(Error, "%s: Mesh info request failed! %x", application_name, result);
+    }
+  }
+
+  if (planeTrackers.size() > 0 && !planesRequestPending) {
+    {
+      // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+
+      planesRequest.bounds_center = mlContext->position;
+      // planesRequest.bounds_rotation = mlContext->rotation;
+      planesRequest.bounds_rotation = {0, 0, 0, 1};
+    }
+    planesRequest.bounds_extents.x = 3;
+    planesRequest.bounds_extents.y = 3;
+    planesRequest.bounds_extents.z = 3;
+
+    planesRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All;
+    planesRequest.min_hole_length = 0.5;
+    planesRequest.min_plane_area = 0.25;
+    planesRequest.max_results = MAX_NUM_PLANES;
+
+    MLResult result = MLPlanesQueryBegin(planesTracker, &planesRequest, &planesRequestHandle);
+    if (result == MLResult_Ok) {
+      planesRequestPending = true;
+    } else {
+      ML_LOG(Error, "%s: Planes request failed! %x", application_name, result);
+    }
+  }
+
+  {
+    // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+
+    if (cameraRequests.size() > 0) {
+      cameraRequestConditionVariable.notify_one();
+    }
+  }
+
+  if (snapshot) {
+    if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
+      ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
+    }
+  }
+}
+
+NAN_METHOD(MLContext::PostPollEvents) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+
+  GLuint fbo = info[2]->Uint32Value();
+
+  if (meshInfoRequestPending) {
+    MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
+    if (result == MLResult_Ok) {
+      uint32_t dataCount = meshInfo.data_count;
+
+      meshRequestNewMap.clear();
+      meshRequestRemovedMap.clear();
+      meshRequestUnchangedMap.clear();
+      for (uint32_t i = 0; i < dataCount; i++) {
+        const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
+        const MLMeshingMeshState &state = meshBlockInfo.state;
+        MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
+        meshBlockRequest.id = meshBlockInfo.id;
+        // meshBlockRequest.level = MLMeshingLOD_Minimum;
+        meshBlockRequest.level = MLMeshingLOD_Medium;
+        // meshBlockRequest.level = MLMeshingLOD_Maximum;
+
+        const std::string &id = id2String(meshBlockInfo.id);
+        meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
+        meshRequestRemovedMap[id] = (state == MLMeshingMeshState_Deleted);
+        meshRequestUnchangedMap[id] = (state == MLMeshingMeshState_Unchanged);
+      }
+      numMeshBlockRequests = dataCount;
+
+      meshInfoRequestPending = false;
+      meshRequestsPending = true;
+      meshRequestPending = false;
+      meshBlockRequestIndex = 0;
+      MLMeshingFreeResource(meshTracker, &meshInfoRequestHandle);
+    } else if (result == MLResult_Pending) {
+      // nothing
+    } else {
+      ML_LOG(Error, "%s: Mesh info get failed! %x", application_name, result);
+
+      meshInfoRequestPending = false;
+    }
+  }
+  if (meshRequestsPending && !meshRequestPending) {
+    if (meshBlockRequestIndex < numMeshBlockRequests) {
+      uint32_t requestsRemaining = numMeshBlockRequests - meshBlockRequestIndex;
+      uint32_t requestsThisTime = std::min<uint32_t>(requestsRemaining, 16);
+      meshRequest.data = meshBlockRequests.data() + meshBlockRequestIndex;
+      meshRequest.request_count = requestsThisTime;
+
+      meshBlockRequestIndex += requestsThisTime;
+
+      MLResult result = MLMeshingRequestMesh(meshTracker, &meshRequest, &meshRequestHandle);
+      if (result == MLResult_Ok) {
+        meshRequestsPending = true;
+        meshRequestPending = true;
+      } else {
+        ML_LOG(Error, "%s: Mesh request failed! %x", application_name, result);
+
+        meshRequestsPending = false;
+        meshRequestPending = false;
+      }
+    } else {
+      meshRequestsPending = false;
+      meshRequestPending = false;
+    }
+  }
+  if (meshRequestsPending && meshRequestPending) {
+    MLResult result = MLMeshingGetMeshResult(meshTracker, meshRequestHandle, &mesh);
+    if (result == MLResult_Ok) {
+      MLMeshingBlockMesh *blockMeshes = mesh.data;
+      uint32_t dataCount = mesh.data_count;
+
+      for (uint32_t i = 0; i < dataCount; i++) {
+        MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+        const std::string &id = id2String(blockMesh.id);
+
+        if (!meshRequestRemovedMap[id]) {
+          MeshBuffer *meshBuffer;
+          auto iter = meshBuffers.find(id);
+          if (iter != meshBuffers.end()) {
+            meshBuffer = &iter->second;
+          } else {
+            GLuint buffers[3];
+            glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
+            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2]);
+            meshBuffer = &meshBuffers[id];
+          }
+
+          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
+        } else {
+          auto iter = meshBuffers.find(id);
+          if (iter != meshBuffers.end()) {
+            MeshBuffer *meshBuffer = &iter->second;
+            GLuint buffers[3] = {
+              meshBuffer->positionBuffer,
+              meshBuffer->normalBuffer,
+              meshBuffer->indexBuffer,
+            };
+            glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
+            meshBuffers.erase(iter);
+          }
+        }
+      }
+
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+
+      std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
+        m->Poll();
+      });
+
+      meshRequestsPending = true;
+      meshRequestPending = false;
+
+      MLMeshingFreeResource(meshTracker, &meshRequestHandle);
+    } else if (result == MLResult_Pending) {
+      // nothing
+    } else {
+      ML_LOG(Error, "%s: Mesh get failed! %x", application_name, result);
+
+      meshRequestsPending = true;
+      meshRequestPending = false;
+    }
+  }
+
+  if (planesRequestPending) {
+    MLResult result = MLPlanesQueryGetResults(planesTracker, planesRequestHandle, planeResults, &numPlanesResults);
+    if (result == MLResult_Ok) {
+      std::for_each(planeTrackers.begin(), planeTrackers.end(), [&](MLPlaneTracker *p) {
+        p->Poll();
+      });
+
+      planesRequestPending = false;
+    } else if (result == MLResult_Pending) {
+      // nothing
+    } else {
+      ML_LOG(Error, "%s: Planes request failed! %x", application_name, result);
+
+      planesRequestPending = false;
+    }
   }
 }
 
