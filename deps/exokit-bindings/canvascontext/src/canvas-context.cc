@@ -2,21 +2,14 @@
 
 
 #include "gl/GrGLInterface.h"
-#include "GLFW/glfw3.h"
 #include "GrBackendSurface.h"
 #include "GrContext.h"
-#include "SkCanvas.h"
-#include "SkColorSpace.h"
-#include "SkSurface.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 using namespace v8;
 using namespace node;
 
 
 GrContext* sContext = nullptr;
-SkSurface* sSurface = nullptr;
 
 bool isImageValue(Local<Value> arg) {
   if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
