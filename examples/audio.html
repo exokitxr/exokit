@@ -91,7 +91,22 @@
 
     init();
 
-    (async () => {
+    audio = document.createElement('audio');
+    audio.oncanplay = () => {
+      console.log('audio loaded');
+
+      setInterval(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play();
+      }, 1000);
+    };
+    audio.onerror = err => {
+      console.warn('audio error', err.stack);
+    };
+    audio.src = 'ohno.mp3';
+
+    /* (async () => {
       console.log('request device');
       display = await navigator.xr.requestDevice();
       console.log('request session');
@@ -106,24 +121,9 @@
           frameOfReferenceType: 'stage',
         });
 
-        audio = document.createElement('audio');
-        audio.oncanplay = () => {
-          console.log('audio loaded');
-
-          setInterval(() => {
-            audio.pause();
-            audio.currentTime = 0;
-            audio.play();
-          }, 1000);
-        };
-        audio.onerror = err => {
-          console.warn('audio error', err.stack);
-        };
-        audio.src = 'ohno.mp3';
-
         console.log('running!');
       });
-    })();
+    })(); */
   </script>
   </body>
 </html>
