@@ -40,7 +40,8 @@ NAN_METHOD(StereoPannerNode::New) {
     Local<Object> stereoPannerNodeObj = info.This();
     stereoPannerNode->Wrap(stereoPannerNodeObj);
 
-    shared_ptr<lab::StereoPannerNode> labStereoPannerNode = make_shared<lab::StereoPannerNode>(getDefaultAudioContext()->sampleRate());
+    AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+    shared_ptr<lab::StereoPannerNode> labStereoPannerNode = make_shared<lab::StereoPannerNode>(audioContext->sampleRate());
     
     stereoPannerNode->context.Reset(audioContextObj);
     stereoPannerNode->audioNode = labStereoPannerNode;
