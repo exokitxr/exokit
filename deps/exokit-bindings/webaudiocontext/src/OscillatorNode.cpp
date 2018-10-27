@@ -41,9 +41,10 @@ NAN_METHOD(OscillatorNode::New) {
     Local<Object> oscillatorNodeObj = info.This();
     oscillatorNode->Wrap(oscillatorNodeObj);
 
-    double sampleRate = getDefaultAudioContext()->sampleRate();
+    AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+    oscillatorNode->audioNode = make_shared<lab::OscillatorNode>(audioContext->sampleRate());
+
     oscillatorNode->context.Reset(audioContextObj);
-    oscillatorNode->audioNode = make_shared<lab::OscillatorNode>(sampleRate);
 
     Local<Function> audioParamConstructor = Local<Function>::Cast(oscillatorNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioParam")));
 
