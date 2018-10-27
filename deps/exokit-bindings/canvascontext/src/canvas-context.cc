@@ -1,15 +1,36 @@
 #include <canvascontext/include/canvas-context.h>
 
-
 #include "gl/GrGLInterface.h"
 #include "GrBackendSurface.h"
 #include "GrContext.h"
+
+ 
+#include <GLFW/glfw3.h>
+#include "gl/GrGLAssembleInterface.h"
 
 using namespace v8;
 using namespace node;
 
 
 GrContext* sContext = nullptr;
+
+// https://github.com/google/skia/blob/master/include/gpu/GrContext.h#L58
+// https://codereview.chromium.org/1827153003 and https://codereview.chromium.org/1827153003/patch/20001/30002
+
+static GrGLFuncPtr glfw_get(void* ctx, const char name[]) {
+   SkASSERT(nullptr == ctx);
+   SkASSERT(glfwGetCurrentContext());
+   return glfwGetProcAddress(name);
+}
+
+const GrGLInterface* GrGLCreateNativeInterfaceGLFW() {
+  if (nullptr == glfwGetCurrentContext()) {
+    return nullptr;
+  }
+ 
+  return GrGLAssembleInterface(nullptr, glfw_get);
+}
+
 
 bool isImageValue(Local<Value> arg) {
   if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
@@ -260,9 +281,37 @@ void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, floa
   surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
 }
 
+sk_sp<SkSurface> getSurface(unsigned int width, unsigned int height){
+  GrContextOptions options;
+  // glfwGetCurrentContext();
+  
+  // options.fRequireDecodeDisableForSRGB = false;
+  
+  // This next line should be getting the context from GLFW but it does not work - it must be returning something other than nullptr as the method.
+  
+  // sContext = GrContext::MakeGL(GrGLCreateNativeInterfaceGLFW(),options).release();
+  sContext = GrContext::MakeGL(nullptr,options).release();
+
+  GrGLFramebufferInfo framebufferInfo;
+  framebufferInfo.fFBOID = 0; // assume default framebuffer
+  // We are always using OpenGL and we use RGBA8 internal format for both RGBA and BGRA configs in OpenGL.
+  framebufferInfo.fFormat = GL_SRGB8_ALPHA8;
+
+  SkColorType colorType;
+  if (kRGBA_8888_GrPixelConfig == kSkia8888_GrPixelConfig) {
+    colorType = kRGBA_8888_SkColorType;
+  }else {
+    colorType = kBGRA_8888_SkColorType;
+  }
+  GrBackendRenderTarget backendRenderTarget(width, height,0,0,framebufferInfo);
+
+  return SkSurface::MakeFromBackendRenderTarget(sContext, backendRenderTarget, kBottomLeft_GrSurfaceOrigin, colorType, SkColorSpace::MakeSRGB(), nullptr);//.release();
+}
+
+
 bool CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
-  SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  sk_sp<SkSurface> newSurface = SkSurface::MakeRaster(info);
+  //SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+  sk_sp<SkSurface> newSurface = getSurface(w,h);//SkSurface::MakeRaster(info);
 
   if (newSurface) {
     surface = newSurface;
@@ -1397,33 +1446,9 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   }
 }
 
-
 CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
 	
-	
-	GrContextOptions options;
-	//options.fRequireDecodeDisableForSRGB = false;
-	sContext = GrContext::MakeGL(nullptr, options).release();
-
-	GrGLFramebufferInfo framebufferInfo;
-	framebufferInfo.fFBOID = 0; // assume default framebuffer
-	// We are always using OpenGL and we use RGBA8 internal format for both RGBA and BGRA configs in OpenGL.
-	framebufferInfo.fFormat = GL_SRGB8_ALPHA8;
-
-	SkColorType colorType;
-	if (kRGBA_8888_GrPixelConfig == kSkia8888_GrPixelConfig) {
-		colorType = kRGBA_8888_SkColorType;
-	}else {
-		colorType = kBGRA_8888_SkColorType;
-	}
-	GrBackendRenderTarget backendRenderTarget(width, height,
-		0, // sample count
-		0, // stencil bits
-		framebufferInfo);
-
-	surface = SkSurface::MakeFromBackendRenderTarget(sContext, backendRenderTarget, kBottomLeft_GrSurfaceOrigin, colorType, SkColorSpace::MakeSRGB(), nullptr);//.release();
-	
-	
+  surface = getSurface(width,height);
 
   // SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
   // surface = SkSurface::MakeRaster(info); 
