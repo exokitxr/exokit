@@ -7,15 +7,21 @@ const url = require('url');
 const https = require('https');
 const fs = require('fs');
 const opn = require('opn');
+const downloadsFolder = require('downloads-folder');
 
-
-const exokitPath = 'C:\\Users\\ceddy\\Documents\\GitHub\\exokit\\scripts\\exokit.cmd'; // have to make this relative
+let exokitPath;
+if(process.platform === 'win32'){
+  exokitPath = '..\\scripts\\exokit.cmd';
+}
+else{
+  exokitPath = '../scripts/exokit.cmd';
+}
 
 let window = null;
 
 // Wait until the app is ready
 app.once('ready', () => {
-
+  console.log(downloadsFolder());
   // Create a new window
   window = new BrowserWindow({
     center: true,
@@ -47,6 +53,7 @@ app.once('ready', () => {
   });
 });
 
+
 // Accept communication from frontend, arg1 will always be the key to the function... arg2/arg3 is for extra data like a URL/flags.
 ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
   switch (arg1) {
@@ -74,7 +81,7 @@ ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
 
       version.once('exit', function() {
         // Send the userVersion to Frontend
-        event.sender.send('asynchronous-reply', stdout.slice(0, 7));
+        event.sender.send('asynchronous-reply', stdout); // FAKING THE VERSION # FOR DEMO
 
         https.get('https://get.webmr.io/version', (res) => {
           console.log('Checking Version...');
@@ -99,7 +106,7 @@ ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
       break;
 
     case 'update':
-      let writeStream = fs.createWriteStream('C:\\Users\\ceddy\\Downloads\\exokit-installer.exe');
+      let writeStream = fs.createWriteStream(downloadsFolder() + 'exokit-installer.exe');
 
       let url = '';
 
@@ -127,7 +134,7 @@ ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
         res.on('data', (d) => {
           chunkSize += d.length;
           writeStream.write(d);
-          event.sender.send('asynchronous-reply', chunkSize / downloadSize);
+          event.sender.send('asynchronous-reply', ((chunkSize / downloadSize) * 100).toFixed(1));
         });
 
         res.on('end', () => {
@@ -148,9 +155,20 @@ ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
       event.sender.send('asynchronous-reply', 'message does not make sense to electron backend');
       break;
   }
+  function launchInstaller(){
+    const child = spawn(downloadsFolder() + 'exokit-installer.exe', [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+
+    child.on('close', (code) => {
+      console.log(`child close process exited with code ${code}`);
+      event.sender.send('asynchronous-reply', 'code:' + code);
+    });
+
+    child.on('error', (code) => {
+      console.log(`child error process exited with code ${code}`);
+      event.sender.send('asynchronous-reply', 'code:' + code);
+    });
+  }
 });
 
 
-function launchInstaller(){
-  spawn('C:\\Users\\ceddy\\Downloads\\exokit-installer.exe', [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-}
+

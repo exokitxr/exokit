@@ -44,7 +44,8 @@
     }
 
     componentDidMount(){
-      document.getElementById('defaultUpdate').hidden = false;
+      document.getElementById('checkingUpdate').hidden = false;
+      document.getElementById('upToUpdate').hidden = true;
       document.getElementById('needsUpdate').hidden = true;
       document.getElementById('downloadingUpdate').hidden = true;
       this.checkVersion();
@@ -91,17 +92,35 @@
       ipcRenderer.send('asynchronous-message', 'exohome', this.state.url, this.state.flags) // Launch ExoHome from Node
     }
 
+
     updateExokit(){
       let progress = 0;
       ipcRenderer.on('asynchronous-reply', (event, arg) => {
-        progress = (arg * 100).toFixed(0);
+        progress = arg;
         this.setState({ progress: progress });
-        if(this.state.progress === 100){
+        if(this.state.progress === 100.0){
+
+        }
+        if(arg === 'code:0'){ // means that installer finished with exit code 0
+          document.getElementById('checkingUpdate').hidden = false;
+          document.getElementById('upToUpdate').hidden = true;
+          document.getElementById('needsUpdate').hidden = true;
+          document.getElementById('downloadingUpdate').hidden = true;
           ipcRenderer.removeAllListeners('asynchronous-reply');
+          this.checkVersion()
+        }
+        if(arg === 'code:2'){ // means that installer finished with exit code 2
+          console.log('update canceled by user.');
+          document.getElementById('checkingUpdate').hidden = false;
+          document.getElementById('upToUpdate').hidden = true;
+          document.getElementById('needsUpdate').hidden = true;
+          document.getElementById('downloadingUpdate').hidden = true;
+          ipcRenderer.removeAllListeners('asynchronous-reply');
+          this.checkVersion()
         }
       });
       ipcRenderer.send('asynchronous-message', 'update');
-      document.getElementById('defaultUpdate').hidden = true;
+      document.getElementById('upToUpdate').hidden = true;
       document.getElementById('needsUpdate').hidden = true;
       document.getElementById('downloadingUpdate').hidden = false;
     }
@@ -118,14 +137,18 @@
             this.setState({ needsUpdate: true });
             this.setState({ userVersion: versions[0] });
             this.setState({ upstreamVersion: versions[1] });
-            document.getElementById('defaultUpdate').hidden = true;
+            document.getElementById('checkingUpdate').hidden = true;
+            document.getElementById('upToUpdate').hidden = true;
             document.getElementById('needsUpdate').hidden = false;
+            document.getElementById('downloadingUpdate').hidden = true;
             ipcRenderer.removeAllListeners('asynchronous-reply');
           }
           else if(versions[0] === versions[1]){
             console.log('Your version is up-to date');
-            document.getElementById('defaultUpdate').hidden = false;
+            document.getElementById('checkingUpdate').hidden = true;
+            document.getElementById('upToUpdate').hidden = false;
             document.getElementById('needsUpdate').hidden = true;
+            document.getElementById('downloadingUpdate').hidden = false;
             this.setState({ needsUpdate: false });
             this.setState({ userVersion: versions[0] });
             this.setState({ upstreamVersion: versions[1] });
@@ -257,8 +280,14 @@
 
             <div className="row pt-3 pl-4 pb-4 fixed-bottom">
 
-              <div className="col-8" id='defaultUpdate'>
+              <div className="col-8" id='upToUpdate'>
                 <h5 className="">Updates - <span style={{"color": "#00b490"}}><small>You are up-to date!</small></span></h5>
+                <p>Your Version: <span style={{"color": "#00b490"}}>{this.state.userVersion}</span></p>
+                <p className="pt-0">Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
+              </div>
+
+              <div className="col-8" id='checkingUpdate'>
+                <h5 className="">Updates - <span style={{"color": "#00b490"}}><small>Checking for Updates...</small></span></h5>
                 <p>Your Version: <span style={{"color": "#00b490"}}>{this.state.userVersion}</span></p>
                 <p className="pt-0">Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
               </div>
