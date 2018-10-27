@@ -47,13 +47,16 @@ NAN_METHOD(OscillatorNode::New) {
     oscillatorNode->context.Reset(audioContextObj);
 
     Local<Function> audioParamConstructor = Local<Function>::Cast(oscillatorNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioParam")));
+    Local<Value> args[] = {
+      audioContextObj,
+    };
 
-    Local<Object> frequencyAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    Local<Object> frequencyAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(args)/sizeof(args[0]), args).ToLocalChecked();
     AudioParam *frequencyAudioParam = ObjectWrap::Unwrap<AudioParam>(frequencyAudioParamObj);
     frequencyAudioParam->audioParam = (*(shared_ptr<lab::OscillatorNode> *)(&oscillatorNode->audioNode))->frequency();
     oscillatorNodeObj->Set(JS_STR("frequency"), frequencyAudioParamObj);
 
-    Local<Object> detuneAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    Local<Object> detuneAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(args)/sizeof(args[0]), args).ToLocalChecked();
     AudioParam *detuneAudioParam = ObjectWrap::Unwrap<AudioParam>(detuneAudioParamObj);
     detuneAudioParam->audioParam = (*(shared_ptr<lab::OscillatorNode> *)(&oscillatorNode->audioNode))->detune();
     oscillatorNodeObj->Set(JS_STR("detune"), detuneAudioParamObj);
