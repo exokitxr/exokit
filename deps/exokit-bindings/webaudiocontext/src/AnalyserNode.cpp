@@ -74,6 +74,9 @@ NAN_SETTER(AnalyserNode::FftSizeSetter) {
     AnalyserNode *analyserNode = ObjectWrap::Unwrap<AnalyserNode>(info.This());
     shared_ptr<lab::AudioNode> oldAudioNode = analyserNode->audioNode;
 
+    Local<Object> audioContextObj = Nan::New(analyserNode->context);
+    AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
     unsigned int newValue = value->Uint32Value();
     shared_ptr<lab::AudioNode> newAudioNode = make_shared<lab::AnalyserNode>(newValue);
 
@@ -89,7 +92,7 @@ NAN_SETTER(AnalyserNode::FftSizeSetter) {
           break;
         }
       }
-      getDefaultAudioContext()->connect(newAudioNode, oldSrcNode, 0, oldSrcOutputIndex);
+      audioContext->connect(newAudioNode, oldSrcNode, 0, oldSrcOutputIndex);
     }
     shared_ptr<lab::AudioNodeOutput> oldDst = oldAudioNode->output(0);
     if (oldDst && oldDst->node()) {
@@ -103,7 +106,7 @@ NAN_SETTER(AnalyserNode::FftSizeSetter) {
           break;
         }
       }
-      getDefaultAudioContext()->connect(oldDstNode, newAudioNode, oldDstInputIndex, 0);
+      audioContext->connect(oldDstNode, newAudioNode, oldDstInputIndex, 0);
     }
   } else {
     Nan::ThrowError("value: invalid arguments");
