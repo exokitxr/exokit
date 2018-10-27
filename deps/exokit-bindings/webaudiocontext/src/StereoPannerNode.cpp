@@ -47,8 +47,11 @@ NAN_METHOD(StereoPannerNode::New) {
     stereoPannerNode->audioNode = labStereoPannerNode;
 
     Local<Function> audioParamConstructor = Local<Function>::Cast(stereoPannerNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioParam")));
+    Local<Value> args[] = {
+      audioContextObj,
+    };
 
-    Local<Object> panAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    Local<Object> panAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(args)/sizeof(args[0]), args).ToLocalChecked();
     AudioParam *panAudioParam = ObjectWrap::Unwrap<AudioParam>(panAudioParamObj);
     panAudioParam->audioParam = (*(shared_ptr<lab::StereoPannerNode> *)(&stereoPannerNode->audioNode))->pan();
     stereoPannerNodeObj->Set(JS_STR("pan"), panAudioParamObj);
