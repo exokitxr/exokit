@@ -745,6 +745,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "useProgram", glCallWrap<UseProgram>);
   Nan::SetMethod(proto, "createFramebuffer", glCallWrap<CreateFramebuffer>);
   Nan::SetMethod(proto, "bindFramebuffer", glCallWrap<BindFramebuffer>);
+  Nan::SetMethod(proto, "bindFramebufferRaw", glCallWrap<BindFramebufferRaw>);
   Nan::SetMethod(proto, "framebufferTexture2D", glCallWrap<FramebufferTexture2D>);
   Nan::SetMethod(proto, "blitFramebuffer", glCallWrap<BlitFramebuffer>);
   Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
@@ -871,6 +872,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), DrawingBufferWidthGetter);
   Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), DrawingBufferHeightGetter);
 
+  Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>);
 
   setGlConstants(proto);
@@ -2074,7 +2076,7 @@ NAN_METHOD(WebGLRenderingContext::IsContextLost) {
 }
 
 NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
@@ -2086,7 +2088,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
 }
 
 NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
@@ -2095,6 +2097,20 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
   windowsystem::GetWindowSize(gl->windowHandle, &width, &height);
 
   info.GetReturnValue().Set(JS_INT(height));
+}
+
+NAN_METHOD(WebGLRenderingContext::GetFramebuffer) {
+  Local<Object> glObj = info.This();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+
+  GLuint target = info[0]->Uint32Value();
+  if (gl->HasFramebufferBinding(target)) {
+    Local<Object> fboObject = Nan::New<Object>();
+    fboObject->Set(JS_STR("id"), JS_INT(gl->GetFramebufferBinding(target)));
+    info.GetReturnValue().Set(fboObject);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
@@ -2827,6 +2843,14 @@ NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::BindFramebufferRaw) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  GLenum target = info[0]->Uint32Value();
+  GLuint framebuffer = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glBindFramebuffer(target, framebuffer);
+}
 
 NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
   GLenum target = info[0]->Uint32Value();

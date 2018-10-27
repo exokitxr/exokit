@@ -1,0 +1,1249 @@
+<!doctype html>
+<html>
+  <body>
+    <script src="three.js?tab=top"></script>
+    <script src="fakeDisplay.js"></script>
+    <script src="keycode.js"></script>
+    <script src="svg-boundings.js"></script>
+    <script>
+let display, fakeDisplay;
+
+const RAY_COLOR = 0x44c2ff;
+const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
+const rayDistance = 1;
+const menuWidth = 1;
+const menuHeight = 1;
+const menuWorldWidth = menuWidth;
+const menuWorldHeight = menuHeight * .1;
+const menuPositionHeight = .3;
+const urlBarWidth = menuWidth;
+const urlBarHeight = menuHeight;
+const urlBarOffset = urlBarHeight;
+const fontSize = 60;
+const keyboardWidth = 2048;
+const keyboardHeight = 716;
+const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
+const cursorWidth = 10;
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localEuler = new THREE.Euler();
+localEuler.order = 'YXZ';
+const localMatrix = new THREE.Matrix4();
+
+function parseQuery(queryString) {
+  var query = {};
+  var pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+  for (var i = 0; i < pairs.length; i++) {
+    var pair = pairs[i].split('=');
+    query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+  }
+  return query;
+}
+const query = parseQuery(window.location.search);
+const FLOOR_SIZE = 20;
+const DEFAULT_URL = 'http://';
+
+// load
+
+const keyMap = [];
+fetch('../assets/keyboard.svg')
+  .then(res => res.text())
+  .then(keyboardText => {
+    const div = document.createElement('div');
+    div.innerHTML = keyboardText;
+    const keyEls = div.querySelectorAll('svg > g[key]');
+    for (let i = 0; i < keyEls.length; i++) {
+      const keyEl = keyEls[i];
+      const key = keyEl.getAttribute('key');
+      const shapeEl = keyEl.children[0];
+      const boundings = svgBoundings[shapeEl.tagName.toLowerCase()](shapeEl);
+      const {
+        left,
+        right,
+        top,
+        bottom,
+      } = boundings;
+      const x1 = left * keyboardMatrix[0];
+      const x2 = right * keyboardMatrix[0];
+      const y1 = top * keyboardMatrix[1];
+      const y2 = bottom * keyboardMatrix[1];
+      keyMap.push([key, x1, y1, x2, y2]);
+    }
+  })
+  .catch(err => {
+    console.warn(err.stack);
+  });
+
+let keyboardHighlightCanvasCtx = null;
+new Promise((accept, reject) => {
+  const img = new Image();
+  img.crossOrigin = 'Anonymous';
+  img.src = '../assets/keyboard-hightlight.png';
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    accept(ctx);
+  };
+  img.onerror = err => {
+    reject(err);
+  };
+})
+  .then(ctx => {
+    keyboardHighlightCanvasCtx = ctx;
+  })
+  .catch(err => {
+    console.warn(err.stack);
+  });
+
+// helpers
+
+const _makeRenderer = () => {
+  const scene = new THREE.Scene();
+  // scene.background = new THREE.Color(0x7E57C2);
+  scene.matrixAutoUpdate = false;
+
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.y = 1.6;
+  // camera.position.z = 1;
+
+  const renderer = new THREE.WebGLRenderer( { antialias: true } );
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild(renderer.domElement);
+
+  return {
+    scene,
+    camera,
+    renderer,
+    destroy() {
+      document.body.removeChild(renderer.domElement);
+    },
+  };
+};
+/* const _makeRenderTarget = (width, height) => {
+  const renderTarget = new THREE.WebGLRenderTarget(width, height);
+  renderTarget.depthTexture = new THREE.DepthTexture(
+    width,
+    height,
+    THREE.UnsignedInt248Type,
+    THREE.UVMapping,
+    THREE.ClampToEdgeWrapping,
+    THREE.ClampToEdgeWrapping,
+    THREE.NearestFilter,
+    THREE.NearestFilter,
+    1,
+    THREE.DepthStencilFormat
+  );
+  return renderTarget;
+}; */
+
+const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1)) => {
+  const _drawOk = () => {
+    console.log('Load ok: ' + u);
+  };
+  const _drawFail = () => {
+    console.log('Load error: ' + u);
+  };
+
+  const iframe = document.createElement('iframe');
+  iframe.position = position.toArray();
+  iframe.rotation = rotation.toArray();
+  iframe.scale = scale.toArray();
+  iframe.onload = function() {
+    const contentDocument = (() => {
+      try {
+        if (this.contentDocument) { // this potentially throws
+          return this.contentDocument;
+        } else {
+          return null;
+        }
+      } catch(err) {
+        console.warn(err.stack);
+        return null;
+      }
+    })();
+    if (contentDocument) {
+      _drawOk();
+
+      layers.push(iframe);
+
+      // floorMesh.visible = false;
+      // scene.background = null;
+    } else {
+      _drawFail();
+
+      _closeUrl(iframe);
+
+      layers.splice(layers.indexOf(iframe), 1);
+    }
+  };
+  iframe.src = u;
+  iframe.hidden = true;
+  iframe.addEventListener('destroy', () => {
+    // floorMesh.visible = true;
+    // scene.background = _makeBackground();
+  });
+  document.body.appendChild(iframe);
+
+  return iframe;
+};
+const _closeUrl = iframe => {
+  if (iframe.destroy) {
+    iframe.destroy();
+  }
+
+  document.body.removeChild(iframe);
+};
+
+// main
+
+/* (() => { // XXX
+  const {scene, camera, renderer, destroy} = _makeRenderer();
+  renderer.render(scene, camera);
+  destroy();
+})(); */
+
+const {scene, camera, renderer, destroy} = _makeRenderer();
+const layers = [renderer.domElement];
+
+const ambientLight = new THREE.AmbientLight(0x808080);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+directionalLight.position.set(1, 1, 1);
+scene.add(directionalLight);
+
+// controller meshes
+
+const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01);
+const controllerMaterial = new THREE.MeshPhongMaterial({
+  color: 0x4caf50,
+});
+const controllerMeshes = [
+  // _makeControllerMesh(-0.1),
+  // _makeControllerMesh(0.1),
+];
+
+for (let i = 0; i < 2; i++) {
+  const controllerMesh = new THREE.Object3D();
+  controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
+  controllerMesh.quaternion.setFromUnitVectors(
+    new THREE.Vector3(0, 0, -1),
+    new THREE.Vector3(0, -1, -1)
+  );
+
+  const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+    const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+    mesh.position.set(x, y, z);
+    mesh.quaternion.set(qx, qy, qz, qw);
+    // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+    mesh.updateMatrix();
+    mesh.updateMatrixWorld();
+    mesh.matrixAutoUpdate = false;
+    mesh.frustumCulled = false;
+    return mesh;
+  };
+  const blockMesh = _makeBlockMesh();
+  controllerMesh.add(blockMesh);
+
+  const rayMesh = (() => {
+    const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+    const material = new THREE.MeshBasicMaterial({
+      color: RAY_COLOR,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    // mesh.visible = true;
+    mesh.frustumCulled = false;
+    return mesh;
+  })();
+  controllerMesh.add(rayMesh);
+  controllerMesh.rayMesh = rayMesh;
+
+  const rayDot = (() => {
+    const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xe91e63,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.z = -1;
+    mesh.visible = true;
+    return mesh;
+  })();
+  controllerMesh.add(rayDot);
+  controllerMesh.rayDot = rayDot;
+
+
+
+  controllerMesh.ray = new THREE.Ray();
+  controllerMesh.update = () => {
+    controllerMesh.ray.origin.copy(controllerMesh.position);
+    controllerMesh.ray.direction
+      .set(0, 0, -1)
+      .applyQuaternion(controllerMesh.quaternion);
+  };
+
+  /* const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+  // controllerMesh.position.set(x, y, z);
+  // controllerMesh.quaternion.set(qx, qy, qz, qw);
+  // controllerMesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+  // controllerMesh.updateMatrix();
+  // controllerMesh.updateMatrixWorld();
+  controllerMesh.matrixAutoUpdate = false;
+  controllerMesh.frustumCulled = false; */
+
+  scene.add(controllerMesh);
+  controllerMeshes[i] = controllerMesh;
+}
+
+// local scene
+
+const floorMesh = (() => {
+  const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
+    .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+      new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 0)
+      )
+    ));
+  const uvs = geometry.attributes.uv.array;
+  const numUvs = uvs.length / 2;
+  for (let i = 0; i < numUvs; i++) {
+    uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
+    uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
+  }
+
+  const texture = new THREE.Texture(
+    null,
+    THREE.UVMapping,
+    THREE.RepeatWrapping,
+    THREE.RepeatWrapping,
+    THREE.NearestFilter,
+    THREE.NearestFilter,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType,
+    1
+  );
+
+  const graphImg = new Image();
+  graphImg.crossOrigin = 'Anonymous';
+  graphImg.src = 'graphy.png';
+  graphImg.onload = () => {
+    texture.image = graphImg;
+    texture.needsUpdate = true;
+  };
+  graphImg.onerror = err => {
+    console.warn(err.stack);
+  };
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  return mesh;
+})();
+scene.add(floorMesh);
+
+const cubeMesh = (() => {
+  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+  const material = new THREE.MeshPhongMaterial({
+    color: 0x9ccc65,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.y = 1.5;
+  mesh.position.z = -1;
+  mesh.rotation.order = 'YXZ';
+  mesh.frustumCulled = false;
+  return mesh;
+})();
+scene.add(cubeMesh);
+
+// rig
+
+const _makeRig = () => {
+  const rig = new THREE.Object3D();
+
+  const menuMesh = (() => {
+    const object = new THREE.Object3D();
+    object.position.set(0, menuPositionHeight, 0);
+
+    const urlMesh = (() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = menuWidth;
+      canvas.height = menuHeight;
+      const ctx = canvas.getContext('2d');
+
+      const geometry = new THREE.PlaneBufferGeometry(menuWorldWidth, menuWorldHeight);
+      const texture = new THREE.Texture(
+        canvas,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      texture.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        alphaTest: 0.9,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.frustumCulled = false;
+
+      const text = DEFAULT_URL;
+      const urlState = {
+        text,
+        cursor: text.length,
+        measures: [],
+      };
+      mesh.urlState = urlState;
+
+      const _updateText = () => {
+        console.log('update text', urlState.text, urlState.cursor);
+
+        ctx.fillStyle = '#EEE';
+        ctx.fillRect(0, 0, menuWidth, menuHeight*2);
+
+
+        ctx.fillStyle = '#563156';
+        ctx.fillRect(0, 0, urlBarWidth, 2048);
+        //                    .set(0, -0.5, -1)
+
+  //            ctx.fillStyle = '#RFF';
+  //            ctx.fillRect(5, urlBarOffset + 500, urlBarWidth - 10, urlBarHeight - 10);
+
+
+
+        ctx.fillStyle = '#FFF';
+        // ctx.font = `${fontSize}px Arial`;
+        // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
+        //
+        // urlState.measures.length = 0;
+        // urlState.measures.push(0);
+        // const {width: barWidth} = ctx.measureText('[');
+        // for (let i = 1; i <= urlState.text.length; i++) {
+        //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+        //   urlState.measures.push(width - barWidth*2);
+        // }
+        //
+        // ctx.fillStyle = '#03a9f4';
+        // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
+
+  //TEST
+          // ctx.font = `${fontSize}px Arial`;
+          // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
+
+          urlState.measures.length = 0;
+          urlState.measures.push(0);
+          // const {width: barWidth} = ctx.measureText('[');
+          for (let i = 1; i <= urlState.text.length; i++) {
+            // const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+            const {width} = 4;
+            const {barWidth} = 4;
+            urlState.measures.push(width - barWidth*2);
+          }
+
+          ctx.fillStyle = '#03a9f4';
+          ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
+
+  //END TEST
+
+
+
+
+
+        texture.needsUpdate = true;
+      };
+      _updateText();
+      mesh.updateText = _updateText;
+
+      mesh.plane = new THREE.Plane();
+      mesh.leftLine = new THREE.Line3();
+      mesh.topLine = new THREE.Line3();
+      mesh.update = () => {
+        mesh.leftLine.start
+          .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+        mesh.leftLine.end
+          .set(-menuWorldWidth/2, -menuWorldHeight/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+
+        mesh.topLine.start
+          .set(-menuWorldWidth/2, menuWorldHeight/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+        mesh.topLine.end
+          .set(menuWorldWidth/2, menuWorldHeight / 2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+
+        mesh.plane.setFromCoplanarPoints(
+          mesh.leftLine.start,
+          mesh.leftLine.end,
+          mesh.topLine.end
+        );
+      };
+
+      return mesh;
+    })();
+    object.add(urlMesh);
+    object.urlMesh = urlMesh;
+
+    return object;
+  })();
+  rig.add(menuMesh);
+  rig.menuMesh = menuMesh;
+
+  const keyboardMesh = (() => {
+    const object = new THREE.Object3D();
+
+    const planeMesh = (() => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.src = '../assets/keyboard.png';
+      img.onload = () => {
+        texture.needsUpdate = true;
+      };
+      img.onerror = err => {
+        console.warn(err.stack);
+      };
+
+      const geometry = new THREE.PlaneBufferGeometry(1, keyboardHeight / keyboardWidth);
+      const texture = new THREE.Texture(
+        img,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        alphaTest: 0.9,
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.frustumCulled = false;
+      mesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 1).normalize()
+      );
+
+      const keyMeshes = [];
+      for (let i = 0; i < 2; i++) {
+        const keyMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(1, 1);
+          const texture = new THREE.Texture(
+            null,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.NearestFilter,
+            THREE.NearestFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            1
+          );
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            transparent: true,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.frustumCulled = false;
+          return mesh;
+        })();
+        mesh.add(keyMesh);
+
+        keyMeshes.push(keyMesh);
+      }
+      mesh.keyMeshes = keyMeshes;
+
+      return mesh;
+    })();
+    object.add(planeMesh);
+    object.planeMesh = planeMesh;
+
+    object.plane = new THREE.Plane();
+    object.leftLine = new THREE.Line3();
+    object.topLine = new THREE.Line3();
+    object.update = () => {
+      object.leftLine.start
+        .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+      object.leftLine.end
+        .set(-1/2, -keyboardHeight / keyboardWidth / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+
+      object.topLine.start
+        .set(-1/2, keyboardHeight / keyboardWidth / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+      object.topLine.end
+        .set(1/2, keyboardHeight / keyboardWidth / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+
+      object.plane.setFromCoplanarPoints(
+        object.leftLine.start,
+        object.leftLine.end,
+        object.topLine.end
+      );
+    };
+
+    return object;
+  })();
+  rig.add(keyboardMesh);
+  rig.keyboardMesh = keyboardMesh;
+
+  return rig;
+};
+
+const rigs = [];
+const _openRig = (position, quaternion) => {
+  const rig =  _makeRig();
+  // rig.position.set(0, 0.5, 0);
+  rig.position.copy(position);
+  rig.quaternion.copy(quaternion);
+
+  /* const _recurse = () => {
+    requestAnimationFrame(_recurse);
+
+    rig.position.y += 0.001;
+    rig.updateMatrix();
+    rig.updateMatrixWorld(true);
+  };
+  requestAnimationFrame(_recurse); */
+
+  // console.log('map 1', rig.position.toArray().join(','), rig.quaternion.toArray().join(','), rig.matrixWorld.toArray().join(','));
+  rig.updateMatrix();
+  rig.updateMatrixWorld(true);
+
+  // console.log('map 2', rig.matrixWorld.toArray().join(','), rig.children.map(child => child.matrixWorld.toArray().join(',')));
+
+  scene.add(rig);
+  rigs.push(rig);
+};
+const _closeRig = rig => {
+  scene.remove(rig);
+  rigs.splice(rigs.indexOf(rig), 1);
+};
+/* const _findRig = position => rigs.find(rig => rig.position.distanceTo(position) < 0.5);
+const _handleRigToggle = (position, quaternion) => {
+  const rig = _findRig(position);
+  if (rig) {
+    _closeRig(rig);
+  } else {
+    _openRig(position, quaternion);
+  }
+}; */
+
+window.addEventListener('click', () => {
+  renderer.domElement.requestPointerLock();
+});
+window.addEventListener('mousedown', e => {
+  if (window.document.pointerLockElement) {
+    fakeDisplay.gamepads[1].buttons[1].pressed = true;
+  }
+});
+window.addEventListener('mouseup', e => {
+  if (window.document.pointerLockElement) {
+    fakeDisplay.gamepads[1].buttons[1].pressed = false;
+  }
+});
+window.addEventListener('mousemove', e => {
+  if (window.document.pointerLockElement) {
+    const {movementX, movementY} = e;
+
+    /* if (keys.ctrl) {
+      const controllerOffset = controllerOffsets[controllerIndex];
+      controllerOffset.x += movementX * 0.002;
+      controllerOffset.y -= movementY * 0.002;
+    } else if (keys.alt) {
+      const controllerOffset = controllerOffsets[controllerIndex];
+      controllerOffset.x += movementX * 0.002;
+      controllerOffset.z += movementY * 0.002;
+    } else { */
+      localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+      localEuler.y -= movementX * 0.01;
+      localEuler.x -= movementY * 0.01;
+      localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
+      fakeDisplay.quaternion.setFromEuler(localEuler);
+
+      fakeDisplay.update();
+    // }
+
+    // _updateGamepads();
+  }
+});
+
+const keys = {
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+};
+const _makeButtons = () => ({
+  trigger: false,
+  bumper: false,
+});
+const lastButtons = [
+  _makeButtons(),
+  _makeButtons(),
+];
+const intersectionSpecs = [
+  null,
+  null,
+];
+window.addEventListener('keydown', e => {
+  // if (window.document.pointerLockElement) {
+    switch (e.which) {
+      case 87: { // W
+        keys.up = true;
+        /* if (!window.document.pointerLockElement) {
+          renderer.domElement.requestPointerLock();
+        } */
+        break;
+      }
+      case 83: { // S
+        keys.down = true;
+        /* if (!window.document.pointerLockElement) {
+          renderer.domElement.requestPointerLock();
+        } */
+        break;
+      }
+      case 65: { // A
+        keys.left = true;
+        /* if (!window.document.pointerLockElement) {
+          renderer.domElement.requestPointerLock();
+        } */
+        break;
+      }
+      case 68: { // D
+        keys.right = true;
+        /* if (!window.document.pointerLockElement) {
+          renderer.domElement.requestPointerLock();
+        } */
+        break;
+      }
+      case 69: { // E
+        fakeDisplay.gamepads[1].buttons[2].pressed = true;
+        break;
+      }
+    }
+  // }
+});
+window.addEventListener('keyup', e => {
+  // if (window.document.pointerLockElement) {
+    switch (e.which) {
+      case 87: { // W
+        keys.up = false;
+        break;
+      }
+      case 83: { // S
+        keys.down = false;
+        break;
+      }
+      case 65: { // A
+        keys.left = false;
+        break;
+      }
+      case 68: { // D
+        keys.right = false;
+        break;
+      }
+      case 69: { // E
+        fakeDisplay.gamepads[1].buttons[2].pressed = false;
+        break;
+      }
+    }
+  // }
+});
+
+// let renderTarget = null;
+const startTime = Date.now();
+let lastTime = 0;
+function animate(time, frame) {
+  const now = Date.now();
+  const timeDiff = now - lastTime;
+  const startTimeDiff = now - startTime;
+
+  const _updateGamepads = () => {
+    if (fakeDisplay) {
+      const inputSources = display.session.getInputSources();
+
+      for (let i = 0; i < inputSources.length; i++) {
+        const gamepad = fakeDisplay.gamepads[i];
+        if (gamepad) {
+          // const controllerOffset = controllerOffsets[i];
+
+          localVector.copy(fakeDisplay.position)
+            .add(
+              localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
+                // .add(controllerOffset)
+                .applyQuaternion(fakeDisplay.quaternion)
+            ).toArray(gamepad.pose.position);
+          fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
+        }
+
+        const inputSource = inputSources[i];
+        const pose = frame.getInputPose(inputSource);
+        localMatrix.compose(
+          localVector.fromArray(gamepad.pose.position),
+          localQuaternion.fromArray(gamepad.pose.orientation),
+          localVector2.set(1, 1, 1)
+        )
+          .toArray(pose.pointerMatrix);
+      }
+    }
+  };
+  _updateGamepads();
+
+  const _updateControllerMeshes = () => {
+    if (renderer.vr.enabled) {
+      const inputSources = display.session.getInputSources();
+
+      for (let i = 0; i < inputSources.length; i++) {
+        const inputSource = inputSources[i];
+        const pose = frame.getInputPose(inputSource);
+        const controllerMesh = controllerMeshes[i];
+        controllerMesh.matrix.fromArray(pose.pointerMatrix);
+        controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+        controllerMesh.updateMatrixWorld(true);
+      }
+    }
+  };
+  _updateControllerMeshes();
+
+  const _updateIntersections = () => {
+    for (let i = 0; i < 2; i++) {
+      const controllerMesh = controllerMeshes[i];
+      controllerMesh.update();
+
+      const _setIntersectionDefault = () => {
+        controllerMesh.rayMesh.scale.z = rayDistance;
+        controllerMesh.rayMesh.updateMatrixWorld();
+
+        // controllerMesh.rayDot.visible = false;
+        for (let r = 0; r < rigs.length; r++) {
+          rigs[r].keyboardMesh.planeMesh.keyMeshes[i].visible = false;
+        }
+
+        intersectionSpecs[i] = null;
+      };
+
+      const intersectionPoints = [];
+      const intersectionCbs = [];
+      for (let r = 0; r < rigs.length; r++) {
+        const rig = rigs[r];
+        const {keyboardMesh, menuMesh} = rig;
+        const {planeMesh} = keyboardMesh;
+        const keyMesh = planeMesh.keyMeshes[i];
+        keyboardMesh.update();
+        menuMesh.urlMesh.update();
+
+        // keyboard
+        {
+          const intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
+          if (intersectionPoint) {
+            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+            const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
+            const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+              const x = xFactor * keyboardWidth;
+              const y = yFactor * keyboardHeight;
+
+              intersectionPoints.push(intersectionPoint.clone());
+              intersectionCbs.push(() => {
+                controllerMesh.rayMesh.scale.z = distance;
+                controllerMesh.updateMatrixWorld();
+
+                controllerMesh.rayDot.position.z = -distance;
+                controllerMesh.updateMatrixWorld();
+                controllerMesh.rayDot.visible = true;
+
+                for (let j = 0; j < keyMap.length; j++) {
+                  const [key, kx1, ky1, kx2, ky2] = keyMap[j];
+                  if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
+                    if (keyboardHighlightCanvasCtx) {
+                      const width = kx2 - kx1;
+                      const height = ky2 - ky1;
+                      let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
+                      /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                        const canvas = document.createElement('canvas');
+                        canvas.width = imageData.width;
+                        canvas.height = imageData.height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.putImageData(imageData, 0, 0);
+                        ctx.clearRect(0, 0, 80, 140);
+
+                        imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+                      } */
+
+                      keyMesh.material.map.image = imageData;
+                      keyMesh.material.map.needsUpdate = true;
+
+                      keyMesh.position
+                        .set(
+                          -1/2 + ((width/2 + kx1) / keyboardWidth),
+                          (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
+                           0.01 * (1)
+                        );
+                      keyMesh.scale.set(
+                        width / keyboardWidth,
+                        height / keyboardHeight * (keyboardHeight / keyboardWidth),
+                        1
+                      );
+                      keyMesh.updateMatrixWorld();
+                      keyMesh.visible = true;
+                    }
+
+                    intersectionSpecs[i] = {
+                      type: 'key',
+                      data: {
+                        key,
+                        rig,
+                      },
+                    };
+
+                    break;
+                  }
+                }
+              });
+            }
+          }
+        }
+
+        // menu mesh
+        {
+          // let urlCoords = null;
+          // let intersectionRect = null;
+          const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.urlMesh.plane, localVector) : null;
+          if (intersectionPoint) {
+            const leftIntersectionPoint = menuMesh.urlMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+            const topIntersectionPoint = menuMesh.urlMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+            const xFactor = topIntersectionPoint.distanceTo(menuMesh.urlMesh.topLine.start) / menuWorldWidth;
+            const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / menuWorldHeight;
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+              const x = xFactor * menuWidth;
+              const y = yFactor * menuHeight;
+
+              if (y < urlBarOffset*2) {
+                // urlCoords = [x, y];
+
+                intersectionPoints.push(intersectionPoint.clone());
+                intersectionCbs.push(() => {
+                  controllerMesh.rayMesh.scale.z = distance;
+                  controllerMesh.updateMatrixWorld();
+
+                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.updateMatrixWorld();
+                  controllerMesh.rayDot.visible = true;
+
+                  intersectionSpecs[i] = null;
+                });
+              }
+            }
+          }
+        }
+      }
+
+
+      if (intersectionPoints.length > 0) {
+        const intersectionCb = intersectionPoints
+          .map((a, i) => ({
+            distance: a.distanceTo(controllerMesh.position),
+            cb: intersectionCbs[i],
+          }))
+          .sort((a, b) => a.distance - b.distance)[0].cb;
+        intersectionCb();
+      } else {
+        _setIntersectionDefault();
+      }
+    }
+  };
+  _updateIntersections();
+
+  const _updateButtons = () => {
+    if (display) {
+      const inputSources = display.session.getInputSources();
+      const gamepads = navigator.getGamepads();
+
+      for (let i = 0; i < inputSources.length; i++) {
+        const inputSource = inputSources[i];
+        const gamepad = gamepads[i];
+
+        {
+          const trigger = gamepad.buttons[1].pressed;
+          const lastTrigger = lastButtons[i].trigger;
+
+          if (trigger && !lastTrigger) {
+            const spec = intersectionSpecs[i];
+            if (spec && spec.type === 'key') {
+              const {data: {key, rig}} = spec;
+              const {menuMesh: {urlMesh}} = rig;
+
+              switch (key) {
+                case 'enter': {
+                  const pose = frame.getInputPose(inputSource);
+                  localMatrix.fromArray(pose.pointerMatrix)
+                    .decompose(localVector, localQuaternion, localVector2);
+
+                  const u = urlMesh.urlState.text !== DEFAULT_URL ? urlMesh.urlState.text : 'realitytab.html?color=29b6f6';
+                  _openUrl(u, rig.position, rig.quaternion);
+                  _closeRig(rig);
+                  break;
+                }
+                default: {
+                  const _handleDefaultKey = (code, shiftKey) => {
+                    let c = String.fromCharCode(code);
+                    if (!shiftKey) {
+                      c = c.toLowerCase();
+                    }
+                    urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + c + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
+                    urlMesh.urlState.cursor++;
+                    urlMesh.updateText();
+                  };
+                  const _handleKey = (code, shiftKey) => {
+                    if (code === 8) { // backspace
+                      if (urlMesh.urlState.cursor > 0) {
+                        urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor - 1) + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
+                        urlMesh.urlState.cursor--;
+                        urlMesh.updateText();
+                      } else {
+                        if (urlMesh.urlState.text.length === 0) {
+                          _closeRig(rig);
+                        }
+                      }
+                    } else if (code === 46) { // delete
+                      if (urlMesh.urlState.cursor < urlMesh.urlState.text.length) {
+                        urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + urlMesh.urlState.text.slice(urlMesh.urlState.cursor + 1);
+                        urlMesh.updateText();
+                      }
+                    } else if (code === 32) { // space
+                      urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + ' ' + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
+                      urlMesh.urlState.cursor++;
+                      urlMesh.updateText();
+                    } else if (code === 13) { // enter
+                      urlMesh.urlState.submit();
+                    } else if (
+                      code === 9 || // tab
+                      code === 16 || // shift
+                      code === 17 || // ctrl
+                      code === 18 || // alt
+                      code === 20 || // capslock
+                      code === 27 || // esc
+                      code === 91 // win
+                    ) {
+                      // nothing
+                    } else if (code === 37) { // left
+                      urlMesh.urlState.cursor = Math.max(urlMesh.urlState.cursor - 1, 0);
+                      urlMesh.updateText();
+                    } else if (code === 39) { // right
+                      urlMesh.urlState.cursor = Math.min(urlMesh.urlState.cursor + 1, urlMesh.urlState.text.length);
+                      urlMesh.updateText();
+                    } else if (code === 38) { // up
+                      urlMesh.urlState.cursor = 0;
+                      urlMesh.updateText();
+                    } else if (code === 40) { // down
+                      urlMesh.urlState.cursor = urlMesh.urlState.text.length;
+                      urlMesh.updateText();
+                    } else if (code === -1) {
+                      // nothing
+                    } else {
+                      _handleDefaultKey(code, shiftKey);
+                    }
+                  };
+                  const code = keyCode(key);
+                  _handleKey(code, false);
+                  break;
+                }
+              }
+            }
+          }
+
+          lastButtons[i].trigger = trigger;
+        }
+        {
+          const bumper = gamepad.buttons[2].pressed;
+          const lastBumper = lastButtons[i].bumper;
+
+          if (bumper && !lastBumper) {
+            const pose = frame.getInputPose(inputSource);
+            localMatrix.fromArray(pose.pointerMatrix)
+              .decompose(localVector, localQuaternion, localVector2);
+
+            // _handleRigToggle(localVector, localQuaternion);
+            _openRig(localVector, localQuaternion);
+          }
+
+          lastButtons[i].bumper = bumper;
+        }
+      }
+    }
+  };
+  _updateButtons();
+
+  const _render = () => {
+    // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+    cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
+
+    renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+  };
+  _render();
+
+  const _updateMovement = () => {
+    if (fakeDisplay) {
+      // if (window.document.pointerLockElement) {
+        // let moving = false;
+        const speed = 0.002;
+        const velocity = localVector.set(0, 0, 0);
+        if (keys.up) {
+          velocity.z -= speed * timeDiff;
+          // moving = true;
+        }
+        if (keys.down) {
+          velocity.z += speed * timeDiff;
+          // moving = true;
+        }
+        if (keys.left) {
+          velocity.x -= speed * timeDiff;
+          // moving = true;
+        }
+        if (keys.right) {
+          velocity.x += speed * timeDiff;
+          // moving = true;
+        }
+
+        // if (moving) {
+          // velocity.multiplyScalar(Math.pow(moving ? 0.98 : 0.91, timePassed / 5));
+          localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+          localEuler.x = 0;
+          fakeDisplay.position.add(
+            localVector.copy(velocity)
+              .applyEuler(localEuler)
+          );
+          fakeDisplay.update();
+        // }
+      // }
+    }
+  };
+  _updateMovement();
+
+  /* const _updateFakeDisplay = () => {
+    if (fakeDisplay) {
+      const factor = startTimeDiff/1000 % (Math.PI*2);
+
+      fakeDisplay.position.set(0, 1.6, 0);
+      fakeDisplay.quaternion.setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(
+          fakeDisplay.position,
+          new THREE.Vector3(0, 1.6, -1),
+          new THREE.Vector3(0, 1, 0)
+        )
+      );
+      fakeDisplay.update();
+    }
+  };
+  _updateFakeDisplay(); */
+
+  lastTime = now;
+}
+
+// reality tabs
+
+// _openUrl('realitytab.html?color=29b6f6', new THREE.Vector3(0.05, 1.55, -1 + 0.05));
+// _openUrl('realitytab.html?color=ab47bc', new THREE.Vector3(-0.05, 1.45, -1));
+
+// bootstrap
+
+if (navigator.xr && !query.fake) {
+  (async () => {
+    display = await navigator.xr.requestDevice();
+    const session = await display.requestSession({
+      exclusive: true,
+    });
+    display.session = session;
+
+    session.layers = layers;
+
+    session.onselect = e => {
+      console.log('select'); // XXX
+    };
+
+    // console.log('request first frame');
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const viewport = session.baseLayer.getViewport(frame.views[0]);
+      // const width = viewport.width;
+      const height = viewport.height;
+      const fullWidth = (() => {
+        let result = 0;
+        for (let i = 0; i < frame.views.length; i++) {
+          result += session.baseLayer.getViewport(frame.views[i]).width;
+        }
+        return result;
+      })();
+
+      renderer.setSize(fullWidth, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setDevice(display);
+      renderer.vr.setAnimationLoop(animate);
+
+      console.log('loaded root in XR');
+    });
+  })()
+    .catch(err => {
+      console.warn(err.stack);
+    });
+} else {
+  fakeDisplay = _makeFakeDisplay();
+  camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
+  camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
+  fakeDisplay.position.set(0, 1.6, 0);
+  // const canvas = renderer.domElement;
+  fakeDisplay.enter({
+    renderer,
+    animate,
+    layers,
+  });
+
+  display = fakeDisplay;
+
+  console.log('loaded root in 2D');
+}
+    </script>
+  </body>
+</html>

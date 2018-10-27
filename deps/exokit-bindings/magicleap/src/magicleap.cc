@@ -2,6 +2,7 @@
 
 #include <magicleap.h>
 #include <ml-math.h>
+#include <windowsystem.h>
 #include <uv.h>
 #include <iostream>
 
@@ -1152,7 +1153,7 @@ void CameraRequest::Poll() {
   asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 }
 
-MLContext::MLContext() : window(nullptr), gl(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
+MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
 
 MLContext::~MLContext() {}
 
@@ -1312,7 +1313,7 @@ void RunCameraInMainThread(uv_async_t *handle) {
     MLHandle output;
     MLResult result = MLCameraGetPreviewStream(&output);
     if (result == MLResult_Ok) {    
-      ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
+      // ANativeWindowBuffer_t *aNativeWindowBuffer = (ANativeWindowBuffer_t *)output;
 
       MLContext *mlContext = application_context.mlContext;
       NATIVEwindow *window = application_context.window;
@@ -1600,7 +1601,7 @@ NAN_METHOD(MLContext::Present) {
   GLuint msColorTex;
   GLuint msDepthStencilTex;
   {
-    bool ok = windowsystem::CreateRenderTarget(gl, width, height, 0, 0, 0, 0, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+    bool ok = windowsystembase::CreateRenderTarget(gl, width, height, 0, 0, 0, 0, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
     if (!ok) {
       ML_LOG(Error, "%s: Failed to create ML present render context.", application_name);
       info.GetReturnValue().Set(Nan::Null());
@@ -2178,22 +2179,22 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
-    GLuint src_framebuffer_id = info[0]->Uint32Value();
-    unsigned int width = info[1]->Uint32Value();
-    unsigned int height = info[2]->Uint32Value();
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    GLuint src_framebuffer_id = info[1]->Uint32Value();
+    unsigned int width = info[2]->Uint32Value();
+    unsigned int height = info[3]->Uint32Value();
 
     const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
 
     for (int i = 0; i < 2; i++) {
       MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
-
-      glBindFramebuffer(GL_FRAMEBUFFER, mlContext->framebuffer_id);
-      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
-      glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
-
+      
       glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
+
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
+      glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+      // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
 
       glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
         i == 0 ? width/2 : width, height,
@@ -2201,8 +2202,6 @@ NAN_METHOD(MLContext::SubmitFrame) {
         viewport.w, viewport.h,
         GL_COLOR_BUFFER_BIT,
         GL_LINEAR);
-
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
       MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
       if (result != MLResult_Ok) {
@@ -2214,6 +2213,19 @@ NAN_METHOD(MLContext::SubmitFrame) {
     if (result != MLResult_Ok) {
       ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
     }
+    
+    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+  } else {
+    Nan::ThrowError("MLContext::SubmitFrame: invalid arguments");
   }
 }
 
@@ -2230,7 +2242,7 @@ NAN_METHOD(MLContext::OnPresentChange) {
     Local<Function> initCbFn = Local<Function>::Cast(info[0]);
     initCb.Reset(initCbFn);
   } else {
-    Nan::ThrowError("invalid arguments");
+    Nan::ThrowError("MLContext::OnPresentChange: invalid arguments");
   }
 }
 

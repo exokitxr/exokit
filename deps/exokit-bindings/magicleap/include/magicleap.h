@@ -37,7 +37,6 @@
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
 
-#include "ml-window.h"
 #include "sjpeg.h"
 
 using namespace v8;
@@ -236,7 +235,6 @@ public:
 // protected:
   // EGL
   NATIVEwindow *window;
-  WebGLRenderingContext *gl;
 
   // tracking
   MLHandle graphics_client;

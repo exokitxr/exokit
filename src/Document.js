@@ -108,6 +108,7 @@ function initDocument (document, window) {
   };
   document[symbols.pointerLockElementSymbol] = null;
   document[symbols.fullscreenElementSymbol] = null;
+  document[symbols.xrOffsetSymbol] = null;
 
   const runElQueue = [];
   const _addRun = fn => {

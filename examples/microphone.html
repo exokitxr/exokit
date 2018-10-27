@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script>
     let container, scene, camera, renderer, display, controllerMeshes;
-    let audio = null;
+    let audioCtx, mediaStream;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -27,6 +27,69 @@
       mesh.frustumCulled = false;
       return mesh;
     };
+    const _makeAudioCtx = () => {
+      const audioCtx = new AudioContext();
+
+      return navigator.mediaDevices.getUserMedia({
+        audio: true,
+      })
+        .then(mediaStream => {
+          const mediaStreamSource = audioCtx.createMediaStreamSource(mediaStream);
+          mediaStreamSource.connect(audioCtx.destination);
+
+          return Promise.resolve({
+            audioCtx,
+            mediaStream,
+          });
+        });
+    };
+    const _destroyAudioCtx = ({audioCtx, mediaStream}) => {
+      const mediaStreamTracks = mediaStream.getTracks();
+      const tracks = mediaStream.getTracks();
+      for (let i = 0; i < tracks.length; i++) {
+        tracks[i].stop();
+      }
+
+      audioCtx.close();
+    };
+    const _toggleAudio = () => {
+      if (audioCtx && mediaStream) {
+        _destroyAudioCtx({audioCtx, mediaStream});
+        audioCtx = null;
+        mediaStream = null;
+
+        _makeAudioCtx()
+          .then(result => {
+            audioCtx = result.audioCtx;
+            mediaStream = result.mediaStream;
+          })
+          .catch(err => {
+            console.warn('microphone error', err.stack);
+          });
+      }
+    };
+
+    const _makeButtons = () => ({
+      bumper: false,
+    });
+    const currentButtons = [
+      _makeButtons(),
+      _makeButtons(),
+    ];
+    const lastButtons = [
+      _makeButtons(),
+      _makeButtons(),
+    ];
+    window.addEventListener('keydown', e => {
+      if (e.keyCode === 82) { // R
+        currentButtons[1].bumper = true;
+      }
+    });
+    window.addEventListener('keyup', e => {
+      if (e.keyCode === 82) { // R
+        currentButtons[1].bumper = false;
+      }
+    });
 
     function init() {
       container = document.createElement('div');
@@ -75,14 +138,39 @@
     function animate(time, frame) {
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
+        const gamepads = navigator.getGamepads();
 
         for (let i = 0; i < inputSources.length; i++) {
-          const inputSource = inputSources[i];
-          const pose = frame.getInputPose(inputSource);
+          {
+            const inputSource = inputSources[i];
+            const pose = frame.getInputPose(inputSource);
 
-          const controllerMesh = controllerMeshes[i];
-          controllerMesh.matrix.fromArray(pose.pointerMatrix);
-          controllerMesh.updateMatrixWorld(true);
+            const controllerMesh = controllerMeshes[i];
+            controllerMesh.matrix.fromArray(pose.pointerMatrix);
+            controllerMesh.updateMatrixWorld(true);
+          }
+
+          {
+            const bumper = gamepads[i].buttons[2].pressed;
+            const lastBumper = lastButtons[i].bumper;
+
+            if (bumper && !lastBumper) {
+              _toggleAudio();
+            }
+
+            lastButtons[i].bumper = bumper;
+          }
+        }
+      } else {
+        for (let i = 0; i < currentButtons.length; i++) {
+          const bumper = currentButtons[i].bumper;
+          const lastBumper = lastButtons[i].bumper;
+
+          if (bumper && !lastBumper) {
+            _toggleAudio();
+          }
+
+          lastButtons[i].bumper = bumper;
         }
       }
 
@@ -90,6 +178,24 @@
     }
 
     init();
+
+    const audio = document.createElement('audio');
+    audio.oncanplay = () => {
+      console.log('audio loaded');
+    };
+    audio.onerror = err => {
+      console.warn('audio error', err.stack);
+    };
+    audio.src = 'ohno.mp3';
+
+    _makeAudioCtx()
+      .then(result => {
+        audioCtx = result.audioCtx;
+        mediaStream = result.mediaStream;
+      })
+      .catch(err => {
+        console.warn('microphone error', err.stack);
+      });
 
     (async () => {
       console.log('request device');
@@ -100,44 +206,20 @@
       });
       display.session = session;
 
-      // console.log('request first frame');
+      session.onselect = () => {
+        console.log('audio play', audio.paused);
+
+        if (!audio.paused) {
+          audio.pause();
+        }
+        audio.currentTime = 0;
+        audio.play();
+      };
+
       session.requestAnimationFrame((timestamp, frame) => {
         renderer.vr.setSession(session, {
           frameOfReferenceType: 'stage',
         });
-
-        audio = document.createElement('audio');
-        audio.oncanplay = () => {
-          console.log('audio loaded');
-
-          session.onselect = () => {
-            console.log('audio play', audio.paused);
-
-            if (!audio.paused) {
-              audio.pause();
-            }
-            audio.currentTime = 0;
-            audio.play();
-          };
-        };
-        audio.onerror = err => {
-          console.warn('audio error', err.stack);
-        };
-        audio.src = 'ohno.mp3';
-
-        const audioCtx = new AudioContext();
-        navigator.mediaDevices.getUserMedia({
-          audio: true,
-        })
-          .then(mediaStream => {
-            console.log('connect microphone');
-
-            const mediaStreamSource = audioCtx.createMediaStreamSource(mediaStream);
-            mediaStreamSource.connect(audioCtx.destination);
-          })
-          .catch(err => {
-            console.warn('microphone error', err.stack);
-          });
 
         const viewport = session.baseLayer.getViewport(frame.views[0]);
         const width = viewport.width;

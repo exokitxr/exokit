@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.492",
+  "version": "0.0.494",
   "description": "Javascript web browser for the post-screen world",
   "engines": {
     "node": ">=10.0.0"
@@ -61,7 +61,7 @@
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "nan": "^2.10.0",
-    "native-audio-deps": "0.0.53",
+    "native-audio-deps": "0.0.54",
     "native-canvas-deps": "0.0.48",
     "native-graphics-deps": "0.0.20",
     "native-openvr-deps": "0.0.17",
@@ -75,8 +75,8 @@
     "rimraf": "^2.6.2",
     "upng-js": "^2.1.0",
     "vm-one": "0.0.22",
-    "vr-display": "0.0.26",
-    "webgl-to-opengl": "0.0.11",
+    "vr-display": "0.0.28",
+    "webgl-to-opengl": "0.0.12",
     "window-classlist": "0.0.4",
     "window-fetch": "0.0.9",
     "window-selector": "0.0.5",

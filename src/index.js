@@ -21,6 +21,7 @@ const UPNG = require('upng-js');
 
 const {version} = require('../package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
+const symbols = require('./symbols');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
@@ -137,7 +138,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       const {hidden} = canvas.ownerDocument;
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
       const firstGl = contexts.length > 0 ? contexts[0] : null;
-      return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden, hidden, firstWindowHandle, firstGl);
+      return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden, hidden, firstWindowHandle, gl, firstGl);
     } catch (err) {
       console.warn(err.message);
       return null;
@@ -173,27 +174,23 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const {hidden} = document;
     if (hidden) {
-      const [framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture);
+      const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
 
-      gl.setDefaultFramebuffer(msFramebuffer);
+      gl.setDefaultFramebuffer(msFbo);
 
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, framebuffer, colorTexture, depthStencilTexture, msFramebuffer, msColorTexture, msDepthStencilTexture);
+        nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
       };
 
-      document._emit('framebuffer', {
-        framebuffer,
-        colorTexture,
-        depthStencilTexture,
-        render() {
-          nativeWindow.setCurrentWindowContext(windowHandle);
-
-          // color blit is linear, depth/stencil is nearest
-          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, true, false, false);
-          nativeWindow.blitFrameBuffer(gl, msFramebuffer, framebuffer, canvas.width, canvas.height, canvas.width, canvas.height, false, true, true);
-        },
-      });
+      // TODO: handle multiple child canvases
+      document.framebuffer = {
+        canvas,
+        msTex,
+        msDepthTex,
+        tex,
+        depthTex,
+      };
     } else {
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
@@ -240,8 +237,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         vrPresentState.system = null;
         vrPresentState.compositor = null;
       }
-      if (gl === mlGlContext) {
-        mlGlContext = null;
+      if (gl === mlPresentState.mlGlContext) {
+        mlPresentState.mlGlContext = null;
       }
 
       nativeWindow.destroy(windowHandle);
@@ -326,7 +323,9 @@ const vrPresentState = {
   cleanups: null,
   hasPose: false,
   lmContext: null,
+  layers: [],
 };
+GlobalContext.vrPresentState = vrPresentState;
 let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
@@ -361,7 +360,7 @@ if (nativeVr) {
 
         const cleanups = [];
 
-        const [fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
         context.setDefaultFramebuffer(msFbo);
 
@@ -372,19 +371,26 @@ if (nativeVr) {
         vrPresentState.glContext = context;
         vrPresentState.msFbo = msFbo;
         vrPresentState.msTex = msTex;
-        vrPresentState.msDepthTex = msDepthStencilTex;
+        vrPresentState.msDepthTex = msDepthTex;
         vrPresentState.fbo = fbo;
         vrPresentState.tex = tex;
-        vrPresentState.depthTex = depthStencilTex;
+        vrPresentState.depthTex = depthTex;
         vrPresentState.cleanups = cleanups;
 
         vrPresentState.lmContext = lmContext;
+
+        canvas.framebuffer = {
+          msTex,
+          msDepthTex,
+          tex: 0,
+          depthTex: 0,
+        };
 
         const _attribute = (name, value) => {
           if (name === 'width' || name === 'height') {
             nativeWindow.setCurrentWindowContext(windowHandle);
 
-            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
           }
         };
         canvas.on('attribute', _attribute);
@@ -401,7 +407,12 @@ if (nativeVr) {
         return {
           width,
           height,
-          framebuffer: msFbo,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
         };
       } else {
         throw new Error('no HTMLCanvasElement source provided');
@@ -410,10 +421,16 @@ if (nativeVr) {
       /* const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
       const width = halfWidth * 2; */
 
+      const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
       return {
         width: renderWidth * 2,
         height: renderHeight,
-        framebuffer: vrPresentState.msFbo,
+        msFbo,
+        msTex,
+        msDepthTex,
+        fbo,
+        tex,
+        depthTex,
       };
     }
   };
@@ -448,20 +465,24 @@ if (nativeVr) {
     return Promise.resolve();
   };
 }
-let mlContext = null;
-let mlFbo = null;
-let mlTex = null;
-let mlDepthTex = null;
-let mlMsFbo = null;
-let mlMsTex = null;
-let mlMsDepthTex = null;
-let mlGlContext = null;
-let mlCleanups = null;
-let mlHasPose = false;
+const mlPresentState = {
+  mlContext: null,
+  mlFbo: null,
+  mlTex: null,
+  mlDepthTex: null,
+  mlMsFbo: null,
+  mlMsTex: null,
+  mlMsDepthTex: null,
+  mlGlContext: null,
+  mlCleanups: null,
+  mlHasPose: false,
+  layers: [],
+};
+GlobalContext.mlPresentState = mlPresentState;
 if (nativeMl) {
-  mlContext = new nativeMl();
+  mlPresentState.mlContext = new nativeMl();
   nativeMl.requestPresent = function(layers) {
-    if (!mlGlContext) {
+    if (!mlPresentState.mlGlContext) {
       const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
       if (layer) {
         const canvas = layer.source;
@@ -476,37 +497,44 @@ if (nativeMl) {
 
         fps = ML_FPS;
 
-        const initResult = mlContext.Present(windowHandle, context);
+        const initResult = mlPresentState.mlContext.Present(windowHandle, context);
         if (initResult) {
           const {
             width: halfWidth,
             height,
             fbo,
             colorTex: tex,
-            depthStencilTex,
+            depthStencilTex: depthTex,
             msFbo,
             msColorTex: msTex,
-            msDepthStencilTex,
+            msDepthStencilTex: msDepthTex,
           } = initResult;
           const width = halfWidth * 2;
           renderWidth = halfWidth;
           renderHeight = height;
-          
-          mlFbo = fbo;
-          mlTex = tex;
-          mlDepthTex = depthStencilTex;
-          mlMsFbo = msFbo;
-          mlMsTex = msTex;
-          mlMsDepthTex = msDepthStencilTex;
+
+          mlPresentState.mlFbo = fbo;
+          mlPresentState.mlTex = tex;
+          mlPresentState.mlDepthTex = depthTex;
+          mlPresentState.mlMsFbo = msFbo;
+          mlPresentState.mlMsTex = msTex;
+          mlPresentState.mlMsDepthTex = msDepthTex;
+
+          canvas.framebuffer = {
+            msTex,
+            msDepthTex,
+            tex,
+            depthTex,
+          };
 
           const cleanups = [];
-          mlCleanups = cleanups;
+          mlPresentState.mlCleanups = cleanups;
 
           const _attribute = (name, value) => {
             if (name === 'width' || name === 'height') {
               nativeWindow.setCurrentWindowContext(windowHandle);
 
-              nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthStencilTex, msFbo, msTex, msDepthStencilTex);
+              nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
             }
           };
           canvas.on('attribute', _attribute);
@@ -520,14 +548,19 @@ if (nativeMl) {
             force: true,
           });
 
-          context.setDefaultFramebuffer(mlMsFbo);
+          context.setDefaultFramebuffer(msFbo);
 
-          mlGlContext = context;
+          mlPresentState.mlGlContext = context;
 
           return {
             width,
             height,
-            framebuffer: mlMsFbo,
+            msFbo,
+            msTex,
+            msDepthTex,
+            fbo,
+            tex,
+            depthTex,
           };
         } else {
           throw new Error('failed to present ml context');
@@ -539,30 +572,35 @@ if (nativeMl) {
       return {
         width: renderWidth * 2,
         height: renderHeight,
-        framebuffer: mlMsFbo,
+        msFbo: mlPresentState.mlMsFbo,
+        msTex: mlPresentState.mlMsTex,
+        msDepthTex: mlPresentState.mlMsDepthTex,
+        fbo: mlPresentState.mlFbo,
+        tex: mlPresentState.mlTex,
+        depthTex: mlPresentState.mlDepthTex,
       };
     }
   };
   nativeMl.exitPresent = function() {
-    nativeWindow.destroyRenderTarget(mlMsFbo, mlMsTex, mlMsDepthTex);
-    nativeWindow.destroyRenderTarget(mlFbo, mlTex, mlDepthTex);
+    nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
+    nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
 
-    nativeWindow.setCurrentWindowContext(mlGlContext.getWindowHandle());
-    mlGlContext.setDefaultFramebuffer(0);
+    nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle());
+    mlPresentState.mlGlContext.setDefaultFramebuffer(0);
 
-    for (let i = 0; i < mlCleanups.length; i++) {
-      mlCleanups[i]();
+    for (let i = 0; i < mlPresentState.mlCleanups.length; i++) {
+      mlPresentState.mlCleanups[i]();
     }
 
-    mlFbo = null;
-    mlTex = null;
-    mlDepthTex = null;
-    mlMsFbo = null;
-    mlMsTex = null;
-    mlMsDepthTex = null;
-    mlGlContext = null;
-    mlCleanups = null;
-    mlHasPose = false;
+    mlPresentState.mlFbo = null;
+    mlPresentState.mlTex = null;
+    mlPresentState.mlDepthTex = null;
+    mlPresentState.mlMsFbo = null;
+    mlPresentState.mlMsTex = null;
+    mlPresentState.mlMsDepthTex = null;
+    mlPresentState.mlGlContext = null;
+    mlPresentState.mlCleanups = null;
+    mlPresentState.mlHasPose = false;
   };
 
   const _mlLifecycleEvent = e => {
@@ -574,8 +612,8 @@ if (nativeMl) {
       }
       case 'stop':
       case 'pause': {
-        if (mlContext) {
-          mlContext.Exit();
+        if (mlPresentState.mlContext) {
+          mlPresentState.mlContext.Exit();
         }
         nativeMl.DeinitLifecycle();
         process.exit();
@@ -596,8 +634,8 @@ if (nativeMl) {
   const _mlKeyboardEvent = e => {
     // console.log('got ml keyboard event', e);
 
-    if (mlGlContext) {
-      const {canvas} = mlGlContext;
+    if (mlPresentState.mlGlContext) {
+      const {canvas} = mlPresentState.mlGlContext;
       const window = canvas.ownerDocument.defaultView;
 
       switch (e.type) {
@@ -650,6 +688,11 @@ if (nativeMl) {
     s.on('error', () => {});
   }
 }
+
+const fakePresentState = {
+  layers: [],
+};
+GlobalContext.fakePresentState = fakePresentState;
 
 nativeWindow.setEventHandler((type, data) => {
   const {windowHandle} = data;
@@ -802,6 +845,7 @@ let innerHeight = 1024;
 let fps = DEFAULT_FPS;
 const _getFrameTimeMax = () => ~~(1000 / fps);
 const _getFrameTimeMin = () => 0;
+const isMac = os.platform() === 'darwin';
 
 const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
@@ -929,31 +973,57 @@ const _bindWindow = (window, newWindowCb) => {
       const context = contexts[i];
       const windowHandle = context.getWindowHandle();
 
-      const isDirty = context.isDirty() || mlGlContext === context;
+      const isDirty = context.isDirty() || mlPresentState.mlGlContext === context;
       if (isDirty) {
         nativeWindow.setCurrentWindowContext(windowHandle);
-        context.flush();
+        if (isMac) {
+          context.flush();
+        }
 
-        const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlGlContext === context;
+        const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
+            if (vrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
+            }
 
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
             vrPresentState.hasPose = false;
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
-          } else if (mlGlContext === context && mlHasPose) {
-            nativeWindow.blitFrameBuffer(context, mlMsFbo, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
+          } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
+            if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
+              nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+            }
 
-            mlContext.SubmitFrame(mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
-            mlHasPose = false;
+            mlPresentState.mlContext.SubmitFrame(context, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
+            mlPresentState.mlHasPose = false;
 
-            nativeWindow.blitFrameBuffer(context, mlFbo, 0, mlGlContext.canvas.width, mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
+            // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
+          } else if (fakePresentState.layers.length > 0) {
+            nativeWindow.composeLayers(context, 0, fakePresentState.layers);
           }
         }
 
+        if (isMac) {
+          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+        }
         nativeWindow.swapBuffers(windowHandle);
+        if (isMac) {
+          const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+          if (drawFramebuffer) {
+            context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+          }
+
+          const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+          if (readFramebuffer) {
+            context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+          }
+        }
 
         numDirtyFrames++;
         _checkDirtyFrameTimeout();
@@ -1267,8 +1337,8 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.total += diff;
         timestamps.last = now;
       }
-    } else if (mlGlContext && mlGlContext.canvas.ownerDocument.defaultView === window) {
-      mlHasPose = mlContext.WaitGetPoses(mlGlContext, mlMsFbo, renderWidth*2, renderHeight, transformArray, projectionArray, controllersArray);
+    } else if (mlPresentState.mlGlContext && mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
+      mlPresentState.mlHasPose = mlPresentState.mlContext.WaitGetPoses(mlPresentState.mlGlContext, mlPresentState.mlMsFbo, renderWidth*2, renderHeight, transformArray, projectionArray, controllersArray);
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -1277,7 +1347,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
 
-      if (mlHasPose) {
+      if (mlPresentState.mlHasPose) {
         const depthNear = 0.1;
         const depthFar = 100;
 
@@ -1372,7 +1442,7 @@ const _bindWindow = (window, newWindowCb) => {
           frameData,
           stageParameters,
           gamepads,
-          context: mlContext,
+          context: mlPresentState.mlContext,
         });
       }
 
@@ -1406,8 +1476,8 @@ const _bindWindow = (window, newWindowCb) => {
     // update media frames
     nativeVideo.Video.updateAll();
     // update magic leap pre state
-    if (nativeMl && mlGlContext) {
-      nativeMl.PrePollEvents(mlContext);
+    if (nativeMl && mlPresentState.mlGlContext) {
+      nativeMl.PrePollEvents(mlPresentState.mlContext);
     }
     if (args.performance) {
       const now = Date.now();
@@ -1443,8 +1513,8 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // update magic leap post state
-    if (nativeMl && mlGlContext) {
-      nativeMl.PostPollEvents(mlContext, mlGlContext, mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height);
+    if (nativeMl && mlPresentState.mlGlContext) {
+      nativeMl.PostPollEvents(mlPresentState.mlContext, mlPresentState.mlGlContext, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
     }
     if (args.performance) {
       const now = Date.now();
