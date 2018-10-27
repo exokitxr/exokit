@@ -40,7 +40,7 @@
       this.launchTerminal = this.launchTerminal.bind(this);
       this.launchExoHome = this.launchExoHome.bind(this);
       this.checkVersion = this.checkVersion.bind(this);
-      this.onSettingsSave = this.onSettingsSave.bind(this);
+      this.getSettings = this.getSettings.bind(this);
     }
 
     componentDidMount(){
@@ -56,8 +56,7 @@
       console.log(this.state.url);
     };
 
-    onSettingsSave = (e) => {
-      e.preventDefault();
+    getSettings(){
       let flags = '';
       if(document.getElementById("-u").checked){
         flags += 'u'
@@ -84,11 +83,13 @@
       ipcRenderer.send('asynchronous-message', 'social', url) // Launch Terminal from Node
     }
 
-    launchTerminal(){
+    launchTerminal(e){
+      e.preventDefault();
       ipcRenderer.send('asynchronous-message', 'terminal', this.state.url, this.state.flags) // Launch Terminal from Node
     }
 
-    launchExoHome(){
+    launchExoHome(e){
+      e.preventDefault();
       ipcRenderer.send('asynchronous-message', 'exohome', this.state.url, this.state.flags) // Launch ExoHome from Node
     }
 
@@ -197,35 +198,35 @@
               <form>
                 <div className="form-group">
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="-u"/>
+                    <input type="checkbox" className="custom-control-input" id="-u" onClick={() => this.getSettings()}/>
                       <label className="custom-control-label" htmlFor="-u"><code>-u</code> | Uncap FPS</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="-p"/>
+                    <input type="checkbox" className="custom-control-input" id="-p" onClick={() => this.getSettings()}/>
                       <label className="custom-control-label" htmlFor="-p"><code>-p</code> | Performance Log to
                         Console</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="-x"/>
+                    <input type="checkbox" className="custom-control-input" id="-x" onClick={() => this.getSettings()}/>
                       <label className="custom-control-label" htmlFor="-x"><code>-x</code> | WebXR</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="-t"/>
+                    <input type="checkbox" className="custom-control-input" id="-t" onClick={() => this.getSettings()}/>
                     <label className="custom-control-label" htmlFor="-t"><code>-t</code> | Reality Tab</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="-m"/>
+                    <input type="checkbox" className="custom-control-input" id="-m" onClick={() => this.getSettings()}/>
                     <label className="custom-control-label" htmlFor="-m"><code>-m</code> | Minimal Frame	</label>
                   </div>
                   <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="-w"/>
+                    <input type="checkbox" className="custom-control-input" id="-w" onClick={() => this.getSettings()}/>
                     <label className="custom-control-label" htmlFor="-w"><code>-w</code> | WebGL	</label>
                   </div>
                 </div>
                 <div className="form-inline d-inline">
                   <input onChange={this.onURLChange} type="text" className="form-control" id="formGroupExampleInput" placeholder="Run with custom URL"/>
                 </div>
-                <button onClick={(e) => this.onSettingsSave(e)} className="btn btn-sm btnSecondary m-2 p-2">Save</button>
+                <button onClick={(e) => this.launchTerminal(e)} className="btn btn-sm btnSecondary m-2 p-2">Go</button>
               </form>
             </div>
 
@@ -310,8 +311,8 @@
 
               <div className="col-4">
                 <h5>Launch</h5>
-                <button className="btn m-2" onClick={() => this.launchTerminal()}>Terminal</button>
-                <button className="btn m-2" onClick={() => this.launchExoHome()}>Exo-Home</button>
+                <button className="btn m-2" onClick={(e) => this.launchTerminal(e)}>Terminal</button>
+                <button className="btn m-2" onClick={(e) => this.launchExoHome(e)}>Exo-Home</button>
               </div>
             </div>
 
