@@ -15,12 +15,8 @@ lab::AudioContext *getDefaultAudioContext(float sampleRate) {
   return _defaultAudioContext.get();
 }
 
-void deleteDefaultAudioContext() {
-  _defaultAudioContext.reset();
-}
-
 AudioContext::AudioContext(float sampleRate) {
-  audioContext = getDefaultAudioContext(sampleRate);
+  audioContext = lab::MakeRealtimeAudioContext(sampleRate);
 }
 
 AudioContext::~AudioContext() {}
@@ -239,8 +235,7 @@ void AudioContext::Resume() {
 void AudioContext::Close() {
   // Nan::HandleScope scope;
 
-  audioContext = nullptr;
-  deleteDefaultAudioContext();
+  audioContext.reset();
 }
 
 NAN_METHOD(AudioContext::New) {

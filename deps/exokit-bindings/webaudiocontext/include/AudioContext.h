@@ -74,7 +74,7 @@ protected:
   ~AudioContext();
 
 protected:
-  lab::AudioContext *audioContext;
+  std::unique_ptr<AudioContext> audioContext;
 
   friend class Audio;
   friend class AudioListener;
