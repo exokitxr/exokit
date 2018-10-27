@@ -35,11 +35,18 @@ Handle<Object> AudioParam::Initialize(Isolate *isolate) {
 NAN_METHOD(AudioParam::New) {
   Nan::HandleScope scope;
 
-  AudioParam *audioParam = new AudioParam();
-  Local<Object> audioParamObj = info.This();
-  audioParam->Wrap(audioParamObj);
+  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+    Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
 
-  info.GetReturnValue().Set(audioParamObj);
+    AudioParam *audioParam = new AudioParam();
+    audioParam->context.Reset(audioContextObj);
+    Local<Object> audioParamObj = info.This();
+    audioParam->Wrap(audioParamObj);
+
+    info.GetReturnValue().Set(audioParamObj);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
 }
 
 NAN_GETTER(AudioParam::DefaultValueGetter) {
@@ -77,9 +84,12 @@ NAN_GETTER(AudioParam::ValueGetter) {
 
   AudioParam *audioParam = ObjectWrap::Unwrap<AudioParam>(info.This());
 
+  Local<Object> audioContextObj = Nan::New(audioParam->context);
+  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
   float value;
   {
-    lab::ContextRenderLock lock(getDefaultAudioContext(), "AudioParam::ValueGetter");
+    lab::ContextRenderLock lock(audioContext, "AudioParam::ValueGetter");
     value = audioParam->audioParam->value(lock);
   }
 
