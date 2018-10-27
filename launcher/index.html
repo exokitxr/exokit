@@ -149,7 +149,7 @@
             document.getElementById('checkingUpdate').hidden = true;
             document.getElementById('upToUpdate').hidden = false;
             document.getElementById('needsUpdate').hidden = true;
-            document.getElementById('downloadingUpdate').hidden = false;
+            document.getElementById('downloadingUpdate').hidden = true;
             this.setState({ needsUpdate: false });
             this.setState({ userVersion: versions[0] });
             this.setState({ upstreamVersion: versions[1] });

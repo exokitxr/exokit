@@ -81,7 +81,7 @@ ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
 
       version.once('exit', function() {
         // Send the userVersion to Frontend
-        event.sender.send('asynchronous-reply', stdout); // FAKING THE VERSION # FOR DEMO
+        event.sender.send('asynchronous-reply', stdout.slice(0, 7));
 
         https.get('https://get.webmr.io/version', (res) => {
           console.log('Checking Version...');
