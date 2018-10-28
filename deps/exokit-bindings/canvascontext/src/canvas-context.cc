@@ -4,18 +4,22 @@
 #include "GrBackendSurface.h"
 #include "GrContext.h"
 
- 
-#include <GLFW/glfw3.h>
+#include <glfw/include/glfw.h>
+#include <windowsystem.h>
 #include "gl/GrGLAssembleInterface.h"
 
 using namespace v8;
 using namespace node;
 
 
-GrContext* sContext = nullptr;
+void error_callback(int error, const char* description) {
+	fputs(description, stderr);
+}
 
-// https://github.com/google/skia/blob/master/include/gpu/GrContext.h#L58
-// https://codereview.chromium.org/1827153003 and https://codereview.chromium.org/1827153003/patch/20001/30002
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
+}
 
 static GrGLFuncPtr glfw_get(void* ctx, const char name[]) {
    SkASSERT(nullptr == ctx);
@@ -23,14 +27,13 @@ static GrGLFuncPtr glfw_get(void* ctx, const char name[]) {
    return glfwGetProcAddress(name);
 }
 
-const GrGLInterface* GrGLCreateNativeInterfaceGLFW() {
+sk_sp<const GrGLInterface> GrGLCreateNativeInterfaceGLFW() {
   if (nullptr == glfwGetCurrentContext()) {
     return nullptr;
   }
  
-  return GrGLAssembleInterface(nullptr, glfw_get);
+  return GrGLMakeAssembledInterface(nullptr, glfw_get);
 }
-
 
 bool isImageValue(Local<Value> arg) {
   if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
@@ -282,6 +285,7 @@ void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, floa
 }
 
 sk_sp<SkSurface> getSurface(unsigned int width, unsigned int height){
+  
   GrContextOptions options;
   // glfwGetCurrentContext();
   
@@ -289,8 +293,8 @@ sk_sp<SkSurface> getSurface(unsigned int width, unsigned int height){
   
   // This next line should be getting the context from GLFW but it does not work - it must be returning something other than nullptr as the method.
   
-  // sContext = GrContext::MakeGL(GrGLCreateNativeInterfaceGLFW(),options).release();
-  sContext = GrContext::MakeGL(nullptr,options).release();
+  sk_sp<GrContext> sContext = GrContext::MakeGL(GrGLCreateNativeInterfaceGLFW(),options);
+  //sk_sp<GrContext> sContext = GrContext::MakeGL(nullptr, options);
 
   GrGLFramebufferInfo framebufferInfo;
   framebufferInfo.fFBOID = 0; // assume default framebuffer
@@ -305,13 +309,15 @@ sk_sp<SkSurface> getSurface(unsigned int width, unsigned int height){
   }
   GrBackendRenderTarget backendRenderTarget(width, height,0,0,framebufferInfo);
 
-  return SkSurface::MakeFromBackendRenderTarget(sContext, backendRenderTarget, kBottomLeft_GrSurfaceOrigin, colorType, SkColorSpace::MakeSRGB(), nullptr);//.release();
+  sk_sp<SkSurface> newSurface = SkSurface::MakeFromBackendRenderTarget(sContext.get(), backendRenderTarget, kBottomLeft_GrSurfaceOrigin, colorType, SkColorSpace::MakeSRGB(), nullptr);
+  
+  return newSurface;
 }
 
 
 bool CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
-  //SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  sk_sp<SkSurface> newSurface = getSurface(w,h);//SkSurface::MakeRaster(info);
+  SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+  sk_sp<SkSurface> newSurface = SkSurface::MakeRaster(info);//getSurface(w,h);//
 
   if (newSurface) {
     surface = newSurface;
@@ -1446,12 +1452,51 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   }
 }
 
-CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
-	
-  surface = getSurface(width,height);
+void createGLFWWindow(unsigned int width, unsigned int height){
+  GLFWwindow* window;
+  glfwSetErrorCallback([](int err, const char *errString) {
+    fprintf(stderr, "%s", errString);
+  });
+  if (glfwInit() == GLFW_TRUE) {
+      atexit([]() {
+        glfwTerminate();
+      });
 
-  // SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  // surface = SkSurface::MakeRaster(info); 
+	  glfwDefaultWindowHints();
+
+		  // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
+	  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	  glfwWindowHint(GLFW_RESIZABLE, 1);
+	  glfwWindowHint(GLFW_VISIBLE, 1);
+	  glfwWindowHint(GLFW_DECORATED, 1);
+	  glfwWindowHint(GLFW_RED_BITS, 8);
+	  glfwWindowHint(GLFW_GREEN_BITS, 8);
+	  glfwWindowHint(GLFW_BLUE_BITS, 8);
+	  glfwWindowHint(GLFW_DEPTH_BITS, 24);
+	  glfwWindowHint(GLFW_REFRESH_RATE, 0);
+
+      //glfwWindowHint(GLFW_VISIBLE, false);
+	  window = glfwCreateWindow(width, height, "Simple example", NULL, NULL);
+	  if (!window) {
+		glfwTerminate();
+		//exit(EXIT_FAILURE);
+	  }
+	  glfwMakeContextCurrent(window);
+  
+  //glfwSwapInterval(1);
+  //glfwSetKeyCallback(window, key_callback);
+  glfwSwapBuffers(window);
+  }
+}
+
+CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
+	//createGLFWWindow(width,height);
+  //surface = getSurface(width,height);
+  SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+  surface = SkSurface::MakeRaster(info); 
   
   // XXX can optimize this to not allocate until a width/height is set
   // flipCanvasY(surface->getCanvas());
