@@ -42,7 +42,7 @@ NAN_METHOD(OscillatorNode::New) {
     oscillatorNode->Wrap(oscillatorNodeObj);
 
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
-    oscillatorNode->audioNode = make_shared<lab::OscillatorNode>(audioContext->sampleRate());
+    oscillatorNode->audioNode = make_shared<lab::OscillatorNode>(audioContext->audioContext->sampleRate());
 
     oscillatorNode->context.Reset(audioContextObj);
 
