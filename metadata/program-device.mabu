@@ -90,6 +90,7 @@ DATAS = ../package.json : / \
   ../build/Release/exokit.node : /build/Release/exokit.node \
   ../node_modules/ : /node_modules/ \
   ../examples/ : /examples/ \
+  ../metadata/fonts.xml : /etc/fonts.xml
 
 # If you need to perform pre-build or post-build steps,
 # write Makefile snippets using double-colon rules in
