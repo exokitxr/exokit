@@ -1198,6 +1198,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return styleSpec.style;
   };
+  window.Browser = nativeBrowser.Browser;
   window.browser = {
     http: (() => {
       const httpProxy = {};
@@ -1847,6 +1848,7 @@ let VideoDevice = null;
 
 let nativeVr = GlobalContext.nativeVr = null;
 let nativeMl = GlobalContext.nativeMl = null;
+let nativeBrowser = null;
 let nativeWindow = null;
 
 /**
@@ -1960,6 +1962,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
   nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
+  nativeBrowser = bindings.nativeBrowser;
   nativeWindow = bindings.nativeWindow;
 };
 module.exports = exokit;
