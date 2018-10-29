@@ -109,6 +109,7 @@
                     "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib/windows/Release/libcef.dll')\")",
                     "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib/windows/Release/chrome_elf.dll')\")",
                     "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib/windows/Release/libEGL.dll')\")",
+                    "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib/windows/Release/libGLESv2.dll')\")",
                     "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib/windows/Release/natives_blob.bin')\")",
                     "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib/windows/Release/snapshot_blob.bin')\")",
                     "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib/windows/Release/v8_context_snapshot.bin')\")",
