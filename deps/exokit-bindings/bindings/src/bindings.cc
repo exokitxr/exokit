@@ -128,3 +128,15 @@ Local<Object> makeVideo(Local<Value> imageDataCons) {
 
   return scope.Escape(exports);
 }
+
+Local<Object> makeBrowser() {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  Local<Object> exports = Nan::New<Object>();
+
+  exports->Set(JS_STR("Browser"), browser::Browser::Initialize(isolate));
+
+  return scope.Escape(exports);
+}
