@@ -10,6 +10,7 @@
                 'exokit.cpp',
                 'deps/exokit-bindings/bindings/src/*.cc',
                 'deps/exokit-bindings/util/src/*.cc',
+                'deps/exokit-bindings/browser/src/*.cpp',
                 'deps/exokit-bindings/canvas/src/*.cpp',
                 'deps/exokit-bindings/nanosvg/src/*.cpp',
                 'deps/exokit-bindings/canvascontext/src/*.cc',
@@ -22,6 +23,15 @@
                 'deps/exokit-bindings/glfw/src/*.cc',
                 'deps/openvr/src/*.cpp',
                 'deps/exokit-bindings/leapmotion/src/*.cc',
+                'cef/libcef_dll/*.cc',
+                'cef/libcef_dll/base/*.cc',
+                'cef/libcef_dll/cpptoc/*.cc',
+                'cef/libcef_dll/cpptoc/test/*.cc',
+                'cef/libcef_dll/cpptoc/views/*.cc',
+                'cef/libcef_dll/ctocpp/*.cc',
+                'cef/libcef_dll/ctocpp/test/*.cc',
+                'cef/libcef_dll/ctocpp/views/*.cc',
+                'cef/libcef_dll/wrapper/*.cc',
               ],
               'include_dirs': [
                 "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
@@ -34,6 +44,7 @@
                 "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/headers')\")",
                 "<!(node -e \"console.log(require.resolve('leapmotion').slice(0, -9) + '/include')\")",
+                '<(module_root_dir)/cef',
                 '<(module_root_dir)/deps/exokit-bindings',
                 '<(module_root_dir)/deps/exokit-bindings/utf8',
                 '<(module_root_dir)/deps/exokit-bindings/node',
@@ -41,6 +52,7 @@
                 '<(module_root_dir)/deps/exokit-bindings/util/include',
                 '<(module_root_dir)/deps/exokit-bindings/bindings/include',
                 '<(module_root_dir)/deps/exokit-bindings/canvas/include',
+                '<(module_root_dir)/deps/exokit-bindings/browser/include',
                 '<(module_root_dir)/deps/exokit-bindings/nanosvg/include',
                 '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
                 '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
@@ -59,6 +71,7 @@
                 "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/windows')\")",
                 "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/lib/win64')\")",
                 "<!(node -e \"console.log(require.resolve('leapmotion').slice(0, -9) + '/lib/win')\")",
+                '<(module_root_dir)/cef/lib',
               ],
               'libraries': [
                 'opengl32.lib',
@@ -75,6 +88,7 @@
                 'swresample.lib',
                 'openvr_api.lib',
                 'Leap.lib',
+                'libcef.lib',
               ],
               'copies': [
                 {
@@ -92,13 +106,33 @@
                     "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/windows/swresample-3.dll')\")",
                     "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/bin/win64/openvr_api.dll')\")",
                     "<!(node -e \"console.log(require.resolve('leapmotion').slice(0, -9) + '/lib/win/Leap.dll')\")",
+                    '<(module_root_dir)/cef/lib/libcef.dll',
+                    '<(module_root_dir)/cef/lib/chrome_elf.dll',
+                    '<(module_root_dir)/cef/lib/libEGL.dll',
+                    '<(module_root_dir)/cef/lib/libGLESv2.dll',
+                    '<(module_root_dir)/cef/lib/natives_blob.bin',
+                    '<(module_root_dir)/cef/lib/snapshot_blob.bin',
+                    '<(module_root_dir)/cef/lib/v8_context_snapshot.bin',
+                    '<(module_root_dir)/cef/Resources/cef_100_percent.pak',
+                    '<(module_root_dir)/cef/Resources/cef_200_percent.pak',
+                    '<(module_root_dir)/cef/Resources/cef_extensions.pak',
+                    '<(module_root_dir)/cef/Resources/cef.pak',
+                    '<(module_root_dir)/cef/Resources/devtools_resources.pak',
+                    '<(module_root_dir)/cef/Resources/icudtl.dat',
                   ]
-                }
+                },
+                {
+                  'destination': '<(module_root_dir)/build/Release/locales/',
+                  'files': [
+                    '<(module_root_dir)/cef/Resources/locales/en-US.pak',
+                  ]
+                },
               ],
               'defines': [
                 'NOMINMAX',
                 'OPENVR',
                 'LEAPMOTION',
+                'WRAPPING_CEF_SHARED',
               ],
             }],
             ['OS=="linux"', {
