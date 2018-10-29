@@ -13,6 +13,7 @@
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
+#include <Browser.h>
 #if _WIN32
 #include <leapmotion.h>
 #endif
@@ -31,5 +32,6 @@ Local<Object> makeCanvasGradient();
 Local<Object> makeCanvasPattern();
 Local<Object> makeAudio();
 Local<Object> makeVideo(Local<Value> imageDataCons);
+Local<Object> makeBrowser();
 
 #endif
