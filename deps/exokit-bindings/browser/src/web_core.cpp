@@ -3,8 +3,7 @@
 #include "browser_client.h"
 #include "render_handler.h"
 
-#include <cassert>
-#include <include/cef_app.h>
+#include <iostream>
 
 WebCoreManager::WebCoreManager()
 {
@@ -20,14 +19,31 @@ bool WebCoreManager::setUp(int *exit_code)
 {
 	assert(exit_code != nullptr);
 
-	CefMainArgs args;
-	*exit_code = CefExecuteProcess(args, nullptr, nullptr);;
+  /* const char *argv[] = {
+    "node",
+    "--single-process",
+  };
+  int argc = sizeof(argv)/sizeof(argv[0]);
+	CefMainArgs args(argc, argc); */
+  
+	/* CefMainArgs args;
+	*exit_code = CefExecuteProcess(args, nullptr, nullptr);
 	if (*exit_code >= 0) { 
 		return false;
-	}
+	} */
 
+  CefMainArgs args;
+  
 	CefSettings settings;
-	bool result = CefInitialize(args, settings, nullptr, nullptr);
+  // settings.log_severity = LOGSEVERITY_VERBOSE;
+  // CefString(&settings.resources_dir_path) = resourcesPath;
+  // CefString(&settings.locales_dir_path) = localesPath;
+  settings.no_sandbox = true;
+  
+  // CefRefPtr<SimpleApp> app(new SimpleApp());
+  SimpleApp *app = new SimpleApp();
+  
+	bool result = CefInitialize(args, settings, app, nullptr);
 	if (!result) {
 		*exit_code = -1;
 		return false;
@@ -47,9 +63,9 @@ void WebCoreManager::update()
 	CefDoMessageLoopWork();
 }
 
-std::weak_ptr<WebCore> WebCoreManager::createBrowser(const std::string &url)
+std::weak_ptr<WebCore> WebCoreManager::createBrowser(const std::string &url, RenderHandler::OnPaintFn onPaint)
 {
-	auto web_core = std::make_shared<WebCore>(url);
+	auto web_core = std::make_shared<WebCore>(url, onPaint);
 	browsers_.push_back(web_core);
 	return web_core;
 }
@@ -65,17 +81,18 @@ void WebCoreManager::removeBrowser(std::weak_ptr<WebCore> web_core)
 	}
 }
 
-WebCore::WebCore(const std::string &url)
+WebCore::WebCore(const std::string &url, RenderHandler::OnPaintFn onPaint)
 	: mouse_x_(0), mouse_y_(0)
 {
-	render_handler_ = new RenderHandler();
+	render_handler_ = new RenderHandler(onPaint);
 	render_handler_->init();
 	// initial size
 	render_handler_->resize(128, 128);
 
 	CefWindowInfo window_info;
-	HWND hwnd = GetConsoleWindow();
-	window_info.SetAsWindowless(hwnd, true);
+	/* HWND hwnd = GetConsoleWindow();
+	window_info.SetAsWindowless(hwnd, true); */
+  window_info.SetAsWindowless(nullptr);
 
 	CefBrowserSettings browserSettings;
 	// browserSettings.windowless_frame_rate = 60; // 30 is default
@@ -139,4 +156,19 @@ void WebCore::keyPress(int key, bool pressed)
 	evt.type = KEYEVENT_CHAR;
 
 	browser_->GetHost()->SendKeyEvent(evt);
+}
+
+SimpleApp::SimpleApp() {}
+
+void SimpleApp::OnBeforeCommandLineProcessing(const CefString &process_type, CefRefPtr<CefCommandLine> command_line) {
+  command_line->AppendSwitch(CefString("single-process"));
+  // command_line->AppendSwitch(CefString("no-proxy-server"));
+  command_line->AppendSwitch(CefString("winhttp-proxy-resolver"));
+  command_line->AppendSwitch(CefString("no-sandbox"));
+}
+
+void SimpleApp::OnContextInitialized() {
+  CEF_REQUIRE_UI_THREAD();
+  
+  std::cout << "SimpleApp::OnContextInitialized" << std::endl;
 }
