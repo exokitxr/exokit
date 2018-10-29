@@ -10,6 +10,8 @@ for (const k in exokitNode) {
   bindings[k] = exokitNode[k];
 }
 bindings.nativeWorker = WindowWorker;
+bindings.nativeBrowser.Browser.setResourcesPath(path.join(__dirname, '..', 'cef', 'Resources'));
+bindings.nativeBrowser.Browser.setLocalesPath(path.join(__dirname, '..', 'cef', 'Resources', 'locales'));
 bindings.nativeVm = vmOne;
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {
