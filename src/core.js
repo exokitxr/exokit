@@ -34,7 +34,6 @@ const {
   getGamepads,
   getAllGamepads,
 } = require('vr-display')(THREE);
-const electron = require('./electron');
 
 const BindingsModule = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
@@ -1216,7 +1215,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       })(wsProxy.Server);
       return wsProxy;
     })(),
-    electron,
     magicleap: nativeMl ? {
       RequestMeshing() {
         const mesher = nativeMl.RequestMeshing.apply(nativeMl, arguments);
