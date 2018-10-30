@@ -78,54 +78,66 @@ BrowserClient::~BrowserClient() {}
 
 Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : initialized(false) {
   glGenTextures(1, &tex);
+
+  QueueOnBrowserThread([&]() -> void {
+    render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+      RunOnMainThread([&]() -> void {
+        glBindTexture(GL_TEXTURE_2D, this->tex);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+
+        if (!this->initialized) {
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+          glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+          glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+          this->initialized = true;
+        }
+
+        for (size_t i = 0; i < dirtyRects.size(); i++) {
+          const CefRect &rect = dirtyRects[i];
+          
+          glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
+          glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
+          glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+        }
+
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+        if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+          glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+        } else {
+          glBindTexture(GL_TEXTURE_2D, 0);
+        }
+      });
+    }));
+    render_handler_->resize(128, 128);
+
+    CefWindowInfo window_info;
+    window_info.SetAsWindowless(nullptr);
+    CefBrowserSettings browserSettings;
+    // browserSettings.windowless_frame_rate = 60; // 30 is default
+    client_.reset(new BrowserClient(render_handler_.get()));
+    
+    browser_ = CefBrowserHost::CreateBrowserSync(window_info, client_.get(), url, browserSettings, nullptr);
+    
+    this->reshape(width, height);
+    
+    uv_sem_post(&constructSem);
+  });
   
-  render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
-    glBindTexture(GL_TEXTURE_2D, this->tex);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-
-    if (!this->initialized) {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-      glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-
-      this->initialized = true;
-    }
-
-    for (size_t i = 0; i < dirtyRects.size(); i++) {
-      const CefRect &rect = dirtyRects[i];
-      
-      glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
-      glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
-      glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
-    }
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-    } else {
-      glBindTexture(GL_TEXTURE_2D, 0);
-    }
-  }));
-	render_handler_->resize(128, 128);
-
-	CefWindowInfo window_info;
-  window_info.SetAsWindowless(nullptr);
-	CefBrowserSettings browserSettings;
-	// browserSettings.windowless_frame_rate = 60; // 30 is default
-	client_.reset(new BrowserClient(render_handler_.get()));
-
-	browser_ = CefBrowserHost::CreateBrowserSync(window_info, client_.get(), url, browserSettings, nullptr);
-  
-  this->reshape(width, height);
+  uv_sem_wait(&constructSem);
 }
 
 Browser::~Browser() {}
 
 Handle<Object> Browser::Initialize(Isolate *isolate) {
+  uv_async_init(uv_default_loop(), &mainThreadAsync, MainThreadAsync);
+  uv_sem_init(&constructSem, 0);
+  uv_sem_init(&paintSem, 0);
+  
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -152,14 +164,24 @@ NAN_METHOD(Browser::New) {
     info[3]->IsString()
   ) {
     if (!cefInitialized) {
-      // std::cout << "initialize web core manager 1" << std::endl;
-      const bool success = initializeCef();
-      // std::cout << "initialize web core manager 2 " << success << std::endl;
-      if (success) {
-        cefInitialized = true;
-      } else {
-        return Nan::ThrowError("Browser::Browser: failed to initialize CEF");
-      }
+      browserThread = std::thread([]() -> void {
+        // std::cout << "initialize web core manager 1" << std::endl;
+        const bool success = initializeCef();
+        // std::cout << "initialize web core manager 2 " << success << std::endl;
+        if (success) {          
+          for (;;) {
+            std::lock_guard<std::mutex> lock(browserThreadFnMutex);
+            
+            for (size_t i = 0; i < browserThreadFns.size(); i++) {
+              browserThreadFns[i]();
+            }
+            browserThreadFns.clear();
+          }
+        } else {
+          std::cerr << "Browser::Browser: failed to initialize CEF" << std::endl;
+        }
+      });
+      cefInitialized = true;
     }
 
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
@@ -180,20 +202,17 @@ NAN_METHOD(Browser::New) {
   }
 }
 
-void Browser::Update() {
-  CefDoMessageLoopWork();
-}
-
 void Browser::reshape(int w, int h) {
 	render_handler_->resize(w, h);
 	browser_->GetHost()->WasResized();
 }
 
 NAN_METHOD(Browser::Update) {
-  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-  // std::cout << "browser update 1" << std::endl;
-  browser->Update();
-  // std::cout << "browser update 2" << std::endl;
+  QueueOnBrowserThread([]() -> void {
+    // std::cout << "browser update 1" << std::endl;
+    CefDoMessageLoopWork();
+    // std::cout << "browser update 2" << std::endl;
+  });
 }
 
 NAN_GETTER(Browser::TextureGetter) {
@@ -202,6 +221,38 @@ NAN_GETTER(Browser::TextureGetter) {
   Local<Object> textureObj = Nan::New<Object>();
   textureObj->Set(JS_STR("id"), JS_INT(browser->tex));
   info.GetReturnValue().Set(textureObj);
+}
+
+// helpers
+
+void QueueOnBrowserThread(std::function<void()> fn) {
+  {
+    std::lock_guard<std::mutex> lock(browserThreadFnMutex);
+    browserThreadFns.push_front(fn); // front for fifo
+  }
+}
+
+void RunOnMainThread(std::function<void()> fn) {
+  {
+    std::lock_guard<std::mutex> lock(mainThreadFnMutex);
+    mainThreadFns.push_back(fn);
+  }
+
+  uv_async_send(&mainThreadAsync);
+  uv_sem_wait(&paintSem);
+}
+
+void MainThreadAsync(uv_async_t *handle) {
+  {
+    std::lock_guard<std::mutex> lock(mainThreadFnMutex);
+    
+    for (size_t i = 0; i < mainThreadFns.size(); i++) {
+      mainThreadFns[i]();
+    }
+    mainThreadFns.clear();
+  }
+
+  uv_sem_post(&paintSem);
 }
 
 /* WebCore::WebCore(const std::string &url, RenderHandler::OnPaintFn onPaint)
@@ -281,6 +332,19 @@ void WebCore::keyPress(int key, bool pressed)
 	browser_->GetHost()->SendKeyEvent(evt);
 } */
 
+// variables
+
 bool cefInitialized = false;
+std::thread browserThread;
+
+uv_sem_t constructSem;
+uv_sem_t paintSem;
+
+std::mutex browserThreadFnMutex;
+std::deque<std::function<void()>> browserThreadFns;
+
+uv_async_t mainThreadAsync;
+std::mutex mainThreadFnMutex;
+std::deque<std::function<void()>> mainThreadFns;
 
 }
