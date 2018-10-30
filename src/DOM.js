@@ -1817,6 +1817,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.contentWindow = null;
     this.contentDocument = null;
     this.live = true;
+    
+    this.d = null;
+    this.browser = null;
     this.xrOffset = {
       position: new Float32Array(3),
       rotation: new Float32Array(4),
@@ -1834,54 +1837,71 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         }
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
-          this.ownerDocument.defaultView.fetch(url)
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.text();
-              } else {
-                return Promise.reject(new Error('iframe src got invalid status code: ' + res.status + ' : ' + url));
-              }
-            })
-            .then(htmlString => {
-              if (this.live) {
-                const parentWindow = this.ownerDocument.defaultView;
-                const options = parentWindow[symbols.optionsSymbol];
-
-                url = utils._makeNormalizeUrl(options.baseUrl)(url);
-                const contentWindow = GlobalContext._makeWindow({
-                  url,
-                  baseUrl: url,
-                  dataPath: options.dataPath,
-                }, parentWindow, parentWindow.top);
-                const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
-                contentDocument.hidden = this.hidden;
-                contentDocument.xrOffset = this.xrOffset;
-
-                contentWindow.document = contentDocument;
-
-                this.contentWindow = contentWindow;
-                this.contentDocument = contentDocument;
-
-                contentWindow.on('destroy', e => {
-                  parentWindow.emit('destroy', e);
-                });
+          (async () => {
+            if (this.d === 2) {
+              const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+              if (context) {
+                this.browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
                 
-                this.readyState = 'complete';
-
+                setInterval(() => { // XXX do updates natively in a separate thread
+                  this.browser.update();
+                }, 1000/30);
+                
                 this.dispatchEvent(new Event('load', {target: this}));
+              } else {
+                throw new Error('iframe owner document does not have a WebGL context');
               }
-              
+            } else {
+              const res = await this.ownerDocument.defaultView.fetch(url);
+              if (res.status >= 200 && res.status < 300) {
+                const htmlString = await res.text();
+                
+                if (this.live) {
+                  const parentWindow = this.ownerDocument.defaultView;
+                  const options = parentWindow[symbols.optionsSymbol];
+
+                  url = utils._makeNormalizeUrl(options.baseUrl)(url);
+                  const contentWindow = GlobalContext._makeWindow({
+                    url,
+                    baseUrl: url,
+                    dataPath: options.dataPath,
+                  }, parentWindow, parentWindow.top);
+                  const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
+
+                  contentDocument.hidden = this.d === 3;
+
+                  contentDocument.xrOffset = this.xrOffset;
+
+                  contentWindow.document = contentDocument;
+
+                  this.contentWindow = contentWindow;
+                  this.contentDocument = contentDocument;
+
+                  contentWindow.on('destroy', e => {
+                    parentWindow.emit('destroy', e);
+                  });
+
+                  this.dispatchEvent(new Event('load', {target: this}));
+                }
+              } else {
+                throw new Error('iframe src got invalid status code: ' + res.status + ' : ' + url);
+              }
+            }
+          })()
+            .then(() => {
+              this.readyState = 'complete';
+
               cb();
             })
             .catch(err => {
               console.error(err);
-              
+
               this.readyState = 'complete';
-              
+
               this.dispatchEvent(new Event('load', {target: this}));
-              
+
               cb(err);
-            });
+            })
         });
       } else if (name === 'position' || name === 'rotation' || name === 'scale') {
         const v = _parseVector(value);
@@ -1892,9 +1912,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         } else if (name === 'scale' && v.length === 3) {
           this.xrOffset.scale.set(v);
         }
-      } else if (name === 'hidden') {
-        if (this.contentDocument) {
-          this.contentDocument.hidden = value;
+      } else if (name === 'd') {
+        if (value === '2') {
+          this.d = 2;
+        } else if (value === '3') {
+          this.d = 3;
+        } else {
+          this.d = null;
         }
       }
     });
@@ -1904,8 +1928,21 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         this.contentWindow = null;
       }
       this.contentDocument = null;
+      
+      if (this.browser) {
+        this.browser.destroy(); // XXX support this
+      }
     });
   }
+  
+  get texture() {
+    if (this.d === 2) {
+      return this.browser && this.browser.texture;
+    } else {
+      return null;
+    }
+  }
+  set texture(texture) {}
   
   get position() {
     return this.getAttribute('position');
@@ -1935,13 +1972,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       scale = scale.join(' ');
     }
     this.setAttribute('scale', scale);
-  }
-
-  get hidden() {
-    return this.getAttribute('hidden');
-  }
-  set hidden(hidden) {
-    this.setAttribute('hidden', hidden);
   }
 
   destroy() {
