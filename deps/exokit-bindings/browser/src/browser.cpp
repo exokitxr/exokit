@@ -77,11 +77,15 @@ BrowserClient::~BrowserClient() {}
 // Browser
 
 Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : initialized(false) {
+  ensureCurrentGlWindow(gl);
+  
   glGenTextures(1, &tex);
 
   QueueOnBrowserThread([&]() -> void {
     render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
       RunOnMainThread([&]() -> void {
+        ensureCurrentGlWindow(gl);
+        
         glBindTexture(GL_TEXTURE_2D, this->tex);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
