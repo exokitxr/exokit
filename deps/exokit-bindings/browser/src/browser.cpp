@@ -201,6 +201,83 @@ void Browser::reshape(int w, int h) {
 	browser_->GetHost()->WasResized();
 }
 
+/* WebCore::WebCore(const std::string &url, RenderHandler::OnPaintFn onPaint)
+	: mouse_x_(0), mouse_y_(0)
+{
+	render_handler_ = new RenderHandler(onPaint);
+	render_handler_->init();
+	// initial size
+	render_handler_->resize(128, 128);
+
+	CefWindowInfo window_info;
+	// HWND hwnd = GetConsoleWindow();
+	// window_info.SetAsWindowless(hwnd, true);
+  window_info.SetAsWindowless(nullptr);
+
+	CefBrowserSettings browserSettings;
+	// browserSettings.windowless_frame_rate = 60; // 30 is default
+	client_ = new BrowserClient(render_handler_);
+
+	browser_ = CefBrowserHost::CreateBrowserSync(window_info, client_.get(), url, browserSettings, nullptr);
+}
+
+WebCore::~WebCore()
+{
+	browser_->GetHost()->CloseBrowser(true);
+	CefDoMessageLoopWork();
+
+	browser_ = nullptr;
+	client_ = nullptr;
+}
+
+void WebCore::reshape(int w, int h)
+{
+	render_handler_->resize(w, h);
+	browser_->GetHost()->WasResized();
+}
+
+
+void WebCore::mouseMove(int x, int y)
+{
+	mouse_x_ = x;
+	mouse_y_ = y;
+
+	CefMouseEvent evt;
+	evt.x = x;
+	evt.y = y;
+
+	//TODO
+	bool mouse_leave = false;
+
+	browser_->GetHost()->SendMouseMoveEvent(evt, mouse_leave);
+}
+
+void WebCore::mouseClick(CefBrowserHost::MouseButtonType btn, bool mouse_up)
+{
+	CefMouseEvent evt;
+	evt.x = mouse_x_;
+	evt.y = mouse_y_;
+
+	//TODO
+	int click_count = 1;
+
+	browser_->GetHost()->SendMouseClickEvent(evt, btn, mouse_up, click_count);
+}
+
+void WebCore::keyPress(int key, bool pressed)
+{
+	//TODO ???
+	// test page http://javascript.info/tutorial/keyboard-events
+	CefKeyEvent evt;
+	//event.native_key_code = key;
+	//event.type = pressed ? KEYEVENT_KEYDOWN : KEYEVENT_KEYUP;
+	evt.character = key;
+	evt.native_key_code = key;
+	evt.type = KEYEVENT_CHAR;
+
+	browser_->GetHost()->SendKeyEvent(evt);
+} */
+
 bool cefInitialized = false;
 
 }
