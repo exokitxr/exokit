@@ -15,8 +15,22 @@ using namespace node;
 
 namespace browser {
 
+bool initializeCef() {
+  CefMainArgs args;
+  
+	CefSettings settings;
+  // settings.log_severity = LOGSEVERITY_VERBOSE;
+  // CefString(&settings.resources_dir_path) = resourcesPath;
+  // CefString(&settings.locales_dir_path) = localesPath;
+  settings.no_sandbox = true;
+  
+  SimpleApp *app = new SimpleApp();
+  
+	return CefInitialize(args, settings, app, nullptr);
+}
+
 Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, const std::string &url) : tex(tex), initialized(false) {
-  web_core = g_web_core_manager.createBrowser(url, [this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+  web_core.reset(new WebCore(url, [this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
     size_t count = 0;
     for (int i = 0; i < width * height * 4; i += 4) {
       if (((const char *)buffer)[i]) {
@@ -53,8 +67,8 @@ Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, c
     } else {
       glBindTexture(GL_TEXTURE_2D, 0);
     }
-  });
-  web_core.lock()->reshape(width, height);
+  }));
+  web_core->reshape(width, height);
 }
 
 Browser::~Browser() {}
@@ -72,8 +86,6 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "update", Update);
 
   Local<Function> ctorFn = ctor->GetFunction();
-  Nan::SetMethod(ctorFn, "setResourcesPath", SetResourcesPath);
-  Nan::SetMethod(ctorFn, "setLocalesPath", SetLocalesPath);
 
   return scope.Escape(ctorFn);
 }
@@ -88,15 +100,14 @@ NAN_METHOD(Browser::New) {
     info[3]->IsNumber() &&
     info[4]->IsString()
   ) {
-    if (!g_web_core_manager_initialized) {
-      int exit_code = 0;
-      std::cout << "initialize web core manager 1" << std::endl;
-      const bool success = g_web_core_manager.setUp(&exit_code);
-      std::cout << "initialize web core manager 2 " << success << std::endl;
+    if (!cefInitialized) {
+      // std::cout << "initialize web core manager 1" << std::endl;
+      const bool success = initializeCef();
+      // std::cout << "initialize web core manager 2 " << success << std::endl;
       if (success) {
-        g_web_core_manager_initialized = true;
+        cefInitialized = true;
       } else {
-        return Nan::ThrowError("Browser::Browser: failed to set up core manager");
+        return Nan::ThrowError("Browser::Browser: failed to initialize CEF");
       }
     }
 
@@ -118,7 +129,7 @@ NAN_METHOD(Browser::New) {
 }
 
 void Browser::Update() {
-  g_web_core_manager.update();
+  CefDoMessageLoopWork();
 }
 
 NAN_METHOD(Browser::Update) {
@@ -128,27 +139,6 @@ NAN_METHOD(Browser::Update) {
   // std::cout << "browser update 2" << std::endl;
 }
 
-NAN_METHOD(Browser::SetResourcesPath) {
-  if (info[0]->IsString()) {
-    String::Utf8Value utf8Value(Local<String>::Cast(info[0]));
-    g_resources_path = std::string(*utf8Value, utf8Value.length());
-  } else {
-    Nan::ThrowError("Browser::SetResourcesPath: invalid arguments");
-  }
-}
-
-NAN_METHOD(Browser::SetLocalesPath) {
-  if (info[0]->IsString()) {
-    String::Utf8Value utf8Value(Local<String>::Cast(info[0]));
-    g_locales_path = std::string(*utf8Value, utf8Value.length());
-  } else {
-    Nan::ThrowError("Browser::SetLocalesPath: invalid arguments");
-  }
-}
-
-WebCoreManager g_web_core_manager;
-bool g_web_core_manager_initialized = false;
-std::string g_resources_path;
-std::string g_locales_path;
+bool cefInitialized = false;
 
 }
