@@ -36,9 +36,7 @@ function init() {
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
 
-  const gl = renderer.getContext();
-  const tex = gl.createTexture();
-  brwsr = new Browser(gl, tex, window.innerWidth, window.innerHeight, 'https://google.com');
+  brwsr = new Browser(renderer.getContext(), window.innerWidth, window.innerHeight, 'https://google.com');
 
   planeMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(0.9, 0.9)
@@ -63,7 +61,7 @@ function init() {
       16
     );
     const properties = renderer.properties.get(texture);
-    properties.__webglTexture = tex;
+    properties.__webglTexture = brwsr.texture;
     properties.__webglInit = true;
     const material = new THREE.MeshBasicMaterial({
       map: texture,
