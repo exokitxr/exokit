@@ -76,7 +76,7 @@ BrowserClient::~BrowserClient() {}
 
 // Browser
 
-Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : tex(tex), initialized(false) {
+Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : initialized(false) {
   glGenTextures(1, &tex);
   
   render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
