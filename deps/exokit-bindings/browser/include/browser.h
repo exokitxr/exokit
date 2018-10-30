@@ -97,15 +97,15 @@ public:
 protected:
   static NAN_METHOD(New);
   static NAN_METHOD(Update);
+  static NAN_GETTER(TextureGetter);
   void reshape(int w, int h);
 
-  Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, const std::string &url);
+  Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url);
   ~Browser();
 
 protected:
   GLuint tex;
   bool initialized;
-  // std::unique_ptr<WebCore> web_core;
   std::unique_ptr<RenderHandler> render_handler_;
   std::unique_ptr<BrowserClient> client_;
   CefRefPtr<CefBrowser> browser_;
