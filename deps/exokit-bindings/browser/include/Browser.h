@@ -16,10 +16,7 @@ using namespace node;
 
 namespace browser {
   
-extern WebCoreManager g_web_core_manager;
-extern bool g_web_core_manager_initialized;
-extern std::string g_resources_path;
-extern std::string g_locales_path;
+extern bool cefInitialized;
 
 class Browser : public ObjectWrap {
 public:
@@ -29,8 +26,6 @@ public:
 protected:
   static NAN_METHOD(New);
   static NAN_METHOD(Update);
-  static NAN_METHOD(SetResourcesPath);
-  static NAN_METHOD(SetLocalesPath);
 
   Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, const std::string &url);
   ~Browser();
@@ -38,7 +33,7 @@ protected:
 protected:
   GLuint tex;
   bool initialized;
-  std::weak_ptr<WebCore> web_core;
+  std::unique_ptr<WebCore> web_core;
 };
 
 }
