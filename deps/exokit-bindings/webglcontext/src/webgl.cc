@@ -36,6 +36,12 @@ void unregisterGLObj(GLuint obj); */
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
+void ensureCurrentGlWindow(WebGLRenderingContext *gl) {
+  if (gl->windowHandle) {
+    windowsystem::SetCurrentWindowContext(gl->windowHandle);
+  }
+}
+
 template<NAN_METHOD(F)>
 NAN_METHOD(glCallWrap) {
   // Nan::HandleScope scope;
@@ -43,9 +49,7 @@ NAN_METHOD(glCallWrap) {
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->live) {
-    if (gl->windowHandle) {
-      windowsystem::SetCurrentWindowContext(gl->windowHandle);
-    }
+    ensureCurrentGlWindow(gl);
 
     F(info);
   }
@@ -57,9 +61,7 @@ NAN_METHOD(glSwitchCallWrap) {
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->live) {
-    if (gl->windowHandle) {
-      windowsystem::SetCurrentWindowContext(gl->windowHandle);
-    }
+    ensureCurrentGlWindow(gl);
 
     F(info);
   }
