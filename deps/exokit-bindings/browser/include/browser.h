@@ -103,7 +103,7 @@ protected:
   ~Browser();
 
   static NAN_METHOD(New);
-  static NAN_METHOD(Update);
+  static NAN_METHOD(UpdateAll);
   static NAN_GETTER(TextureGetter);
   void reshape(int w, int h);
 protected:
@@ -127,7 +127,8 @@ extern bool cefInitialized;
 extern std::thread browserThread;
 
 extern uv_sem_t constructSem;
-extern uv_sem_t paintSem;
+extern uv_sem_t mainThreadSem;
+extern uv_sem_t browserThreadSem;
 
 extern std::mutex browserThreadFnMutex;
 extern std::deque<std::function<void()>> browserThreadFns;
