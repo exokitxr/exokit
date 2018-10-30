@@ -1198,7 +1198,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return styleSpec.style;
   };
-  window.Browser = nativeBrowser.Browser;
   window.browser = {
     http: (() => {
       const httpProxy = {};
