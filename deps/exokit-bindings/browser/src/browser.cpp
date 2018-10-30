@@ -76,7 +76,9 @@ BrowserClient::~BrowserClient() {}
 
 // Browser
 
-Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, const std::string &url) : tex(tex), initialized(false) {
+Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : tex(tex), initialized(false) {
+  glGenTextures(1, &tex);
+  
   render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
     glBindTexture(GL_TEXTURE_2D, this->tex);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
@@ -145,10 +147,9 @@ NAN_METHOD(Browser::New) {
 
   if (
     info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) &&
-    info[1]->IsObject() && info[1]->ToObject()->Get(JS_STR("id"))->IsNumber() &&
+    info[1]->IsNumber() &&
     info[2]->IsNumber() &&
-    info[3]->IsNumber() &&
-    info[4]->IsString()
+    info[3]->IsString()
   ) {
     if (!cefInitialized) {
       // std::cout << "initialize web core manager 1" << std::endl;
@@ -162,15 +163,16 @@ NAN_METHOD(Browser::New) {
     }
 
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint tex = Local<Object>::Cast(info[1])->Get(JS_STR("id"))->Uint32Value();
-    int width = info[2]->Int32Value();
-    int height = info[3]->Int32Value();
-    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[4]));
+    int width = info[1]->Int32Value();
+    int height = info[2]->Int32Value();
+    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[3]));
     std::string url(*urlUtf8Value, urlUtf8Value.length());
 
-    Browser *browser = new Browser(gl, tex, width, height, url);
+    Browser *browser = new Browser(gl, width, height, url);
     Local<Object> browserObj = info.This();
     browser->Wrap(browserObj);
+    
+    Nan::SetAccessor(browserObj, JS_STR("texture"), TextureGetter);
 
     return info.GetReturnValue().Set(browserObj);
   } else {
@@ -182,6 +184,11 @@ void Browser::Update() {
   CefDoMessageLoopWork();
 }
 
+void Browser::reshape(int w, int h) {
+	render_handler_->resize(w, h);
+	browser_->GetHost()->WasResized();
+}
+
 NAN_METHOD(Browser::Update) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   // std::cout << "browser update 1" << std::endl;
@@ -189,9 +196,12 @@ NAN_METHOD(Browser::Update) {
   // std::cout << "browser update 2" << std::endl;
 }
 
-void Browser::reshape(int w, int h) {
-	render_handler_->resize(w, h);
-	browser_->GetHost()->WasResized();
+NAN_GETTER(Browser::TextureGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+
+  Local<Object> textureObj = Nan::New<Object>();
+  textureObj->Set(JS_STR("id"), JS_INT(browser->tex));
+  info.GetReturnValue().Set(textureObj);
 }
 
 /* WebCore::WebCore(const std::string &url, RenderHandler::OnPaintFn onPaint)
