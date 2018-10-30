@@ -2,6 +2,8 @@
 
 The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint. This is inspired by the [WebExtension API style](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API). It is not a web standard (yet).
 
+Headset and controller pose uses the standard WebVR/WebXR bindings. The rest of the API currently uses the following custom endpoints:
+
 ## Endpoints
 
 #### `browser.magicleap.RequestMeshing() : MLMesher`
