@@ -16,14 +16,6 @@ using namespace node;
 namespace browser {
 
 Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, const std::string &url) : tex(tex), initialized(false) {
-  {
-    GLenum error = glGetError();
-    if (error) {
-      std::cout << "error outer 1 " << error << std::endl;
-    }
-  }
-
-  // std::cout << "web core create browser 1" << std::endl;
   web_core = g_web_core_manager.createBrowser(url, [this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
     size_t count = 0;
     for (int i = 0; i < width * height * 4; i += 4) {
@@ -31,28 +23,11 @@ Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, c
         count++;
       }
     }
-    // std::cout << "paint " << width << " " << height << " " << dirtyRects.size() << " " << count << std::endl;
-    
-    {
-      GLenum error = glGetError();
-      if (error) {
-        std::cout << "error inner 1 " << error << std::endl;
-      }
-    }
     
     glBindTexture(GL_TEXTURE_2D, this->tex);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-    
-    {
-      GLenum error = glGetError();
-      if (error) {
-        std::cout << "error inner 2 " << error << std::endl;
-      }
-    }
 
     if (!this->initialized) {
-      // std::cout << "paint init " << width << " " << height << " " << count << std::endl;
-
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
@@ -61,29 +36,13 @@ Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, c
 
       this->initialized = true;
     }
-    
-    {
-      GLenum error = glGetError();
-      if (error) {
-        std::cout << "error inner 3 " << error << std::endl;
-      }
-    }
 
     for (size_t i = 0; i < dirtyRects.size(); i++) {
       const CefRect &rect = dirtyRects[i];
       
-      // std::cout << "paint change " << width << " " << height << " " << rect.x << " " << rect.y << " " << rect.width << " " << rect.height << std::endl;
-      
       glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
       glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
       glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
-    }
-    
-    {
-      GLenum error = glGetError();
-      if (error) {
-        std::cout << "error inner 4 " << error << std::endl;
-      }
     }
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -94,17 +53,8 @@ Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, c
     } else {
       glBindTexture(GL_TEXTURE_2D, 0);
     }
-    
-    {
-      GLenum error = glGetError();
-      if (error) {
-        std::cout << "error inner 5 " << error << std::endl;
-      }
-    }
   });
-  // std::cout << "web core create browser 2" << std::endl;
   web_core.lock()->reshape(width, height);
-  // std::cout << "web core create browser 3" << std::endl;
 }
 
 Browser::~Browser() {}
