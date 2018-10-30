@@ -140,7 +140,8 @@ Browser::~Browser() {}
 Handle<Object> Browser::Initialize(Isolate *isolate) {
   uv_async_init(uv_default_loop(), &mainThreadAsync, MainThreadAsync);
   uv_sem_init(&constructSem, 0);
-  uv_sem_init(&paintSem, 0);
+  uv_sem_init(&mainThreadSem, 0);
+  uv_sem_init(&browserThreadSem, 0);
   
   Nan::EscapableHandleScope scope;
 
@@ -151,9 +152,9 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "update", Update);
 
   Local<Function> ctorFn = ctor->GetFunction();
+  Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
 
   return scope.Escape(ctorFn);
 }
@@ -174,12 +175,17 @@ NAN_METHOD(Browser::New) {
         // std::cout << "initialize web core manager 2 " << success << std::endl;
         if (success) {          
           for (;;) {
-            std::lock_guard<std::mutex> lock(browserThreadFnMutex);
+            uv_sem_wait(&browserThreadSem);
             
-            for (size_t i = 0; i < browserThreadFns.size(); i++) {
-              browserThreadFns[i]();
+            std::function<void()> fn;
+            {
+              std::lock_guard<std::mutex> lock(browserThreadFnMutex);
+
+              fn = browserThreadFns.front();
+              browserThreadFns.pop_front();
             }
-            browserThreadFns.clear();
+            
+            fn();
           }
         } else {
           std::cerr << "Browser::Browser: failed to initialize CEF" << std::endl;
@@ -211,12 +217,14 @@ void Browser::reshape(int w, int h) {
 	browser_->GetHost()->WasResized();
 }
 
-NAN_METHOD(Browser::Update) {
-  QueueOnBrowserThread([]() -> void {
-    // std::cout << "browser update 1" << std::endl;
-    CefDoMessageLoopWork();
-    // std::cout << "browser update 2" << std::endl;
-  });
+NAN_METHOD(Browser::UpdateAll) {
+  if (cefInitialized) {
+    QueueOnBrowserThread([]() -> void {
+      // std::cout << "browser update 1" << std::endl;
+      CefDoMessageLoopWork();
+      // std::cout << "browser update 2" << std::endl;
+    });
+  }
 }
 
 NAN_GETTER(Browser::TextureGetter) {
@@ -232,8 +240,10 @@ NAN_GETTER(Browser::TextureGetter) {
 void QueueOnBrowserThread(std::function<void()> fn) {
   {
     std::lock_guard<std::mutex> lock(browserThreadFnMutex);
-    browserThreadFns.push_front(fn); // front for fifo
+    browserThreadFns.push_front(fn); // push_front for fifo
   }
+  
+  uv_sem_post(&browserThreadSem);
 }
 
 void RunOnMainThread(std::function<void()> fn) {
@@ -243,7 +253,7 @@ void RunOnMainThread(std::function<void()> fn) {
   }
 
   uv_async_send(&mainThreadAsync);
-  uv_sem_wait(&paintSem);
+  uv_sem_wait(&mainThreadSem);
 }
 
 void MainThreadAsync(uv_async_t *handle) {
@@ -256,7 +266,7 @@ void MainThreadAsync(uv_async_t *handle) {
     mainThreadFns.clear();
   }
 
-  uv_sem_post(&paintSem);
+  uv_sem_post(&mainThreadSem);
 }
 
 /* WebCore::WebCore(const std::string &url, RenderHandler::OnPaintFn onPaint)
@@ -342,7 +352,8 @@ bool cefInitialized = false;
 std::thread browserThread;
 
 uv_sem_t constructSem;
-uv_sem_t paintSem;
+uv_sem_t mainThreadSem;
+uv_sem_t browserThreadSem;
 
 std::mutex browserThreadFnMutex;
 std::deque<std::function<void()>> browserThreadFns;

@@ -1843,10 +1843,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               if (context) {
                 this.browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
                 
-                setInterval(() => { // XXX do updates natively in a separate thread
-                  this.browser.update();
-                }, 1000/30);
-                
                 this.dispatchEvent(new Event('load', {target: this}));
               } else {
                 throw new Error('iframe owner document does not have a WebGL context');
