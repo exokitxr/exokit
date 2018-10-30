@@ -59,6 +59,7 @@ const ML_FPS = 60;
 const MLSDK_PORT = 17955;
 
 const contexts = [];
+GlobalContext.contexts = contexts;
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
 let _takeScreenshot = false;
