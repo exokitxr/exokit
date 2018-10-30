@@ -24,7 +24,7 @@ const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const symbols = require('./symbols');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
-const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
+const {nativeVideo, nativeBrowser, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
@@ -1476,6 +1476,7 @@ const _bindWindow = (window, newWindowCb) => {
 
     // update media frames
     nativeVideo.Video.updateAll();
+    nativeBrowser.Browser.updateAll();
     // update magic leap pre state
     if (nativeMl && mlPresentState.mlGlContext) {
       nativeMl.PrePollEvents(mlPresentState.mlContext);
