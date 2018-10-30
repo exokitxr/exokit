@@ -15,6 +15,8 @@ using namespace node;
 
 namespace browser {
 
+// helpers
+
 bool initializeCef() {
   CefMainArgs args;
   
@@ -29,8 +31,53 @@ bool initializeCef() {
 	return CefInitialize(args, settings, app, nullptr);
 }
 
+// SimpleApp
+
+SimpleApp::SimpleApp() {}
+
+void SimpleApp::OnBeforeCommandLineProcessing(const CefString &process_type, CefRefPtr<CefCommandLine> command_line) {
+  command_line->AppendSwitch(CefString("single-process"));
+  // command_line->AppendSwitch(CefString("no-proxy-server"));
+  command_line->AppendSwitch(CefString("winhttp-proxy-resolver"));
+  command_line->AppendSwitch(CefString("no-sandbox"));
+}
+
+void SimpleApp::OnContextInitialized() {
+  // CEF_REQUIRE_UI_THREAD();
+  
+  // std::cout << "SimpleApp::OnContextInitialized" << std::endl;
+}
+
+// RenderHandler
+
+RenderHandler::RenderHandler(OnPaintFn onPaint) : onPaint(onPaint), width(2), height(2) {}
+
+RenderHandler::~RenderHandler() {}
+
+void RenderHandler::resize(int w, int h) {
+	width = w;
+	height = h;
+}
+
+bool RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
+	rect = CefRect(0, 0, width, height);
+	return true;
+}
+
+void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects, const void *buffer, int width, int height) {
+  onPaint(dirtyRects, buffer, width, height);
+}
+
+// BrowserClient
+
+BrowserClient::BrowserClient(RenderHandler *renderHandler) : m_renderHandler(renderHandler) {}
+
+BrowserClient::~BrowserClient() {}
+
+// Browser
+
 Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, const std::string &url) : tex(tex), initialized(false) {
-  web_core.reset(new WebCore(url, [this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+  render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
     size_t count = 0;
     for (int i = 0; i < width * height * 4; i += 4) {
       if (((const char *)buffer)[i]) {
@@ -68,7 +115,17 @@ Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, c
       glBindTexture(GL_TEXTURE_2D, 0);
     }
   }));
-  web_core->reshape(width, height);
+	render_handler_->resize(128, 128);
+
+	CefWindowInfo window_info;
+  window_info.SetAsWindowless(nullptr);
+	CefBrowserSettings browserSettings;
+	// browserSettings.windowless_frame_rate = 60; // 30 is default
+	client_.reset(new BrowserClient(render_handler_.get()));
+
+	browser_ = CefBrowserHost::CreateBrowserSync(window_info, client_.get(), url, browserSettings, nullptr);
+  
+  this->reshape(width, height);
 }
 
 Browser::~Browser() {}
@@ -137,6 +194,11 @@ NAN_METHOD(Browser::Update) {
   // std::cout << "browser update 1" << std::endl;
   browser->Update();
   // std::cout << "browser update 2" << std::endl;
+}
+
+void Browser::reshape(int w, int h) {
+	render_handler_->resize(w, h);
+	browser_->GetHost()->WasResized();
 }
 
 bool cefInitialized = false;
