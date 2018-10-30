@@ -9,6 +9,11 @@
 
 #include <defines.h>
 
+#include <chrono>
+// #include <vector>
+#include <deque>
+#include <thread>
+#include <mutex>
 #include <functional>
 
 #include <include/cef_client.h>
@@ -92,17 +97,15 @@ private:
 class Browser : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
-  void Update();
 
 protected:
+  Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url);
+  ~Browser();
+
   static NAN_METHOD(New);
   static NAN_METHOD(Update);
   static NAN_GETTER(TextureGetter);
   void reshape(int w, int h);
-
-  Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url);
-  ~Browser();
-
 protected:
   GLuint tex;
   bool initialized;
@@ -111,7 +114,27 @@ protected:
   CefRefPtr<CefBrowser> browser_;
 };
 
+// helpers
+
+void QueueOnBrowserThread(std::function<void()> fn);
+
+void RunOnMainThread(std::function<void()> fn);
+void MainThreadAsync(uv_async_t *handle);
+
+// variables
+
 extern bool cefInitialized;
+extern std::thread browserThread;
+
+extern uv_sem_t constructSem;
+extern uv_sem_t paintSem;
+
+extern std::mutex browserThreadFnMutex;
+extern std::deque<std::function<void()>> browserThreadFns;
+
+extern uv_async_t mainThreadAsync;
+extern std::mutex mainThreadFnMutex;
+extern std::deque<std::function<void()>> mainThreadFns;
 
 }
 
