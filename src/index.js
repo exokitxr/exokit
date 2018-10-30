@@ -1486,6 +1486,7 @@ const _bindWindow = (window, newWindowCb) => {
 
     // update media frames
     nativeBindings.nativeVideo.Video.updateAll();
+    nativeBindings.nativeBrowser.Browser.updateAll();
     // update magic leap pre state
     if (nativeBindings.nativeMl && mlPresentState.mlGlContext) {
       nativeBindings.nativeMl.PrePollEvents(mlPresentState.mlContext);
