@@ -3,7 +3,7 @@
   <body>
     <script src="three.js"></script>
     <script>
-let renderer, scene, camera, brwsr, planeMesh;
+let renderer, scene, camera, iframe, planeMesh;
 
 function init() {
   renderer = new THREE.WebGLRenderer({
@@ -36,7 +36,10 @@ function init() {
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
 
-  brwsr = new Browser(renderer.getContext(), window.innerWidth, window.innerHeight, 'https://google.com');
+  iframe = document.createElement('iframe');
+  iframe.d = 2;
+  iframe.src = 'https://google.com';
+  document.body.appendChild(iframe);
 
   planeMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(0.9, 0.9)
@@ -61,7 +64,7 @@ function init() {
       16
     );
     const properties = renderer.properties.get(texture);
-    properties.__webglTexture = brwsr.texture;
+    properties.__webglTexture = iframe.texture;
     properties.__webglInit = true;
     const material = new THREE.MeshBasicMaterial({
       map: texture,
@@ -79,7 +82,6 @@ init();
 
 let direction = true;
 function animate() {
-  brwsr.update();
   if (direction) {
     planeMesh.rotation.y += 0.01;
 
