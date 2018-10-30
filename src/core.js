@@ -321,6 +321,7 @@ class Screen {
 }
 let nativeVr = GlobalContext.nativeVr = null;
 let nativeMl = GlobalContext.nativeMl = null;
+GlobalContext.nativeBrowser = null;
 let nativeWindow = null;
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
@@ -1938,6 +1939,7 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
 
   nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
   nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
+  GlobalContext.nativeBrowser = bindings.nativeBrowser;
   nativeWindow = bindings.nativeWindow;
 };
 module.exports = exokit;
