@@ -78,13 +78,6 @@ BrowserClient::~BrowserClient() {}
 
 Browser::Browser(WebGLRenderingContext *gl, GLuint tex, int width, int height, const std::string &url) : tex(tex), initialized(false) {
   render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
-    size_t count = 0;
-    for (int i = 0; i < width * height * 4; i += 4) {
-      if (((const char *)buffer)[i]) {
-        count++;
-      }
-    }
-    
     glBindTexture(GL_TEXTURE_2D, this->tex);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
