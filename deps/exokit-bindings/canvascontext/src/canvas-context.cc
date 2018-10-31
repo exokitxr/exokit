@@ -1361,6 +1361,10 @@ NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
     GrBackendTexture backendTex(width, height, GrMipMapped::kNo, glTexInfo);
     
     ctx->surface = SkSurface::MakeFromBackendTexture(ctx->grContext.get(), backendTex, kTopLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
+    if (!ctx->surface) {
+      std::cerr << "Failed to create CanvasRenderingContext2D surface" << std::endl;
+      abort();
+    }
     
     if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
       glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
