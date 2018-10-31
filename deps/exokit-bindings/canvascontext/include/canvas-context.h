@@ -160,8 +160,6 @@ public:
   virtual ~CanvasRenderingContext2D();
 
 // protected:
-  Nan::Persistent<Uint8ClampedArray> dataArray;
-
   NATIVEwindow *windowHandle;
   GLuint tex;
   sk_sp<GrContext> grContext;

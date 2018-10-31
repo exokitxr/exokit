@@ -829,8 +829,6 @@ NAN_METHOD(CanvasRenderingContext2D::Stroke) {
   } else {
     context->Stroke();
   }
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Fill) {
@@ -844,8 +842,6 @@ NAN_METHOD(CanvasRenderingContext2D::Fill) {
   } else {
     context->Fill();
   }
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::MoveTo) {
@@ -866,8 +862,6 @@ NAN_METHOD(CanvasRenderingContext2D::LineTo) {
   double y = info[1]->NumberValue();
 
   context->LineTo(x, y);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Arc) {
@@ -882,8 +876,6 @@ NAN_METHOD(CanvasRenderingContext2D::Arc) {
   double anticlockwise = info[5]->NumberValue();
 
   context->Arc(x, y, radius, startAngle, endAngle, anticlockwise);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
@@ -897,8 +889,6 @@ NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
   double radius = info[4]->NumberValue();
 
   context->ArcTo(x1, y1, x2, y2, radius);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::QuadraticCurveTo) {
@@ -911,8 +901,6 @@ NAN_METHOD(CanvasRenderingContext2D::QuadraticCurveTo) {
   double y2 = info[3]->NumberValue();
 
   context->QuadraticCurveTo(x1, y1, x2, y2);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::BezierCurveTo) {
@@ -927,8 +915,6 @@ NAN_METHOD(CanvasRenderingContext2D::BezierCurveTo) {
   double y = info[5]->NumberValue();
 
   context->BezierCurveTo(x1, y1, x2, y2, x, y);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Rect) {
@@ -941,8 +927,6 @@ NAN_METHOD(CanvasRenderingContext2D::Rect) {
   double h = info[3]->NumberValue();
 
   context->Rect(x, y, w, h);
-
-  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
@@ -958,8 +942,6 @@ NAN_METHOD(CanvasRenderingContext2D::FillRect) {
 
   context->FillRect(x, y, w, h);
 
-  context->dataArray.Reset();
-
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -973,8 +955,6 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeRect) {
   double h = info[3]->NumberValue();
 
   context->StrokeRect(x, y, w, h);
-
-  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
@@ -990,8 +970,6 @@ NAN_METHOD(CanvasRenderingContext2D::ClearRect) {
 
   context->ClearRect(x, y, w, h);
 
-  context->dataArray.Reset();
-
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -1006,8 +984,6 @@ NAN_METHOD(CanvasRenderingContext2D::FillText) {
 
   context->FillText(string, x, y);
 
-  context->dataArray.Reset();
-
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -1021,8 +997,6 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeText) {
   double y = info[2]->NumberValue();
 
   context->StrokeText(string, x, y);
-
-  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
@@ -1092,9 +1066,7 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
   unsigned int h = info[1]->Uint32Value();
 
   if (context->Resize(w, h)) {
-    context->dataArray.Reset();
-
-    // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
+    // nothing
   } else {
     Nan::ThrowError("failed to resize CanvasRenderingContext2D");
   }
@@ -1137,8 +1109,6 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
 
         context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
       }
-
-      context->dataArray.Reset();
     }
   } else {
     Nan::ThrowError("drawImage: invalid arguments");
@@ -1215,8 +1185,6 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
 
     context->surface->getCanvas()->restore();
-
-    context->dataArray.Reset();
   } else {
     unsigned int sw = imageData->GetWidth();
     unsigned int sh = imageData->GetHeight();
@@ -1230,8 +1198,6 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     context->DrawImage(image.get(), 0, 0, sw, sh, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
 
     context->surface->getCanvas()->restore();
-
-    context->dataArray.Reset();
   }
 }
 
