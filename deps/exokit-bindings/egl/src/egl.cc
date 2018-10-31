@@ -202,7 +202,7 @@ NATIVEwindow *CreateGLWindow(unsigned int width, unsigned int height, bool visib
     EGL_CONTEXT_MINOR_VERSION_KHR, 2,
     EGL_NONE
   };
-  
+
   EGLContext context = eglCreateContext(display, egl_config, sharedWindow ? GetGLContext(sharedWindow) : EGL_NO_CONTEXT, context_attribs);
 
   eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context);
@@ -210,7 +210,7 @@ NATIVEwindow *CreateGLWindow(unsigned int width, unsigned int height, bool visib
   return new NATIVEwindow{display, context, width, height};
 }
 
-NAN_METHOD(Create) {
+NAN_METHOD(Create3D) {
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
   bool initialVisible = info[2]->BooleanValue();
@@ -313,7 +313,7 @@ Local<Object> makeWindow() {
 
   windowsystembase::Decorate(target);
 
-  Nan::SetMethod(target, "create", egl::Create);
+  Nan::SetMethod(target, "create3d", egl::Create3D);
   Nan::SetMethod(target, "destroy", egl::Destroy);
   Nan::SetMethod(target, "show", egl::Show);
   Nan::SetMethod(target, "hide", egl::Hide);

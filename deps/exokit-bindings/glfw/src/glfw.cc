@@ -1152,7 +1152,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   return window;
 }
 
-NAN_METHOD(Create) {
+NAN_METHOD(Create3D) {
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
   bool initialVisible = info[2]->BooleanValue();
@@ -1670,7 +1670,7 @@ Local<Object> makeWindow() {
   
   windowsystembase::Decorate(target);
 
-  Nan::SetMethod(target, "create", glfw::Create);
+  Nan::SetMethod(target, "create3d", glfw::Create3D);
   Nan::SetMethod(target, "destroy", glfw::Destroy);
   Nan::SetMethod(target, "show", glfw::Show);
   Nan::SetMethod(target, "hide", glfw::Hide);
