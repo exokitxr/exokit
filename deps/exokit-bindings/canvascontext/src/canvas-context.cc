@@ -34,10 +34,10 @@ bool isImageValue(Local<Value> arg) {
   }
 }
 
-void flipCanvasY(SkCanvas *canvas, float height) {
+/* void flipCanvasY(SkCanvas *canvas, float height) {
   canvas->translate(0, canvas->imageInfo().height());
   canvas->scale(1.0, -1.0);
-}
+} */
 
 Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
   Nan::EscapableHandleScope scope;
@@ -298,22 +298,22 @@ void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
   }
 }
 
-void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, bool flipY) {
-  if (flipY) {
+void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh/*, bool flipY*/) {
+  /* if (flipY) {
     surface->getCanvas()->save();
     flipCanvasY(surface->getCanvas(), dy + dh);
-  }
+  } */
 
   SkPaint paint;
   paint.setColor(0xFFFFFFFF);
   paint.setStyle(SkPaint::kFill_Style);
   paint.setBlendMode(SkBlendMode::kSrcOver);
-  surface->getCanvas()->drawImageRect(image, SkRect::MakeXYWH(sx, sy, sw, sh), SkRect::MakeXYWH(dx, surface->getCanvas()->imageInfo().height() - dy - dh, dw, dh), &paint);
+  surface->getCanvas()->drawImageRect(image, SkRect::MakeXYWH(sx, sy, sw, sh), SkRect::MakeXYWH(dx, dy, dw, dh), &paint);
   surface->flush();
 
-  if (flipY) {
+  /* if (flipY) {
     surface->getCanvas()->restore();
-  }
+  } */
 }
 
 void CanvasRenderingContext2D::Save() {
@@ -1105,14 +1105,14 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
           unsigned int dw = info[7]->Uint32Value();
           unsigned int dh = info[8]->Uint32Value();
 
-          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
+          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh/*, false*/);
         } else {
           unsigned int dw = info[3]->Uint32Value();
           unsigned int dh = info[4]->Uint32Value();
           unsigned int sw = image->width();
           unsigned int sh = image->height();
 
-          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
+          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh/*, false*/);
         }
       } else {
         unsigned int sw = image->width();
@@ -1120,7 +1120,7 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
         unsigned int dw = sw;
         unsigned int dh = sh;
 
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
+        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh/*, false*/);
       }
     }
   } else {
@@ -1191,26 +1191,26 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     unsigned int dw = imageData->GetWidth();
     unsigned int dh = imageData->GetHeight();
 
-    context->surface->getCanvas()->save();
-    flipCanvasY(context->surface->getCanvas(), y + dh);
+    // context->surface->getCanvas()->save();
+    // flipCanvasY(context->surface->getCanvas(), y + dh);
 
     sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
-    context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
+    context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, y, dw, dh/*, false*/);
 
-    context->surface->getCanvas()->restore();
+    // context->surface->getCanvas()->restore();
   } else {
     unsigned int sw = imageData->GetWidth();
     unsigned int sh = imageData->GetHeight();
     unsigned int dw = sw;
     unsigned int dh = sh;
 
-    context->surface->getCanvas()->save();
-    flipCanvasY(context->surface->getCanvas(), y + dh);
+    // context->surface->getCanvas()->save();
+    // flipCanvasY(context->surface->getCanvas(), y + dh);
 
     sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
-    context->DrawImage(image.get(), 0, 0, sw, sh, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
+    context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh/*, false*/);
 
-    context->surface->getCanvas()->restore();
+    // context->surface->getCanvas()->restore();
   }
 }
 
