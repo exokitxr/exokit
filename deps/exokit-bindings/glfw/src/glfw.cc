@@ -1163,7 +1163,7 @@ NAN_METHOD(Create) {
 
   GLuint framebuffers[] = {0, 0};
   GLuint framebufferTextures[] = {0, 0, 0, 0};
-  bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
+  const bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
   if (shared) {
     SetCurrentWindowContext(sharedWindow);
 
