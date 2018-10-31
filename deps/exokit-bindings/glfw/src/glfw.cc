@@ -1105,7 +1105,8 @@ NAN_METHOD(ExtensionSupported) {
   info.GetReturnValue().Set(JS_BOOL(glfwExtensionSupported(*str)==1));
 } */
 
-NATIVEwindow *CreateWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
+bool glfwInitialized = false;
+NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
 
@@ -1151,7 +1152,6 @@ NATIVEwindow *CreateWindow(unsigned int width, unsigned int height, bool visible
   return window;
 }
 
-bool glfwInitialized = false;
 NAN_METHOD(Create) {
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
@@ -1171,7 +1171,7 @@ NAN_METHOD(Create) {
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
   }
 
-  NATIVEwindow *windowHandle = CreateWindow(width, height, initialVisible, shared ? sharedWindow : nullptr)
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, shared ? sharedWindow : nullptr);
 
   SetCurrentWindowContext(windowHandle);
 
