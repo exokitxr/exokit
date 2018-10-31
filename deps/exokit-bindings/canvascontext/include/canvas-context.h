@@ -160,6 +160,7 @@ protected:
 private:
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
+  NATIVEwindow *windowHandle;
   sk_sp<SkSurface> surface;
   SkPath path;
   SkPaint strokePaint;

@@ -11,28 +11,13 @@
 using namespace v8;
 using namespace node;
 
+template<NAN_METHOD(F)>
+NAN_METHOD(ctxCallWrap) {
+  Local<Object> ctxObj = info.This();
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<WebGLRenderingContext>(ctxObj);
+  windowsystem::SetCurrentWindowContext(ctx->windowHandle);
 
-void error_callback(int error, const char* description) {
-	fputs(description, stderr);
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
-}
-
-static GrGLFuncPtr glfw_get(void* ctx, const char name[]) {
-   SkASSERT(nullptr == ctx);
-   SkASSERT(glfwGetCurrentContext());
-   return glfwGetProcAddress(name);
-}
-
-sk_sp<const GrGLInterface> GrGLCreateNativeInterfaceGLFW() {
-  if (nullptr == glfwGetCurrentContext()) {
-    return nullptr;
-  }
- 
-  return GrGLMakeAssembledInterface(nullptr, glfw_get);
+  F(info);
 }
 
 bool isImageValue(Local<Value> arg) {
@@ -65,43 +50,43 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Nan::SetMethod(proto,"scale", Scale);
-  Nan::SetMethod(proto,"rotate", Rotate);
-  Nan::SetMethod(proto,"translate", Translate);
-  Nan::SetMethod(proto,"transform", Transform);
-  Nan::SetMethod(proto,"setTransform", SetTransform);
-  Nan::SetMethod(proto,"resetTransform", ResetTransform);
-  Nan::SetMethod(proto,"measureText", MeasureText);
-  Nan::SetMethod(proto,"beginPath", BeginPath);
-  Nan::SetMethod(proto,"closePath", ClosePath);
-  Nan::SetMethod(proto,"clip", Clip);
-  Nan::SetMethod(proto,"stroke", Stroke);
-  Nan::SetMethod(proto,"fill", Fill);
-  Nan::SetMethod(proto,"moveTo", MoveTo);
-  Nan::SetMethod(proto,"lineTo", LineTo);
-  Nan::SetMethod(proto,"arc", Arc);
-  Nan::SetMethod(proto,"arcTo", ArcTo);
-  Nan::SetMethod(proto,"quadraticCurveTo", QuadraticCurveTo);
-  Nan::SetMethod(proto,"bezierCurveTo", BezierCurveTo);
-  Nan::SetMethod(proto,"rect", Rect);
-  Nan::SetMethod(proto,"fillRect", FillRect);
-  Nan::SetMethod(proto,"strokeRect", StrokeRect);
-  Nan::SetMethod(proto,"clearRect", ClearRect);
-  Nan::SetMethod(proto,"fillText", FillText);
-  Nan::SetMethod(proto,"strokeText", StrokeText);
-  Nan::SetMethod(proto,"createLinearGradient", CreateLinearGradient);
-  Nan::SetMethod(proto,"createRadialGradient", CreateRadialGradient);
-  Nan::SetMethod(proto,"createPattern", CreatePattern);
-  Nan::SetMethod(proto,"resize", Resize);
-  Nan::SetMethod(proto,"drawImage", DrawImage);
-  Nan::SetMethod(proto,"save", Save);
-  Nan::SetMethod(proto,"restore", Restore);
-  Nan::SetMethod(proto,"toDataURL", ToDataURL);
-  Nan::SetMethod(proto,"createImageData", CreateImageData);
-  Nan::SetMethod(proto,"getImageData", GetImageData);
-  Nan::SetMethod(proto,"putImageData", PutImageData);
+  Nan::SetMethod(proto, "scale", ctxCallWrap<Scale>);
+  Nan::SetMethod(proto, "rotate", ctxCallWrap<Rotate>);
+  Nan::SetMethod(proto, "translate", ctxCallWrap<Translate>);
+  Nan::SetMethod(proto, "transform", ctxCallWrap<Transform>);
+  Nan::SetMethod(proto, "setTransform", ctxCallWrap<SetTransform>);
+  Nan::SetMethod(proto, "resetTransform", ctxCallWrap<ResetTransform>);
+  Nan::SetMethod(proto, "measureText", ctxCallWrap<MeasureText>);
+  Nan::SetMethod(proto, "beginPath", ctxCallWrap<BeginPath>);
+  Nan::SetMethod(proto, "closePath", ctxCallWrap<ClosePath>);
+  Nan::SetMethod(proto, "clip", ctxCallWrap<Clip>);
+  Nan::SetMethod(proto, "stroke", ctxCallWrap<Stroke>);
+  Nan::SetMethod(proto, "fill", ctxCallWrap<Fill>);
+  Nan::SetMethod(proto, "moveTo", ctxCallWrap<MoveTo>);
+  Nan::SetMethod(proto, "lineTo", ctxCallWrap<LineTo>);
+  Nan::SetMethod(proto, "arc", ctxCallWrap<Arc>);
+  Nan::SetMethod(proto, "arcTo", ctxCallWrap<ArcTo>);
+  Nan::SetMethod(proto, "quadraticCurveTo", ctxCallWrap<QuadraticCurveTo>);
+  Nan::SetMethod(proto, "bezierCurveTo", ctxCallWrap<BezierCurveTo>);
+  Nan::SetMethod(proto, "rect", ctxCallWrap<Rect>);
+  Nan::SetMethod(proto, "fillRect", ctxCallWrap<FillRect>);
+  Nan::SetMethod(proto, "strokeRect", ctxCallWrap<StrokeRect>);
+  Nan::SetMethod(proto, "clearRect", ctxCallWrap<ClearRect>);
+  Nan::SetMethod(proto, "fillText", ctxCallWrap<FillText>);
+  Nan::SetMethod(proto, "strokeText", ctxCallWrap<StrokeText>);
+  Nan::SetMethod(proto, "createLinearGradient", ctxCallWrap<CreateLinearGradient>);
+  Nan::SetMethod(proto, "createRadialGradient", ctxCallWrap<CreateRadialGradient>);
+  Nan::SetMethod(proto, "createPattern", ctxCallWrap<CreatePattern>);
+  Nan::SetMethod(proto, "resize", ctxCallWrap<Resize>);
+  Nan::SetMethod(proto, "drawImage", ctxCallWrap<DrawImage>);
+  Nan::SetMethod(proto, "save", ctxCallWrap<Save>);
+  Nan::SetMethod(proto, "restore", ctxCallWrap<Restore>);
+  Nan::SetMethod(proto, "toDataURL", ctxCallWrap<ToDataURL>);
+  Nan::SetMethod(proto, "createImageData", ctxCallWrap<CreateImageData>);
+  Nan::SetMethod(proto, "getImageData", ctxCallWrap<GetImageData>);
+  Nan::SetMethod(proto, "putImageData", ctxCallWrap<PutImageData>);
 
-  Nan::SetMethod(proto,"destroy", Destroy);
+  Nan::SetMethod(proto, "destroy", ctxCallWrap<Destroy>);
 
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
@@ -284,40 +269,11 @@ void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, floa
   surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
 }
 
-sk_sp<SkSurface> getSurface(unsigned int width, unsigned int height){
-  
-  GrContextOptions options;
-  // glfwGetCurrentContext();
-  
-  // options.fRequireDecodeDisableForSRGB = false;
-  
-  // This next line should be getting the context from GLFW but it does not work - it must be returning something other than nullptr as the method.
-  
-  sk_sp<GrContext> sContext = GrContext::MakeGL(GrGLCreateNativeInterfaceGLFW(),options);
-  //sk_sp<GrContext> sContext = GrContext::MakeGL(nullptr, options);
-
-  GrGLFramebufferInfo framebufferInfo;
-  framebufferInfo.fFBOID = 0; // assume default framebuffer
-  // We are always using OpenGL and we use RGBA8 internal format for both RGBA and BGRA configs in OpenGL.
-  framebufferInfo.fFormat = GL_SRGB8_ALPHA8;
-
-  SkColorType colorType;
-  if (kRGBA_8888_GrPixelConfig == kSkia8888_GrPixelConfig) {
-    colorType = kRGBA_8888_SkColorType;
-  }else {
-    colorType = kBGRA_8888_SkColorType;
-  }
-  GrBackendRenderTarget backendRenderTarget(width, height,0,0,framebufferInfo);
-
-  sk_sp<SkSurface> newSurface = SkSurface::MakeFromBackendRenderTarget(sContext.get(), backendRenderTarget, kBottomLeft_GrSurfaceOrigin, colorType, SkColorSpace::MakeSRGB(), nullptr);
-  
-  return newSurface;
-}
-
-
 bool CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
+  const GrGLInterface *interface = nullptr;
+  sk_sp<GrContext> context = GrContext::MakeGL(interface);
   SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  sk_sp<SkSurface> newSurface = SkSurface::MakeRaster(info);//getSurface(w,h);//
+  sk_sp<SkSurface> newSurface = SkSurface::MakeRenderTarget(context, SkBudgeted::kNo, info);
 
   if (newSurface) {
     surface = newSurface;
@@ -1452,53 +1408,20 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   }
 }
 
-void createGLFWWindow(unsigned int width, unsigned int height){
-  GLFWwindow* window;
-  glfwSetErrorCallback([](int err, const char *errString) {
-    fprintf(stderr, "%s", errString);
-  });
-  if (glfwInit() == GLFW_TRUE) {
-      atexit([]() {
-        glfwTerminate();
-      });
-
-	  glfwDefaultWindowHints();
-
-		  // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
-	  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-	  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	  glfwWindowHint(GLFW_RESIZABLE, 1);
-	  glfwWindowHint(GLFW_VISIBLE, 1);
-	  glfwWindowHint(GLFW_DECORATED, 1);
-	  glfwWindowHint(GLFW_RED_BITS, 8);
-	  glfwWindowHint(GLFW_GREEN_BITS, 8);
-	  glfwWindowHint(GLFW_BLUE_BITS, 8);
-	  glfwWindowHint(GLFW_DEPTH_BITS, 24);
-	  glfwWindowHint(GLFW_REFRESH_RATE, 0);
-
-      //glfwWindowHint(GLFW_VISIBLE, false);
-	  window = glfwCreateWindow(width, height, "Simple example", NULL, NULL);
-	  if (!window) {
-		glfwTerminate();
-		//exit(EXIT_FAILURE);
-	  }
-	  glfwMakeContextCurrent(window);
-  
-  //glfwSwapInterval(1);
-  //glfwSetKeyCallback(window, key_callback);
-  glfwSwapBuffers(window);
-  }
-}
-
 CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
-	//createGLFWWindow(width,height);
-  //surface = getSurface(width,height);
+  windowHandle = windowsystem::CreateWindow(width, height, false, nullptr);
+  windowsystem::SetCurrentWindowContext(windowHandle);
+
+  // You've already created your OpenGL context and bound it.
+  // Leaving interface as null makes Skia extract pointers to OpenGL functions for the current
+  // context in a platform-specific way. Alternatively, you may create your own GrGLInterface and
+  // initialize it however you like to attach to an alternate OpenGL implementation or intercept
+  // Skia's OpenGL calls.
+  const GrGLInterface *interface = nullptr;
+  sk_sp<GrContext> context = GrContext::MakeGL(interface);
   SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  surface = SkSurface::MakeRaster(info); 
+  surface = SkSurface::MakeRenderTarget(context, SkBudgeted::kNo, info);
   
-  // XXX can optimize this to not allocate until a width/height is set
   // flipCanvasY(surface->getCanvas());
 
   strokePaint.setTextSize(12);
