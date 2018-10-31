@@ -1136,7 +1136,8 @@ NATIVEwindow *CreateWindow(unsigned int width, unsigned int height, bool visible
 
       glfwInitialized = true;
     } else {
-      return Nan::ThrowError("failed to initialize GLFW");
+      std::cerr << "Failed to initialize GLFW" << std::endl;
+      abort();
     }
   }
 
