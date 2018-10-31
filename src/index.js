@@ -277,6 +277,35 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   }
 };
 
+nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
+  const canvasWidth = canvas.width || innerWidth;
+  const canvasHeight = canvas.height || innerHeight;
+
+  const windowSpec = (() => {
+    try {
+      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+      const firstGl = contexts.length > 0 ? contexts[0] : null;
+      return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle, firstGl);
+    } catch (err) {
+      console.warn(err.message);
+      return null;
+    }
+  })();
+
+  if (windowSpec) {
+    const [windowHandle, tex] = windowSpec;
+
+    ctx.setWindowHandle(windowHandle);
+    ctx.setTexture(tex, canvasWidth, canvasHeight, contexts.length > 0 ? contexts[0] : null);
+    
+    ctx.canvas = canvas;
+
+    return true;
+  } else {
+    return false;
+  }
+};
+
 const zeroMatrix = new THREE.Matrix4();
 const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));

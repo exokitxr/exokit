@@ -87,6 +87,9 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto, "putImageData", ctxCallWrap<PutImageData>);
 
   Nan::SetMethod(proto, "destroy", ctxCallWrap<Destroy>);
+  // Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
+  Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
+  Nan::SetMethod(proto, "setTexture", SetTexture);
 
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
@@ -313,15 +316,12 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
 
   if (info[0]->IsObject() && Local<Object>::Cast(info[0])->Get(JS_STR("constructor"))->IsObject() && Local<Object>::Cast(Local<Object>::Cast(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
     Local<Object> canvasObj = Local<Object>::Cast(info[0]);
-    unsigned int width = canvasObj->Get(JS_STR("width"))->Uint32Value();
-    unsigned int height = canvasObj->Get(JS_STR("height"))->Uint32Value();
-    CanvasRenderingContext2D *context = new CanvasRenderingContext2D(width, height);
+    CanvasRenderingContext2D *context = new CanvasRenderingContext2D();
 
     if (context->isValid()) {
       Local<Object> ctxObj = info.This();
       context->Wrap(ctxObj);
 
-      ctxObj->Set(JS_STR("canvas"), canvasObj);
       Nan::SetAccessor(ctxObj, JS_STR("width"), WidthGetter);
       Nan::SetAccessor(ctxObj, JS_STR("height"), HeightGetter);
       Nan::SetAccessor(ctxObj, JS_STR("data"), DataGetter);
@@ -1327,6 +1327,68 @@ NAN_METHOD(CanvasRenderingContext2D::Destroy) {
   // nothing
 }
 
+/* NAN_METHOD(CanvasRenderingContext2D::GetWindowHandle) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  if (ctx->windowHandle) {
+    info.GetReturnValue().Set(pointerToArray(ctx->windowHandle));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
+} */
+
+NAN_METHOD(CanvasRenderingContext2D::SetWindowHandle) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  if (info[0]->IsArray()) {
+    ctx->windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+    
+    windowsystem::SetCurrentWindowContext(ctx->windowHandle);
+    
+    // You've already created your OpenGL context and bound it.
+    // Leaving interface as null makes Skia extract pointers to OpenGL functions for the current
+    // context in a platform-specific way. Alternatively, you may create your own GrGLInterface and
+    // initialize it however you like to attach to an alternate OpenGL implementation or intercept
+    // Skia's OpenGL calls.
+    // const GrGLInterface *interface = nullptr;
+    ctx->grContext = GrContext::MakeGL(nullptr);
+  } else {
+    ctx->windowHandle = nullptr;
+  }
+}
+
+NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsObject()) {
+    GLuint tex = info[0]->Uint32Value();
+    int width = info[1]->Int32Value();
+    int height = info[2]->Int32Value();
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[3]));
+
+    ctx->tex = tex;
+    
+    windowsystem::SetCurrentWindowContext(ctx->windowHandle);
+
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    GrGLTextureInfo glTexInfo;
+    glTexInfo.fID = tex;
+    glTexInfo.fTarget = GL_TEXTURE_2D;
+    glTexInfo.fFormat = GL_RGBA8;
+    
+    GrBackendTexture backendTex(width, height, GrMipMapped::kNo, glTexInfo);
+    
+    ctx->surface = SkSurface::MakeFromBackendTexture(ctx->grContext.get(), backendTex, kTopLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
+    
+    if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
+    } else {
+      glBindTexture(GL_TEXTURE_2D, 0);
+    }
+  } else {
+    Nan::ThrowError("CanvasRenderingContext2D: invalid arguments");
+  }
+}
+
 bool CanvasRenderingContext2D::isImageType(Local<Value> arg) {
   Local<Value> constructorName = arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
 
@@ -1407,36 +1469,7 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   }
 }
 
-CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
-  windowHandle = windowsystem::CreateNativeWindow(width, height, false, nullptr);
-  windowsystem::SetCurrentWindowContext(windowHandle);
-  
-  GLuint tex;
-  glGenTextures(1, &tex);
-  
-  // XXX create this texture
-  // XXX share the texture
-
-  // You've already created your OpenGL context and bound it.
-  // Leaving interface as null makes Skia extract pointers to OpenGL functions for the current
-  // context in a platform-specific way. Alternatively, you may create your own GrGLInterface and
-  // initialize it however you like to attach to an alternate OpenGL implementation or intercept
-  // Skia's OpenGL calls.
-  // const GrGLInterface *interface = nullptr;
-  grContext = GrContext::MakeGL(nullptr);
-
-  GrGLTextureInfo glTexInfo;
-  glTexInfo.fID = tex;
-  glTexInfo.fTarget = GL_TEXTURE_2D;
-  glTexInfo.fFormat = GL_RGBA8;
-  
-  GrBackendTexture backendTex(width, height, GrMipMapped::kNo, glTexInfo);
-  
-  surface = SkSurface::MakeFromBackendTexture(grContext.get(), backendTex, kTopLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
-  
-  /* SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  surface = SkSurface::MakeRenderTarget(grContext.get(), SkBudgeted::kNo, info); */
-  
+CanvasRenderingContext2D::CanvasRenderingContext2D() {
   // flipCanvasY(surface->getCanvas());
 
   strokePaint.setTextSize(12);

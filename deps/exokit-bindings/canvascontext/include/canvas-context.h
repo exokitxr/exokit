@@ -149,18 +149,22 @@ public:
   static NAN_METHOD(Restore);
   static NAN_METHOD(ToDataURL);
   static NAN_METHOD(Destroy);
+  // static NAN_METHOD(GetWindowHandle);
+  static NAN_METHOD(SetWindowHandle);
+  static NAN_METHOD(SetTexture);
 
   static bool isImageType(Local<Value> arg);
   static sk_sp<SkImage> getImageFromContext(CanvasRenderingContext2D *ctx);
   static sk_sp<SkImage> getImage(Local<Value> arg);
 
-  CanvasRenderingContext2D(unsigned int width, unsigned int height);
+  CanvasRenderingContext2D();
   virtual ~CanvasRenderingContext2D();
 
 // protected:
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
   NATIVEwindow *windowHandle;
+  GLuint tex;
   sk_sp<GrContext> grContext;
   sk_sp<SkSurface> surface;
   SkPath path;
