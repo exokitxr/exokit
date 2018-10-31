@@ -296,7 +296,7 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
     const [windowHandle, tex] = windowSpec;
 
     ctx.setWindowHandle(windowHandle);
-    ctx.setTexture(tex, canvasWidth, canvasHeight, contexts.length > 0 ? contexts[0] : null);
+    ctx.setTexture(tex, canvasWidth, canvasHeight);
     
     ctx.canvas = canvas;
 

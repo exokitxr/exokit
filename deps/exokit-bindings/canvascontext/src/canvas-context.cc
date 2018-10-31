@@ -358,13 +358,6 @@ NAN_GETTER(CanvasRenderingContext2D::TextureGetter) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
   if (context->tex != 0) {
-    NATIVEwindow *oldWindowHandle = windowsystem::GetCurrentWindowContext();
-    windowsystem::SetCurrentWindowContext(context->windowHandle);
-
-    context->surface->flush();
-
-    windowsystem::SetCurrentWindowContext(oldWindowHandle);
-    
     Local<Object> texObj = Nan::New<Object>();
     texObj->Set(JS_STR("id"), JS_INT(context->tex));
     info.GetReturnValue().Set(texObj);
@@ -1304,13 +1297,10 @@ NAN_METHOD(CanvasRenderingContext2D::SetWindowHandle) {
 
 NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
   CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsObject()) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     GLuint tex = info[0]->Uint32Value();
     int width = info[1]->Int32Value();
     int height = info[2]->Int32Value();
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[3]));
-
-    windowsystem::SetCurrentWindowContext(gl->windowHandle);
     
     ctx->tex = tex;
     
@@ -1330,12 +1320,6 @@ NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
     if (!ctx->surface) {
       std::cerr << "Failed to create CanvasRenderingContext2D surface" << std::endl;
       abort();
-    }
-    
-    if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
-      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
-    } else {
-      glBindTexture(GL_TEXTURE_2D, 0);
     }
   } else {
     Nan::ThrowError("CanvasRenderingContext2D: invalid arguments");
