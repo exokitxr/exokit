@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <body>
+    <script src="three.js"></script>
+    <script>
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      // canvas
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      document.body.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#FF0000';
+      ctx.fillRect(100, 100, 200, 200);
+      // ctx.font = '30px Arial';
+      // ctx.fillText('lol', 512, 512);
+
+      const planeMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(0.3, 0.3);
+        const texture = new THREE.Texture(
+          canvas,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      scene.add(planeMesh);
+
+      function animate(time, frame) {
+        renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+      }
+    </script>
+  </body>
+</html>
