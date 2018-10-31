@@ -5,7 +5,7 @@
 namespace egl {
 
 // @Module: Window handling
-NATIVEwindow *currentWindow = nullptr;
+thread_local NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
 std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 
@@ -181,25 +181,7 @@ NAN_METHOD(ExitFullscreen) {
   // nothing
 }
 
-NAN_METHOD(Create) {
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
-  bool initialVisible = info[2]->BooleanValue();
-  bool hidden = info[3]->BooleanValue();
-  NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
-  WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
-
-  GLuint framebuffers[] = {0, 0};
-  GLuint framebufferTextures[] = {0, 0, 0, 0};
-  bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
-  if (shared) {
-    SetCurrentWindowContext(sharedWindow);
-
-    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  }
-
+NATIVEwindow *CreateWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
   EGLint config_attribs[] = {
@@ -220,11 +202,34 @@ NAN_METHOD(Create) {
     EGL_CONTEXT_MINOR_VERSION_KHR, 2,
     EGL_NONE
   };
-  EGLContext context = eglCreateContext(display, egl_config, shared ? GetGLContext(sharedWindow) : EGL_NO_CONTEXT, context_attribs);
+  
+  EGLContext context = eglCreateContext(display, egl_config, sharedWindow ? GetGLContext(sharedWindow) : EGL_NO_CONTEXT, context_attribs);
 
   eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context);
 
-  NATIVEwindow *windowHandle = new NATIVEwindow{display, context, width, height};
+  return new NATIVEwindow{display, context, width, height};
+}
+
+NAN_METHOD(Create) {
+  unsigned int width = info[0]->Uint32Value();
+  unsigned int height = info[1]->Uint32Value();
+  bool initialVisible = info[2]->BooleanValue();
+  bool hidden = info[3]->BooleanValue();
+  NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
+  WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
+
+  GLuint framebuffers[] = {0, 0};
+  GLuint framebufferTextures[] = {0, 0, 0, 0};
+  bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
+  if (shared) {
+    SetCurrentWindowContext(sharedWindow);
+
+    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+  }
+
+  NATIVEwindow *windowHandle = CreateWindow(width, height, initialVisible, shared ? sharedWindow : nullptr);
 
   windowsystembase::InitializeLocalGlState(gl);
 
