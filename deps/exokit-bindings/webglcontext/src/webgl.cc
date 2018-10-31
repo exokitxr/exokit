@@ -970,7 +970,26 @@ inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
   return data;
 }
 
-inline void *getImageData(Local<Value> arg, int *num = nullptr) {
+inline GLuint getImageTexture(Local<Value> arg) {
+  GLuint tex = 0;
+
+  if (arg->IsObject()) {
+    Local<String> textureString = String::NewFromUtf8(Isolate::GetCurrent(), "texture", NewStringType::kInternalized).ToLocalChecked();
+    Local<Value> textureVal = Local<Object>::Cast(arg)->Get(textureString);
+    
+    if (textureVal->IsObject()) {
+      Local<String> idString = String::NewFromUtf8(Isolate::GetCurrent(), "id", NewStringType::kInternalized).ToLocalChecked();
+      Local<Value> idVal = Local<Object>::Cast(textureVal)->Get(idString);
+      
+      if (idVal->IsNumber()) {
+        tex = idVal->Uint32Value();
+      }
+    }
+  }
+  return tex;
+}
+
+inline void *getImageData(Local<Value> arg) {
   void *pixels = nullptr;
 
   if (!arg->IsNull()) {
@@ -2611,12 +2630,28 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
+  GLuint texV;
   char *pixelsV;
   if (pixels->IsNull()) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, NULL);
   } else if (pixels->IsNumber()) {
     GLintptr offsetV = pixels->Uint32Value();
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, (void *)offsetV);
+  } else if ((texV = getImageTexture(pixels)) != 0) {
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texV, 0);
+
+    glCopyTexImage2D(targetV, levelV, internalformatV, 0, 0, widthV, heightV, 0);
+    
+    glDeleteFramebuffers(1, &fbo);
+
+    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     size_t formatSize = getFormatSize(formatV);
     size_t typeSize = getTypeSize(typeV);
@@ -3806,12 +3841,28 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
     pixels = Uint8Array::New(arrayBufferView->Buffer(), arrayBufferView->ByteOffset() + extraOffset, arrayBufferView->ByteLength() - extraOffset);
   }
 
+  GLuint texV;
   char *pixelsV;
   if (pixels->IsNull()) {
     glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, nullptr);
   } else if (pixels->IsNumber()) {
     GLintptr offsetV = pixels->Uint32Value();
     glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, (void *)offsetV);
+  } else if ((texV = getImageTexture(pixels)) != 0) {
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texV, 0);
+
+    glCopyTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, 0, 0, widthV, heightV);
+    
+    glDeleteFramebuffers(1, &fbo);
+
+    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     size_t formatSize = getFormatSize(formatV);
     size_t typeSize = getTypeSize(typeV);
