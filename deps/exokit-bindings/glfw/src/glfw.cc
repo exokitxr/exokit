@@ -1179,21 +1179,7 @@ NAN_METHOD(Create) {
   if (!err) {
     glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    // GLFW.SetWindowTitle(win, "WebGL");
-
     glfwSwapInterval(0);
-
-    /* int fbWidth, fbHeight;
-    glfwGetFramebufferSize(windowHandle, &fbWidth, &fbHeight);
-
-    int wWidth, wHeight;
-    glfwGetWindowSize(windowHandle, &wWidth, &wHeight); */
-
-    /* Local<Object> result = Object::New(Isolate::GetCurrent());
-    result->Set(JS_STR("width"), JS_INT(fbWidth));
-    result->Set(JS_STR("height"), JS_INT(fbHeight)); */
-
-    // glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
 
     // window callbacks
     glfwSetWindowPosCallback(windowHandle, windowPosCB);
