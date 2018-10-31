@@ -1997,11 +1997,18 @@ class HTMLCanvasElement extends HTMLElement {
   getBoundingClientRect() {
     return new DOMRect(0, 0, this.clientWidth, this.clientHeight);
   }
-
+  
   get data() {
     return (this._context && this._context.data) || null;
   }
   set data(data) {}
+
+  get texture() {
+    const t = (this._context && this._context.texture) || null;
+    console.log('get texture', t);
+    return t;
+  }
+  set texture(texture) {}
 
   getContext(contextType) {
     if (contextType === '2d') {
