@@ -1174,12 +1174,12 @@ NAN_METHOD(Create) {
   NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, shared ? sharedWindow : nullptr);
 
   SetCurrentWindowContext(windowHandle);
+  
+  glfwSwapInterval(0);
 
   GLenum err = glewInit();
   if (!err) {
     glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-    glfwSwapInterval(0);
 
     // window callbacks
     glfwSetWindowPosCallback(windowHandle, windowPosCB);
