@@ -14,7 +14,7 @@ using namespace node;
 template<NAN_METHOD(F)>
 NAN_METHOD(ctxCallWrap) {
   Local<Object> ctxObj = info.This();
-  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<WebGLRenderingContext>(ctxObj);
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(ctxObj);
   windowsystem::SetCurrentWindowContext(ctx->windowHandle);
 
   F(info);
