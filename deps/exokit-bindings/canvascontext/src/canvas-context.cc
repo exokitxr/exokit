@@ -1410,6 +1410,12 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
 CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
   windowHandle = windowsystem::CreateNativeWindow(width, height, false, nullptr);
   windowsystem::SetCurrentWindowContext(windowHandle);
+  
+  GLuint tex;
+  glGenTextures(1, &tex);
+  
+  // XXX create this texture
+  // XXX share the texture
 
   // You've already created your OpenGL context and bound it.
   // Leaving interface as null makes Skia extract pointers to OpenGL functions for the current
@@ -1418,8 +1424,18 @@ CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned 
   // Skia's OpenGL calls.
   // const GrGLInterface *interface = nullptr;
   grContext = GrContext::MakeGL(nullptr);
-  SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  surface = SkSurface::MakeRenderTarget(grContext.get(), SkBudgeted::kNo, info);
+
+  GrGLTextureInfo glTexInfo;
+  glTexInfo.fID = tex;
+  glTexInfo.fTarget = GL_TEXTURE_2D;
+  glTexInfo.fFormat = GL_RGBA8;
+  
+  GrBackendTexture backendTex(width, height, GrMipMapped::kNo, glTexInfo);
+  
+  surface = SkSurface::MakeFromBackendTexture(grContext.get(), backendTex, kTopLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
+  
+  /* SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+  surface = SkSurface::MakeRenderTarget(grContext.get(), SkBudgeted::kNo, info); */
   
   // flipCanvasY(surface->getCanvas());
 
