@@ -181,7 +181,7 @@ NAN_METHOD(ExitFullscreen) {
   // nothing
 }
 
-NATIVEwindow *CreateWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
+NATIVEwindow *CreateGLWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
   EGLint config_attribs[] = {
@@ -229,7 +229,7 @@ NAN_METHOD(Create) {
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
   }
 
-  NATIVEwindow *windowHandle = CreateWindow(width, height, initialVisible, shared ? sharedWindow : nullptr);
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, shared ? sharedWindow : nullptr);
 
   windowsystembase::InitializeLocalGlState(gl);
 
