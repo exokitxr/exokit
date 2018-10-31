@@ -315,7 +315,7 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
 
   Nan::SetAccessor(ctxObj, JS_STR("width"), WidthGetter);
   Nan::SetAccessor(ctxObj, JS_STR("height"), HeightGetter);
-  Nan::SetAccessor(ctxObj, JS_STR("data"), DataGetter);
+  Nan::SetAccessor(ctxObj, JS_STR("texture"), TextureGetter);
   Nan::SetAccessor(ctxObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
   Nan::SetAccessor(ctxObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
   Nan::SetAccessor(ctxObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
@@ -347,28 +347,16 @@ NAN_GETTER(CanvasRenderingContext2D::HeightGetter) {
   info.GetReturnValue().Set(JS_INT(context->GetHeight()));
 }
 
-NAN_GETTER(CanvasRenderingContext2D::DataGetter) {
-  // Nan::HandleScope scope;
-
+NAN_GETTER(CanvasRenderingContext2D::TextureGetter) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-  if (context->dataArray.IsEmpty()) {
-    unsigned int width = context->GetWidth();
-    unsigned int height = context->GetHeight();
-
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4); // XXX link lifetime
-
-    SkImageInfo imageInfo = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-    bool ok = context->surface->getCanvas()->readPixels(imageInfo, arrayBuffer->GetContents().Data(), width * 4, 0, 0);
-    if (ok) {
-      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-      context->dataArray.Reset(uint8ClampedArray);
-    } else {
-      return info.GetReturnValue().Set(Nan::Null());
-    }
+  if (context->tex != 0) {
+    Local<Object> texObj = Nan::New<Object>();
+    texObj->Set(JS_STR("id"), JS_INT(context->tex));
+    info.GetReturnValue().Set(texObj);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
   }
-
-  return info.GetReturnValue().Set(Nan::New(context->dataArray));
 }
 
 NAN_GETTER(CanvasRenderingContext2D::LineWidthGetter) {

@@ -85,7 +85,7 @@ public:
   static NAN_METHOD(New);
   static NAN_GETTER(WidthGetter);
   static NAN_GETTER(HeightGetter);
-  static NAN_GETTER(DataGetter);
+  static NAN_GETTER(TextureGetter);
   static NAN_GETTER(LineWidthGetter);
   static NAN_SETTER(LineWidthSetter);
   static NAN_GETTER(StrokeStyleGetter);
