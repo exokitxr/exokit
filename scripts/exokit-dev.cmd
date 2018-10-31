@@ -1,5 +1,3 @@
-
-
 setlocal
 
 set home=%~dp0
