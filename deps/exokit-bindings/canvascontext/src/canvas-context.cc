@@ -1444,7 +1444,7 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   }
 }
 
-CanvasRenderingContext2D::CanvasRenderingContext2D() {
+CanvasRenderingContext2D::CanvasRenderingContext2D() : tex(0), lineHeight(1) {
   // flipCanvasY(surface->getCanvas());
 
   strokePaint.setTextSize(12);
@@ -1459,8 +1459,6 @@ CanvasRenderingContext2D::CanvasRenderingContext2D() {
   clearPaint.setColor(0x0);
   clearPaint.setStyle(SkPaint::kFill_Style);
   clearPaint.setBlendMode(SkBlendMode::kSrc);
-
-  lineHeight = 1;
 }
 
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}
