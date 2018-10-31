@@ -351,6 +351,13 @@ NAN_GETTER(CanvasRenderingContext2D::TextureGetter) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
   if (context->tex != 0) {
+    NATIVEwindow *oldWindowHandle = windowsystem::GetCurrentWindowContext();
+    windowsystem::SetCurrentWindowContext(context->windowHandle);
+
+    context->surface->flush();
+
+    windowsystem::SetCurrentWindowContext(oldWindowHandle);
+    
     Local<Object> texObj = Nan::New<Object>();
     texObj->Set(JS_STR("id"), JS_INT(context->tex));
     info.GetReturnValue().Set(texObj);
