@@ -82,7 +82,7 @@ public:
   void Save();
   void Restore();
 
-protected:
+// protected:
   static NAN_METHOD(New);
   static NAN_GETTER(WidthGetter);
   static NAN_GETTER(HeightGetter);
@@ -157,7 +157,7 @@ protected:
   CanvasRenderingContext2D(unsigned int width, unsigned int height);
   virtual ~CanvasRenderingContext2D();
 
-private:
+// protected:
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
   NATIVEwindow *windowHandle;
@@ -172,12 +172,12 @@ private:
   TextBaseline textBaseline;
   Direction direction;
 
-  friend class Image;
+  /* friend class Image;
   friend class ImageData;
   friend class ImageBitmap;
   friend class Path2D;
   friend class CanvasGradient;
-  friend class CanvasPattern;
+  friend class CanvasPattern; */
 };
 
 #include "image-context.h"
