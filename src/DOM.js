@@ -2004,9 +2004,7 @@ class HTMLCanvasElement extends HTMLElement {
   set data(data) {}
 
   get texture() {
-    const t = (this._context && this._context.texture) || null;
-    console.log('get texture', t);
-    return t;
+    return (this._context && this._context.texture) || null;
   }
   set texture(texture) {}
 
