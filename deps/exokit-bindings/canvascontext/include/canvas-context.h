@@ -161,6 +161,7 @@ private:
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
   NATIVEwindow *windowHandle;
+  sk_sp<GrContext> grContext;
   sk_sp<SkSurface> surface;
   SkPath path;
   SkPaint strokePaint;

@@ -270,10 +270,9 @@ void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, floa
 }
 
 bool CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
-  const GrGLInterface *interface = nullptr;
-  sk_sp<GrContext> context = GrContext::MakeGL(interface);
+  // const GrGLInterface *interface = nullptr;
   SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  sk_sp<SkSurface> newSurface = SkSurface::MakeRenderTarget(context, SkBudgeted::kNo, info);
+  sk_sp<SkSurface> newSurface = SkSurface::MakeRenderTarget(grContext.get(), SkBudgeted::kNo, info);
 
   if (newSurface) {
     surface = newSurface;
@@ -1409,7 +1408,7 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
 }
 
 CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
-  windowHandle = windowsystem::CreateWindow(width, height, false, nullptr);
+  windowHandle = windowsystem::CreateNativeWindow(width, height, false, nullptr);
   windowsystem::SetCurrentWindowContext(windowHandle);
 
   // You've already created your OpenGL context and bound it.
@@ -1417,10 +1416,10 @@ CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned 
   // context in a platform-specific way. Alternatively, you may create your own GrGLInterface and
   // initialize it however you like to attach to an alternate OpenGL implementation or intercept
   // Skia's OpenGL calls.
-  const GrGLInterface *interface = nullptr;
-  sk_sp<GrContext> context = GrContext::MakeGL(interface);
+  // const GrGLInterface *interface = nullptr;
+  grContext = GrContext::MakeGL(nullptr);
   SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  surface = SkSurface::MakeRenderTarget(context, SkBudgeted::kNo, info);
+  surface = SkSurface::MakeRenderTarget(grContext.get(), SkBudgeted::kNo, info);
   
   // flipCanvasY(surface->getCanvas());
 
