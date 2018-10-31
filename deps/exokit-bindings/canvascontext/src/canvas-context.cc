@@ -266,19 +266,26 @@ void CanvasRenderingContext2D::FillText(const std::string &text, float x, float 
 void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, float y) {
   // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(strokePaint, textBaseline, lineHeight), strokePaint);
   surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
+  surface->flush();
 }
 
-bool CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
-  // const GrGLInterface *interface = nullptr;
-  SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  sk_sp<SkSurface> newSurface = SkSurface::MakeRenderTarget(grContext.get(), SkBudgeted::kNo, info);
-
-  if (newSurface) {
-    surface = newSurface;
-    // flipCanvasY(surface->getCanvas());
-    return true;
-  } else {
-    return false;
+void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
+  grContext->resetContext();
+  
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  
+  GrGLTextureInfo glTexInfo;
+  glTexInfo.fID = tex;
+  glTexInfo.fTarget = GL_TEXTURE_2D;
+  glTexInfo.fFormat = GL_RGBA8;
+  
+  GrBackendTexture backendTex(w, h, GrMipMapped::kNo, glTexInfo);
+  
+  surface = SkSurface::MakeFromBackendTexture(grContext.get(), backendTex, kTopLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
+  if (!surface) {
+    std::cerr << "Failed to resize CanvasRenderingContext2D surface" << std::endl;
+    abort();
   }
 }
 
@@ -1071,12 +1078,8 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   unsigned int w = info[0]->Uint32Value();
   unsigned int h = info[1]->Uint32Value();
-
-  if (context->Resize(w, h)) {
-    // nothing
-  } else {
-    Nan::ThrowError("failed to resize CanvasRenderingContext2D");
-  }
+  
+  context->Resize(w, h);
 }
 
 NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
