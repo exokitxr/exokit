@@ -996,12 +996,12 @@ inline void *getImageData(Local<Value> arg) {
     Local<Object> obj = Local<Object>::Cast(arg);
     if (obj->IsObject()) {
       if (obj->IsArrayBufferView()) {
-        pixels = getArrayData<unsigned char>(obj, num);
+        pixels = getArrayData<unsigned char>(obj);
       } else {
         Local<String> dataString = String::NewFromUtf8(Isolate::GetCurrent(), "data", NewStringType::kInternalized).ToLocalChecked();
         if (obj->Has(dataString)) {
           Local<Value> data = obj->Get(dataString);
-          pixels = getArrayData<unsigned char>(data, num);
+          pixels = getArrayData<unsigned char>(data);
         } else {
           Nan::ThrowError("Bad texture argument");
           // pixels = node::Buffer::Data(Nan::Get(obj, JS_STR("data")).ToLocalChecked());
