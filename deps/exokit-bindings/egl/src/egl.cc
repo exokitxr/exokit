@@ -257,6 +257,28 @@ NAN_METHOD(Create3D) {
   info.GetReturnValue().Set(result);
 }
 
+NAN_METHOD(Create2D) {
+  unsigned int width = info[0]->Uint32Value();
+  unsigned int height = info[1]->Uint32Value();
+  NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
+  WebGLRenderingContext *sharedGl = info[3]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[3])) : nullptr;
+
+  GLuint tex = 0;
+  bool shared = sharedWindow != nullptr && sharedGl != nullptr;
+  if (shared) {
+    SetCurrentWindowContext(sharedWindow);
+
+    glGenTextures(1, &tex);
+  }
+
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, shared ? sharedWindow : nullptr);
+
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, pointerToArray(windowHandle));
+  result->Set(1, JS_INT(tex));
+  info.GetReturnValue().Set(result);
+}
+
 NAN_METHOD(Destroy) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   eglDestroyContext(window->display, window->context);
@@ -314,6 +336,7 @@ Local<Object> makeWindow() {
   windowsystembase::Decorate(target);
 
   Nan::SetMethod(target, "create3d", egl::Create3D);
+  Nan::SetMethod(target, "create2d", egl::Create2D);
   Nan::SetMethod(target, "destroy", egl::Destroy);
   Nan::SetMethod(target, "show", egl::Show);
   Nan::SetMethod(target, "hide", egl::Hide);
