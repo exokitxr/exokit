@@ -2613,7 +2613,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
 
   char *pixelsV;
   if (pixels->IsNull()) {
-    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, nullptr);
+    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, NULL);
   } else if (pixels->IsNumber()) {
     GLintptr offsetV = pixels->Uint32Value();
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, (void *)offsetV);
