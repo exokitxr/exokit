@@ -1334,6 +1334,8 @@ NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
     int height = info[2]->Int32Value();
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[3]));
 
+    windowsystem::SetCurrentWindowContext(gl->windowHandle);
+    
     ctx->tex = tex;
     
     windowsystem::SetCurrentWindowContext(ctx->windowHandle);
