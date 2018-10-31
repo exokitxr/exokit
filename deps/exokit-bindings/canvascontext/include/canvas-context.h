@@ -50,7 +50,6 @@ public:
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();
-  bool isValid();
   void Scale(float x, float y);
   void Rotate(float angle);
   void Translate(float x, float y);
