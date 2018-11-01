@@ -137,8 +137,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
       const {hidden} = canvas.ownerDocument;
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-      const firstGl = contexts.length > 0 ? contexts[0] : null;
-      return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl, firstGl);
+      return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
     } catch (err) {
       console.warn(err.message);
       return null;
@@ -276,8 +275,7 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
   const windowSpec = (() => {
     try {
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-      const firstGl = contexts.length > 0 ? contexts[0] : null;
-      return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle, firstGl);
+      return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
     } catch (err) {
       console.warn(err.message);
       return null;
