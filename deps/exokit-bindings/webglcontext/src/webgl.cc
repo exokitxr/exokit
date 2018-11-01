@@ -2638,25 +2638,28 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     GLintptr offsetV = pixels->Uint32Value();
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, (void *)offsetV);
   } else if ((texV = getImageTexture(pixels)) != 0) {
+    glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, NULL);
+    
     GLuint fbos[2];
     glGenFramebuffers(2, fbos);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[0]);
+    
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbos[0]);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texV, 0);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[1]);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasFramebufferBinding(targetV) ? gl->GetFramebufferBinding(targetV) : 0, 0);
-
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasTextureBinding(gl->activeTexture, targetV) ? gl->GetTextureBinding(gl->activeTexture, targetV) : 0, 0);
+    
     if (gl->flipY) {
       glBlitFramebuffer(
         0, 0, widthV, heightV,
-        xoffset, yoffsetV, xoffset + widthV, yoffsetV + heightV,
+        0, 0, widthV, heightV,
         GL_COLOR_BUFFER_BIT,
         GL_NEAREST
       );
     } else {
       glBlitFramebuffer(
         0, heightV, widthV, 0,
-        xoffset, yoffsetV, xoffset + widthV, yoffsetV + heightV,
+        0, 0, widthV, heightV,
         GL_COLOR_BUFFER_BIT,
         GL_NEAREST
       );
@@ -3875,23 +3878,23 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
   } else if ((texV = getImageTexture(pixels)) != 0) {
     GLuint fbos[2];
     glGenFramebuffers(2, fbos);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[0]);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbos[0]);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texV, 0);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[1]);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasFramebufferBinding(targetV) ? gl->GetFramebufferBinding(targetV) : 0, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasTextureBinding(gl->activeTexture, targetV) ? gl->GetTextureBinding(gl->activeTexture, targetV) : 0, 0);
 
     if (gl->flipY) {
       glBlitFramebuffer(
         0, 0, widthV, heightV,
-        xoffset, yoffsetV, xoffset + widthV, yoffsetV + heightV,
+        xoffsetV, yoffsetV, xoffsetV + widthV, yoffsetV + heightV,
         GL_COLOR_BUFFER_BIT,
         GL_NEAREST
       );
     } else {
       glBlitFramebuffer(
         0, heightV, widthV, 0,
-        xoffset, yoffsetV, xoffset + widthV, yoffsetV + heightV,
+        xoffsetV, yoffsetV, xoffsetV + widthV, yoffsetV + heightV,
         GL_COLOR_BUFFER_BIT,
         GL_NEAREST
       );
