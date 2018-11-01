@@ -1424,6 +1424,8 @@ class HTMLLinkElement extends HTMLLoadableElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'href' && this.isRunnable()) {
+        this.readyState = 'loading';
+        
         const url = value;
         this.ownerDocument.defaultView.fetch(url)
           .then(res => {
@@ -1437,9 +1439,14 @@ class HTMLLinkElement extends HTMLLoadableElement {
           .then(stylesheet => {
             this.stylesheet = stylesheet;
             GlobalContext.styleEpoch++;
+            
+            this.readyState = 'complete';
+            
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .catch(err => {
+            this.readyState = 'complete';
+            
             const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
@@ -1479,7 +1486,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
 
   [symbols.runSymbol]() {
     let running = false;
-    if (this.isRunnable()) {
+    if (this.isRunnable() && !this.readyState) {
       const hrefAttr = this.attributes.href;
       if (hrefAttr) {
         this._emit('attribute', 'href', hrefAttr.value);
