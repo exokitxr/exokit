@@ -116,7 +116,7 @@ NAN_METHOD(ImageBitmap::New) {
         return Nan::ThrowError("Failed to install pixels");
       }
     } else {
-      return Nan::ThrowError("Invalid arguments");
+      return Nan::ThrowError("ImageBitmap::ImageBitmap: Invalid arguments");
     }
   }
 
