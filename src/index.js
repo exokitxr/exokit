@@ -877,7 +877,7 @@ const _bindWindow = (window, newWindowCb) => {
   window.on('navigate', newWindowCb);
   window.document.on('paste', e => {
     e.clipboardData = new window.DataTransfer();
-    if (contexts.length > 0) {
+    if (contexts.length > 0) { // XXX use the currently focused context
       const context = contexts[0];
       const windowHandle = context.getWindowHandle();
       const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);
