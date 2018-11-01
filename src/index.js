@@ -291,6 +291,8 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
     ctx.setTexture(tex, canvasWidth, canvasHeight);
     
     ctx.canvas = canvas;
+    
+    contexts.push(ctx);
 
     return true;
   } else {
