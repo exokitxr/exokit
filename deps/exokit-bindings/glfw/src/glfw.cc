@@ -1156,14 +1156,14 @@ NAN_METHOD(Create3D) {
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
   bool initialVisible = info[2]->BooleanValue();
-  bool hidden = info[3]->BooleanValue();
+  // bool hidden = info[3]->BooleanValue();
   NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
   WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
 
-  GLuint framebuffers[] = {0, 0};
-  GLuint framebufferTextures[] = {0, 0, 0, 0};
-  const bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
+  GLuint framebuffers[2];
+  GLuint framebufferTextures[4];
+  const bool shared = sharedWindow != nullptr && sharedGl != nullptr;
   if (shared) {
     SetCurrentWindowContext(sharedWindow);
 
@@ -1203,6 +1203,11 @@ NAN_METHOD(Create3D) {
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+    
+    if (!shared) {
+      glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+      glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+    }
 
 #ifdef GL_VERTEX_PROGRAM_POINT_SIZE
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
@@ -1253,6 +1258,10 @@ NAN_METHOD(Create2D) {
 
   GLenum err = glewInit();
   if (!err) {
+    if (!shared) {
+      glGenTextures(1, &tex);
+    }
+    
     Local<Array> result = Nan::New<Array>(2);
     result->Set(0, pointerToArray(windowHandle));
     result->Set(1, JS_INT(tex));
