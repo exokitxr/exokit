@@ -2672,7 +2672,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       pixelsV2 = pixelsV;
     }
 
-    if (canvas::ImageData::getFlip() && gl->flipY && !pixels->IsArrayBufferView()) {
+    if (gl->flipY && !pixels->IsArrayBufferView()) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
 
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
@@ -3877,7 +3877,7 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
       pixelsV2 = pixelsV;
     }
 
-    if (canvas::ImageData::getFlip() && gl->flipY && !pixels->IsArrayBufferView()) {
+    if (gl->flipY && !pixels->IsArrayBufferView()) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
 

@@ -211,8 +211,6 @@ void InitExports(Handle<Object> exports) {
 }
 
 void Init(Handle<Object> exports) {
-  canvas::ImageData::setFlip(true);
-
   InitExports(exports);
 }
 
