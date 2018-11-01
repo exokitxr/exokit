@@ -12,7 +12,7 @@ function _getBaseUrl(u) {
     baseUrl = url.format({
       protocol: parsedUrl.protocol || 'http:',
       host: parsedUrl.host || '127.0.0.1',
-      pathname: parsedUrl.pathname,
+      pathname: parsedUrl.pathname.replace(/\/[^\/]*$/, '') || '/',
       search: parsedUrl.search,
     });
   }
