@@ -1593,38 +1593,38 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
   loadRunNow() {
     this.readyState = 'loading';
-
-    const resource = this.ownerDocument.resources.addResource();
     
     const url = this.src;
-    return this.ownerDocument.defaultView.fetch(url)
-      .then(res => {
-        if (res.status >= 200 && res.status < 300) {
-          return res.text();
-        } else {
-          return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-        }
-      })
-      .then(s => {
-        utils._runJavascript(s, this.ownerDocument.defaultView, url);
+    
+    return this.ownerDocument.resources.addResource((onprogress, cb) => {
+      this.ownerDocument.defaultView.fetch(url)
+        .then(res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.text();
+          } else {
+            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
+          }
+        })
+        .then(s => {
+          utils._runJavascript(s, this.ownerDocument.defaultView, url);
 
-        this.readyState = 'complete';
+          this.readyState = 'complete';
 
-        this.dispatchEvent(new Event('load', {target: this}));
-      })
-      .catch(err => {
-        this.readyState = 'complete';
+          this.dispatchEvent(new Event('load', {target: this}));
+          
+          cb();
+        })
+        .catch(err => {
+          this.readyState = 'complete';
 
-        const e = new ErrorEvent('error', {target: this});
-        e.message = err.message;
-        e.stack = err.stack;
-        this.dispatchEvent(e);
-      })
-      .finally(() => {
-        setImmediate(() => {
-          resource.setProgress(1);
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
+          
+          cb(err);
         });
-      });
+    });
   }
 
   runNow() {
@@ -1632,16 +1632,15 @@ class HTMLScriptElement extends HTMLLoadableElement {
     
     const innerHTML = this.childNodes[0].value;
     const window = this.ownerDocument.defaultView;
-    utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
+    
+    return this.ownerDocument.resources.addResource((onprogress, cb) => {
+      utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
 
-    this.readyState = 'complete';
-
-    const resource = this.ownerDocument.resources.addResource();
-
-    setImmediate(() => {
+      this.readyState = 'complete';
+      
       this.dispatchEvent(new Event('load', {target: this}));
 
-      resource.setProgress(1);
+      cb();
     });
   }
 
@@ -1834,57 +1833,56 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
 
-        const resource = this.ownerDocument.resources.addResource();
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
+          this.ownerDocument.defaultView.fetch(url)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.text();
+              } else {
+                return Promise.reject(new Error('iframe src got invalid status code: ' + res.status + ' : ' + url));
+              }
+            })
+            .then(htmlString => {
+              if (this.live) {
+                const parentWindow = this.ownerDocument.defaultView;
+                const options = parentWindow[symbols.optionsSymbol];
 
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('iframe src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(htmlString => {
-            if (this.live) {
-              const parentWindow = this.ownerDocument.defaultView;
-              const options = parentWindow[symbols.optionsSymbol];
+                url = utils._makeNormalizeUrl(options.baseUrl)(url);
+                const contentWindow = GlobalContext._makeWindow({
+                  url,
+                  baseUrl: url,
+                  dataPath: options.dataPath,
+                }, parentWindow, parentWindow.top);
+                const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
+                contentDocument.hidden = this.hidden;
+                contentDocument.xrOffset = this.xrOffset;
 
-              url = utils._makeNormalizeUrl(options.baseUrl)(url);
-              const contentWindow = GlobalContext._makeWindow({
-                url,
-                baseUrl: url,
-                dataPath: options.dataPath,
-              }, parentWindow, parentWindow.top);
-              const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
-              contentDocument.hidden = this.hidden;
-              contentDocument.xrOffset = this.xrOffset;
+                contentWindow.document = contentDocument;
 
-              contentWindow.document = contentDocument;
+                this.contentWindow = contentWindow;
+                this.contentDocument = contentDocument;
 
-              this.contentWindow = contentWindow;
-              this.contentDocument = contentDocument;
+                contentWindow.on('destroy', e => {
+                  parentWindow.emit('destroy', e);
+                });
+                
+                this.readyState = 'complete';
 
-              contentWindow.on('destroy', e => {
-                parentWindow.emit('destroy', e);
-              });
+                this.dispatchEvent(new Event('load', {target: this}));
+              }
+              
+              cb();
+            })
+            .catch(err => {
+              console.error(err);
               
               this.readyState = 'complete';
-
+              
               this.dispatchEvent(new Event('load', {target: this}));
-            }
-          })
-          .catch(err => {
-            console.error(err);
-            
-            this.readyState = 'complete';
-            
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .finally(() => {
-            setImmediate(() => {
-              resource.setProgress(1);
+              
+              cb(err);
             });
-          });
+        });
       } else if (name === 'position' || name === 'rotation' || name === 'scale') {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
@@ -2215,45 +2213,44 @@ class HTMLImageElement extends HTMLSrcableElement {
         
         const src = value;
 
-        const resource = this.ownerDocument.resources.addResource();
-
-        this.ownerDocument.defaultView.fetch(src)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.arrayBuffer();
-            } else {
-              return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-            }
-          })
-          .then(arrayBuffer => new Promise((accept, reject) => {
-            this.image.load(arrayBuffer, err => {
-              if (!err) {
-                accept();
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
+          this.ownerDocument.defaultView.fetch(src)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.arrayBuffer();
               } else {
-                reject(new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength}, message: ${err})`));
+                return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
               }
-            });
-          }))
-          .then(() => {
-            this.readyState = 'complete';
-            
-            this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            console.warn('failed to load image:', src);
-            
-            this.readyState = 'complete';
+            })
+            .then(arrayBuffer => new Promise((accept, reject) => {
+              this.image.load(arrayBuffer, err => {
+                if (!err) {
+                  accept();
+                } else {
+                  reject(new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength}, message: ${err})`));
+                }
+              });
+            }))
+            .then(() => {
+              this.readyState = 'complete';
+              
+              this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
+              
+              cb();
+            })
+            .catch(err => {
+              console.warn('failed to load image:', src);
 
-            const e = new ErrorEvent('error', {target: this});
-            e.message = err.message;
-            e.stack = err.stack;
-            this._dispatchEventOnDocumentReady(e);
-          })
-          .finally(() => {
-            setImmediate(() => {
-              resource.setProgress(1);
+              this.readyState = 'complete';
+              
+              const e = new ErrorEvent('error', {target: this});
+              e.message = err.message;
+              e.stack = err.stack;
+              this._dispatchEventOnDocumentReady(e);
+              
+              cb(err);
             });
-          });
+        });
       }
     });
   }
@@ -2339,48 +2336,47 @@ class HTMLAudioElement extends HTMLMediaElement {
       if (name === 'src' && value) {
         const src = value;
 
-        const resource = this.ownerDocument.resources.addResource();
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
+          this.ownerDocument.defaultView.fetch(src)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.arrayBuffer();
+              } else {
+                return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
+              }
+            })
+            .then(arrayBuffer => {
+              try {
+                this.audio.load(arrayBuffer);
+              } catch(err) {
+                throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
+              }
+            })
+            .then(() => {
+              this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
-        this.ownerDocument.defaultView.fetch(src)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.arrayBuffer();
-            } else {
-              return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-            }
-          })
-          .then(arrayBuffer => {
-            try {
-              this.audio.load(arrayBuffer);
-            } catch(err) {
-              throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-            }
-          })
-          .then(() => {
-            this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+              const progressEvent = new Event('progress', {target: this});
+              progressEvent.loaded = 1;
+              progressEvent.total = 1;
+              progressEvent.lengthComputable = true;
+              this._emit(progressEvent);
 
-            const progressEvent = new Event('progress', {target: this});
-            progressEvent.loaded = 1;
-            progressEvent.total = 1;
-            progressEvent.lengthComputable = true;
-            this._emit(progressEvent);
+              this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
+              this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
+              
+              cb();
+            })
+            .catch(err => {
+              console.warn('failed to load audio:', src);
 
-            this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
-            this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
-          })
-          .catch(err => {
-            console.warn('failed to load audio:', src);
-
-            const e = new ErrorEvent('error', {target: this});
-            e.message = err.message;
-            e.stack = err.stack;
-            this._dispatchEventOnDocumentReady(e);
-          })
-          .finally(() => {
-            setImmediate(() => {
-              resource.setProgress(1);
+              const e = new ErrorEvent('error', {target: this});
+              e.message = err.message;
+              e.stack = err.stack;
+              this._dispatchEventOnDocumentReady(e);
+              
+              cb(err);
             });
-          });
+        });
       }
     });
   }
@@ -2455,9 +2451,7 @@ class HTMLVideoElement extends HTMLMediaElement {
           }
         }
 
-        const resource = this.ownerDocument.resources.addResource();
-
-        setImmediate(() => {
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
           const progressEvent = new Event('progress', {target: this});
           progressEvent.loaded = 1;
           progressEvent.total = 1;
@@ -2469,7 +2463,7 @@ class HTMLVideoElement extends HTMLMediaElement {
           this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 
-          resource.setProgress(1);
+          cb();
         });
       }
     });
