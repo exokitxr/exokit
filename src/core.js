@@ -1260,6 +1260,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       })(wsProxy.Server);
       return wsProxy;
     })(),
+    createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
     electron,
     magicleap: nativeMl ? {
       RequestMeshing() {
