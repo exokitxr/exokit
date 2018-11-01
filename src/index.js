@@ -1020,7 +1020,7 @@ const _bindWindow = (window, newWindowCb) => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
 
-      const isDirty = context.isDirty() || mlPresentState.mlGlContext === context;
+      const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context;
       if (isDirty) {
         const windowHandle = context.getWindowHandle();
         
