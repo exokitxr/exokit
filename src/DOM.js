@@ -1646,7 +1646,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   [symbols.runSymbol]() {
-    if (this.isRunnable()) {
+    if (this.isRunnable() && !this.readyState) {
       const srcAttr = this.attributes.src;
       if (srcAttr) {
         return this.loadRunNow();
