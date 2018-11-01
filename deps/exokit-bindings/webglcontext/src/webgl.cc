@@ -886,7 +886,7 @@ WebGLRenderingContext::WebGLRenderingContext() :
   defaultVao(0),
   dirty(false),
   defaultFramebuffer(0),
-  flipY(true),
+  flipY(false),
   premultiplyAlpha(true),
   packAlignment(4),
   unpackAlignment(4),
