@@ -87,7 +87,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto, "putImageData", ctxCallWrap<PutImageData>);
 
   Nan::SetMethod(proto, "destroy", ctxCallWrap<Destroy>);
-  // Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
+  Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
   Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
   Nan::SetMethod(proto, "setTexture", SetTexture);
 
@@ -1256,14 +1256,14 @@ NAN_METHOD(CanvasRenderingContext2D::Destroy) {
   // nothing
 }
 
-/* NAN_METHOD(CanvasRenderingContext2D::GetWindowHandle) {
+NAN_METHOD(CanvasRenderingContext2D::GetWindowHandle) {
   CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   if (ctx->windowHandle) {
     info.GetReturnValue().Set(pointerToArray(ctx->windowHandle));
   } else {
     info.GetReturnValue().Set(Nan::Null());
   }
-} */
+}
 
 NAN_METHOD(CanvasRenderingContext2D::SetWindowHandle) {
   CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
