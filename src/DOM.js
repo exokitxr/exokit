@@ -1506,8 +1506,6 @@ class HTMLScriptElement extends HTMLLoadableElement {
       return false;
     };
     const _loadRun = async => {
-      this.readyState = 'loading';
-
       if (!async) {
         this.ownerDocument[symbols.addRunSymbol](this.loadRunNow.bind(this));
       } else {
@@ -1587,8 +1585,10 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   loadRunNow() {
-    const resource = this.ownerDocument.resources.addResource();
+    this.readyState = 'loading';
 
+    const resource = this.ownerDocument.resources.addResource();
+    
     const url = this.src;
     return this.ownerDocument.defaultView.fetch(url)
       .then(res => {
@@ -1621,6 +1621,8 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   runNow() {
+    this.readyState = 'loading';
+    
     const innerHTML = this.childNodes[0].value;
     const window = this.ownerDocument.defaultView;
     utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
