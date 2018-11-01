@@ -1655,6 +1655,8 @@ module.exports.HTMLScriptElement = HTMLScriptElement;
 class HTMLSrcableElement extends HTMLLoadableElement {
   constructor(tagName = null, attrs = [], value = '', location = null) {
     super(tagName, attrs, value, location);
+    
+    this.readyState = null;
   }
 
   get src() {
@@ -1666,7 +1668,7 @@ class HTMLSrcableElement extends HTMLLoadableElement {
 
   [symbols.runSymbol]() {
     const srcAttr = this.attributes.src;
-    if (srcAttr) {
+    if (srcAttr && !this.readyState) {
       this._emit('attribute', 'src', srcAttr.value);
     }
     return Promise.resolve();
@@ -1817,6 +1819,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        this.readyState = 'loading';
+        
         let url = value;
         const match = url.match(/^javascript:(.+)$/); // XXX should support this for regular fetches too
         if (match) {
@@ -1856,12 +1860,17 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               contentWindow.on('destroy', e => {
                 parentWindow.emit('destroy', e);
               });
+              
+              this.readyState = 'complete';
 
               this.dispatchEvent(new Event('load', {target: this}));
             }
           })
           .catch(err => {
             console.error(err);
+            
+            this.readyState = 'complete';
+            
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .finally(() => {
@@ -2195,6 +2204,8 @@ class HTMLImageElement extends HTMLSrcableElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        this.readyState = 'loading';
+        
         const src = value;
 
         const resource = this.ownerDocument.resources.addResource();
@@ -2217,10 +2228,14 @@ class HTMLImageElement extends HTMLSrcableElement {
             });
           }))
           .then(() => {
+            this.readyState = 'complete';
+            
             this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
           })
           .catch(err => {
             console.warn('failed to load image:', src);
+            
+            this.readyState = 'complete';
 
             const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
@@ -2420,6 +2435,8 @@ class HTMLVideoElement extends HTMLMediaElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        this.readyState = 'loading';
+        
         const src = value;
 
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
@@ -2439,6 +2456,8 @@ class HTMLVideoElement extends HTMLMediaElement {
           progressEvent.total = 1;
           progressEvent.lengthComputable = true;
           this._emit(progressEvent);
+          
+          this.readyState = 'complete';
 
           this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
