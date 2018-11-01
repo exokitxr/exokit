@@ -2638,19 +2638,43 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     GLintptr offsetV = pixels->Uint32Value();
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, (void *)offsetV);
   } else if ((texV = getImageTexture(pixels)) != 0) {
-    GLuint fbo;
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    GLuint fbos[2];
+    glGenFramebuffers(2, fbos);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[0]);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texV, 0);
 
-    glCopyTexImage2D(targetV, levelV, internalformatV, 0, 0, widthV, heightV, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasFramebufferBinding(targetV) ? gl->GetFramebufferBinding(targetV) : 0, 0);
+
+    if (gl->flipY) {
+      glBlitFramebuffer(
+        0, 0, widthV, heightV,
+        xoffset, yoffsetV, xoffset + widthV, yoffsetV + heightV,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+      );
+    } else {
+      glBlitFramebuffer(
+        0, heightV, widthV, 0,
+        xoffset, yoffsetV, xoffset + widthV, yoffsetV + heightV,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+      );
+    }
+
+    // glCopyTexImage2D(targetV, levelV, internalformatV, 0, 0, widthV, heightV, 0);
     
-    glDeleteFramebuffers(1, &fbo);
+    glDeleteFramebuffers(2, fbos);
 
     if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
     } else {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
     }
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     size_t formatSize = getFormatSize(formatV);
@@ -3849,19 +3873,43 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
     GLintptr offsetV = pixels->Uint32Value();
     glTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, widthV, heightV, formatV, typeV, (void *)offsetV);
   } else if ((texV = getImageTexture(pixels)) != 0) {
-    GLuint fbo;
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    GLuint fbos[2];
+    glGenFramebuffers(2, fbos);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[0]);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texV, 0);
 
-    glCopyTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, 0, 0, widthV, heightV);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasFramebufferBinding(targetV) ? gl->GetFramebufferBinding(targetV) : 0, 0);
+
+    if (gl->flipY) {
+      glBlitFramebuffer(
+        0, 0, widthV, heightV,
+        xoffset, yoffsetV, xoffset + widthV, yoffsetV + heightV,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+      );
+    } else {
+      glBlitFramebuffer(
+        0, heightV, widthV, 0,
+        xoffset, yoffsetV, xoffset + widthV, yoffsetV + heightV,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+      );
+    }
+
+    // glCopyTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, 0, 0, widthV, heightV);
     
-    glDeleteFramebuffers(1, &fbo);
+    glDeleteFramebuffers(2, fbos);
 
     if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
     } else {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+    }
+    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
     }
   } else if ((pixelsV = (char *)getImageData(pixels)) != nullptr) {
     size_t formatSize = getFormatSize(formatV);
