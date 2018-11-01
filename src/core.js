@@ -81,19 +81,19 @@ const parseJson = s => {
 GlobalContext.styleEpoch = 0;
 
 const maxParallelResources = 8;
-class Resource extends EventEmitter {
+class Resource {
   constructor(getCb = (onprogress, cb) => cb(), value = 0.5, total = 1) {
-    super();
-
     this.getCb = getCb;
     this.value = value;
     this.total = total;
+    
+    this.onupdate = null;
   }
 
   setProgress(value) {
     this.value = value;
 
-    this.emit('update');
+    this.onupdate && this.onupdate();
   }
   
   get() {
@@ -111,9 +111,7 @@ class Resource extends EventEmitter {
   }
   
   destroy() {
-    this.value = 1;
-
-    this.emit('update');
+    this.setProgress(1);
   }
 }
 class Resources extends EventTarget {
@@ -153,11 +151,11 @@ class Resources extends EventTarget {
   addResource(getCb) {
     return new Promise((accept, reject) => {
       const resource = new Resource(getCb);
-      const onupdate = () => {
+      resource.onupdate = () => {
         if (resource.value >= resource.total) {
           this.resources.splice(this.resources.indexOf(resource), 1);
           
-          resource.removeListener('update', onupdate);
+          resource.onupdate = null;
           
           accept();
         }
@@ -168,7 +166,6 @@ class Resources extends EventTarget {
         e.progress = this.getProgress();
         this.dispatchEvent(e);
       };
-      resource.on('update', onupdate);
       this.resources.push(resource);
       this.queue.push(resource);
       
