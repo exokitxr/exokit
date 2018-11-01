@@ -1515,19 +1515,19 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     };
     this.on('attribute', (name, value) => {
-      if (name === 'src' && value && this.isRunnable() && _isAttached() && this.readyState === null) {
+      if (name === 'src' && value && this.isRunnable() && _isAttached() && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : false);
       }
     });
     this.on('attached', () => {
-      if (this.src && this.isRunnable() && _isAttached() && this.readyState === null) {
+      if (this.src && this.isRunnable() && _isAttached() && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
     });
     this.on('innerHTML', innerHTML => {
-      if (this.isRunnable() && _isAttached() && this.readyState === null) {
+      if (this.isRunnable() && _isAttached() && !this.readyState) {
         this.runNow();
       }
     });
