@@ -1018,10 +1018,11 @@ const _bindWindow = (window, newWindowCb) => {
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-      const windowHandle = context.getWindowHandle();
 
       const isDirty = context.isDirty() || mlPresentState.mlGlContext === context;
       if (isDirty) {
+        const windowHandle = context.getWindowHandle();
+        
         nativeWindow.setCurrentWindowContext(windowHandle);
         if (isMac) {
           context.flush();
