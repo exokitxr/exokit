@@ -2,8 +2,6 @@
 <html>
   <body>
     <script>
-      // Error.stackTraceLimit = 100;
-
       let scripts = 0;
       let scriptsDone = 0;
       const maxScripts = 50;
@@ -19,35 +17,15 @@
       const _hasWork = () => _hasScriptWork() || _hasImageWork();
       const _isDone = () => scriptsDone === maxScripts && imagesDone === maxImages;
 
-      /* let frame = 0;
-      const _raf = () => {
-        frame++;
-
-        setTimeout(() => {
-          _raf();
-        });
-      };
-      _raf(); */
-
       for (;;) {
-      // const _recurse = () => {
         if (_hasWork()) {
           if (Math.random() < 0.5) {
             if (_hasScriptWork()) {
               const script = document.createElement('script');
               document.body.appendChild(script);
               appends++;
-              // let loaded = null;
               const onload = () => {
-                /* if (loaded) {
-                  console.warn('fail script', loadedFrame, frame, loaded.stack, '\n\n', new Error().stack, '\n\n');
-                  throw new Error();
-                } */
-
                 loads++;
-                // console.log('children script', appends, loads, loaded, document.body.children.length);
-                // loaded = new Error();
-                // loadedFrame = frame;
                 document.body.removeChild(script);
 
                 scriptsDone++;
@@ -68,17 +46,8 @@
               const img = new Image();
               document.body.appendChild(img);
               appends++;
-              // let loaded = null;
               const onload = () => {
-                /* if (loaded) {
-                  console.warn('fail img', loadedFrame, frame, loaded.stack, '\n\n', new Error().stack, '\n\n');
-                  throw new Error();
-                } */
-
                 loads++;
-                // console.log('children img', appends, loads, document.body.children.length);
-                // loaded = new Error();
-                // loadedFrame = frame;
                 document.body.removeChild(img);
 
                 imagesDone++;
@@ -95,14 +64,10 @@
               images++;
             }
           }
-          // _recurse();
         } else {
           break;
         }
       }
-      // _recurse();
-
-      // console.log('sync done');
     </script>
   </body>
 </html>
