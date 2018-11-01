@@ -80,25 +80,47 @@ const parseJson = s => {
 
 GlobalContext.styleEpoch = 0;
 
-class Resource extends EventEmitter {
-  constructor(value = 0.5, total = 1) {
-    super();
-
+const maxParallelResources = 8;
+class Resource {
+  constructor(getCb = (onprogress, cb) => cb(), value = 0.5, total = 1) {
+    this.getCb = getCb;
     this.value = value;
     this.total = total;
+    
+    this.onupdate = null;
   }
 
   setProgress(value) {
     this.value = value;
 
-    this.emit('update');
+    this.onupdate && this.onupdate();
+  }
+  
+  get() {
+    return new Promise((accept, reject) => {
+      this.getCb(progress => {
+        this.setValue(progress);
+      }, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    });
+  }
+  
+  destroy() {
+    this.setProgress(1);
   }
 }
-
 class Resources extends EventTarget {
   constructor() {
     super();
+    
     this.resources = [];
+    this.queue = [];
+    this.numRunning = 0;
   }
 
   getValue() {
@@ -126,23 +148,45 @@ class Resources extends EventTarget {
     return total > 0 ? (value / total) : 1;
   }
 
-  addResource() {
-    const resource = new Resource();
-    resource.on('update', () => {
-      if (resource.value >= resource.total) {
-        this.resources.splice(this.resources.indexOf(resource), 1);
-      }
+  addResource(getCb) {
+    return new Promise((accept, reject) => {
+      const resource = new Resource(getCb);
+      resource.onupdate = () => {
+        if (resource.value >= resource.total) {
+          this.resources.splice(this.resources.indexOf(resource), 1);
+          
+          resource.onupdate = null;
+          
+          accept();
+        }
 
-      const e = new Event('update');
-      e.value = this.getValue();
-      e.total = this.getTotal();
-      e.progress = this.getProgress();
-      this.dispatchEvent(e);
+        const e = new Event('update');
+        e.value = this.getValue();
+        e.total = this.getTotal();
+        e.progress = this.getProgress();
+        this.dispatchEvent(e);
+      };
+      this.resources.push(resource);
+      this.queue.push(resource);
+      
+      this.drain();
     });
-
-    this.resources.push(resource);
-
-    return resource;
+  }
+  
+  drain() {
+    if (this.queue.length > 0 && this.numRunning < maxParallelResources) {
+      const resource = this.queue.shift();
+      resource.get()
+        .finally(() => {
+          resource.destroy();
+          
+          this.numRunning--;
+          
+          this.drain();
+        });
+      
+      this.numRunning++;
+    }
   }
 }
 GlobalContext.Resources = Resources;

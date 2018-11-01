@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <body>
+    <script>
+      let scripts = 0;
+      let scriptsDone = 0;
+      const maxScripts = 50;
+      let images = 0;
+      let imagesDone = 0;
+      const maxImages = 200;
+
+      let appends = 0;
+      let loads = 0;
+
+      const _hasScriptWork = () => scripts < maxScripts;
+      const _hasImageWork = () => images < maxImages;
+      const _hasWork = () => _hasScriptWork() || _hasImageWork();
+      const _isDone = () => scriptsDone === maxScripts && imagesDone === maxImages;
+
+      for (;;) {
+        if (_hasWork()) {
+          if (Math.random() < 0.5) {
+            if (_hasScriptWork()) {
+              const script = document.createElement('script');
+              document.body.appendChild(script);
+              appends++;
+              const onload = () => {
+                loads++;
+                document.body.removeChild(script);
+
+                scriptsDone++;
+                if (_isDone()) {
+                  console.log('done');
+                }
+              };
+              script.onload = onload;
+              script.onerror = err => {
+                console.warn(err.stack);
+              };
+              script.src = 'log.js';
+
+              scripts++;
+            }
+          } else {
+            if (_hasImageWork()) {
+              const img = new Image();
+              document.body.appendChild(img);
+              appends++;
+              const onload = () => {
+                loads++;
+                document.body.removeChild(img);
+
+                imagesDone++;
+                if (_isDone()) {
+                  console.log('done');
+                }
+              };
+              img.onload = onload;
+              img.onerror = err => {
+                console.warn(err.stack);
+              };
+              img.src = 'test.jpg';
+
+              images++;
+            }
+          }
+        } else {
+          break;
+        }
+      }
+    </script>
+  </body>
+</html>
