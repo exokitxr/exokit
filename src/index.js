@@ -138,7 +138,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       const {hidden} = canvas.ownerDocument;
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
       const firstGl = contexts.length > 0 ? contexts[0] : null;
-      return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, hidden, firstWindowHandle, gl, firstGl);
+      return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl, firstGl);
     } catch (err) {
       console.warn(err.message);
       return null;
