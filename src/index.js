@@ -170,8 +170,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     const title = `Exokit ${version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
 
-    const cleanups = [];
-
     const {hidden} = document;
     if (hidden) {
       const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
@@ -227,7 +225,9 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     };
     canvas.ownerDocument.on('domchange', ondomchange);
 
-    cleanups.push(() => {
+    gl.destroy = (destroy => function() {
+      destroy.call(this);
+
       nativeWindow.setCurrentWindowContext(windowHandle);
 
       if (gl === vrPresentState.glContext) {
@@ -253,14 +253,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       if (!contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // no more windows
         process.exit();
-      }
-    });
-
-    gl.destroy = (destroy => function() {
-      destroy.call(this);
-
-      for (let i = 0; i < cleanups.length; i++) {
-        cleanups[i]();
       }
     })(gl.destroy);
 
