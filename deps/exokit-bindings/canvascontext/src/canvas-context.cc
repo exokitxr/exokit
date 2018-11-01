@@ -291,7 +291,7 @@ void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
   
   GrBackendTexture backendTex(w, h, GrMipMapped::kNo, glTexInfo);
   
-  surface = SkSurface::MakeFromBackendTexture(grContext.get(), backendTex, kTopLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
+  surface = SkSurface::MakeFromBackendTexture(grContext.get(), backendTex, kBottomLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
   if (!surface) {
     std::cerr << "Failed to resize CanvasRenderingContext2D surface" << std::endl;
     abort();
