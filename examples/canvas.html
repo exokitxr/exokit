@@ -44,54 +44,86 @@
       // ctx.font = '30px Arial';
       // ctx.fillText('lol', 512, 512);
 
-      const texture = new THREE.Texture(
-        canvas/*,
-        THREE.UVMapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.NearestFilter,
-        THREE.NearestFilter,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        1 */
-      );
-      
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 200, 200, 300, 300);
-
-        const imageData = ctx.getImageData(100, 100, 300, 300);
-        ctx.putImageData(imageData, 100, 500);
-
+      (() => {
+        const texture = new THREE.Texture(
+          canvas/*,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1 */
+        );
         texture.needsUpdate = true;
+        
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 200, 200, 300, 300);
 
-        createImageBitmap(img)
-          .then(imageBitmap => {
-            ctx.drawImage(imageBitmap, 500, 0);
-            texture.needsUpdate = true;
-          })
-          .catch(err => {
-            console.warn(err.stack);
+          const imageData = ctx.getImageData(100, 100, 300, 300);
+          ctx.putImageData(imageData, 100, 500);
+
+          texture.needsUpdate = true;
+
+          createImageBitmap(img)
+            .then(imageBitmap => {
+              ctx.drawImage(imageBitmap, 500, 0);
+              texture.needsUpdate = true;
+            })
+            .catch(err => {
+              console.warn(err.stack);
+            });
+        };
+        img.onerror = err => {
+          console.warn(err);
+        };
+        img.src = 'test.jpg';
+
+        const planeMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(0.8, 0.8);
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            // color: 0xFF0000,
           });
-      };
-      img.onerror = err => {
-        console.warn(err);
-      };
-      img.src = 'test.jpg';
-
-      const planeMesh = (() => {
-        const geometry = new THREE.PlaneBufferGeometry(0.8, 0.8);
-        texture.needsUpdate = true;
-        const material = new THREE.MeshBasicMaterial({
-          map: texture,
-          // color: 0xFF0000,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.z = -1;
-        mesh.updateMatrixWorld();
-        return mesh;
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.z = -1;
+          mesh.updateMatrixWorld();
+          return mesh;
+        })();
+        scene.add(planeMesh);
       })();
-      scene.add(planeMesh);
+
+      (() => {
+        const texture = new THREE.Texture();
+        
+        const img = new Image();
+        img.onload = () => {
+          texture.image = img;
+          texture.needsUpdate = true;
+        };
+        img.onerror = err => {
+          console.warn(err);
+        };
+        img.src = 'test.jpg';
+
+        const imageMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(0.5, 0.5);
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            // color: 0xFF0000,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.x = 0.3;
+          mesh.position.z = -1;
+          mesh.rotation.y = -0.5;
+          mesh.rotation.order = 'YXZ';
+          mesh.updateMatrixWorld();
+          return mesh;
+        })();
+        scene.add(imageMesh);
+      })();
 
       function animate(time, frame) {
         renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
