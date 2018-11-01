@@ -1842,8 +1842,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
               if (context) {
                 this.browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
+
+                this.readyState = 'complete';
                 
                 this.dispatchEvent(new Event('load', {target: this}));
+
+                cb();
               } else {
                 throw new Error('iframe owner document does not have a WebGL context');
               }
@@ -1877,18 +1881,17 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     parentWindow.emit('destroy', e);
                   });
 
+                  this.readyState = 'complete';
+
                   this.dispatchEvent(new Event('load', {target: this}));
                 }
+
+                cb();
               } else {
                 throw new Error('iframe src got invalid status code: ' + res.status + ' : ' + url);
               }
             }
           })()
-            .then(() => {
-              this.readyState = 'complete';
-
-              cb();
-            })
             .catch(err => {
               console.error(err);
 
