@@ -205,8 +205,6 @@ NATIVEwindow *CreateGLWindow(unsigned int width, unsigned int height, bool visib
 
   EGLContext context = eglCreateContext(display, egl_config, sharedWindow ? GetGLContext(sharedWindow) : EGL_NO_CONTEXT, context_attribs);
 
-  eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context);
-
   return new NATIVEwindow{display, context, width, height};
 }
 
@@ -216,30 +214,30 @@ NAN_METHOD(Create3D) {
   bool initialVisible = info[2]->BooleanValue();
   NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[4]));
-  WebGLRenderingContext *sharedGl = info[5]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5])) : nullptr;
 
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+  
   GLuint framebuffers[2];
   GLuint framebufferTextures[4];
-  bool shared = sharedWindow != nullptr && sharedGl != nullptr;
-  if (shared) {
+  if (sharedWindow != nullptr) {
     SetCurrentWindowContext(sharedWindow);
 
     glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+    
+    SetCurrentWindowContext(windowHandle);
+  } else {
+    SetCurrentWindowContext(windowHandle);
+    
+    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
   }
-
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, shared ? sharedWindow : nullptr);
 
   windowsystembase::InitializeLocalGlState(gl);
 
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
-  
-  if (!shared) {
-    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  }
 
 #ifdef GL_VERTEX_PROGRAM_POINT_SIZE
   glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
@@ -265,19 +263,19 @@ NAN_METHOD(Create2D) {
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
   NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
-  WebGLRenderingContext *sharedGl = info[3]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[3])) : nullptr;
 
-  GLuint tex = 0;
-  bool shared = sharedWindow != nullptr && sharedGl != nullptr;
-  if (shared) {
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, shared ? sharedWindow : nullptr);
+
+  GLuint tex;
+  if (sharedWindow != nullptr) {
     SetCurrentWindowContext(sharedWindow);
 
     glGenTextures(1, &tex);
-  }
-
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, shared ? sharedWindow : nullptr);
-  
-  if (!shared) {
+    
+    SetCurrentWindowContext(windowHandle);
+  } else {
+    SetCurrentWindowContext(windowHandle);
+    
     glGenTextures(1, &tex);
   }
 
