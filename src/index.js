@@ -293,6 +293,15 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
     ctx.canvas = canvas;
     
     contexts.push(ctx);
+    
+    ctx.destroy = (destroy => function() {
+      destroy.call(this);
+      
+      nativeWindow.destroy(windowHandle);
+      canvas._context = null;
+      
+      contexts.splice(contexts.indexOf(ctx), 1);
+    })(ctx.destroy);
 
     return true;
   } else {
