@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+  <body>
+    <script>
+      // Error.stackTraceLimit = 100;
+
+      let scripts = 0;
+      let scriptsDone = 0;
+      const maxScripts = 50;
+      let images = 0;
+      let imagesDone = 0;
+      const maxImages = 200;
+
+      let appends = 0;
+      let loads = 0;
+
+      const _hasScriptWork = () => scripts < maxScripts;
+      const _hasImageWork = () => images < maxImages;
+      const _hasWork = () => _hasScriptWork() || _hasImageWork();
+      const _isDone = () => scriptsDone === maxScripts && imagesDone === maxImages;
+
+      /* let frame = 0;
+      const _raf = () => {
+        frame++;
+
+        setTimeout(() => {
+          _raf();
+        });
+      };
+      _raf(); */
+
+      for (;;) {
+      // const _recurse = () => {
+        if (_hasWork()) {
+          if (Math.random() < 0.5) {
+            if (_hasScriptWork()) {
+              const script = document.createElement('script');
+              document.body.appendChild(script);
+              appends++;
+              // let loaded = null;
+              const onload = () => {
+                /* if (loaded) {
+                  console.warn('fail script', loadedFrame, frame, loaded.stack, '\n\n', new Error().stack, '\n\n');
+                  throw new Error();
+                } */
+
+                loads++;
+                // console.log('children script', appends, loads, loaded, document.body.children.length);
+                // loaded = new Error();
+                // loadedFrame = frame;
+                document.body.removeChild(script);
+
+                scriptsDone++;
+                if (_isDone()) {
+                  console.log('done');
+                }
+              };
+              script.onload = onload;
+              script.onerror = err => {
+                console.warn(err.stack);
+              };
+              script.src = 'log.js';
+
+              scripts++;
+            }
+          } else {
+            if (_hasImageWork()) {
+              const img = new Image();
+              document.body.appendChild(img);
+              appends++;
+              // let loaded = null;
+              const onload = () => {
+                /* if (loaded) {
+                  console.warn('fail img', loadedFrame, frame, loaded.stack, '\n\n', new Error().stack, '\n\n');
+                  throw new Error();
+                } */
+
+                loads++;
+                // console.log('children img', appends, loads, document.body.children.length);
+                // loaded = new Error();
+                // loadedFrame = frame;
+                document.body.removeChild(img);
+
+                imagesDone++;
+                if (_isDone()) {
+                  console.log('done');
+                }
+              };
+              img.onload = onload;
+              img.onerror = err => {
+                console.warn(err.stack);
+              };
+              img.src = 'test.jpg';
+
+              images++;
+            }
+          }
+          // _recurse();
+        } else {
+          break;
+        }
+      }
+      // _recurse();
+
+      // console.log('sync done');
+    </script>
+  </body>
+</html>
