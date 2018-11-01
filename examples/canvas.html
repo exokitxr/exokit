@@ -64,6 +64,15 @@
         ctx.putImageData(imageData, 100, 500);
 
         texture.needsUpdate = true;
+
+        createImageBitmap(img)
+          .then(imageBitmap => {
+            ctx.drawImage(imageBitmap, 500, 0);
+            texture.needsUpdate = true;
+          })
+          .catch(err => {
+            console.warn(err.stack);
+          });
       };
       img.onerror = err => {
         console.warn(err);
