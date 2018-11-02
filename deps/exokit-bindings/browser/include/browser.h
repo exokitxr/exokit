@@ -53,21 +53,23 @@ private:
 
 class LoadHandler : public CefLoadHandler {
 public:
-	LoadHandler(std::function<void()> onLoad);
+	LoadHandler(std::function<void()> onLoadStart, std::function<void()> onLoadEnd, std::function<void()> onLoadError);
   ~LoadHandler();
 
 	// CefRenderHandler interface
 public:
-	virtual void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type);
-	virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type);
-	virtual void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type);
+	virtual void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) override;
+	virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) override;
+	virtual void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString& errorText, const CefString &failedUrl) override;
 
 	// CefBase interface
 private:
   IMPLEMENT_REFCOUNTING(LoadHandler);
 
 private:
-  std::function<void()> onLoad;
+  std::function<void()> onLoadStart;
+  std::function<void()> onLoadEnd;
+  std::function<void()> onLoadError;
 };
 
 // RenderHandler
@@ -131,6 +133,12 @@ protected:
 
   static NAN_METHOD(New);
   static NAN_METHOD(UpdateAll);
+  static NAN_GETTER(OnLoadStartGetter);
+  static NAN_SETTER(OnLoadStartSetter);
+  static NAN_GETTER(OnLoadEndGetter);
+  static NAN_SETTER(OnLoadEndSetter);
+  static NAN_GETTER(OnLoadErrorGetter);
+  static NAN_SETTER(OnLoadErrorSetter);
   static NAN_METHOD(SendMouseMove);
   static NAN_METHOD(SendMouseDown);
   static NAN_METHOD(SendMouseUp);
@@ -143,10 +151,15 @@ protected:
 protected:
   GLuint tex;
   bool initialized;
+  
   std::unique_ptr<LoadHandler> load_handler_;
   std::unique_ptr<RenderHandler> render_handler_;
   std::unique_ptr<BrowserClient> client_;
   CefRefPtr<CefBrowser> browser_;
+  
+  Nan::Persistent<Function> onloadstart;
+  Nan::Persistent<Function> onloadend;
+  Nan::Persistent<Function> onloaderror;
 };
 
 // helpers
