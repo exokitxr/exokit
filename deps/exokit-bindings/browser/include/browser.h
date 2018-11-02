@@ -131,6 +131,9 @@ protected:
 
   static NAN_METHOD(New);
   static NAN_METHOD(UpdateAll);
+  static NAN_METHOD(SendMouseMove);
+  static NAN_METHOD(SendMouseDown);
+  static NAN_METHOD(SendMouseUp);
   static NAN_GETTER(TextureGetter);
   void reshape(int w, int h);
 protected:
