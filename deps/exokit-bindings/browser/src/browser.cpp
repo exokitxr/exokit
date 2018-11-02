@@ -48,6 +48,30 @@ void SimpleApp::OnContextInitialized() {
   // std::cout << "SimpleApp::OnContextInitialized" << std::endl;
 }
 
+// LoadHandler
+
+LoadHandler::LoadHandler(std::function<void()> onLoad) : onLoad(onLoad) {}
+
+LoadHandler::~LoadHandler() {}
+
+void LoadHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) {
+  RunOnMainThread([&]() -> void { // XXX handle different load evnet types
+    onLoad();
+  });
+}
+
+void LoadHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) {
+  RunOnMainThread([&]() -> void {
+    onLoad();
+  });
+}
+
+void LoadHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) {
+  RunOnMainThread([&]() -> void {
+    onLoad();
+  });
+}
+
 // RenderHandler
 
 RenderHandler::RenderHandler(OnPaintFn onPaint) : onPaint(onPaint), width(2), height(2) {}
@@ -70,7 +94,7 @@ void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type
 
 // BrowserClient
 
-BrowserClient::BrowserClient(RenderHandler *renderHandler) : m_renderHandler(renderHandler) {}
+BrowserClient::BrowserClient(LoadHandler *loadHandler, RenderHandler *renderHandler) : m_loadHandler(loadHandler), m_renderHandler(renderHandler) {}
 
 BrowserClient::~BrowserClient() {}
 
@@ -82,6 +106,10 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
   glGenTextures(1, &tex);
 
   QueueOnBrowserThread([&]() -> void {
+    load_handler_.reset(new LoadHandler([this]() -> void {
+      // XXX handle load event
+    }));
+    
     render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
       RunOnMainThread([&]() -> void {
         ensureCurrentGlWindow(gl);
@@ -123,7 +151,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
     window_info.SetAsWindowless(nullptr);
     CefBrowserSettings browserSettings;
     // browserSettings.windowless_frame_rate = 60; // 30 is default
-    client_.reset(new BrowserClient(render_handler_.get()));
+    client_.reset(new BrowserClient(load_handler_.get(), render_handler_.get()));
     
     browser_ = CefBrowserHost::CreateBrowserSync(window_info, client_.get(), url, browserSettings, nullptr);
     
