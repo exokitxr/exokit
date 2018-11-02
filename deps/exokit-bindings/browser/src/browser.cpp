@@ -135,25 +135,45 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
       )
     );
     
+    render_handler_.reset(
+      new RenderHandler(
+        [this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+          RunOnMainThread([&]() -> void {
+            ensureCurrentGlWindow(gl);
+            
+            glBindTexture(GL_TEXTURE_2D, this->tex);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
-        for (size_t i = 0; i < dirtyRects.size(); i++) {
-          const CefRect &rect = dirtyRects[i];
-          
-          glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
-          glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
-          glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
-        }
+            if (!this->initialized) {
+              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+              glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+              glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-        if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-          glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-        } else {
-          glBindTexture(GL_TEXTURE_2D, 0);
+              this->initialized = true;
+            }
+
+            for (size_t i = 0; i < dirtyRects.size(); i++) {
+              const CefRect &rect = dirtyRects[i];
+              
+              glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
+              glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
+              glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+            }
+
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+            glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+            if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+              glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+            } else {
+              glBindTexture(GL_TEXTURE_2D, 0);
+            }
+          });
         }
-      });
-    }));
+      )
+    );
     render_handler_->resize(128, 128);
 
     CefWindowInfo window_info;
@@ -207,8 +227,6 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
 }
 
 NAN_METHOD(Browser::New) {
-  // Nan::HandleScope scope;
-
   if (
     info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) &&
     info[1]->IsNumber() &&
