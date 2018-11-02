@@ -1982,6 +1982,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   sendMouseUp(x, y) {
     this.browser && this.browser.sendMouseUp(x, y);
   }
+  sendMouseWheel(x, y, deltaX, deltaY) {
+    this.browser && this.browser.sendMouseWheel(x, y, deltaX, deltaY);
+  }
   sendKeyDown(key) {
     this.browser && this.browser.sendKeyDown(key);
   }
