@@ -180,6 +180,9 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "sendMouseMove", SendMouseMove);
+  Nan::SetMethod(proto, "sendMouseDown", SendMouseDown);
+  Nan::SetMethod(proto, "sendMouseUp", SendMouseUp);
 
   Local<Function> ctorFn = ctor->GetFunction();
   Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
@@ -252,6 +255,64 @@ NAN_METHOD(Browser::UpdateAll) {
       CefDoMessageLoopWork();
       // std::cout << "browser update 2" << std::endl;
     });
+  }
+}
+
+NAN_METHOD(Browser::SendMouseMove) {
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    int x = info[0]->Int32Value();
+    int y = info[1]->Int32Value();
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([x, y, cefBrowser]() -> void {
+      CefMouseEvent evt;
+      evt.x = x;
+      evt.y = y;
+
+      cefBrowser->GetHost()->SendMouseMoveEvent(evt, false);
+    });
+
+  } else {
+    return Nan::ThrowError("Browser::SendMouseMove: invalid arguments");
+  }
+}
+
+NAN_METHOD(Browser::SendMouseDown) {
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    int x = info[0]->Int32Value();
+    int y = info[1]->Int32Value();
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([x, y, cefBrowser]() -> void {
+      CefMouseEvent evt;
+      evt.x = x;
+      evt.y = y;
+
+      cefBrowser->GetHost()->SendMouseClickEvent(evt, CefBrowserHost::MouseButtonType::MBT_LEFT, false, 1);
+    });
+  } else {
+    return Nan::ThrowError("Browser::SendMouseDown: invalid arguments");
+  }
+}
+
+NAN_METHOD(Browser::SendMouseUp) {
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    int x = info[0]->Int32Value();
+    int y = info[1]->Int32Value();
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([x, y, cefBrowser]() -> void {
+      CefMouseEvent evt;
+      evt.x = x;
+      evt.y = y;
+
+      cefBrowser->GetHost()->SendMouseClickEvent(evt, CefBrowserHost::MouseButtonType::MBT_LEFT, true, 1);
+    });
+  } else {
+    return Nan::ThrowError("Browser::SendMouseUp: invalid arguments");
   }
 }
 
