@@ -149,6 +149,7 @@ protected:
   static NAN_METHOD(SendKeyDown);
   static NAN_METHOD(SendKeyUp);
   static NAN_METHOD(SendKeyPress);
+  static NAN_METHOD(RunJs);
   static NAN_GETTER(TextureGetter);
   void reshape(int w, int h);
 protected:
