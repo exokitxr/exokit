@@ -62,8 +62,8 @@ public:
 
 	// CefRenderHandler interface
 public:
-	bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect);
-	void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects, const void *buffer, int width, int height);
+	virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
+	virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects, const void *buffer, int width, int height) override;
 
 	// CefBase interface
 private:
@@ -82,7 +82,7 @@ public:
 	BrowserClient(RenderHandler *renderHandler);
   ~BrowserClient();
 
-	virtual CefRefPtr<CefRenderHandler> GetRenderHandler() {
+	virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override {
 		return m_renderHandler;
 	}
 
