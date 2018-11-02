@@ -222,6 +222,7 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "sendKeyDown", SendKeyDown);
   Nan::SetMethod(proto, "sendKeyUp", SendKeyUp);
   Nan::SetMethod(proto, "sendKeyPress", SendKeyPress);
+  Nan::SetMethod(proto, "runJs", RunJs);
 
   Local<Function> ctorFn = ctor->GetFunction();
   Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
@@ -506,6 +507,28 @@ NAN_METHOD(Browser::SendKeyPress) {
 
   } else {
     return Nan::ThrowError("Browser::SendKeyPress: invalid arguments");
+  }
+}
+
+NAN_METHOD(Browser::RunJs) {
+  if (info[0]->IsString() && info[1]->IsString() && info[2]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    
+    String::Utf8Value jsStringValue(Local<String>::Cast(info[0]));
+    string jsString(*jsStringValue, jsStringValue.length());
+    
+    String::Utf8Value scriptUrlValue(Local<String>::Cast(info[1]));
+    string scriptUrl(*scriptUrlValue, scriptUrlValue.length());
+    
+    int startLine = info[2]->Int32Value();
+    
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([jsString, scriptUrl, startLine, cefBrowser]() -> void {
+      cefBrowser->GetMainFrame()->ExecuteJavaScript(CefString(jsString), CefString(scriptUrl), startLine);
+    });
+  } else {
+    return Nan::ThrowError("Browser::RunJs: invalid arguments");
   }
 }
 
