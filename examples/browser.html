@@ -47,7 +47,13 @@ function init() {
   iframe.d = 2;
   iframe.src = 'https://google.com';
   iframe.onload = () => {
-    iframe.runJs(`document.body.style.background = '#000080';`);
+    iframe.runJs(`
+      document.body.style.background = '#000080';
+      console.log('run js log');
+    `);
+  };
+  iframe.onconsole = (message, source, line) => {
+    console.log(source + ':' + line + ': ' + message);
   };
   document.body.appendChild(iframe);
 
