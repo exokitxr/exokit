@@ -83,13 +83,13 @@ init();
 let direction = true;
 function animate() {
   if (direction) {
-    planeMesh.rotation.y += 0.01;
+    planeMesh.rotation.y += 0.001;
 
     if (planeMesh.rotation.y >= Math.PI/8) {
       direction = false;
     }
   } else {
-    planeMesh.rotation.y -= 0.01;
+    planeMesh.rotation.y -= 0.001;
 
     if (planeMesh.rotation.y <= -Math.PI/8) {
       direction = true;
