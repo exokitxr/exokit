@@ -18,6 +18,7 @@
 
 #include <include/cef_client.h>
 #include <include/cef_app.h>
+#include <include/cef_load_handler.h>
 #include <include/cef_render_handler.h>
 #include <include/wrapper/cef_helpers.h>
 
@@ -46,6 +47,27 @@ public:
 private:
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(SimpleApp);
+};
+
+// LoadHandler
+
+class LoadHandler : public CefLoadHandler {
+public:
+	LoadHandler(std::function<void()> onLoad);
+  ~LoadHandler();
+
+	// CefRenderHandler interface
+public:
+	virtual void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type);
+	virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type);
+	virtual void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type);
+
+	// CefBase interface
+private:
+  IMPLEMENT_REFCOUNTING(LoadHandler);
+
+private:
+  std::function<void()> onLoad;
 };
 
 // RenderHandler
@@ -79,13 +101,18 @@ private:
 
 class BrowserClient : public CefClient {
 public:
-	BrowserClient(RenderHandler *renderHandler);
+	BrowserClient(LoadHandler *loadHandler, RenderHandler *renderHandler);
   ~BrowserClient();
+  
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override {
+		return m_loadHandler;
+	}
 
 	virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override {
 		return m_renderHandler;
 	}
 
+	CefRefPtr<CefLoadHandler> m_loadHandler;
 	CefRefPtr<CefRenderHandler> m_renderHandler;
 
 private:
@@ -109,6 +136,7 @@ protected:
 protected:
   GLuint tex;
   bool initialized;
+  std::unique_ptr<LoadHandler> load_handler_;
   std::unique_ptr<RenderHandler> render_handler_;
   std::unique_ptr<BrowserClient> client_;
   CefRefPtr<CefBrowser> browser_;
