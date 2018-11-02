@@ -74,6 +74,8 @@ DisplayHandler::~DisplayHandler() {}
 
 bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message, const CefString &source, int line) {
   onConsole(message.ToString(), source.length() > 0 ? source.ToString() : std::string("<unknown>"), line);
+  
+  return true;
 }
 
 // RenderHandler
