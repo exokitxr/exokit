@@ -2030,6 +2030,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   sendKeyPress(key) {
     this.browser && this.browser.sendKeyPress(key);
   }
+  
+  runJs(jsString = '', scriptUrl = '', startLine = 0) {
+    this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
+  }
 
   destroy() {
     if (this.live) {
