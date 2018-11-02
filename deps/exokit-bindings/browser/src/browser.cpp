@@ -172,7 +172,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
             ensureCurrentGlWindow(gl);
             
             glBindTexture(GL_TEXTURE_2D, this->tex);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
 
             if (!this->initialized) {
               glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
