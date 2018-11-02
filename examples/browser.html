@@ -48,6 +48,9 @@ function init() {
   iframe = document.createElement('iframe');
   iframe.d = 2;
   iframe.src = 'https://google.com';
+  iframe.onload = () => {
+    iframe.runJs(`document.body.style.background = '#000080';`);
+  };
   document.body.appendChild(iframe);
 
   const planeWorldWidth = 0.9;
