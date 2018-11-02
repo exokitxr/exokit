@@ -162,6 +162,11 @@ function init() {
       iframe.sendMouseUp(coord.x, coord.y);
     }
   });
+  window.addEventListener('wheel', e => {
+    if (focused) {
+      iframe.sendMouseWheel(e.clientX, e.clientY, e.deltaX, -e.deltaY);
+    }
+  });
   window.addEventListener('keydown', e => {
     if (focused) {
       iframe.sendKeyDown(e.keyCode);
