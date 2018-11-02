@@ -151,7 +151,6 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
           RunOnMainThread([&]() -> void {
             Nan::HandleScope scope;
             
-            std::cout << "got console " << !this->onconsole.IsEmpty() << std::endl;
             if (!this->onconsole.IsEmpty()) {
               Local<Function> onconsole = Nan::New(this->onconsole);
               Local<Value> argv[] = {
