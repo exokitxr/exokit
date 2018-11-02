@@ -169,7 +169,13 @@ function init() {
   });
   window.addEventListener('keydown', e => {
     if (focused) {
-      iframe.sendKeyDown(e.keyCode);
+      if (e.keyCode === 37 && e.altKey) { // Alt-Left
+        iframe.back();
+      } else if (e.keyCode === 39 && e.altKey) { // Alt-Right
+        iframe.forward();
+      } else {
+        iframe.sendKeyDown(e.keyCode);
+      }
     }
   });
   window.addEventListener('keyup', e => {
@@ -179,7 +185,11 @@ function init() {
   });
   window.addEventListener('keypress', e => {
     if (focused) {
-      iframe.sendKeyPress(e.keyCode);
+      if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
+        iframe.reload();
+      } else {
+        iframe.sendKeyPress(e.keyCode);
+      }
     }
   });
 
