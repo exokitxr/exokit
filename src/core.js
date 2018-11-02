@@ -177,6 +177,9 @@ class Resources extends EventTarget {
     if (this.queue.length > 0 && this.numRunning < maxParallelResources) {
       const resource = this.queue.shift();
       resource.get()
+        .catch(err => {
+          console.warn(err.stack);
+        })
         .finally(() => {
           resource.destroy();
           
