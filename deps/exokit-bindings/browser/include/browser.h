@@ -134,6 +134,7 @@ protected:
   static NAN_METHOD(SendMouseMove);
   static NAN_METHOD(SendMouseDown);
   static NAN_METHOD(SendMouseUp);
+  static NAN_METHOD(SendMouseWheel);
   static NAN_METHOD(SendKeyDown);
   static NAN_METHOD(SendKeyUp);
   static NAN_METHOD(SendKeyPress);

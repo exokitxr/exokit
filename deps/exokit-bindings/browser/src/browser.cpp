@@ -183,6 +183,7 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "sendMouseMove", SendMouseMove);
   Nan::SetMethod(proto, "sendMouseDown", SendMouseDown);
   Nan::SetMethod(proto, "sendMouseUp", SendMouseUp);
+  Nan::SetMethod(proto, "sendMouseWheel", SendMouseWheel);
   Nan::SetMethod(proto, "sendKeyDown", SendKeyDown);
   Nan::SetMethod(proto, "sendKeyUp", SendKeyUp);
   Nan::SetMethod(proto, "sendKeyPress", SendKeyPress);
@@ -313,6 +314,27 @@ NAN_METHOD(Browser::SendMouseUp) {
       evt.y = y;
 
       cefBrowser->GetHost()->SendMouseClickEvent(evt, CefBrowserHost::MouseButtonType::MBT_LEFT, true, 1);
+    });
+  } else {
+    return Nan::ThrowError("Browser::SendMouseUp: invalid arguments");
+  }
+}
+
+NAN_METHOD(Browser::SendMouseWheel) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    int x = info[0]->Int32Value();
+    int y = info[1]->Int32Value();
+    int deltaX = info[2]->Int32Value();
+    int deltaY = info[3]->Int32Value();
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([x, y, deltaX, deltaY, cefBrowser]() -> void {
+      CefMouseEvent evt;
+      evt.x = x;
+      evt.y = y;
+
+      cefBrowser->GetHost()->SendMouseWheelEvent(evt, deltaX, deltaY);
     });
   } else {
     return Nan::ThrowError("Browser::SendMouseUp: invalid arguments");
