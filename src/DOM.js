@@ -1843,6 +1843,32 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               if (context) {
                 this.browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
 
+                let done = false, err = null;
+                const _makeLoadError = () => new Error('failed to load page');
+                this.browser.onloadend = () => {
+                  done = true;
+                };
+                this.browser.onloaderror = () => {
+                  done = true;
+                  err = _makeLoadError();
+                };
+                await new Promise((accept, reject) => {
+                  if (!done) {
+                    this.browser.onloadend = () => {
+                      accept();
+                    };
+                    this.browser.onloaderror = () => {
+                      reject(_makeLoadError());
+                    };
+                  } else {
+                    if (!err) {
+                      accept();
+                    } else {
+                      reject(err);
+                    }
+                  }
+                });
+
                 this.readyState = 'complete';
                 
                 this.dispatchEvent(new Event('load', {target: this}));
