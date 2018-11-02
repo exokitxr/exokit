@@ -1972,6 +1972,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
     this.setAttribute('scale', scale);
   }
+  
+  sendMouseMove(x, y) {
+    this.browser && this.browser.sendMouseMove(x, y);
+  }
+  sendMouseDown(x, y) {
+    this.browser && this.browser.sendMouseDown(x, y);
+  }
+  sendMouseUp(x, y) {
+    this.browser && this.browser.sendMouseUp(x, y);
+  }
 
   destroy() {
     if (this.live) {
