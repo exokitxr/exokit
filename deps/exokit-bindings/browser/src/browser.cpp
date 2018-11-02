@@ -76,7 +76,7 @@ BrowserClient::~BrowserClient() {}
 
 // Browser
 
-Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : initialized(false) {
+Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : tex(0), initialized(false) {
   ensureCurrentGlWindow(gl);
   
   glGenTextures(1, &tex);
