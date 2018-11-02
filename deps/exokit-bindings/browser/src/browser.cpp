@@ -183,6 +183,9 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "sendMouseMove", SendMouseMove);
   Nan::SetMethod(proto, "sendMouseDown", SendMouseDown);
   Nan::SetMethod(proto, "sendMouseUp", SendMouseUp);
+  Nan::SetMethod(proto, "sendKeyDown", SendKeyDown);
+  Nan::SetMethod(proto, "sendKeyUp", SendKeyUp);
+  Nan::SetMethod(proto, "sendKeyPress", SendKeyPress);
 
   Local<Function> ctorFn = ctor->GetFunction();
   Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
@@ -313,6 +316,69 @@ NAN_METHOD(Browser::SendMouseUp) {
     });
   } else {
     return Nan::ThrowError("Browser::SendMouseUp: invalid arguments");
+  }
+}
+
+NAN_METHOD(Browser::SendKeyDown) {
+  if (info[0]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    int key = info[0]->Int32Value();
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([key, cefBrowser]() -> void {
+      CefKeyEvent evt;
+      evt.type = KEYEVENT_RAWKEYDOWN;
+      evt.character = key;
+      evt.native_key_code = key;
+      evt.windows_key_code = key;
+
+      cefBrowser->GetHost()->SendKeyEvent(evt);
+    });
+
+  } else {
+    return Nan::ThrowError("Browser::SendKeyDown: invalid arguments");
+  }
+}
+
+NAN_METHOD(Browser::SendKeyUp) {
+  if (info[0]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    int key = info[0]->Int32Value();
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([key, cefBrowser]() -> void {
+      CefKeyEvent evt;
+      evt.type = KEYEVENT_KEYUP;
+      evt.character = key;
+      evt.native_key_code = key;
+      evt.windows_key_code = key;
+
+      cefBrowser->GetHost()->SendKeyEvent(evt);
+    });
+
+  } else {
+    return Nan::ThrowError("Browser::SendKeyUp: invalid arguments");
+  }
+}
+
+NAN_METHOD(Browser::SendKeyPress) {
+  if (info[0]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    int key = info[0]->Uint32Value();
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([key, cefBrowser]() -> void {
+      CefKeyEvent evt;
+      evt.type = KEYEVENT_CHAR;
+      evt.character = key;
+      evt.native_key_code = key;
+      evt.windows_key_code = key;
+
+      cefBrowser->GetHost()->SendKeyEvent(evt);
+    });
+
+  } else {
+    return Nan::ThrowError("Browser::SendKeyPress: invalid arguments");
   }
 }
 
