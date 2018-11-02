@@ -1999,6 +1999,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.setAttribute('scale', scale);
   }
   
+  back() {
+    this.browser && this.browser.back();
+  }
+  forward() {
+    this.browser && this.browser.forward();
+  }
+  reload() {
+    this.browser && this.browser.reload();
+  }
+  
   sendMouseMove(x, y) {
     this.browser && this.browser.sendMouseMove(x, y);
   }
