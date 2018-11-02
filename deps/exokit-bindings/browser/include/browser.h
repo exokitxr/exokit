@@ -72,6 +72,25 @@ private:
   std::function<void()> onLoadError;
 };
 
+// DisplayHandler
+
+class DisplayHandler : public CefDisplayHandler {
+public:
+	DisplayHandler(std::function<void(const std::string &, const std::string &, int)> onConsole);
+  ~DisplayHandler();
+
+	// CefRenderHandler interface
+public:
+	virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message ,const CefString &source, int line) override;
+
+	// CefBase interface
+private:
+  IMPLEMENT_REFCOUNTING(DisplayHandler);
+
+private:
+  std::function<void(const std::string &, const std::string &, int)> onConsole;
+};
+
 // RenderHandler
 
 class RenderHandler : public CefRenderHandler {
@@ -103,18 +122,21 @@ private:
 
 class BrowserClient : public CefClient {
 public:
-	BrowserClient(LoadHandler *loadHandler, RenderHandler *renderHandler);
+	BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler);
   ~BrowserClient();
   
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override {
 		return m_loadHandler;
 	}
-
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override {
+    return m_displayHandler;
+  }
 	virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override {
 		return m_renderHandler;
 	}
 
 	CefRefPtr<CefLoadHandler> m_loadHandler;
+	CefRefPtr<CefDisplayHandler> m_displayHandler;
 	CefRefPtr<CefRenderHandler> m_renderHandler;
 
 private:
@@ -139,6 +161,8 @@ protected:
   static NAN_SETTER(OnLoadEndSetter);
   static NAN_GETTER(OnLoadErrorGetter);
   static NAN_SETTER(OnLoadErrorSetter);
+  static NAN_GETTER(OnConsoleGetter);
+  static NAN_SETTER(OnConsoleSetter);
   static NAN_METHOD(Back);
   static NAN_METHOD(Forward);
   static NAN_METHOD(Reload);
@@ -157,6 +181,7 @@ protected:
   bool initialized;
   
   std::unique_ptr<LoadHandler> load_handler_;
+  std::unique_ptr<DisplayHandler> display_handler_;
   std::unique_ptr<RenderHandler> render_handler_;
   std::unique_ptr<BrowserClient> client_;
   CefRefPtr<CefBrowser> browser_;
@@ -164,6 +189,7 @@ protected:
   Nan::Persistent<Function> onloadstart;
   Nan::Persistent<Function> onloadend;
   Nan::Persistent<Function> onloaderror;
+  Nan::Persistent<Function> onconsole;
 };
 
 // helpers
