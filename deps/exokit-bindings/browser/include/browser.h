@@ -139,6 +139,9 @@ protected:
   static NAN_SETTER(OnLoadEndSetter);
   static NAN_GETTER(OnLoadErrorGetter);
   static NAN_SETTER(OnLoadErrorSetter);
+  static NAN_METHOD(Back);
+  static NAN_METHOD(Forward);
+  static NAN_METHOD(Reload);
   static NAN_METHOD(SendMouseMove);
   static NAN_METHOD(SendMouseDown);
   static NAN_METHOD(SendMouseUp);

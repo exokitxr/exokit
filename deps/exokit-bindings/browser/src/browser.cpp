@@ -212,6 +212,9 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("onloadstart"), OnLoadStartGetter, OnLoadStartSetter);
   Nan::SetAccessor(proto, JS_STR("onloadend"), OnLoadEndGetter, OnLoadEndSetter);
   Nan::SetAccessor(proto, JS_STR("onloaderror"), OnLoadErrorGetter, OnLoadErrorSetter);
+  Nan::SetMethod(proto, "back", Back);
+  Nan::SetMethod(proto, "forward", Forward);
+  Nan::SetMethod(proto, "reload", Reload);
   Nan::SetMethod(proto, "sendMouseMove", SendMouseMove);
   Nan::SetMethod(proto, "sendMouseDown", SendMouseDown);
   Nan::SetMethod(proto, "sendMouseUp", SendMouseUp);
@@ -338,6 +341,33 @@ NAN_SETTER(Browser::OnLoadErrorSetter) {
   }
 }
 
+NAN_METHOD(Browser::Back) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  CefBrowser *cefBrowser = browser->browser_.get();
+  
+  QueueOnBrowserThread([cefBrowser]() -> void {
+    cefBrowser->GoBack();
+  });
+}
+
+NAN_METHOD(Browser::Forward) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  CefBrowser *cefBrowser = browser->browser_.get();
+  
+  QueueOnBrowserThread([cefBrowser]() -> void {
+    cefBrowser->GoForward();
+  });
+}
+
+NAN_METHOD(Browser::Reload) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  CefBrowser *cefBrowser = browser->browser_.get();
+  
+  QueueOnBrowserThread([cefBrowser]() -> void {
+    cefBrowser->Reload();
+  });
+}
+
 NAN_METHOD(Browser::SendMouseMove) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
@@ -352,7 +382,6 @@ NAN_METHOD(Browser::SendMouseMove) {
 
       cefBrowser->GetHost()->SendMouseMoveEvent(evt, false);
     });
-
   } else {
     return Nan::ThrowError("Browser::SendMouseMove: invalid arguments");
   }
