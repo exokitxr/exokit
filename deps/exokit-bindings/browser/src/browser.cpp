@@ -66,6 +66,16 @@ void LoadHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame>
   onLoadError();
 }
 
+// DisplayHandler
+
+DisplayHandler::DisplayHandler(std::function<void(const std::string &, const std::string &, int)> onConsole) : onConsole(onConsole) {}
+
+DisplayHandler::~DisplayHandler() {}
+
+bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message, const CefString &source, int line) {
+  onConsole(message.ToString(), source.length() > 0 ? source.ToString() : std::string("<unknown>"), line);
+}
+
 // RenderHandler
 
 RenderHandler::RenderHandler(OnPaintFn onPaint) : onPaint(onPaint), width(2), height(2) {}
@@ -88,7 +98,7 @@ void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type
 
 // BrowserClient
 
-BrowserClient::BrowserClient(LoadHandler *loadHandler, RenderHandler *renderHandler) : m_loadHandler(loadHandler), m_renderHandler(renderHandler) {}
+BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler) : m_loadHandler(loadHandler), m_displayHandler(displayHandler), m_renderHandler(renderHandler) {}
 
 BrowserClient::~BrowserClient() {}
 
@@ -129,6 +139,27 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
             if (!this->onloaderror.IsEmpty()) {
               Local<Function> onloaderror = Nan::New(this->onloaderror);
               onloaderror->Call(Nan::Null(), 0, nullptr);
+            }
+          });
+        }
+      )
+    );
+    
+    display_handler_.reset(
+      new DisplayHandler(
+        [this](const std::string &jsString, const std::string &scriptUrl, int startLine) -> void {
+          RunOnMainThread([&]() -> void {
+            Nan::HandleScope scope;
+            
+            std::cout << "got console " << !this->onconsole.IsEmpty() << std::endl;
+            if (!this->onconsole.IsEmpty()) {
+              Local<Function> onconsole = Nan::New(this->onconsole);
+              Local<Value> argv[] = {
+                JS_STR(jsString),
+                JS_STR(scriptUrl),
+                JS_INT(startLine),
+              };
+              onconsole->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
             }
           });
         }
@@ -180,7 +211,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
     window_info.SetAsWindowless(nullptr);
     CefBrowserSettings browserSettings;
     // browserSettings.windowless_frame_rate = 60; // 30 is default
-    client_.reset(new BrowserClient(load_handler_.get(), render_handler_.get()));
+    client_.reset(new BrowserClient(load_handler_.get(), display_handler_.get(), render_handler_.get()));
     
     browser_ = CefBrowserHost::CreateBrowserSync(window_info, client_.get(), url, browserSettings, nullptr);
     
@@ -212,6 +243,7 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("onloadstart"), OnLoadStartGetter, OnLoadStartSetter);
   Nan::SetAccessor(proto, JS_STR("onloadend"), OnLoadEndGetter, OnLoadEndSetter);
   Nan::SetAccessor(proto, JS_STR("onloaderror"), OnLoadErrorGetter, OnLoadErrorSetter);
+  Nan::SetAccessor(proto, JS_STR("onconsole"), OnConsoleGetter, OnConsoleSetter);
   Nan::SetMethod(proto, "back", Back);
   Nan::SetMethod(proto, "forward", Forward);
   Nan::SetMethod(proto, "reload", Reload);
@@ -339,6 +371,22 @@ NAN_SETTER(Browser::OnLoadErrorSetter) {
     browser->onloaderror.Reset(onloaderror);
   } else {
     browser->onloaderror.Reset();
+  }
+}
+
+NAN_GETTER(Browser::OnConsoleGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  Local<Function> onconsole = Nan::New(browser->onconsole);
+  info.GetReturnValue().Set(onconsole);
+}
+NAN_SETTER(Browser::OnConsoleSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> onconsole = Local<Function>::Cast(value);
+    browser->onconsole.Reset(onconsole);
+  } else {
+    browser->onconsole.Reset();
   }
 }
 
