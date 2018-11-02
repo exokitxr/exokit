@@ -1820,6 +1820,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     
     this.d = null;
     this.browser = null;
+    this.onconsole = null;
     this.xrOffset = {
       position: new Float32Array(3),
       rotation: new Float32Array(4),
@@ -1851,6 +1852,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 this.browser.onloaderror = () => {
                   done = true;
                   err = _makeLoadError();
+                };
+                this.browser.onconsole = (message, source, line) => {
+                  this.onconsole && this.onconsole(message, source, line);
                 };
                 await new Promise((accept, reject) => {
                   if (!done) {
