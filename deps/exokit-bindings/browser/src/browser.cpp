@@ -50,26 +50,20 @@ void SimpleApp::OnContextInitialized() {
 
 // LoadHandler
 
-LoadHandler::LoadHandler(std::function<void()> onLoad) : onLoad(onLoad) {}
+LoadHandler::LoadHandler(std::function<void()> onLoadStart, std::function<void()> onLoadEnd, std::function<void()> onLoadError) : onLoadStart(onLoadStart), onLoadEnd(onLoadEnd), onLoadError(onLoadError) {}
 
 LoadHandler::~LoadHandler() {}
 
 void LoadHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) {
-  RunOnMainThread([&]() -> void { // XXX handle different load evnet types
-    onLoad();
-  });
+  onLoadStart();
 }
 
-void LoadHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) {
-  RunOnMainThread([&]() -> void {
-    onLoad();
-  });
+void LoadHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) {
+  onLoadEnd();
 }
 
-void LoadHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) {
-  RunOnMainThread([&]() -> void {
-    onLoad();
-  });
+void LoadHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString& errorText, const CefString &failedUrl) {
+  onLoadError();
 }
 
 // RenderHandler
@@ -106,26 +100,41 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
   glGenTextures(1, &tex);
 
   QueueOnBrowserThread([&]() -> void {
-    load_handler_.reset(new LoadHandler([this]() -> void {
-      // XXX handle load event
-    }));
-    
-    render_handler_.reset(new RenderHandler([this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
-      RunOnMainThread([&]() -> void {
-        ensureCurrentGlWindow(gl);
-        
-        glBindTexture(GL_TEXTURE_2D, this->tex);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-
-        if (!this->initialized) {
-          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-          glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-          glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-
-          this->initialized = true;
+    load_handler_.reset(
+      new LoadHandler(
+        [this]() -> void {
+          RunOnMainThread([&]() -> void {
+            Nan::HandleScope scope;
+            
+            if (!this->onloadstart.IsEmpty()) {
+              Local<Function> onloadstart = Nan::New(this->onloadstart);
+              onloadstart->Call(Nan::Null(), 0, nullptr);
+            }
+          });
+        },
+        [this]() -> void {
+          RunOnMainThread([&]() -> void {
+            Nan::HandleScope scope;
+            
+            if (!this->onloadend.IsEmpty()) {
+              Local<Function> onloadend = Nan::New(this->onloadend);
+              onloadend->Call(Nan::Null(), 0, nullptr);
+            }
+          });
+        },
+        [this]() -> void {
+          RunOnMainThread([&]() -> void {
+            Nan::HandleScope scope;
+            
+            if (!this->onloaderror.IsEmpty()) {
+              Local<Function> onloaderror = Nan::New(this->onloaderror);
+              onloaderror->Call(Nan::Null(), 0, nullptr);
+            }
+          });
         }
+      )
+    );
+    
 
         for (size_t i = 0; i < dirtyRects.size(); i++) {
           const CefRect &rect = dirtyRects[i];
@@ -180,6 +189,9 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetAccessor(proto, JS_STR("onloadstart"), OnLoadStartGetter, OnLoadStartSetter);
+  Nan::SetAccessor(proto, JS_STR("onloadend"), OnLoadEndGetter, OnLoadEndSetter);
+  Nan::SetAccessor(proto, JS_STR("onloaderror"), OnLoadErrorGetter, OnLoadErrorSetter);
   Nan::SetMethod(proto, "sendMouseMove", SendMouseMove);
   Nan::SetMethod(proto, "sendMouseDown", SendMouseDown);
   Nan::SetMethod(proto, "sendMouseUp", SendMouseUp);
@@ -259,6 +271,52 @@ NAN_METHOD(Browser::UpdateAll) {
       CefDoMessageLoopWork();
       // std::cout << "browser update 2" << std::endl;
     });
+  }
+}
+
+NAN_GETTER(Browser::OnLoadStartGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  Local<Function> onloadstart = Nan::New(browser->onloadstart);
+  info.GetReturnValue().Set(onloadstart);
+}
+NAN_SETTER(Browser::OnLoadStartSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> onloadstart = Local<Function>::Cast(value);
+    browser->onloadstart.Reset(onloadstart);
+  } else {
+    browser->onloadstart.Reset();
+  }
+}
+NAN_GETTER(Browser::OnLoadEndGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  Local<Function> onloadend = Nan::New(browser->onloadend);
+  info.GetReturnValue().Set(onloadend);
+}
+NAN_SETTER(Browser::OnLoadEndSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> onloadend = Local<Function>::Cast(value);
+    browser->onloadend.Reset(onloadend);
+  } else {
+    browser->onloadend.Reset();
+  }
+}
+NAN_GETTER(Browser::OnLoadErrorGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  Local<Function> onloaderror = Nan::New(browser->onloaderror);
+  info.GetReturnValue().Set(onloaderror);
+}
+NAN_SETTER(Browser::OnLoadErrorSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> onloaderror = Local<Function>::Cast(value);
+    browser->onloaderror.Reset(onloaderror);
+  } else {
+    browser->onloaderror.Reset();
   }
 }
 
