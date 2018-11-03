@@ -117,11 +117,30 @@ private:
   IMPLEMENT_REFCOUNTING(RenderHandler);
 };
 
+/* // LifeSpanHandler
+
+class LifeSpanHandler : public CefLifeSpanHandlerHandler {
+public:
+	LifeSpanHandler(std::function<void(CefRefPtr<CefBrowser>)> onBeforeClose);
+  ~LifeSpanHandler();
+
+
+	// CefLifeSpanHandlerHandler interface
+	virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser);
+
+// protected:
+  std::function<void(CefRefPtr<CefBrowser>)> onBeforeClose;
+
+	// CefBase interface
+private:
+  IMPLEMENT_REFCOUNTING(LifeSpanHandler);
+}; */
+
 // BrowserClient
 
 class BrowserClient : public CefClient {
 public:
-	BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler);
+	BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler/*, LifeSpanHandler *lifespanHandler*/);
   ~BrowserClient();
   
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override {
@@ -133,10 +152,14 @@ public:
 	virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override {
 		return m_renderHandler;
 	}
+  /* virtual CefRefPtr<CefLifeSpanHandler>	GetLifeSpanHandler() override {
+    return m_lifespanHandler;
+  } */
 
-	CefRefPtr<CefLoadHandler> m_loadHandler;
-	CefRefPtr<CefDisplayHandler> m_displayHandler;
-	CefRefPtr<CefRenderHandler> m_renderHandler;
+	CefRefPtr<LoadHandler> m_loadHandler;
+	CefRefPtr<DisplayHandler> m_displayHandler;
+	CefRefPtr<RenderHandler> m_renderHandler;
+	// CefRefPtr<LifeSpanHandler> m_lifespanHandler;
 
 private:
 	IMPLEMENT_REFCOUNTING(BrowserClient);
@@ -154,10 +177,8 @@ protected:
 
   static NAN_METHOD(New);
   static NAN_METHOD(UpdateAll);
-  static NAN_GETTER(WidthGetter);
-  static NAN_SETTER(WidthSetter);
-  static NAN_GETTER(HeightGetter);
-  static NAN_SETTER(HeightSetter);
+  static NAN_METHOD(Load);
+  static NAN_METHOD(Resize);
   static NAN_GETTER(OnLoadStartGetter);
   static NAN_SETTER(OnLoadStartSetter);
   static NAN_GETTER(OnLoadEndGetter);
@@ -181,16 +202,18 @@ protected:
   static NAN_METHOD(RunJs);
   static NAN_METHOD(PostMessage);
   static NAN_GETTER(TextureGetter);
+  void load(const std::string &url);
+  void loadImmediate(const std::string &url);
   void resize(int w, int h);
 protected:
   WebGLRenderingContext *gl;
   GLuint tex;
   bool initialized;
   
-  std::unique_ptr<LoadHandler> load_handler_;
-  std::unique_ptr<DisplayHandler> display_handler_;
-  std::unique_ptr<RenderHandler> render_handler_;
-  std::unique_ptr<BrowserClient> client_;
+  /* LoadHandler *load_handler_;
+  DisplayHandler *display_handler_;
+  RenderHandler *render_handler_; */
+  // std::map<CefBrowser *, BrowserClient *> clients;
   CefRefPtr<CefBrowser> browser_;
   
   Nan::Persistent<Function> onloadstart;
