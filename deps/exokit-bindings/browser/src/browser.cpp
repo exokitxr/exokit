@@ -228,7 +228,6 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
         }
       )
     );
-    render_handler_->resize(128, 128);
 
     CefWindowInfo window_info;
     window_info.SetAsWindowless(nullptr);
