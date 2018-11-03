@@ -68,7 +68,7 @@ void LoadHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame>
 
 // DisplayHandler
 
-DisplayHandler::DisplayHandler(std::function<void(const std::string &, const std::string &, int)> onConsole) : onConsole(onConsole) {}
+DisplayHandler::DisplayHandler(std::function<void(const std::string &, const std::string &, int)> onConsole, std::function<void(const std::string &)> onMessage) : onConsole(onConsole), onMessage(onMessage) {}
 
 DisplayHandler::~DisplayHandler() {}
 
@@ -161,6 +161,19 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
                 JS_INT(startLine),
               };
               onconsole->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+            }
+          });
+        },
+        [this](const std::string &m) -> void {
+          RunOnMainThread([&]() -> void {
+            Nan::HandleScope scope;
+            
+            if (!this->onmessage.IsEmpty()) {
+              Local<Function> onmessage = Nan::New(this->onmessage);
+              Local<Value> argv[] = {
+                JS_STR(m),
+              };
+              onmessage->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
             }
           });
         }
