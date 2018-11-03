@@ -458,6 +458,20 @@ NAN_METHOD(Browser::Reload) {
   });
 }
 
+
+int GetMouseButton(int button){
+  int mouseButton = CefBrowserHost::MouseButtonType::MBT_LEFT;
+  switch(button){
+	case 1:
+	  mouseButton = CefBrowserHost::MouseButtonType::MBT_MIDDLE;
+	  break;
+	case 2:
+	  mouseButton = CefBrowserHost::MouseButtonType::MBT_RIGHT;
+	  break;
+  }
+  return mouseButton
+}
+
 NAN_METHOD(Browser::SendMouseMove) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
@@ -478,10 +492,11 @@ NAN_METHOD(Browser::SendMouseMove) {
 }
 
 NAN_METHOD(Browser::SendMouseDown) {
-  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int x = info[0]->Int32Value();
     int y = info[1]->Int32Value();
+    int button = info[2]->Int32Value();
     CefBrowser *cefBrowser = browser->browser_.get();
     
     QueueOnBrowserThread([x, y, cefBrowser]() -> void {
@@ -489,7 +504,7 @@ NAN_METHOD(Browser::SendMouseDown) {
       evt.x = x;
       evt.y = y;
 
-      cefBrowser->GetHost()->SendMouseClickEvent(evt, CefBrowserHost::MouseButtonType::MBT_LEFT, false, 1);
+      cefBrowser->GetHost()->SendMouseClickEvent(evt, GetMouseButton(button), false, 1);
     });
   } else {
     return Nan::ThrowError("Browser::SendMouseDown: invalid arguments");
@@ -497,18 +512,19 @@ NAN_METHOD(Browser::SendMouseDown) {
 }
 
 NAN_METHOD(Browser::SendMouseUp) {
-  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int x = info[0]->Int32Value();
     int y = info[1]->Int32Value();
+    int button = info[2]->Int32Value();
     CefBrowser *cefBrowser = browser->browser_.get();
     
     QueueOnBrowserThread([x, y, cefBrowser]() -> void {
       CefMouseEvent evt;
       evt.x = x;
       evt.y = y;
-
-      cefBrowser->GetHost()->SendMouseClickEvent(evt, CefBrowserHost::MouseButtonType::MBT_LEFT, true, 1);
+	  
+      cefBrowser->GetHost()->SendMouseClickEvent(evt, GetMouseButton(button), true, 1);
     });
   } else {
     return Nan::ThrowError("Browser::SendMouseUp: invalid arguments");
@@ -522,6 +538,7 @@ NAN_METHOD(Browser::SendMouseWheel) {
     int y = info[1]->Int32Value();
     int deltaX = info[2]->Int32Value();
     int deltaY = info[3]->Int32Value();
+	
     CefBrowser *cefBrowser = browser->browser_.get();
     
     QueueOnBrowserThread([x, y, deltaX, deltaY, cefBrowser]() -> void {
@@ -536,10 +553,37 @@ NAN_METHOD(Browser::SendMouseWheel) {
   }
 }
 
+int GetKeyModifiers(Local<Object> modifiersObj){
+	int modifiers = 0;
+	if(modifiersObj->Get(JS_BOOL("caps_lock")))
+		modifiers |= EVENTFLAG_CAPS_LOCK_ON;
+	
+	if(modifiersObj->Get(JS_BOOL("num_lock")))
+		modifiers |= EVENTFLAG_NUM_LOCK_ON;
+	
+	if(modifiersObj->Get(JS_BOOL("control")))
+		modifiers |= EVENTFLAG_CONTROL_DOWN;// EVENTFLAG_COMMAND_DOWN  for mac?
+	
+	if(modifiersObj->Get(JS_BOOL("alt")))
+		modifiers |= EVENTFLAG_ALT_DOWN;
+	
+	if(modifiersObj->Get(JS_BOOL("shift")))
+		modifiers |= EVENTFLAG_SHIFT_DOWN;
+	//EVENTFLAG_IS_RIGHT - do we need to specify the side for this? 
+	//EVENTFLAG_IS_LEFT
+	
+	if(modifiersObj->Get(JS_BOOL("pad")))
+		modifiers |= EVENTFLAG_IS_KEY_PAD;
+	
+	return modifiers;
+}
+
+
 NAN_METHOD(Browser::SendKeyDown) {
-  if (info[0]->IsNumber()) {
+  if (info[0]->IsNumber() && info[1]->IsObject()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int key = info[0]->Int32Value();
+	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
     CefBrowser *cefBrowser = browser->browser_.get();
     
     QueueOnBrowserThread([key, cefBrowser]() -> void {
@@ -548,7 +592,7 @@ NAN_METHOD(Browser::SendKeyDown) {
       evt.character = key;
       evt.native_key_code = key;
       evt.windows_key_code = key;
-
+	  evt.modifiers = GetKeyModifiers(modifiersObj);
       cefBrowser->GetHost()->SendKeyEvent(evt);
     });
   } else {
@@ -557,9 +601,10 @@ NAN_METHOD(Browser::SendKeyDown) {
 }
 
 NAN_METHOD(Browser::SendKeyUp) {
-  if (info[0]->IsNumber()) {
+  if (info[0]->IsNumber() && info[1]->IsObject()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int key = info[0]->Int32Value();
+	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
     CefBrowser *cefBrowser = browser->browser_.get();
     
     QueueOnBrowserThread([key, cefBrowser]() -> void {
@@ -568,7 +613,7 @@ NAN_METHOD(Browser::SendKeyUp) {
       evt.character = key;
       evt.native_key_code = key;
       evt.windows_key_code = key;
-
+	  evt.modifiers = GetKeyModifiers(modifiersObj);
       cefBrowser->GetHost()->SendKeyEvent(evt);
     });
 
@@ -578,9 +623,10 @@ NAN_METHOD(Browser::SendKeyUp) {
 }
 
 NAN_METHOD(Browser::SendKeyPress) {
-  if (info[0]->IsNumber()) {
+  if (info[0]->IsNumber() && info[1]->IsObject()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int key = info[0]->Uint32Value();
+	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
     CefBrowser *cefBrowser = browser->browser_.get();
     
     QueueOnBrowserThread([key, cefBrowser]() -> void {
@@ -589,7 +635,7 @@ NAN_METHOD(Browser::SendKeyPress) {
       evt.character = key;
       evt.native_key_code = key;
       evt.windows_key_code = key;
-
+	  evt.modifiers = GetKeyModifiers(modifiersObj);
       cefBrowser->GetHost()->SendKeyEvent(evt);
     });
 
