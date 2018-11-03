@@ -76,12 +76,12 @@ private:
 
 class DisplayHandler : public CefDisplayHandler {
 public:
-	DisplayHandler(std::function<void(const std::string &, const std::string &, int)> onConsole);
+	DisplayHandler(std::function<void(const std::string &, const std::string &, int)> onConsole, std::function<void(const std::string &)> onMessage);
   ~DisplayHandler();
 
 	// CefRenderHandler interface
 public:
-	virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message ,const CefString &source, int line) override;
+	virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message, const CefString &source, int line) override;
 
 	// CefBase interface
 private:
@@ -89,6 +89,7 @@ private:
 
 private:
   std::function<void(const std::string &, const std::string &, int)> onConsole;
+  std::function<void(const std::string &)> onMessage;
 };
 
 // RenderHandler
@@ -193,6 +194,7 @@ protected:
   Nan::Persistent<Function> onloadend;
   Nan::Persistent<Function> onloaderror;
   Nan::Persistent<Function> onconsole;
+  Nan::Persistent<Function> onmessage;
 };
 
 // helpers
