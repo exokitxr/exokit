@@ -237,7 +237,6 @@ void Browser::loadImmediate(const std::string &url) {
   if (browser_) {
     browser_->GetHost()->CloseBrowser(true);
     browser_ = nullptr;
-    // client_.reset();
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
@@ -344,30 +343,16 @@ void Browser::loadImmediate(const std::string &url) {
     }
   );
   
-  /* LifeSpanHandler *lifespan_handler = new LifeSpanHandler(
-    [this](CefRefPtr<CefBrowser> browser) -> void {
-      RunOnMainThread([&]() -> void {
-        CefBrowser *browserPtr = browser.get();
-        BrowserClient *client = this->clients[browserPtr];
-        this->clients.erase(browserPtr);
-        delete client; // XXX
-      });
-    }
-  ); */
-  
   CefWindowInfo window_info;
   window_info.SetAsWindowless(nullptr);
   CefBrowserSettings browserSettings;
   // browserSettings.windowless_frame_rate = 60; // 30 is default
-  BrowserClient *client = new BrowserClient(load_handler_, display_handler_, render_handler_/*, lifespan_handler_*/);
+  BrowserClient *client = new BrowserClient(load_handler_, display_handler_, render_handler_);
   
   browser_ = CefBrowserHost::CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
-  
-  // clients[browser_.get()] = client;
 }
 
 void Browser::resize(int w, int h) {
-	// client_->m_renderHandler->resize(w, h);
   ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->resize(w, h);
 	browser_->GetHost()->WasResized();
 }
