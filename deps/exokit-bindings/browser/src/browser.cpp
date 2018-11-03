@@ -87,7 +87,7 @@ bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_sev
 
 // RenderHandler
 
-RenderHandler::RenderHandler(OnPaintFn onPaint) : onPaint(onPaint), width(2), height(2) {}
+RenderHandler::RenderHandler(OnPaintFn onPaint) : onPaint(onPaint), width(1280), height(1024) {}
 
 RenderHandler::~RenderHandler() {}
 
