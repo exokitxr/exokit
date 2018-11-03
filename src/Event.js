@@ -231,10 +231,14 @@ class DragEvent extends MouseEvent {
 module.exports.DragEvent = DragEvent;
 
 class MessageEvent extends Event {
-  constructor(data) {
-    super('message');
+  constructor(type, init = {}) {
+    super(type, init);
 
-    this.data = data;
+    MessageEvent.prototype.init.call(this, init);
+  }
+  
+  init(init = {}) {
+    this.data = init.data !== undefined ? init.data : null;
   }
 }
 module.exports.MessageEvent = MessageEvent;

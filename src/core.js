@@ -1468,7 +1468,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.postMessage = function(data) {
     setImmediate(() => {
-      window._emit('message', new MessageEvent(data));
+      window._emit('message', new MessageEvent('message', {data}));
     });
   };
   /*
