@@ -614,7 +614,11 @@ NAN_METHOD(Browser::RunJs) {
     
     QueueOnBrowserThread([jsString, scriptUrl, startLine, cefBrowser]() -> void {
       cefBrowser->GetMainFrame()->ExecuteJavaScript(CefString(jsString), CefString(scriptUrl), startLine);
+      
+      uv_sem_post(&constructSem);
     });
+    
+    uv_sem_wait(&constructSem);
   } else {
     return Nan::ThrowError("Browser::RunJs: invalid arguments");
   }
