@@ -183,6 +183,7 @@ protected:
   static NAN_GETTER(TextureGetter);
   void resize(int w, int h);
 protected:
+  WebGLRenderingContext *gl;
   GLuint tex;
   bool initialized;
   
