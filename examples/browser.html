@@ -171,7 +171,7 @@ function init() {
     const coord = planeMesh.projectMouse(e.clientX, e.clientY);
 
     if (coord) {
-      iframe.sendMouseDown(coord.x, coord.y);
+      iframe.sendMouseDown(coord.x, coord.y,0); //button 0 - left , 1 middle, 2 - right
 
       focused = true;
     } else {
@@ -182,7 +182,7 @@ function init() {
     const coord = planeMesh.projectMouse(e.clientX, e.clientY);
 
     if (coord) {
-      iframe.sendMouseUp(coord.x, coord.y);
+      iframe.sendMouseUp(coord.x, coord.y,0);
     }
   });
   window.addEventListener('wheel', e => {
@@ -197,13 +197,13 @@ function init() {
       } else if (e.keyCode === 39 && e.altKey) { // Alt-Right
         iframe.forward();
       } else {
-        iframe.sendKeyDown(e.keyCode);
+        iframe.sendKeyDown(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
       }
     }
   });
   window.addEventListener('keyup', e => {
     if (focused) {
-      iframe.sendKeyUp(e.keyCode);
+      iframe.sendKeyUp(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
     }
   });
   window.addEventListener('keypress', e => {
@@ -211,7 +211,7 @@ function init() {
       if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
         iframe.reload();
       } else {
-        iframe.sendKeyPress(e.keyCode);
+        iframe.sendKeyPress(e.keyCode,{shiftKey:false,ctrlKey:false,altKey:false});
       }
     }
   });
