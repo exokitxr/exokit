@@ -117,30 +117,11 @@ private:
   IMPLEMENT_REFCOUNTING(RenderHandler);
 };
 
-/* // LifeSpanHandler
-
-class LifeSpanHandler : public CefLifeSpanHandlerHandler {
-public:
-	LifeSpanHandler(std::function<void(CefRefPtr<CefBrowser>)> onBeforeClose);
-  ~LifeSpanHandler();
-
-
-	// CefLifeSpanHandlerHandler interface
-	virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser);
-
-// protected:
-  std::function<void(CefRefPtr<CefBrowser>)> onBeforeClose;
-
-	// CefBase interface
-private:
-  IMPLEMENT_REFCOUNTING(LifeSpanHandler);
-}; */
-
 // BrowserClient
 
 class BrowserClient : public CefClient {
 public:
-	BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler/*, LifeSpanHandler *lifespanHandler*/);
+	BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler/);
   ~BrowserClient();
   
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override {
@@ -152,14 +133,10 @@ public:
 	virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override {
 		return m_renderHandler;
 	}
-  /* virtual CefRefPtr<CefLifeSpanHandler>	GetLifeSpanHandler() override {
-    return m_lifespanHandler;
-  } */
 
 	CefRefPtr<LoadHandler> m_loadHandler;
 	CefRefPtr<DisplayHandler> m_displayHandler;
 	CefRefPtr<RenderHandler> m_renderHandler;
-	// CefRefPtr<LifeSpanHandler> m_lifespanHandler;
 
 private:
 	IMPLEMENT_REFCOUNTING(BrowserClient);
