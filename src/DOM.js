@@ -1984,6 +1984,23 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     });
   }
   
+  get width() {
+    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+  }
+  set width(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('width', value);
+    }
+  }
+  get height() {
+    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
+  }
+  set height(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('height', value);
+    }
+  }
+  
   get texture() {
     if (this.d === 2) {
       return this.browser && this.browser.texture;
