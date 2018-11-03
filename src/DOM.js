@@ -1840,66 +1840,70 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (async () => {
             if (this.d === 2) {
-              const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
-              if (context) {
-                const browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
-                this.browser = browser;
+              if (!this.browser) {
+                const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+                if (context) {
+                  const browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
+                  this.browser = browser;
 
-                let done = false, err = null;
-                const _makeLoadError = () => new Error('failed to load page');
-                this.browser.onloadend = () => {
-                  done = true;
-                };
-                this.browser.onloaderror = () => {
-                  done = true;
-                  err = _makeLoadError();
-                };
-                this.browser.onconsole = (message, source, line) => {
-                  this.onconsole && this.onconsole(message, source, line);
-                };
-                await new Promise((accept, reject) => {
-                  if (!done) {
-                    this.browser.onloadend = () => {
-                      accept();
-                    };
-                    this.browser.onloaderror = () => {
-                      reject(_makeLoadError());
-                    };
-                  } else {
-                    if (!err) {
-                      accept();
+                  let done = false, err = null;
+                  const _makeLoadError = () => new Error('failed to load page');
+                  this.browser.onloadend = () => {
+                    done = true;
+                  };
+                  this.browser.onloaderror = () => {
+                    done = true;
+                    err = _makeLoadError();
+                  };
+                  this.browser.onconsole = (message, source, line) => {
+                    this.onconsole && this.onconsole(message, source, line);
+                  };
+                  await new Promise((accept, reject) => {
+                    if (!done) {
+                      this.browser.onloadend = () => {
+                        accept();
+                      };
+                      this.browser.onloaderror = () => {
+                        reject(_makeLoadError());
+                      };
                     } else {
-                      reject(err);
+                      if (!err) {
+                        accept();
+                      } else {
+                        reject(err);
+                      }
                     }
-                  }
-                });
-                
-                let onmessage = null;
-                this.contentWindow = {
-                  postMessage(m) {
-                    browser.postMessage(JSON.stringify(m));
-                  },
-                  get onmessage() {
-                    return onmessage;
-                  },
-                  set onmessage(newOnmessage) {
-                    onmessage = newOnmessage;
-                    browser.onmessage = newOnmessage ? m => {
-                      newOnmessage(new MessageEvent('messaage', {
-                        data: JSON.parse(m),
-                      }));
-                    } : null;
-                  },
-                };
-                this.contentDocument = {};
+                  });
+                  
+                  let onmessage = null;
+                  this.contentWindow = {
+                    postMessage(m) {
+                      browser.postMessage(JSON.stringify(m));
+                    },
+                    get onmessage() {
+                      return onmessage;
+                    },
+                    set onmessage(newOnmessage) {
+                      onmessage = newOnmessage;
+                      browser.onmessage = newOnmessage ? m => {
+                        newOnmessage(new MessageEvent('messaage', {
+                          data: JSON.parse(m),
+                        }));
+                      } : null;
+                    },
+                  };
+                  this.contentDocument = {};
 
-                this.readyState = 'complete';
-                
-                this.dispatchEvent(new Event('load', {target: this}));
+                  this.readyState = 'complete';
+                  
+                  this.dispatchEvent(new Event('load', {target: this}));
 
-                cb();
+                  cb();
+                } else {
+                  throw new Error('iframe owner document does not have a WebGL context');
+                }
               } else {
-                throw new Error('iframe owner document does not have a WebGL context');
+                this.browser.load(url);
               }
             } else {
               const res = await this.ownerDocument.defaultView.fetch(url);
