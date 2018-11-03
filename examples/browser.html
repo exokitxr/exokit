@@ -47,9 +47,14 @@ function init() {
   iframe.d = 2;
   iframe.src = 'https://google.com';
   iframe.onload = () => {
+    iframe.contentWindow.onmessage = m => {
+      console.log('got message', m);
+    };
+
     iframe.runJs(`
       document.body.style.background = '#000080';
-      console.log('run js log');
+      console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
+      window.postMessage({lol: 'zol'});
     `);
   };
   iframe.onconsole = (message, source, line) => {
