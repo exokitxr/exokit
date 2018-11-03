@@ -630,9 +630,13 @@ NAN_METHOD(Browser::SendKeyPress) {
 	
 	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
 	int modifiers = GetKeyModifiers(modifiersObj);
-	if(modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()){
-		key = key + 32;
-	}
+	if (
+      modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue() &&
+      key >= 97 && // a
+      key <= 122 // z
+    ) {
+      key -= 32;
+    }
     CefBrowser *cefBrowser = browser->browser_.get();
     
     QueueOnBrowserThread([key, modifiers, cefBrowser]() -> void {
