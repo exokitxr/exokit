@@ -624,8 +624,8 @@ NAN_METHOD(Browser::RunJs) {
   }
 }
 
-const char *postMessagePrefix = "window.dispatchEvent(new MessageEvent('message', {data: JSON.parse(\"";
-const char *postMessageSuffix = "\")}));";
+const char *postMessagePrefix = "window.dispatchEvent(new MessageEvent('message', {data: ";
+const char *postMessageSuffix = "}));";
 NAN_METHOD(Browser::PostMessage) {
   if (info[0]->IsString()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
