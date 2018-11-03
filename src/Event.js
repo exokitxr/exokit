@@ -114,14 +114,13 @@ class KeyboardEvent extends Event {
     if (init.key === undefined || init.code === undefined) {
       const keySpec = findKeySpecByKeyCode(init.keyCode);
       if (keySpec) {
-		  
+		const isAlphaCap = isCapsLock && init.keyCode >= 65 && init.keyCode <= 90; 
 	    if ( init.shiftKey ) {
-		  init.key = isCapsLock ? keySpec.key : keySpec.shiftKey;
+		  init.key = isAlphaCap ? keySpec.key : keySpec.shiftKey;
 		} else {
-		  init.key = isCapsLock ? keySpec.shiftKey : keySpec.key;
+		  init.key = isAlphaCap ? keySpec.shiftKey : keySpec.key;
 		}
-		
-        init.code = /^[a-z]$/i.test(keySpec.key) ? ('Key' + keySpec.key.toUpperCase()) : keySpec.key;
+        init.code = keySpec.code; // /^[a-z]$/i.test(keySpec.key) ? ('Key' + keySpec.key.toUpperCase()) : keySpec.key;
       }
     }
 
