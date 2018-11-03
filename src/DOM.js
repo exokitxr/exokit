@@ -9,7 +9,7 @@ const util = require('util');
 
 const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
-const {Event, EventTarget, MouseEvent, ErrorEvent} = require('./Event');
+const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const urls = require('./urls').urls;
@@ -1885,7 +1885,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   set onmessage(newOnmessage) {
                     onmessage = newOnmessage;
                     browser.onmessage = newOnmessage ? m => {
-                      newOnmessage(JSON.parse(m));
+                      newOnmessage(new MessageEvent('messaage', {
+                        data: JSON.parse(m),
+                      }));
                     } : null;
                   },
                 };
