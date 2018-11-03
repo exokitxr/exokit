@@ -72,8 +72,15 @@ DisplayHandler::DisplayHandler(std::function<void(const std::string &, const std
 
 DisplayHandler::~DisplayHandler() {}
 
+const std::string postMessageConsolePrefix("<postMessage>");
 bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message, const CefString &source, int line) {
-  onConsole(message.ToString(), source.length() > 0 ? source.ToString() : std::string("<unknown>"), line);
+  std::string m = message.ToString();
+  
+  if (!m.compare(0, postMessageConsolePrefix.size(), postMessageConsolePrefix)) {
+    onMessage(m.substr(postMessageConsolePrefix.size()));
+  } else {
+    onConsole(m, source.length() > 0 ? source.ToString() : std::string("<unknown>"), line);
+  }
   
   return true;
 }
@@ -115,6 +122,8 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
     load_handler_.reset(
       new LoadHandler(
         [this]() -> void {
+          browser_->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
+          
           RunOnMainThread([&]() -> void {
             Nan::HandleScope scope;
             
