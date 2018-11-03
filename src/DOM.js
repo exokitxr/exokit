@@ -1872,6 +1872,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     }
                   }
                 });
+                
+                this.contentWindow = {
+                  postMessage(m) {
+                    this.browser.postMessage(JSON.stringify(m));
+                  },
+                };
+                this.contentDocument = {};
 
                 this.readyState = 'complete';
                 
