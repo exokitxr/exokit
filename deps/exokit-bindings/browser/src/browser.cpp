@@ -238,7 +238,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
     
     browser_ = CefBrowserHost::CreateBrowserSync(window_info, client_.get(), url, browserSettings, nullptr);
     
-    this->reshape(width, height);
+    this->resize(width, height);
     
     uv_sem_post(&constructSem);
   });
@@ -338,7 +338,7 @@ NAN_METHOD(Browser::New) {
   }
 }
 
-void Browser::reshape(int w, int h) {
+void Browser::resize(int w, int h) {
 	render_handler_->resize(w, h);
 	browser_->GetHost()->WasResized();
 }
@@ -351,6 +351,29 @@ NAN_METHOD(Browser::UpdateAll) {
       // std::cout << "browser update 2" << std::endl;
     });
   }
+}
+
+NAN_GETTER(Browser::WidthGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  info.GetReturnValue().Set(JS_INT(browser->render_handler_->width));
+}
+NAN_SETTER(Browser::WidthSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+
+  int width = value->Int32Value();
+  int height = browser->render_handler_->height;
+  browser->resize(width, height);
+}
+NAN_GETTER(Browser::HeightGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  info.GetReturnValue().Set(JS_INT(browser->render_handler_->height));
+}
+NAN_SETTER(Browser::HeightSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+
+  int width = browser->render_handler_->width;
+  int height = value->Int32Value();
+  browser->resize(width, height);
 }
 
 NAN_GETTER(Browser::OnLoadStartGetter) {
