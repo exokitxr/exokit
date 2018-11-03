@@ -1969,6 +1969,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         } else {
           this.d = null;
         }
+      } else if (name === 'width' || name === 'height') {
+        if (this.browser) {
+          this.browser.resize(this.width, this.height);
+        }
       }
     });
     this.on('destroy', () => {
