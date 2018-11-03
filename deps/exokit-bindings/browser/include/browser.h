@@ -98,25 +98,23 @@ class RenderHandler : public CefRenderHandler {
 public:
   typedef std::function<void(const RectList &, const void *, int, int)> OnPaintFn;
   
-public:
 	RenderHandler(OnPaintFn onPaint);
   ~RenderHandler();
 
 	void resize(int w, int h);
 
 	// CefRenderHandler interface
-public:
 	virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
 	virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects, const void *buffer, int width, int height) override;
+
+// protected:
+  int width;
+	int height;
+  std::function<void(const RectList &, const void *, int, int)> onPaint;
 
 	// CefBase interface
 private:
   IMPLEMENT_REFCOUNTING(RenderHandler);
-
-private:
-  int width;
-	int height;
-  std::function<void(const RectList &, const void *, int, int)> onPaint;
 };
 
 // BrowserClient
@@ -156,6 +154,10 @@ protected:
 
   static NAN_METHOD(New);
   static NAN_METHOD(UpdateAll);
+  static NAN_GETTER(WidthGetter);
+  static NAN_SETTER(WidthSetter);
+  static NAN_GETTER(HeightGetter);
+  static NAN_SETTER(HeightSetter);
   static NAN_GETTER(OnLoadStartGetter);
   static NAN_SETTER(OnLoadStartSetter);
   static NAN_GETTER(OnLoadEndGetter);
@@ -179,7 +181,7 @@ protected:
   static NAN_METHOD(RunJs);
   static NAN_METHOD(PostMessage);
   static NAN_GETTER(TextureGetter);
-  void reshape(int w, int h);
+  void resize(int w, int h);
 protected:
   GLuint tex;
   bool initialized;
