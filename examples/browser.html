@@ -48,14 +48,25 @@ function init() {
   iframe.src = 'https://google.com';
   iframe.onload = () => {
     iframe.contentWindow.onmessage = m => {
-      console.log('got message', m);
+      console.log('parent got message: ' + JSON.stringify(m.data));
     };
 
     iframe.runJs(`
       document.body.style.background = '#000080';
-      console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
+      // console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
+
+      window.onmessage = m => {
+        console.log('child got message: ' + JSON.stringify(m.data));
+      };
+
       window.postMessage({lol: 'zol'});
     `);
+
+    console.log('post message 1');
+    iframe.contentWindow.postMessage({
+      woot: 'toot',
+    });
+    console.log('post message 2');
   };
   iframe.onconsole = (message, source, line) => {
     console.log(source + ':' + line + ': ' + message);
