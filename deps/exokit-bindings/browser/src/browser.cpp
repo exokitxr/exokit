@@ -560,19 +560,15 @@ int GetKeyModifiers(Local<Object> modifiersObj){
   int modifiers = 0;
   if(modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()){
     modifiers |= EVENTFLAG_SHIFT_DOWN;
-	std::cout << "shiftKey" << std::endl;
   }
   
   if(modifiersObj->Get(JS_STR("ctrlKey"))->BooleanValue()){
     modifiers |= EVENTFLAG_CONTROL_DOWN;// EVENTFLAG_COMMAND_DOWN  for mac?
-	std::cout << "ctrlKey" << std::endl;
   }
 	
   if(modifiersObj->Get(JS_STR("altKey"))->BooleanValue()){
     modifiers |= EVENTFLAG_ALT_DOWN;
-	std::cout << "altKey" << std::endl;
   }
-  std::cout << "modifiers " << modifiers << std::endl;
   return modifiers;
 }
 
