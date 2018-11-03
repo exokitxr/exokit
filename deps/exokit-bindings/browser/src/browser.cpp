@@ -245,6 +245,7 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("onloadend"), OnLoadEndGetter, OnLoadEndSetter);
   Nan::SetAccessor(proto, JS_STR("onloaderror"), OnLoadErrorGetter, OnLoadErrorSetter);
   Nan::SetAccessor(proto, JS_STR("onconsole"), OnConsoleGetter, OnConsoleSetter);
+  Nan::SetAccessor(proto, JS_STR("onmessage"), OnMessageGetter, OnMessageSetter);
   Nan::SetMethod(proto, "back", Back);
   Nan::SetMethod(proto, "forward", Forward);
   Nan::SetMethod(proto, "reload", Reload);
@@ -256,6 +257,7 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "sendKeyUp", SendKeyUp);
   Nan::SetMethod(proto, "sendKeyPress", SendKeyPress);
   Nan::SetMethod(proto, "runJs", RunJs);
+  Nan::SetMethod(proto, "postMessage", PostMessage);
 
   Local<Function> ctorFn = ctor->GetFunction();
   Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
@@ -388,6 +390,22 @@ NAN_SETTER(Browser::OnConsoleSetter) {
     browser->onconsole.Reset(onconsole);
   } else {
     browser->onconsole.Reset();
+  }
+}
+
+NAN_GETTER(Browser::OnMessageGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  Local<Function> onmessage = Nan::New(browser->onmessage);
+  info.GetReturnValue().Set(onmessage);
+}
+NAN_SETTER(Browser::OnMessageSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> onmessage = Local<Function>::Cast(value);
+    browser->onmessage.Reset(onmessage);
+  } else {
+    browser->onmessage.Reset();
   }
 }
 
@@ -575,6 +593,28 @@ NAN_METHOD(Browser::RunJs) {
     
     QueueOnBrowserThread([jsString, scriptUrl, startLine, cefBrowser]() -> void {
       cefBrowser->GetMainFrame()->ExecuteJavaScript(CefString(jsString), CefString(scriptUrl), startLine);
+    });
+  } else {
+    return Nan::ThrowError("Browser::RunJs: invalid arguments");
+  }
+}
+
+const char *postMessagePrefix = "window.dispatchEvent(new MessageEvent('message', {data: JSON.parse(\"";
+const char *postMessageSuffix = "\")}));";
+NAN_METHOD(Browser::PostMessage) {
+  if (info[0]->IsString()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    
+    String::Utf8Value messageJsonValue(Local<String>::Cast(info[0]));
+    string messageJson(*messageJsonValue, messageJsonValue.length());
+    
+    CefBrowser *cefBrowser = browser->browser_.get();
+    
+    QueueOnBrowserThread([messageJson, cefBrowser]() -> void {
+      std::string jsString(postMessagePrefix);
+      jsString += messageJson;
+      jsString += postMessageSuffix;
+      cefBrowser->GetMainFrame()->ExecuteJavaScript(CefString(jsString), CefString("<postMessage>"), 1);
     });
   } else {
     return Nan::ThrowError("Browser::RunJs: invalid arguments");

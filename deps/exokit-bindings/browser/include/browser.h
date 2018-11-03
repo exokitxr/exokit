@@ -163,6 +163,8 @@ protected:
   static NAN_SETTER(OnLoadErrorSetter);
   static NAN_GETTER(OnConsoleGetter);
   static NAN_SETTER(OnConsoleSetter);
+  static NAN_GETTER(OnMessageGetter);
+  static NAN_SETTER(OnMessageSetter);
   static NAN_METHOD(Back);
   static NAN_METHOD(Forward);
   static NAN_METHOD(Reload);
@@ -174,6 +176,7 @@ protected:
   static NAN_METHOD(SendKeyUp);
   static NAN_METHOD(SendKeyPress);
   static NAN_METHOD(RunJs);
+  static NAN_METHOD(PostMessage);
   static NAN_GETTER(TextureGetter);
   void reshape(int w, int h);
 protected:
