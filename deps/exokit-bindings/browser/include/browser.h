@@ -121,7 +121,7 @@ private:
 
 class BrowserClient : public CefClient {
 public:
-	BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler/);
+	BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler);
   ~BrowserClient();
   
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override {
