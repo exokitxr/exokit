@@ -2023,7 +2023,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.setAttribute('scale', scale);
   }
   
-  back() {
+  back() { // XXX should use native navigation APIs for these
     this.browser && this.browser.back();
   }
   forward() {
