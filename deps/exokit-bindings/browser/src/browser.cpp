@@ -529,7 +529,6 @@ NAN_METHOD(Browser::SendKeyDown) {
 
       cefBrowser->GetHost()->SendKeyEvent(evt);
     });
-
   } else {
     return Nan::ThrowError("Browser::SendKeyDown: invalid arguments");
   }
