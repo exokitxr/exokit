@@ -107,7 +107,8 @@ void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type
 
 // BrowserClient
 
-BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler) : m_loadHandler(loadHandler), m_displayHandler(displayHandler), m_renderHandler(renderHandler) {}
+BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler/*, LifeSpanHandler *lifespanHandler*/) :
+  m_loadHandler(loadHandler), m_displayHandler(displayHandler), m_renderHandler(renderHandler)/*, m_lifespanHandler(lifespanHandler)*/ {}
 
 BrowserClient::~BrowserClient() {}
 
@@ -119,124 +120,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
   glGenTextures(1, &tex);
 
   QueueOnBrowserThread([&]() -> void {
-    load_handler_.reset(
-      new LoadHandler(
-        [this]() -> void {
-          browser_->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
-          
-          RunOnMainThread([&]() -> void {
-            Nan::HandleScope scope;
-            
-            if (!this->onloadstart.IsEmpty()) {
-              Local<Function> onloadstart = Nan::New(this->onloadstart);
-              onloadstart->Call(Nan::Null(), 0, nullptr);
-            }
-          });
-        },
-        [this]() -> void {
-          RunOnMainThread([&]() -> void {
-            Nan::HandleScope scope;
-            
-            if (!this->onloadend.IsEmpty()) {
-              Local<Function> onloadend = Nan::New(this->onloadend);
-              onloadend->Call(Nan::Null(), 0, nullptr);
-            }
-          });
-        },
-        [this]() -> void {
-          RunOnMainThread([&]() -> void {
-            Nan::HandleScope scope;
-            
-            if (!this->onloaderror.IsEmpty()) {
-              Local<Function> onloaderror = Nan::New(this->onloaderror);
-              onloaderror->Call(Nan::Null(), 0, nullptr);
-            }
-          });
-        }
-      )
-    );
-    
-    display_handler_.reset(
-      new DisplayHandler(
-        [this](const std::string &jsString, const std::string &scriptUrl, int startLine) -> void {
-          RunOnMainThread([&]() -> void {
-            Nan::HandleScope scope;
-            
-            if (!this->onconsole.IsEmpty()) {
-              Local<Function> onconsole = Nan::New(this->onconsole);
-              Local<Value> argv[] = {
-                JS_STR(jsString),
-                JS_STR(scriptUrl),
-                JS_INT(startLine),
-              };
-              onconsole->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
-            }
-          });
-        },
-        [this](const std::string &m) -> void {
-          RunOnMainThread([&]() -> void {
-            Nan::HandleScope scope;
-            
-            if (!this->onmessage.IsEmpty()) {
-              Local<Function> onmessage = Nan::New(this->onmessage);
-              Local<Value> argv[] = {
-                JS_STR(m),
-              };
-              onmessage->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
-            }
-          });
-        }
-      )
-    );
-    
-    render_handler_.reset(
-      new RenderHandler(
-        [this, gl](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
-          RunOnMainThread([&]() -> void {
-            ensureCurrentGlWindow(gl);
-            
-            glBindTexture(GL_TEXTURE_2D, this->tex);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
-
-            if (!this->initialized) {
-              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-              glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-              glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-              glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-              glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-
-              this->initialized = true;
-            }
-
-            for (size_t i = 0; i < dirtyRects.size(); i++) {
-              const CefRect &rect = dirtyRects[i];
-              
-              glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
-              glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
-              glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
-            }
-
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-            glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-            glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-            if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-              glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-            } else {
-              glBindTexture(GL_TEXTURE_2D, 0);
-            }
-          });
-        }
-      )
-    );
-
-    CefWindowInfo window_info;
-    window_info.SetAsWindowless(nullptr);
-    CefBrowserSettings browserSettings;
-    // browserSettings.windowless_frame_rate = 60; // 30 is default
-    client_.reset(new BrowserClient(load_handler_.get(), display_handler_.get(), render_handler_.get()));
-    
-    browser_ = CefBrowserHost::CreateBrowserSync(window_info, client_.get(), url, browserSettings, nullptr);
-    
+    this->loadImmediate(url);
     this->resize(width, height);
     
     uv_sem_post(&constructSem);
@@ -262,6 +146,8 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "load", Load);
+  Nan::SetMethod(proto, "resize", Resize);
   Nan::SetAccessor(proto, JS_STR("onloadstart"), OnLoadStartGetter, OnLoadStartSetter);
   Nan::SetAccessor(proto, JS_STR("onloadend"), OnLoadEndGetter, OnLoadEndSetter);
   Nan::SetAccessor(proto, JS_STR("onloaderror"), OnLoadErrorGetter, OnLoadErrorSetter);
@@ -337,8 +223,152 @@ NAN_METHOD(Browser::New) {
   }
 }
 
+void Browser::load(const std::string &url) {
+  QueueOnBrowserThread([&]() -> void {
+    this->loadImmediate(url);
+  
+    uv_sem_post(&constructSem);
+  });
+  
+  uv_sem_wait(&constructSem);
+}
+
+void Browser::loadImmediate(const std::string &url) {
+  if (browser_) {
+    browser_->GetHost()->CloseBrowser(true);
+    browser_ = nullptr;
+    // client_.reset();
+  }
+  
+  LoadHandler *load_handler_ = new LoadHandler(
+    [this]() -> void {
+      browser_->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
+      
+      RunOnMainThread([&]() -> void {
+        Nan::HandleScope scope;
+        
+        if (!this->onloadstart.IsEmpty()) {
+          Local<Function> onloadstart = Nan::New(this->onloadstart);
+          onloadstart->Call(Nan::Null(), 0, nullptr);
+        }
+      });
+    },
+    [this]() -> void {
+      RunOnMainThread([&]() -> void {
+        Nan::HandleScope scope;
+        
+        if (!this->onloadend.IsEmpty()) {
+          Local<Function> onloadend = Nan::New(this->onloadend);
+          onloadend->Call(Nan::Null(), 0, nullptr);
+        }
+      });
+    },
+    [this]() -> void {
+      RunOnMainThread([&]() -> void {
+        Nan::HandleScope scope;
+        
+        if (!this->onloaderror.IsEmpty()) {
+          Local<Function> onloaderror = Nan::New(this->onloaderror);
+          onloaderror->Call(Nan::Null(), 0, nullptr);
+        }
+      });
+    }
+  );
+  
+  DisplayHandler *display_handler_ = new DisplayHandler(
+    [this](const std::string &jsString, const std::string &scriptUrl, int startLine) -> void {
+      RunOnMainThread([&]() -> void {
+        Nan::HandleScope scope;
+        
+        if (!this->onconsole.IsEmpty()) {
+          Local<Function> onconsole = Nan::New(this->onconsole);
+          Local<Value> argv[] = {
+            JS_STR(jsString),
+            JS_STR(scriptUrl),
+            JS_INT(startLine),
+          };
+          onconsole->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+        }
+      });
+    },
+    [this](const std::string &m) -> void {
+      RunOnMainThread([&]() -> void {
+        Nan::HandleScope scope;
+        
+        if (!this->onmessage.IsEmpty()) {
+          Local<Function> onmessage = Nan::New(this->onmessage);
+          Local<Value> argv[] = {
+            JS_STR(m),
+          };
+          onmessage->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+        }
+      });
+    }
+  );
+  
+  RenderHandler *render_handler_ = new RenderHandler(
+    [this](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+      RunOnMainThread([&]() -> void {
+        ensureCurrentGlWindow(this->gl);
+        
+        glBindTexture(GL_TEXTURE_2D, this->tex);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
+
+        if (!this->initialized) {
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+          glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+          glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+          this->initialized = true;
+        }
+
+        for (size_t i = 0; i < dirtyRects.size(); i++) {
+          const CefRect &rect = dirtyRects[i];
+          
+          glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
+          glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
+          glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+        }
+
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+        if (this->gl->HasTextureBinding(this->gl->activeTexture, GL_TEXTURE_2D)) {
+          glBindTexture(GL_TEXTURE_2D, this->gl->GetTextureBinding(this->gl->activeTexture, GL_TEXTURE_2D));
+        } else {
+          glBindTexture(GL_TEXTURE_2D, 0);
+        }
+      });
+    }
+  );
+  
+  /* LifeSpanHandler *lifespan_handler = new LifeSpanHandler(
+    [this](CefRefPtr<CefBrowser> browser) -> void {
+      RunOnMainThread([&]() -> void {
+        CefBrowser *browserPtr = browser.get();
+        BrowserClient *client = this->clients[browserPtr];
+        this->clients.erase(browserPtr);
+        delete client; // XXX
+      });
+    }
+  ); */
+  
+  CefWindowInfo window_info;
+  window_info.SetAsWindowless(nullptr);
+  CefBrowserSettings browserSettings;
+  // browserSettings.windowless_frame_rate = 60; // 30 is default
+  BrowserClient *client = new BrowserClient(load_handler_, display_handler_, render_handler_/*, lifespan_handler_*/);
+  
+  browser_ = CefBrowserHost::CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
+  
+  // clients[browser_.get()] = client;
+}
+
 void Browser::resize(int w, int h) {
-	render_handler_->resize(w, h);
+	// client_->m_renderHandler->resize(w, h);
+  ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->resize(w, h);
 	browser_->GetHost()->WasResized();
 }
 
@@ -352,27 +382,28 @@ NAN_METHOD(Browser::UpdateAll) {
   }
 }
 
-NAN_GETTER(Browser::WidthGetter) {
-  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-  info.GetReturnValue().Set(JS_INT(browser->render_handler_->width));
+NAN_METHOD(Browser::Load) {
+  if (info[0]->IsString()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[0]));
+    std::string url(*urlUtf8Value, urlUtf8Value.length());
+    
+    browser->load(url);
+  } else {
+    return Nan::ThrowError("Browser::Load: invalid arguments");
+  }
 }
-NAN_SETTER(Browser::WidthSetter) {
-  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
 
-  int width = value->Int32Value();
-  int height = browser->render_handler_->height;
-  browser->resize(width, height);
-}
-NAN_GETTER(Browser::HeightGetter) {
-  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-  info.GetReturnValue().Set(JS_INT(browser->render_handler_->height));
-}
-NAN_SETTER(Browser::HeightSetter) {
-  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-
-  int width = browser->render_handler_->width;
-  int height = value->Int32Value();
-  browser->resize(width, height);
+NAN_METHOD(Browser::Resize) {
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+    int width = info[0]->Int32Value();
+    int height = info[1]->Int32Value();
+    
+    browser->resize(width, height);
+  } else {
+    return Nan::ThrowError("Browser::Resize: invalid arguments");
+  }
 }
 
 NAN_GETTER(Browser::OnLoadStartGetter) {
