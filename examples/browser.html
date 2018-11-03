@@ -171,7 +171,7 @@ function init() {
     const coord = planeMesh.projectMouse(e.clientX, e.clientY);
 
     if (coord) {
-      iframe.sendMouseDown(coord.x, coord.y,0); //button 0 - left , 1 middle, 2 - right
+      iframe.sendMouseDown(coord.x, coord.y,e.button); 
 
       focused = true;
     } else {
@@ -182,7 +182,7 @@ function init() {
     const coord = planeMesh.projectMouse(e.clientX, e.clientY);
 
     if (coord) {
-      iframe.sendMouseUp(coord.x, coord.y,0);
+      iframe.sendMouseUp(coord.x, coord.y,e.button);
     }
   });
   window.addEventListener('wheel', e => {
