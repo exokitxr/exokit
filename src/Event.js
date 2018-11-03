@@ -90,6 +90,8 @@ class Event {
 }
 module.exports.Event = Event;
 
+let isCapsLock = false;
+
 class KeyboardEvent extends Event {
   constructor(type, init = {}) {
     init.bubbles = true;
@@ -104,10 +106,21 @@ class KeyboardEvent extends Event {
       }
       return null;
     };
+	
+	if( init.keyCode === 20 && init.type === 'keydown' ){
+		isCapsLock = !isCapsLock;
+	}
+	
     if (init.key === undefined || init.code === undefined) {
       const keySpec = findKeySpecByKeyCode(init.keyCode);
       if (keySpec) {
-        init.key = init.shiftKey !== undefined?keySpec.shiftKey:keySpec.key;
+		  
+	    if ( init.shiftKey ) {
+		  init.key = isCapsLock ? keySpec.key : keySpec.shiftKey;
+		} else {
+		  init.key = isCapsLock ? keySpec.shiftKey : keySpec.key;
+		}
+		
         init.code = /^[a-z]$/i.test(keySpec.key) ? ('Key' + keySpec.key.toUpperCase()) : keySpec.key;
       }
     }
@@ -134,7 +147,7 @@ class KeyboardEvent extends Event {
 
   initKeyboardEvent(type, canBubble, cancelable, view, charCode, keyCode, location, modifiersList, repeat) {
     this.type = type;
-
+	console.log(modifiers,charCode);
     const modifiers = modifiers.split(/\s/);
     const ctrlKey = modifiers.includes('Control') || modifiers.includes('AltGraph');
     const altKey = modifiers.includes('Alt') || modifiers.includes('AltGraph');
