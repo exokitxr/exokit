@@ -1842,7 +1842,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
             if (this.d === 2) {
               const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
               if (context) {
-                this.browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
+                const browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
+                this.browser = browser;
 
                 let done = false, err = null;
                 const _makeLoadError = () => new Error('failed to load page');
@@ -1873,9 +1874,19 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   }
                 });
                 
+                let onmessage = null;
                 this.contentWindow = {
                   postMessage(m) {
-                    this.browser.postMessage(JSON.stringify(m));
+                    browser.postMessage(JSON.stringify(m));
+                  },
+                  get onmessage() {
+                    return onmessage;
+                  },
+                  set onmessage(newOnmessage) {
+                    onmessage = newOnmessage;
+                    browser.onmessage = newOnmessage ? m => {
+                      newOnmessage(JSON.parse(m));
+                    } : null;
                   },
                 };
                 this.contentDocument = {};
