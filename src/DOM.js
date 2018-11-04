@@ -2073,10 +2073,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   sendKeyDown(key, modifiers) {
     this.browser && this.browser.sendKeyDown(key, modifiers);
   }
-  sendKeyUp(key) {
+  sendKeyUp(key, modifiers) {
     this.browser && this.browser.sendKeyUp(key, modifiers);
   }
-  sendKeyPress(key) {
+  sendKeyPress(key, modifiers) {
     this.browser && this.browser.sendKeyPress(key, modifiers);
   }
   
