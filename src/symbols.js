@@ -5,6 +5,7 @@ module.exports.elementSymbol = Symbol();
 module.exports.fullscreenElementSymbol = Symbol();
 module.exports.htmlTagsSymbol = Symbol();
 module.exports.idSymbol = Symbol();
+module.exports.listenerSymbol = Symbol();
 module.exports.mrDisplaysSymbol = Symbol();
 module.exports.optionsSymbol = Symbol();
 module.exports.pointerLockElementSymbol = Symbol();
