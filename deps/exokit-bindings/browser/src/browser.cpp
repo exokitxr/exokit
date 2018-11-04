@@ -6,12 +6,53 @@
 
 #include <defines.h>
 
-// #include <functional>
 #include <iostream>
 
 using namespace std;
 using namespace v8;
 using namespace node;
+
+bool CefInitialize(const CefMainArgs& args,
+                              const CefSettings& settings,
+                              CefRefPtr<CefApp> application,
+                              void* windows_sandbox_info) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Unverified params: application, windows_sandbox_info
+
+  // Execute
+  int _retval = cef_initialize(
+      &args, &settings, CefAppCppToC::Wrap(application), windows_sandbox_info);
+
+  // Return type: bool
+  return _retval ? true : false;
+}
+
+void CefDoMessageLoopWork() {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_do_message_loop_work();
+}
+
+CefRefPtr<CefBrowser> CreateBrowserSync(
+    const CefWindowInfo& windowInfo,
+    CefRefPtr<CefClient> client,
+    const CefString& url,
+    const CefBrowserSettings& settings,
+    CefRefPtr<CefRequestContext> request_context) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Unverified params: client, url, request_context
+
+  // Execute
+  cef_browser_t* _retval = cef_browser_host_create_browser_sync(
+      &windowInfo, CefClientCppToC::Wrap(client), url.GetStruct(), &settings,
+      CefRequestContextCToCpp::Unwrap(request_context));
+
+  // Return type: refptr_same
+  return CefBrowserCToCpp::Wrap(_retval);
+}
 
 namespace browser {
 
@@ -349,7 +390,7 @@ void Browser::loadImmediate(const std::string &url) {
   // browserSettings.windowless_frame_rate = 60; // 30 is default
   BrowserClient *client = new BrowserClient(load_handler_, display_handler_, render_handler_);
   
-  browser_ = CefBrowserHost::CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
+  browser_ = CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
 }
 
 void Browser::resize(int w, int h) {
