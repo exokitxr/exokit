@@ -211,7 +211,7 @@ function init() {
       if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
         iframe.reload();
       } else {
-        iframe.sendKeyPress(e.keyCode,{shiftKey:false,ctrlKey:false,altKey:false});
+        iframe.sendKeyPress(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
       }
     }
   });

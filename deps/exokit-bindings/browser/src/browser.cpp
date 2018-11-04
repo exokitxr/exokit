@@ -572,6 +572,45 @@ int GetKeyModifiers(Local<Object> modifiersObj){
   return modifiers;
 }
 
+map<int, int> keyCodesMap{ 
+	{ 57, 40 }, // ( -
+	{ 48, 41 }, // )
+	{ 56, 42 }, // *
+	{ 61, 43 }, // +
+	{ 53, 37 }, // % - 
+	{ 55, 38 }, // & -
+	{ 49, 33 }, // ! -
+	{ 52, 36 }, // $ -
+	{ 39, 34 }, // " -
+	{ 51, 35 }, // # -
+	{ 44, 60 }, // < 
+	{ 46, 62 }, // > 
+	{ 59, 58 }, // : 
+	{ 47, 63 }, // ?
+	{ 50, 64 }, // @
+	{ 54, 94 }, // ^
+	{ 91, 123 }, // {
+	{ 93, 125 }, // }
+	{ 45, 95 }, // _
+	{ 92, 124 }, // |
+	{ 96, 126 } // ~
+};
+
+int MutateKey(int key, Local<Object> modifiersObj){
+
+	if (modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()){
+	  if(key >= 97 && // a
+         key <= 122){// z
+		  key -= 32;
+	  }else if(keyCodesMap.count(key)){
+		  //std::cout << "key: " << key << "mutation: " << keyCodesMap[key] << std::endl;
+
+		  key = keyCodesMap[key];
+	  }
+    }
+	return key;
+}
+
 
 NAN_METHOD(Browser::SendKeyDown) {
   // Nan::HandleScope scope;
@@ -582,7 +621,7 @@ NAN_METHOD(Browser::SendKeyDown) {
 	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
 	int modifiers = GetKeyModifiers(modifiersObj);
     CefBrowser *cefBrowser = browser->browser_.get();
-    
+    //int wkey = MutateKey(key,modifiersObj);
     QueueOnBrowserThread([key, modifiers, cefBrowser]() -> void {
       CefKeyEvent evt;
       evt.type = KEYEVENT_RAWKEYDOWN;
@@ -606,7 +645,7 @@ NAN_METHOD(Browser::SendKeyUp) {
 	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
 	int modifiers = GetKeyModifiers(modifiersObj);
     CefBrowser *cefBrowser = browser->browser_.get();
-    
+    //int wkey = MutateKey(key,modifiersObj);
     QueueOnBrowserThread([key, modifiers, cefBrowser]() -> void {
       CefKeyEvent evt;
       evt.type = KEYEVENT_KEYUP;
@@ -630,21 +669,16 @@ NAN_METHOD(Browser::SendKeyPress) {
 	
 	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
 	int modifiers = GetKeyModifiers(modifiersObj);
-	if (
-      modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue() &&
-      key >= 97 && // a
-      key <= 122 // z
-    ) {
-      key -= 32;
-    }
+	std::cout << "keycode " << key << std::endl;
     CefBrowser *cefBrowser = browser->browser_.get();
-    
-    QueueOnBrowserThread([key, modifiers, cefBrowser]() -> void {
+    int wkey = MutateKey(key,modifiersObj);
+	std::cout << "mutation " << wkey << std::endl;
+    QueueOnBrowserThread([key, wkey, modifiers, cefBrowser]() -> void {
       CefKeyEvent evt;
       evt.type = KEYEVENT_CHAR;
       evt.character = key;
       evt.native_key_code = key;
-      evt.windows_key_code = key;
+      evt.windows_key_code = wkey;
 	  evt.modifiers = modifiers;
       cefBrowser->GetHost()->SendKeyEvent(evt);
     });
