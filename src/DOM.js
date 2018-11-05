@@ -2072,6 +2072,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   }
   sendKeyDown(key, modifiers) {
     this.browser && this.browser.sendKeyDown(key, modifiers);
+	if(key === 13){
+		this.browser.sendKeyPress(key, modifiers);
+	}
   }
   sendKeyUp(key, modifiers) {
     this.browser && this.browser.sendKeyUp(key, modifiers);
