@@ -486,6 +486,17 @@ void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int
       evt,
     };
     CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+	
+	// Shim keypress after keydown for return key
+	
+	if(key == 13 && action == GLFW_PRESS){
+	  evt->Set(JS_STR("type"), JS_STR("keypress"));
+	  Local<Value> argv[] = {
+	    JS_STR("keypress"), // event name
+	    evt,
+	  };
+	  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+	}
 
     if (action == GLFW_PRESS && isPrintable) {
       keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
