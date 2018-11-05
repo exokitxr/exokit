@@ -33,7 +33,7 @@ void MediaStreamTrack::InitializePrototype(Local<ObjectTemplate> proto) {
 }
 
 NAN_METHOD(MediaStreamTrack::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
     Local<Object> microphoneMediaStreamObj = Local<Object>::Cast(info[0]);
@@ -50,32 +50,32 @@ NAN_METHOD(MediaStreamTrack::New) {
 }
 
 NAN_GETTER(MediaStreamTrack::EnabledGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
   
   info.GetReturnValue().Set(JS_BOOL(true));
 }
 
 NAN_GETTER(MediaStreamTrack::KindGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
   
   info.GetReturnValue().Set(JS_STR("audio"));
 }
 
 NAN_GETTER(MediaStreamTrack::LabelGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
   
   info.GetReturnValue().Set(JS_STR("microphone"));
 }
 
 NAN_GETTER(MediaStreamTrack::MutedGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
   
   MediaStreamTrack *mediaStreamTrack = ObjectWrap::Unwrap<MediaStreamTrack>(info.This());
   info.GetReturnValue().Set(JS_BOOL(mediaStreamTrack->muted));
 }
 
 NAN_SETTER(MediaStreamTrack::MutedSetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
   
   if (value->IsBoolean()) {
     MediaStreamTrack *mediaStreamTrack = ObjectWrap::Unwrap<MediaStreamTrack>(info.This());
@@ -88,7 +88,7 @@ NAN_SETTER(MediaStreamTrack::MutedSetter) {
 }
 
 NAN_GETTER(MediaStreamTrack::ReadyStateGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
   
   MediaStreamTrack *mediaStreamTrack = ObjectWrap::Unwrap<MediaStreamTrack>(info.This());
   
@@ -96,7 +96,7 @@ NAN_GETTER(MediaStreamTrack::ReadyStateGetter) {
 }
 
 NAN_METHOD(MediaStreamTrack::Stop) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   MediaStreamTrack *mediaStreamTrack = ObjectWrap::Unwrap<MediaStreamTrack>(info.This());
   MediaStream *mediaStream = mediaStreamTrack->mediaStream;
