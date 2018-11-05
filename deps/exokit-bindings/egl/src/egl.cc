@@ -264,7 +264,7 @@ NAN_METHOD(Create2D) {
   unsigned int height = info[1]->Uint32Value();
   NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
 
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, shared ? sharedWindow : nullptr);
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, sharedWindow);
 
   GLuint tex;
   if (sharedWindow != nullptr) {
