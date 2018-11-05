@@ -11,12 +11,12 @@ let display, fakeDisplay;
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 const rayDistance = 1;
-const menuWidth = 1;
-const menuHeight = 1;
-const menuWorldWidth = menuWidth;
-const menuWorldHeight = menuHeight * .1;
+const menuWidth = 1024;
+const menuHeight = menuWidth * 0.1;
+const menuWorldWidth = 1;
+const menuWorldHeight = menuWorldWidth / menuWidth * menuHeight;
 const menuPositionHeight = .3;
-const urlBarWidth = menuWidth;
+const urlBarWidth = menuWorldWidth;
 const urlBarHeight = menuHeight;
 const urlBarOffset = urlBarHeight;
 const fontSize = 60;
@@ -399,10 +399,11 @@ const _makeRig = () => {
       const material = new THREE.MeshBasicMaterial({
         map: texture,
         side: THREE.DoubleSide,
-        transparent: true,
-        alphaTest: 0.9,
+        // transparent: true,
+        // alphaTest: 0.9,
       });
       const mesh = new THREE.Mesh(geometry, material);
+      // mesh.position.y = -menuWorldHeight/2;
       mesh.frustumCulled = false;
 
       const text = DEFAULT_URL;
@@ -414,58 +415,22 @@ const _makeRig = () => {
       mesh.urlState = urlState;
 
       const _updateText = () => {
-        console.log('update text', urlState.text, urlState.cursor);
+        // console.log('update text', urlState.text, urlState.cursor);
 
         ctx.fillStyle = '#EEE';
         ctx.fillRect(0, 0, menuWidth, menuHeight*2);
 
+        ctx.fillStyle = '#000';
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 10);
 
-        ctx.fillStyle = '#563156';
-        ctx.fillRect(0, 0, urlBarWidth, 2048);
-        //                    .set(0, -0.5, -1)
-
-  //            ctx.fillStyle = '#RFF';
-  //            ctx.fillRect(5, urlBarOffset + 500, urlBarWidth - 10, urlBarHeight - 10);
-
-
-
-        ctx.fillStyle = '#FFF';
-        // ctx.font = `${fontSize}px Arial`;
-        // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
-        //
-        // urlState.measures.length = 0;
-        // urlState.measures.push(0);
-        // const {width: barWidth} = ctx.measureText('[');
-        // for (let i = 1; i <= urlState.text.length; i++) {
-        //   const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
-        //   urlState.measures.push(width - barWidth*2);
-        // }
-        //
-        // ctx.fillStyle = '#03a9f4';
-        // ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
-
-  //TEST
-          // ctx.font = `${fontSize}px Arial`;
-          // ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 30);
-
-          urlState.measures.length = 0;
-          urlState.measures.push(0);
-          // const {width: barWidth} = ctx.measureText('[');
-          for (let i = 1; i <= urlState.text.length; i++) {
-            // const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
-            const {width} = 4;
-            const {barWidth} = 4;
-            urlState.measures.push(width - barWidth*2);
-          }
-
-          ctx.fillStyle = '#03a9f4';
-          ctx.fillRect(20 + urlState.measures[urlState.cursor] - cursorWidth/2, 30, cursorWidth, urlBarHeight - 20*2);
-
-  //END TEST
-
-
-
-
+        urlState.measures.length = 0;
+        urlState.measures.push(0);
+        const {width: barWidth} = ctx.measureText('[');
+        for (let i = 1; i <= urlState.text.length; i++) {
+          const {width} = ctx.measureText('[' + urlState.text.slice(0, i) + ']');
+          urlState.measures.push(width - barWidth*2);
+        }
 
         texture.needsUpdate = true;
       };
@@ -1244,6 +1209,9 @@ if (navigator.xr && !query.fake) {
 
   console.log('loaded root in 2D');
 }
+
+// renderer.setAnimationLoop(animate);
+// _openRig(new THREE.Vector3(0, 1.5, -1), new THREE.Quaternion());
     </script>
   </body>
 </html>
