@@ -16,8 +16,8 @@ Handle<Object> MicrophoneMediaStream::Initialize(Isolate *isolate, Local<Value> 
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  AudioNode::InitializePrototype(proto);
-  AudioSourceNode::InitializePrototype(proto);
+  // AudioNode::InitializePrototype(proto);
+  // AudioSourceNode::InitializePrototype(proto);
   MicrophoneMediaStream::InitializePrototype(proto);
 
   Local<Function> ctorFn = ctor->GetFunction();
