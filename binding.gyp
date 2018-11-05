@@ -21,7 +21,6 @@
                 'deps/exokit-bindings/videocontext/src/win/*.cpp',
                 'deps/exokit-bindings/windowsystem/src/*.cc',
                 'deps/exokit-bindings/glfw/src/*.cc',
-                "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib/windows/libcef_dll/base/cef_logging.cc')\")",
                 'deps/openvr/src/*.cpp',
                 'deps/exokit-bindings/leapmotion/src/*.cc',
               ],
