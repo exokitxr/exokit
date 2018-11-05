@@ -181,7 +181,7 @@ NAN_METHOD(ExitFullscreen) {
   // nothing
 }
 
-NATIVEwindow *CreateGLWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
+NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
   EGLint config_attribs[] = {
