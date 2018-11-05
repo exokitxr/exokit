@@ -13,7 +13,7 @@
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
-#include <Browser.h>
+#include <browser.h>
 #if _WIN32
 #include <leapmotion.h>
 #endif
