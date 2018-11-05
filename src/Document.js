@@ -218,6 +218,7 @@ function initDocument (document, window) {
         }
       };
       const _emitOneDisplay = display => {
+        if(GlobalContext.args.xr === 'none') return;
         const e = new window.Event('vrdisplayactivate');
         e.display = display;
         window.dispatchEvent(e);
