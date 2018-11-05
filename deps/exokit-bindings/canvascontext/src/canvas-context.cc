@@ -4,7 +4,6 @@
 #include "GrBackendSurface.h"
 #include "GrContext.h"
 
-#include <glfw/include/glfw.h>
 #include <windowsystem.h>
 #include "gl/GrGLAssembleInterface.h"
 
