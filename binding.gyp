@@ -134,6 +134,7 @@
                     'exokit.cpp',
                     '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
                     '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
+                    '<!@(ls -1 deps/exokit-bindings/browser/src/*.cpp)',
                     '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
                     '<!@(ls -1 deps/exokit-bindings/nanosvg/src/*.cpp)',
                     '<!@(ls -1 deps/exokit-bindings/canvascontext/src/*.cc)',
@@ -154,6 +155,7 @@
                     "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/effects')\")",
                     "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/include')\")",
                     "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
+                    "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
                     "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/headers')\")",
                     '<(module_root_dir)/deps/exokit-bindings',
                     '<(module_root_dir)/deps/exokit-bindings/utf8',
@@ -162,6 +164,7 @@
                     '<(module_root_dir)/deps/exokit-bindings/util/include',
                     '<(module_root_dir)/deps/exokit-bindings/bindings/include',
                     '<(module_root_dir)/deps/exokit-bindings/canvas/include',
+                    '<(module_root_dir)/deps/exokit-bindings/browser/include',
                     '<(module_root_dir)/deps/exokit-bindings/nanosvg/include',
                     '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
                     '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
@@ -178,6 +181,7 @@
                     "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib/linux')\")",
                     "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux')\")",
                     "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/lib/linux64')\")",
+                    "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib4/linux')\")",
                   ],
                   'libraries': [
                     '-lGL',
@@ -227,6 +231,7 @@
                   'defines': [
                     'NOMINMAX',
                     'OPENVR',
+                    'WRAPPING_CEF_SHARED',
                   ],
                 }],
                 ['"<!(node -e \"console.log(process.arch)\")"=="arm64"', {
