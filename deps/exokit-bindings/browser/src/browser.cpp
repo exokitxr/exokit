@@ -385,7 +385,7 @@ void Browser::loadImmediate(const std::string &url) {
   );
   
   CefWindowInfo window_info;
-  window_info.SetAsWindowless(nullptr);
+  window_info.SetAsWindowless((CefWindowHandle)NULL);
   CefBrowserSettings browserSettings;
   // browserSettings.windowless_frame_rate = 60; // 30 is default
   BrowserClient *client = new BrowserClient(load_handler_, display_handler_, render_handler_);
