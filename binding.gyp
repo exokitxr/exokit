@@ -209,6 +209,8 @@
                     '-lXi',
                     '-lasound',
                     '-lexpat',
+                    '-lcef',
+                    '-lcef_dll_wrapper',
                   ],
                   'ldflags': [
                     '-Wl,-Bsymbolic', # required for ffmpeg asm linkage
@@ -225,6 +227,7 @@
                     "-Wl,-rpath,./../node_modules/native-video-deps/lib/linux/libavfilter",
                     "-Wl,-rpath,./../node_modules/native-video-deps/lib/linux/libswscale",
                     "-Wl,-rpath,./../node_modules/native-video-deps/lib/linux/libswresample",
+                    "-Wl,-rpath,./../node_modules/native-browser-deps/lib4/linux",
                     "-Wl,-rpath,./../node_modules/native-openvr-deps/bin/linux64",
                     "-Wl,-rpath,./node_modules/native-openvr-deps/bin/linux64",
                   ],
