@@ -197,7 +197,7 @@ function initDocument (document, window) {
     window.dispatchEvent(new Event('load', {target: window}));
 
     const displays = window.navigator.getVRDisplaysSync();
-    if (displays.length > 0) {
+    if (displays.length > 0 && !['all', 'webvr'].includes(GlobalContext.args.xr)) {
       const _initDisplays = () => {
         if (!_tryEmitDisplay()) {
           _delayFrames(() => {
@@ -218,7 +218,6 @@ function initDocument (document, window) {
         }
       };
       const _emitOneDisplay = display => {
-        if (GlobalContext.args.xr === 'none') return;
         const e = new window.Event('vrdisplayactivate');
         e.display = display;
         window.dispatchEvent(e);
