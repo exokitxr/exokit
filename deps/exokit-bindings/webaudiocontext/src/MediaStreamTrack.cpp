@@ -98,9 +98,9 @@ NAN_GETTER(MediaStreamTrack::ReadyStateGetter) {
 NAN_METHOD(MediaStreamTrack::Stop) {
   // Nan::HandleScope scope;
 
-  MediaStreamTrack *mediaStreamTrack = ObjectWrap::Unwrap<MediaStreamTrack>(info.This());
+  /* MediaStreamTrack *mediaStreamTrack = ObjectWrap::Unwrap<MediaStreamTrack>(info.This()); // XXX actually stop the audio node
   MediaStream *mediaStream = mediaStreamTrack->mediaStream;
-  mediaStream->audioNode.reset();
+  mediaStream->audioNode.reset(); */
 }
 
 }

@@ -45,10 +45,10 @@ NAN_METHOD(MicrophoneMediaStream::New) {
   Local<Array> localTracks = Nan::New(microphoneMediaStream->tracks);
   localTracks->Set(0, mediaStreamTrackObj);
 
-  {
+  /* {
     lab::ContextRenderLock r(getDefaultAudioContext(), "MicrophoneMediaStream::New");
     microphoneMediaStream->audioNode = lab::MakeHardwareSourceNode(r);
-  }
+  } */
 
   info.GetReturnValue().Set(microphoneMediaStreamObj);
 }
