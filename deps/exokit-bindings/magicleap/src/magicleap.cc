@@ -2278,14 +2278,14 @@ NAN_METHOD(MLContext::RequestDepthPopulation) {
   }
 }
 
-bool cameraConnected = false;
+bool cameraRunning = false;
 NAN_METHOD(MLContext::RequestCamera) {
   if (info[0]->IsFunction()) {
-    if (!cameraConnected) {
+    if (!cameraRunning) {
       MLResult result = MLCameraConnect();
 
       if (result == MLResult_Ok) {
-        cameraConnected = true;
+        cameraRunning = true;
 
         std::thread([]() -> void {
           for (;;) {
