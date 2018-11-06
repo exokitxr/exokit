@@ -1858,24 +1858,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   this.browser.onconsole = (message, source, line) => {
                     this.onconsole && this.onconsole(message, source, line);
                   };
-                  await new Promise((accept, reject) => {
-                    if (!done) {
-                      this.browser.onloadend = (_url) => {
-                        loadedUrl = _url;
-                        this.dispatchEvent(new Event('load', {target: this}));
-                        accept();
-                      };
-                      this.browser.onloaderror = () => {
-                        reject(_makeLoadError());
-                      };
-                    } else {
-                      if (!err) {
-                        accept();
-                      } else {
-                        reject(err);
-                      }
-                    }
-                  });
                   
                   let onmessage = null;
                   this.contentWindow = {
@@ -1886,7 +1868,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       set href(_url) {
                         return this.setAttribute('src',_url);
                       },
-                    }
+                    },
                     postMessage(m) {
                       browser.postMessage(JSON.stringify(m));
                     },
@@ -1902,9 +1884,30 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       } : null;
                     },
                   };
+                  
                   this.contentDocument = {};
-
-                  this.readyState = 'complete';
+                  
+                  await new Promise((accept, reject) => {
+                    if (!done) {
+                      this.browser.onloadend = (_url) => {
+                        loadedUrl = _url;
+                        
+                        this.readyState = 'complete';
+                        
+                        this.dispatchEvent(new Event('load', {target: this}));
+                        accept();
+                      };
+                      this.browser.onloaderror = () => {
+                        reject(_makeLoadError());
+                      };
+                    } else {
+                      if (!err) {
+                        accept();
+                      } else {
+                        reject(err);
+                      }
+                    }
+                  });
 
                   cb();
                 } else {
