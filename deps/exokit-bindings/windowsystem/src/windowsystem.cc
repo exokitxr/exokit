@@ -483,7 +483,7 @@ void ComposeLayersArray(WebGLRenderingContext *gl, GLuint tex, const std::vector
 
       glUniform4f(
         composeSpec->texSizeLocation,
-        i == 0 ? 0 : layer.width/2, 0,
+        j == 0 ? 0 : layer.width/2, 0,
         layer.width/2, layer.height
       );
 
