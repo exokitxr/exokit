@@ -1881,8 +1881,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   
                   let onmessage = null;
                   this.contentWindow = {
-                    location:{
-                      href:loadedUrl
+                    location: {
+                      href: loadedUrl
                     },
                     postMessage(m) {
                       browser.postMessage(JSON.stringify(m));
