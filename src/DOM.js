@@ -2087,7 +2087,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   runJs(jsString = '', scriptUrl = '<unknown>', startLine = 1) {
     this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
   }
-
+  
+  runCss(styleString){
+    this.browser && this.browser.runJs(`
+      var s = document.createElement('style');
+      s.setAttribute('type', 'text/css');
+      s.appendChild(document.createTextNode(`+style+`));
+      document.body.prependChild(s);`
+    );
+  }
+  
   destroy() {
     if (this.live) {
       this._emit('destroy');
