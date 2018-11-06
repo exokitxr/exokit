@@ -1934,9 +1934,7 @@ NAN_METHOD(MLContext::Present) {
   application_context.dummy_value = DummyValue::RUNNING;
 
   ML_LOG(Info, "%s: Start loop.", application_name);
-
-  glGenFramebuffers(1, &mlContext->framebuffer_id);
-
+  
   Local<Object> result = Nan::New<Object>();
   result->Set(JS_STR("width"), JS_INT(halfWidth));
   result->Set(JS_STR("height"), JS_INT(height));
@@ -2002,8 +2000,6 @@ NAN_METHOD(MLContext::Exit) {
 
   // HACK: force the app to be "stopped"
   application_context.dummy_value = DummyValue::STOPPED;
-
-  glDeleteFramebuffers(1, &mlContext->framebuffer_id);
 }
 
 NAN_METHOD(MLContext::WaitGetPoses) {

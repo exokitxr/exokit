@@ -239,7 +239,6 @@ public:
 
   // tracking
   MLHandle graphics_client;
-  GLuint framebuffer_id;
   MLHandle frame_handle;
   MLHandle head_tracker;
   MLHeadTrackingStaticData head_static_data;
