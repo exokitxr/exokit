@@ -70,21 +70,21 @@ NAN_METHOD(BlitFrameBuffer) {
 
 NAN_METHOD(BlitFrameBufferArray) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
-  GLuint fbo1 = info[1]->Uint32Value();
-  GLuint tex = info[2]->Uint32Value();
+  GLuint srcFbo = info[1]->Uint32Value();
+  GLuint dstTex = info[2]->Uint32Value();
   int width = info[3]->Int32Value();
   int height = info[4]->Int32Value();
   bool color = info[5]->BooleanValue();
   bool depth = info[6]->BooleanValue();
   bool stencil = info[7]->BooleanValue();
 
-  GLuint fbo2;
-  glGenFramebuffers(1, &fbo2);
+  GLuint dstFbo;
+  glGenFramebuffers(1, &dstFbo);
 
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
   for (int i = 0; i < 2; i++) {
-    glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex, 0, i);
+    glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, dstTex, 0, i);
     // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0, i);
 
     glBlitFramebuffer(
@@ -99,7 +99,7 @@ NAN_METHOD(BlitFrameBufferArray) {
     );
   }
   
-  glDeleteFramebuffers(1, &fbo2);
+  glDeleteFramebuffers(1, &dstFbo);
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
