@@ -1858,15 +1858,14 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   this.browser.onconsole = (message, source, line) => {
                     this.onconsole && this.onconsole(message, source, line);
                   };
-                  
-                  let onmessage = null;
+                  let onmessage = null, setAttribute = this.setAttribute.bind(this);
                   this.contentWindow = {
                     location:{
                       get href() {
                         return loadedUrl;
                       },
                       set href(_url) {
-                        return this.setAttribute('src',_url);
+                        return setAttribute('src',_url);
                       },
                     },
                     postMessage(m) {
