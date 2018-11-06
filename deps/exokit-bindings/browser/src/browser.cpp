@@ -156,7 +156,7 @@ BrowserClient::~BrowserClient() {}
 // Browser
 
 Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : gl(gl), tex(0), initialized(false) {
-  ensureCurrentGlWindow(gl);
+  windowsystem::SetCurrentWindowContext(gl->windowHandle);
   
   glGenTextures(1, &tex);
 
@@ -352,7 +352,7 @@ void Browser::loadImmediate(const std::string &url) {
   RenderHandler *render_handler_ = new RenderHandler(
     [this](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
       RunOnMainThread([&]() -> void {
-        ensureCurrentGlWindow(this->gl);
+        windowsystem::SetCurrentWindowContext(this->gl->windowHandle);
         
         glBindTexture(GL_TEXTURE_2D, this->tex);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
