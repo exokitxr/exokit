@@ -1846,7 +1846,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   const browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
                   this.browser = browser;
                   
-                  let done = false, err = null, loadedUrl = url;
+                  let done = false, err = null;
                   const _makeLoadError = () => new Error('failed to load page');
                   this.browser.onloadend = () => {
                     done = true;
@@ -1858,16 +1858,29 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   this.browser.onconsole = (message, source, line) => {
                     this.onconsole && this.onconsole(message, source, line);
                   };
-                  let onmessage = null, setAttribute = this.setAttribute.bind(this);
+                  await new Promise((accept, reject) => {
+                    if (!done) {
+                      this.browser.onloadend = (_url) => {
+                        this.contentWindow.location.href = _url;
+                        accept();
+                      };
+                      this.browser.onloaderror = () => {
+                        reject(_makeLoadError());
+                      };
+                    } else {
+                      if (!err) {
+                        accept();
+                      } else {
+                        reject(err);
+                      }
+                    }
+                  });
+                  
+                  let onmessage = null;
                   this.contentWindow = {
                     location:{
-                      get href() {
-                        return loadedUrl;
-                      },
-                      set href(_url) {
-                        return setAttribute('src',_url);
-                      },
-                    },
+                      href:url
+                    }
                     postMessage(m) {
                       browser.postMessage(JSON.stringify(m));
                     },
@@ -1883,30 +1896,11 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       } : null;
                     },
                   };
-                  
                   this.contentDocument = {};
+
+                  this.readyState = 'complete';
                   
-                  await new Promise((accept, reject) => {
-                    if (!done) {
-                      this.browser.onloadend = (_url) => {
-                        loadedUrl = _url;
-                        
-                        this.readyState = 'complete';
-                        
-                        this.dispatchEvent(new Event('load', {target: this}));
-                        accept();
-                      };
-                      this.browser.onloaderror = () => {
-                        reject(_makeLoadError());
-                      };
-                    } else {
-                      if (!err) {
-                        accept();
-                      } else {
-                        reject(err);
-                      }
-                    }
-                  });
+                  this.dispatchEvent(new Event('load', {target: this}));
 
                   cb();
                 } else {
