@@ -229,6 +229,7 @@ public:
   static NAN_METHOD(RequestDepthPopulation);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
+  static NAN_METHOD(IsCameraRunning);
   static NAN_METHOD(PrePollEvents);
   static NAN_METHOD(PostPollEvents);
 

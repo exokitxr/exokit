@@ -1185,6 +1185,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
+  Nan::SetMethod(ctorFn, "IsCameraRunning", IsCameraRunning);
   Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
   Nan::SetMethod(ctorFn, "PostPollEvents", PostPollEvents);
 
@@ -2336,6 +2337,10 @@ NAN_METHOD(MLContext::CancelCamera) {
   } else {
     Nan::ThrowError("invalid arguments");
   }
+}
+
+NAN_METHOD(MLContext::IsCameraRunning) {
+  info.GetReturnValue().Set(JS_BOOL(cameraRunning));
 }
 
 void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]);
