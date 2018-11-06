@@ -2179,18 +2179,18 @@ NAN_METHOD(MLContext::WaitGetPoses) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  // if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
+    /* WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
     GLuint src_framebuffer_id = info[1]->Uint32Value();
     unsigned int width = info[2]->Uint32Value();
     unsigned int height = info[3]->Uint32Value();
 
-    const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
+    const MLRectf &viewport = mlContext->virtual_camera_array.viewport; */
 
     for (int i = 0; i < 2; i++) {
       MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
       
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
+      /* glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
 
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
       glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
@@ -2201,7 +2201,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
         viewport.x, viewport.y,
         viewport.w, viewport.h,
         GL_COLOR_BUFFER_BIT,
-        GL_LINEAR);
+        GL_LINEAR); */
 
       MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
       if (result != MLResult_Ok) {
@@ -2214,7 +2214,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
       ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
     }
     
-    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
     } else {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
@@ -2223,10 +2223,10 @@ NAN_METHOD(MLContext::SubmitFrame) {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
     } else {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
-    }
-  } else {
+    } */
+  /* } else {
     Nan::ThrowError("MLContext::SubmitFrame: invalid arguments");
-  }
+  } */
 }
 
 NAN_METHOD(MLContext::IsPresent) {
