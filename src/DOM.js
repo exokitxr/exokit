@@ -1846,7 +1846,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   const browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
                   this.browser = browser;
                   
-                  let done = false, err = null;
+                  let done = false, err = null, loadedUrl = url;
                   const _makeLoadError = () => new Error('failed to load page');
                   this.browser.onloadend = () => {
                     done = true;
@@ -1861,7 +1861,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   await new Promise((accept, reject) => {
                     if (!done) {
                       this.browser.onloadend = (_url) => {
-                        this.dispatchEvent(new MessageEvent('navigate', {data: _url}));
+                        loadedUrl = _url;
+                        this.dispatchEvent(new Event('load', {target: this}));
                         accept();
                       };
                       this.browser.onloaderror = () => {
@@ -1878,6 +1879,14 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   
                   let onmessage = null;
                   this.contentWindow = {
+                    location:{
+                      get href() {
+                        return loadedUrl;
+                      },
+                      set href(_url) {
+                        return this.setAttribute('src',_url);
+                      },
+                    }
                     postMessage(m) {
                       browser.postMessage(JSON.stringify(m));
                     },
@@ -1896,8 +1905,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   this.contentDocument = {};
 
                   this.readyState = 'complete';
-                  
-                  this.dispatchEvent(new Event('load', {target: this}));
 
                   cb();
                 } else {
