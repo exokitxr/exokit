@@ -329,6 +329,7 @@ const handsArray = [
   new Float32Array(handEntrySize),
 ];
 const controllersArray = new Float32Array((3 + 4 + 6) * 2);
+const graphicsBuffersArray = new Uint32Array(2);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
