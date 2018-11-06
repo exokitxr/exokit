@@ -5,7 +5,7 @@
 namespace egl {
 
 // @Module: Window handling
-NATIVEwindow *currentWindow = nullptr;
+thread_local NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
 std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 
@@ -181,25 +181,7 @@ NAN_METHOD(ExitFullscreen) {
   // nothing
 }
 
-NAN_METHOD(Create) {
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
-  bool initialVisible = info[2]->BooleanValue();
-  bool hidden = info[3]->BooleanValue();
-  NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
-  WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
-
-  GLuint framebuffers[] = {0, 0};
-  GLuint framebufferTextures[] = {0, 0, 0, 0};
-  bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
-  if (shared) {
-    SetCurrentWindowContext(sharedWindow);
-
-    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  }
-
+NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
   EGLint config_attribs[] = {
@@ -220,11 +202,36 @@ NAN_METHOD(Create) {
     EGL_CONTEXT_MINOR_VERSION_KHR, 2,
     EGL_NONE
   };
-  EGLContext context = eglCreateContext(display, egl_config, shared ? GetGLContext(sharedWindow) : EGL_NO_CONTEXT, context_attribs);
 
-  eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context);
+  EGLContext context = eglCreateContext(display, egl_config, sharedWindow ? GetGLContext(sharedWindow) : EGL_NO_CONTEXT, context_attribs);
 
-  NATIVEwindow *windowHandle = new NATIVEwindow{display, context, width, height};
+  return new NATIVEwindow{display, context, width, height};
+}
+
+NAN_METHOD(Create3D) {
+  unsigned int width = info[0]->Uint32Value();
+  unsigned int height = info[1]->Uint32Value();
+  bool initialVisible = info[2]->BooleanValue();
+  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[4]));
+
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+  
+  GLuint framebuffers[2];
+  GLuint framebufferTextures[4];
+  if (sharedWindow != nullptr) {
+    SetCurrentWindowContext(sharedWindow);
+
+    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+    
+    SetCurrentWindowContext(windowHandle);
+  } else {
+    SetCurrentWindowContext(windowHandle);
+    
+    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+  }
 
   windowsystembase::InitializeLocalGlState(gl);
 
@@ -249,6 +256,32 @@ NAN_METHOD(Create) {
   result->Set(5, JS_INT(framebufferTextures[2]));
   result->Set(6, JS_INT(framebufferTextures[3]));
   result->Set(7, JS_INT(vao));
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(Create2D) {
+  unsigned int width = info[0]->Uint32Value();
+  unsigned int height = info[1]->Uint32Value();
+  NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
+
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, sharedWindow);
+
+  GLuint tex;
+  if (sharedWindow != nullptr) {
+    SetCurrentWindowContext(sharedWindow);
+
+    glGenTextures(1, &tex);
+    
+    SetCurrentWindowContext(windowHandle);
+  } else {
+    SetCurrentWindowContext(windowHandle);
+    
+    glGenTextures(1, &tex);
+  }
+
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, pointerToArray(windowHandle));
+  result->Set(1, JS_INT(tex));
   info.GetReturnValue().Set(result);
 }
 
@@ -308,7 +341,8 @@ Local<Object> makeWindow() {
 
   windowsystembase::Decorate(target);
 
-  Nan::SetMethod(target, "create", egl::Create);
+  Nan::SetMethod(target, "create3d", egl::Create3D);
+  Nan::SetMethod(target, "create2d", egl::Create2D);
   Nan::SetMethod(target, "destroy", egl::Destroy);
   Nan::SetMethod(target, "show", egl::Show);
   Nan::SetMethod(target, "hide", egl::Hide);

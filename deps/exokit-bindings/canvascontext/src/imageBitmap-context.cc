@@ -65,7 +65,7 @@ NAN_METHOD(ImageBitmap::New) {
     bool ok = image->image->scalePixels(pixmap, SkFilterQuality::kNone_SkFilterQuality);
 
     if (ok) {
-      if (!flipY) { // the default representation is flipped; flip iff the user did not want this
+      if (flipY) {
         unique_ptr<char[]> line(new char[width * 4]);
 
         for (size_t i = 0; i < height / 2; i++) {
@@ -116,7 +116,7 @@ NAN_METHOD(ImageBitmap::New) {
         return Nan::ThrowError("Failed to install pixels");
       }
     } else {
-      return Nan::ThrowError("Invalid arguments");
+      return Nan::ThrowError("ImageBitmap::ImageBitmap: Invalid arguments");
     }
   }
 

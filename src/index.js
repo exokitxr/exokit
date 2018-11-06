@@ -137,8 +137,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
       const {hidden} = canvas.ownerDocument;
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-      const firstGl = contexts.length > 0 ? contexts[0] : null;
-      return nativeWindow.create(canvasWidth, canvasHeight, visible && !hidden, hidden, firstWindowHandle, gl, firstGl);
+      return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
     } catch (err) {
       console.warn(err.message);
       return null;
@@ -169,8 +168,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const title = `Exokit ${version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
-
-    const cleanups = [];
 
     const {hidden} = document;
     if (hidden) {
@@ -227,7 +224,9 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     };
     canvas.ownerDocument.on('domchange', ondomchange);
 
-    cleanups.push(() => {
+    gl.destroy = (destroy => function() {
+      destroy.call(this);
+
       nativeWindow.setCurrentWindowContext(windowHandle);
 
       if (gl === vrPresentState.glContext) {
@@ -254,14 +253,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       if (!contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // no more windows
         process.exit();
       }
-    });
-
-    gl.destroy = (destroy => function() {
-      destroy.call(this);
-
-      for (let i = 0; i < cleanups.length; i++) {
-        cleanups[i]();
-      }
     })(gl.destroy);
 
     contexts.push(gl);
@@ -270,6 +261,45 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     canvas.ownerDocument.defaultView.on('unload', () => {
       gl.destroy();
     });
+
+    return true;
+  } else {
+    return false;
+  }
+};
+
+nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
+  const canvasWidth = canvas.width || innerWidth;
+  const canvasHeight = canvas.height || innerHeight;
+
+  const windowSpec = (() => {
+    try {
+      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+      return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
+    } catch (err) {
+      console.warn(err.message);
+      return null;
+    }
+  })();
+
+  if (windowSpec) {
+    const [windowHandle, tex] = windowSpec;
+
+    ctx.setWindowHandle(windowHandle);
+    ctx.setTexture(tex, canvasWidth, canvasHeight);
+    
+    ctx.canvas = canvas;
+    
+    contexts.push(ctx);
+    
+    ctx.destroy = (destroy => function() {
+      destroy.call(this);
+      
+      nativeWindow.destroy(windowHandle);
+      canvas._context = null;
+      
+      contexts.splice(contexts.indexOf(ctx), 1);
+    })(ctx.destroy);
 
     return true;
   } else {
@@ -850,13 +880,14 @@ const isMac = os.platform() === 'darwin';
 const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
   window.innerHeight = innerHeight;
+
   window.on('unload', () => {
     clearTimeout(timeout);
   });
   window.on('navigate', newWindowCb);
   window.document.on('paste', e => {
     e.clipboardData = new window.DataTransfer();
-    if (contexts.length > 0) {
+    if (contexts.length > 0) { // XXX use the currently focused context
       const context = contexts[0];
       const windowHandle = context.getWindowHandle();
       const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);
@@ -864,7 +895,33 @@ const _bindWindow = (window, newWindowCb) => {
       e.clipboardData.items.push(dataTransferItem);
     }
   });
+  window.on('vrdisplaypresentchange', e => {
+    if (e.display) {
+      const gamepads = [leftGamepad, rightGamepad];
+      for (let i = 0; i < gamepads.length; i++) {
+        gamepads[i].ontriggerhapticpulse = (value, duration) => {
+          if (vrPresentState.isPresenting) {
+            value = Math.min(Math.max(value, 0), 1);
+            const deviceIndex = vrPresentState.system.GetTrackedDeviceIndexForControllerRole(i + 1);
 
+            const startTime = Date.now();
+            const _recurse = () => {
+              if ((Date.now() - startTime) < duration) {
+                vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
+                setTimeout(_recurse, 50);
+              }
+            };
+            setTimeout(_recurse, 50);
+          }
+        };
+      }
+    } else {
+      const gamepads = [leftGamepad, rightGamepad];
+      for (let i = 0; i < gamepads.length; i++) {
+        gamepads[i].ontriggerhapticpulse = null
+      }
+    }
+  });
   window.document.addEventListener('pointerlockchange', () => {
     const {pointerLockElement} = window.document;
 
@@ -971,10 +1028,11 @@ const _bindWindow = (window, newWindowCb) => {
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-      const windowHandle = context.getWindowHandle();
 
-      const isDirty = context.isDirty() || mlPresentState.mlGlContext === context;
+      const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context;
       if (isDirty) {
+        const windowHandle = context.getWindowHandle();
+        
         nativeWindow.setCurrentWindowContext(windowHandle);
         if (isMac) {
           context.flush();
@@ -1103,53 +1161,6 @@ const _bindWindow = (window, newWindowCb) => {
     }
   };
   window.setDirtyFrameTimeout = setDirtyFrameTimeout;
-
-  window.on('unload', () => {
-    clearTimeout(timeout);
-  });
-  window.on('navigate', newWindowCb);
-  window.document.on('paste', e => {
-    e.clipboardData = new window.DataTransfer();
-    if (contexts.length > 0) {
-      const context = contexts[0];
-      const windowHandle = context.getWindowHandle();
-      const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);
-      const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
-      e.clipboardData.items.push(dataTransferItem);
-    }
-  });
-
-  window.on('vrdisplaypresentchange', e => {
-    if (e.display) {
-      const gamepads = [leftGamepad, rightGamepad];
-      for (let i = 0; i < gamepads.length; i++) {
-        gamepads[i].ontriggerhapticpulse = (value, duration) => {
-          if (vrPresentState.isPresenting) {
-            value = Math.min(Math.max(value, 0), 1);
-            const deviceIndex = vrPresentState.system.GetTrackedDeviceIndexForControllerRole(i + 1);
-
-            const startTime = Date.now();
-            const _recurse = () => {
-              if ((Date.now() - startTime) < duration) {
-                vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
-                setTimeout(_recurse, 50);
-              }
-            };
-            setTimeout(_recurse, 50);
-          }
-        };
-      }
-    } else {
-      const gamepads = [leftGamepad, rightGamepad];
-      for (let i = 0; i < gamepads.length; i++) {
-        gamepads[i].ontriggerhapticpulse = null
-      }
-    }
-  });
-
-  window.addEventListener('error', err => {
-    console.warn('got error', err);
-  });
 
   const _recurse = () => {
     if (args.performance) {

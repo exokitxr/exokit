@@ -835,6 +835,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return Promise.reject(new Error('invalid arguments. Unknown constructor type: ' + src.constructor.name));
     }
 
+    if (typeof x === 'object') {
+      options = x;
+      x = undefined;
+    }
+    
     x = x || 0;
     y = y || 0;
     w = w || image.width;
