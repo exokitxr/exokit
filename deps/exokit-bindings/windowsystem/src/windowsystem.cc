@@ -22,10 +22,10 @@ out vec4 fragColor;\n\
 int texSamples = 4;\n\
 uniform sampler2DMS msTex;\n\
 uniform sampler2DMS msDepthTex;\n\
-uniform vec2 texSize;\n\
+uniform vec4 texSize;\n\
 \n\
 vec4 textureMultisample(sampler2DMS sampler, vec2 uv) {\n\
-  ivec2 iUv = ivec2(uv * texSize);\n\
+  ivec2 iUv = ivec2(texSize.xy + uv*texSize.zw);\n\
 \n\
   vec4 color = vec4(0.0);\n\
   for (int i = 0; i < texSamples; i++) {\n\
@@ -381,22 +381,6 @@ NAN_METHOD(DestroyRenderTarget) {
   }
 }
 
-void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
-  glUniform1i(composeSpec->msTexLocation, 0);
-
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
-  glUniform1i(composeSpec->msDepthTexLocation, 1);
-
-  glUniform2f(composeSpec->texSizeLocation, layer.width, layer.height);
-
-  glViewport(0, 0, layer.width, layer.height);
-  // glScissor(0, 0, width, height);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-}
-
 void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
 
@@ -406,60 +390,21 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-  /* // blit
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
+    glUniform1i(composeSpec->msTexLocation, 0);
 
-    if (layer.blit) {
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->composeReadFbo);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, layer.msColorTex, 0);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
+    glUniform1i(composeSpec->msDepthTexLocation, 1);
 
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeWriteFbo);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, layer.colorTex, 0);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, layer.depthTex, 0);
+    glUniform4f(composeSpec->texSizeLocation, 0, 0, layer.width, layer.height);
 
-      glBlitFramebuffer(
-        0, 0,
-        layer.width, layer.height,
-        0, 0,
-        layer.width, layer.height,
-        GL_COLOR_BUFFER_BIT,
-        GL_LINEAR);
-
-      glBlitFramebuffer(
-        0, 0,
-        layer.width, layer.height,
-        0, 0,
-        layer.width, layer.height,
-        GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-        GL_NEAREST);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-    }
-  }
-
-  // render unblitted
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (!layer.blit) {
-      ComposeLayer(composeSpec, layer);
-    }
-  }
-
-  // render blitted
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (layer.blit) {
-      ComposeLayer(composeSpec, layer);
-    }
-  } */
-
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-    ComposeLayer(composeSpec, layer);
+    glViewport(0, 0, layer.width, layer.height);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -502,10 +447,97 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
   glActiveTexture(gl->activeTexture);
 }
 
+void ComposeLayersArray(WebGLRenderingContext *gl, GLuint tex, const std::vector<LayerSpec> &layers) {
+  ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
+
+  GLuint fbo;
+  glGenFramebuffers(1, &fbo);
+
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  glBindVertexArray(composeSpec->composeVao);
+  glUseProgram(composeSpec->composeProgram);
+  
+  for (int i = 0; i < 2; i++) {
+    glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex, 0, i);
+    // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0, i);
+
+    glClear(GL_COLOR_BUFFER_BIT);
+  }
+
+  for (size_t i = 0; i < layers.size(); i++) {
+    const LayerSpec &layer = layers[i];
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
+    glUniform1i(composeSpec->msTexLocation, 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
+    glUniform1i(composeSpec->msDepthTexLocation, 1);
+
+    glViewport(0, 0, layer.width/2, layer.height);
+    
+    for (int j = 0; j < 2; j++) {
+      glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex, 0, j);
+      // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0, j);
+
+      glUniform4f(
+        composeSpec->texSizeLocation,
+        i == 0 ? 0 : layer.width/2, 0,
+        layer.width/2, layer.height
+      );
+
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    }
+  }
+  
+  glDeleteFramebuffers(1, &fbo);
+
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasVertexArrayBinding()) {
+    glBindVertexArray(gl->GetVertexArrayBinding());
+  } else {
+    glBindVertexArray(gl->defaultVao);
+  }
+  if (gl->HasProgramBinding()) {
+    glUseProgram(gl->GetProgramBinding());
+  } else {
+    glUseProgram(0);
+  }
+  if (gl->viewportState.valid) {
+    glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+  } else {
+    glViewport(0, 0, 1280, 1024);
+  }
+  glActiveTexture(GL_TEXTURE0);
+  if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  glActiveTexture(GL_TEXTURE1);
+  if (gl->HasTextureBinding(GL_TEXTURE1, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE1, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  glActiveTexture(gl->activeTexture);
+}
+
+template<bool isTextureArray>
 NAN_METHOD(ComposeLayers) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint fbo = info[1]->Uint32Value();
+    GLuint fboOrTex = info[1]->Uint32Value();
     Local<Array> array = Local<Array>::Cast(info[2]);
 
     std::vector<LayerSpec> layers;
@@ -578,7 +610,11 @@ NAN_METHOD(ComposeLayers) {
     }
 
     if (layers.size() > 0) {
-      ComposeLayers(gl, fbo, layers);
+      if (!isTextureArray) {
+        ComposeLayers(gl, fboOrTex, layers);
+      } else {
+        ComposeLayersArray(gl, fboOrTex, layers);
+      }
     }
   } else {
     Nan::ThrowError("WindowSystem::ComposeLayers: invalid arguments");
@@ -589,7 +625,8 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
-  Nan::SetMethod(target, "composeLayers", ComposeLayers);
+  Nan::SetMethod(target, "composeLayers", ComposeLayers<false>);
+  Nan::SetMethod(target, "composeLayersArray", ComposeLayers<true>);
 }
 
 }
