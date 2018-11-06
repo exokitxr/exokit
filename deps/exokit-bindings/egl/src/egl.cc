@@ -35,10 +35,10 @@ NAN_METHOD(BlitFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
   GLuint fbo1 = info[1]->Uint32Value();
   GLuint fbo2 = info[2]->Uint32Value();
-  int sw = info[3]->Uint32Value();
-  int sh = info[4]->Uint32Value();
-  int dw = info[5]->Uint32Value();
-  int dh = info[6]->Uint32Value();
+  int sw = info[3]->Int32Value();
+  int sh = info[4]->Int32Value();
+  int dw = info[5]->Int32Value();
+  int dh = info[6]->Int32Value();
   bool color = info[7]->BooleanValue();
   bool depth = info[8]->BooleanValue();
   bool stencil = info[9]->BooleanValue();
