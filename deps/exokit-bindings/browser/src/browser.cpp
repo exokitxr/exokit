@@ -278,6 +278,8 @@ void Browser::loadImmediate(const std::string &url) {
   if (browser_) {
     browser_->GetHost()->CloseBrowser(true);
     browser_ = nullptr;
+    
+    this->initialized = false;
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
