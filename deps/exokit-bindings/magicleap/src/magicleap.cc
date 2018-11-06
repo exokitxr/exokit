@@ -2003,7 +2003,7 @@ NAN_METHOD(MLContext::Exit) {
 }
 
 NAN_METHOD(MLContext::WaitGetPoses) {
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsFloat32Array() && info[5]->IsFloat32Array() && info[6]->IsFloat32Array()) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsFloat32Array() && info[5]->IsFloat32Array() && info[6]->IsFloat32Array() && info[7]->IsUint32Array()) {
     if (application_context.dummy_value == DummyValue::RUNNING) {
       MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
@@ -2014,6 +2014,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[4]);
       Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[5]);
       Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[6]);
+      Local<Uint32Array> graphicsBuffersArray = Local<Uint32Array>::Cast(info[7]);
 
       MLGraphicsFrameParams frame_params;
       MLResult result = MLGraphicsInitFrameParams(&frame_params);
@@ -2086,7 +2087,12 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
         }
+        
+        // graphics
+        graphicsBuffersArray->Set(0, JS_INT((unsigned int)mlContext->virtual_camera_array.color_id));
+        graphicsBuffersArray->Set(1, JS_INT((unsigned int)mlContext->virtual_camera_array.depth_id));
 
+        // draw helpers
         if (depthEnabled) {
           glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
 
