@@ -1067,10 +1067,12 @@ const _bindWindow = (window, newWindowCb) => {
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
-            if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
-              nativeWindow.composeLayersArray(context, mlPresentState.mlTex, mlPresentState.layers);
+            // compose to hardware framebuffer
+            if (mlPresentState.layers.length > 0) {
+              nativeWindow.composeLayersArray(context, mlPresentState.mlHwColorTex, mlPresentState.layers);
             } else {
-              nativeWindow.blitFrameBufferArray(context, mlPresentState.mlMsFbo, mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+              nativeWindow.blitFrameBufferArray(context, mlPresentState.mlMsFbo, mlPresentState.mlHwColorTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+            }
             }
 
             mlPresentState.mlContext.SubmitFrame();
