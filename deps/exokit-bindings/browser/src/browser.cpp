@@ -296,10 +296,13 @@ void Browser::loadImmediate(const std::string &url) {
     [this]() -> void {
       RunOnMainThread([&]() -> void {
         Nan::HandleScope scope;
-        
+        CefString loadUrl = browser_->GetMainFrame()->GetURL();
+        Local<Value> argv[] = {
+            JS_STR(loadUrl.ToString()),
+          };
         if (!this->onloadend.IsEmpty()) {
           Local<Function> onloadend = Nan::New(this->onloadend);
-          onloadend->Call(Nan::Null(), 0, nullptr);
+          onloadend->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
         }
       });
     },
