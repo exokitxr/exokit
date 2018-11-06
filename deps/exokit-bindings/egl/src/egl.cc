@@ -68,6 +68,52 @@ NAN_METHOD(BlitFrameBuffer) {
   }
 }
 
+NAN_METHOD(BlitFrameBufferArray) {
+  Local<Object> glObj = Local<Object>::Cast(info[0]);
+  GLuint fbo1 = info[1]->Uint32Value();
+  GLuint tex = info[2]->Uint32Value();
+  int width = info[3]->Int32Value();
+  int height = info[4]->Int32Value();
+  bool color = info[5]->BooleanValue();
+  bool depth = info[6]->BooleanValue();
+  bool stencil = info[7]->BooleanValue();
+
+  GLuint fbo2;
+  glGenFramebuffers(1, &fbo2);
+
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
+  for (int i = 0; i < 2; i++) {
+    glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex, 0, i);
+    // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0, i);
+
+    glBlitFramebuffer(
+      i == 0 ? 0 : width/2, 0,
+      i == 0 ? width/2 : width, height,
+      0, 0,
+      width/2, height,
+      (color ? GL_COLOR_BUFFER_BIT : 0) |
+      (depth ? GL_DEPTH_BUFFER_BIT : 0) |
+      (stencil ? GL_STENCIL_BUFFER_BIT : 0),
+      (depth || stencil) ? GL_NEAREST : GL_LINEAR
+    );
+  }
+  
+  glDeleteFramebuffers(1, &fbo2);
+
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+}
+
 NATIVEwindow *GetCurrentWindowContext() {
   return currentWindow;
 }
@@ -374,6 +420,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "getClipboard", egl::GetClipboard);
   Nan::SetMethod(target, "setClipboard", egl::SetClipboard);
   Nan::SetMethod(target, "blitFrameBuffer", egl::BlitFrameBuffer);
+  Nan::SetMethod(target, "blitFrameBufferArray", egl::BlitFrameBufferArray);
   Nan::SetMethod(target, "setCurrentWindowContext", egl::SetCurrentWindowContext);
 
   return scope.Escape(target);
