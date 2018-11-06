@@ -80,8 +80,6 @@
 using namespace v8;
 using namespace node;
 
-void ensureCurrentGlWindow(WebGLRenderingContext *gl);
-
 enum GlKey {
   GL_KEY_COMPOSE,
 };
