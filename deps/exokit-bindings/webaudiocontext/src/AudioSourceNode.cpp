@@ -29,7 +29,7 @@ void AudioSourceNode::InitializePrototype(Local<ObjectTemplate> proto) {
 }
 
 NAN_METHOD(AudioSourceNode::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[1]->IsObject() && info[1]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[1]);
@@ -53,7 +53,21 @@ NAN_METHOD(AudioSourceNode::New) {
         Nan::ThrowError("AudioSourceNode: invalid audio element state");
       }
     } else if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
-      Local<Object> microphoneMediaStreamObj = Local<Object>::Cast(info[0]);
+      AudioSourceNode *audioSourceNode = new AudioSourceNode();
+      Local<Object> audioSourceNodeObj = info.This();
+      audioSourceNode->Wrap(audioSourceNodeObj);
+      
+      audioSourceNode->context.Reset(audioContextObj);
+  
+      AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(Local<Object>::Cast(audioContextObj));
+      {
+        lab::ContextRenderLock r(audioContext->audioContext.get(), "AudioSourceNode::New");
+        audioSourceNode->audioNode = lab::MakeHardwareSourceNode(r);
+      }
+      
+      info.GetReturnValue().Set(audioSourceNodeObj);
+
+      /* Local<Object> microphoneMediaStreamObj = Local<Object>::Cast(info[0]);
       MicrophoneMediaStream *microphoneMediaStream = ObjectWrap::Unwrap<MicrophoneMediaStream>(Local<Object>::Cast(microphoneMediaStreamObj));
 
       if (microphoneMediaStream->audioNode) {
@@ -67,7 +81,7 @@ NAN_METHOD(AudioSourceNode::New) {
         info.GetReturnValue().Set(audioSourceNodeObj);
       } else {
         Nan::ThrowError("AudioSourceNode: media stream is not live");
-      }
+      } */
     } else {
       Nan::ThrowError("AudioSourceNode: invalid media element");
     }

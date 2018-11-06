@@ -49,7 +49,6 @@ public:
   void Suspend();
   void Resume();
 
-protected:
   static NAN_METHOD(New);
   static NAN_METHOD(Close);
   static NAN_METHOD(_DecodeAudioDataSync);
@@ -73,8 +72,8 @@ protected:
   AudioContext(float sampleRate);
   ~AudioContext();
 
-protected:
-  lab::AudioContext *audioContext;
+// protected:
+  std::unique_ptr<lab::AudioContext> audioContext;
 
   friend class Audio;
   friend class AudioListener;

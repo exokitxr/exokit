@@ -73,10 +73,10 @@ NAN_METHOD(AudioNode::Connect) {
 
       Local<Object> audioContextObj = Nan::New(srcAudioNode->context);
       AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
-      lab::AudioContext *labAudioContext = audioContext->audioContext;
+      // lab::AudioContext *labAudioContext = audioContext->audioContext;
 
       // try {
-        labAudioContext->connect(dstLabAudioNode, srcLabAudioNode, outputIndex, inputIndex);
+        audioContext->audioContext->connect(dstLabAudioNode, srcLabAudioNode, outputIndex, inputIndex);
       /* } catch (const std::exception &e) {
         Nan::ThrowError(e.what());
         return;
@@ -107,10 +107,10 @@ NAN_METHOD(AudioNode::Disconnect) {
 
     Local<Object> audioContextObj = Nan::New(srcAudioNode->context);
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
-    lab::AudioContext *labAudioContext = audioContext->audioContext;
+    // lab::AudioContext *labAudioContext = audioContext->audioContext;
 
     // try {
-      labAudioContext->disconnect(nullptr, srcLabAudioNode);
+      audioContext->audioContext->disconnect(nullptr, srcLabAudioNode);
     /* } catch (const std::exception &e) {
       Nan::ThrowError(e.what());
       return;
@@ -167,9 +167,10 @@ NAN_METHOD(AudioNode::Disconnect) {
 
         Local<Object> audioContextObj = Nan::New(srcAudioNode->context);
         AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
-        lab::AudioContext *labAudioContext = audioContext->audioContext;
+        // lab::AudioContext *labAudioContext = audioContext->audioContext;
+        
         // try {
-          labAudioContext->disconnect(dstLabAudioNode, srcLabAudioNode);
+          audioContext->audioContext->disconnect(dstLabAudioNode, srcLabAudioNode);
         /* } catch (const std::exception &e) {
           Nan::ThrowError(e.what());
           return;

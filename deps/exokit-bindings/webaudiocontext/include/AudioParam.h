@@ -39,6 +39,7 @@ protected:
   ~AudioParam();
 
 protected:
+  Nan::Persistent<Object> context;
   shared_ptr<lab::AudioParam> audioParam;
 
   friend class GainNode;

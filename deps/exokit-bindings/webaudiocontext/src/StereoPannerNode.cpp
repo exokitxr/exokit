@@ -40,14 +40,18 @@ NAN_METHOD(StereoPannerNode::New) {
     Local<Object> stereoPannerNodeObj = info.This();
     stereoPannerNode->Wrap(stereoPannerNodeObj);
 
-    shared_ptr<lab::StereoPannerNode> labStereoPannerNode = make_shared<lab::StereoPannerNode>(getDefaultAudioContext()->sampleRate());
+    AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+    shared_ptr<lab::StereoPannerNode> labStereoPannerNode = make_shared<lab::StereoPannerNode>(audioContext->audioContext->sampleRate());
     
     stereoPannerNode->context.Reset(audioContextObj);
     stereoPannerNode->audioNode = labStereoPannerNode;
 
     Local<Function> audioParamConstructor = Local<Function>::Cast(stereoPannerNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioParam")));
+    Local<Value> args[] = {
+      audioContextObj,
+    };
 
-    Local<Object> panAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    Local<Object> panAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(args)/sizeof(args[0]), args).ToLocalChecked();
     AudioParam *panAudioParam = ObjectWrap::Unwrap<AudioParam>(panAudioParamObj);
     panAudioParam->audioParam = (*(shared_ptr<lab::StereoPannerNode> *)(&stereoPannerNode->audioNode))->pan();
     stereoPannerNodeObj->Set(JS_STR("pan"), panAudioParamObj);
