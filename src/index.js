@@ -1073,6 +1073,13 @@ const _bindWindow = (window, newWindowCb) => {
             } else {
               nativeWindow.blitFrameBufferArray(context, mlPresentState.mlMsFbo, mlPresentState.mlHwColorTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
             }
+            // if camera is running, compose to camera content composition framebuffer
+            if (nativeMl.IsCameraRunning()) {
+              if (mlPresentState.layers.length > 0) {
+                nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
+              } else {
+                nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+              }
             }
 
             mlPresentState.mlContext.SubmitFrame();
