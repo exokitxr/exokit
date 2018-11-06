@@ -1845,7 +1845,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 if (context) {
                   const browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
                   this.browser = browser;
-
                   let done = false, err = null;
                   const _makeLoadError = () => new Error('failed to load page');
                   this.browser.onloadend = () => {
@@ -1860,7 +1859,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   };
                   await new Promise((accept, reject) => {
                     if (!done) {
-                      this.browser.onloadend = () => {
+                      this.browser.onloadend = (_url) => {
+                        this.dispatchEvent(new MessageEvent('navigate', {data: _url}));
                         accept();
                       };
                       this.browser.onloaderror = () => {
@@ -1895,7 +1895,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   this.contentDocument = {};
 
                   this.readyState = 'complete';
-                  
                   this.dispatchEvent(new Event('load', {target: this}));
 
                   cb();
