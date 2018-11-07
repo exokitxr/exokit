@@ -161,14 +161,16 @@ STLIBS = node \
   avdevice \
   swscale \
   swresample \
-  opus
+  opus \
+  cef_dll_wrapper
 
 # shared libs to link in
 #
 # SHLIBS.win = ole32 winmm
 SHLIBS = ml_privileges \
   ml_camera \
-  ml_audio
+  ml_audio \
+  cef
 
 # paths for finding libraries above
 #
@@ -179,7 +181,8 @@ LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   ../node_modules/libnode.a \
   ../node_modules/native-canvas-deps\lib2\magicleap \
   ../node_modules/native-audio-deps\lib2\magicleap \
-  ../node_modules/native-video-deps\lib2\magicleap
+  ../node_modules/native-video-deps\lib2\magicleap \
+  ../node_modules/native-browser-deps\lib5\magicleap
 
 # flags for C/C++/assembly preprocessing
 #
