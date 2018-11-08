@@ -91,7 +91,7 @@ void SimpleApp::OnContextInitialized() {
 
 // LoadHandler
 
-LoadHandler::LoadHandler(std::function<void()> onLoadStart, std::function<void()> onLoadEnd, std::function<void()> onLoadError) : onLoadStart(onLoadStart), onLoadEnd(onLoadEnd), onLoadError(onLoadError) {}
+LoadHandler::LoadHandler(std::function<void()> onLoadStart, std::function<void()> onLoadEnd, std::function<void(int, const std::string &, const std::string &)> onLoadError) : onLoadStart(onLoadStart), onLoadEnd(onLoadEnd), onLoadError(onLoadError) {}
 
 LoadHandler::~LoadHandler() {}
 
@@ -103,8 +103,8 @@ void LoadHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> f
   onLoadEnd();
 }
 
-void LoadHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString& errorText, const CefString &failedUrl) {
-  onLoadError();
+void LoadHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString &errorText, const CefString &failedUrl) {
+  onLoadError((int)errorCode, errorText.ToString(), failedUrl.ToString());
 }
 
 // DisplayHandler
@@ -308,13 +308,18 @@ void Browser::loadImmediate(const std::string &url) {
         }
       });
     },
-    [this]() -> void {
+    [this](int errorCode, const std::string &errorString, const std::string &failedUrl) -> void {
       RunOnMainThread([&]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onloaderror.IsEmpty()) {
           Local<Function> onloaderror = Nan::New(this->onloaderror);
-          onloaderror->Call(Nan::Null(), 0, nullptr);
+          Local<Value> argv[] = {
+            JS_INT(errorCode),
+            JS_STR(errorString),
+            JS_STR(failedUrl),
+          };
+          onloaderror->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
         }
       });
     }
