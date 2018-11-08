@@ -1847,13 +1847,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   this.browser = browser;
                   
                   let done = false, err = null, loadedUrl = url;
-                  const _makeLoadError = () => new Error('failed to load page');
                   this.browser.onloadend = () => {
                     done = true;
                   };
-                  this.browser.onloaderror = () => {
+                  this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
                     done = true;
-                    err = _makeLoadError();
+                    err = new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`);
                   };
                   this.browser.onconsole = (message, source, line) => {
                     this.onconsole && this.onconsole(message, source, line);
@@ -1868,7 +1867,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         accept();
                       };
                       this.browser.onloaderror = () => {
-                        reject(_makeLoadError());
+                        reject(new Error('failed to load page'));
                       };
                     } else {
                       if (!err) {
