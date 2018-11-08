@@ -481,20 +481,25 @@ const _makeRig = () => {
       mesh.position.y = -menuWorldHeight - (10/menuHeight*menuWorldHeight);
       // mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
+      mesh.d = 3;
 
-      ctx.fillStyle = '#42a5f5';
-      ctx.fillRect(0, 0, menuHeight*2, menuHeight);
-      ctx.fillStyle = '#FFF';
-      ctx.font = `${fontSize}px Arial`;
-      ctx.fillText('3D', menuHeight - 30, menuHeight/2 + 20);
+      const _updateOptions = () => {
+        ctx.fillStyle = mesh.d === 3 ? '#42a5f5' : '#EEE';
+        ctx.fillRect(0, 0, menuHeight*2, menuHeight);
+        ctx.fillStyle = mesh.d === 3 ? '#FFF' : '#000';
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillText('3D', menuHeight - 30, menuHeight/2 + 20);
 
-      ctx.fillStyle = '#EEE';
-      ctx.fillRect(menuHeight*2 + 10, 0, menuHeight*2, menuHeight);
-      ctx.fillStyle = '#000';
-      ctx.font = `${fontSize}px Arial`;
-      ctx.fillText('2D', menuHeight*3 - 30, menuHeight/2 + 20);
+        ctx.fillStyle = mesh.d === 2 ? '#42a5f5' : '#EEE';
+        ctx.fillRect(menuHeight*2 + 10, 0, menuHeight*2, menuHeight);
+        ctx.fillStyle = mesh.d === 2 ? '#FFF' : '#000';
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillText('2D', menuHeight*3 - 30, menuHeight/2 + 20);
 
-      texture.needsUpdate = true;
+        texture.needsUpdate = true;
+      };
+      _updateOptions();
+      mesh.updateOptions = _updateOptions;
 
       mesh.plane = new THREE.Plane();
       mesh.leftLine = new THREE.Line3();
@@ -1041,6 +1046,19 @@ function animate(time, frame) {
                   controllerMesh.rayDot.position.z = -distance;
                   controllerMesh.updateMatrixWorld();
                   controllerMesh.rayDot.visible = true;
+
+                  const gamepads = navigator.getGamepads();
+                  const gamepad = gamepads[i];
+                  if (gamepad.buttons[1].pressed) {
+                    const optionX = Math.floor(x/(menuHeight*2+10));
+                    if (optionX === 0) {
+                      menuMesh.optionsMesh.d = 3;
+                      menuMesh.optionsMesh.updateOptions();
+                    } else if (optionX === 1) {
+                      menuMesh.optionsMesh.d = 2;
+                      menuMesh.optionsMesh.updateOptions();
+                    }
+                  }
 
                   intersectionSpecs[i] = null;
                 });
