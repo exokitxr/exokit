@@ -105,7 +105,7 @@ public:
 	RenderHandler(OnPaintFn onPaint);
   ~RenderHandler();
 
-	void resize(int w, int h);
+	// void resize(int w, int h);
 
 	// CefRenderHandler interface
 	virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
@@ -159,7 +159,10 @@ protected:
   static NAN_METHOD(New);
   static NAN_METHOD(UpdateAll);
   static NAN_METHOD(Load);
-  static NAN_METHOD(Resize);
+  static NAN_GETTER(WidthGetter);
+  static NAN_SETTER(WidthSetter);
+  static NAN_GETTER(HeightGetter);
+  static NAN_SETTER(HeightSetter);
   static NAN_GETTER(OnLoadStartGetter);
   static NAN_SETTER(OnLoadStartSetter);
   static NAN_GETTER(OnLoadEndGetter);
@@ -185,7 +188,7 @@ protected:
   static NAN_GETTER(TextureGetter);
   void load(const std::string &url);
   void loadImmediate(const std::string &url);
-  void resize(int w, int h);
+  // void resize(int w, int h);
 protected:
   WebGLRenderingContext *gl;
   GLuint tex;

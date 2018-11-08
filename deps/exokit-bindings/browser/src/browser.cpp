@@ -132,10 +132,10 @@ RenderHandler::RenderHandler(OnPaintFn onPaint) : onPaint(onPaint), width(1280),
 
 RenderHandler::~RenderHandler() {}
 
-void RenderHandler::resize(int w, int h) {
+/* void RenderHandler::resize(int w, int h) {
 	width = w;
 	height = h;
-}
+} */
 
 bool RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
 	rect = CefRect(0, 0, width, height);
@@ -162,7 +162,8 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
 
   QueueOnBrowserThread([&]() -> void {
     this->loadImmediate(url);
-    this->resize(width, height);
+    ((BrowserClient *)this->browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
+    ((BrowserClient *)this->browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
     
     uv_sem_post(&constructSem);
   });
@@ -188,7 +189,9 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "load", Load);
-  Nan::SetMethod(proto, "resize", Resize);
+  // Nan::SetMethod(proto, "resize", Resize);
+  Nan::SetAccessor(proto, JS_STR("width"), WidthGetter, WidthSetter);
+  Nan::SetAccessor(proto, JS_STR("height"), HeightGetter, HeightSetter);
   Nan::SetAccessor(proto, JS_STR("onloadstart"), OnLoadStartGetter, OnLoadStartSetter);
   Nan::SetAccessor(proto, JS_STR("onloadend"), OnLoadEndGetter, OnLoadEndSetter);
   Nan::SetAccessor(proto, JS_STR("onloaderror"), OnLoadErrorGetter, OnLoadErrorSetter);
@@ -411,10 +414,10 @@ void Browser::loadImmediate(const std::string &url) {
   browser_ = CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
 }
 
-void Browser::resize(int w, int h) {
+/* void Browser::resize(int w, int h) {
   ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->resize(w, h);
 	browser_->GetHost()->WasResized();
-}
+} */
 
 NAN_METHOD(Browser::UpdateAll) {
   if (cefInitialized) {
@@ -438,16 +441,27 @@ NAN_METHOD(Browser::Load) {
   }
 }
 
-NAN_METHOD(Browser::Resize) {
-  if (info[0]->IsNumber() && info[1]->IsNumber()) {
-    Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-    int width = info[0]->Int32Value();
-    int height = info[1]->Int32Value();
-    
-    browser->resize(width, height);
-  } else {
-    return Nan::ThrowError("Browser::Resize: invalid arguments");
-  }
+NAN_GETTER(Browser::WidthGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  Local<Number> width = Nan::New(((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width);
+  info.GetReturnValue().Set(width);
+}
+NAN_SETTER(Browser::WidthSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  
+  ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width = value->Int32Value();
+	browser->browser_->GetHost()->WasResized();
+}
+NAN_GETTER(Browser::HeightGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  Local<Number> height = Nan::New(((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height);
+  info.GetReturnValue().Set(height);
+}
+NAN_SETTER(Browser::HeightSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  
+  ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height = value->Int32Value();
+	browser->browser_->GetHost()->WasResized();
 }
 
 NAN_GETTER(Browser::OnLoadStartGetter) {
