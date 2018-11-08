@@ -57,7 +57,7 @@ private:
 
 class LoadHandler : public CefLoadHandler {
 public:
-	LoadHandler(std::function<void()> onLoadStart, std::function<void()> onLoadEnd, std::function<void()> onLoadError);
+	LoadHandler(std::function<void()> onLoadStart, std::function<void()> onLoadEnd, std::function<void(int, const std::string &, const std::string &)> onLoadError);
   ~LoadHandler();
 
 	// CefRenderHandler interface
@@ -73,7 +73,7 @@ private:
 private:
   std::function<void()> onLoadStart;
   std::function<void()> onLoadEnd;
-  std::function<void()> onLoadError;
+  std::function<void(int, const std::string &, const std::string &)> onLoadError;
 };
 
 // DisplayHandler
