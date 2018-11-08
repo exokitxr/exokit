@@ -126,22 +126,6 @@ const _makeRenderer = () => {
     },
   };
 };
-/* const _makeRenderTarget = (width, height) => {
-  const renderTarget = new THREE.WebGLRenderTarget(width, height);
-  renderTarget.depthTexture = new THREE.DepthTexture(
-    width,
-    height,
-    THREE.UnsignedInt248Type,
-    THREE.UVMapping,
-    THREE.ClampToEdgeWrapping,
-    THREE.ClampToEdgeWrapping,
-    THREE.NearestFilter,
-    THREE.NearestFilter,
-    1,
-    THREE.DepthStencilFormat
-  );
-  return renderTarget;
-}; */
 
 const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1)) => {
   const _drawOk = () => {
@@ -281,8 +265,6 @@ for (let i = 0; i < 2; i++) {
   })();
   controllerMesh.add(rayDot);
   controllerMesh.rayDot = rayDot;
-
-
 
   controllerMesh.ray = new THREE.Ray();
   controllerMesh.update = () => {
