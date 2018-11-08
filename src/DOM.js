@@ -1866,8 +1866,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         }
                         accept();
                       };
-                      this.browser.onloaderror = () => {
-                        reject(new Error('failed to load page'));
+                      this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
+                        reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
                       };
                     } else {
                       if (!err) {
