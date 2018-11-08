@@ -169,6 +169,7 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
   };
   iframe.src = u;
   iframe.hidden = true;
+  iframe.d = 3;
   iframe.addEventListener('destroy', () => {
     // floorMesh.visible = true;
     // scene.background = _makeBackground();
