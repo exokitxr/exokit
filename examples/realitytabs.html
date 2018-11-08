@@ -127,7 +127,7 @@ const _makeRenderer = () => {
   };
 };
 
-const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1)) => {
+const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1), d = 3) => {
   const _drawOk = () => {
     console.log('Load ok: ' + u);
   };
@@ -167,9 +167,8 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
       layers.splice(layers.indexOf(iframe), 1);
     }
   };
+  iframe.d = d;
   iframe.src = u;
-  iframe.hidden = true;
-  iframe.d = 3;
   iframe.addEventListener('destroy', () => {
     // floorMesh.visible = true;
     // scene.background = _makeBackground();
@@ -1102,16 +1101,14 @@ function animate(time, frame) {
             const spec = intersectionSpecs[i];
             if (spec && spec.type === 'key') {
               const {data: {key, rig}} = spec;
-              const {menuMesh: {urlMesh}} = rig;
+              const {menuMesh: {urlMesh, optionsMesh}} = rig;
 
               switch (key) {
                 case 'enter': {
                   const pose = frame.getInputPose(inputSource);
-                  localMatrix.fromArray(pose.pointerMatrix)
-                    .decompose(localVector, localQuaternion, localVector2);
 
-                  const u = urlMesh.urlState.text !== DEFAULT_URL ? urlMesh.urlState.text : 'realitytab.html?color=29b6f6';
-                  _openUrl(u, rig.position, rig.quaternion);
+                  const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
+                  _openUrl(u, rig.position, rig.quaternion, undefined, optionsMesh.d);
                   _closeRig(rig);
                   break;
                 }
