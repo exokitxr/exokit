@@ -523,28 +523,56 @@ NAN_METHOD(DestroyRenderTarget) {
   }
 }
 
-void ComposeLayer(ComposeSpec *composeSpec, const LayerSpec &layer) {
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
-  glUniform1i(composeSpec->msTexLocation, 0);
+void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
+  if (layer.viewports[0] == nullptr) {
+    glBindVertexArray(composeSpec->composeVao);
+    glUseProgram(composeSpec->composeProgram);
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
+    glUniform1i(composeSpec->msTexLocation, 0);
 
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
-  glUniform1i(composeSpec->msDepthTexLocation, 1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
+    glUniform1i(composeSpec->msDepthTexLocation, 1);
 
-  glUniform2f(composeSpec->texSizeLocation, layer.width, layer.height);
+    glUniform2f(composeSpec->texSizeLocation, layer.width, layer.height);
 
-  glViewport(0, 0, layer.width, layer.height);
-  // glScissor(0, 0, width, height);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    glViewport(0, 0, layer.width, layer.height);
+    // glScissor(0, 0, width, height);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+  } else {
+    glBindVertexArray(planeSpec->planeVao);
+    glUseProgram(planeSpec->planeProgram);
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, layer.tex);
+    glUniform1i(planeSpec->texLocation, 0);
+
+    {
+      glUniformMatrix4fv(planeSpec->modelViewMatrixLocation, 1, false, layer.modelView[0]);
+      glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[0]);
+
+      glViewport(layer.viewports[0][0], layer.viewports[0][1], layer.viewports[0][2], layer.viewports[0][3]);
+      // glScissor(0, 0, width, height);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    }
+    {
+      glUniformMatrix4fv(planeSpec->modelViewMatrixLocation, 1, false, layer.modelView[1]);
+      glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[1]);
+
+      glViewport(layer.viewports[1][0], layer.viewports[1][1], layer.viewports[1][2], layer.viewports[1][3]);
+      // glScissor(0, 0, width, height);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    }
+  }
 }
 
 void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
+  PlaneSpec *planeSpec = (PlaneSpec *)(gl->keys[GlKey::GL_KEY_PLANE]);
 
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-  glBindVertexArray(composeSpec->composeVao);
-  glUseProgram(composeSpec->composeProgram);
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
@@ -601,7 +629,7 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
-    ComposeLayer(composeSpec, layer);
+    ComposeLayer(composeSpec, planeSpec, layer);
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -680,7 +708,50 @@ NAN_METHOD(ComposeLayers) {
               msDepthTex,
               tex,
               depthTex,
-              true
+              {nullptr,nullptr},
+              {nullptr,nullptr},
+              {nullptr,nullptr}
+            });
+          } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
+            Local<Object> browserObj = Local<Object>::Cast(elementObj->Get(JS_STR("browser")));
+            GLuint tex = Local<Object>::Cast(browserObj->Get(JS_STR("texture")))->Get(JS_STR("id"))->Uint32Value();
+            Local<Array> viewportsArray = Local<Array>::Cast(browserObj->Get(JS_STR("viewports")));
+            Local<Float32Array> viewportsFloat32Arrays[] = {
+              Local<Float32Array>::Cast(viewportsArray->Get(0)),
+              Local<Float32Array>::Cast(viewportsArray->Get(1)),
+            };
+            Local<Array> modelViewArray = Local<Array>::Cast(browserObj->Get(JS_STR("modelView")));
+            Local<Float32Array> modelViewFloat32Arrays[] = {
+              Local<Float32Array>::Cast(modelViewArray->Get(0)),
+              Local<Float32Array>::Cast(modelViewArray->Get(1)),
+            };
+            Local<Array> projectionArray = Local<Array>::Cast(browserObj->Get(JS_STR("projection")));
+            Local<Float32Array> projectionFloat32Arrays[] = {
+              Local<Float32Array>::Cast(projectionArray->Get(0)),
+              Local<Float32Array>::Cast(projectionArray->Get(1)),
+            };
+            int width = browserObj->Get(JS_STR("width"))->Int32Value();
+            int height = browserObj->Get(JS_STR("height"))->Int32Value();
+
+            layers.push_back(LayerSpec{
+              width,
+              height,
+              0,
+              0,
+              tex,
+              0,
+              { // viewports
+                (float *)((char *)(viewportsFloat32Arrays[0]->Buffer()->GetContents().Data()) + viewportsFloat32Arrays[0]->ByteOffset()),
+                (float *)((char *)(viewportsFloat32Arrays[1]->Buffer()->GetContents().Data()) + viewportsFloat32Arrays[1]->ByteOffset())
+              },
+              { // modelView
+                (float *)((char *)(modelViewFloat32Arrays[0]->Buffer()->GetContents().Data()) + modelViewFloat32Arrays[0]->ByteOffset()),
+                (float *)((char *)(modelViewFloat32Arrays[1]->Buffer()->GetContents().Data()) + modelViewFloat32Arrays[1]->ByteOffset())
+              },
+              { // projection
+                (float *)((char *)(projectionFloat32Arrays[0]->Buffer()->GetContents().Data()) + projectionFloat32Arrays[0]->ByteOffset()),
+                (float *)((char *)(projectionFloat32Arrays[1]->Buffer()->GetContents().Data()) + projectionFloat32Arrays[1]->ByteOffset())
+              }
             });
           } else { // iframe not ready
             // nothing
@@ -706,7 +777,9 @@ NAN_METHOD(ComposeLayers) {
               msDepthTex,
               tex,
               depthTex,
-              false
+              {nullptr,nullptr},
+              {nullptr,nullptr},
+              {nullptr,nullptr}
             });
           } else { // canvas not ready
             // nothing
