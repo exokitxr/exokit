@@ -26,7 +26,9 @@ public:
   GLuint msDepthTex;
   GLuint tex;
   GLuint depthTex;
-  bool blit;
+  float *viewports[2];
+  float *modelView[2];
+  float *projection[2];
 };
 
 class ComposeSpec {
