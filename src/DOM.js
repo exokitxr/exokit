@@ -1880,6 +1880,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   
                   let onmessage = null;
                   this.contentWindow = {
+                    _emit() {},
                     location: {
                       href: loadedUrl
                     },
@@ -1898,7 +1899,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       } : null;
                     },
                   };
-                  this.contentDocument = {};
+                  this.contentDocument = {
+                    _emit() {},
+                  };
 
                   this.readyState = 'complete';
                   
