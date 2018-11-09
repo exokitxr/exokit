@@ -34,8 +34,6 @@ public:
 class ComposeSpec {
 public:
   GLuint composeVao;
-  GLuint composeReadFbo;
-  GLuint composeWriteFbo;
   GLuint composeProgram;
   GLint positionLocation;
   GLint uvLocation;
