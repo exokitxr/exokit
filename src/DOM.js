@@ -1981,7 +1981,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         }
       } else if (name === 'width' || name === 'height') {
         if (this.browser) {
-          this.browser.resize(this.width, this.height);
+          this.browser.width = this.width;
+          this.browser.height = this.height;
         }
       }
     });
