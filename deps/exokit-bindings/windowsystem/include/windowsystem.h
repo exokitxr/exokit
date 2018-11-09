@@ -45,6 +45,20 @@ public:
   GLuint indexBuffer;
 };
 
+class PlaneSpec {
+public:
+  GLuint planeVao;
+  GLuint planeProgram;
+  GLint positionLocation;
+  GLint uvLocation;
+  GLint modelViewMatrixLocation;
+  GLint projectionMatrixLocation;
+  GLint texLocation;
+  GLuint positionBuffer;
+  GLuint uvBuffer;
+  GLuint indexBuffer;
+};
+
 void InitializeLocalGlState(WebGLRenderingContext *gl);
 bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex);
 NAN_METHOD(CreateRenderTarget);
