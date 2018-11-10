@@ -2396,25 +2396,21 @@ class HTMLAudioElement extends HTMLMediaElement {
   }
   
   get paused() {
-    return this.audio ? this.audio.paused : true;
+    return this.audio.paused;
   }
 
   get currentTime() {
-    return this.audio && this.audio.currentTime;
+    return this.audio.currentTime;
   }
   set currentTime(currentTime) {
-    if (this.audio) {
-      this.audio.currentTime = currentTime;
-    }
+    this.audio.currentTime = currentTime;
   }
 
   get duration() {
     return this.audio && this.audio.duration;
   }
   set duration(duration) {
-    if (this.audio) {
-      this.audio.duration = duration;
-    }
+    this.audio.duration = duration;
   }
 
   get buffered() {
