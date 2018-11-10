@@ -2432,119 +2432,6 @@ module.exports.HTMLAudioElement = HTMLAudioElement;
 
 class HTMLVideoElement extends HTMLMediaElement {
   constructor(attrs = [], value = '', location = null) {
-    super('VIDEO', attrs, value, location);
-
-    this.readyState = HTMLMediaElement.HAVE_NOTHING;
-    this.data = new Uint8Array(0);
-
-    this.on('attribute', (name, value) => {
-      if (name === 'src' && value) {
-        this.readyState = 'loading';
-        
-        const src = value;
-
-        this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
-
-        if (urls.has(value)) {
-          const blob = urls.get(value);
-          if (blob instanceof Bindings.bindings.nativeVideo.VideoDevice) {
-            this.video = blob;
-          }
-        }
-
-        this.ownerDocument.resources.addResource((onprogress, cb) => {
-          const progressEvent = new Event('progress', {target: this});
-          progressEvent.loaded = 1;
-          progressEvent.total = 1;
-          progressEvent.lengthComputable = true;
-          this._emit(progressEvent);
-          
-          this.readyState = 'complete';
-
-          this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
-          this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
-
-          cb();
-        });
-      }
-    });
-  }
-
-  get width() {
-    return this.video ? this.video.width : 0;
-  }
-  set width(width) {}
-  get height() {
-    return this.video ? this.video.height : 0;
-  }
-  set height(height) {}
-
-  get autoplay() {
-    return this.getAttribute('autoplay');
-  }
-  set autoplay(autoplay) {
-    this.setAttribute('autoplay', autoplay);
-  }
-
-  getBoundingClientRect() {
-    return new DOMRect(0, 0, this.width, this.height);
-  }
-
-  get data() {
-    return this.video ? this.video.data : null;
-  }
-  set data(data) {}
-
-  play() {
-    const _getDevice = facingMode => {
-      switch (facingMode) {
-        case 'user': return devices[0];
-        case 'environment': return devices[1];
-        case 'left': return devices[2];
-        case 'right': return devices[3];
-        default: return devices[0];
-      }
-    }
-    const _getName = facingMode => (process.platform === 'darwin' ? '' : 'video=') + _getDevice(facingMode).name;
-    const _getOptions = facingMode => {
-      if (process.platform === 'darwin') {
-        return 'framerate='+_getDevice(facingMode).modes[0].fps;
-      } else {
-        return null;
-      }
-    }
-    if (this.video) {
-      this.video.close();
-      this.video.open(
-        _getName(this.video.constraints.facingMode),
-        _getOptions(this.video.constraints.facingMode)
-      );
-    }
-
-    return Promise.resolve();
-  }
-  pause() {
-    if (this.video) {
-      this.video.close();
-    }
-  }
-
-  get buffered() {
-    return new TimeRanges([0, this.duration]);
-  }
-  set buffered(buffered) {}
-
-  update() {
-    if (this.video) {
-      this.video.update();
-    }
-  }
-}
-module.exports.HTMLVideoElement = HTMLVideoElement;
-
-/*
-class HTMLVideoElement extends HTMLMediaElement {
-  constructor(attrs = [], value = '') {
     super('VIDEO', attrs, value);
 
     this.readyState = HTMLMediaElement.HAVE_NOTHING;
@@ -2552,43 +2439,64 @@ class HTMLVideoElement extends HTMLMediaElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
-        console.log('video downloading...');
         const src = value;
 
-        this.ownerDocument.defaultView.fetch(src)
-          .then(res => {
-            console.log('video download res');
-            if (res.status >= 200 && res.status < 300) {
-              return res.arrayBuffer();
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
+          (() => {
+            const b = urls.get(src);
+            if (b instanceof bindings.nativeVideo.VideoDevice) {
+              this.video = b;
+              
+              return Promise.resolve();
             } else {
-              return Promise.reject(new Error(`video src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
+              return this.ownerDocument.defaultView.fetch(src)
+                .then(res => {
+                  if (res.status >= 200 && res.status < 300) {
+                    return res.arrayBuffer();
+                  } else {
+                    return Promise.reject(new Error(`video src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
+                  }
+                })
+                .then(arrayBuffer => {
+                  try {
+                    this.video.load(arrayBuffer);
+                  } catch(err) {
+                    throw new Error(`failed to decode video: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
+                  }
+                })
             }
-          })
-          .then(arrayBuffer => {
-            console.log('video download arraybuffer');
-            try {
-              this.video.load(arrayBuffer);
-            } catch(err) {
-              throw new Error(`failed to decode video: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-            }
-          })
-          .then(() => {
-            console.log('video download done');
-            this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
-            this._emit('canplay');
-            this._emit('canplaythrough');
-          })
-          .catch(err => {
-            this._emit('error', err);
-          });
+          })()
+            .then(() => {
+              this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+              
+              const progressEvent = new Event('progress', {target: this});
+              progressEvent.loaded = 1;
+              progressEvent.total = 1;
+              progressEvent.lengthComputable = true;
+              this._emit(progressEvent);
+
+              this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
+              this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
+              
+              cb();
+            })
+            .catch(err => {
+              console.warn('failed to load audio:', src);
+
+              const e = new ErrorEvent('error', {target: this});
+              e.message = err.message;
+              e.stack = err.stack;
+              this._dispatchEventOnDocumentReady(e);
+              
+              cb(err);
+            });
+        });
       } else if (name === 'loop') {
         this.video.loop = !!value || value === '';
       } else if (name === 'autoplay') {
         const autoplay = !!value || value === '';
         if (autoplay) {
-          console.log('video set autoplay');
           const canplay = () => {
-            console.log('video autoplay play');
             this.video.play();
             _cleanup();
           };
@@ -2605,7 +2513,7 @@ class HTMLVideoElement extends HTMLMediaElement {
       }
     });
   }
-
+  
   get width() {
     return this.video.width;
   }
@@ -2639,31 +2547,61 @@ class HTMLVideoElement extends HTMLMediaElement {
   set data(data) {}
 
   play() {
-    this.video.play();
+    if (this.video instanceof bindings.nativeVideo.VideoDevice) {
+      const _getDevice = facingMode => {
+        switch (facingMode) {
+          case 'user': return devices[0];
+          case 'environment': return devices[1];
+          case 'left': return devices[2];
+          case 'right': return devices[3];
+          default: return devices[0];
+        }
+      }
+      const _getName = facingMode => (process.platform === 'darwin' ? '' : 'video=') + _getDevice(facingMode).name;
+      const _getOptions = facingMode => {
+        if (process.platform === 'darwin') {
+          return 'framerate='+_getDevice(facingMode).modes[0].fps;
+        } else {
+          return null;
+        }
+      }
+      if (this.video) {
+        this.video.close();
+        this.video.open(
+          _getName(this.video.constraints.facingMode),
+          _getOptions(this.video.constraints.facingMode)
+        );
+      }
+    } else {
+      
+    }
 
     return Promise.resolve();
   }
   pause() {
-    this.video.pause();
+    if (this.video instanceof bindings.nativeVideo.VideoDevice) { // XXX
+      this.video.close();
+    } else {
+      this.video.pause();
+    }
   }
 
   get currentTime() {
-    return this.video && this.video.currentTime;
+    return this.video.currentTime;
   }
   set currentTime(currentTime) {
-    if (this.video) {
-      this.video.currentTime = currentTime;
-    }
+    this.video.currentTime = currentTime;
   }
 
   get duration() {
-    return this.video && this.video.duration;
+    return this.video.duration;
   }
-  set duration(duration) {
-    if (this.video) {
-      this.video.duration = duration;
-    }
+  set duration(duration) {}
+  
+  get buffered() {
+    return new TimeRanges([0, this.duration]);
   }
+  set buffered(buffered) {}
 
   run() {
     let running = false;
@@ -2697,8 +2635,12 @@ class HTMLVideoElement extends HTMLMediaElement {
 
     return running;
   }
+  
+  update() {
+    this.video.update();
+  }
 }
-*/
+module.exports.HTMLVideoElement = HTMLVideoElement;
 
 function _hash(s) {
   let result = 0;
