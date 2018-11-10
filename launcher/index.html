@@ -31,7 +31,6 @@
       super(props);
       this.state = {
         progress: 0,
-        needsUpdate: false,
         userVersion: '',
         upstreamVersion: '',
         url: '',
@@ -98,10 +97,8 @@
       let progress = 0;
       ipcRenderer.on('asynchronous-reply', (event, arg) => {
         progress = arg;
+        console.log(progress);
         this.setState({ progress: progress });
-        if(this.state.progress === 100.0){
-
-        }
         if(arg === 'code:0'){ // means that installer finished with exit code 0
           document.getElementById('checkingUpdate').hidden = false;
           document.getElementById('upToUpdate').hidden = true;
@@ -119,6 +116,9 @@
           ipcRenderer.removeAllListeners('asynchronous-reply');
           this.checkVersion()
         }
+        if(arg === 'code:-13'){ // means that installer finished with exit code -13 EACCESS error
+          console.log('update error with file permissions');
+        }
       });
       ipcRenderer.send('asynchronous-message', 'update');
       document.getElementById('upToUpdate').hidden = true;
@@ -135,7 +135,6 @@
           console.log(versions[0].length, versions[1].length);
           if(versions[0] !== versions[1]){
             console.log('Your version is out of date');
-            this.setState({ needsUpdate: true });
             this.setState({ userVersion: versions[0] });
             this.setState({ upstreamVersion: versions[1] });
             document.getElementById('checkingUpdate').hidden = true;
@@ -150,14 +149,13 @@
             document.getElementById('upToUpdate').hidden = false;
             document.getElementById('needsUpdate').hidden = true;
             document.getElementById('downloadingUpdate').hidden = true;
-            this.setState({ needsUpdate: false });
             this.setState({ userVersion: versions[0] });
             this.setState({ upstreamVersion: versions[1] });
             ipcRenderer.removeAllListeners('asynchronous-reply');
           }
         }
       });
-      ipcRenderer.send('asynchronous-message', 'version') // Launch ExoHome from Node
+      ipcRenderer.send('asynchronous-message', 'version') // Check version
     }
 
     render() {
@@ -281,19 +279,19 @@
 
             <div className="row pt-3 pl-4 pb-4 fixed-bottom">
 
-              <div className="col-8" id='upToUpdate'>
+              <div className="col-8 updateDivs" id='upToUpdate'>
                 <h5 className="">Updates - <span style={{"color": "#00b490"}}><small>You are up-to date!</small></span></h5>
                 <p>Your Version: <span style={{"color": "#00b490"}}>{this.state.userVersion}</span></p>
                 <p className="pt-0">Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
               </div>
 
-              <div className="col-8" id='checkingUpdate'>
+              <div className="col-8 updateDivs" id='checkingUpdate'>
                 <h5 className="">Updates - <span style={{"color": "#00b490"}}><small>Checking for Updates...</small></span></h5>
                 <p>Your Version: <span style={{"color": "#00b490"}}>{this.state.userVersion}</span></p>
                 <p className="pt-0">Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
               </div>
 
-              <div className="col-8 mb-2" id='needsUpdate'>
+              <div className="col-8 mb-2 updateDivs" id='needsUpdate'>
                 <h5 className="">Updates - <span style={{"color": "orange"}}><small>Update Available</small></span></h5>
                 <p>Your Version: <span style={{"color": "orange"}}>{this.state.userVersion}</span></p>
                 <p className="d-inline">Version Available: <span style={{"color": "#00b490"}}>{this.state.upstreamVersion}</span></p>
@@ -309,7 +307,7 @@
                 <p className="text-center">{this.state.progress}%</p>
               </div>
 
-              <div className="col-4">
+              <div className="col-4 float-right">
                 <h5>Launch</h5>
                 <button className="btn m-2" onClick={(e) => this.launchTerminal(e)}>Terminal</button>
                 <button className="btn m-2" onClick={(e) => this.launchExoHome(e)}>Exo-Home</button>

@@ -17,7 +17,7 @@
     "popper.js": "^1.14.4",
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
-    "react-scripts": "1.1.4"
+    "react-scripts": "^2.1.1"
   },
   "devDependencies": {
     "electron-packager": "^12.2.0"

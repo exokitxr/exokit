@@ -11,6 +11,7 @@ body{
   background: radial-gradient(circle, rgba(32,32,32,1) 0%, rgba(0,0,0,1) 99%);
   color: #d1d1d1;
 }
+
 .carousel{
   max-height: 200px;
   max-width: 100%
@@ -45,6 +46,9 @@ body{
 .carousel-control-next-icon {
   background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='#00b490' viewBox='0 0 8 8'%3E%3Cpath d='M2.75 0l-1.5 1.5 2.5 2.5-2.5 2.5 1.5 1.5 4-4-4-4z'/%3E%3C/svg%3E") !important;
 }
+.carousel-inner h5, p{
+    color: white;
+}
 
 .carousel-indicators .active{
   background-color: #00b490;
@@ -57,4 +61,8 @@ h3, h5{
 }
 .fab{
   color: white;
+}
+.updateDivs{
+    padding-left: 50px;
+    padding-bottom: 20px;
 }

@@ -1,7 +1,7 @@
 const {BrowserWindow} = require('electron');
 const {app} = require('electron');
 const {ipcMain} = require('electron');
-const { spawn } = require('child_process');
+const {spawn} = require('child_process');
 const path = require('path');
 const url = require('url');
 const https = require('https');
@@ -14,14 +14,13 @@ if(process.platform === 'win32'){
   exokitPath = '..\\scripts\\exokit.cmd';
 }
 else{
-  exokitPath = '../scripts/exokit.cmd';
+  exokitPath = '../scripts/exokit.sh';
 }
 
 let window = null;
 
 // Wait until the app is ready
 app.once('ready', () => {
-  console.log(downloadsFolder());
   // Create a new window
   window = new BrowserWindow({
     center: true,
@@ -58,105 +57,147 @@ app.once('ready', () => {
 ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
   switch (arg1) {
 
-    case 'social':
-      opn(arg2);
-      break;
+  case 'social':
+    opn(arg2);
+    break;
 
-    case 'terminal':
-      // arg2 is url, arg3 is flags, they can be empty or filled.
+  case 'terminal':
+    console.log(typeof arg2, typeof arg3);
+    console.log(arg2, arg3);
+    // arg2 is url, arg3 is flags, they can be empty or filled.
+    if(arg3.length > 0 && arg2.length > 0){ // launch with both flag and url
       spawn(exokitPath, [arg2, '-' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-      break;
-
-    case 'exohome':
-      spawn(exokitPath, [arg2, '-' + 'h' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
-      break;
-
-    case 'version':
-
-      const version = spawn(exokitPath, ['-v']);
-      let stdout = '';
-      version.stdout.on('data', (data) => {
-        stdout += String(data);
-      });
-
-      version.once('exit', function() {
-        // Send the userVersion to Frontend
-        event.sender.send('asynchronous-reply', stdout.slice(0, 7));
-
-        https.get('https://get.webmr.io/version', (res) => {
-          console.log('Checking Version...');
-          let data = '';
-          res.on('data', (d) => {
-            data += String(d);
-          });
-
-          res.on('end', () => {
-            const json = JSON.parse(data);
-            let version = json['version'];
-            version = version.slice(1, 8);
-            console.log('upstream version = ', version);
-            // Send the upstreamVersion to Frontend
-            event.sender.send('asynchronous-reply', version);
-          });
-
-        }).on('error', (e) => {
-          console.error(e);
-        });
-      });
-      break;
-
-    case 'update':
-      let writeStream = fs.createWriteStream(downloadsFolder() + 'exokit-installer.exe');
-
-      let url = '';
-
-      console.log('Detected OS:', process.platform);
-
-      switch (process.platform) {
-        case 'win32':
-          url = 'https://get.webmr.io/windows';
-          break;
-        case 'darwin':
-          url = 'https://get.webmr.io/macos';
-          break;
-        case 'linux':
-          url = 'https://get.webmr.io/linux';
-          break;
+    }
+    if(arg3.length > 0){ // launch with just a flag
+      spawn(exokitPath, ['-' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+    }
+    if(arg2.length > 0){ // launch with just a URL parameter
+      spawn(exokitPath, [arg2], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+    }
+    else{ // launch with nothing extra
+      if(process.platform === 'darwin'){
+        spawn('sh', [exokitPath], {shell: true, detached: true});
       }
+      else{
+        spawn(exokitPath, {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+      }
+    }
+    break;
 
-      https.get(url, (res) => {
+  case 'exohome':
+    spawn(exokitPath, [arg2, '-' + 'h' + arg3], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+    break;
 
-        console.log('Downloading Exokit...');
+  case 'version':
+    const version = spawn(exokitPath, ['-v']);
+    let stdout = '';
+    version.stdout.on('data', (data) => {
+      stdout += String(data);
+    });
 
-        const downloadSize = res.headers['content-length' ];
-        let chunkSize = 0;
+    version.once('exit', function() {
+      // Send the userVersion to Frontend
+      const userVersion = stdout.slice(0, 7);
+      event.sender.send('asynchronous-reply', userVersion);
+      console.log('User Version:', userVersion);
 
+      https.get('https://get.webmr.io/version', (res) => {
+        console.log('Checking Upstream Version...');
+        let data = '';
         res.on('data', (d) => {
-          chunkSize += d.length;
-          writeStream.write(d);
-          event.sender.send('asynchronous-reply', ((chunkSize / downloadSize) * 100).toFixed(1));
+          data += String(d);
         });
 
         res.on('end', () => {
-          console.log('Download complete!');
-          writeStream.close();
+          const json = JSON.parse(data);
+          if(json['version'] != null){
+            let upstreamVersion = json['version'].slice(1, 8);
+            console.log('Upstream Version:', upstreamVersion);
+            // Send the upstreamVersion to Frontend
+            event.sender.send('asynchronous-reply', upstreamVersion);
+          }
+          else{
+            console.log('Version returned null from upstream');
+            // Send the upstreamVersion to Frontend
+            event.sender.send('asynchronous-reply', null);
+          }
         });
 
       }).on('error', (e) => {
         console.error(e);
       });
+    });
+    break;
 
-      writeStream.on('finish', () => {
-        launchInstaller();
+  case 'update':
+    let writeStream = fs.createWriteStream(downloadsFolder() + 'exokit-installer.exe');
+
+    let url = '';
+
+    console.log('Detected OS:', process.platform);
+
+    switch (process.platform) {
+    case 'win32':
+      url = 'https://get.webmr.io/windows';
+      break;
+    case 'darwin':
+      url = 'https://get.webmr.io/macos';
+      break;
+    case 'linux':
+      url = 'https://get.webmr.io/linux';
+      break;
+    }
+
+    https.get(url, (res) => {
+
+      console.log('Downloading Exokit...');
+
+      const downloadSize = res.headers['content-length' ];
+      let chunkSize = 0;
+      let prevChunkSize = 0;
+      let prevProgress = 0;
+      let currentProgress = 0;
+
+      res.on('data', (d) => {
+        prevChunkSize = chunkSize;
+        prevProgress = ((prevChunkSize / downloadSize) * 100).toFixed(0);
+        chunkSize += d.length;
+        currentProgress = ((chunkSize / downloadSize) * 100).toFixed(0);
+        writeStream.write(d);
+        if(prevProgress !== currentProgress){
+          event.sender.send('asynchronous-reply', currentProgress);
+        }
       });
-      break;
 
-    default:
-      event.sender.send('asynchronous-reply', 'message does not make sense to electron backend');
-      break;
+      res.on('end', () => {
+        console.log('Download complete!');
+        writeStream.close();
+      });
+
+    }).on('error', (e) => {
+      console.error(e);
+    });
+
+    writeStream.on('finish', () => {
+      launchInstaller();
+    });
+    break;
+
+  default:
+    event.sender.send('asynchronous-reply', 'message does not make sense to electron backend');
+    break;
   }
   function launchInstaller(){
-    const child = spawn(downloadsFolder() + 'exokit-installer.exe', [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+    let child;
+    if(process.platform === 'win32'){
+      child = spawn(downloadsFolder() + 'exokit-installer.exe', [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+    }
+    if(process.platform === 'darwin'){
+      child = spawn(downloadsFolder() + '/exokit-macos-x64.dmg', [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+    }
+    if(process.platform === 'linux'){
+      child = spawn(downloadsFolder() + '/exokit-installer.exe', [], {detached: true, stdio: ['ignore', 'ignore', 'ignore']});
+    }
 
     child.on('close', (code) => {
       console.log(`child close process exited with code ${code}`);
