@@ -2481,7 +2481,7 @@ class HTMLVideoElement extends HTMLMediaElement {
               cb();
             })
             .catch(err => {
-              console.warn('failed to load audio:', src);
+              console.warn('failed to load video:', src);
 
               const e = new ErrorEvent('error', {target: this});
               e.message = err.message;
