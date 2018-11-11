@@ -2547,7 +2547,7 @@ class HTMLVideoElement extends HTMLMediaElement {
   set data(data) {}
 
   play() {
-    if (this.video instanceof bindings.nativeVideo.VideoDevice) {
+    if (this.video instanceof bindings.nativeVideo.VideoDevice) { // XXX
       const _getDevice = facingMode => {
         switch (facingMode) {
           case 'user': return devices[0];
@@ -2573,7 +2573,7 @@ class HTMLVideoElement extends HTMLMediaElement {
         );
       }
     } else {
-      
+      this.video.play();
     }
 
     return Promise.resolve();
