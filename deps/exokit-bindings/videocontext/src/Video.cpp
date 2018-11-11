@@ -211,9 +211,8 @@ FrameStatus AppData::advanceToFrameAt(double timestamp) {
       return FRAME_STATUS_ERROR;
     }
 
-    sws_scale(conv_ctx, av_frame->data, av_frame->linesize, 0, codec_ctx->height, gl_frame->data, gl_frame->linesize);
-
     if (frame_finished) {
+      sws_scale(conv_ctx, av_frame->data, av_frame->linesize, 0, codec_ctx->height, gl_frame->data, gl_frame->linesize);
       lastTimestamp = (double)packet->pts * timeBase;
     }
 
