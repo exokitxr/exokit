@@ -81,7 +81,8 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   // dump debug info
   // av_dump_format(fmt_ctx, 0, argv[1], 0);
 
-   // find the video stream
+  // find the video stream
+  stream_idx = -1;
   for (unsigned int i = 0; i < fmt_ctx->nb_streams; ++i)
   {
       if (fmt_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
