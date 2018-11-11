@@ -11,7 +11,8 @@ extern "C" {
 namespace ffmpeg {
 
 const int kBufferSize = 4 * 1024;
-const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGB24;
+const int bpp = 4;
+const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
 
 AppData::AppData() :
   dataPos(0),
@@ -436,7 +437,7 @@ NAN_GETTER(Video::DataGetter) {
 
   unsigned int width = video->GetWidth();
   unsigned int height = video->GetHeight();
-  unsigned int dataSize = width * height * 3;
+  unsigned int dataSize = width * height * bpp;
   if (video->dataArray.IsEmpty()) {
     Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), dataSize);
     Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
