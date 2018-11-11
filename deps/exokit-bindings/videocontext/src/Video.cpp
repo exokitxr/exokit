@@ -91,7 +91,6 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
           break;
       }
   }
-
   if (stream_idx == -1) {
     if (error) {
       *error = "failed to find video stream";
