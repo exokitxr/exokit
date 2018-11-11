@@ -99,19 +99,29 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   }
 
   video_stream = fmt_ctx->streams[stream_idx];
-  codec_ctx = video_stream->codec;
-
+  
   // find the decoder
-  decoder = avcodec_find_decoder(codec_ctx->codec_id);
+  decoder = avcodec_find_decoder(video_stream->codec->codec_id);
   if (decoder == nullptr) {
     if (error) {
       *error = "failed to find decoder: ";
-      *error += avcodec_get_name(codec_ctx->codec_id);
+      *error += avcodec_get_name(video_stream->codec->codec_id);
     }
     return false;
   }
 
   // open the decoder
+  codec_ctx = avcodec_alloc_context3(decoder);
+  ret = avcodec_copy_context(codec_ctx, video_stream->codec);
+  if (ret < 0) {
+    if (error) {
+      *error = "failed to copy codec context: ";
+      char errbuf[1024];
+      av_strerror(ret, errbuf, sizeof(errbuf));
+      *error += errbuf;
+    }
+    return false;
+  }
   ret = avcodec_open2(codec_ctx, decoder, nullptr);
   if (ret < 0) {
     if (error) {
