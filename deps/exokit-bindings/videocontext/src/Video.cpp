@@ -143,7 +143,7 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
 
   // allocate the converter
   conv_ctx = sws_getContext(
-    codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
+    codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt != -1 ? codec_ctx->pix_fmt : AV_PIX_FMT_YUV420P,
     codec_ctx->width, codec_ctx->height, kPixelFormat,
     SWS_BICUBIC, nullptr, nullptr, nullptr
   );
