@@ -2549,6 +2549,7 @@ class HTMLVideoElement extends HTMLMediaElement {
   play() {
     if (this.video instanceof bindings.nativeVideo.VideoDevice) { // XXX
       const _getDevice = facingMode => {
+        const devices = bindings.nativeVideo.Video.getDevices();
         switch (facingMode) {
           case 'user': return devices[0];
           case 'environment': return devices[1];
