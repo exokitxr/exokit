@@ -10,7 +10,7 @@ extern "C" {
 
 namespace ffmpeg {
 
-const int kBufferSize = 4 * 1024;
+const int kBufferSize = 8 * 1024;
 const int bpp = 4;
 const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
 
