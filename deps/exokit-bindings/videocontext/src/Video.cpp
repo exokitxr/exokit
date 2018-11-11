@@ -181,13 +181,14 @@ FrameStatus AppData::advanceToFrameAt(double timestamp) {
     }
 
     bool packetValid = false;
+    int ret;
     for (;;) {
       if (packetValid) {
         av_free_packet(packet);
         packetValid = false;
       }
 
-      int ret = av_read_frame(fmt_ctx, packet);
+      ret = av_read_frame(fmt_ctx, packet);
       packetValid = true;
       if (ret == AVERROR_EOF) {
         av_free_packet(packet);
@@ -204,7 +205,8 @@ FrameStatus AppData::advanceToFrameAt(double timestamp) {
     }
     // we have a valid packet at this point
     int frame_finished = 0;
-    if (avcodec_decode_video2(codec_ctx, av_frame, &frame_finished, packet) < 0) {
+    ret = avcodec_decode_video2(codec_ctx, av_frame, &frame_finished, packet);
+    if (ret < 0) {
       av_free_packet(packet);
       return FRAME_STATUS_ERROR;
     }
