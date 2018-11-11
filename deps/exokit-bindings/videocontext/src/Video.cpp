@@ -57,7 +57,8 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   fmt_ctx = avformat_alloc_context();
   io_ctx = avio_alloc_context((unsigned char *)av_malloc(kBufferSize), kBufferSize, 0, this, bufferRead, nullptr, bufferSeek);
   fmt_ctx->pb = io_ctx;
-  if (avformat_open_input(&fmt_ctx, "memory input", nullptr, nullptr) < 0) {
+  int ret = avformat_open_input(&fmt_ctx, "memory input", nullptr, nullptr);
+  if (ret < 0) {
     if (error) {
       *error = "failed to open input";
     }
@@ -65,9 +66,13 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   }
 
   // find stream info
-  if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
+  ret = avformat_find_stream_info(fmt_ctx, nullptr);
+  if (ret < 0) {
     if (error) {
-      *error = "failed to get stream info";
+      *error = "failed to get stream info: ";
+      char errbuf[1024];
+      av_strerror(ret, errbuf, sizeof(errbuf));
+      *error += errbuf;
     }
     return false;
   }
@@ -99,15 +104,20 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   decoder = avcodec_find_decoder(codec_ctx->codec_id);
   if (decoder == nullptr) {
     if (error) {
-      *error = "failed to find decoder";
+      *error = "failed to find decoder: ";
+      *error += avcodec_get_name(codec_ctx->codec_id);
     }
     return false;
   }
 
   // open the decoder
-  if (avcodec_open2(codec_ctx, decoder, nullptr) < 0) {
+  ret = avcodec_open2(codec_ctx, decoder, nullptr);
+  if (ret < 0) {
     if (error) {
-      *error = "failed to open codec";
+      *error = "failed to open codec: ";
+      char errbuf[1024];
+      av_strerror(ret, errbuf, sizeof(errbuf));
+      *error += errbuf;
     }
     return false;
   }
