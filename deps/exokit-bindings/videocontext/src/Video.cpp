@@ -57,7 +57,8 @@ bool AppData::set(vector<unsigned char> &memory, string *error) {
   fmt_ctx = avformat_alloc_context();
   io_ctx = avio_alloc_context((unsigned char *)av_malloc(kBufferSize), kBufferSize, 0, this, bufferRead, nullptr, bufferSeek);
   fmt_ctx->pb = io_ctx;
-  int ret = avformat_open_input(&fmt_ctx, "memory input", nullptr, nullptr);
+  fmt_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
+  int ret = avformat_open_input(&fmt_ctx, "memory", nullptr, nullptr);
   if (ret < 0) {
     if (error) {
       *error = "failed to open input";
