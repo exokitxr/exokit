@@ -177,6 +177,7 @@
                     '-lXxf86vm',
                     '-lXrandr',
                     '-lXi',
+                    '-lx264',
                     '-lasound',
                     '-lexpat',
                   ],
