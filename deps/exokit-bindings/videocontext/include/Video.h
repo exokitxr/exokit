@@ -4,6 +4,9 @@
 #include <v8.h>
 #include <node.h>
 #include <nan.h>
+#include <deque>
+#include <thread>
+#include <functional>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -26,6 +29,12 @@ enum FrameStatus {
   FRAME_STATUS_ERROR,
   FRAME_STATUS_EOF,
 };
+
+class AppData;
+class Video;
+class VideoCamera;
+class VideoRequest;
+class VideoResponse;
 
 class AppData {
 public:
@@ -87,12 +96,14 @@ protected:
   double getRequiredCurrentTimeS();
   double getFrameCurrentTimeS();
   FrameStatus advanceToFrameAt(double timestamp);
+  static void queueInVideoThread(std::function<void()> fn, std::function<void()> cb);
+  static void runInMainThread();
 
   Video();
   ~Video();
 
 private:
-  AppData data;
+  AppData appData;
   bool loaded;
   bool playing;
   bool loop;
@@ -100,9 +111,13 @@ private:
   double startFrameTime;
   Nan::Persistent<Uint8ClampedArray> dataArray;
   bool dataDirty;
-};
 
-class VideoCamera;
+  std::thread thread;
+  uv_sem_t requestSem;
+  // uv_sem_t responseSem;
+  std::mutex requestMutex;
+  std::deque<VideoRequest> requestQueue;
+};
 
 class VideoDevice : public ObjectWrap {
   public:
@@ -126,6 +141,20 @@ class VideoDevice : public ObjectWrap {
     Nan::Persistent<Object> imageData;
 };
 
+class VideoRequest {
+public:
+  std::function<void(std::function<void()>)> fn;
+  std::function<void()> cb;
+};
+
+class VideoResponse {
+public:
+  std::function<void()> fn;
+};
+
+extern std::mutex responseMutex;
+extern uv_async_t requestAsync;
+extern std::deque<VideoResponse> responseQueue;
 extern std::vector<Video *> videos;
 extern std::vector<VideoDevice *> videoDevices;
 

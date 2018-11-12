@@ -239,20 +239,53 @@ double AppData::getTimeBase() {
   }
 }
 
-Video::Video() : loaded(false), playing(false), loop(false), startTime(0), startFrameTime(0), dataDirty(true) {
+Video::Video() :
+  loaded(false), playing(false), loop(false), startTime(0), startFrameTime(0), dataDirty(true)
+{
   videos.push_back(this);
+
+  uv_sem_init(&requestSem, 0);
+  // uv_sem_init(&responseSem, 0);
+  thread = std::thread([this]() -> void {
+    for (;;) {
+      uv_sem_wait(&this->requestSem);
+      std::lock_guard<std::mutex> lock(this->requestMutex);
+
+      if (this->requestQueue.size() > 0) {
+        VideoRequest &entry = this->requestQueue.front();
+        entry.fn([&]() -> void {
+          {
+            std::lock_guard<std::mutex> lock(responseMutex);
+
+            responseQueue.push_back(VideoResponse{entry.cb});
+          }
+
+          uv_async_send(&responseAsync);
+        });
+
+        this->requestQueue.pop_front();
+      } else {
+        break;
+      }
+    }
+
+    uv_sem_destroy(&this->requestSem);
+  });
 }
 
 Video::~Video() {
   videos.erase(std::find(videos.begin(), videos.end(), this));
+  uv_sem_post(&requestSem); // join the thread
+  // uv_sem_destroy(&responseSem);
 }
 
 Handle<Object> Video::Initialize(Isolate *isolate) {
-  // initialize libav
   av_register_all();
   avcodec_register_all();
   avdevice_register_all();
   avformat_network_init();
+
+  uv_async_init(uv_default_loop(), &responseAsync, runInMainThread);
 
   Nan::EscapableHandleScope scope;
 
@@ -292,7 +325,7 @@ NAN_METHOD(Video::New) {
   info.GetReturnValue().Set(videoObj);
 }
 
-bool Video::Load(unsigned char *bufferValue, size_t bufferLength, string *error) {
+void Video::Load(unsigned char *bufferValue, size_t bufferLength, string *error) {
   // reset state
   loaded = false;
   dataArray.Reset();
@@ -302,30 +335,49 @@ bool Video::Load(unsigned char *bufferValue, size_t bufferLength, string *error)
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
 
-  if (data.set(bufferData, error)) { // takes ownership of bufferData
-    // scan to the first frame
-    FrameStatus status = advanceToFrameAt(0);
-    if (status == FRAME_STATUS_OK) {
-      loaded = true;
+  queueInVideoThread([this](std::function<void()> cb) -> void {
+    if (this->appData.set(bufferData, error)) { // takes ownership of bufferData
+      FrameStatus status = this->appData.advanceToFrameAt(0);
 
-      return true;
+      cb([this, status]() -> void {
+        if (status == FRAME_STATUS_OK) {
+          this->loaded = true;
+          this->dataDirty = true;
+        } else {
+          std::cerr << "failed to advance to first video frame" << std::endl; // XXX call error here
+        }
+      });
     } else {
-      return false;
+      cb([this]() -> void {
+        std::cerr << "failed to advance to first video frame" << std::endl; // XXX call error here
+      });
     }
-  } else {
-    return false;
-  }
+  });
 }
 
 void Video::Update() {
   if (loaded && playing) {
-    FrameStatus status = advanceToFrameAt(getRequiredCurrentTimeS());
-    if (status == FRAME_STATUS_EOF) {
-      if (loop) {
-        SeekTo(0);
-      } else {
-        Pause();
-      }
+    bool shouldQueue;
+    {
+      std::lock_guard<std::mutex> lock(requestMutex);
+      shouldQueue = queue.size() < 2
+    }
+    if (shouldQueue) {
+      double requiredCurrentTime = getRequiredCurrentTimeS();
+
+      queueInVideoThread([this, requiredCurrentTime](std::function<void()> cb) -> void {
+        FrameStatus status = this->appData.advanceToFrameAt(requiredCurrentTime);
+
+        if (status == FRAME_STATUS_EOF) {
+          cb([this]() -> void {
+            if (this->loop) {
+              this->SeekTo(0);
+            } else {
+              this->Pause();
+            }
+          });
+        }
+      });
     }
   }
 }
@@ -346,23 +398,34 @@ void Video::SeekTo(double timestamp) {
   if (loaded) {
     startTime = av_gettime() - (int64_t)(timestamp * 1e6);
 
-    data.dataPos = 0;
-    if (av_seek_frame(data.fmt_ctx, data.stream_idx, (int64_t)(timestamp / data.video_stream->time_base.num * data.video_stream->time_base.den), AVSEEK_FLAG_BACKWARD) >= 0) {
-      avcodec_flush_buffers(data.codec_ctx);
-      av_free(data.av_frame);
-      data.av_frame = av_frame_alloc();
-      data.lastTimestamp = 0;
+    bool shouldQueue;
+    {
+      std::lock_guard<std::mutex> lock(requestMutex);
+      shouldQueue = queue.size() < 2
+    }
+    if (shouldQueue) {
+      double requiredCurrentTime = getRequiredCurrentTimeS();
 
-      advanceToFrameAt(getRequiredCurrentTimeS());
-    } else {
-      Nan::ThrowError("currentTime: failed to seek");
+      queueInVideoThread([this, timestamp, requiredCurrentTime](std::function<void()> cb) -> void {
+        this->appData.dataPos = 0;
+        if (av_seek_frame(this->appData.fmt_ctx, this->appData.stream_idx, (int64_t)(timestamp / this->appData.video_stream->time_base.num * this->appData.video_stream->time_base.den), AVSEEK_FLAG_BACKWARD) >= 0) {
+          avcodec_flush_buffers(this->appData.codec_ctx);
+          av_free(this->appData.av_frame);
+          this->appData.av_frame = av_frame_alloc();
+          this->appData.lastTimestamp = 0;
+
+          this->appData.advanceToFrameAt(requiredCurrentTime);
+        } else {
+          std::cerr << "failed to seek to video frame" << std::endl;
+        }
+      });
     }
   }
 }
 
 uint32_t Video::GetWidth() {
   if (loaded) {
-    return data.codec_ctx->width;
+    return appData.codec_ctx->width;
   } else {
     return 0;
   }
@@ -370,7 +433,7 @@ uint32_t Video::GetWidth() {
 
 uint32_t Video::GetHeight() {
   if (loaded) {
-    return data.codec_ctx->height;
+    return appData.codec_ctx->height;
   } else {
     return 0;
   }
@@ -469,7 +532,7 @@ NAN_GETTER(Video::DataGetter) {
   Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
   if (video->loaded && video->dataDirty) {
     Local<ArrayBuffer> arrayBuffer = uint8ClampedArray->Buffer();
-    memcpy((unsigned char *)arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset(), video->data.gl_frame->data[0], dataSize);
+    memcpy((unsigned char *)arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset(), video->appData.gl_frame->data[0], dataSize);
     video->dataDirty = false;
   }
 
@@ -503,8 +566,12 @@ NAN_GETTER(Video::DurationGetter) {
 
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-  double duration = video->loaded ? ((double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE) : 1;
-  info.GetReturnValue().Set(JS_NUM(duration));
+  if (video->loaded) {
+    double duration = video->loaded ? ((double)video->appData.fmt_ctx->duration / (double)AV_TIME_BASE) : 1;
+    info.GetReturnValue().Set(JS_NUM(duration));
+  } else {
+    info.GetReturnValue().Set(JS_NUM(0));
+  }
 }
 
 NAN_METHOD(Video::UpdateAll) {
@@ -512,6 +579,7 @@ NAN_METHOD(Video::UpdateAll) {
     i->Update();
   }
 }
+
 NAN_METHOD(Video::GetDevices) {
   Nan::HandleScope scope;
 
@@ -558,22 +626,32 @@ double Video::getRequiredCurrentTimeS() {
 
 double Video::getFrameCurrentTimeS() {
   if (loaded) {
-    double pts = data.av_frame ? (double)std::max<int64_t>(data.av_frame->pts, 0) : 0;
-    double timeBase = data.getTimeBase();
+    double pts = appData.av_frame ? (double)std::max<int64_t>(appData.av_frame->pts, 0) : 0;
+    double timeBase = appData.getTimeBase();
     return pts * timeBase;
   } else {
     return 0;
   }
 }
 
-FrameStatus Video::advanceToFrameAt(double timestamp) {
-  FrameStatus status = data.advanceToFrameAt(timestamp);
-  if (status == FRAME_STATUS_OK) {
-    dataDirty = true;
-  }
-  return status;
+void Video::queueInVideoThread(std::function<void()> fn, std::function<void()> cb) {
+  queue.push_back(VideoRequest{fn, cb});
+
+  uv_sem_post(&requestSem);
 }
 
+void Video::runInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  std::lock_guard<std::mutex> lock(responseMutex);
+
+  while (responseQueue.size() > 0) {
+    VideoResponse &entry = responseQueue.front();
+    entry.fn();
+
+    responseQueue.pop_front();
+  }
+}
 
 VideoDevice::VideoDevice() : dev(nullptr) {
   videoDevices.push_back(this);
@@ -731,6 +809,9 @@ NAN_GETTER(VideoDevice::ImageDataGetter) {
   }
 }
 
+std::mutex responseMutex;
+std::deque<VideoResponse> responseQueue;
+uv_async_t responseAsync;
 std::vector<Video *> videos;
 std::vector<VideoDevice *> videoDevices;
 
