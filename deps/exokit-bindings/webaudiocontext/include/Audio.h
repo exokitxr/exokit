@@ -32,6 +32,10 @@ protected:
   static NAN_GETTER(DurationGetter);
   static NAN_GETTER(LoopGetter);
   static NAN_SETTER(LoopSetter);
+  static NAN_GETTER(OnLoadGetter);
+  static NAN_SETTER(OnLoadSetter);
+  static NAN_GETTER(OnErrorGetter);
+  static NAN_SETTER(OnErrorSetter);
   static NAN_GETTER(OnEndedGetter);
   static NAN_SETTER(OnEndedSetter);
   static void ProcessInMainThread(Audio *self);

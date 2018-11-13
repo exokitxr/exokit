@@ -6,6 +6,7 @@
 #include <nan.h>
 #include <deque>
 #include <thread>
+#include <mutex>
 #include <functional>
 
 extern "C" {
@@ -42,7 +43,7 @@ public:
   ~AppData();
 
   void resetState();
-  bool set(vector<unsigned char> &memory, string *error = nullptr);
+  bool set(vector<unsigned char> &&memory, string *error = nullptr);
   static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
   static int64_t bufferSeek(void *opaque, int64_t offset, int whence);
   double getTimeBase();
@@ -68,7 +69,7 @@ public:
 class Video : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
-  bool Load(uint8_t *bufferValue, size_t bufferLength, string *error = nullptr);
+  void Load(uint8_t *bufferValue, size_t bufferLength);
   void Update();
   void Play();
   void Pause();
@@ -86,6 +87,10 @@ protected:
   static NAN_GETTER(HeightGetter);
   static NAN_GETTER(LoopGetter);
   static NAN_SETTER(LoopSetter);
+  static NAN_GETTER(OnLoadGetter);
+  static NAN_SETTER(OnLoadSetter);
+  static NAN_GETTER(OnErrorGetter);
+  static NAN_SETTER(OnErrorSetter);
   static NAN_GETTER(DataGetter);
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_SETTER(CurrentTimeSetter);
@@ -96,8 +101,8 @@ protected:
   double getRequiredCurrentTimeS();
   double getFrameCurrentTimeS();
   FrameStatus advanceToFrameAt(double timestamp);
-  static void queueInVideoThread(std::function<void()> fn, std::function<void()> cb);
-  static void runInMainThread();
+  void queueInVideoThread(std::function<void(std::function<void(std::function<void()>)>)> fn);
+  static void runInMainThread(uv_async_t *handle);
 
   Video();
   ~Video();
@@ -110,6 +115,8 @@ private:
   int64_t startTime;
   double startFrameTime;
   Nan::Persistent<Uint8ClampedArray> dataArray;
+  Nan::Persistent<Function> onload;
+  Nan::Persistent<Function> onerror;
   bool dataDirty;
 
   std::thread thread;
@@ -143,8 +150,7 @@ class VideoDevice : public ObjectWrap {
 
 class VideoRequest {
 public:
-  std::function<void(std::function<void()>)> fn;
-  std::function<void()> cb;
+  std::function<void(std::function<void(std::function<void()>)>)> fn;
 };
 
 class VideoResponse {
@@ -152,9 +158,10 @@ public:
   std::function<void()> fn;
 };
 
+
 extern std::mutex responseMutex;
-extern uv_async_t requestAsync;
 extern std::deque<VideoResponse> responseQueue;
+extern uv_async_t responseAsync;
 extern std::vector<Video *> videos;
 extern std::vector<VideoDevice *> videoDevices;
 
