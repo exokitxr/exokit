@@ -338,22 +338,13 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
 
-  std::cout << "load 1" << std::endl;
   queueInVideoThread([this, bufferData(std::move(bufferData))](std::function<void(std::function<void()>)> cb) mutable -> void {
-    std::cout << "load 2" << std::endl;
-    
     std::string error;
     if (this->appData.set(std::move(bufferData), &error)) { // takes ownership of bufferData
-      std::cout << "load 3" << std::endl;
-    
       FrameStatus status = this->appData.advanceToFrameAt(0);
 
       cb([this, status]() -> void {
-        std::cout << "load 4" << std::endl;
-        
         if (status == FRAME_STATUS_OK) {
-          std::cout << "load 5" << std::endl;
-          
           this->loaded = true;
           
           unsigned int width = this->GetWidth();
@@ -364,8 +355,6 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
           this->dataArray.Reset(uint8ClampedArray);
 
           if (!this->onload.IsEmpty()) {
-            std::cout << "load 6" << std::endl;
-            
             Local<Function> onloadFn = Nan::New(this->onload);
             onloadFn->Call(Nan::Null(), 0, nullptr);
           }
