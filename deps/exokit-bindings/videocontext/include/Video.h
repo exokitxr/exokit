@@ -121,7 +121,6 @@ private:
   Nan::Persistent<Uint8ClampedArray> dataArray;
   Nan::Persistent<Function> onload;
   Nan::Persistent<Function> onerror;
-  bool dataDirty;
 
   std::thread thread;
   uv_sem_t requestSem;

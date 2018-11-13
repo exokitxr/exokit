@@ -242,7 +242,7 @@ double AppData::getTimeBase() {
 }
 
 Video::Video() :
-  loaded(false), playing(false), loop(false), startTime(0), startFrameTime(0), dataDirty(true)
+  loaded(false), playing(false), loop(false), startTime(0), startFrameTime(0)
 {
   videos.push_back(this);
 
@@ -333,23 +333,39 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   // reset state
   loaded = false;
   dataArray.Reset();
-  dataDirty = true;
 
   // initialize custom data structure
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
 
+  std::cout << "load 1" << std::endl;
   queueInVideoThread([this, bufferData(std::move(bufferData))](std::function<void(std::function<void()>)> cb) mutable -> void {
+    std::cout << "load 2" << std::endl;
+    
     std::string error;
     if (this->appData.set(std::move(bufferData), &error)) { // takes ownership of bufferData
+      std::cout << "load 3" << std::endl;
+    
       FrameStatus status = this->appData.advanceToFrameAt(0);
 
       cb([this, status]() -> void {
+        std::cout << "load 4" << std::endl;
+        
         if (status == FRAME_STATUS_OK) {
+          std::cout << "load 5" << std::endl;
+          
           this->loaded = true;
-          this->dataDirty = true;
+          
+          unsigned int width = this->GetWidth();
+          unsigned int height = this->GetHeight();
+          unsigned int dataSize = width * height * bpp;
+          Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), this->appData.gl_frame->data[0], dataSize);
+          Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+          this->dataArray.Reset(uint8ClampedArray);
 
           if (!this->onload.IsEmpty()) {
+            std::cout << "load 6" << std::endl;
+            
             Local<Function> onloadFn = Nan::New(this->onload);
             onloadFn->Call(Nan::Null(), 0, nullptr);
           }
@@ -513,7 +529,7 @@ NAN_SETTER(Video::LoopSetter) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
     video->loop = value->BooleanValue();
   } else {
-    Nan::ThrowError("loop: invalid arguments`");
+    Nan::ThrowError("loop: invalid arguments");
   }
 }
 
@@ -527,11 +543,11 @@ NAN_GETTER(Video::OnLoadGetter) {
 NAN_SETTER(Video::OnLoadSetter) {
   // Nan::HandleScope scope;
 
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
   if (value->IsFunction()) {
-    Video *video = ObjectWrap::Unwrap<Video>(info.This());
     video->onload.Reset(Local<Function>::Cast(value));
   } else {
-    Nan::ThrowError("onload: invalid arguments`");
+    video->onload.Reset();
   }
 }
 
@@ -545,11 +561,11 @@ NAN_GETTER(Video::OnErrorGetter) {
 NAN_SETTER(Video::OnErrorSetter) {
   // Nan::HandleScope scope;
 
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
   if (value->IsFunction()) {
-    Video *video = ObjectWrap::Unwrap<Video>(info.This());
     video->onerror.Reset(Local<Function>::Cast(value));
   } else {
-    Nan::ThrowError("onerror: invalid arguments`");
+    video->onerror.Reset();
   }
 }
 
@@ -557,23 +573,7 @@ NAN_GETTER(Video::DataGetter) {
   // Nan::HandleScope scope;
 
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
-
-  unsigned int width = video->GetWidth();
-  unsigned int height = video->GetHeight();
-  unsigned int dataSize = width * height * bpp;
-  if (video->dataArray.IsEmpty()) {
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), dataSize);
-    Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-    video->dataArray.Reset(uint8ClampedArray);
-  }
-
   Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
-  if (video->loaded && video->dataDirty) {
-    Local<ArrayBuffer> arrayBuffer = uint8ClampedArray->Buffer();
-    memcpy((unsigned char *)arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset(), video->appData.gl_frame->data[0], dataSize);
-    video->dataDirty = false;
-  }
-
   info.GetReturnValue().Set(uint8ClampedArray);
 }
 
