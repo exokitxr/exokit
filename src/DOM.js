@@ -2457,13 +2457,21 @@ class HTMLVideoElement extends HTMLMediaElement {
                     return Promise.reject(new Error(`video src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
                   }
                 })
-                .then(arrayBuffer => {
-                  try {
-                    this.video.load(arrayBuffer);
-                  } catch(err) {
-                    throw new Error(`failed to decode video: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-                  }
-                })
+                .then(arrayBuffer => new Promise((accept, reject) => {
+                  const _cleanup = () => {
+                    this.video.onload = null;
+                    this.video.onerror = null;
+                  };
+                  this.video.onload = () => {
+                    accept();
+                    _cleanup();
+                  };
+                  this.video.onerror = err => {
+                    reject(new Error(`failed to decode video: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
+                    _cleanup();
+                  };
+                  this.video.load(arrayBuffer);
+                }));
             }
           })()
             .then(() => {
