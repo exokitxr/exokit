@@ -31,12 +31,6 @@ enum FrameStatus {
   FRAME_STATUS_EOF,
 };
 
-class AppData;
-class Video;
-class VideoCamera;
-class VideoRequest;
-class VideoResponse;
-
 class AppData {
 public:
   AppData();
@@ -64,6 +58,16 @@ public:
 	AVFrame *gl_frame;
 	struct SwsContext *conv_ctx;
   double lastTimestamp;
+};
+
+class VideoRequest {
+public:
+  std::function<void(std::function<void(std::function<void()>)>)> fn;
+};
+
+class VideoResponse {
+public:
+  std::function<void()> fn;
 };
 
 class Video : public ObjectWrap {
@@ -126,6 +130,7 @@ private:
   std::deque<VideoRequest> requestQueue;
 };
 
+class VideoCamera;
 class VideoDevice : public ObjectWrap {
   public:
     static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons);
@@ -147,17 +152,6 @@ class VideoDevice : public ObjectWrap {
     VideoCamera *dev;
     Nan::Persistent<Object> imageData;
 };
-
-class VideoRequest {
-public:
-  std::function<void(std::function<void(std::function<void()>)>)> fn;
-};
-
-class VideoResponse {
-public:
-  std::function<void()> fn;
-};
-
 
 extern std::mutex responseMutex;
 extern std::deque<VideoResponse> responseQueue;
