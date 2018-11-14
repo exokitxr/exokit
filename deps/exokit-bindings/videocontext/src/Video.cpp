@@ -330,7 +330,7 @@ NAN_METHOD(Video::New) {
   info.GetReturnValue().Set(videoObj);
 }
 
-void Video::Load(WebGLRenderingContext *gl, unsigned char *bufferValue, size_t bufferLength) {
+void Video::Load(WebGLRenderingContext *gl, unsigned char *bufferValue, size_t bufferLength) { // XXX first should be looked up locally instead of passed in
   // reset state
   loaded = false;
 
