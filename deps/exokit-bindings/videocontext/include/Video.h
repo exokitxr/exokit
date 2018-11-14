@@ -17,6 +17,7 @@ extern "C" {
 #include <libavutil/time.h>
 }
 
+#include <webgl.h>
 #include <defines.h>
 
 using namespace std;
@@ -73,7 +74,7 @@ public:
 class Video : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
-  void Load(uint8_t *bufferValue, size_t bufferLength);
+  void Load(WebGLRenderingContext *gl, uint8_t *bufferValue, size_t bufferLength);
   void Update();
   void Play();
   void Pause();
@@ -95,7 +96,8 @@ protected:
   static NAN_SETTER(OnLoadSetter);
   static NAN_GETTER(OnErrorGetter);
   static NAN_SETTER(OnErrorSetter);
-  static NAN_GETTER(DataGetter);
+  // static NAN_GETTER(DataGetter);
+  static NAN_GETTER(TextureGetter);
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);
@@ -113,12 +115,13 @@ protected:
 
 private:
   AppData appData;
+  WebGLRenderingContext *gl;
+  GLuint texture;
   bool loaded;
   bool playing;
   bool loop;
   int64_t startTime;
   double startFrameTime;
-  Nan::Persistent<Uint8ClampedArray> dataArray;
   Nan::Persistent<Function> onload;
   Nan::Persistent<Function> onerror;
 
@@ -142,6 +145,7 @@ class VideoDevice : public ObjectWrap {
     static NAN_GETTER(HeightGetter);
     static NAN_GETTER(SizeGetter);
     static NAN_GETTER(DataGetter);
+    // static NAN_GETTER(TextureGetter);
     static NAN_GETTER(ImageDataGetter);
 
     VideoDevice();

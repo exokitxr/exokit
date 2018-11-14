@@ -2443,35 +2443,41 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (() => {
-            const b = urls.get(src);
-            if (b instanceof bindings.nativeVideo.VideoDevice) {
-              this.video = b;
-              
-              return Promise.resolve();
+            const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+            if (context) {
+              const b = urls.get(src);
+              if (b instanceof bindings.nativeVideo.VideoDevice) {
+                this.video = b;
+                this.video.load(context);
+                
+                return Promise.resolve();
+              } else {
+                return this.ownerDocument.defaultView.fetch(src)
+                  .then(res => {
+                    if (res.status >= 200 && res.status < 300) {
+                      return res.arrayBuffer();
+                    } else {
+                      return Promise.reject(new Error(`video src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
+                    }
+                  })
+                  .then(arrayBuffer => new Promise((accept, reject) => {
+                    const _cleanup = () => {
+                      this.video.onload = null;
+                      this.video.onerror = null;
+                    };
+                    this.video.onload = () => {
+                      accept();
+                      _cleanup();
+                    };
+                    this.video.onerror = err => {
+                      reject(new Error(`failed to decode video: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
+                      _cleanup();
+                    };
+                    this.video.load(context, arrayBuffer);
+                  }));
+              }
             } else {
-              return this.ownerDocument.defaultView.fetch(src)
-                .then(res => {
-                  if (res.status >= 200 && res.status < 300) {
-                    return res.arrayBuffer();
-                  } else {
-                    return Promise.reject(new Error(`video src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-                  }
-                })
-                .then(arrayBuffer => new Promise((accept, reject) => {
-                  const _cleanup = () => {
-                    this.video.onload = null;
-                    this.video.onerror = null;
-                  };
-                  this.video.onload = () => {
-                    accept();
-                    _cleanup();
-                  };
-                  this.video.onerror = err => {
-                    reject(new Error(`failed to decode video: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
-                    _cleanup();
-                  };
-                  this.video.load(arrayBuffer);
-                }));
+              return Promise.reject(new Error('no gl context available to decode video'));
             }
           })()
             .then(() => {
@@ -2550,9 +2556,14 @@ class HTMLVideoElement extends HTMLMediaElement {
   }
 
   get data() {
-    return this.video.data;
+    return this.video && this.video.data;
   }
   set data(data) {}
+  
+  get texture() {
+    return this.video && this.video.texture;
+  }
+  set texture(texture) {}
 
   play() {
     if (this.video instanceof bindings.nativeVideo.VideoDevice) { // XXX

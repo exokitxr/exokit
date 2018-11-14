@@ -242,7 +242,7 @@ double AppData::getTimeBase() {
 }
 
 Video::Video() :
-  loaded(false), playing(false), loop(false), startTime(0), startFrameTime(0)
+  gl(nullptr), texture(0), loaded(false), playing(false), loop(false), startTime(0), startFrameTime(0)
 {
   videos.push_back(this);
 
@@ -307,7 +307,8 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("loop"), LoopGetter, LoopSetter);
   Nan::SetAccessor(proto, JS_STR("onload"), OnLoadGetter, OnLoadSetter);
   Nan::SetAccessor(proto, JS_STR("onerror"), OnErrorGetter, OnErrorSetter);
-  Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
+  // Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
+  Nan::SetAccessor(proto, JS_STR("texture"), TextureGetter);
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
 
@@ -329,57 +330,76 @@ NAN_METHOD(Video::New) {
   info.GetReturnValue().Set(videoObj);
 }
 
-void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
+void Video::Load(WebGLRenderingContext *gl, unsigned char *bufferValue, size_t bufferLength) {
   // reset state
   loaded = false;
-  dataArray.Reset();
 
   // initialize custom data structure
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
 
-  queueInVideoThread([this, bufferData(std::move(bufferData))](std::function<void(std::function<void()>)> cb) mutable -> void {
-    std::string error;
-    if (this->appData.set(std::move(bufferData), &error)) { // takes ownership of bufferData
-      FrameStatus status = this->appData.advanceToFrameAt(0);
+  if (bufferValue != nullptr) {
+    queueInVideoThread([this, gl, bufferData(std::move(bufferData))](std::function<void(std::function<void()>)> cb) mutable -> void {
+      std::string error;
+      if (this->appData.set(std::move(bufferData), &error)) { // takes ownership of bufferData
+        FrameStatus status = this->appData.advanceToFrameAt(0);
 
-      cb([this, status]() -> void {
-        if (status == FRAME_STATUS_OK) {
-          this->loaded = true;
-          
-          unsigned int width = this->GetWidth();
-          unsigned int height = this->GetHeight();
-          unsigned int dataSize = width * height * bpp;
-          Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), this->appData.gl_frame->data[0], dataSize);
-          Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-          this->dataArray.Reset(uint8ClampedArray);
+        cb([this, gl, status]() -> void {
+          if (status == FRAME_STATUS_OK) {
+            if (!this->gl) {
+              this->gl = gl;
+            }
+            
+            windowsystem::SetCurrentWindowContext(this->gl->windowHandle);
+            if (!this->texture) {
+              glGenTextures(1, &this->texture);
+            }
+            glBindTexture(GL_TEXTURE_2D, this->texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, this->GetWidth(), this->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, this->appData.gl_frame->data[0]);
+            
+            if (this->gl->HasTextureBinding(this->gl->activeTexture, GL_TEXTURE_2D)) {
+              glBindTexture(GL_TEXTURE_2D, this->gl->GetTextureBinding(this->gl->activeTexture, GL_TEXTURE_2D));
+            } else {
+              glBindTexture(GL_TEXTURE_2D, 0);
+            }
+            
+            this->loaded = true;
 
-          if (!this->onload.IsEmpty()) {
-            Local<Function> onloadFn = Nan::New(this->onload);
-            onloadFn->Call(Nan::Null(), 0, nullptr);
+            if (!this->onload.IsEmpty()) {
+              Local<Function> onloadFn = Nan::New(this->onload);
+              onloadFn->Call(Nan::Null(), 0, nullptr);
+            }
+          } else {
+            if (!this->onerror.IsEmpty()) {
+              Local<Function> onerrorFn = Nan::New(this->onerror);
+              Local<Value> args[] = {
+                JS_STR("failed to advance to first video frame"),
+              };
+              onerrorFn->Call(Nan::Null(), sizeof(args)/sizeof(args[0]), args);
+            }
           }
-        } else {
+        });
+      } else {
+        cb([this, error(std::move(error))]() -> void {
           if (!this->onerror.IsEmpty()) {
             Local<Function> onerrorFn = Nan::New(this->onerror);
             Local<Value> args[] = {
-              JS_STR("failed to advance to first video frame"),
+              JS_STR(error),
             };
             onerrorFn->Call(Nan::Null(), sizeof(args)/sizeof(args[0]), args);
           }
-        }
-      });
-    } else {
-      cb([this, error(std::move(error))]() -> void {
-        if (!this->onerror.IsEmpty()) {
-          Local<Function> onerrorFn = Nan::New(this->onerror);
-          Local<Value> args[] = {
-            JS_STR(error),
-          };
-          onerrorFn->Call(Nan::Null(), sizeof(args)/sizeof(args[0]), args);
-        }
-      });
+        });
+      }
+    });
+  } else {   
+    if (!this->gl) {
+      this->gl = gl;
     }
-  });
+    if (!this->texture) {
+      windowsystem::SetCurrentWindowContext(this->gl->windowHandle);
+      glGenTextures(1, &this->texture);
+    }
+  }
 }
 
 void Video::Update() {
@@ -395,7 +415,20 @@ void Video::Update() {
       queueInVideoThread([this, requiredCurrentTime](std::function<void(std::function<void()>)> cb) -> void {
         FrameStatus status = this->appData.advanceToFrameAt(requiredCurrentTime);
 
-        if (status == FRAME_STATUS_EOF) {
+        if (status == FRAME_STATUS_OK) {
+          cb([this]() -> void {
+            windowsystem::SetCurrentWindowContext(this->gl->windowHandle);
+            
+            glBindTexture(GL_TEXTURE_2D, this->texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, this->GetWidth(), this->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, this->appData.gl_frame->data[0]);
+            
+            if (this->gl->HasTextureBinding(this->gl->activeTexture, GL_TEXTURE_2D)) {
+              glBindTexture(GL_TEXTURE_2D, this->gl->GetTextureBinding(this->gl->activeTexture, GL_TEXTURE_2D));
+            } else {
+              glBindTexture(GL_TEXTURE_2D, 0);
+            }
+          });
+        } else if (status == FRAME_STATUS_EOF) {
           cb([this]() -> void {
             if (this->loop) {
               this->SeekTo(0);
@@ -459,19 +492,23 @@ uint32_t Video::GetHeight() {
 }
 
 NAN_METHOD(Video::Load) {
-  if (info[0]->IsArrayBuffer()) {
-    Video *video = ObjectWrap::Unwrap<Video>(info.This());
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
+  
+  if (info[0]->IsObject()) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    
+    if (info[1]->IsArrayBuffer()) {
+      Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[1]);
 
-    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
-
-    video->Load((uint8_t *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength());
-  } else if (info[0]->IsTypedArray()) {
-    Video *video = ObjectWrap::Unwrap<Video>(info.This());
-
-    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
-    Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
-
-    video->Load((unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
+      video->Load(gl, (uint8_t *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength());
+    } else if (info[1]->IsTypedArray()) {
+      Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[1]);
+      Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
+      
+      video->Load(gl, (unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
+    } else {
+      video->Load(gl, nullptr, 0);
+    }
   } else {
     Nan::ThrowError("Video::Load: invalid arguments");
   }
@@ -558,12 +595,25 @@ NAN_SETTER(Video::OnErrorSetter) {
   }
 }
 
-NAN_GETTER(Video::DataGetter) {
+/* NAN_GETTER(Video::DataGetter) {
   // Nan::HandleScope scope;
 
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
   Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
   info.GetReturnValue().Set(uint8ClampedArray);
+} */
+
+NAN_GETTER(Video::TextureGetter) {
+  // Nan::HandleScope scope;
+
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
+  if (video->loaded) {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("id"), JS_INT(video->texture));
+    info.GetReturnValue().Set(obj);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 NAN_GETTER(Video::CurrentTimeGetter) {
@@ -668,11 +718,11 @@ void Video::queueInVideoThread(std::function<void(std::function<void(std::functi
 }
 
 void Video::runInMainThread(uv_async_t *handle) {
-  Nan::HandleScope scope;
-
   std::lock_guard<std::mutex> lock(responseMutex);
 
   while (responseQueue.size() > 0) {
+    Nan::HandleScope scope;
+    
     VideoResponse &entry = responseQueue.front();
     entry.fn();
 
@@ -707,6 +757,7 @@ Handle<Object> VideoDevice::Initialize(Isolate *isolate, Local<Value> imageDataC
   Nan::SetAccessor(proto, JS_STR("height"), HeightGetter);
   Nan::SetAccessor(proto, JS_STR("size"), SizeGetter);
   Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
+  // Nan::SetAccessor(proto, JS_STR("texture"), TextureGetter);
   Nan::SetAccessor(proto, JS_STR("imageData"), ImageDataGetter);
 
   Local<Function> ctorFn = ctor->GetFunction();
@@ -716,7 +767,7 @@ Handle<Object> VideoDevice::Initialize(Isolate *isolate, Local<Value> imageDataC
 }
 
 NAN_METHOD(VideoDevice::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   VideoDevice *video = new VideoDevice();
   Local<Object> videoObj = info.This();
@@ -757,7 +808,7 @@ NAN_METHOD(VideoDevice::Close) {
 }
 
 NAN_GETTER(VideoDevice::WidthGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
   if (video->dev) {
@@ -768,7 +819,7 @@ NAN_GETTER(VideoDevice::WidthGetter) {
 }
 
 NAN_GETTER(VideoDevice::HeightGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
   if (video->dev) {
@@ -779,7 +830,7 @@ NAN_GETTER(VideoDevice::HeightGetter) {
 }
 
 NAN_GETTER(VideoDevice::SizeGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
   if (video->dev) {
@@ -790,7 +841,7 @@ NAN_GETTER(VideoDevice::SizeGetter) {
 }
 
 NAN_GETTER(VideoDevice::DataGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
 
@@ -824,8 +875,37 @@ NAN_GETTER(VideoDevice::DataGetter) {
   }
 }
 
+/* NAN_GETTER(Video::TextureGetter) {
+  // Nan::HandleScope scope;
+
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
+  if (video->loaded) {
+    if (video->dev && video->dev->isFrameReady()) {
+      int w = video->dev->getWidth();
+      int h = video->dev->getHeight();
+      std::vector<uint8_t> buffer(w * h * bpp);
+      video->dev->pullUpdate(buffer.data());
+      
+      glBindTexture(GL_TEXTURE_2D, video->texture);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, video->GetWidth(), video->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.data());
+      
+      if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+      } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
+      }
+    }
+    
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("id"), JS_STR(video->texture));
+    info.GetReturnValue().Set(obj);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
+} */
+
 NAN_GETTER(VideoDevice::ImageDataGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   VideoDevice *video = ObjectWrap::Unwrap<VideoDevice>(info.This());
 
