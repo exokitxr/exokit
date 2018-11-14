@@ -183,7 +183,12 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       // TODO: handle multiple child canvases
       document.framebuffer = {
-        canvas,
+        get width() {
+          return gl.drawingBufferWidth;
+        },
+        get height() {
+          return gl.drawingBufferHeight;
+        },
         msTex,
         msDepthTex,
         tex,

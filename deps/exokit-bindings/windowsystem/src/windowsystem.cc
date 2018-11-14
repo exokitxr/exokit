@@ -524,8 +524,8 @@ NAN_METHOD(ComposeLayers) {
             GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
             GLuint msTex = framebufferObj->Get(JS_STR("msTex"))->Uint32Value();
             GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
-            int width = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
-            int height = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
+            int width = framebufferObj->Get(JS_STR("width"))->Int32Value();
+            int height = framebufferObj->Get(JS_STR("height"))->Int32Value();
 
             layers.push_back(LayerSpec{
               width,
