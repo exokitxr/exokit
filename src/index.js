@@ -22,6 +22,7 @@ const UPNG = require('upng-js');
 const {version} = require('../package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const symbols = require('./symbols');
+const {defaultCanvasSize} = require('./constants');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
@@ -59,7 +60,6 @@ const ML_FPS = 60;
 const MLSDK_PORT = 17955;
 
 const contexts = [];
-GlobalContext.contexts = contexts;
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
 let _takeScreenshot = false;
@@ -128,6 +128,16 @@ const args = (() => {
     return {};
   }
 })();
+
+GlobalContext.getDefaultGl = window => {
+  if (contexts.length === 0) {
+    window.document.createElement('canvas').getContext('webgl');
+  }
+  if (contexts.length === 0) {
+    throw new Error('failed to create default GL context');
+  }
+  return contexts[0];
+};
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
