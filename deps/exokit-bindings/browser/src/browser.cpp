@@ -12,7 +12,7 @@ using namespace std;
 using namespace v8;
 using namespace node;
 
-bool CefInitialize(const CefMainArgs& args,
+bool CefInitialize2(const CefMainArgs& args,
                               const CefSettings& settings,
                               CefRefPtr<CefApp> application,
                               void* windows_sandbox_info) {
@@ -28,7 +28,7 @@ bool CefInitialize(const CefMainArgs& args,
   return _retval ? true : false;
 }
 
-void CefDoMessageLoopWork() {
+void CefDoMessageLoopWork2() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
@@ -69,7 +69,7 @@ bool initializeCef() {
   
   SimpleApp *app = new SimpleApp();
   
-	return CefInitialize(args, settings, app, nullptr);
+	return CefInitialize2(args, settings, app, nullptr);
 }
 
 // SimpleApp
@@ -423,7 +423,7 @@ NAN_METHOD(Browser::UpdateAll) {
   if (cefInitialized) {
     QueueOnBrowserThread([]() -> void {
       // std::cout << "browser update 1" << std::endl;
-      CefDoMessageLoopWork();
+      CefDoMessageLoopWork2();
       // std::cout << "browser update 2" << std::endl;
     });
   }
