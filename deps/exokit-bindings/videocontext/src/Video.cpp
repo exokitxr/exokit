@@ -16,6 +16,16 @@ const int kBufferSize = 8 * 1024;
 const int bpp = 4;
 const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
 
+AVHWAccel *find_hwaccel(AVCodecID codec_id, AVPixelFormat pix_fmt) {
+  AVHWAccel *hwaccel = nullptr;
+  while((hwaccel = av_hwaccel_next(hwaccel))){
+    if (hwaccel->id == codec_id && hwaccel->pix_fmt == pix_fmt) {
+      return hwaccel;
+    }
+  }
+  return nullptr;
+}
+
 AppData::AppData() :
   dataPos(0),
   fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr), lastTimestamp(0) {}
@@ -124,6 +134,7 @@ bool AppData::set(vector<unsigned char> &&memory, string *error) {
     }
     return false;
   }
+  codec_ctx->hwaccel = find_hwaccel(codec_ctx->codec->id, codec_ctx->pix_fmt);
   ret = avcodec_open2(codec_ctx, decoder, nullptr);
   if (ret < 0) {
     if (error) {
