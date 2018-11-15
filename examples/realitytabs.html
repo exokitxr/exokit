@@ -1293,7 +1293,7 @@ const _bootFakeDisplay = () => {
 
   console.log('loaded root in 2D');
 };
-if (navigator.xr) {
+if (navigator.xr && !query.fake) {
   (async () => {
     display = await navigator.xr.requestDevice();
 
