@@ -144,7 +144,7 @@ describe('HTMLSrcableElement', () => {
     });
   });
 
-  describe('<video>', () => {
+  /* describe('<video>', () => {
     it('can setAttribute', done => {
       el = document.createElement('video');
       el.oncanplay = () => { done(); };
@@ -200,5 +200,5 @@ describe('HTMLSrcableElement', () => {
 
       el.src = `${TEST_URL}/test.mp4`;
     });
-  });
+  }); */
 });
