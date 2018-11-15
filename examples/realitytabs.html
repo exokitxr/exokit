@@ -1277,52 +1277,7 @@ function animate(time, frame) {
 
 // bootstrap
 
-if (navigator.xr && !query.fake) {
-  (async () => {
-    display = await navigator.xr.requestDevice();
-    const session = await display.requestSession({
-      exclusive: true,
-    });
-    display.session = session;
-
-    session.layers = layers;
-
-    session.onselect = e => {
-      console.log('select'); // XXX
-    };
-
-    // console.log('request first frame');
-    session.requestAnimationFrame((timestamp, frame) => {
-      renderer.vr.setSession(session, {
-        frameOfReferenceType: 'stage',
-      });
-
-      const viewport = session.baseLayer.getViewport(frame.views[0]);
-      // const width = viewport.width;
-      const height = viewport.height;
-      const fullWidth = (() => {
-        let result = 0;
-        for (let i = 0; i < frame.views.length; i++) {
-          result += session.baseLayer.getViewport(frame.views[i]).width;
-        }
-        return result;
-      })();
-
-      renderer.setSize(fullWidth, height);
-
-      renderer.setAnimationLoop(null);
-
-      renderer.vr.enabled = true;
-      renderer.vr.setDevice(display);
-      renderer.vr.setAnimationLoop(animate);
-
-      console.log('loaded root in XR');
-    });
-  })()
-    .catch(err => {
-      console.warn(err.stack);
-    });
-} else {
+const _bootFakeDisplay = () => {
   fakeDisplay = _makeFakeDisplay();
   camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
@@ -1337,6 +1292,59 @@ if (navigator.xr && !query.fake) {
   display = fakeDisplay;
 
   console.log('loaded root in 2D');
+};
+if (navigator.xr && !query.fake) {
+  (async () => {
+    display = await navigator.xr.requestDevice();
+
+    if (display) {
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      session.layers = layers;
+
+      session.onselect = e => {
+        console.log('select'); // XXX
+      };
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        // const width = viewport.width;
+        const height = viewport.height;
+        const fullWidth = (() => {
+          let result = 0;
+          for (let i = 0; i < frame.views.length; i++) {
+            result += session.baseLayer.getViewport(frame.views[i]).width;
+          }
+          return result;
+        })();
+
+        renderer.setSize(fullWidth, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('loaded root in XR');
+      });
+    } else {
+      _bootFakeDisplay();
+    }
+  })()
+    .catch(err => {
+      console.warn(err.stack);
+    });
+} else {
+  _bootFakeDisplay();
 }
 
 // renderer.setAnimationLoop(animate);
