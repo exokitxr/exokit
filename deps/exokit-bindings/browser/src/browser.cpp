@@ -465,7 +465,7 @@ NAN_SETTER(Browser::WidthSetter) {
     ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
     
     browser->browser_->GetHost()->WasResized();
-    browser->browser_->GetHost()->Invalidate(PET_VIEW);
+    // browser->browser_->GetHost()->Invalidate(PET_VIEW);
   });
 }
 NAN_GETTER(Browser::HeightGetter) {
@@ -482,7 +482,7 @@ NAN_SETTER(Browser::HeightSetter) {
     ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
     
     browser->browser_->GetHost()->WasResized();
-    browser->browser_->GetHost()->Invalidate(PET_VIEW);
+    // browser->browser_->GetHost()->Invalidate(PET_VIEW);
   });
 }
 
