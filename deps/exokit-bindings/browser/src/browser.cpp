@@ -128,7 +128,7 @@ bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_sev
 
 // RenderHandler
 
-RenderHandler::RenderHandler(OnPaintFn onPaint) : onPaint(onPaint), width(1280), height(1024) {}
+RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height) : onPaint(onPaint), width(width), height(height) {}
 
 RenderHandler::~RenderHandler() {}
 
@@ -155,15 +155,13 @@ BrowserClient::~BrowserClient() {}
 
 // Browser
 
-Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : gl(gl), tex(0), initialized(false) {
+Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : gl(gl), tex(0), textureWidth(0), textureHeight(0) {
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
   
   glGenTextures(1, &tex);
 
   QueueOnBrowserThread([&]() -> void {
-    this->loadImmediate(url);
-    ((BrowserClient *)this->browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
-    ((BrowserClient *)this->browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
+    this->loadImmediate(url, width, height);
     
     uv_sem_post(&constructSem);
   });
@@ -277,12 +275,21 @@ void Browser::load(const std::string &url) {
   uv_sem_wait(&constructSem);
 }
 
-void Browser::loadImmediate(const std::string &url) {
+void Browser::loadImmediate(const std::string &url, int width, int height) {
+  if (width == 0) {
+    width = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
+  }
+  if (height == 0) {
+    height = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height;
+  }
+  std::cout << "load immediate " << width << " " << height << std::endl;
+  
   if (browser_) {
     browser_->GetHost()->CloseBrowser(true);
     browser_ = nullptr;
     
-    this->initialized = false;
+    this->textureWidth = 0;
+    this->textureHeight = 0;
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
@@ -367,7 +374,7 @@ void Browser::loadImmediate(const std::string &url) {
         glBindTexture(GL_TEXTURE_2D, this->tex);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
 
-        if (!this->initialized) {
+        if (this->textureWidth != width || this->textureHeight != height) {
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
           glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
@@ -378,7 +385,8 @@ void Browser::loadImmediate(const std::string &url) {
           glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
 #endif
         
-          this->initialized = true;
+          this->textureWidth = width;
+          this->textureHeight = height;
         }
 
         for (size_t i = 0; i < dirtyRects.size(); i++) {
@@ -402,7 +410,9 @@ void Browser::loadImmediate(const std::string &url) {
           glBindTexture(GL_TEXTURE_2D, 0);
         }
       });
-    }
+    },
+    width,
+    height
   );
   
   CefWindowInfo window_info;
