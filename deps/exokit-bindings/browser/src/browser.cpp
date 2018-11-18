@@ -459,8 +459,14 @@ NAN_GETTER(Browser::WidthGetter) {
 NAN_SETTER(Browser::WidthSetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   
-  ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width = value->Int32Value();
-	browser->browser_->GetHost()->WasResized();
+  int width = value->Int32Value();
+  
+  QueueOnBrowserThread([browser, width]() -> void {
+    ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
+    
+    browser->browser_->GetHost()->WasResized();
+    browser->browser_->GetHost()->Invalidate(PET_VIEW);
+  });
 }
 NAN_GETTER(Browser::HeightGetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
@@ -470,8 +476,14 @@ NAN_GETTER(Browser::HeightGetter) {
 NAN_SETTER(Browser::HeightSetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   
-  ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height = value->Int32Value();
-	browser->browser_->GetHost()->WasResized();
+  int height = value->Int32Value();
+  
+  QueueOnBrowserThread([browser, height]() -> void {
+    ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
+    
+    browser->browser_->GetHost()->WasResized();
+    browser->browser_->GetHost()->Invalidate(PET_VIEW);
+  });
 }
 
 NAN_GETTER(Browser::OnLoadStartGetter) {
