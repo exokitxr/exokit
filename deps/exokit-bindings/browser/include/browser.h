@@ -102,7 +102,7 @@ class RenderHandler : public CefRenderHandler {
 public:
   typedef std::function<void(const RectList &, const void *, int, int)> OnPaintFn;
   
-	RenderHandler(OnPaintFn onPaint);
+	RenderHandler(OnPaintFn onPaint, int width, int height);
   ~RenderHandler();
 
 	// void resize(int w, int h);
@@ -187,12 +187,13 @@ protected:
   static NAN_METHOD(PostMessage);
   static NAN_GETTER(TextureGetter);
   void load(const std::string &url);
-  void loadImmediate(const std::string &url);
+  void loadImmediate(const std::string &url, int width = 0, int height = 0);
   // void resize(int w, int h);
 protected:
   WebGLRenderingContext *gl;
   GLuint tex;
-  bool initialized;
+  int textureWidth;
+  int textureHeight;
   
   /* LoadHandler *load_handler_;
   DisplayHandler *display_handler_;
