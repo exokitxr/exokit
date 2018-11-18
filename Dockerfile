@@ -8,10 +8,10 @@ ADD . /app
 WORKDIR /app
 
 RUN \
-  wget "https://nodejs.org/dist/v10.6.0/node-v10.6.0-linux-x64.tar.gz" -O node.tar.gz && \
+  wget "https://nodejs.org/dist/v11.2.0/node-v11.2.0-linux-x64.tar.gz" -O node.tar.gz && \
   tar -zxf node.tar.gz && \
   rm node.tar.gz && \
-  mv node-v10.6.0-linux-x64 node
+  mv node-v11.2.0-linux-x64 node
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
   npm install --unsafe-perm . && \
