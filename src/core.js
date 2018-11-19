@@ -9,6 +9,7 @@ const ws = require('ws');
 const os = require('os');
 const util = require('util');
 const {URL} = url;
+const {TextEncoder, TextDecoder} = util;
 const {performance} = require('perf_hooks');
 const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
@@ -19,7 +20,7 @@ const WebSocket = require('ws/lib/websocket');
 
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
-const {TextEncoder, TextDecoder} = require('window-text-encoding');
+const  = require('window-text-encoding');
 const parseXml = require('@rgrove/parse-xml');
 const THREE = require('../lib/three-min.js');
 const {
