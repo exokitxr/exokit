@@ -58,7 +58,7 @@ namespace browser {
 
 // helpers
 
-bool initializeCef() {
+bool initializeCef(const std::string &dataPath) {
   CefMainArgs args;
   
 	CefSettings settings;
@@ -81,6 +81,7 @@ void SimpleApp::OnBeforeCommandLineProcessing(const CefString &process_type, Cef
   // command_line->AppendSwitch(CefString("no-proxy-server"));
   command_line->AppendSwitch(CefString("winhttp-proxy-resolver"));
   command_line->AppendSwitch(CefString("no-sandbox"));
+  command_line->AppendSwitchWithValue(CefString("user-data-dir"), CefString());
 }
 
 void SimpleApp::OnContextInitialized() {
@@ -219,12 +220,21 @@ NAN_METHOD(Browser::New) {
     info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) &&
     info[1]->IsNumber() &&
     info[2]->IsNumber() &&
-    info[3]->IsString()
+    info[3]->IsString() &&
+    info[4]->IsString()
   ) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    int width = info[1]->Int32Value();
+    int height = info[2]->Int32Value();
+    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[3]));
+    std::string url(*urlUtf8Value, urlUtf8Value.length());
+    String::Utf8Value dataPathValue(Local<String>::Cast(info[4]));
+    std::string dataPath(*urlUtf8Value, urlUtf8Value.length());
+
     if (!cefInitialized) {
-      browserThread = std::thread([]() -> void {
+      browserThread = std::thread([dataPath{std::move(dataPath)}]() -> void {
         // std::cout << "initialize web core manager 1" << std::endl;
-        const bool success = initializeCef();
+        const bool success = initializeCef(dataPath);
         // std::cout << "initialize web core manager 2 " << success << std::endl;
         if (success) {          
           for (;;) {
@@ -246,12 +256,6 @@ NAN_METHOD(Browser::New) {
       });
       cefInitialized = true;
     }
-
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    int width = info[1]->Int32Value();
-    int height = info[2]->Int32Value();
-    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[3]));
-    std::string url(*urlUtf8Value, urlUtf8Value.length());
 
     Browser *browser = new Browser(gl, width, height, url);
     Local<Object> browserObj = info.This();
