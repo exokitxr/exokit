@@ -1,3 +1,4 @@
+const path = require('path');
 const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
