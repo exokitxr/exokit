@@ -11,6 +11,10 @@
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true)](https://ci.appveyor.com/project/modulesio/exokit-windows)
 [![Twitter Follow](https://img.shields.io/twitter/follow/webmixedreality.svg?style=social)](https://twitter.com/webmixedreality)
 
+### Get Started
+
+See our [docs](https://docs.webmr.io/) and [development guide](https://docs.webmr.io/docs/sdk.html).
+
 ### Subscribe to our Email list to be notified when we launch! http://eepurl.com/dFiLMz
 
 This project enables developers to build XR experiences using the same code that runs on the web. Exokit engine is written on top of Node and emulates a web browser, providing native hooks for WebGL, WebXR, WebAudio, and other APIs used in immersive experiences.
