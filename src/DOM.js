@@ -1848,7 +1848,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     context.canvas.ownerDocument.defaultView.innerWidth,
                     context.canvas.ownerDocument.defaultView.innerHeight,
                     url,
-                    this.ownerDocument.defaultView.[symbols.optionsSymbol].dataPath
+                    path.join(this.ownerDocument.defaultView.[symbols.optionsSymbol].dataPath, 'cef')
                   );
                   this.browser = browser;
                   
