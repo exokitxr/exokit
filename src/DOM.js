@@ -1843,7 +1843,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               if (!this.browser) {
                 const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
                 if (context) {
-                  const browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
+                  const browser = new GlobalContext.nativeBrowser.Browser(
+                    context,
+                    context.canvas.ownerDocument.defaultView.innerWidth,
+                    context.canvas.ownerDocument.defaultView.innerHeight,
+                    url,
+                    this.ownerDocument.defaultView.[symbols.optionsSymbol].dataPath
+                  );
                   this.browser = browser;
                   
                   let done = false, err = null, loadedUrl = url;
