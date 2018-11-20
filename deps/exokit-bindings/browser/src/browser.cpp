@@ -67,21 +67,23 @@ bool initializeCef(const std::string &dataPath) {
   // CefString(&settings.locales_dir_path) = localesPath;
   settings.no_sandbox = true;
   
-  SimpleApp *app = new SimpleApp();
+  SimpleApp *app = new SimpleApp(dataPath);
   
 	return CefInitialize2(args, settings, app, nullptr);
 }
 
 // SimpleApp
 
-SimpleApp::SimpleApp() {}
+SimpleApp::SimpleApp(const std::string &dataPath) : dataPath(dataPath) {}
 
 void SimpleApp::OnBeforeCommandLineProcessing(const CefString &process_type, CefRefPtr<CefCommandLine> command_line) {
   command_line->AppendSwitch(CefString("single-process"));
   // command_line->AppendSwitch(CefString("no-proxy-server"));
   command_line->AppendSwitch(CefString("winhttp-proxy-resolver"));
   command_line->AppendSwitch(CefString("no-sandbox"));
-  command_line->AppendSwitchWithValue(CefString("user-data-dir"), CefString());
+  CefString dataPathString(dataPath);
+  command_line->AppendSwitchWithValue(CefString("user-data-dir"), dataPathString);
+  command_line->AppendSwitchWithValue(CefString("disk-cache-dir"), dataPathString);
 }
 
 void SimpleApp::OnContextInitialized() {
