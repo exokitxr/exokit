@@ -36,7 +36,7 @@ namespace browser {
 
 class SimpleApp : public CefApp, public CefBrowserProcessHandler {
 public:
-  SimpleApp();
+  SimpleApp(const std::string &dataPath);
 
   // CefApp methods:
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
@@ -47,6 +47,9 @@ public:
   
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() override;
+
+protected:
+  std::string dataPath;
 
 private:
   // Include the default reference counting implementation.
