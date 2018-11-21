@@ -243,7 +243,7 @@ The detected hand gesture. See `MLHandUpdate.gesture`.
 
 A three-component world position vector represting the gesture pointer origin
 
-#### `MLTransform.rotation : Float32Array(4)`
+#### `MLGestureUpdate.rotation : Float32Array(4)`
 
 A four-component world quaternion representing the gesture normal.
 
