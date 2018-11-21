@@ -58,7 +58,7 @@ namespace browser {
 
 // helpers
 
-bool initializeCef() {
+bool initializeCef(const std::string &dataPath) {
   CefMainArgs args;
   
 	CefSettings settings;
@@ -67,20 +67,23 @@ bool initializeCef() {
   // CefString(&settings.locales_dir_path) = localesPath;
   settings.no_sandbox = true;
   
-  SimpleApp *app = new SimpleApp();
+  SimpleApp *app = new SimpleApp(dataPath);
   
 	return CefInitialize2(args, settings, app, nullptr);
 }
 
 // SimpleApp
 
-SimpleApp::SimpleApp() {}
+SimpleApp::SimpleApp(const std::string &dataPath) : dataPath(dataPath) {}
 
 void SimpleApp::OnBeforeCommandLineProcessing(const CefString &process_type, CefRefPtr<CefCommandLine> command_line) {
   command_line->AppendSwitch(CefString("single-process"));
   // command_line->AppendSwitch(CefString("no-proxy-server"));
   command_line->AppendSwitch(CefString("winhttp-proxy-resolver"));
   command_line->AppendSwitch(CefString("no-sandbox"));
+  CefString dataPathString(dataPath);
+  command_line->AppendSwitchWithValue(CefString("user-data-dir"), dataPathString);
+  command_line->AppendSwitchWithValue(CefString("disk-cache-dir"), dataPathString);
 }
 
 void SimpleApp::OnContextInitialized() {
@@ -128,7 +131,7 @@ bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_sev
 
 // RenderHandler
 
-RenderHandler::RenderHandler(OnPaintFn onPaint) : onPaint(onPaint), width(1280), height(1024) {}
+RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height) : onPaint(onPaint), width(width), height(height) {}
 
 RenderHandler::~RenderHandler() {}
 
@@ -155,15 +158,13 @@ BrowserClient::~BrowserClient() {}
 
 // Browser
 
-Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : gl(gl), tex(0), initialized(false) {
+Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : gl(gl), tex(0), textureWidth(0), textureHeight(0) {
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
   
   glGenTextures(1, &tex);
 
   QueueOnBrowserThread([&]() -> void {
-    this->loadImmediate(url);
-    ((BrowserClient *)this->browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
-    ((BrowserClient *)this->browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
+    this->loadImmediate(url, width, height);
     
     uv_sem_post(&constructSem);
   });
@@ -221,12 +222,21 @@ NAN_METHOD(Browser::New) {
     info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) &&
     info[1]->IsNumber() &&
     info[2]->IsNumber() &&
-    info[3]->IsString()
+    info[3]->IsString() &&
+    info[4]->IsString()
   ) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    int width = info[1]->Int32Value();
+    int height = info[2]->Int32Value();
+    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[3]));
+    std::string url(*urlUtf8Value, urlUtf8Value.length());
+    String::Utf8Value dataPathValue(Local<String>::Cast(info[4]));
+    std::string dataPath(*urlUtf8Value, urlUtf8Value.length());
+
     if (!cefInitialized) {
-      browserThread = std::thread([]() -> void {
+      browserThread = std::thread([dataPath{std::move(dataPath)}]() -> void {
         // std::cout << "initialize web core manager 1" << std::endl;
-        const bool success = initializeCef();
+        const bool success = initializeCef(dataPath);
         // std::cout << "initialize web core manager 2 " << success << std::endl;
         if (success) {          
           for (;;) {
@@ -248,12 +258,6 @@ NAN_METHOD(Browser::New) {
       });
       cefInitialized = true;
     }
-
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    int width = info[1]->Int32Value();
-    int height = info[2]->Int32Value();
-    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[3]));
-    std::string url(*urlUtf8Value, urlUtf8Value.length());
 
     Browser *browser = new Browser(gl, width, height, url);
     Local<Object> browserObj = info.This();
@@ -277,12 +281,21 @@ void Browser::load(const std::string &url) {
   uv_sem_wait(&constructSem);
 }
 
-void Browser::loadImmediate(const std::string &url) {
+void Browser::loadImmediate(const std::string &url, int width, int height) {
+  if (width == 0) {
+    width = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
+  }
+  if (height == 0) {
+    height = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height;
+  }
+  std::cout << "load immediate " << width << " " << height << std::endl;
+  
   if (browser_) {
     browser_->GetHost()->CloseBrowser(true);
     browser_ = nullptr;
     
-    this->initialized = false;
+    this->textureWidth = 0;
+    this->textureHeight = 0;
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
@@ -367,7 +380,7 @@ void Browser::loadImmediate(const std::string &url) {
         glBindTexture(GL_TEXTURE_2D, this->tex);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
 
-        if (!this->initialized) {
+        if (this->textureWidth != width || this->textureHeight != height) {
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
           glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
@@ -378,7 +391,8 @@ void Browser::loadImmediate(const std::string &url) {
           glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
 #endif
         
-          this->initialized = true;
+          this->textureWidth = width;
+          this->textureHeight = height;
         }
 
         for (size_t i = 0; i < dirtyRects.size(); i++) {
@@ -402,7 +416,9 @@ void Browser::loadImmediate(const std::string &url) {
           glBindTexture(GL_TEXTURE_2D, 0);
         }
       });
-    }
+    },
+    width,
+    height
   );
   
   CefWindowInfo window_info;
@@ -449,8 +465,14 @@ NAN_GETTER(Browser::WidthGetter) {
 NAN_SETTER(Browser::WidthSetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   
-  ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width = value->Int32Value();
-	browser->browser_->GetHost()->WasResized();
+  int width = value->Int32Value();
+  
+  QueueOnBrowserThread([browser, width]() -> void {
+    ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
+    
+    browser->browser_->GetHost()->WasResized();
+    // browser->browser_->GetHost()->Invalidate(PET_VIEW);
+  });
 }
 NAN_GETTER(Browser::HeightGetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
@@ -460,8 +482,14 @@ NAN_GETTER(Browser::HeightGetter) {
 NAN_SETTER(Browser::HeightSetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   
-  ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height = value->Int32Value();
-	browser->browser_->GetHost()->WasResized();
+  int height = value->Int32Value();
+  
+  QueueOnBrowserThread([browser, height]() -> void {
+    ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
+    
+    browser->browser_->GetHost()->WasResized();
+    // browser->browser_->GetHost()->Invalidate(PET_VIEW);
+  });
 }
 
 NAN_GETTER(Browser::OnLoadStartGetter) {

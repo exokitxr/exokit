@@ -1,3 +1,4 @@
+const path = require('path');
 const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
@@ -1843,7 +1844,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               if (!this.browser) {
                 const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
                 if (context) {
-                  const browser = new GlobalContext.nativeBrowser.Browser(context, context.canvas.ownerDocument.defaultView.innerWidth, context.canvas.ownerDocument.defaultView.innerHeight, url);
+                  const browser = new GlobalContext.nativeBrowser.Browser(
+                    context,
+                    context.canvas.ownerDocument.defaultView.innerWidth,
+                    context.canvas.ownerDocument.defaultView.innerHeight,
+                    url,
+                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, 'cef')
+                  );
                   this.browser = browser;
                   
                   let done = false, err = null, loadedUrl = url;
