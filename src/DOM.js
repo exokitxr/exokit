@@ -1,12 +1,13 @@
 const path = require('path');
+const fs = require('fs');
+const url = require('url');
+const util = require('util');
 const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
 const parse5 = require('parse5');
 const parseIntStrict = require('parse-int');
 const selector = require('window-selector');
-const url = require('url');
-const util = require('util');
 
 const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
