@@ -288,7 +288,6 @@ void Browser::loadImmediate(const std::string &url, int width, int height) {
   if (height == 0) {
     height = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height;
   }
-  std::cout << "load immediate " << width << " " << height << std::endl;
   
   if (browser_) {
     browser_->GetHost()->CloseBrowser(true);
