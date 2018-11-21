@@ -231,7 +231,7 @@ NAN_METHOD(Browser::New) {
     String::Utf8Value urlUtf8Value(Local<String>::Cast(info[3]));
     std::string url(*urlUtf8Value, urlUtf8Value.length());
     String::Utf8Value dataPathValue(Local<String>::Cast(info[4]));
-    std::string dataPath(*urlUtf8Value, urlUtf8Value.length());
+    std::string dataPath(*dataPathValue, dataPathValue.length());
 
     if (!cefInitialized) {
       browserThread = std::thread([dataPath{std::move(dataPath)}]() -> void {
