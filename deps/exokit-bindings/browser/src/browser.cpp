@@ -65,6 +65,7 @@ bool initializeCef(const std::string &dataPath) {
   // settings.log_severity = LOGSEVERITY_VERBOSE;
   // CefString(&settings.resources_dir_path) = resourcesPath;
   // CefString(&settings.locales_dir_path) = localesPath;
+  CefString(&settings.cache_path).FromString(dataPath);
   settings.no_sandbox = true;
   
   SimpleApp *app = new SimpleApp(dataPath);
