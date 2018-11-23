@@ -170,91 +170,10 @@ STLIBS = node \
 SHLIBS = ml_privileges \
   ml_camera \
   ml_audio \
-  :libcef.so \
-  :libdl.so.2 \
-  :libpthread.so.0 \
-  :libgobject-2.0.so.0 \
-  :libffi.so.6 \
-  :libglib-2.0.so.0 \
-  :libpcre.so.3 \
-  :libnss3.so \
-  :libplc4.so \
-  :libplds4.so \
-  :libnssutil3.so \
-  :libsmime3.so \
-  :libnspr4.so \
-  :libfontconfig.so.1 \
-  :libfreetype.so.6 \
-  :libpng16.so.16 \
-  :libz.so.1 \
-  :libuuid.so.1 \
-  :libX11.so.6 \
-  :libX11-xcb.so.1 \
-  :libxcb.so.1 \
-  :libXau.so.6 \
-  :libXdmcp.so.6 \
-  :libbsd.so.0 \
-  :librt.so.1 \
-  :libXcomposite.so.1 \
-  :libXcursor.so.1 \
-  :libXdamage.so.1 \
-  :libXext.so.6 \
-  :libXfixes.so.3 \
-  :libXi.so.6 \
-  :libXrender.so.1 \
-  :libXtst.so.6 \
-  :libXss.so.1 \
-  :libexpat.so.1 \
-  :libXrandr.so.2 \
-  :libgio-2.0.so.0 \
-  :libgmodule-2.0.so.0 \
-  :libselinux.so.1 \
-  :libresolv.so.2 \
-  :libmount.so.1 \
-  :libblkid.so.1 \
-  :libm.so.6 \
-  :libdbus-1.so.3 \
-  :libsystemd.so.0 \
-  :liblzma.so.5 \
-  :liblz4.so.1 \
-  :libgcrypt.so.20 \
-  :libgpg-error.so.0 \
-  :libasound.so.2 \
-  :libpangocairo-1.0.so.0 \
-  :libpangoft2-1.0.so.0 \
-  :libharfbuzz.so.0 \
-  :libgraphite2.so.3 \
-  :libcairo.so.2 \
-  :libpixman-1.so.0 \
-  :libxcb-shm.so.0 \
-  :libxcb-render.so.0 \
-  :libpango-1.0.so.0 \
-  :libthai.so.0 \
-  :libdatrie.so.1 \
-  :libfribidi.so.0 \
-  :libatk-1.0.so.0 \
-  :libatk-bridge-2.0.so.0 \
-  :libcups.so.2 \
-  :libgssapi_krb5.so.2 \
-  :libkrb5.so.3 \
-  :libk5crypto.so.3 \
-  :libcom_err.so.2 \
-  :libkrb5support.so.0 \
-  :libkeyutils.so.1 \
-  :libgnutls.so.30 \
-  :libp11-kit.so.0 \
-  :libidn2.so.0 \
-  :libunistring.so.2 \
-  :libtasn1.so.6 \
-  :libnettle.so.6 \
-  :libhogweed.so.4 \
-  :libgmp.so.10 \
-  :libavahi-common.so.3 \
-  :libavahi-client.so.3 \
-  :libatspi.so.0 \
-  :libgcc_s.so.1 \
-  :libc.so.6 \
-  :ld-linux-aarch64.so.1
+  log \
+  :libandroid.so \
+  :libjnigraphics.so \
+  :libcef.so
 
 # paths for finding libraries above
 #
@@ -266,8 +185,8 @@ LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   ../node_modules/native-canvas-deps\lib2\magicleap \
   ../node_modules/native-audio-deps\lib2\magicleap \
   ../node_modules/native-video-deps\lib2\magicleap \
-  ../node_modules/native-browser-deps\lib5\magicleap \
-  ../node_modules/native-browser-deps\lib5\magicleap\lib
+  ../node_modules/native-browser-deps\lib5\magicleap
+
 # flags for C/C++/assembly preprocessing
 #
 # CPPFLAGS = -Dspecial -Ubad_macro
