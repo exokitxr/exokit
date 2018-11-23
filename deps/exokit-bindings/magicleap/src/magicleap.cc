@@ -79,6 +79,22 @@ bool meshRequestPending = false;
 
 std::map<std::string, MeshBuffer> meshBuffers;
 
+MLHandle floorTracker;
+std::vector<MLPlaneTracker *> floorTrackers;
+MLPlanesQuery floorRequest;
+MLHandle floorRequestHandle;
+MLPlane floorResults[MAX_NUM_PLANES];
+uint32_t numFloorResults;
+bool floorRequestPending = false;
+struct LargestFloor {
+  MLVec3f position;
+  float size;
+};
+LargestFloor largestFloor{
+  {0, 0, 0}
+  0,
+};
+
 MLHandle planesTracker;
 std::vector<MLPlaneTracker *> planeTrackers;
 MLPlanesQuery planesRequest;
@@ -2487,6 +2503,31 @@ NAN_METHOD(MLContext::PrePollEvents) {
     }
   }
 
+  if (!floorRequestPending) {
+    {
+      // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+
+      floorRequest.bounds_center = mlContext->position;
+      // floorRequest.bounds_rotation = mlContext->rotation;
+      floorRequest.bounds_rotation = {0, 0, 0, 1};
+    }
+    floorRequest.bounds_extents.x = 3;
+    floorRequest.bounds_extents.y = 3;
+    floorRequest.bounds_extents.z = 3;
+
+    floorRequest.flags = MLPlanesQueryFlag_Vertical | MLPlanesQueryFlag_Semantic_Floor;
+    floorRequest.min_hole_length = 0.5;
+    floorRequest.min_plane_area = 0.25;
+    floorRequest.max_results = MAX_NUM_PLANES;
+
+    MLResult result = MLPlanesQueryBegin(floorTracker, &floorRequest, &floorRequestHandle);
+    if (result == MLResult_Ok) {
+      floorRequestPending = true;
+    } else {
+      ML_LOG(Error, "%s: Floor request failed! %x", application_name, result);
+    }
+  }
+
   if (planeTrackers.size() > 0 && !planesRequestPending) {
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
@@ -2653,6 +2694,37 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
       meshRequestsPending = true;
       meshRequestPending = false;
+    }
+  }
+
+  if (floorRequestPending) {
+    MLResult result = MLPlanesQueryGetResults(floorRequest, floorRequestHandle, floorResults, &numFloorResults);
+    if (result == MLResult_Ok) {
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
+
+      for (uint32_t i = 0; i < numFloorResults; i++) {
+        MLPlane &plane = planeResults[i];
+
+        float width = plane.width;
+        float height = plane.height;
+        float size = width * height;
+
+        if (size > largestFloor.size) {
+          largestFloor = {
+            plane.position,
+            size,
+          };
+        }
+      }
+
+      floorRequestPending = false;
+    } else if (result == MLResult_Pending) {
+      // nothing
+    } else {
+      ML_LOG(Error, "%s: Planes request failed! %x", application_name, result);
+
+      floorRequestPending = false;
     }
   }
 
