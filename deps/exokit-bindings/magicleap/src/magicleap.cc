@@ -301,6 +301,7 @@ bool MLRaycaster::Poll() {
   if (result == MLResult_Ok) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
+    Local<Function> cb = Nan::New(this->cb);
     
     if (raycastResult.state == MLRaycastResultState_HitObserved) {
       const MLVec3f &position = raycastResult.hitpoint;
@@ -309,7 +310,6 @@ bool MLRaycaster::Poll() {
       const MLVec3f &scale = {1, 1, 1};
       const MLMat4f &hitMatrix = composeMatrix(position, quaternion, scale);
 
-      Local<Function> cb = Nan::New(this->cb);
       Local<Object> xrHitResult = Nan::New<Object>();
       Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), hitMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
       xrHitResult->Set(JS_STR("hitMatrix"), hitMatrixArray);
