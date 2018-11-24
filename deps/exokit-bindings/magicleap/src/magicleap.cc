@@ -2676,14 +2676,14 @@ NAN_METHOD(MLContext::RequestHitTest) {
     Local<Function> cb = Local<Function>::Cast(info[1]);
 
     raycastQuery.position = MLVec3f{
-      origin->Get(JS_STR("x"))->NumberValue(),
-      origin->Get(JS_STR("y"))->NumberValue(),
-      origin->Get(JS_STR("z"))->NumberValue(),
+      (float)origin->Get(JS_STR("x"))->NumberValue(),
+      (float)origin->Get(JS_STR("y"))->NumberValue(),
+      (float)origin->Get(JS_STR("z"))->NumberValue(),
     };
     raycastQuery.direction = MLVec3f{
-      direction->Get(JS_STR("x"))->NumberValue(),
-      direction->Get(JS_STR("y"))->NumberValue(),
-      direction->Get(JS_STR("z"))->NumberValue(),
+      (float)direction->Get(JS_STR("x"))->NumberValue(),
+      (float)direction->Get(JS_STR("y"))->NumberValue(),
+      (float)direction->Get(JS_STR("z"))->NumberValue(),
     };
     raycastQuery.up_vector = MLVec3f{0, 1, 0};
     raycastQuery.width = 1;
