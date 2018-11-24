@@ -1495,6 +1495,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
+  Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
   Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
@@ -2595,6 +2596,24 @@ NAN_METHOD(MLContext::RequestPlaneTracking) {
     info.GetReturnValue().Set(mlPlaneTrackerObj);
   } else {
     Nan::ThrowError("MLContext::RequestPlaneTracking: invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::RequestHitTest) {
+  if (
+    info[0]->IsObject() && Local<Object>::Cast(info[0])->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRRay")) &&
+    info[1]->IsFunction()
+  ) {
+    Local<Object> xrRay = Local<Object>::Cast(info[0]);
+    Local<Float32Array> transformMatrix = Local<Float32Array>::Cast(xrRay->Get(JS_STR("transformMatrix")));
+    Local<Function> cbFn = Local<Function>::Cast(info[1]);
+
+    // XXX trigger MLRaycastQuery
+    
+    Local<Array> result = Nan::New<Array>(0);
+    info.GetReturnValue().Set(result);
+  } else {
+    Nan::ThrowError("MLContext::RequestHitTest: invalid arguments");
   }
 }
 

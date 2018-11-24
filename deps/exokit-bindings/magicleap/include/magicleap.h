@@ -252,6 +252,7 @@ public:
   static NAN_METHOD(OnPresentChange);
   static NAN_METHOD(RequestMeshing);
   static NAN_METHOD(RequestPlaneTracking);
+  static NAN_METHOD(RequestHitTest);
   static NAN_METHOD(RequestHandTracking);
   static NAN_METHOD(RequestEyeTracking);
   static NAN_METHOD(RequestImageTracking);
