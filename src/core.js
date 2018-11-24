@@ -1467,6 +1467,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     window.XRViewport = XR.XRViewport;
     window.XRDevicePose = XR.XRDevicePose;
     window.XRInputSource = XR.XRInputSource;
+    window.XRRay = XR.XRRay;
     window.XRInputPose = XR.XRInputPose;
     window.XRInputSourceEvent = XR.XRInputSourceEvent;
     window.XRCoordinateSystem = XR.XRCoordinateSystem;

@@ -478,6 +478,15 @@ class XRInputSource {
 }
 module.exports.XRInputSource = XRInputSource;
 
+class XRRay {
+  constructor() {
+    this.origin = new GlobalContext.DOMPoint(0, 0, 0, 1);
+    this.direction = new GlobalContext.DOMPoint(0, 0, 1, 0);
+    this.transformMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  }
+}
+module.exports.XRRay = XRRay;
+
 class XRInputPose {
   constructor() {
     this.emulatedPosition = false;
