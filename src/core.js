@@ -20,7 +20,6 @@ const WebSocket = require('ws/lib/websocket');
 
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
-const  = require('window-text-encoding');
 const parseXml = require('@rgrove/parse-xml');
 const THREE = require('../lib/three-min.js');
 const {
