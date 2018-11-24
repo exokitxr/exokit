@@ -2916,7 +2916,7 @@ NAN_METHOD(MLContext::Update) {
 
   if (raycasters.size() > 0) {
     raycasters.erase(std::remove_if(raycasters.begin(), raycasters.end(), [&](MLRaycaster *r) -> bool {
-      if (r.Poll()) {
+      if (r->Poll()) {
         delete r;
         return true;
       } else {
