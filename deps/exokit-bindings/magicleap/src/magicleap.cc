@@ -2922,7 +2922,7 @@ NAN_METHOD(MLContext::Update) {
       } else {
         return false;
       }
-    ), raycasters.end());
+    }), raycasters.end());
   }
 
   if (handTrackers.size() > 0) {
