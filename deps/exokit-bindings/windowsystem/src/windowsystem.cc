@@ -214,6 +214,8 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
 #endif
     // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, samples);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+    
+    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
   }
   {
     glGenFramebuffers(1, &fbo);
@@ -240,6 +242,8 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+    
+    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
   }
 
   bool framebufferOk = (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
