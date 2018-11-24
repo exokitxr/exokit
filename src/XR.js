@@ -121,7 +121,6 @@ class XRSession extends EventTarget {
     ];
     this._lastPresseds = [false, false];
     this._rafs = [];
-    this._onrequesthittest = null;
   }
   get layers() {
     return this.device.layers;
@@ -158,8 +157,8 @@ class XRSession extends EventTarget {
   }
   requestHitTest(ray, coordinateSystem) {
     return new Promise((accept, reject) => {
-      if (this._onrequesthittest)  {
-        this._onrequesthittest(ray, coordinateSystem, result => {
+      if (this.device.onrequesthittest)  {
+        this.device.onrequesthittest(ray, coordinateSystem, result => {
           accept(result);
         });
       } else {
