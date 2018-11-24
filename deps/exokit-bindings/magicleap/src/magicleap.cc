@@ -311,7 +311,7 @@ bool MLRaycaster::Poll() {
       const MLMat4f &hitMatrix = composeMatrix(position, quaternion, scale);
 
       Local<Object> xrHitResult = Nan::New<Object>();
-      Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), hitMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
+      Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)hitMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
       xrHitResult->Set(JS_STR("hitMatrix"), hitMatrixArray);
       Local<Array> array = Nan::New<Array>(1);
       array->Set(0, xrHitResult);
