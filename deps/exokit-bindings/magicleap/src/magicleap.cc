@@ -87,7 +87,7 @@ MLPlane floorResults[MAX_NUM_PLANES];
 uint32_t numFloorResults;
 bool floorRequestPending = false;
 struct LargestFloor {
-  MLVec3f position;
+  MLVec3f offset;
   float size;
 };
 LargestFloor largestFloor{
