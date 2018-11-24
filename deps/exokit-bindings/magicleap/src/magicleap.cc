@@ -2712,7 +2712,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
 
         if (size > largestFloor.size) {
           largestFloor = {
-            plane.position,
+            {0, -plane.position.y, 0},
             size,
           };
         }
