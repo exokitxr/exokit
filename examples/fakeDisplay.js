@@ -57,8 +57,9 @@ window._makeFakeDisplay = () => {
 
   fakeDisplay.update(); // initialize gamepads
   for (let i = 0; i < fakeDisplay.gamepads.length; i++) {
-    fakeDisplay.gamepads[i].pose.pointerMatrix = new Float32Array(16);
-    fakeDisplay.gamepads[i].pose._localPointerMatrix = new Float32Array(16);
+    fakeDisplay.gamepads[i].pose.targetRay = {
+      transformMatrix: new Float32Array(16),
+    };
   }
 
   const onends = [];

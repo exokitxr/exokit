@@ -328,7 +328,7 @@
           const pose = frame.getInputPose(inputSource);
 
           const controllerMesh = controllerMeshes[i];
-          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           controllerMesh.updateMatrixWorld(true);
         }
       } */
