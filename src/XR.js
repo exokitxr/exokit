@@ -120,6 +120,7 @@ class XRSession extends EventTarget {
     ];
     this._lastPresseds = [false, false];
     this._rafs = [];
+    this._onrequesthittest = null;
   }
   get layers() {
     return this.device.layers;
@@ -153,6 +154,17 @@ class XRSession extends EventTarget {
       }
       return result;
     }
+  }
+  requestHitTest(ray, coordinateSystem) {
+    return new Promise((accept, reject) => {
+      if (this._onrequesthittest)  {
+        this._onrequesthittest(ray, coordinateSystem, result => {
+          accept(result);
+        });
+      } else {
+        reject(new Error('api not supported'));
+      }
+    });
   }
   end() {
     this.emit('end');
