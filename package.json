@@ -1,7 +1,7 @@
 {
   "name": "exokit",
   "version": "0.0.495",
-  "description": "Javascript web browser for the post-screen world",
+  "description": "Native VR and AR engine for JavaScript",
   "engines": {
     "node": ">=10.0.0"
   },
