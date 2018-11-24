@@ -3,6 +3,7 @@
 /package-lock.json
 /CMakeFiles
 /CMakeCache.txt
+/app
 .DS_Store
 .idea
 .exokit_history
