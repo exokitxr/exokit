@@ -601,6 +601,16 @@ class FileReader extends EventTarget {
   }
 }
 
+class DOMPoint {
+  constructor(x = 0, y = 0, z = 0, w = 1) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.w = w;
+  }
+}
+GlobalContext.DOMPoint = DOMPoint;
+
 const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   if (node.nodeName === '#text') {
     const text = new DOM.Text(node.value);
@@ -1446,6 +1456,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
+  window.DOMPoint = DOMPoint;
   if (window.navigator.xr) {
     window.XR = XR.XR;
     window.XRDevice = XR.XRDevice;
