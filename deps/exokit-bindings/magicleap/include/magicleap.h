@@ -94,6 +94,18 @@ public:
   uint32_t modifier_mask;
 };
 
+class MLRaycaster : public ObjectWrap {
+public:
+  MLRaycaster(MLHandle requestHandle, Local<Function> cb);
+  ~MLRaycaster();
+
+  bool Poll();
+
+// protected:
+  MLHandle requestHandle;
+  Nan::Persistent<Function> cb;
+};
+
 class MeshBuffer {
 public:
   MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer);
