@@ -320,7 +320,7 @@ const localFovArray2 = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
-const transformArray = new Float32Array(7 * 2);
+const transformArray = new Float32Array(10 * 2);
 const projectionArray = new Float32Array(16 * 2);
 const handsArray = [
   new Float32Array(handEntrySize),
@@ -1432,20 +1432,31 @@ const _bindWindow = (window, newWindowCb) => {
         const depthNear = 0.1;
         const depthFar = 100;
 
-        localVector.fromArray(transformArray, 0);
-        localQuaternion.fromArray(transformArray, 3);
+        let offset = 0;
+        localVector.fromArray(transformArray, offset);
+        offset += 3;
+        localQuaternion.fromArray(transformArray, offset);
+        offset += 4;
         localVector2.set(1, 1, 1);
         localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
         frameData.pose.set(localVector, localQuaternion);
         localMatrix.toArray(frameData.leftViewMatrix);
         frameData.leftProjectionMatrix.set(projectionArray.slice(0, 16));
+        
+        localVector.fromArray(transformArray, offset); // XXX hook this in
+        offset += 3;
 
-        localVector.fromArray(transformArray, 3 + 4);
-        localQuaternion.fromArray(transformArray, 3 + 4 + 3);
+        localVector.fromArray(transformArray, offset);
+        offset += 3;
+        localQuaternion.fromArray(transformArray, offset);
+        offset += 4
         // localVector2.set(1, 1, 1);
         localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
         localMatrix.toArray(frameData.rightViewMatrix);
         frameData.rightProjectionMatrix.set(projectionArray.slice(16, 32));
+        
+        localVector.fromArray(transformArray, offset); // XXX hook this in
+        // offset += 3;
 
         let controllersArrayIndex = 0;
         leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));

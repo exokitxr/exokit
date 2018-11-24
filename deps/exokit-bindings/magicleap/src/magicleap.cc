@@ -2053,13 +2053,16 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         for (int i = 0; i < 2; i++) {
           const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
           const MLTransform &transform = cameraInfo.transform;
-          transformArray->Set(i*7 + 0, JS_NUM(transform.position.x));
-          transformArray->Set(i*7 + 1, JS_NUM(transform.position.y));
-          transformArray->Set(i*7 + 2, JS_NUM(transform.position.z));
-          transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
-          transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
-          transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
-          transformArray->Set(i*7 + 6, JS_NUM(transform.rotation.w));
+          transformArray->Set(i*10 + 0, JS_NUM(transform.position.x));
+          transformArray->Set(i*10 + 1, JS_NUM(transform.position.y));
+          transformArray->Set(i*10 + 2, JS_NUM(transform.position.z));
+          transformArray->Set(i*10 + 3, JS_NUM(transform.rotation.x));
+          transformArray->Set(i*10 + 4, JS_NUM(transform.rotation.y));
+          transformArray->Set(i*10 + 5, JS_NUM(transform.rotation.z));
+          transformArray->Set(i*10 + 6, JS_NUM(transform.rotation.w));
+          transformArray->Set(i*10 + 7, JS_NUM(largestFloor.offset.x));
+          transformArray->Set(i*10 + 8, JS_NUM(largestFloor.offset.y));
+          transformArray->Set(i*10 + 9, JS_NUM(largestFloor.offset.z));
 
           const MLMat4f &projection = cameraInfo.projection;
           for (int j = 0; j < 16; j++) {
