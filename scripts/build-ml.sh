@@ -6,6 +6,13 @@ set -e
 
 # preface
 
+if [ -n "$1" ] && [ -d "$1" ] && [ -f "$1" ]; then
+  APPPATH=$(realpath "$1")
+  echo building user app "$APPPATH"
+else
+  echo building default app
+fi
+
 cd "$(dirname "$0")"
 
 export MLSDK=${MLSDK:-/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0}
@@ -49,10 +56,20 @@ find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/l
 ./scripts/gen-dlibs-h.js "$(pwd)" >build/libexokit/dlibs.h
 popd
 
+# inject app
+
+if [ -n "$APPPATH" ]; then
+  pushd ..
+  rm -Rf app
+  cp -R "$APPPATH" app
+  EXTRA_DATAS="../app/ : /app/"
+  popd
+fi
+
 # build mpk
 
 ./magicleap-js/hack-toolchain.js -u
 
-cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -j 4 ../metadata/program-device.mabu
+cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -j 4 EXTRA_DATAS="$EXTRA_DATAS" ../metadata/program-device.mabu
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m ../metadata/manifest-device.xml -p --create-package -s ../cert/app.cert ../metadata/app-device.package
 cp ../build/magicleap/app-device/app-device.mpk ../build/magicleap/exokit.mpk
