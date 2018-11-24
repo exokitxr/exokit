@@ -91,7 +91,7 @@ DATAS = ../package.json : / \
   ../node_modules/ : /node_modules/ \
   ../examples/ : /examples/ \
   ../metadata/fonts.xml : /etc/fonts.xml \
-  $(EXTRA_DATAS)
+  # EXTRA_DATAS_PLACEHOLDER
 
 # If you need to perform pre-build or post-build steps,
 # write Makefile snippets using double-colon rules in
