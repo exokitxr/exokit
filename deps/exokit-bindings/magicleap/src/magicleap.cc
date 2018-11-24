@@ -2693,7 +2693,7 @@ NAN_METHOD(MLContext::RequestHitTest) {
     MLHandle requestHandle;
     MLResult result = MLRaycastRequest(raycastTracker, &raycastQuery, &requestHandle);
     if (result == MLResult_Ok) {
-      MLRaycaster *raycaster = new MLRaycaster(cb);
+      MLRaycaster *raycaster = new MLRaycaster(requestHandle, cb);
       raycasters.push_back(raycaster);
     } else {
       ML_LOG(Error, "%s: Failed to request raycast: %x", application_name, result);
