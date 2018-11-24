@@ -1717,7 +1717,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
-    mlDisplay.onrequesthittest = nativeMl.requestHitTest;
+    mlDisplay.onrequesthittest = function() { return nativeMl.requestHitTest.apply(this, arguments); };
     mlDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
@@ -1737,7 +1737,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xmDisplay.requestSession);
-    xmDisplay.onrequesthittest = nativeMl.requestHitTest;
+    xmDisplay.onrequesthittest = function() { return nativeMl.requestHitTest.apply(this, arguments); };
     xmDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
