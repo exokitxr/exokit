@@ -1,8 +1,8 @@
-node_modules
-build
-package-lock.json
-CMakeFiles
-CMakeCache.txt
+/node_modules
+/build
+/package-lock.json
+/CMakeFiles
+/CMakeCache.txt
 .DS_Store
 .idea
 .exokit_history
