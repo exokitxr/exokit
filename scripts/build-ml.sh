@@ -6,7 +6,7 @@ set -e
 
 # preface
 
-if [ -n "$1" ] && [ -d "$1" ] && [ -f "$1" ]; then
+if [ -n "$1" ] && [ -d "$1" ] && [ -f "$1/index.html" ]; then
   APPPATH=$(realpath "$1")
   echo building user app "$APPPATH"
 else
