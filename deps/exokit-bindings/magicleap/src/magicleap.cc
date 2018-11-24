@@ -296,15 +296,15 @@ MLRaycaster::MLRaycaster(MLHandle requestHandle, Local<Function> cb) : requestHa
 MLRaycaster::~MLRaycaster() {}
 
 bool MLRaycaster::Poll() {
-  MLRaycastResult result;
-  MLResult result = MLRaycastGetResult(raycastTracker, this->requestHandle, &result);
+  MLRaycastResult raycastResult;
+  MLResult result = MLRaycastGetResult(raycastTracker, this->requestHandle, &raycastResult);
   if (result == MLResult_Ok) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
     
-    if (result.state == MLRaycastResultState_HitObserved) {
-      const MLVec3f &position = result.hitpoint;
-      const MLVec3f &normal = result.normal;
+    if (raycastResult.state == MLRaycastResultState_HitObserved) {
+      const MLVec3f &position = raycastResult.hitpoint;
+      const MLVec3f &normal = raycastResult.normal;
       const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, normal);
       const MLVec3f &scale = {1, 1, 1};
       const MLMat4f &hitMatrix = composeMatrix(position, quaternion, scale);
