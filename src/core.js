@@ -1149,67 +1149,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     return styleSpec.style;
   };
   window.browser = {
-    http: (() => {
-      const httpProxy = {};
-      for (const k in http) {
-        httpProxy[k] = http[k];
-      }
-      httpProxy.createServer = (createServer => function(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(req, res) {
-            res.write = (write => function(d) {
-              if (typeof d === 'object') {
-                d = utils._normalizePrototype(d, global);
-              }
-              return write.apply(this, arguments);
-            })(res.write);
-            res.end = (end => function(d) {
-              if (typeof d === 'object') {
-                d = utils._normalizePrototype(d, global);
-              }
-              return end.apply(this, arguments);
-            })(res.end);
-
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return createServer.apply(this, arguments);
-      })(httpProxy.createServer);
-      return httpProxy;
-    })(),
+    http,
     // https,
-    ws: (() => {
-      const wsProxy = {};
-      for (const k in ws) {
-        wsProxy[k] = ws[k];
-      }
-      wsProxy.Server = (OldServer => function Server() {
-        const server = Reflect.construct(OldServer, arguments);
-        server.on = (on => function(e, cb) {
-          if (e === 'connection' && cb) {
-            cb = (cb => function(c) {
-              c.on = (on => function(e, cb) {
-                if (e === 'message' && cb) {
-                  cb = (cb => function(m) {
-                    m = utils._normalizePrototype(m, window);
-                    return cb.apply(this, arguments);
-                  })(cb);
-                }
-                return on.apply(this, arguments);
-              })(c.on);
-              c.send = (send => function(d) {
-                d = utils._normalizePrototype(d, global);
-                return send.apply(this, arguments);
-              })(c.send);
-              return cb.apply(this, arguments);
-            })(cb);
-          }
-          return on.apply(this, arguments);
-        })(server.on);
-        return server;
-      })(wsProxy.Server);
-      return wsProxy;
-    })(),
+    ws,
     createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
     magicleap: nativeMl ? {
       RequestMeshing() {
