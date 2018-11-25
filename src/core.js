@@ -247,7 +247,7 @@ class CustomElementRegistry {
   }
 
   upgrade(el, constructor) {
-    el.setProtototypeOf(el, constructor.prototype);
+    Object.setPrototypeOf(el, constructor.prototype);
     constructor.call(el);
   }
 }
