@@ -57,14 +57,6 @@ const XR = require('./XR');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = require('./utils');
 
-let browser = null;
-const _requestBrowser = async () => {
-  if (browser === null) {
-    browser = await puppeteer.launch()
-  }
-  return browser;
-};
-
 let nativeBindings = false;
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
