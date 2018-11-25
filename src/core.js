@@ -1027,7 +1027,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       if (blob) {
         return Promise.resolve(new Response(blob));
       } else {
-        const oldUrl = url;
         url = _normalizeUrl(url);
         return _boundFetch(url, options);
       }
