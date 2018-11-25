@@ -1035,11 +1035,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.Request = Request;
-  window.Response = (Old => class Response extends Old {
-    constructor(body, opts) {
-      super(utils._normalizePrototype(body, global), opts);
-    }
-  })(Response);
+  window.Response = Response;
   window.Headers = Headers;
   window.Blob = (Old => class Blob extends Old {
     constructor(parts, opts) {
