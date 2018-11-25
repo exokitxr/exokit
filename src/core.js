@@ -1022,48 +1022,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.fetch = (url, options) => {
-    const _boundFetch = (url, options) => utils._normalizePrototype(
-      fetch(url, options),
-      window
-    )
-      .then(res => {
-        res.arrayBuffer = (fn => function() {
-          return utils._normalizePrototype(
-            fn.apply(this, arguments),
-            window
-          );
-        })(res.arrayBuffer);
-        res.blob = (fn => function() {
-          return utils._normalizePrototype(
-            fn.apply(this, arguments),
-            window
-          );
-        })(res.blob);
-        res.json = (fn => function() {
-          return utils._normalizePrototype(
-            fn.apply(this, arguments),
-            window
-          );
-        })(res.json);
-        res.text = (fn => function() {
-          return utils._normalizePrototype(
-            fn.apply(this, arguments),
-            window
-          );
-        })(res.text);
-
-        res.arrayBuffer = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(ab => utils._normalizePrototype(ab, window));
-        })(res.arrayBuffer);
-        res.blob = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(b => utils._normalizePrototype(b, window));
-        })(res.blob);
-
-        return res;
-      });
-
     if (typeof url === 'string') {
       const blob = urls.get(url);
       if (blob) {
