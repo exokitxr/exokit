@@ -34,7 +34,6 @@ const {
   getGamepads,
   getAllGamepads,
 } = require('vr-display')(THREE);
-const electron = require('./electron');
 
 const BindingsModule = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
@@ -57,14 +56,6 @@ const {XMLHttpRequest} = require('./Network');
 const XR = require('./XR');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = require('./utils');
-
-let browser = null;
-const _requestBrowser = async () => {
-  if (browser === null) {
-    browser = await puppeteer.launch()
-  }
-  return browser;
-};
 
 let nativeBindings = false;
 
@@ -1269,7 +1260,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return wsProxy;
     })(),
     createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
-    electron,
     magicleap: nativeMl ? {
       RequestMeshing() {
         const mesher = nativeMl.RequestMeshing.apply(nativeMl, arguments);
