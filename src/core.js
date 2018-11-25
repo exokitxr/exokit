@@ -1028,10 +1028,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         return Promise.resolve(new Response(blob));
       } else {
         url = _normalizeUrl(url);
-        return _boundFetch(url, options);
+        return fetch(url, options);
       }
     } else {
-      return _boundFetch(url, options);
+      return fetch(url, options);
     }
   };
   window.Request = Request;
