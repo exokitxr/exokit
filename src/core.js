@@ -34,7 +34,6 @@ const {
   getGamepads,
   getAllGamepads,
 } = require('vr-display')(THREE);
-const electron = require('./electron');
 
 const BindingsModule = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
@@ -1269,7 +1268,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return wsProxy;
     })(),
     createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
-    electron,
     magicleap: nativeMl ? {
       RequestMeshing() {
         const mesher = nativeMl.RequestMeshing.apply(nativeMl, arguments);
