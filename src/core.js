@@ -793,7 +793,7 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   return result;
 };
 
-const _makeWindow = (options = {}, parent = null, top = null) => {
+const _makeWindowVm = (options = {}) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
@@ -880,13 +880,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   window.window = window;
   window.self = window;
-  window.parent = parent || window;
-  window.top = top || window;
+  window.parent = window.top = {};
 
   window.innerWidth = defaultCanvasSize[0];
   window.innerHeight = defaultCanvasSize[1];
   window.devicePixelRatio = 1;
-  window.document = null;
   const location = new Location(options.url);
   Object.defineProperty(window, 'location', {
     get() {
@@ -1201,7 +1199,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return _parseDocumentAst(htmlAst, window, false);
     }
   };
-  // window.Buffer = Buffer; // XXX non-standard
   window.Event = Event;
   window.KeyboardEvent = KeyboardEvent;
   window.MouseEvent = MouseEvent;
@@ -1599,13 +1596,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       window._emit('vrdisplaypresentchange', e);
     });
   }
-  return window;
-};
-GlobalContext._makeWindow = _makeWindow;
 
-const _makeWindowWithDocument = (s, options, parent, top) => {
-  const window = _makeWindow(options, parent, top);
   window.document = _parseDocument(s, window);
+
   return window;
 };
 
@@ -1613,7 +1606,7 @@ const exokit = (s = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1/';
   options.baseUrl = options.baseUrl || options.url;
   options.dataPath = options.dataPath || __dirname;
-  return _makeWindowWithDocument(s, options);
+  return _makeWindowVm(s, options);
 };
 exokit.load = (src, options = {}) => {
   if (!url.parse(src).protocol) {
