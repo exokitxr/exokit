@@ -1045,9 +1045,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         url = _normalizeUrl(url);
         return super.open(method, url, async, username, password);
       }
-      get response() {
-        return utils._normalizePrototype(super.response, window);
-      }
     }
     for (const k in XMLHttpRequestBase) {
       XMLHttpRequest[k] = XMLHttpRequestBase[k];
