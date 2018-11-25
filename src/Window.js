@@ -1459,7 +1459,7 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
  *
  * @param {string} nativeBindingsModule - Path to native bindings JS module.
  */
-exokit.setNativeBindingsModule = nativeBindingsModule => {
+const setNativeBindingsModule = nativeBindingsModule => {
   const bindings = require(nativeBindingsModule);
 
   // Set in binding module to be referenced from other modules.
