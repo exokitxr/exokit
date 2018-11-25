@@ -1816,6 +1816,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
     this.contentWindow = null;
     this.contentDocument = null;
+    
+    // non-standard
+    this.vm = null;
     this.live = true;
     this.xrOffset = {
       position: new Float32Array(3),
@@ -1848,23 +1851,24 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 const options = parentWindow[symbols.optionsSymbol];
 
                 url = utils._makeNormalizeUrl(options.baseUrl)(url);
-                const contentWindow = GlobalContext._makeWindow({
+                /* const contentWindow = GlobalContext._makeWindowVm(htmlString, {
                   url,
                   baseUrl: url,
                   dataPath: options.dataPath,
-                }, parentWindow, parentWindow.top);
+                });
                 const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
                 contentDocument.hidden = this.hidden;
                 contentDocument.xrOffset = this.xrOffset;
 
-                contentWindow.document = contentDocument;
+                contentWindow.document = contentDocument; */
 
-                this.contentWindow = contentWindow;
-                this.contentDocument = contentDocument;
-
-                contentWindow.on('destroy', e => {
-                  parentWindow.emit('destroy', e);
+                this.vm = GlobalContext._makeWindowVm(htmlString, {
+                  url,
+                  baseUrl: url,
+                  dataPath: options.dataPath,
                 });
+                this.contentWindow = {};
+                this.contentDocument = {};
                 
                 this.readyState = 'complete';
 
