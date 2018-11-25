@@ -1037,11 +1037,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Request = Request;
   window.Response = Response;
   window.Headers = Headers;
-  window.Blob = (Old => class Blob extends Old {
-    constructor(parts, opts) {
-      super(parts && parts.map(part => utils._normalizePrototype(part, global)), opts);
-    }
-  })(Blob);
+  window.Blob = Blob;
   window.FormData = FormData;
   window.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
