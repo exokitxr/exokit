@@ -33,7 +33,7 @@ const {
   GamepadButton,
   getGamepads,
   getAllGamepads,
-} = require('vr-display')(THREE);
+} = require('./VR.js');
 
 const BindingsModule = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
