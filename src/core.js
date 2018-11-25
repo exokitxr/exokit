@@ -1154,47 +1154,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     ws,
     createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
     magicleap: nativeMl ? {
-      RequestMeshing() {
-        const mesher = nativeMl.RequestMeshing.apply(nativeMl, arguments);
-        return {
-          get onmesh() {
-            return mesher.onmesh;
-          },
-          set onmesh(cb) {
-            mesher.onmesh = cb ? updates => {
-              for (let i = 0; i < updates.length; i++) {
-                const update = updates[i];
-                if (update.positionArray) {
-                  update.positionArray = utils._normalizePrototype(update.positionArray, window);
-                }
-                if (update.normalArray) {
-                  update.normalArray = utils._normalizePrototype(update.normalArray, window);
-                }
-                if (update.indexArray) {
-                  update.indexArray = utils._normalizePrototype(update.indexArray, window);
-                }
-              }
-              cb(updates);
-            } : null;
-          },
-        };
-      },
+      RequestMeshing: nativeMl.RequestMeshing,
       RequestPlaneTracking: nativeMl.RequestPlaneTracking,
       RequestHandTracking: nativeMl.RequestHandTracking,
       RequestEyeTracking: nativeMl.RequestEyeTracking,
       RequestDepthPopulation: nativeMl.RequestDepthPopulation,
-      RequestCamera(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(datas) {
-            for (let i = 0; i < datas.length; i++) {
-              const data = datas[i];
-              data.data = utils._normalizePrototype(data.data, window);
-            }
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return nativeMl.RequestCamera.apply(nativeMl, arguments);
-      },
+      RequestCamera: nativeMl.RequestCamera,
     } : null,
     monitors: new MonitorManager(),
   };
