@@ -1053,14 +1053,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   })(XMLHttpRequest);
   window.WebSocket = (Old => {
     class WebSocket extends Old {
-      emit(type, event) {
-        if (type === 'message') {
-          event = utils._normalizePrototype(event, window);
-        }
-        return super.emit.apply(this, arguments);
-      }
-      send(data) {
-        return super.send(utils._normalizePrototype(data, global));
+      constructor(url, protocols) {
+        url = _normalizeUrl(url);
+        super(url, protocols);
       }
     }
     for (const k in Old) {
