@@ -322,7 +322,6 @@ core.load = (src, options = {}) => {
         baseUrl = utils._getBaseUrl(src);
       }
 
-      return exokit(htmlString, {
       return core(htmlString, {
         url: options.url || src,
         baseUrl,
