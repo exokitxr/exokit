@@ -173,7 +173,6 @@ class Resources extends EventTarget {
 }
 GlobalContext.Resources = Resources;
 
-let nativeVm = GlobalContext.nativeVm = null;
 let nativeWorker = null;
 let nativeVr = GlobalContext.nativeVr = null;
 let nativeMl = GlobalContext.nativeMl = null;
