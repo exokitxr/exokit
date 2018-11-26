@@ -1800,7 +1800,6 @@ if (require.main === module) {
   }
 
   core.setArgs(args);
-  core.setNativeBindingsModule(nativeBindingsModulePath);
 
   _prepare()
     .then(() => _start())
@@ -1808,8 +1807,6 @@ if (require.main === module) {
       console.warn(err.stack);
       process.exit(1);
     });
-} else {
-  core.setNativeBindingsModule(nativeBindingsModulePath);
 }
 
 module.exports = core;
