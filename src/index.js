@@ -884,7 +884,7 @@ const _bindWindow = (window, newWindowCb) => {
     clearTimeout(timeout);
   });
   window.on('navigate', newWindowCb);
-  window.document.on('paste', e => {
+  window.on('paste', e => { // XXX emit on window instead of document
     e.clipboardData = new window.DataTransfer();
     if (contexts.length > 0) { // XXX use the currently focused context
       const context = contexts[0];
@@ -921,7 +921,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
-  window.document.addEventListener('pointerlockchange', () => {
+  window.on('pointerlockchange', () => { // XXX emit on window instead of document
     const {pointerLockElement} = window.document;
 
     if (pointerLockElement) {
@@ -952,7 +952,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
-  window.document.addEventListener('fullscreenchange', () => {
+  window.on('fullscreenchange', () => { // XXX emit on window instead of document
     const {fullscreenElement} = window.document;
 
     if (fullscreenElement) {
@@ -983,7 +983,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
-  window.addEventListener('destroy', e => {
+  window.on('destroy', e => {
     const {window} = e;
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -993,7 +993,7 @@ const _bindWindow = (window, newWindowCb) => {
     }
     clearTimeout(timeout);
   });
-  window.addEventListener('error', err => {
+  window.on('error', err => {
     console.warn('got error', err);
   });
 
