@@ -276,13 +276,13 @@ const _runHtml = (element, window) => {
 };
 GlobalContext._runHtml = _runHtml;
 
-const exokit = (htmlString = '', options = {}) => {
+const core = (htmlString = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1/';
   options.baseUrl = options.baseUrl || options.url;
   options.dataPath = options.dataPath || __dirname;
   return _makeWindowVm(htmlString, options);
 };
-exokit.load = (src, options = {}) => {
+core.load = (src, options = {}) => {
   if (!url.parse(src).protocol) {
     src = 'http://' + src;
   }
@@ -323,18 +323,20 @@ exokit.load = (src, options = {}) => {
       }
 
       return exokit(htmlString, {
+      return core(htmlString, {
         url: options.url || src,
         baseUrl,
         dataPath: options.dataPath,
       });
     });
 };
-exokit.setArgs = newArgs => {
+core.setArgs = newArgs => {
   GlobalContext.args = newArgs;
 };
-exokit.setVersion = newVersion => {
+core.setVersion = newVersion => {
   GlobalContext.version = newVersion;
 };
+module.exports = core;
 
 /**
  * Initialize classes and modules that require native bindings.
