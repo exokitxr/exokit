@@ -45,7 +45,7 @@ GlobalContext.args = {};
 GlobalContext.version = '';
 
 // Class imports.
-const {_makeWindowVm} = require('./Window');
+const {_makeWindowVm} = require('./WindowVm');
 const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const DOM = require('./DOM');
 const {DOMRect, Node, NodeList} = require('./DOM');
