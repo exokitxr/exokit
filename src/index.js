@@ -60,7 +60,7 @@ const MLSDK_PORT = 17955;
 const contexts = [];
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
-let _takeScreenshot = false;
+// let _takeScreenshot = false;
 
 const args = (() => {
   if (require.main === module) {
@@ -997,7 +997,7 @@ const _bindWindow = (window, newWindowCb) => {
     console.warn('got error', err);
   });
 
-  const _saveImage = (context, name) => {
+  /* const _saveImage = (context, name) => {
     const _flipImage = (width, height, stride, arrayBuffer) => {
       const uint8Array = new Uint8Array(arrayBuffer);
 
@@ -1023,7 +1023,7 @@ const _bindWindow = (window, newWindowCb) => {
     ], width, height, 0));
     console.dir({width, height, image: name, result: result.length});
     fs.writeFileSync(name, result);
-  }
+  }; */
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -1082,8 +1082,8 @@ const _bindWindow = (window, newWindowCb) => {
           }
         }
 
-        numDirtyFrames++;
-        _checkDirtyFrameTimeout();
+        /* numDirtyFrames++;
+        _checkDirtyFrameTimeout(); */
 
         context.clearDirty();
       }
@@ -1108,7 +1108,7 @@ const _bindWindow = (window, newWindowCb) => {
   const gamepads = [null, null];
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
-  let timeout = null;
+  /* let timeout = null;
   let numDirtyFrames = 0;
   const dirtyFrameContexts = [];
   const _checkDirtyFrameTimeout = () => {
@@ -1159,7 +1159,7 @@ const _bindWindow = (window, newWindowCb) => {
       dirtyFrameContexts.push(dirtyFrameContext);
     }
   };
-  window.setDirtyFrameTimeout = setDirtyFrameTimeout;
+  window.setDirtyFrameTimeout = setDirtyFrameTimeout; */
 
   const _recurse = () => {
     if (args.performance) {
@@ -1509,10 +1509,10 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    if (args.image && _takeScreenshot) {
+    /* if (args.image && _takeScreenshot) {
       _saveImage(contexts[contexts.length - 1], args.image);
       process.exit(0);
-    }
+    } */
     _blit();
     if (args.performance) {
       const now = Date.now();
@@ -1660,7 +1660,7 @@ const _start = () => {
     return core.load(u, {
       dataPath,
     })
-      .then(window => {
+      /* .then(window => {
         if (args.image) {
           window.setDirtyFrameTimeout({
             dirtyFrames: 100,
@@ -1673,7 +1673,7 @@ const _start = () => {
             }
           });
         }
-      });
+      }); */
   } else {
     let window = null;
     const _bindReplWindow = newWindow => {
