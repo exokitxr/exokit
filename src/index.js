@@ -1704,7 +1704,7 @@ const _start = () => {
         } else {
           result = e.childNodes;
         }
-      } else if (match = cmd.match(/^\s*(?:const|var|let)?\s*([a-z][a-z0-9]*)\s*=\s*(<(?:!-*)?[a-z].*)$/im)) {
+      } else if (match = cmd.match(/^\s*(?:const|var|let)?\s*([a-z][a-z0-9]*)\s*=\s*(<(?:!-*)?[a-z].*)$/im)) { //eslint-disable-line no-cond-assign
         const e = window.document.createElement('div');
         e.innerHTML = match[2];
         if (e.childNodes.length === 0) {
