@@ -7,7 +7,9 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>exokit-macos</string>
+	<string>scripts/exokit-macos</string>
+	<key>CFBundleDisplayName</key>
+	<string>Exokit</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.webmixedreality.exokit</string>
 	<key>CFBundleInfoDictionaryVersion</key>
