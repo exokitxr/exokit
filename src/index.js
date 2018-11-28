@@ -415,7 +415,7 @@ if (nativeVr) {
           depthTex: 0,
         };
 
-        const _attribute = (name, value) => {
+        const _attribute = (name/*, value*/) => {
           if (name === 'width' || name === 'height') {
             nativeWindow.setCurrentWindowContext(windowHandle);
 
@@ -559,7 +559,7 @@ if (nativeMl) {
           const cleanups = [];
           mlPresentState.mlCleanups = cleanups;
 
-          const _attribute = (name, value) => {
+          const _attribute = (name/*, value*/) => {
             if (name === 'width' || name === 'height') {
               nativeWindow.setCurrentWindowContext(windowHandle);
 
@@ -1591,7 +1591,7 @@ const _prepare = () => Promise.all([
       const openvrPathsPath = path.join(rootPath, 'openvrpaths.vrpath');
 
       return new Promise((accept, reject) => {
-        fs.lstat(openvrPathsPath, (err, stats) => {
+        fs.lstat(openvrPathsPath, (err/*, stats*/) => {
           if (err) {
             if (err.code === 'ENOENT') {
               mkdirp(rootPath, err => {
@@ -1665,7 +1665,7 @@ const _start = () => {
           window.setDirtyFrameTimeout({
             dirtyFrames: 100,
             timeout: 5000,
-          }, (err, gl) => {
+          }, (err/*, gl*/) => {
             if (!err) {
               _takeScreenshot = true;
             } else {
