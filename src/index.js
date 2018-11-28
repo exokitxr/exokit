@@ -1597,14 +1597,14 @@ const _prepare = () => Promise.all([
               mkdirp(rootPath, err => {
                 if (!err) {
                   const jsonString = JSON.stringify({
-                    "config" : [ rootPath ],
-                    "external_drivers" : null,
-                    "jsonid" : "vrpathreg",
-                    "log" : [ rootPath ],
-                    "runtime" : [
+                    'config' : [ rootPath ],
+                    'external_drivers' : null,
+                    'jsonid' : 'vrpathreg',
+                    'log' : [ rootPath ],
+                    'runtime' : [
                        runtimePath,
                      ],
-                    "version" : 1
+                    'version' : 1
                   }, null, 2);
                   fs.writeFile(openvrPathsPath, jsonString, err => {
                     if (!err) {
