@@ -39,8 +39,8 @@ const dataPath = (() => {
     if (candidatePathPrefix) {
       const ok = (() => {
         try {
-         fs.accessSync(candidatePathPrefix, fs.constants.W_OK);
-         return true;
+          fs.accessSync(candidatePathPrefix, fs.constants.W_OK);
+          return true;
         } catch(err) {
           return false;
         }
@@ -286,17 +286,17 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 
     ctx.setWindowHandle(windowHandle);
     ctx.setTexture(tex, canvasWidth, canvasHeight);
-    
+
     ctx.canvas = canvas;
-    
+
     contexts.push(ctx);
-    
+
     ctx.destroy = (destroy => function() {
       destroy.call(this);
-      
+
       nativeWindow.destroy(windowHandle);
       canvas._context = null;
-      
+
       contexts.splice(contexts.indexOf(ctx), 1);
     })(ctx.destroy);
 
@@ -1031,7 +1031,7 @@ const _bindWindow = (window, newWindowCb) => {
       const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context;
       if (isDirty) {
         const windowHandle = context.getWindowHandle();
-        
+
         nativeWindow.setCurrentWindowContext(windowHandle);
         if (isMac) {
           context.flush();
