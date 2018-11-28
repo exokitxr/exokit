@@ -21,7 +21,6 @@ const UPNG = require('upng-js');
 
 const {version} = require('../package.json');
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
-const symbols = require('./symbols');
 const {THREE} = core;
 const nativeBindings = require(nativeBindingsModulePath);
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
