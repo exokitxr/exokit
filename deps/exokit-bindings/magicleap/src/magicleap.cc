@@ -1040,22 +1040,43 @@ NAN_GETTER(MLEyeTracker::EyesGetter) {
   // Nan::HandleScope scope;
   MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
 
+  bool transform;
+  MLMat4f transformMatrix;
+  if (!this->xrFrameOfReference.IsEmpty()) {
+    Local<Object> xrFrameOfReference = Nan::New(this->xrFrameOfReference);
+    Local<Float32Array> float32Array = Local<Float32Array>::Cast(xrFrameOfReference->Get(JS_STR("_leftFrameMatrix")));
+    memcpy(transformMatrix.matrix_colmajor, (char *)float32Array->Buffer().GetContents().Data() + float32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
+    
+    transform = true;
+  } else {
+    transform = false;
+  }
+  
   Local<Array> array = Nan::New<Array>(2);
   for (size_t i = 0; i < 2; i++) {
+    MLVec3f position = eyeTransform.position;
+    MLQuaternionf rotation = eyeTransform.rotation;
+
+    if (transform) {
+      MLMat4f eyeMatrix = composeMatrix(position, rotation, MLVec3f{1, 1, 1});
+      MLMat4f newMatrix = multiplyMatrices(transformMatrix, eyeMatrix);
+      decomposeMatrix(newMatrix, position, rotation);
+    }
+    
     Local<Object> obj = Nan::New<Object>();
 
     const MLTransform &eyeTransform = i == 0 ? mlEyeTracker->leftTransform : mlEyeTracker->rightTransform;
     Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
-    positionArray->Set(0, JS_NUM(eyeTransform.position.x));
-    positionArray->Set(1, JS_NUM(eyeTransform.position.y));
-    positionArray->Set(2, JS_NUM(eyeTransform.position.z));
+    positionArray->Set(0, JS_NUM(position.x));
+    positionArray->Set(1, JS_NUM(position.y));
+    positionArray->Set(2, JS_NUM(position.z));
     obj->Set(JS_STR("position"), positionArray);
 
     Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
-    rotationArray->Set(0, JS_NUM(eyeTransform.rotation.x));
-    rotationArray->Set(1, JS_NUM(eyeTransform.rotation.y));
-    rotationArray->Set(2, JS_NUM(eyeTransform.rotation.z));
-    rotationArray->Set(3, JS_NUM(eyeTransform.rotation.w));
+    rotationArray->Set(0, JS_NUM(rotation.x));
+    rotationArray->Set(1, JS_NUM(rotation.y));
+    rotationArray->Set(2, JS_NUM(rotation.z));
+    rotationArray->Set(3, JS_NUM(rotation.w));
     obj->Set(JS_STR("rotation"), rotationArray);
 
     const bool &eyeBlink = i == 0 ? mlEyeTracker->leftBlink : mlEyeTracker->rightBlink;
