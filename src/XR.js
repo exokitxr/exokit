@@ -457,7 +457,7 @@ class XRInputPose {
   constructor() {
     this.emulatedPosition = false;
     this.pointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.gripMatrix = this.pointerMatrix.slice();
   }
 }
 module.exports.XRInputPose = XRInputPose;
