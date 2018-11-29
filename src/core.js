@@ -311,6 +311,8 @@ const maxNumPlanes = 32 * 3;
 const planeEntrySize = 3 + 4 + 2 + 1;
 VRFrameData.nonstandard = {
   init() {
+    this.leftFrameMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.rightFrameMatrix = this.rightFrameMatrix.slice();
     this.hands = [
       new Float32Array(handEntrySize),
       new Float32Array(handEntrySize),
@@ -319,6 +321,8 @@ VRFrameData.nonstandard = {
     this.numPlanes = 0;
   },
   copy(frameData) {
+    this.leftFrameMatrix.set(frameData.leftFrameMatrix);
+    this.rightFrameMatrix.set(frameData.rightFrameMatrix);
     for (let i = 0; i < this.hands.length; i++) {
       this.hands[i].set(frameData.hands[i]);
     }

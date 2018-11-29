@@ -200,6 +200,8 @@ class XRSession extends EventTarget {
         this._frame.views[1].projectionMatrix.set(frameData.rightProjectionMatrix);
         this._frame.views[1]._viewMatrix.set(frameData.rightViewMatrix);
       }
+      this._frameOfReference._leftFrameMatrix.set(frameData.leftFrameMatrix);
+      this._frameOfReference._rightFrameMatrix.set(frameData.rightFrameMatrix);
     }
     /* if (stageParameters !== undefined) {
       this._frameOfReference.emulatedHeight = stageParameters.position.y; // XXX
@@ -485,6 +487,8 @@ class XRFrameOfReference extends XRCoordinateSystem {
 
     this.bounds = new XRStageBounds();
     this.emulatedHeight = 0;
+    this._leftFrameMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this._rightFrameMatrix = this._leftFrameMatrix.slice();
   }
   get onboundschange() {
     return _elementGetter(this, 'boundschange');
