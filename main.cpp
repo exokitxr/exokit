@@ -205,31 +205,11 @@ int main(int argc, char **argv) {
 
     const char *argsEnv = getenv("ARGS");
     if (argsEnv) {
-      
       char args[4096];
       strncpy(args, argsEnv, sizeof(args));
 
       char *argv[64];
       size_t argc = 0;
-
-      const char *nodeString = "node";
-      const char *dotString = ".";
-      const char *jsString = "examples/hello_ml.html";
-      char argsString[4096];
-      int i = 0;
-
-      char *nodeArg = argsString + i;
-      strncpy(nodeArg, nodeString, sizeof(argsString) - i);
-      i += strlen(nodeString) + 1;
-
-      char *dotArg = argsString + i;
-      strncpy(dotArg, dotString, sizeof(argsString) - i);
-      i += strlen(dotString) + 1;
-
-      char *jsArg = argsString + i;
-      strncpy(jsArg, jsString, sizeof(argsString) - i);
-      i += strlen(jsString) + 1;
-
 
       int argStartIndex = 0;
       for (int i = 0;; i++) {
