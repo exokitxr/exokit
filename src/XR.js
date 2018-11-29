@@ -359,9 +359,11 @@ class XRPresentationFrame {
     this._pose = new XRDevicePose(this);
   }
   getDevicePose(coordinateSystem) {
+    this._pose._coordinateSystem = coordinateSystem;
     return this._pose;
   }
   getInputPose(inputSource, coordinateSystem) {
+    inputSource._pose._coordinateSystem = coordinateSystem;
     return inputSource._pose;
   }
   clone() {
@@ -416,6 +418,7 @@ class XRDevicePose {
   constructor(frame) {
     this.frame = frame; // non-standard
     this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this._coordinateSystem = null;
   }
   getViewMatrix(view) {
     if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.window) {
@@ -428,6 +431,10 @@ class XRDevicePose {
             localQuaternion.fromArray(xrOffset.rotation),
             localVector2.fromArray(xrOffset.scale)
           )
+        )
+        .multiply(
+          localMatrix2
+            .fromArray(view.eye === 'left' ? this._coordinateSystem.leftFrameMatrix : this._coordinateSystem.rightFrameMatrix)
         )
         .toArray(view._localViewMatrix);
     } else {
