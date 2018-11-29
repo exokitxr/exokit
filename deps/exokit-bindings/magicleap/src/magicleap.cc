@@ -440,7 +440,7 @@ void MLMesher::Poll() {
             Local<Object> xrFrameOfReference = Nan::New(this->xrFrameOfReference);
             Local<Float32Array> float32Array = Local<Float32Array>::Cast(xrFrameOfReference->Get(JS_STR("_leftFrameMatrix")));
             MLMat4f matrix;
-            memcpy(matrix.matrix_colmajor, (char *)float32Array->Buffer().GetContents().Data() + float32Array->ByteOffset(), sizeof(matrix.matrix_colmajor));
+            memcpy(matrix.matrix_colmajor, (char *)float32Array->Buffer()->GetContents().Data() + float32Array->ByteOffset(), sizeof(matrix.matrix_colmajor));
             decomposeMatrix(matrix, position, rotation, scale);
           } else {
             position = MLVec3f{0, 0, 0};
@@ -588,7 +588,7 @@ void MLPlaneTracker::Poll() {
         Local<Object> xrFrameOfReference = Nan::New(this->xrFrameOfReference);
         Local<Float32Array> float32Array = Local<Float32Array>::Cast(xrFrameOfReference->Get(JS_STR("_leftFrameMatrix")));
         MLMat4f transformMatrix;
-        memcpy(transformMatrix.matrix_colmajor, (char *)float32Array->Buffer().GetContents().Data() + float32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
+        memcpy(transformMatrix.matrix_colmajor, (char *)float32Array->Buffer()->GetContents().Data() + float32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
         
         MLMat4f planeMatrix = composeMatrix(position, rotation, MLVec3f{1, 1, 1});
         
