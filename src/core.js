@@ -81,12 +81,19 @@ function isArrayBuffer(x) {
   return kind(x) === '[object ArrayBuffer]';
 }
 
+function isBlob(x) {
+    return kind(x) === '[object Blob]';
+}
+
 function dispatch(op, ...args) {
   const props = Object.assign({op}, ...args);
   if (op === 'fetch' || op === 'response') {
     if (props.data != null) {
       if (isArrayBuffer(props.data)) {
         props.data = new Buffer(props.data);
+      }
+      if (isBlob(props.data) && props.data.buffer) {
+        props.data = props.data.buffer;
       }
       if (GlobalContext.args.mirror) {
         const {url, data} = props;
