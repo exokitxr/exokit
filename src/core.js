@@ -44,6 +44,13 @@ const {urls} = require('./urls');
 GlobalContext.args = {};
 GlobalContext.version = '';
 
+const wgot = require('wgot');
+const _dump = ({url, data}) => {
+  if (GlobalContext.args.mirror) {
+    wgot(url, data);
+  }
+};
+
 // Class imports.
 const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType,
        DOMImplementation, initDocument} = require('./Document');
@@ -70,6 +77,35 @@ const parseJson = s => {
 };
 
 GlobalContext.styleEpoch = 0;
+
+XMLHttpRequest[symbols.dispatch] = _dump;
+
+const _listify = x => Array.isArray(x) ? x : (x == null) ? [] : [x];
+
+function kind(x) {
+  return Object.prototype.toString.call(x);
+}
+
+function dispatch(op, ...args) {
+  const props = Object.assign({op}, ...args);
+  if (kind(props.data) === '[object ArrayBuffer]') {
+    props.data = new Buffer(props.data);
+  }
+  for (const f of _listify(XMLHttpRequest[symbols.dispatch])) {
+    f(props);
+  }
+}
+
+function onFetched(url, data, ...args) {
+  dispatch('fetch', {url, data, whence: 'fetch'}, ...args);
+  return data;
+}
+
+function onResponse(url, data, ...args) {
+  dispatch('response', {url, data, whence: 'XMLHttpRequest'}, ...args);
+  return data;
+}
+
 
 const maxParallelResources = 8;
 class Resource {
@@ -1030,25 +1066,25 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           );
         })(res.blob);
         res.json = (fn => function() {
-          return utils._normalizePrototype(
+          return onFetched(url, utils._normalizePrototype(
             fn.apply(this, arguments),
             window
-          );
+          ));
         })(res.json);
         res.text = (fn => function() {
-          return utils._normalizePrototype(
+          return onFetched(url, utils._normalizePrototype(
             fn.apply(this, arguments),
             window
-          );
+          ));
         })(res.text);
 
         res.arrayBuffer = (fn => function() {
           return fn.apply(this, arguments)
-            .then(ab => utils._normalizePrototype(ab, window));
+            .then(ab => onFetched(url, utils._normalizePrototype(ab, window)));
         })(res.arrayBuffer);
         res.blob = (fn => function() {
           return fn.apply(this, arguments)
-            .then(b => utils._normalizePrototype(b, window));
+            .then(b => onFetched(url, utils._normalizePrototype(b, window)));
         })(res.blob);
 
         return res;
@@ -1087,7 +1123,13 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         return super.open(method, url, async, username, password);
       }
       get response() {
-        return utils._normalizePrototype(super.response, window);
+        const _response = utils._normalizePrototype(super.response, window);
+        if (!this[symbols.DISTURBED]) {
+          this[symbols.DISTURBED] = true;
+          const url = this._properties.uri;
+          onResponse(url, _response, {responseType: this.responseType});
+        }
+        return _response;
       }
     }
     for (const k in XMLHttpRequestBase) {
@@ -1774,7 +1816,7 @@ exokit.load = (src, options = {}) => {
         return res.text()
           .then(htmlString => ({
             src,
-            htmlString,
+            htmlString: onFetched(src, htmlString),
           }));
       } else if (res.status >= 300 && res.status < 400) {
         const l = res.headers.get('Location');

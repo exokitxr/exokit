@@ -15,3 +15,4 @@ module.exports.runSymbol = Symbol();
 module.exports.runningSymbol = Symbol();
 module.exports.timeoutSymbol = Symbol();
 module.exports.windowSymbol = Symbol();
+module.exports.DISTURBED = Symbol('disturbed');

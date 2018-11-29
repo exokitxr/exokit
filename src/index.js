@@ -29,6 +29,8 @@ const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics}
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
 
+process.chdir(cwd);
+
 const dataPath = (() => {
   const candidatePathPrefixes = [
     os.homedir(),
@@ -78,6 +80,7 @@ const args = (() => {
         'blit',
         'uncapped',
         'require',
+        'mirror',
       ],
       string: [
         'tab',
@@ -122,6 +125,7 @@ const args = (() => {
       uncapped: minimistArgs.uncapped,
       image: minimistArgs.image,
       require: minimistArgs.require,
+      mirror: minimistArgs.mirror,
     };
   } else {
     return {};
