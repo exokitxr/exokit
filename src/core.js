@@ -1131,8 +1131,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
       get response() {
         const _response = utils._normalizePrototype(super.response, window);
-        if (!this[symbols.DISTURBED]) {
-          this[symbols.DISTURBED] = true;
+        if (!this[symbols.disturbed]) {
+          this[symbols.disturbed] = true;
           const url = this._properties.uri;
           onResponse(url, _response, {responseType: this.responseType});
         }
