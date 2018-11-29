@@ -91,7 +91,7 @@ struct LargestFloor {
   float size;
 };
 LargestFloor largestFloor{
-  {0, 0, 0}
+  {0, 0, 0},
   0,
 };
 
