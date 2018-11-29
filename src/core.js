@@ -350,42 +350,6 @@ const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
-/* class ARDisplay extends MRDisplay {
-  constructor(window) {
-    super('AR', window);
-
-    this._viewMatrix = new Float32Array(16);
-    this._projectionMatrix = new Float32Array(16);
-
-    const _resize = () => {
-      this._width = window.innerWidth / 2;
-      this._height = window.innerHeight;
-    };
-    window.top.on('resize', _resize);
-    const _updatearframe = (viewMatrix, projectionMatrix) => {
-      this._viewMatrix.set(viewMatrix);
-      this._projectionMatrix.set(projectionMatrix);
-    };
-    window.top.on('updatearframe', _updatearframe);
-
-    this._cleanups.push(() => {
-      window.top.removeListener('resize', _resize);
-      window.top.removeListener('updatearframe', _updatearframe);
-    });
-  }
-
-  getFrameData(frameData) {
-    const hmdMatrix = localMatrix.fromArray(this._viewMatrix);
-    hmdMatrix.decompose(localVector, localQuaternion, localVector2);
-    frameData.pose.set(localVector, localQuaternion);
-
-    frameData.leftViewMatrix.set(this._viewMatrix);
-    frameData.rightViewMatrix.set(this._viewMatrix);
-
-    frameData.leftProjectionMatrix.set(this._projectionMatrix);
-    frameData.rightProjectionMatrix.set(this._projectionMatrix);
-  }
-} */
 class MLDisplay extends MRDisplay {
   constructor() {
     super('ML');
