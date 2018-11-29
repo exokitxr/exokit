@@ -286,6 +286,99 @@ MLMat4f composeMatrix(
   return result;
 }
 
+float matrixDeterminant(const MLMat4f &m) {
+  const float *te = m.matrix_colmajor;
+
+  float n11 = te[ 0 ], n12 = te[ 4 ], n13 = te[ 8 ], n14 = te[ 12 ];
+  float n21 = te[ 1 ], n22 = te[ 5 ], n23 = te[ 9 ], n24 = te[ 13 ];
+  float n31 = te[ 2 ], n32 = te[ 6 ], n33 = te[ 10 ], n34 = te[ 14 ];
+  float n41 = te[ 3 ], n42 = te[ 7 ], n43 = te[ 11 ], n44 = te[ 15 ];
+
+  //TODO: make this more efficient
+  //( based on http://www.euclideanspace.com/maths/algebra/matrix/functions/inverse/fourD/index.htm )
+
+  return (
+    n41 * (
+      + n14 * n23 * n32
+       - n13 * n24 * n32
+       - n14 * n22 * n33
+       + n12 * n24 * n33
+       + n13 * n22 * n34
+       - n12 * n23 * n34
+    ) +
+    n42 * (
+      + n11 * n23 * n34
+       - n11 * n24 * n33
+       + n14 * n21 * n33
+       - n13 * n21 * n34
+       + n13 * n24 * n31
+       - n14 * n23 * n31
+    ) +
+    n43 * (
+      + n11 * n24 * n32
+       - n11 * n22 * n34
+       - n14 * n21 * n32
+       + n12 * n21 * n34
+       + n14 * n22 * n31
+       - n12 * n24 * n31
+    ) +
+    n44 * (
+      - n13 * n22 * n31
+       - n11 * n23 * n32
+       + n11 * n22 * n33
+       + n13 * n21 * n32
+       - n12 * n21 * n33
+       + n12 * n23 * n31
+    )
+  );
+}
+
+void decomposeMatrix(
+  const MLMat4f &m,
+  MLVec3f &position,
+  MLQuaternionf &quaternion,
+  MLVec3f &scale
+) {
+  const float *te = m.matrix_colmajor;
+
+  float sx = vectorLength(MLVec3f{te[ 0 ], te[ 1 ], te[ 2 ]});
+  float sy = vectorLength(MLVec3f{te[ 4 ], te[ 5 ], te[ 6 ]});
+  float sz = vectorLength(MLVec3f{te[ 8 ], te[ 9 ], te[ 10 ]});
+
+  // if determine is negative, we need to invert one scale
+  float det = matrixDeterminant(m);
+  if ( det < 0 ) sx = - sx;
+
+  position.x = te[ 12 ];
+  position.y = te[ 13 ];
+  position.z = te[ 14 ];
+
+  // scale the rotation part
+  MLMat4f matrix = m;
+
+  float invSX = 1.0f / sx;
+  float invSY = 1.0f / sy;
+  float invSZ = 1.0f / sz;
+
+  matrix.matrix_colmajor[ 0 ] *= invSX;
+  matrix.matrix_colmajor[ 1 ] *= invSX;
+  matrix.matrix_colmajor[ 2 ] *= invSX;
+
+  matrix.matrix_colmajor[ 4 ] *= invSY;
+  matrix.matrix_colmajor[ 5 ] *= invSY;
+  matrix.matrix_colmajor[ 6 ] *= invSY;
+
+  matrix.matrix_colmajor[ 8 ] *= invSZ;
+  matrix.matrix_colmajor[ 9 ] *= invSZ;
+  matrix.matrix_colmajor[ 10 ] *= invSZ;
+
+  quaternion = getQuaternionFromRotationMatrix(matrix);
+
+  scale.x = sx;
+  scale.y = sy;
+  scale.z = sz;
+}
+
 MLMat4f invertMatrix(const MLMat4f &matrix) {
   MLMat4f result;
 
