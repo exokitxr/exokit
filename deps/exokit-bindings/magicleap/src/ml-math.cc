@@ -392,6 +392,47 @@ void decomposeMatrix(
   scale.z = sz;
 }
 
+void decomposeMatrix(
+  const MLMat4f &m,
+  MLVec3f &position,
+  MLQuaternionf &quaternion
+) {
+  const float *te = m.matrix_colmajor;
+
+  float sx = vectorLength(MLVec3f{te[ 0 ], te[ 1 ], te[ 2 ]});
+  float sy = vectorLength(MLVec3f{te[ 4 ], te[ 5 ], te[ 6 ]});
+  float sz = vectorLength(MLVec3f{te[ 8 ], te[ 9 ], te[ 10 ]});
+
+  // if determine is negative, we need to invert one scale
+  float det = matrixDeterminant(m);
+  if ( det < 0 ) sx = - sx;
+
+  position.x = te[ 12 ];
+  position.y = te[ 13 ];
+  position.z = te[ 14 ];
+
+  // scale the rotation part
+  MLMat4f matrix = m;
+
+  float invSX = 1.0f / sx;
+  float invSY = 1.0f / sy;
+  float invSZ = 1.0f / sz;
+
+  matrix.matrix_colmajor[ 0 ] *= invSX;
+  matrix.matrix_colmajor[ 1 ] *= invSX;
+  matrix.matrix_colmajor[ 2 ] *= invSX;
+
+  matrix.matrix_colmajor[ 4 ] *= invSY;
+  matrix.matrix_colmajor[ 5 ] *= invSY;
+  matrix.matrix_colmajor[ 6 ] *= invSY;
+
+  matrix.matrix_colmajor[ 8 ] *= invSZ;
+  matrix.matrix_colmajor[ 9 ] *= invSZ;
+  matrix.matrix_colmajor[ 10 ] *= invSZ;
+
+  quaternion = getQuaternionFromRotationMatrix(matrix);
+}
+
 MLMat4f invertMatrix(const MLMat4f &matrix) {
   MLMat4f result;
 

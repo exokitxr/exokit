@@ -34,9 +34,14 @@ MLMat4f composeMatrix(
 float matrixDeterminant(const MLMat4f &m);
 void decomposeMatrix(
   const MLMat4f &matrix,
-  MLVec3f &position = MLVec3f{0,0,0},
-  MLQuaternionf &quaternion = MLQuaternionf{0,0,0,1},
-  MLVec3f &scale = MLVec3f{1,1,1}
+  MLVec3f &position,
+  MLQuaternionf &quaternion,
+  MLVec3f &scale
+);
+void decomposeMatrix(
+  const MLMat4f &matrix,
+  MLVec3f &position,
+  MLQuaternionf &quaternion
 );
 MLMat4f invertMatrix(const MLMat4f &matrix);
 MLMat4f multiplyMatrices(const MLMat4f &a, const MLMat4f &b);
