@@ -30,6 +30,13 @@ MLMat4f composeMatrix(
   const MLQuaternionf &quaternion = MLQuaternionf{0,0,0,1},
   const MLVec3f &scale = MLVec3f{1,1,1}
 );
+float matrixDeterminant(const MLMat4f &m);
+void decomposeMatrix(
+  const MLMat4f &matrix,
+  MLVec3f &position,
+  MLQuaternionf &quaternion,
+  MLVec3f &scale
+);
 MLMat4f invertMatrix(const MLMat4f &matrix);
 
 // hands
