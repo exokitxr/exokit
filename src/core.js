@@ -15,6 +15,8 @@ const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
 
+const wgot = require('wgot');
+
 const WebSocket = require('ws/lib/websocket');
 
 const {LocalStorage} = require('node-localstorage');
@@ -44,13 +46,6 @@ const {urls} = require('./urls');
 GlobalContext.args = {};
 GlobalContext.version = '';
 
-const wgot = require('wgot');
-const _dump = ({url, data}) => {
-  if (GlobalContext.args.mirror) {
-    wgot(url, data);
-  }
-};
-
 // Class imports.
 const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType,
        DOMImplementation, initDocument} = require('./Document');
@@ -78,21 +73,26 @@ const parseJson = s => {
 
 GlobalContext.styleEpoch = 0;
 
-XMLHttpRequest[symbols.dispatch] = _dump;
-
-const _listify = x => Array.isArray(x) ? x : (x == null) ? [] : [x];
-
 function kind(x) {
   return Object.prototype.toString.call(x);
 }
 
+function isArrayBuffer(x) {
+  return kind(x) === '[object ArrayBuffer]';
+}
+
 function dispatch(op, ...args) {
   const props = Object.assign({op}, ...args);
-  if (kind(props.data) === '[object ArrayBuffer]') {
-    props.data = new Buffer(props.data);
-  }
-  for (const f of _listify(XMLHttpRequest[symbols.dispatch])) {
-    f(props);
+  if (op === 'fetch' || op === 'response') {
+    if (props.data != null) {
+      if (isArrayBuffer(props.data)) {
+        props.data = new Buffer(props.data);
+      }
+      if (GlobalContext.args.mirror) {
+        const {url, data} = props;
+        wgot(url, data);
+      }
+    }
   }
 }
 
