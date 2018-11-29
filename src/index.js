@@ -333,6 +333,8 @@ const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
+const oneVector = new THREE.Vector3(1, 1, 1);
+const zeroQuaternion = new THREE.Quaternion();
 const _normalizeMatrixArray = float32Array => {
   if (isNaN(float32Array[0])) {
     zeroMatrix.toArray(float32Array);
@@ -1437,10 +1439,10 @@ const _bindWindow = (window, newWindowCb) => {
         offset += 3;
         localQuaternion.fromArray(transformArray, offset);
         offset += 4;
-        localVector2.set(1, 1, 1);
-        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
         frameData.pose.set(localVector, localQuaternion);
-        localMatrix.toArray(frameData.leftViewMatrix);
+        localMatrix.compose(localVector, localQuaternion, oneVector)
+          .getInverse(localMatrix)
+          .toArray(frameData.leftViewMatrix);
         frameData.leftProjectionMatrix.set(projectionArray.slice(0, 16));
         
         localVector.fromArray(transformArray, offset); // XXX hook this in
@@ -1450,9 +1452,9 @@ const _bindWindow = (window, newWindowCb) => {
         offset += 3;
         localQuaternion.fromArray(transformArray, offset);
         offset += 4
-        // localVector2.set(1, 1, 1);
-        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-        localMatrix.toArray(frameData.rightViewMatrix);
+        localMatrix.compose(localVector, localQuaternion, oneVector)
+          .getInverse(localMatrix)
+          .toArray(frameData.rightViewMatrix);
         frameData.rightProjectionMatrix.set(projectionArray.slice(16, 32));
         
         localVector.fromArray(transformArray, offset); // XXX hook this in
