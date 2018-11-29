@@ -474,7 +474,7 @@ module.exports.XRInputSourceEvent = XRInputSourceEvent;
 
 class XRCoordinateSystem {
   getTransformTo(other) {
-    return Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); // XXX
+    return Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); // XXX need to compute the proper transform
   }
 }
 module.exports.XRCoordinateSystem = XRCoordinateSystem;
