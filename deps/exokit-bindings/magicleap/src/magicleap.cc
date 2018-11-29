@@ -1045,7 +1045,7 @@ NAN_GETTER(MLEyeTracker::EyesGetter) {
   if (!mlEyeTracker->xrFrameOfReference.IsEmpty()) {
     Local<Object> xrFrameOfReference = Nan::New(mlEyeTracker->xrFrameOfReference);
     Local<Float32Array> float32Array = Local<Float32Array>::Cast(xrFrameOfReference->Get(JS_STR("_leftFrameMatrix")));
-    memcpy(transformMatrix.matrix_colmajor, (char *)float32Array->Buffer().GetContents().Data() + float32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
+    memcpy(transformMatrix.matrix_colmajor, (char *)float32Array->Buffer()->GetContents().Data() + float32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
     
     transform = true;
   } else {
