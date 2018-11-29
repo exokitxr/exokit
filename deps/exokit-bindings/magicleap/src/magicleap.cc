@@ -432,6 +432,24 @@ void MLMesher::Poll() {
             type = "update";
           }
           obj->Set(JS_STR("type"), JS_STR(type));
+          
+          MLVec3f position;
+          MLQuaternionf rotation;
+          MLVec3f scale;
+          if (!this->xrFrameOfReference.IsEmpty()) {
+            Local<Object> xrFrameOfReference = Nan::New(this->xrFrameOfReference);
+            Local<Float32Array> float32Array = Local<Float32Array>::Cast(xrFrameOfReference->Get(JS_STR("_leftFrameMatrix")));
+            MLMat4f matrix;
+            memcpy(matrix.matrix_colmajor, (char *)float32Array->Buffer().GetContents().Data() + float32Array->ByteOffset(), sizeof(matrix.matrix_colmajor));
+            decomposeMatrix(matrix, position, rotation, scale);
+          } else {
+            position = MLVec3f{0, 0, 0};
+            rotation = MLQuaternionf{0, 0, 0, 1};
+            scale = MLVec3f{0, 0, 0};
+          }
+          obj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), position.values, 3 * sizeof(float)), 0, 3));
+          obj->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), rotation.values, 4 * sizeof(float)), 0, 4));
+          obj->Set(JS_STR("scale"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), scale.values, 3 * sizeof(float)), 0, 3));
 
           Local<Object> positionBuffer = Nan::New<Object>();
           positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
