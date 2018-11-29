@@ -56,3 +56,8 @@ popd
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -j 4 ../metadata/program-device.mabu
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m ../metadata/manifest-device.xml -p --create-package -s ../cert/app.cert ../metadata/app-device.package
 cp ../build/magicleap/app-device/app-device.mpk ../build/magicleap/exokit.mpk
+if [ "$1" == "--unsigned" ]; then
+  cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin_unsigned -j 4 --allow-unsigned ../metadata/program-device.mabu
+  cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin_unsigned -m ../metadata/manifest-device.xml -p --create-package -s --allow-unsigned ../metadata/app-device.package
+  cp ../build/magicleap/app-device/app-device.mpk ../build/magicleap/exokit-unsigned.mpk
+fi

@@ -251,9 +251,15 @@ int main(int argc, char **argv) {
 
       return node::Start(argc, argv);
     } else {
+      const char *jsString;
+      if (access("/package/app/index.html", F_OK) != -1) {
+        jsString = "/package/app/index.html";
+      } else {
+        jsString = "examples/hello_ml.html";
+      }
+      
       const char *nodeString = "node";
       const char *dotString = ".";
-      const char *jsString = "examples/hello_ml.html";
       char argsString[4096];
       int i = 0;
 
