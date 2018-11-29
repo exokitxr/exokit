@@ -116,7 +116,7 @@ class MLMesher : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLMesher();
+  MLMesher(Local<Object> xrFrameOfReference);
   ~MLMesher();
 
   static NAN_METHOD(New);
@@ -127,6 +127,7 @@ public:
   void Poll();
 
 // protected:
+  Nan::Persistent<Object> xrFrameOfReference;
   Nan::Persistent<Function> cb;
 };
 
@@ -134,7 +135,7 @@ class MLPlaneTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLPlaneTracker();
+  MLPlaneTracker(Local<Object> xrFrameOfReference);
   ~MLPlaneTracker();
 
   static NAN_METHOD(New);
@@ -145,6 +146,7 @@ public:
   void Poll();
 
 // protected:
+  Nan::Persistent<Object> xrFrameOfReference;
   Nan::Persistent<Function> cb;
 };
 
@@ -152,7 +154,7 @@ class MLHandTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLHandTracker();
+  MLHandTracker(Local<Object> xrFrameOfReference);
   ~MLHandTracker();
 
   static NAN_METHOD(New);
@@ -165,6 +167,7 @@ public:
   void Poll();
 
 // protected:
+  Nan::Persistent<Object> xrFrameOfReference;
   Nan::Persistent<Function> cb;
   Nan::Persistent<Function> ongesture;
 };
@@ -173,7 +176,7 @@ class MLEyeTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLEyeTracker();
+  MLEyeTracker(Local<Object> xrFrameOfReference);
   ~MLEyeTracker();
 
   static NAN_METHOD(New);
@@ -184,6 +187,7 @@ public:
   void Poll(MLSnapshot *snapshot);
 
 // protected:
+  Nan::Persistent<Object> xrFrameOfReference;
   MLTransform transform;
   MLTransform leftTransform;
   bool leftBlink;

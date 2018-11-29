@@ -343,12 +343,17 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
 
 // MLMesher
 
-MLMesher::MLMesher() {}
+MLMesher::MLMesher(Local<Object> xrFrameOfReference) : xrFrameOfReference(xrFrameOfReference) {}
 
 MLMesher::~MLMesher() {}
 
 NAN_METHOD(MLMesher::New) {
-  MLMesher *mlMesher = new MLMesher();
+  Local<Object> xrFrameOfReference;
+  if (info.Length() > 0) {
+    xrFrameOfReference = Local<Object>::Cast(info[0]);
+  }
+  
+  MLMesher *mlMesher = new MLMesher(xrFrameOfReference);
   Local<Object> mlMesherObj = info.This();
   mlMesher->Wrap(mlMesherObj);
 
@@ -485,12 +490,17 @@ NAN_METHOD(MLMesher::Destroy) {
 
 // MLPlaneTracker
 
-MLPlaneTracker::MLPlaneTracker() {}
+MLPlaneTracker::MLPlaneTracker(Local<Object> xrFrameOfReference) : xrFrameOfReference(xrFrameOfReference) {}
 
 MLPlaneTracker::~MLPlaneTracker() {}
 
 NAN_METHOD(MLPlaneTracker::New) {
-  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker();
+  Local<Object> xrFrameOfReference;
+  if (info.Length() > 0) {
+    xrFrameOfReference = Local<Object>::Cast(info[0]);
+  }
+  
+  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker(xrFrameOfReference);
   Local<Object> mlPlaneTrackerObj = info.This();
   mlPlaneTracker->Wrap(mlPlaneTrackerObj);
 
@@ -603,12 +613,17 @@ NAN_METHOD(MLPlaneTracker::Destroy) {
 
 // MLHandTracker
 
-MLHandTracker::MLHandTracker() {}
+MLHandTracker::MLHandTracker(Local<Object> xrFrameOfReference) : xrFrameOfReference(xrFrameOfReference) {}
 
 MLHandTracker::~MLHandTracker() {}
 
 NAN_METHOD(MLHandTracker::New) {
-  MLHandTracker *mlHandTracker = new MLHandTracker();
+  Local<Object> xrFrameOfReference;
+  if (info.Length() > 0) {
+    xrFrameOfReference = Local<Object>::Cast(info[0]);
+  }
+  
+  MLHandTracker *mlHandTracker = new MLHandTracker(xrFrameOfReference);
   Local<Object> mlHandTrackerObj = info.This();
   mlHandTracker->Wrap(mlHandTrackerObj);
 
@@ -930,12 +945,17 @@ NAN_METHOD(MLHandTracker::Destroy) {
 
 // MLEyeTracker
 
-MLEyeTracker::MLEyeTracker() {}
+MLEyeTracker::MLEyeTracker(Local<Object> xrFrameOfReference) : xrFrameOfReference(xrFrameOfReference) {}
 
 MLEyeTracker::~MLEyeTracker() {}
 
 NAN_METHOD(MLEyeTracker::New) {
-  MLEyeTracker *mlEyeTracker = new MLEyeTracker();
+  Local<Object> xrFrameOfReference;
+  if (info.Length() > 0) {
+    xrFrameOfReference = Local<Object>::Cast(info[0]);
+  }
+  
+  MLEyeTracker *mlEyeTracker = new MLEyeTracker(xrFrameOfReference);
   Local<Object> mlEyeTrackerObj = info.This();
   mlEyeTracker->Wrap(mlEyeTrackerObj);
 
@@ -2268,26 +2288,65 @@ NAN_METHOD(MLContext::OnPresentChange) {
 
 NAN_METHOD(MLContext::RequestMeshing) {
   Local<Function> mlMesherCons = Nan::New(mlMesherConstructor);
-  Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
-  info.GetReturnValue().Set(mlMesherObj);
+  
+  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRFrameOfReference"))) {
+    Local<Value> argv[] = {
+      info[0],
+    };
+    Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+    info.GetReturnValue().Set(mlMesherObj);
+  } else {
+    Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    info.GetReturnValue().Set(mlMesherObj);
+  }
 }
 
 NAN_METHOD(MLContext::RequestPlaneTracking) {
   Local<Function> mlPlaneTrackerCons = Nan::New(mlPlaneTrackerConstructor);
-  Local<Object> mlPlaneTrackerObj = mlPlaneTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
-  info.GetReturnValue().Set(mlPlaneTrackerObj);
+  
+  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRFrameOfReference"))) {
+    Local<Function> mlPlaneTrackerCons = Nan::New(mlMesherConstructor);
+    Local<Value> argv[] = {
+      info[0],
+    };
+    Local<Object> mlMesherObj = mlPlaneTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+    info.GetReturnValue().Set(mlMesherObj);
+  } else {
+    Local<Object> mlPlaneTrackerObj = mlPlaneTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    info.GetReturnValue().Set(mlPlaneTrackerObj);
+  }
 }
 
 NAN_METHOD(MLContext::RequestHandTracking) {
   Local<Function> mlHandTrackerCons = Nan::New(mlHandTrackerConstructor);
-  Local<Object> mlHandTrackerObj = mlHandTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
-  info.GetReturnValue().Set(mlHandTrackerObj);
+  
+  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRFrameOfReference"))) {
+    Local<Function> mlHandTrackerCons = Nan::New(mlMesherConstructor);
+    Local<Value> argv[] = {
+      info[0],
+    };
+    Local<Object> mlMesherObj = mlHandTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+    info.GetReturnValue().Set(mlMesherObj);
+  } else {
+    Local<Object> mlPlaneTrackerObj = mlHandTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    info.GetReturnValue().Set(mlPlaneTrackerObj);
+  }
 }
 
 NAN_METHOD(MLContext::RequestEyeTracking) {
   Local<Function> mlEyeTrackerCons = Nan::New(mlEyeTrackerConstructor);
-  Local<Object> mlEyeTrackerObj = mlEyeTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
-  info.GetReturnValue().Set(mlEyeTrackerObj);
+  
+  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRFrameOfReference"))) {
+    Local<Function> mlEyeTrackerCons = Nan::New(mlMesherConstructor);
+    Local<Value> argv[] = {
+      info[0],
+    };
+    Local<Object> mlMesherObj = mlEyeTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+    info.GetReturnValue().Set(mlMesherObj);
+  } else {
+    Local<Object> mlPlaneTrackerObj = mlEyeTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    info.GetReturnValue().Set(mlPlaneTrackerObj);
+  }
 }
 
 NAN_METHOD(MLContext::RequestDepthPopulation) {
