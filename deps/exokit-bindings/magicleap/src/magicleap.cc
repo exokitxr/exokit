@@ -1066,17 +1066,19 @@ NAN_GETTER(MLEyeTracker::EyesGetter) {
     
     Local<Object> obj = Nan::New<Object>();
 
-    Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
+    Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)position.values, 3 * sizeof(float)), 0, 3);
+    /* Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
     positionArray->Set(0, JS_NUM(position.x));
     positionArray->Set(1, JS_NUM(position.y));
-    positionArray->Set(2, JS_NUM(position.z));
+    positionArray->Set(2, JS_NUM(position.z)); */
     obj->Set(JS_STR("position"), positionArray);
 
-    Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
+    Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rotation.values, 4 * sizeof(float)), 0, 4);
+    /* Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
     rotationArray->Set(0, JS_NUM(rotation.x));
     rotationArray->Set(1, JS_NUM(rotation.y));
     rotationArray->Set(2, JS_NUM(rotation.z));
-    rotationArray->Set(3, JS_NUM(rotation.w));
+    rotationArray->Set(3, JS_NUM(rotation.w)); */
     obj->Set(JS_STR("rotation"), rotationArray);
 
     const bool &eyeBlink = i == 0 ? mlEyeTracker->leftBlink : mlEyeTracker->rightBlink;
