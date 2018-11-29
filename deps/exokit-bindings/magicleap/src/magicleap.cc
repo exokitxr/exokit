@@ -581,8 +581,20 @@ void MLPlaneTracker::Poll() {
       // uint32_t flags = plane.flags;
       float width = plane.width;
       float height = plane.height;
-      MLVec3f &position = plane.position;
-      MLQuaternionf &rotation = plane.rotation;
+      MLVec3f position = plane.position;
+      MLQuaternionf rotation = plane.rotation;
+      
+      if (!this->xrFrameOfReference.IsEmpty()) {
+        Local<Object> xrFrameOfReference = Nan::New(this->xrFrameOfReference);
+        Local<Float32Array> float32Array = Local<Float32Array>::Cast(xrFrameOfReference->Get(JS_STR("_leftFrameMatrix")));
+        MLMat4f transformMatrix;
+        memcpy(transformMatrix.matrix_colmajor, (char *)float32Array->Buffer().GetContents().Data() + float32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
+        
+        MLMat4f planeMatrix = composeMatrix(position, rotation, MLVec3f{1, 1, 1});
+        
+        MLMat4f newMatrix = multiplyMatrices(transformMatrix, planeMatrix);
+        decomposeMatrix(newMatrix, position, rotation);
+      }
 
       const std::string &id = id2String(planeId);
       obj->Set(JS_STR("id"), JS_STR(id));
