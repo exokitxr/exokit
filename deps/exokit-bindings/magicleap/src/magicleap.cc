@@ -1054,6 +1054,7 @@ NAN_GETTER(MLEyeTracker::EyesGetter) {
   
   Local<Array> array = Nan::New<Array>(2);
   for (size_t i = 0; i < 2; i++) {
+    const MLTransform &eyeTransform = i == 0 ? mlEyeTracker->leftTransform : mlEyeTracker->rightTransform;
     MLVec3f position = eyeTransform.position;
     MLQuaternionf rotation = eyeTransform.rotation;
 
@@ -1065,7 +1066,6 @@ NAN_GETTER(MLEyeTracker::EyesGetter) {
     
     Local<Object> obj = Nan::New<Object>();
 
-    const MLTransform &eyeTransform = i == 0 ? mlEyeTracker->leftTransform : mlEyeTracker->rightTransform;
     Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
     positionArray->Set(0, JS_NUM(position.x));
     positionArray->Set(1, JS_NUM(position.y));
