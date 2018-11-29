@@ -6,13 +6,6 @@ set -e
 
 # preface
 
-if [ -n "$1" ] && [ -d "$1" ] && [ -f "$1/index.html" ]; then
-  APPPATH=$(realpath "$1")
-  echo building user app "$APPPATH"
-else
-  echo building default app
-fi
-
 cd "$(dirname "$0")"
 
 export MLSDK=${MLSDK:-/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.16.0}
@@ -55,16 +48,6 @@ mkdir -p build/libexokit
 find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/libexokit/libexokit.a
 ./scripts/gen-dlibs-h.js "$(pwd)" >build/libexokit/dlibs.h
 popd
-
-# inject app
-
-if [ -n "$APPPATH" ]; then
-  pushd ..
-  rm -Rf app
-  cp -R "$APPPATH" app
-  sed -i 's/# EXTRA_DATAS_PLACEHOLDER/..\/app : \/app\//g' metadata/program-device.mabu
-  popd
-fi
 
 # build mpk
 
