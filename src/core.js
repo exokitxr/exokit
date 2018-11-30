@@ -585,6 +585,16 @@ class FileReader extends EventTarget {
       }));
     });
   }
+
+  readAsText(file) {
+    this.result = file.buffer.toString('utf8');
+
+    process.nextTick(() => {
+      this.dispatchEvent(new Event('load', {
+        target: this,
+      }));
+    });
+  }
 }
 
 const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
