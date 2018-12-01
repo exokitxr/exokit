@@ -88,9 +88,12 @@ DATAS = ../package.json : / \
   ../src/ : /src/ \
   ../lib/ : /lib/ \
   ../build/Release/exokit.node : /build/Release/exokit.node \
-  ../node_modules/native-browser-deps/lib5/magicleap/*.so : /bin/ \
   ../node_modules/ : /node_modules/ \
   ../examples/ : /examples/ \
+  ../metadata/fonts.xml : /etc/fonts.xml \
+  ../node_modules/native-browser-deps/lib5/magicleap/*.so : /bin/ \
+  ../node_modules/native-browser-deps/lib5/magicleap/boot.art : /system/framework/arm64/boot.art \
+  ../node_modules/native-browser-deps/lib5/magicleap/boot.oat : /system/framework/arm64/boot.oat \
   ../metadata/fonts.xml : /etc/fonts.xml
   # ../app/ : /app/
 
@@ -174,6 +177,9 @@ SHLIBS = ml_privileges \
   log \
   :libandroid.so \
   :libjnigraphics.so \
+  :libart.so \
+  :libsigchain.so \
+  :liblz4.so \
   :libcef.so
 
 # paths for finding libraries above
