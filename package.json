@@ -1,7 +1,7 @@
 {
   "name": "exokit",
-  "version": "0.0.494",
-  "description": "Javascript web browser for the post-screen world",
+  "version": "0.0.496",
+  "description": "Native VR and AR engine for JavaScript",
   "engines": {
     "node": ">=10.0.0"
   },
@@ -48,7 +48,6 @@
     "bugsnag": "^2.4.3",
     "cross-env": "^5.2.0",
     "css": "^2.2.3",
-    "electron": "^2.0.6",
     "events": "^3.0.0",
     "exokit-home": "0.0.70",
     "fake-indexeddb": "^2.0.4",
@@ -61,8 +60,8 @@
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "nan": "^2.10.0",
-    "native-audio-deps": "0.0.54",
-    "native-canvas-deps": "0.0.48",
+    "native-audio-deps": "0.0.55",
+    "native-canvas-deps": "0.0.50",
     "native-graphics-deps": "0.0.20",
     "native-openvr-deps": "0.0.17",
     "native-video-deps": "0.0.30",
@@ -75,14 +74,13 @@
     "rimraf": "^2.6.2",
     "upng-js": "^2.1.0",
     "vm-one": "0.0.22",
-    "vr-display": "0.0.28",
     "webgl-to-opengl": "0.0.12",
     "window-classlist": "0.0.4",
     "window-fetch": "0.0.9",
     "window-selector": "0.0.5",
     "window-text-encoding": "0.0.2",
-    "window-worker": "0.0.97",
-    "window-xhr": "0.0.19",
+    "window-worker": "0.0.98",
+    "window-xhr": "0.0.20",
     "ws": "^6.0.0"
   },
   "devDependencies": {

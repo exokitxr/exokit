@@ -1,7 +1,29 @@
 #include <canvascontext/include/canvas-context.h>
 
+#include "gl/GrGLInterface.h"
+#include "GrBackendSurface.h"
+#include "GrContext.h"
+
+#include <windowsystem.h>
+#include "gl/GrGLAssembleInterface.h"
+
 using namespace v8;
 using namespace node;
+
+#ifdef __APPLE__
+#define MAC_FLUSH() glFlush()
+#else
+#define MAC_FLUSH() 
+#endif
+
+template<NAN_METHOD(F)>
+NAN_METHOD(ctxCallWrap) {
+  Local<Object> ctxObj = info.This();
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(ctxObj);
+  windowsystem::SetCurrentWindowContext(ctx->windowHandle);
+
+  F(info);
+}
 
 bool isImageValue(Local<Value> arg) {
   if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
@@ -17,10 +39,10 @@ bool isImageValue(Local<Value> arg) {
   }
 }
 
-void flipCanvasY(SkCanvas *canvas, float height) {
+/* void flipCanvasY(SkCanvas *canvas, float height) {
   canvas->translate(0, canvas->imageInfo().height());
   canvas->scale(1.0, -1.0);
-}
+} */
 
 Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
   Nan::EscapableHandleScope scope;
@@ -33,43 +55,46 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Nan::SetMethod(proto,"scale", Scale);
-  Nan::SetMethod(proto,"rotate", Rotate);
-  Nan::SetMethod(proto,"translate", Translate);
-  Nan::SetMethod(proto,"transform", Transform);
-  Nan::SetMethod(proto,"setTransform", SetTransform);
-  Nan::SetMethod(proto,"resetTransform", ResetTransform);
-  Nan::SetMethod(proto,"measureText", MeasureText);
-  Nan::SetMethod(proto,"beginPath", BeginPath);
-  Nan::SetMethod(proto,"closePath", ClosePath);
-  Nan::SetMethod(proto,"clip", Clip);
-  Nan::SetMethod(proto,"stroke", Stroke);
-  Nan::SetMethod(proto,"fill", Fill);
-  Nan::SetMethod(proto,"moveTo", MoveTo);
-  Nan::SetMethod(proto,"lineTo", LineTo);
-  Nan::SetMethod(proto,"arc", Arc);
-  Nan::SetMethod(proto,"arcTo", ArcTo);
-  Nan::SetMethod(proto,"quadraticCurveTo", QuadraticCurveTo);
-  Nan::SetMethod(proto,"bezierCurveTo", BezierCurveTo);
-  Nan::SetMethod(proto,"rect", Rect);
-  Nan::SetMethod(proto,"fillRect", FillRect);
-  Nan::SetMethod(proto,"strokeRect", StrokeRect);
-  Nan::SetMethod(proto,"clearRect", ClearRect);
-  Nan::SetMethod(proto,"fillText", FillText);
-  Nan::SetMethod(proto,"strokeText", StrokeText);
-  Nan::SetMethod(proto,"createLinearGradient", CreateLinearGradient);
-  Nan::SetMethod(proto,"createRadialGradient", CreateRadialGradient);
-  Nan::SetMethod(proto,"createPattern", CreatePattern);
-  Nan::SetMethod(proto,"resize", Resize);
-  Nan::SetMethod(proto,"drawImage", DrawImage);
-  Nan::SetMethod(proto,"save", Save);
-  Nan::SetMethod(proto,"restore", Restore);
-  Nan::SetMethod(proto,"toDataURL", ToDataURL);
-  Nan::SetMethod(proto,"createImageData", CreateImageData);
-  Nan::SetMethod(proto,"getImageData", GetImageData);
-  Nan::SetMethod(proto,"putImageData", PutImageData);
+  Nan::SetMethod(proto, "scale", ctxCallWrap<Scale>);
+  Nan::SetMethod(proto, "rotate", ctxCallWrap<Rotate>);
+  Nan::SetMethod(proto, "translate", ctxCallWrap<Translate>);
+  Nan::SetMethod(proto, "transform", ctxCallWrap<Transform>);
+  Nan::SetMethod(proto, "setTransform", ctxCallWrap<SetTransform>);
+  Nan::SetMethod(proto, "resetTransform", ctxCallWrap<ResetTransform>);
+  Nan::SetMethod(proto, "measureText", ctxCallWrap<MeasureText>);
+  Nan::SetMethod(proto, "beginPath", ctxCallWrap<BeginPath>);
+  Nan::SetMethod(proto, "closePath", ctxCallWrap<ClosePath>);
+  Nan::SetMethod(proto, "clip", ctxCallWrap<Clip>);
+  Nan::SetMethod(proto, "stroke", ctxCallWrap<Stroke>);
+  Nan::SetMethod(proto, "fill", ctxCallWrap<Fill>);
+  Nan::SetMethod(proto, "moveTo", ctxCallWrap<MoveTo>);
+  Nan::SetMethod(proto, "lineTo", ctxCallWrap<LineTo>);
+  Nan::SetMethod(proto, "arc", ctxCallWrap<Arc>);
+  Nan::SetMethod(proto, "arcTo", ctxCallWrap<ArcTo>);
+  Nan::SetMethod(proto, "quadraticCurveTo", ctxCallWrap<QuadraticCurveTo>);
+  Nan::SetMethod(proto, "bezierCurveTo", ctxCallWrap<BezierCurveTo>);
+  Nan::SetMethod(proto, "rect", ctxCallWrap<Rect>);
+  Nan::SetMethod(proto, "fillRect", ctxCallWrap<FillRect>);
+  Nan::SetMethod(proto, "strokeRect", ctxCallWrap<StrokeRect>);
+  Nan::SetMethod(proto, "clearRect", ctxCallWrap<ClearRect>);
+  Nan::SetMethod(proto, "fillText", ctxCallWrap<FillText>);
+  Nan::SetMethod(proto, "strokeText", ctxCallWrap<StrokeText>);
+  Nan::SetMethod(proto, "createLinearGradient", ctxCallWrap<CreateLinearGradient>);
+  Nan::SetMethod(proto, "createRadialGradient", ctxCallWrap<CreateRadialGradient>);
+  Nan::SetMethod(proto, "createPattern", ctxCallWrap<CreatePattern>);
+  Nan::SetMethod(proto, "resize", ctxCallWrap<Resize>);
+  Nan::SetMethod(proto, "drawImage", ctxCallWrap<DrawImage>);
+  Nan::SetMethod(proto, "save", ctxCallWrap<Save>);
+  Nan::SetMethod(proto, "restore", ctxCallWrap<Restore>);
+  Nan::SetMethod(proto, "toDataURL", ctxCallWrap<ToDataURL>);
+  Nan::SetMethod(proto, "createImageData", ctxCallWrap<CreateImageData>);
+  Nan::SetMethod(proto, "getImageData", ctxCallWrap<GetImageData>);
+  Nan::SetMethod(proto, "putImageData", ctxCallWrap<PutImageData>);
 
-  Nan::SetMethod(proto,"destroy", Destroy);
+  Nan::SetMethod(proto, "destroy", ctxCallWrap<Destroy>);
+  Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
+  Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
+  Nan::SetMethod(proto, "setTexture", SetTexture);
 
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
@@ -89,10 +114,6 @@ unsigned int CanvasRenderingContext2D::GetHeight() {
 
 unsigned int CanvasRenderingContext2D::GetNumChannels() {
   return 4;
-}
-
-bool CanvasRenderingContext2D::isValid() {
-  return (bool)surface;
 }
 
 void CanvasRenderingContext2D::Scale(float x, float y) {
@@ -145,18 +166,26 @@ void CanvasRenderingContext2D::Clip() {
 
 void CanvasRenderingContext2D::Stroke() {
   surface->getCanvas()->drawPath(path, strokePaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::Stroke(const Path2D &path) {
   surface->getCanvas()->drawPath(path.path, strokePaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::Fill() {
   surface->getCanvas()->drawPath(path, fillPaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::Fill(const Path2D &path) {
   surface->getCanvas()->drawPath(path.path, fillPaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::MoveTo(float x, float y) {
@@ -165,6 +194,8 @@ void CanvasRenderingContext2D::MoveTo(float x, float y) {
 
 void CanvasRenderingContext2D::LineTo(float x, float y) {
   path.lineTo(x, y);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::Arc(float x, float y, float radius, float startAngle, float endAngle, float anticlockwise) {
@@ -196,18 +227,24 @@ void CanvasRenderingContext2D::FillRect(float x, float y, float w, float h) {
   SkPath path;
   path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, fillPaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::StrokeRect(float x, float y, float w, float h) {
   SkPath path;
   path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, strokePaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::ClearRect(float x, float y, float w, float h) {
   SkPath path;
   path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, clearPaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 float getFontBaseline(const SkPaint &paint, const TextBaseline &textBaseline, float lineHeight) {
@@ -245,41 +282,45 @@ float getFontBaseline(const SkPaint &paint, const TextBaseline &textBaseline, fl
 void CanvasRenderingContext2D::FillText(const std::string &text, float x, float y) {
   // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fillPaint, textBaseline, lineHeight), fillPaint);
   surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, fillPaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, float y) {
   // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(strokePaint, textBaseline, lineHeight), strokePaint);
   surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
-bool CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
-  SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  sk_sp<SkSurface> newSurface = SkSurface::MakeRaster(info);
-
-  if (newSurface) {
-    surface = newSurface;
-    // flipCanvasY(surface->getCanvas());
-    return true;
-  } else {
-    return false;
+void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
+  grContext->resetContext();
+  
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  
+  GrGLTextureInfo glTexInfo;
+  glTexInfo.fID = tex;
+  glTexInfo.fTarget = GL_TEXTURE_2D;
+  glTexInfo.fFormat = GL_RGBA8;
+  
+  GrBackendTexture backendTex(w, h, GrMipMapped::kNo, glTexInfo);
+  
+  surface = SkSurface::MakeFromBackendTexture(grContext.get(), backendTex, kBottomLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
+  if (!surface) {
+    std::cerr << "Failed to resize CanvasRenderingContext2D surface" << std::endl;
+    abort();
   }
 }
 
-void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, bool flipY) {
-  if (flipY) {
-    surface->getCanvas()->save();
-    flipCanvasY(surface->getCanvas(), dy + dh);
-  }
-
+void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh) {
   SkPaint paint;
   paint.setColor(0xFFFFFFFF);
   paint.setStyle(SkPaint::kFill_Style);
   paint.setBlendMode(SkBlendMode::kSrcOver);
-  surface->getCanvas()->drawImageRect(image, SkRect::MakeXYWH(sx, sy, sw, sh), SkRect::MakeXYWH(dx, surface->getCanvas()->imageInfo().height() - dy - dh, dw, dh), &paint);
-
-  if (flipY) {
-    surface->getCanvas()->restore();
-  }
+  surface->getCanvas()->drawImageRect(image, SkRect::MakeXYWH(sx, sy, sw, sh), SkRect::MakeXYWH(dx, dy, dw, dh), &paint);
+  surface->flush();
+  MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::Save() {
@@ -291,45 +332,29 @@ void CanvasRenderingContext2D::Restore() {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::New) {
-  // Nan::HandleScope scope;
+  CanvasRenderingContext2D *context = new CanvasRenderingContext2D();
 
-  if (info[0]->IsObject() && Local<Object>::Cast(info[0])->Get(JS_STR("constructor"))->IsObject() && Local<Object>::Cast(Local<Object>::Cast(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
-    Local<Object> canvasObj = Local<Object>::Cast(info[0]);
-    unsigned int width = canvasObj->Get(JS_STR("width"))->Uint32Value();
-    unsigned int height = canvasObj->Get(JS_STR("height"))->Uint32Value();
-    CanvasRenderingContext2D *context = new CanvasRenderingContext2D(width, height);
+  Local<Object> ctxObj = info.This();
+  context->Wrap(ctxObj);
 
-    if (context->isValid()) {
-      Local<Object> ctxObj = info.This();
-      context->Wrap(ctxObj);
+  Nan::SetAccessor(ctxObj, JS_STR("width"), WidthGetter);
+  Nan::SetAccessor(ctxObj, JS_STR("height"), HeightGetter);
+  Nan::SetAccessor(ctxObj, JS_STR("texture"), TextureGetter);
+  Nan::SetAccessor(ctxObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("font"), FontGetter, FontSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("fontFamily"), FontFamilyGetter, FontFamilySetter);
+  Nan::SetAccessor(ctxObj, JS_STR("fontSize"), FontSizeGetter, FontSizeSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("fontVariant"), FontVariantGetter, FontVariantSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("fontWeight"), FontWeightGetter, FontWeightSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("lineHeight"), LineHeightGetter, LineHeightSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("fontStyle"), FontStyleGetter, FontStyleSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("textAlign"), TextAlignGetter, TextAlignSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("textBaseline"), TextBaselineGetter, TextBaselineSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("direction"), DirectionGetter, DirectionSetter);
 
-      ctxObj->Set(JS_STR("canvas"), canvasObj);
-      Nan::SetAccessor(ctxObj, JS_STR("width"), WidthGetter);
-      Nan::SetAccessor(ctxObj, JS_STR("height"), HeightGetter);
-      Nan::SetAccessor(ctxObj, JS_STR("data"), DataGetter);
-      Nan::SetAccessor(ctxObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("font"), FontGetter, FontSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("fontFamily"), FontFamilyGetter, FontFamilySetter);
-      Nan::SetAccessor(ctxObj, JS_STR("fontSize"), FontSizeGetter, FontSizeSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("fontVariant"), FontVariantGetter, FontVariantSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("fontWeight"), FontWeightGetter, FontWeightSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("lineHeight"), LineHeightGetter, LineHeightSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("fontStyle"), FontStyleGetter, FontStyleSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("textAlign"), TextAlignGetter, TextAlignSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("textBaseline"), TextBaselineGetter, TextBaselineSetter);
-      Nan::SetAccessor(ctxObj, JS_STR("direction"), DirectionGetter, DirectionSetter);
-
-      info.GetReturnValue().Set(ctxObj);
-    } else {
-      delete context;
-
-      Nan::ThrowError("CanvasRenderingContext2D: failed to create");
-    }
-  } else {
-    Nan::ThrowError("CanvasRenderingContext2D: invalid arguments");
-  }
+  info.GetReturnValue().Set(ctxObj);
 }
 
 NAN_GETTER(CanvasRenderingContext2D::WidthGetter) {
@@ -346,28 +371,16 @@ NAN_GETTER(CanvasRenderingContext2D::HeightGetter) {
   info.GetReturnValue().Set(JS_INT(context->GetHeight()));
 }
 
-NAN_GETTER(CanvasRenderingContext2D::DataGetter) {
-  // Nan::HandleScope scope;
-
+NAN_GETTER(CanvasRenderingContext2D::TextureGetter) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-  if (context->dataArray.IsEmpty()) {
-    unsigned int width = context->GetWidth();
-    unsigned int height = context->GetHeight();
-
-    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), width * height * 4); // XXX link lifetime
-
-    SkImageInfo imageInfo = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-    bool ok = context->surface->getCanvas()->readPixels(imageInfo, arrayBuffer->GetContents().Data(), width * 4, 0, 0);
-    if (ok) {
-      Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
-      context->dataArray.Reset(uint8ClampedArray);
-    } else {
-      return info.GetReturnValue().Set(Nan::Null());
-    }
+  if (context->tex != 0) {
+    Local<Object> texObj = Nan::New<Object>();
+    texObj->Set(JS_STR("id"), JS_INT(context->tex));
+    info.GetReturnValue().Set(texObj);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
   }
-
-  return info.GetReturnValue().Set(Nan::New(context->dataArray));
 }
 
 NAN_GETTER(CanvasRenderingContext2D::LineWidthGetter) {
@@ -840,8 +853,6 @@ NAN_METHOD(CanvasRenderingContext2D::Stroke) {
   } else {
     context->Stroke();
   }
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Fill) {
@@ -855,8 +866,6 @@ NAN_METHOD(CanvasRenderingContext2D::Fill) {
   } else {
     context->Fill();
   }
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::MoveTo) {
@@ -877,8 +886,6 @@ NAN_METHOD(CanvasRenderingContext2D::LineTo) {
   double y = info[1]->NumberValue();
 
   context->LineTo(x, y);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Arc) {
@@ -893,8 +900,6 @@ NAN_METHOD(CanvasRenderingContext2D::Arc) {
   double anticlockwise = info[5]->NumberValue();
 
   context->Arc(x, y, radius, startAngle, endAngle, anticlockwise);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
@@ -908,8 +913,6 @@ NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
   double radius = info[4]->NumberValue();
 
   context->ArcTo(x1, y1, x2, y2, radius);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::QuadraticCurveTo) {
@@ -922,8 +925,6 @@ NAN_METHOD(CanvasRenderingContext2D::QuadraticCurveTo) {
   double y2 = info[3]->NumberValue();
 
   context->QuadraticCurveTo(x1, y1, x2, y2);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::BezierCurveTo) {
@@ -938,8 +939,6 @@ NAN_METHOD(CanvasRenderingContext2D::BezierCurveTo) {
   double y = info[5]->NumberValue();
 
   context->BezierCurveTo(x1, y1, x2, y2, x, y);
-
-  context->dataArray.Reset();
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Rect) {
@@ -952,8 +951,6 @@ NAN_METHOD(CanvasRenderingContext2D::Rect) {
   double h = info[3]->NumberValue();
 
   context->Rect(x, y, w, h);
-
-  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
@@ -969,8 +966,6 @@ NAN_METHOD(CanvasRenderingContext2D::FillRect) {
 
   context->FillRect(x, y, w, h);
 
-  context->dataArray.Reset();
-
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -984,8 +979,6 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeRect) {
   double h = info[3]->NumberValue();
 
   context->StrokeRect(x, y, w, h);
-
-  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
@@ -1001,8 +994,6 @@ NAN_METHOD(CanvasRenderingContext2D::ClearRect) {
 
   context->ClearRect(x, y, w, h);
 
-  context->dataArray.Reset();
-
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -1017,8 +1008,6 @@ NAN_METHOD(CanvasRenderingContext2D::FillText) {
 
   context->FillText(string, x, y);
 
-  context->dataArray.Reset();
-
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
 
@@ -1032,8 +1021,6 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeText) {
   double y = info[2]->NumberValue();
 
   context->StrokeText(string, x, y);
-
-  context->dataArray.Reset();
 
   // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
 }
@@ -1101,14 +1088,8 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   unsigned int w = info[0]->Uint32Value();
   unsigned int h = info[1]->Uint32Value();
-
-  if (context->Resize(w, h)) {
-    context->dataArray.Reset();
-
-    // info.GetReturnValue().Set(JS_INT(image->GetHeight()));
-  } else {
-    Nan::ThrowError("failed to resize CanvasRenderingContext2D");
-  }
+  
+  context->Resize(w, h);
 }
 
 NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
@@ -1131,14 +1112,14 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
           unsigned int dw = info[7]->Uint32Value();
           unsigned int dh = info[8]->Uint32Value();
 
-          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh, false);
+          context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh);
         } else {
           unsigned int dw = info[3]->Uint32Value();
           unsigned int dh = info[4]->Uint32Value();
           unsigned int sw = image->width();
           unsigned int sh = image->height();
 
-          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
+          context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
         }
       } else {
         unsigned int sw = image->width();
@@ -1146,10 +1127,8 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
         unsigned int dw = sw;
         unsigned int dh = sh;
 
-        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh, false);
+        context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
       }
-
-      context->dataArray.Reset();
     }
   } else {
     Nan::ThrowError("drawImage: invalid arguments");
@@ -1203,8 +1182,6 @@ NAN_METHOD(CanvasRenderingContext2D::GetImageData) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
-  // Nan::HandleScope scope;
-
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
 
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(info[0]));
@@ -1219,30 +1196,16 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
     unsigned int dw = imageData->GetWidth();
     unsigned int dh = imageData->GetHeight();
 
-    context->surface->getCanvas()->save();
-    flipCanvasY(context->surface->getCanvas(), y + dh);
-
     sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
-    context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
-
-    context->surface->getCanvas()->restore();
-
-    context->dataArray.Reset();
+    context->DrawImage(image.get(), dirtyX, dirtyY, dirtyWidth, dirtyHeight, x, y, dw, dh);
   } else {
     unsigned int sw = imageData->GetWidth();
     unsigned int sh = imageData->GetHeight();
     unsigned int dw = sw;
     unsigned int dh = sh;
 
-    context->surface->getCanvas()->save();
-    flipCanvasY(context->surface->getCanvas(), y + dh);
-
     sk_sp<SkImage> image = SkImage::MakeFromBitmap(imageData->bitmap);
-    context->DrawImage(image.get(), 0, 0, sw, sh, x, context->surface->getCanvas()->imageInfo().height() - y - dh, dw, dh, false);
-
-    context->surface->getCanvas()->restore();
-
-    context->dataArray.Reset();
+    context->DrawImage(image.get(), 0, 0, sw, sh, x, y, dw, dh);
   }
 }
 
@@ -1307,6 +1270,65 @@ NAN_METHOD(CanvasRenderingContext2D::ToDataURL) {
 
 NAN_METHOD(CanvasRenderingContext2D::Destroy) {
   // nothing
+}
+
+NAN_METHOD(CanvasRenderingContext2D::GetWindowHandle) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  if (ctx->windowHandle) {
+    info.GetReturnValue().Set(pointerToArray(ctx->windowHandle));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
+}
+
+NAN_METHOD(CanvasRenderingContext2D::SetWindowHandle) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  if (info[0]->IsArray()) {
+    ctx->windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+    
+    windowsystem::SetCurrentWindowContext(ctx->windowHandle);
+    
+    // You've already created your OpenGL context and bound it.
+    // Leaving interface as null makes Skia extract pointers to OpenGL functions for the current
+    // context in a platform-specific way. Alternatively, you may create your own GrGLInterface and
+    // initialize it however you like to attach to an alternate OpenGL implementation or intercept
+    // Skia's OpenGL calls.
+    // const GrGLInterface *interface = nullptr;
+    ctx->grContext = GrContext::MakeGL(nullptr);
+  } else {
+    ctx->windowHandle = nullptr;
+  }
+}
+
+NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
+    GLuint tex = info[0]->Uint32Value();
+    int width = info[1]->Int32Value();
+    int height = info[2]->Int32Value();
+    
+    ctx->tex = tex;
+    
+    windowsystem::SetCurrentWindowContext(ctx->windowHandle);
+
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    GrGLTextureInfo glTexInfo;
+    glTexInfo.fID = tex;
+    glTexInfo.fTarget = GL_TEXTURE_2D;
+    glTexInfo.fFormat = GL_RGBA8;
+    
+    GrBackendTexture backendTex(width, height, GrMipMapped::kNo, glTexInfo);
+    
+    ctx->surface = SkSurface::MakeFromBackendTexture(ctx->grContext.get(), backendTex, kBottomLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
+    if (!ctx->surface) {
+      std::cerr << "Failed to create CanvasRenderingContext2D surface" << std::endl;
+      abort();
+    }
+  } else {
+    Nan::ThrowError("CanvasRenderingContext2D: invalid arguments");
+  }
 }
 
 bool CanvasRenderingContext2D::isImageType(Local<Value> arg) {
@@ -1389,9 +1411,7 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   }
 }
 
-CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned int height) {
-  SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
-  surface = SkSurface::MakeRaster(info); // XXX can optimize this to not allocate until a width/height is set
+CanvasRenderingContext2D::CanvasRenderingContext2D() : tex(0), lineHeight(1) {
   // flipCanvasY(surface->getCanvas());
 
   strokePaint.setTextSize(12);
@@ -1406,8 +1426,6 @@ CanvasRenderingContext2D::CanvasRenderingContext2D(unsigned int width, unsigned 
   clearPaint.setColor(0x0);
   clearPaint.setStyle(SkPaint::kFill_Style);
   clearPaint.setBlendMode(SkBlendMode::kSrc);
-
-  lineHeight = 1;
 }
 
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}

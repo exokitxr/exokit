@@ -1424,6 +1424,8 @@ class HTMLLinkElement extends HTMLLoadableElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'href' && this.isRunnable()) {
+        this.readyState = 'loading';
+        
         const url = value;
         this.ownerDocument.defaultView.fetch(url)
           .then(res => {
@@ -1437,9 +1439,14 @@ class HTMLLinkElement extends HTMLLoadableElement {
           .then(stylesheet => {
             this.stylesheet = stylesheet;
             GlobalContext.styleEpoch++;
+            
+            this.readyState = 'complete';
+            
             this.dispatchEvent(new Event('load', {target: this}));
           })
           .catch(err => {
+            this.readyState = 'complete';
+            
             const e = new ErrorEvent('error', {target: this});
             e.message = err.message;
             e.stack = err.stack;
@@ -1479,7 +1486,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
 
   [symbols.runSymbol]() {
     let running = false;
-    if (this.isRunnable()) {
+    if (this.isRunnable() && !this.readyState) {
       const hrefAttr = this.attributes.href;
       if (hrefAttr) {
         this._emit('attribute', 'href', hrefAttr.value);
@@ -1506,8 +1513,6 @@ class HTMLScriptElement extends HTMLLoadableElement {
       return false;
     };
     const _loadRun = async => {
-      this.readyState = 'loading';
-
       if (!async) {
         this.ownerDocument[symbols.addRunSymbol](this.loadRunNow.bind(this));
       } else {
@@ -1515,19 +1520,19 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     };
     this.on('attribute', (name, value) => {
-      if (name === 'src' && value && this.isRunnable() && _isAttached() && this.readyState === null) {
+      if (name === 'src' && value && this.isRunnable() && _isAttached() && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : false);
       }
     });
     this.on('attached', () => {
-      if (this.src && this.isRunnable() && _isAttached() && this.readyState === null) {
+      if (this.src && this.isRunnable() && _isAttached() && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
     });
     this.on('innerHTML', innerHTML => {
-      if (this.isRunnable() && _isAttached() && this.readyState === null) {
+      if (this.isRunnable() && _isAttached() && !this.readyState) {
         this.runNow();
       }
     });
@@ -1587,57 +1592,60 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   loadRunNow() {
-    const resource = this.ownerDocument.resources.addResource();
-
+    this.readyState = 'loading';
+    
     const url = this.src;
-    return this.ownerDocument.defaultView.fetch(url)
-      .then(res => {
-        if (res.status >= 200 && res.status < 300) {
-          return res.text();
-        } else {
-          return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-        }
-      })
-      .then(s => {
-        utils._runJavascript(s, this.ownerDocument.defaultView, url);
+    
+    return this.ownerDocument.resources.addResource((onprogress, cb) => {
+      this.ownerDocument.defaultView.fetch(url)
+        .then(res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.text();
+          } else {
+            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
+          }
+        })
+        .then(s => {
+          utils._runJavascript(s, this.ownerDocument.defaultView, url);
 
-        this.readyState = 'complete';
+          this.readyState = 'complete';
 
-        this.dispatchEvent(new Event('load', {target: this}));
-      })
-      .catch(err => {
-        this.readyState = 'complete';
+          this.dispatchEvent(new Event('load', {target: this}));
+          
+          cb();
+        })
+        .catch(err => {
+          this.readyState = 'complete';
 
-        const e = new ErrorEvent('error', {target: this});
-        e.message = err.message;
-        e.stack = err.stack;
-        this.dispatchEvent(e);
-      })
-      .finally(() => {
-        setImmediate(() => {
-          resource.setProgress(1);
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
+          
+          cb(err);
         });
-      });
+    });
   }
 
   runNow() {
+    this.readyState = 'loading';
+    
     const innerHTML = this.childNodes[0].value;
     const window = this.ownerDocument.defaultView;
-    utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
+    
+    return this.ownerDocument.resources.addResource((onprogress, cb) => {
+      utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
 
-    this.readyState = 'complete';
-
-    const resource = this.ownerDocument.resources.addResource();
-
-    setImmediate(() => {
+      this.readyState = 'complete';
+      
       this.dispatchEvent(new Event('load', {target: this}));
 
-      resource.setProgress(1);
+      cb();
     });
   }
 
   [symbols.runSymbol]() {
-    if (this.isRunnable()) {
+    if (this.isRunnable() && !this.readyState) {
       const srcAttr = this.attributes.src;
       if (srcAttr) {
         return this.loadRunNow();
@@ -1653,6 +1661,8 @@ module.exports.HTMLScriptElement = HTMLScriptElement;
 class HTMLSrcableElement extends HTMLLoadableElement {
   constructor(tagName = null, attrs = [], value = '', location = null) {
     super(tagName, attrs, value, location);
+    
+    this.readyState = null;
   }
 
   get src() {
@@ -1664,7 +1674,7 @@ class HTMLSrcableElement extends HTMLLoadableElement {
 
   [symbols.runSymbol]() {
     const srcAttr = this.attributes.src;
-    if (srcAttr) {
+    if (srcAttr && !this.readyState) {
       this._emit('attribute', 'src', srcAttr.value);
     }
     return Promise.resolve();
@@ -1815,58 +1825,64 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        this.readyState = 'loading';
+        
         let url = value;
         const match = url.match(/^javascript:(.+)$/); // XXX should support this for regular fetches too
         if (match) {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
 
-        const resource = this.ownerDocument.resources.addResource();
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
+          this.ownerDocument.defaultView.fetch(url)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.text();
+              } else {
+                return Promise.reject(new Error('iframe src got invalid status code: ' + res.status + ' : ' + url));
+              }
+            })
+            .then(htmlString => {
+              if (this.live) {
+                const parentWindow = this.ownerDocument.defaultView;
+                const options = parentWindow[symbols.optionsSymbol];
 
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('iframe src got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(htmlString => {
-            if (this.live) {
-              const parentWindow = this.ownerDocument.defaultView;
-              const options = parentWindow[symbols.optionsSymbol];
+                url = utils._makeNormalizeUrl(options.baseUrl)(url);
+                const contentWindow = GlobalContext._makeWindow({
+                  url,
+                  baseUrl: url,
+                  dataPath: options.dataPath,
+                }, parentWindow, parentWindow.top);
+                const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
+                contentDocument.hidden = this.hidden;
+                contentDocument.xrOffset = this.xrOffset;
 
-              url = utils._makeNormalizeUrl(options.baseUrl)(url);
-              const contentWindow = GlobalContext._makeWindow({
-                url,
-                baseUrl: url,
-                dataPath: options.dataPath,
-              }, parentWindow, parentWindow.top);
-              const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
-              contentDocument.hidden = this.hidden;
-              contentDocument.xrOffset = this.xrOffset;
+                contentWindow.document = contentDocument;
 
-              contentWindow.document = contentDocument;
+                this.contentWindow = contentWindow;
+                this.contentDocument = contentDocument;
 
-              this.contentWindow = contentWindow;
-              this.contentDocument = contentDocument;
+                contentWindow.on('destroy', e => {
+                  parentWindow.emit('destroy', e);
+                });
+                
+                this.readyState = 'complete';
 
-              contentWindow.on('destroy', e => {
-                parentWindow.emit('destroy', e);
-              });
-
+                this.dispatchEvent(new Event('load', {target: this}));
+              }
+              
+              cb();
+            })
+            .catch(err => {
+              console.error(err);
+              
+              this.readyState = 'complete';
+              
               this.dispatchEvent(new Event('load', {target: this}));
-            }
-          })
-          .catch(err => {
-            console.error(err);
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .finally(() => {
-            setImmediate(() => {
-              resource.setProgress(1);
+              
+              cb(err);
             });
-          });
+        });
       } else if (name === 'position' || name === 'rotation' || name === 'scale') {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
@@ -1981,11 +1997,16 @@ class HTMLCanvasElement extends HTMLElement {
   getBoundingClientRect() {
     return new DOMRect(0, 0, this.clientWidth, this.clientHeight);
   }
-
+  
   get data() {
     return (this._context && this._context.data) || null;
   }
   set data(data) {}
+
+  get texture() {
+    return (this._context && this._context.texture) || null;
+  }
+  set texture(texture) {}
 
   getContext(contextType) {
     if (contextType === '2d') {
@@ -2193,43 +2214,48 @@ class HTMLImageElement extends HTMLSrcableElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        this.readyState = 'loading';
+        
         const src = value;
 
-        const resource = this.ownerDocument.resources.addResource();
-
-        this.ownerDocument.defaultView.fetch(src)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.arrayBuffer();
-            } else {
-              return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-            }
-          })
-          .then(arrayBuffer => new Promise((accept, reject) => {
-            this.image.load(arrayBuffer, err => {
-              if (!err) {
-                accept();
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
+          this.ownerDocument.defaultView.fetch(src)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.arrayBuffer();
               } else {
-                reject(new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength}, message: ${err})`));
+                return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
               }
-            });
-          }))
-          .then(() => {
-            this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            console.warn('failed to load image:', src);
+            })
+            .then(arrayBuffer => new Promise((accept, reject) => {
+              this.image.load(arrayBuffer, err => {
+                if (!err) {
+                  accept();
+                } else {
+                  reject(new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength}, message: ${err})`));
+                }
+              });
+            }))
+            .then(() => {
+              this.readyState = 'complete';
+              
+              this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
+              
+              cb();
+            })
+            .catch(err => {
+              console.warn('failed to load image:', src);
 
-            const e = new ErrorEvent('error', {target: this});
-            e.message = err.message;
-            e.stack = err.stack;
-            this._dispatchEventOnDocumentReady(e);
-          })
-          .finally(() => {
-            setImmediate(() => {
-              resource.setProgress(1);
+              this.readyState = 'complete';
+              
+              const e = new ErrorEvent('error', {target: this});
+              e.message = err.message;
+              e.stack = err.stack;
+              this._dispatchEventOnDocumentReady(e);
+              
+              cb(err);
             });
-          });
+        });
       }
     });
   }
@@ -2315,48 +2341,47 @@ class HTMLAudioElement extends HTMLMediaElement {
       if (name === 'src' && value) {
         const src = value;
 
-        const resource = this.ownerDocument.resources.addResource();
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
+          this.ownerDocument.defaultView.fetch(src)
+            .then(res => {
+              if (res.status >= 200 && res.status < 300) {
+                return res.arrayBuffer();
+              } else {
+                return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
+              }
+            })
+            .then(arrayBuffer => {
+              try {
+                this.audio.load(arrayBuffer);
+              } catch(err) {
+                throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
+              }
+            })
+            .then(() => {
+              this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
-        this.ownerDocument.defaultView.fetch(src)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.arrayBuffer();
-            } else {
-              return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-            }
-          })
-          .then(arrayBuffer => {
-            try {
-              this.audio.load(arrayBuffer);
-            } catch(err) {
-              throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-            }
-          })
-          .then(() => {
-            this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+              const progressEvent = new Event('progress', {target: this});
+              progressEvent.loaded = 1;
+              progressEvent.total = 1;
+              progressEvent.lengthComputable = true;
+              this._emit(progressEvent);
 
-            const progressEvent = new Event('progress', {target: this});
-            progressEvent.loaded = 1;
-            progressEvent.total = 1;
-            progressEvent.lengthComputable = true;
-            this._emit(progressEvent);
+              this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
+              this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
+              
+              cb();
+            })
+            .catch(err => {
+              console.warn('failed to load audio:', src);
 
-            this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
-            this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
-          })
-          .catch(err => {
-            console.warn('failed to load audio:', src);
-
-            const e = new ErrorEvent('error', {target: this});
-            e.message = err.message;
-            e.stack = err.stack;
-            this._dispatchEventOnDocumentReady(e);
-          })
-          .finally(() => {
-            setImmediate(() => {
-              resource.setProgress(1);
+              const e = new ErrorEvent('error', {target: this});
+              e.message = err.message;
+              e.stack = err.stack;
+              this._dispatchEventOnDocumentReady(e);
+              
+              cb(err);
             });
-          });
+        });
       }
     });
   }
@@ -2418,6 +2443,8 @@ class HTMLVideoElement extends HTMLMediaElement {
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        this.readyState = 'loading';
+        
         const src = value;
 
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
@@ -2429,19 +2456,19 @@ class HTMLVideoElement extends HTMLMediaElement {
           }
         }
 
-        const resource = this.ownerDocument.resources.addResource();
-
-        setImmediate(() => {
+        this.ownerDocument.resources.addResource((onprogress, cb) => {
           const progressEvent = new Event('progress', {target: this});
           progressEvent.loaded = 1;
           progressEvent.total = 1;
           progressEvent.lengthComputable = true;
           this._emit(progressEvent);
+          
+          this.readyState = 'complete';
 
           this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 
-          resource.setProgress(1);
+          cb();
         });
       }
     });

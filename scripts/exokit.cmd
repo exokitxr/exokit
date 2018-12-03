@@ -1,5 +1,3 @@
-@echo off
-
 setlocal
 
 set home=%~dp0

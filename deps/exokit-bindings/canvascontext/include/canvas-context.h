@@ -50,7 +50,6 @@ public:
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();
-  bool isValid();
   void Scale(float x, float y);
   void Rotate(float angle);
   void Translate(float x, float y);
@@ -77,16 +76,16 @@ public:
   void ClearRect(float x, float y, float w, float h);
   void FillText(const std::string &text, float x, float y);
   void StrokeText(const std::string &text, float x, float y);
-  bool Resize(unsigned int w, unsigned int h);
-  void DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh, bool flipY);
+  void Resize(unsigned int w, unsigned int h);
+  void DrawImage(const SkImage *image, float sx, float sy, float sw, float sh, float dx, float dy, float dw, float dh);
   void Save();
   void Restore();
 
-protected:
+// protected:
   static NAN_METHOD(New);
   static NAN_GETTER(WidthGetter);
   static NAN_GETTER(HeightGetter);
-  static NAN_GETTER(DataGetter);
+  static NAN_GETTER(TextureGetter);
   static NAN_GETTER(LineWidthGetter);
   static NAN_SETTER(LineWidthSetter);
   static NAN_GETTER(StrokeStyleGetter);
@@ -149,17 +148,21 @@ protected:
   static NAN_METHOD(Restore);
   static NAN_METHOD(ToDataURL);
   static NAN_METHOD(Destroy);
+  static NAN_METHOD(GetWindowHandle);
+  static NAN_METHOD(SetWindowHandle);
+  static NAN_METHOD(SetTexture);
 
   static bool isImageType(Local<Value> arg);
   static sk_sp<SkImage> getImageFromContext(CanvasRenderingContext2D *ctx);
   static sk_sp<SkImage> getImage(Local<Value> arg);
 
-  CanvasRenderingContext2D(unsigned int width, unsigned int height);
+  CanvasRenderingContext2D();
   virtual ~CanvasRenderingContext2D();
 
-private:
-  Nan::Persistent<Uint8ClampedArray> dataArray;
-
+// protected:
+  NATIVEwindow *windowHandle;
+  GLuint tex;
+  sk_sp<GrContext> grContext;
   sk_sp<SkSurface> surface;
   SkPath path;
   SkPaint strokePaint;
@@ -170,12 +173,12 @@ private:
   TextBaseline textBaseline;
   Direction direction;
 
-  friend class Image;
+  /* friend class Image;
   friend class ImageData;
   friend class ImageBitmap;
   friend class Path2D;
   friend class CanvasGradient;
-  friend class CanvasPattern;
+  friend class CanvasPattern; */
 };
 
 #include "image-context.h"

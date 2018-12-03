@@ -92,7 +92,7 @@ NAN_METHOD(SetMonitor) {
 }
 
 /* @Module: Window handling */
-NATIVEwindow *currentWindow = nullptr;
+thread_local NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
 std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 
@@ -1106,7 +1106,7 @@ NAN_METHOD(ExtensionSupported) {
 } */
 
 bool glfwInitialized = false;
-NAN_METHOD(Create) {
+NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
 
@@ -1137,106 +1137,136 @@ NAN_METHOD(Create) {
 
       glfwInitialized = true;
     } else {
-      return Nan::ThrowError("failed to initialize GLFW");
+      std::cerr << "Failed to initialize GLFW" << std::endl;
+      abort();
     }
   }
 
+  glfwWindowHint(GLFW_VISIBLE, visible);
+  
+  NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
+  if (!window) {
+    std::cerr << "Can't create GLFW window" << std::endl;
+    abort();
+  }
+  return window;
+}
+
+NAN_METHOD(Create3D) {
   unsigned int width = info[0]->Uint32Value();
   unsigned int height = info[1]->Uint32Value();
   bool initialVisible = info[2]->BooleanValue();
-  bool hidden = info[3]->BooleanValue();
-  NATIVEwindow *sharedWindow = info[4]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[4])) : nullptr;
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[5]));
-  WebGLRenderingContext *sharedGl = info[6]->IsObject() ? ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[6])) : nullptr;
+  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[4]));
 
-  glfwWindowHint(GLFW_VISIBLE, initialVisible);
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
 
-  GLuint framebuffers[] = {0, 0};
-  GLuint framebufferTextures[] = {0, 0, 0, 0};
-  bool shared = hidden && sharedWindow != nullptr && sharedGl != nullptr;
-  if (shared) {
-    SetCurrentWindowContext(sharedWindow);
+  SetCurrentWindowContext(windowHandle);
+  
+  GLenum err = glewInit();
+  if (!err) {
+    GLuint framebuffers[2];
+    GLuint framebufferTextures[4];
+    if (sharedWindow != nullptr) {
+      SetCurrentWindowContext(sharedWindow);
 
-    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  }
-
-  NATIVEwindow *windowHandle = glfwCreateWindow(width, height, "Exokit", nullptr, shared ? sharedWindow : nullptr);
-
-  if (windowHandle) {
-    SetCurrentWindowContext(windowHandle);
-
-    GLenum err = glewInit();
-    if (!err) {
-      glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-      // GLFW.SetWindowTitle(win, "WebGL");
-
-      glfwSwapInterval(0);
-
-      /* int fbWidth, fbHeight;
-      glfwGetFramebufferSize(windowHandle, &fbWidth, &fbHeight);
-
-      int wWidth, wHeight;
-      glfwGetWindowSize(windowHandle, &wWidth, &wHeight); */
-
-      /* Local<Object> result = Object::New(Isolate::GetCurrent());
-      result->Set(JS_STR("width"), JS_INT(fbWidth));
-      result->Set(JS_STR("height"), JS_INT(fbHeight)); */
-
-      // glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
-
-      // window callbacks
-      glfwSetWindowPosCallback(windowHandle, windowPosCB);
-      glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
-      glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
-      glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
-      glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
-      glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
-      glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
-      glfwSetDropCallback(windowHandle, windowDropCB);
-
-      // input callbacks
-      glfwSetKeyCallback(windowHandle, keyCB);
-      glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
-      glfwSetCursorPosCallback(windowHandle, cursorPosCB);
-      glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
-      glfwSetScrollCallback(windowHandle, scrollCB);
+      glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+      glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
       
-      windowsystembase::InitializeLocalGlState(gl);
-      
-      GLuint vao;
-      glGenVertexArrays(1, &vao);
-      glBindVertexArray(vao);
+      SetCurrentWindowContext(windowHandle);
+    } else {
+      glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+      glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+    }
+    
+    glfwSwapInterval(0);
+    
+    glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+    // window callbacks
+    glfwSetWindowPosCallback(windowHandle, windowPosCB);
+    glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
+    glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
+    glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
+    glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
+    glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
+    glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
+    glfwSetDropCallback(windowHandle, windowDropCB);
+
+    // input callbacks
+    glfwSetKeyCallback(windowHandle, keyCB);
+    glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
+    glfwSetCursorPosCallback(windowHandle, cursorPosCB);
+    glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
+    glfwSetScrollCallback(windowHandle, scrollCB);
+    
+    windowsystembase::InitializeLocalGlState(gl);
+    
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
 #ifdef GL_VERTEX_PROGRAM_POINT_SIZE
-      glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 #endif
 
 #ifdef GL_PROGRAM_POINT_SIZE
-      glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_PROGRAM_POINT_SIZE);
 #endif
 
-      Local<Array> result = Nan::New<Array>(8);
-      result->Set(0, pointerToArray(windowHandle));
-      result->Set(1, JS_INT(framebuffers[0]));
-      result->Set(2, JS_INT(framebufferTextures[0]));
-      result->Set(3, JS_INT(framebufferTextures[1]));
-      result->Set(4, JS_INT(framebuffers[1]));
-      result->Set(5, JS_INT(framebufferTextures[2]));
-      result->Set(6, JS_INT(framebufferTextures[3]));
-      result->Set(7, JS_INT(vao));
-      info.GetReturnValue().Set(result);
-    } else {
-      /* Problem: glewInit failed, something is seriously wrong. */
-      std::string msg = "Can't init GLEW (glew error ";
-      msg += (const char *)glewGetErrorString(err);
-      msg += ")";
-      Nan::ThrowError(msg.c_str());
-    }
+    Local<Array> result = Nan::New<Array>(8);
+    result->Set(0, pointerToArray(windowHandle));
+    result->Set(1, JS_INT(framebuffers[0]));
+    result->Set(2, JS_INT(framebufferTextures[0]));
+    result->Set(3, JS_INT(framebufferTextures[1]));
+    result->Set(4, JS_INT(framebuffers[1]));
+    result->Set(5, JS_INT(framebufferTextures[2]));
+    result->Set(6, JS_INT(framebufferTextures[3]));
+    result->Set(7, JS_INT(vao));
+    info.GetReturnValue().Set(result);
   } else {
-    // can't create window, throw error
-    Nan::ThrowError("Can't create GLFW window");
+    /* Problem: glewInit failed, something is seriously wrong. */
+    std::string msg = "Can't init GLEW (glew error ";
+    msg += (const char *)glewGetErrorString(err);
+    msg += ")";
+    Nan::ThrowError(msg.c_str());
+  }
+}
+
+NAN_METHOD(Create2D) {
+  unsigned int width = info[0]->Uint32Value();
+  unsigned int height = info[1]->Uint32Value();
+  NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
+
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, sharedWindow);
+
+  SetCurrentWindowContext(windowHandle);
+  
+  GLenum err = glewInit();
+  if (!err) {
+    GLuint tex;
+    if (sharedWindow != nullptr) {
+      SetCurrentWindowContext(sharedWindow);
+
+      glGenTextures(1, &tex);
+      
+      SetCurrentWindowContext(windowHandle);
+    } else {
+      glGenTextures(1, &tex);
+    }
+    
+    glfwSwapInterval(0);
+    
+    Local<Array> result = Nan::New<Array>(2);
+    result->Set(0, pointerToArray(windowHandle));
+    result->Set(1, JS_INT(tex));
+    info.GetReturnValue().Set(result);
+  } else {
+    /* Problem: glewInit failed, something is seriously wrong. */
+    std::string msg = "Can't init GLEW (glew error ";
+    msg += (const char *)glewGetErrorString(err);
+    msg += ")";
+    Nan::ThrowError(msg.c_str());
   }
 }
 
@@ -1679,7 +1709,8 @@ Local<Object> makeWindow() {
   
   windowsystembase::Decorate(target);
 
-  Nan::SetMethod(target, "create", glfw::Create);
+  Nan::SetMethod(target, "create3d", glfw::Create3D);
+  Nan::SetMethod(target, "create2d", glfw::Create2D);
   Nan::SetMethod(target, "destroy", glfw::Destroy);
   Nan::SetMethod(target, "show", glfw::Show);
   Nan::SetMethod(target, "hide", glfw::Hide);

@@ -33,8 +33,7 @@ const {
   GamepadButton,
   getGamepads,
   getAllGamepads,
-} = require('vr-display')(THREE);
-const electron = require('./electron');
+} = require('./VR.js');
 
 const BindingsModule = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
@@ -58,14 +57,6 @@ const XR = require('./XR');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = require('./utils');
 
-let browser = null;
-const _requestBrowser = async () => {
-  if (browser === null) {
-    browser = await puppeteer.launch()
-  }
-  return browser;
-};
-
 let nativeBindings = false;
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
@@ -80,25 +71,47 @@ const parseJson = s => {
 
 GlobalContext.styleEpoch = 0;
 
-class Resource extends EventEmitter {
-  constructor(value = 0.5, total = 1) {
-    super();
-
+const maxParallelResources = 8;
+class Resource {
+  constructor(getCb = (onprogress, cb) => cb(), value = 0.5, total = 1) {
+    this.getCb = getCb;
     this.value = value;
     this.total = total;
+    
+    this.onupdate = null;
   }
 
   setProgress(value) {
     this.value = value;
 
-    this.emit('update');
+    this.onupdate && this.onupdate();
+  }
+  
+  get() {
+    return new Promise((accept, reject) => {
+      this.getCb(progress => {
+        this.setValue(progress);
+      }, err => {
+        if (!err) {
+          accept();
+        } else {
+          reject(err);
+        }
+      });
+    });
+  }
+  
+  destroy() {
+    this.setProgress(1);
   }
 }
-
 class Resources extends EventTarget {
   constructor() {
     super();
+    
     this.resources = [];
+    this.queue = [];
+    this.numRunning = 0;
   }
 
   getValue() {
@@ -126,23 +139,48 @@ class Resources extends EventTarget {
     return total > 0 ? (value / total) : 1;
   }
 
-  addResource() {
-    const resource = new Resource();
-    resource.on('update', () => {
-      if (resource.value >= resource.total) {
-        this.resources.splice(this.resources.indexOf(resource), 1);
-      }
+  addResource(getCb) {
+    return new Promise((accept, reject) => {
+      const resource = new Resource(getCb);
+      resource.onupdate = () => {
+        if (resource.value >= resource.total) {
+          this.resources.splice(this.resources.indexOf(resource), 1);
+          
+          resource.onupdate = null;
+          
+          accept();
+        }
 
-      const e = new Event('update');
-      e.value = this.getValue();
-      e.total = this.getTotal();
-      e.progress = this.getProgress();
-      this.dispatchEvent(e);
+        const e = new Event('update');
+        e.value = this.getValue();
+        e.total = this.getTotal();
+        e.progress = this.getProgress();
+        this.dispatchEvent(e);
+      };
+      this.resources.push(resource);
+      this.queue.push(resource);
+      
+      this.drain();
     });
-
-    this.resources.push(resource);
-
-    return resource;
+  }
+  
+  drain() {
+    if (this.queue.length > 0 && this.numRunning < maxParallelResources) {
+      const resource = this.queue.shift();
+      resource.get()
+        .catch(err => {
+          console.warn(err.stack);
+        })
+        .finally(() => {
+          resource.destroy();
+          
+          this.numRunning--;
+          
+          this.drain();
+        });
+      
+      this.numRunning++;
+    }
   }
 }
 GlobalContext.Resources = Resources;
@@ -200,7 +238,7 @@ class CustomElementRegistry {
   }
 
   upgrade(el, constructor) {
-    el.setProtototypeOf(el, constructor.prototype);
+    Object.setPrototypeOf(el, constructor.prototype);
     constructor.call(el);
   }
 }
@@ -547,6 +585,16 @@ class FileReader extends EventTarget {
       }));
     });
   }
+
+  readAsText(file) {
+    this.result = file.buffer.toString('utf8');
+
+    process.nextTick(() => {
+      this.dispatchEvent(new Event('load', {
+        target: this,
+      }));
+    });
+  }
 }
 
 const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
@@ -788,6 +836,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return Promise.reject(new Error('invalid arguments. Unknown constructor type: ' + src.constructor.name));
     }
 
+    if (typeof x === 'object') {
+      options = x;
+      x = undefined;
+    }
+    
     x = x || 0;
     y = y || 0;
     w = w || image.width;
@@ -1069,6 +1122,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return WebSocket;
   })(WebSocket);
+  window.event = new Event(); // XXX this needs to track the current event
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.indexedDB = indexedDB;
   window.performance = performance;
@@ -1215,7 +1269,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       })(wsProxy.Server);
       return wsProxy;
     })(),
-    electron,
+    createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
     magicleap: nativeMl ? {
       RequestMeshing() {
         const mesher = nativeMl.RequestMeshing.apply(nativeMl, arguments);
@@ -1419,7 +1473,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.postMessage = function(data) {
     setImmediate(() => {
-      window._emit('message', new MessageEvent(data));
+      window._emit('message', new MessageEvent('message', {data}));
     });
   };
   /*

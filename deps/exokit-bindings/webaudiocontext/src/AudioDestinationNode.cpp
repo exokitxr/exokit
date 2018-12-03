@@ -29,19 +29,19 @@ void AudioDestinationNode::InitializePrototype(Local<ObjectTemplate> proto) {
 }
 
 NAN_METHOD(AudioDestinationNode::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsObject() && info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
-    lab::AudioContext *labAudioContext = audioContext->audioContext;
+    // lab::AudioContext *labAudioContext = audioContext->audioContext;
     
     AudioDestinationNode *audioDestinationNode = new AudioDestinationNode();
     Local<Object> audioDestinationNodeObj = info.This();
     audioDestinationNode->Wrap(audioDestinationNodeObj);
 
     audioDestinationNode->context.Reset(audioContextObj);
-    audioDestinationNode->audioNode = labAudioContext->destination();
+    audioDestinationNode->audioNode = audioContext->audioContext->destination();
 
     info.GetReturnValue().Set(audioDestinationNodeObj);
   } else {
@@ -50,9 +50,14 @@ NAN_METHOD(AudioDestinationNode::New) {
 }
 
 NAN_GETTER(AudioDestinationNode::MaxChannelCountGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
+
+  AudioDestinationNode *audioDestinationNode = ObjectWrap::Unwrap<AudioDestinationNode>(info.This());
   
-  info.GetReturnValue().Set(JS_INT(getDefaultAudioContext()->maxNumberOfChannels));
+  Local<Object> audioContextObj = Nan::New(audioDestinationNode->context);
+  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
+  info.GetReturnValue().Set(JS_INT(audioContext->audioContext->maxNumberOfChannels));
 }
 
 }

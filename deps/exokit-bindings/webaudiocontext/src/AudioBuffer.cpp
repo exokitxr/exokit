@@ -257,7 +257,7 @@ NAN_SETTER(AudioBufferSourceNode::BufferSetter) {
     shared_ptr<lab::AudioBus> audioBus(lab::MakeBusFromRawBuffer(audioContext->audioContext->sampleRate(), numChannels, numFrames, frames.get(), false).release());
 
     {
-      lab::ContextRenderLock lock(audioContext->audioContext, "AudioBufferSourceNode::buffer");
+      lab::ContextRenderLock lock(audioContext->audioContext.get(), "AudioBufferSourceNode::buffer");
       audioNode->reset(lock);
       audioNode->setBus(lock, audioBus);
     }
@@ -265,7 +265,7 @@ NAN_SETTER(AudioBufferSourceNode::BufferSetter) {
     audioBufferSourceNode->buffer.Reset();
 
     {
-      lab::ContextRenderLock lock(audioContext->audioContext, "AudioBufferSourceNode::buffer");
+      lab::ContextRenderLock lock(audioContext->audioContext.get(), "AudioBufferSourceNode::buffer");
       audioNode->reset(lock);
       audioNode->setBus(lock, nullptr);
     }

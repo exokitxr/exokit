@@ -45,7 +45,11 @@ NAN_METHOD(GainNode::New) {
     gainNode->audioNode = make_shared<lab::GainNode>();
 
     Local<Function> audioParamConstructor = Local<Function>::Cast(gainNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioParam")));
-    Local<Object> gainAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+    Local<Value> args[] = {
+      audioContextObj,
+    };
+
+    Local<Object> gainAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(args)/sizeof(args[0]), args).ToLocalChecked();
     AudioParam *gainAudioParam = ObjectWrap::Unwrap<AudioParam>(gainAudioParamObj);
     gainAudioParam->audioParam = (*(shared_ptr<lab::GainNode> *)(&gainNode->audioNode))->gain();
     gainNodeObj->Set(JS_STR("gain"), gainAudioParamObj);
