@@ -1,6 +1,5 @@
 const parseIntStrict = require('parse-int');
 const url = require('url');
-const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 
 function _getBaseUrl(u) {
