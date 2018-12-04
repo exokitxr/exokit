@@ -1,61 +1,16 @@
-const events = require('events');
-const {EventEmitter} = events;
-const path = require('path');
-const fs = require('fs');
 const url = require('url');
-const http = require('http');
-const https = require('https');
-const ws = require('ws');
-const os = require('os');
-const util = require('util');
-const {URL} = url;
-const {TextEncoder, TextDecoder} = util;
-const {performance} = require('perf_hooks');
-const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
 const fetch = require('window-fetch');
-const {Request, Response, Headers, Blob} = fetch;
 
-const WebSocket = require('ws/lib/websocket');
-
-const {LocalStorage} = require('node-localstorage');
-const indexedDB = require('fake-indexeddb');
-const parseXml = require('@rgrove/parse-xml');
-const THREE = require('../lib/three-min.js');
-const {
-  MRDisplay,
-  VRDisplay,
-  FakeVRDisplay,
-  VRFrameData,
-  VRPose,
-  VRStageParameters,
-  Gamepad,
-  GamepadButton,
-  getGamepads,
-  getAllGamepads,
-} = require('./VR.js');
-
-const BindingsModule = require('./bindings');
-const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
-const symbols = require('./symbols');
-const {urls} = require('./urls');
 
 GlobalContext.args = {};
 GlobalContext.version = '';
 
 // Class imports.
 const {_makeWindowVm} = require('./WindowVm');
-const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
-const DOM = require('./DOM');
-const {DOMRect, Node, NodeList} = require('./DOM');
-const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
-const {History} = require('./History');
-const {Location} = require('./Location');
-const {XMLHttpRequest} = require('./Network');
-const XR = require('./XR');
+const {Event, EventTarget} = require('./Event');
 const utils = require('./utils');
-const {_elementGetter, _elementSetter} = require('./utils');
 
 GlobalContext.styleEpoch = 0;
 
