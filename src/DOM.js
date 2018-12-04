@@ -962,7 +962,7 @@ class Element extends Node {
     this._emit('children', newChildNodes, oldChildNodes, null, null);
     this.ownerDocument._emit('domchange');
 
-    _promiseSerial(newChildNodes.map(childNode => () => GlobalContext._runHtml(childNode, this.ownerDocument.defaultView)))
+    _promiseSerial(newChildNodes.map(childNode => () => utils._runHtml(childNode, this.ownerDocument.defaultView)))
       .catch(err => {
         console.warn(err);
       });

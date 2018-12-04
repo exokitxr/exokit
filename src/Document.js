@@ -164,7 +164,7 @@ function initDocument (document, window) {
       body.childNodes = new DOM.NodeList();
 
       try {
-        await GlobalContext._runHtml(document.head, window);
+        await utils._runHtml(document.head, window);
       } catch(err) {
         console.warn(err);
       }
@@ -174,13 +174,13 @@ function initDocument (document, window) {
       document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
 
       try {
-        await GlobalContext._runHtml(document.body, window);
+        await utils._runHtml(document.body, window);
       } catch(err) {
         console.warn(err);
       }
     } else {
       try {
-        await GlobalContext._runHtml(document, window);
+        await utils._runHtml(document, window);
       } catch(err) {
         console.warn(err);
       }
