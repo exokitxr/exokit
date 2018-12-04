@@ -13,5 +13,6 @@ module.exports.prioritySymbol = Symbol();
 module.exports.prototypesSymbol = Symbol();
 module.exports.runSymbol = Symbol();
 module.exports.runningSymbol = Symbol();
+module.exports.styleEpochSymbol = Symbol();
 module.exports.timeoutSymbol = Symbol();
 module.exports.windowSymbol = Symbol();

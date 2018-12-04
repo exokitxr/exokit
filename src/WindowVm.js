@@ -59,8 +59,6 @@ const {_elementGetter, _elementSetter} = require('./utils');
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
-GlobalContext.styleEpoch = 0;
-
 class CustomElementRegistry {
   constructor(window) {
     this._window = window;

@@ -56,8 +56,6 @@ const {_elementGetter, _elementSetter} = require('./utils');
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
-GlobalContext.styleEpoch = 0;
-
 class CustomElementRegistry {
   constructor(window) {
     this._window = window;
@@ -848,9 +846,10 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
   window.CustomElementRegistry = CustomElementRegistry;
   window.MutationObserver = require('./MutationObserver').MutationObserver;
   window.DOMRect = DOMRect;
+  window[symbols.styleEpochSymbol] = 0;
   window.getComputedStyle = el => {
     let styleSpec = el[symbols.computedStyleSymbol];
-    if (!styleSpec || styleSpec.epoch !== GlobalContext.styleEpoch) {
+    if (!styleSpec || styleSpec.epoch !== window[symbols.styleEpochSymbol]) {
       const style = el.style.clone();
       const stylesheetEls = el.ownerDocument.documentElement.getElementsByTagName('style')
         .concat(el.ownerDocument.documentElement.getElementsByTagName('link'));
@@ -873,7 +872,7 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
       }
       styleSpec = {
         style,
-        styleEpoch: GlobalContext.styleEpoch,
+        epoch: window[symbols.styleEpochSymbol],
       };
       el[symbols.computedStyleSymbol] = styleSpec;
     }
