@@ -1012,6 +1012,23 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       intervals[index] = null;
     }
   };
+  const _download = (u, data, bufferifyFn) => new Promise((accept, reject) => {
+    if (/^(?:https?|file):/.test(u)) {
+      let p = path.join(GlobalContext.args.download, p.host || '.');
+      if (url.parse(u).path === '/') {
+        p = path.join(p, 'index.html');
+      }
+      fs.writeFile(p, bufferifyFn(data), err => {
+        if (!err) {
+          accept(data);
+        } else {
+          reject(err);
+        }
+      });
+    } else {
+      accept(data);
+    }
+  });
   window.fetch = (u, options) => {
     const _boundFetch = (u, options) => {
       const req = utils._normalizePrototype(
@@ -1045,38 +1062,22 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
             );
           })(res.text);
 
-          const _maybeDownload = (GlobalContext.args.download && req.method === 'GET') ? (data, bufferifyFn) => new Promise((accept, reject) => {
-            if (/^(?:https?|file):/.test(u)) {
-              let p = path.join(GlobalContext.args.download, p.host || '.');
-              if (url.parse(u).path === '/') {
-                p = path.join(p, 'index.html');
-              }
-              fs.writeFile(p, bufferifyFn(data), err => {
-                if (!err) {
-                  accept(data);
-                } else {
-                  reject(err);
-                }
-              });
-            } else {
-              accept(data);
-            }
-          }) : (data, bufferifyFn) => Promise.resolve(data);
+          const _maybeDownload = (GlobalContext.args.download && req.method === 'GET') ? _download : (u, data, bufferifyFn) => Promise.resolve(data);
           res.arrayBuffer = (fn => function() {
             return fn.apply(this, arguments)
-              .then(ab => _maybeDownload(utils._normalizePrototype(ab, window), ab => Buffer.from(ab)));
+              .then(ab => _maybeDownload(u, utils._normalizePrototype(ab, window), ab => Buffer.from(ab)));
           })(res.arrayBuffer);
           res.blob = (fn => function() {
             return fn.apply(this, arguments)
-              .then(blob => _maybeDownload(utils._normalizePrototype(blob, window), blob => blob.buffer);
+              .then(blob => _maybeDownload(u, utils._normalizePrototype(blob, window), blob => blob.buffer);
           })(res.blob);
           res.json = (fn => function() {
             return fn.apply(this, arguments)
-              .then(j => _maybeDownload(j, j => Buffer.from(JSON.stringify(j))));
+              .then(j => _maybeDownload(u, j, j => Buffer.from(JSON.stringify(j))));
           })(res.json);
           res.text = (fn => function() {
             return fn.apply(this, arguments)
-              .then(t => _maybeDownload(t, t => Buffer.from(t, 'utf8')));
+              .then(t => _maybeDownload(u, t, t => Buffer.from(t, 'utf8')));
           })(res.text);
 
           return res;
