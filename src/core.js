@@ -7,7 +7,6 @@ const GlobalContext = require('./GlobalContext');
 
 GlobalContext.args = {};
 GlobalContext.version = '';
-GlobalContext.styleEpoch = 0;
 
 let nativeWorker = null;
 let nativeVr = GlobalContext.nativeVr = null;
