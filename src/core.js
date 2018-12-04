@@ -1,132 +1,13 @@
 const url = require('url');
 
 const fetch = require('window-fetch');
-
+const {_makeWindowVm} = require('./WindowVm');
+const utils = require('./utils');
 const GlobalContext = require('./GlobalContext');
 
 GlobalContext.args = {};
 GlobalContext.version = '';
-
-// Class imports.
-const {_makeWindowVm} = require('./WindowVm');
-const {Event, EventTarget} = require('./Event');
-const utils = require('./utils');
-
 GlobalContext.styleEpoch = 0;
-
-const maxParallelResources = 8;
-class Resource {
-  constructor(getCb = (onprogress, cb) => cb(), value = 0.5, total = 1) {
-    this.getCb = getCb;
-    this.value = value;
-    this.total = total;
-    
-    this.onupdate = null;
-  }
-
-  setProgress(value) {
-    this.value = value;
-
-    this.onupdate && this.onupdate();
-  }
-  
-  get() {
-    return new Promise((accept, reject) => {
-      this.getCb(progress => {
-        this.setValue(progress);
-      }, err => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    });
-  }
-  
-  destroy() {
-    this.setProgress(1);
-  }
-}
-class Resources extends EventTarget {
-  constructor() {
-    super();
-    
-    this.resources = [];
-    this.queue = [];
-    this.numRunning = 0;
-  }
-
-  getValue() {
-    let value = 0;
-    for (let i = 0; i < this.resources.length; i++) {
-      value += this.resources[i].value;
-    }
-    return value;
-  }
-  getTotal() {
-    let total = 0;
-    for (let i = 0; i < this.resources.length; i++) {
-      total += this.resources[i].total;
-    }
-    return total;
-  }
-  getProgress() {
-    let value = 0;
-    let total = 0;
-    for (let i = 0; i < this.resources.length; i++) {
-      const resource = this.resources[i];
-      value += resource.value;
-      total += resource.total;
-    }
-    return total > 0 ? (value / total) : 1;
-  }
-
-  addResource(getCb) {
-    return new Promise((accept, reject) => {
-      const resource = new Resource(getCb);
-      resource.onupdate = () => {
-        if (resource.value >= resource.total) {
-          this.resources.splice(this.resources.indexOf(resource), 1);
-          
-          resource.onupdate = null;
-          
-          accept();
-        }
-
-        const e = new Event('update');
-        e.value = this.getValue();
-        e.total = this.getTotal();
-        e.progress = this.getProgress();
-        this.dispatchEvent(e);
-      };
-      this.resources.push(resource);
-      this.queue.push(resource);
-      
-      this.drain();
-    });
-  }
-  
-  drain() {
-    if (this.queue.length > 0 && this.numRunning < maxParallelResources) {
-      const resource = this.queue.shift();
-      resource.get()
-        .catch(err => {
-          console.warn(err.stack);
-        })
-        .finally(() => {
-          resource.destroy();
-          
-          this.numRunning--;
-          
-          this.drain();
-        });
-      
-      this.numRunning++;
-    }
-  }
-}
-GlobalContext.Resources = Resources;
 
 let nativeWorker = null;
 let nativeVr = GlobalContext.nativeVr = null;
