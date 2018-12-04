@@ -1117,7 +1117,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         return super.open(method, url, async, username, password);
       }
       get response() {
-        return utils._normalizePrototype(super.response, window);
+        const _maybeDownload = (GlobalContext.args.download && this._properties.method === 'GET') ? _download : (u, data, bufferifyFn) => Promise.resolve(data);
+        
+        return _maybeDownload(this._properties.uri, utils._normalizePrototype(super.response, window), o => {
+          switch (this.responseType) {
+            case 'arraybuffer': return Buffer.from(o);
+            case 'blob': return o.buffer;
+            case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
+            case 'json': return Buffer.from(o, 'utf8');
+            default: throw new Error(`cannot download responseType ${responseType}`);
+          }
+        });
       }
     }
     for (const k in XMLHttpRequestBase) {
