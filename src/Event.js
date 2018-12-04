@@ -45,7 +45,7 @@ class EventTarget extends EventEmitter {
     const _recurse = (node, event) => {
       _emit(node, event);
 
-      if (event.bubbles && node instanceof GlobalContext.Document) {
+      if (event.bubbles && !node.ownerDocument) { // no ownerDocument means we are the Document
         _emit(node.defaultView, event);
       }
 
