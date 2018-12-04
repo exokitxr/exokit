@@ -699,7 +699,7 @@ class Element extends Node {
     })
       .childNodes
       .map(childNode =>
-        GlobalContext._fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
+        utils._fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
       );
     switch (position) {
       case 'beforebegin': {
@@ -950,7 +950,7 @@ class Element extends Node {
       })
         .childNodes
         .map(childNode =>
-          GlobalContext._fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
+          utils._fromAST(childNode, this.ownerDocument.defaultView, this, this.ownerDocument, true)
         )
     );
     this.childNodes = newChildNodes;

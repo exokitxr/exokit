@@ -17,7 +17,7 @@ module.exports._parseDocument = _parseDocument;
 GlobalContext._parseDocument = _parseDocument;
 
 const _parseDocumentAst = (ast, window, uppercase) => {
-  const document = GlobalContext._fromAST(ast, window, null, null, uppercase);
+  const document = utils._fromAST(ast, window, null, null, uppercase);
   return initDocument(document, window);
 };
 module.exports._parseDocumentAst = _parseDocumentAst;
@@ -207,7 +207,7 @@ function initDocument (document, window) {
   document.write = htmlString => {
     const childNodes = parse5.parseFragment(htmlString, {
       locationInfo: true,
-    }).childNodes.map(childNode => GlobalContext._fromAST(childNode, window, document.body, document, true));
+    }).childNodes.map(childNode => utils._fromAST(childNode, window, document.body, document, true));
     for (let i = 0; i < childNodes.length; i++) {
       document.body.appendChild(childNodes[i]);
     }
