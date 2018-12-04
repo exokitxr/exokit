@@ -42,7 +42,7 @@ const symbols = require('./symbols');
 const {urls} = require('./urls');
 
 // Class imports.
-const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
+const {Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const DOM = require('./DOM');
 const {DOMRect, Node, NodeList} = require('./DOM');
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
@@ -933,7 +933,7 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
         // preserveComments: true,
       });
       const htmlAst = _recurse(xmlAst);
-      return _parseDocumentAst(htmlAst, window, false);
+      return utils._parseDocumentAst(htmlAst, window, false);
     }
   };
   window.Event = Event;
@@ -1332,7 +1332,7 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
     });
   }
 
-  window.document = _parseDocument(htmlString, window);
+  window.document = utils._parseDocument(htmlString, window);
 
   return window;
 };

@@ -61,6 +61,21 @@ const _makeHtmlCollectionProxy = (el, query) => new Proxy(el, {
 });
 module.exports._makeHtmlCollectionProxy = _makeHtmlCollectionProxy;
 
+const _parseDocument = (s, window) => {
+  const ast = parse5.parse(s, {
+    sourceCodeLocationInfo: true,
+  });
+  ast.tagName = 'document';
+  return _parseDocumentAst(ast, window, true);
+};
+module.exports._parseDocument = _parseDocument;
+
+const _parseDocumentAst = (ast, window, uppercase) => {
+  const document = _fromAST(ast, window, null, null, uppercase);
+  return initDocument(document, window);
+};
+module.exports._parseDocumentAst = _parseDocumentAst;
+
 const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   if (node.nodeName === '#text') {
     const text = new DOM.Text(node.value);

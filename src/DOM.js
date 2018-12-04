@@ -1856,7 +1856,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   baseUrl: url,
                   dataPath: options.dataPath,
                 });
-                const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
+                const contentDocument = utils._parseDocument(htmlString, contentWindow);
                 contentDocument.hidden = this.hidden;
                 contentDocument.xrOffset = this.xrOffset;
 

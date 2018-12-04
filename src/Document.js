@@ -6,22 +6,6 @@ const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const utils = require('./utils');
 
-const _parseDocument = (s, window) => {
-  const ast = parse5.parse(s, {
-    sourceCodeLocationInfo: true,
-  });
-  ast.tagName = 'document';
-  return _parseDocumentAst(ast, window, true);
-};
-module.exports._parseDocument = _parseDocument;
-GlobalContext._parseDocument = _parseDocument;
-
-const _parseDocumentAst = (ast, window, uppercase) => {
-  const document = utils._fromAST(ast, window, null, null, uppercase);
-  return initDocument(document, window);
-};
-module.exports._parseDocumentAst = _parseDocumentAst;
-
 const maxParallelResources = 8;
 class Resource {
   constructor(getCb = (onprogress, cb) => cb(), value = 0.5, total = 1) {
@@ -383,7 +367,7 @@ class DOMImplementation {
   }
 
   createHTMLDocument() {
-    return _parseDocument('', this._window);
+    return utils._parseDocument('', this._window);
   }
 
   hasFeature() {
