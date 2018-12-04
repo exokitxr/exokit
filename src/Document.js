@@ -447,8 +447,6 @@ class Document extends DOM.HTMLLoadableElement {
   }
 }
 module.exports.Document = Document;
-// FIXME: Temporary until refactor out into modules more and not have circular dependencies.
-GlobalContext.Document = Document;
 
 class DocumentFragment extends DOM.HTMLElement {
   constructor() {
@@ -460,7 +458,6 @@ class DocumentFragment extends DOM.HTMLElement {
   }
 }
 module.exports.DocumentFragment = DocumentFragment;
-GlobalContext.DocumentFragment = DocumentFragment;
 
 class Range extends DocumentFragment {
   constructor() {
