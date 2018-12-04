@@ -49,6 +49,7 @@ const args = (() => {
         'xr',
         'size',
         'image',
+        'download',
       ],
       alias: {
         v: 'version',
@@ -68,6 +69,7 @@ const args = (() => {
         i: 'image',
         r: 'require',
         n: 'headless',
+        d: 'download',
       },
     });
     return {
