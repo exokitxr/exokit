@@ -2028,7 +2028,7 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
       if (this._context === null) {
-        if (GlobalContext.args.webgl === '1') {
+        if (global.args.webgl === '1') {
           if (contextType === 'webgl' || contextType === 'xrpresent') {
             this._context = new WebGLRenderingContext(this);
           }

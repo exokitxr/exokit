@@ -699,14 +699,14 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
   };
 
   // WebVR enabled.
-  if (['all', 'webvr'].includes(GlobalContext.args.xr)) {
+  if (['all', 'webvr'].includes(global.args.xr)) {
     window.navigator.getVRDisplays = function() {
       return Promise.resolve(this.getVRDisplaysSync());
     }
   }
 
   // WebXR enabled.
-  if (['all', 'webxr'].includes(GlobalContext.args.xr)) {
+  if (['all', 'webxr'].includes(global.args.xr)) {
     window.navigator.xr = new XR.XR(window);
   }
 
@@ -953,7 +953,7 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
   window.CanvasGradient = CanvasGradient;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
   window.WebGLRenderingContext = WebGLRenderingContext;
-  if (GlobalContext.args.webgl !== '1') {
+  if (global.args.webgl !== '1') {
     window.WebGL2RenderingContext = WebGL2RenderingContext;
   }
   window.Audio = HTMLAudioElementBound;
@@ -1365,16 +1365,16 @@ const setNativeBindingsModule = nativeBindingsModule => {
   CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
   WebGLRenderingContext = GlobalContext.WebGLRenderingContext = bindings.nativeGl;
   WebGL2RenderingContext = GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
-  if (GlobalContext.args.frame || GlobalContext.args.minimalFrame) {
+  if (global.args.frame || global.args.minimalFrame) {
     WebGLRenderingContext = GlobalContext.WebGLRenderingContext = (OldWebGLRenderingContext => {
       function WebGLRenderingContext() {
         const result = Reflect.construct(bindings.nativeGl, arguments);
         for (const k in result) {
           if (typeof result[k] === 'function') {
             result[k] = (old => function() {
-              if (GlobalContext.args.frame) {
+              if (global.args.frame) {
                 console.log(k, arguments);
-              } else if (GlobalContext.args.minimalFrame) {
+              } else if (global.args.minimalFrame) {
                 console.log(k);
               }
               return old.apply(this, arguments);
