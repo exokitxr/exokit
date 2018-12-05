@@ -528,7 +528,7 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   return result;
 };
 
-const _makeWindowVm = (htmlString = '', options = {}) => {
+function _makeWindow(window = {}, htmlString = '', options = {}) {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
@@ -591,22 +591,19 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
     return Promise.resolve(imageBitmap);
   }
 
-  const vmo = nativeVm.make();
-  const window = vmo.getGlobal();
-  window.vm = vmo;
-
-  const windowStartScript = `(() => {
-    ${!GlobalContext.args.require ? 'global.require = undefined;' : ''}
-
+  function windowStartFn(global) {
+    if (!global.args.require) {
+      global.require = undefined;
+    }
     const _logStack = err => {
       console.warn(err);
     };
     process.on('uncaughtException', _logStack);
     process.on('unhandledRejection', _logStack);
-
     global.process = undefined;
     global.setImmediate = undefined;
-  })();`;
+  }
+  windowStartFn(global);
 
   for (const k in EventEmitter.prototype) {
     window[k] = EventEmitter.prototype[k];
