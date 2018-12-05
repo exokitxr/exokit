@@ -1006,7 +1006,10 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     constructor(src, workerOptions = {}) {
       workerOptions.startScript = `
         (() => {
-          ${windowStartScript}
+          const workerThreads = require('worker_threads');
+          const {workerData} = workerThreads;
+          global.args = workerData.args;
+          (${windowStartFn.toString()})(global);
 
           const bindings = requireNative("nativeBindings");
           const smiggles = require("smiggles");
