@@ -1329,7 +1329,8 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   window.document = utils._parseDocument(htmlString, window);
 
   return window;
-};
+}
+_makeWindowVm(global, global.args.htmlString, global.args.options);
 
 /**
  * Initialize classes and modules that require native bindings.
