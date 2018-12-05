@@ -11,6 +11,7 @@ const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
+const {_makeWindowVm} = require('./WindowVm');
 const symbols = require('./symbols');
 const urls = require('./urls').urls;
 const utils = require('./utils');
@@ -1862,7 +1863,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
                 contentWindow.document = contentDocument; */
 
-                this.vm = GlobalContext._makeWindowVm(htmlString, {
+                this.vm = _makeWindowVm(htmlString, {
                   url,
                   baseUrl: url,
                   dataPath: options.dataPath,
