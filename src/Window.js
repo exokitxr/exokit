@@ -1002,7 +1002,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   window.PannerNode = PannerNode;
   window.StereoPannerNode = StereoPannerNode;
   window.createImageBitmap = createImageBitmap;
-  window.Worker =  class Worker extends nativeWorker {
+  window.Worker =  class Worker extends nativeWorker { // XXX make this a real worker
     constructor(src, workerOptions = {}) {
       workerOptions.startScript = `
         (() => {
