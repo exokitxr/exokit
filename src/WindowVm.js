@@ -521,8 +521,12 @@ const _cloneMrDisplays = (mrDisplays, window) => {
 };
 
 const _makeWindowVm = (htmlString = '', options = {}) => vmOne.make({
-  args: [htmlString, options],
   initModule: path.join(__dirname, 'Window.js'),
+  args: {
+    htmlString,
+    options,
+    args: GlobalContext.args,
+  },
 });
 module.exports._makeWindowVm = _makeWindowVm;
 
