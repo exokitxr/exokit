@@ -1115,8 +1115,6 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     },
   });
 
-  vmo.run(windowStartScript, 'window-start-script.js');
-
   const _destroyTimeouts = window => {
     const _pred = fn => fn[symbols.windowSymbol] === window;
     for (let i = 0; i < rafCbs.length; i++) {
