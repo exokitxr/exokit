@@ -1,5 +1,6 @@
 const path = require('path');
-const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
+const exokitNodePath = path.join(__dirname, '..', 'build', 'Release', 'exokit.node');
+const exokitNode = typeof requireNative !== 'function' ? require(exokitNodePath) : requireNative(exokitNodePath);
 const {nativeAudio, nativeVr} = exokitNode;
 const webGlToOpenGl = require('webgl-to-opengl');
 
