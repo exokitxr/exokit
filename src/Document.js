@@ -2,7 +2,6 @@ const parse5 = require('parse5');
 
 const DOM = require('./DOM');
 const {Event} = require('./Event');
-const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const utils = require('./utils');
 
