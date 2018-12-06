@@ -1,16 +1,12 @@
 const path = require('path');
 const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
 const {nativeAudio, nativeVr} = exokitNode;
-const WindowWorker = require('window-worker');
-const vmOne = require('vm-one');
 const webGlToOpenGl = require('webgl-to-opengl');
 
 const bindings = {};
 for (const k in exokitNode) {
   bindings[k] = exokitNode[k];
 }
-bindings.nativeWorker = WindowWorker;
-bindings.nativeVm = vmOne;
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {
     const result = createShader.call(this, type);
