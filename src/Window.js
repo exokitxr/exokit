@@ -1346,17 +1346,7 @@ _makeWindowVm(global, global.args.htmlString, global.args.options);
 const setNativeBindingsModule = nativeBindingsModule => {
   const bindings = require(nativeBindingsModule);
 
-  // Set in binding module to be referenced from other modules.
-  for (const key in bindings) { BindingsModule[key] = bindings[key]; }
-
-  nativeVm = GlobalContext.nativeVm = bindings.nativeVm;
-  nativeWorker = bindings.nativeWorker;
-  nativeWorker.setNativeRequire('nativeBindings', bindings.initFunctionAddress);
-  nativeWorker.bind({
-    ImageBitmap: bindings.nativeImageBitmap,
-  });
-
-  Image = bindings.nativeImage;
+  Image = bindings.nativeImage; // XXX can all be put into native-bindings.js
   ImageData = bindings.nativeImageData;
   ImageBitmap = bindings.nativeImageBitmap;
   Path2D = bindings.nativePath2D;
