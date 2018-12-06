@@ -24,6 +24,8 @@ const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const nativeBindings = require('./native-bindings.js');
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
+const vmOne = require('vm-one');
+const windowWorker = require('window-worker');
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
@@ -1567,6 +1569,10 @@ core.load = (load => function() {
 })(core.load);
 
 const _prepare = () => Promise.all([
+  (() => {
+    vmOne.setNativeRequire('native-bindings', nativeBindings.initFunctionAddress);
+    windowWorker.setNativeRequire('native-bindings', nativeBindings.initFunctionAddress); // XXX implement this
+  })(),
   (() => {
     if (!process.env['DISPLAY']) {
       process.env['DISPLAY'] = ':0.0';
