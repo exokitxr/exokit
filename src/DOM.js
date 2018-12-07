@@ -7,7 +7,7 @@ const selector = require('window-selector');
 const url = require('url');
 const util = require('util');
 
-const bindings = require('./bindings');
+const nativeBindings = require('./native-bindings');
 const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
@@ -2215,7 +2215,7 @@ class HTMLImageElement extends HTMLSrcableElement {
     const [attrs = [], value = '', location = null] = arguments;
     super('IMG', attrs, value, location);
 
-    this.image = new bindings.nativeImage();
+    this.image = new nativeBindings.nativeImage();
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
@@ -2340,7 +2340,7 @@ class HTMLAudioElement extends HTMLMediaElement {
     super('AUDIO', attrs, value);
 
     this.readyState = HTMLMediaElement.HAVE_NOTHING;
-    this.audio = new bindings.nativeAudio.Audio();
+    this.audio = new nativeBindings.nativeAudio.Audio();
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
@@ -2456,7 +2456,7 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         if (urls.has(value)) {
           const blob = urls.get(value);
-          if (blob instanceof Bindings.bindings.nativeVideo.VideoDevice) {
+          if (blob instanceof nativeBindings.nativeVideo.VideoDevice) {
             this.video = blob;
           }
         }
@@ -2557,7 +2557,7 @@ class HTMLVideoElement extends HTMLMediaElement {
     super('VIDEO', attrs, value);
 
     this.readyState = HTMLMediaElement.HAVE_NOTHING;
-    this.video = new bindings.nativeVideo.Video();
+    this.video = new nativeBindings.nativeVideo.Video();
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
