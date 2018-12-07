@@ -258,22 +258,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
 };
-const _getFakeVrDisplay = window => {
-  const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
-  return fakeVrDisplay.isActive ? fakeVrDisplay : null;
-};
-const _getVrDisplay = window => window[symbols.mrDisplaysSymbol].vrDisplay;
-const _getMlDisplay = window => window[symbols.mrDisplaysSymbol].mlDisplay;
-const _cloneMrDisplays = (mrDisplays, window) => {
-  const result = {};
-  for (const k in mrDisplays) {
-    const mrDisplayClone = mrDisplays[k].clone();
-    mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    mrDisplayClone.window = window;
-    result[k] = mrDisplayClone;
-  }
-  return result;
-};
 
 const _makeWindowVm = (htmlString = '', options = {}) => vmOne.make({
   initModule: path.join(__dirname, 'Window.js'),
