@@ -25,7 +25,7 @@ const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
 const parseXml = require('@rgrove/parse-xml');
 
-const {
+let {
   nativeWindow,
   nativeGl,
   nativeGl2,
@@ -351,6 +351,30 @@ class MLDisplay extends MRDisplay {
   }
 }
 
+if (global.args.frame || global.args.minimalFrame) {
+  nativeGl = (OldWebGLRenderingContext => {
+    function WebGLRenderingContext() {
+      const result = Reflect.construct(OldWebGLRenderingContext, arguments);
+      for (const k in result) {
+        if (typeof result[k] === 'function') {
+          result[k] = (old => function() {
+            if (global.args.frame) {
+              console.log(k, arguments);
+            } else if (global.args.minimalFrame) {
+              console.log(k);
+            }
+            return old.apply(this, arguments);
+          })(result[k]);
+        }
+      }
+      return result;
+    }
+    for (const k in OldWebGLRenderingContext) {
+      WebGLRenderingContext[k] = OldWebGLRenderingContext[k];
+    }
+    return WebGLRenderingContext;
+  })(nativeGl);
+}
 const _onGlContextConstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;

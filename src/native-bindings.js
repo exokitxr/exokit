@@ -69,31 +69,6 @@ bindings.nativeGl2 = (nativeGl2 => {
   return WebGL2RenderingContext;
 })(bindings.nativeGl2);
 
-if (global.args.frame || global.args.minimalFrame) {
-  bindings.nativeGl = (OldWebGLRenderingContext => {
-    function WebGLRenderingContext() {
-      const result = Reflect.construct(OldWebGLRenderingContext, arguments);
-      for (const k in result) {
-        if (typeof result[k] === 'function') {
-          result[k] = (old => function() {
-            if (global.args.frame) {
-              console.log(k, arguments);
-            } else if (global.args.minimalFrame) {
-              console.log(k);
-            }
-            return old.apply(this, arguments);
-          })(result[k]);
-        }
-      }
-      return result;
-    }
-    for (const k in OldWebGLRenderingContext) {
-      WebGLRenderingContext[k] = OldWebGLRenderingContext[k];
-    }
-    return WebGLRenderingContext;
-  })(bindings.nativeGl);
-}
-
 bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
   function CanvasRenderingContext2D() {
     return new nativeCanvasRenderingContext2D();
