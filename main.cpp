@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sstream>
 #include <string>
+#include <vector>
 #include <map>
 #include <thread>
 #include <v8.h>
@@ -97,9 +98,39 @@ const MLPrivilegeID privileges[] = {
   MLPrivilegeID_NormalNotificationsUsage,
 };
 
+int Start(int argc, char **argv) {
+  size_t argc2 = argc + 1;
+  std::vector<char *> argv2(argc2);
+
+  char argsString[4096];
+  int index = 0;
+  for (int i = 0; i < 1; i++) {
+    char *dstArg = argsString + index;
+    const char *srcArg = argv[i];
+    strncpy(dstArg, srcArg, sizeof(argsString) - index);
+    argv2[i] = dstArg;
+    index += strlen(srcArg) + 1;
+  }
+
+  const char *experimentalWorkerString = "--experimental-worker";
+  char *experimentalWorkerArg = argsString + i;
+  strncpy(experimentalWorkerArg, experimentalWorkerString, sizeof(argsString) - i);
+  index += strlen(experimentalWorkerString) + 1;
+
+  for (int i = 1; i < argc; i++) {
+    char *dstArg = argsString + index;
+    const char *srcArg = argv[i];
+    strncpy(dstArg, srcArg, sizeof(argsString) - index);
+    argv2[i + 1] = dstArg;
+    index += strlen(srcArg) + 1;
+  }
+
+  return node::Start(argc2.data(), argv2);
+}
+
 int main(int argc, char **argv) {
   if (argc > 1) {
-    return node::Start(argc, argv);
+    return Start(argc, argv);
   }
 
   registerDlibs(node::dlibs);
@@ -229,7 +260,7 @@ int main(int argc, char **argv) {
         }
       }
 
-      return node::Start(argc, argv);
+      return Start(argc, argv);
     } else {
       const char *jsString;
       if (access("/package/app/index.html", F_OK) != -1) {
@@ -258,7 +289,7 @@ int main(int argc, char **argv) {
       char *argv[] = {nodeArg, dotArg, jsArg};
       size_t argc = sizeof(argv) / sizeof(argv[0]);
 
-      return node::Start(argc, argv);
+      return Start(argc, argv);
     }
   } else { // child
     ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit start 1");
