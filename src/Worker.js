@@ -10,6 +10,7 @@ const {XMLHttpRequest} = require('xmlhttprequest');
 const WebSocket = require('ws/lib/websocket');
 const {Worker, parentPort, workerData} = require('worker_threads');
 
+const {src} = args;
 const baseUrl = (src => {
   if (/^https?:/.test(src)) {
     const u = new URL(src);
@@ -18,7 +19,7 @@ const baseUrl = (src => {
   } else {
     return 'file://' + process.cwd();
   }
-})(initMessage.data.src);
+})(src);
 const _normalizeUrl = src => {
   if (!/^(?:data|blob):/.test(src)) {
     const match = baseUrl.match(/^(file:\/\/)(.*)$/);
@@ -31,6 +32,7 @@ const _normalizeUrl = src => {
     return src;
   }
 };
+const filename = _normalizeUrl(src);
 
 global.self = global;
 
@@ -88,9 +90,8 @@ const _handleError = err => {
 };
 process.on('uncaughtException', _handleError);
 process.on('unhandledRejection', _handleError);
-const filename = _normalizeUrl(initMessage.data.src);
-const exp = getScript(filename);
 
+const exp = getScript(filename);
 vm.runInThisContext(exp, {
   filename: /^https?:/.test(filename) ? filename : 'data-url://',
 });
