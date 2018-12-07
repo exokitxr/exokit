@@ -117,7 +117,6 @@ class CustomElementRegistry {
 }
 
 let nativeVm = GlobalContext.nativeVm = null;
-let nativeWorker = null;
 
 class MonitorManager {
   getList() {
@@ -427,6 +426,46 @@ class FileReader extends EventTarget {
         target: this,
       }));
     });
+  }
+}
+
+class Worker {
+  constructor(src) {
+    if (src instanceof Blob) {
+      src = 'data:application/javascript,' + src.buffer.toString('utf8');
+    } else {
+      const blob = urls.get(src);
+
+      if (blob) {
+        src = 'data:application/octet-stream;base64,' + blob.buffer.toString('base64');
+      } else {
+        src = _normalizeUrl(src);
+      }
+    }
+
+    this.worker = vmOne.make({
+      initModule: path.join(__dirname, 'Worker.js'),
+      args: {
+        src,
+      },
+    });
+  }
+
+  postMessage(message, transferList) {
+    this.worker.postMessage(message, transferList);
+  }
+
+  get onmessage() {
+    return this.worker.onmessage;
+  }
+  set onmessage() {
+    this.worker.onmessage = onmessage;
+  }
+  get onerror() {
+    return this.worker.onerror;
+  }
+  set onerror() {
+    this.worker.onerror = onerror;
   }
 }
 
@@ -1004,43 +1043,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   window.PannerNode = PannerNode;
   window.StereoPannerNode = StereoPannerNode;
   window.createImageBitmap = createImageBitmap;
-  window.Worker =  class Worker extends nativeWorker { // XXX make this a real worker
-    constructor(src, workerOptions = {}) {
-      workerOptions.startScript = `
-        (() => {
-          const workerThreads = require('worker_threads');
-          const {workerData} = workerThreads;
-          global.args = workerData.args;
-          (${windowStartFn.toString()})(global);
-
-          const bindings = requireNative("nativeBindings");
-          const smiggles = require("smiggles");
-          const events = require("events");
-          const {EventEmitter} = events;
-
-          smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
-
-          global.Image = bindings.nativeImage;
-          global.ImageBitmap = bindings.nativeImageBitmap;
-          global.createImageBitmap = ${createImageBitmap.toString()};
-          global.EventEmitter = EventEmitter;
-          global.EventTarget = ${EventTarget.toString()};
-          global.FileReader = ${FileReader.toString()};
-        })();
-      `;
-
-      if (src instanceof Blob) {
-        super('data:application/javascript,' + src.buffer.toString('utf8'), workerOptions);
-      } else {
-        const blob = urls.get(src);
-        const normalizedSrc = blob ?
-          'data:application/octet-stream;base64,' + blob.buffer.toString('base64')
-        :
-          _normalizeUrl(src);
-        super(normalizedSrc, workerOptions);
-      }
-    }
-  };
+  window.Worker =  Worker;
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
   window.cancelAnimationFrame = id => {
     const index = rafCbs.findIndex(r => r[symbols.idSymbol] === id);
