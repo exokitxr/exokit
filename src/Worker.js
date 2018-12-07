@@ -35,45 +35,8 @@ const _normalizeUrl = src => {
 const filename = _normalizeUrl(src);
 
 global.self = global;
-
-(() => {
-  let onmessage = null;
-  Object.defineProperty('onmessage', {
-    get() {
-      return onmessage;
-    },
-    set(fn) {
-      onmessage = fn;
-    },
-  });
-})();
-(() => {
-  let onerror = null;
-  Object.defineProperty('onerror', {
-    get() {
-      return onerror;
-    },
-    set(fn) {
-      onerror = fn;
-    },
-  });
-})();
-global.addEventListener = (event, fn) => {
-  if (event === 'message') {
-    onmessage = fn;
-  }
-  if (event === 'error') {
-    onerror = fn;
-  }
-};
-global.removeEventListener = (event, fn) => {
-  if (event === 'message' && onmessage === fn) {
-    onmessage = null;
-  }
-  if (event === 'error' && onerror === fn) {
-    onerror = null;
-  }
-};
+global.addEventListener = global.on;
+global.removeEventListener = global.removeListener; 
 global.location = url.parse(filename);
 global.fetch = (s, options) => fetch(_normalizeUrl(s), options);
 global.XMLHttpRequest = XMLHttpRequest;
@@ -82,6 +45,17 @@ global.importScripts = importScripts;
 global.postMessage = postMessage;
 global.createImageBitmap = createImageBitmap;
 global.FileReader = FileReader;
+
+global.on('message', m => {
+  if (typeof global.onmessage === 'function') {
+    global.onmessage(m);
+  }
+});
+global.on('error', err => {
+  if (typeof global.onerror === 'function') {
+    global.onerror(err);
+  }
+});
 
 const _handleError = err => {
   if (onerror) {
