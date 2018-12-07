@@ -735,69 +735,73 @@ class Worker {
 }
 
 let rafCbs = [];
-let timeouts = [];
-let intervals = [];
 let rafIndex = 0;
-const localCbs = [];
-const _cacheLocalCbs = cbs => {
-  for (let i = 0; i < cbs.length; i++) {
-    localCbs[i] = cbs[i];
-  }
-  for (let i = cbs.length; i < localCbs.length; i++) {
-    localCbs[i] = null;
-  }
-};
-const _clearLocalCbs = () => {
-  for (let i = 0; i < localCbs.length; i++) {
-    localCbs[i] = null;
-  }
-};
-function tickAnimationFrame() {
-  if (rafCbs.length > 0) {
-    _cacheLocalCbs(rafCbs);
+function tickAnimationFrame(timestamp) {
+  for (let i = 0; i < rafCbs.length; i++) {
+    const rafCb = rafCbs[i];
 
-    tickAnimationFrame.window = this;
-
-    const performanceNow = performance.now();
-
-    // hidden rafs
-    for (let i = 0; i < localCbs.length; i++) {
-      const rafCb = localCbs[i];
-      if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
-        try {
-          rafCb(performanceNow);
-        } catch (e) {
-          console.warn(e);
-        }
-
-        const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-        if (index !== -1) {
-          rafCbs[index] = null;
-        }
-      }
+    if (rafCb) {
+      rafCb(timestamp);
     }
-    // visible rafs
-    for (let i = 0; i < localCbs.length; i++) {
-      const rafCb = localCbs[i];
-      if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
-        try {
-          rafCb(performanceNow);
-        } catch (e) {
-          console.warn(e);
-        }
-        const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-        if (index !== -1) {
-          rafCbs[index] = null;
-        }
-      }
-    }
-
-    tickAnimationFrame.window = null;
   }
-
-  _clearLocalCbs(); // release garbage
 }
-tickAnimationFrame.window = null;
+
+const _updateGamepads = newGamepads => {
+  if (newGamepads !== undefined) {
+    const gamepads = getGamepads();
+    const allGamepads = getAllGamepads();
+
+    if (newGamepads[0]) {
+      gamepads[0] = allGamepads[0];
+      gamepads[0].copy(newGamepads[0]);
+    } else {
+      gamepads[0] = null;
+    }
+    if (newGamepads[1]) {
+      gamepads[1] = allGamepads[1];
+      gamepads[1].copy(newGamepads[1]);
+    } else {
+      gamepads[1] = null;
+    }
+  }
+};
+function updateXrFrame(update) {
+  let updatedHmd = false;
+  if (vrDisplay.isPresenting || update.force) {
+    vrDisplay.update(update);
+    updatedHmd = true;
+  }
+  if (xrDisplay.session || update.force) {
+    xrDisplay.update(update);
+    updatedHmd = true;
+  }
+  if (mlDisplay.isPresenting || update.force) {
+    mlDisplay.update(update);
+    updatedHmd = true;
+  }
+  if (xmDisplay.session || update.force) {
+    xmDisplay.update(update);
+    updatedHmd = true;
+  }
+  if (updatedHmd) {
+    _updateGamepads(update.gamepads);
+  }
+}
+
+global.on('message', m => {
+  switch (m.method) {
+    case 'tickAnimationFrame': {
+      tickAnimationFrame(m.timestamp);
+      break;
+    }
+    case 'updateXrFrame': {
+      updateXrFrame(m.update);
+      break;
+    }
+    default: throw new Error(`Window: unknown messsage method ${JSON.stringify(method)}`);
+  }
+});
+
 const _findFreeSlot = a => {
   let i;
   for (i = 0; i < a.length; i++) {
@@ -807,16 +811,7 @@ const _findFreeSlot = a => {
   }
   return i;
 };
-const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
-  fn = fn.bind(window);
-  fn[symbols.windowSymbol] = window;
-  fn[symbols.prioritySymbol] = priority;
-  const id = ++rafIndex;
-  fn[symbols.idSymbol] = id;
-  rafCbs[_findFreeSlot(rafCbs)] = fn;
-  rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
-  return id;
-};
+
 const _getFakeVrDisplay = window => {
   const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
   return fakeVrDisplay.isActive ? fakeVrDisplay : null;
@@ -1197,9 +1192,27 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   window.addEventListener = EventTarget.prototype.addEventListener.bind(window);
   window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
   window.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(window);
+
+  window.requestAnimationFrame = fn => {
+    fn = fn.bind(window);
+    const id = ++rafIndex;
+    fn[symbols.idSymbol] = id;
+    rafCbs[_findFreeSlot(rafCbs)] = fn;
+    return id;
+  };
+  window.cancelAnimationFrame = id => {
+    const index = rafCbs.findIndex(r => r && r[symbols.idSymbol] === id);
+    if (index !== -1) {
+      rafCbs[index] = null;
+    }
+  };
+  // window.postMessage = global.postMessage;
+
   window.Image = HTMLImageElementBound;
   window.ImageData = nativeImageData;
   window.ImageBitmap = nativeImageBitmap;
+  window.createImageBitmap = createImageBitmap;
+
   window.Path2D = nativePath2D;
   window.CanvasGradient = nativeCanvasGradient;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
@@ -1256,16 +1269,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   window.Video = nativeVideo.Video;
   window.VideoDevice = nativeVideo.VideoDevice;
 
-  window.createImageBitmap = createImageBitmap;
   window.Worker =  Worker;
-  window.requestAnimationFrame = _makeRequestAnimationFrame(window);
-  window.cancelAnimationFrame = id => {
-    const index = rafCbs.findIndex(r => r[symbols.idSymbol] === id);
-    if (index !== -1) {
-      rafCbs[index] = null;
-    }
-  };
-  // window.postMessage = global.postMessage;
 
   /*
     Treat function onload() as a special case that disables automatic event attach for onload, because this is how browsers work. E.g.
@@ -1365,10 +1369,8 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   });
 
   if (!parent) {
-    window.tickAnimationFrame = tickAnimationFrame;
-
     const _bindMRDisplay = display => {
-      display.onrequestanimationframe = _makeRequestAnimationFrame(window);
+      display.onrequestanimationframe = window.requestAnimationFrame;
       display.oncancelanimationframe = window.cancelAnimationFrame;
       display.onvrdisplaypresentchange = () => {
         process.nextTick(() => {
@@ -1396,7 +1398,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     const xrDisplay = new XR.XRDevice('VR');
     xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     xrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    xrDisplay.onrequestanimationframe = window.requestAnimationFrame;
     xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     xrDisplay.requestSession = (requestSession => function() {
       return requestSession.apply(this, arguments)
@@ -1423,7 +1425,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     const xmDisplay = new XR.XRDevice('AR');
     xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     xmDisplay.onexitpresent = () => nativeMl.exitPresent();
-    xmDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    xmDisplay.onrequestanimationframe = window.requestAnimationFrame;
     xmDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     xmDisplay.requestSession = (requestSession => function() {
       return requestSession.apply(this, arguments)
@@ -1446,51 +1448,6 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
       mlDisplay,
       xmDisplay,
     };
-
-    const _updateGamepads = newGamepads => {
-      if (newGamepads !== undefined) {
-        const gamepads = getGamepads();
-        const allGamepads = getAllGamepads();
-
-        if (newGamepads[0]) {
-          gamepads[0] = allGamepads[0];
-          gamepads[0].copy(newGamepads[0]);
-        } else {
-          gamepads[0] = null;
-        }
-        if (newGamepads[1]) {
-          gamepads[1] = allGamepads[1];
-          gamepads[1].copy(newGamepads[1]);
-        } else {
-          gamepads[1] = null;
-        }
-      }
-    };
-    window.updateVrFrame = update => {
-      let updatedHmd = false;
-      if (vrDisplay.isPresenting || update.force) {
-        vrDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (xrDisplay.session || update.force) {
-        xrDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (mlDisplay.isPresenting || update.force) {
-        mlDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (xmDisplay.session || update.force) {
-        xmDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (updatedHmd) {
-        _updateGamepads(update.gamepads);
-      }
-    };
-    /* window.updateArFrame = (viewMatrix, projectionMatrix) => {
-      arDisplay.update(viewMatrix, projectionMatrix);
-    }; */
 
     if (nativeMl) {
       let lastPresent = nativeMl.IsPresent();
