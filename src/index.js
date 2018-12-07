@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-(() => {
+if (require.main === module) {
   if (/^11\./.test(process.versions.node)) {
     const hasWorkerThread = (() => {
       try {
@@ -23,7 +23,7 @@
   } else {
     throw new Error('node 11 required');
   }
-})();
+}
 // const cwd = process.cwd();
 // process.chdir(__dirname); // needed for global bin to find libraries
 
