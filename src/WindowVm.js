@@ -36,7 +36,7 @@ const {
   GamepadButton,
   getGamepads,
   getAllGamepads,
-} = require('vr-display')(THREE);
+} = require('./VR.js');
 
 const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
