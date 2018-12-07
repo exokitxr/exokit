@@ -151,9 +151,9 @@ The size of the plane in meters.
 
 Used to acquire hand tracking updates from the Magic Leap platform.
 
-#### `MLHandTracker.onhand : function(MLHandUpdate[])`
+#### `MLHandTracker.onhands : function(MLHandUpdate[])`
 
-When set, `onhand` will be called with an array of `MLHandUpdate`. This indicates an update to the user's hand pose detected from the sensors on the Magic Leap platform.
+When set, `onhands` will be called with an array of `MLHandUpdate`. This indicates an update to the user's hand pose detected from the sensors on the Magic Leap platform.
 
 Each hand is identified as either `'left'` or `'right'`. An update replaces the previous hand state; if a hand is not present in any given update that means it has not been detected for the given update loop.
 
