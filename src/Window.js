@@ -1334,33 +1334,6 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     },
   });
 
-  const _destroyTimeouts = window => {
-    const _pred = fn => fn[symbols.windowSymbol] === window;
-    for (let i = 0; i < rafCbs.length; i++) {
-      const rafCb = rafCbs[i];
-      if (rafCb && _pred(rafCb)) {
-        rafCbs[i] = null;
-      }
-    }
-    for (let i = 0; i < timeouts.length; i++) {
-      const timeout = timeouts[i];
-      if (timeout && _pred(timeout)) {
-        clearTimeout(timeout[symbols.timeoutSymbol]);
-        timeouts[i] = null;
-      }
-    }
-    for (let i = 0; i < intervals.length; i++) {
-      const interval = intervals[i];
-      if (interval && _pred(interval)) {
-        clearInterval(interval[symbols.timeoutSymbol]);
-        intervals[i] = null;
-      }
-    }
-  };
-
-  window.on('destroy', e => {
-    _destroyTimeouts(e.window);
-  });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
 
@@ -1378,8 +1351,6 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
           window._emit('beforeunload');
           window._emit('unload');
           window._emit('navigate', newWindow);
-
-          _destroyTimeouts(window);
         })
         .catch(err => {
           loading = false;
