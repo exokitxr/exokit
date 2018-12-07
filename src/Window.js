@@ -1522,45 +1522,4 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
 }
 _makeWindowVm(global, global.args.htmlString, global.args.options);
 
-/**
- * Initialize classes and modules that require native bindings.
- * Required before creating any windows or documents.
- * Set rather than `require`d directly due to way `require` works with multithreading
- * (for `Worker`), use this route to make sure binaries only get initialized once.
- *
- * @param {string} nativeBindingsModule - Path to native bindings JS module.
- */
-/* const setNativeBindingsModule = nativeBindingsModule => {
-  const bindings = require(nativeBindingsModule);
-
-  if (global.args.frame || global.args.minimalFrame) {
-    WebGLRenderingContext = GlobalContext.WebGLRenderingContext = (OldWebGLRenderingContext => {
-      function WebGLRenderingContext() {
-        const result = Reflect.construct(bindings.nativeGl, arguments);
-        for (const k in result) {
-          if (typeof result[k] === 'function') {
-            result[k] = (old => function() {
-              if (global.args.frame) {
-                console.log(k, arguments);
-              } else if (global.args.minimalFrame) {
-                console.log(k);
-              }
-              return old.apply(this, arguments);
-            })(result[k]);
-          }
-        }
-        return result;
-      }
-      for (const k in OldWebGLRenderingContext) {
-        WebGLRenderingContext[k] = OldWebGLRenderingContext[k];
-      }
-      return WebGLRenderingContext;
-    })(WebGLRenderingContext);
-  }
-
-  // Video.getDevices fails after opening a webcam, so in order to
-  // open multiple webcams we need to call this once on startup.
-  const devices = Video.getDevices();
-}; */
-
 })();
