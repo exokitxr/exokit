@@ -1,3 +1,5 @@
+(() => {
+
 const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
@@ -1438,3 +1440,5 @@ const setNativeBindingsModule = nativeBindingsModule => {
   nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
   nativeWindow = bindings.nativeWindow;
 };
+
+})();
