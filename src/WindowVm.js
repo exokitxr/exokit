@@ -81,6 +81,13 @@ function tickAnimationFrame() {
 tickAnimationFrame.windowVm = null;
 module.exports.tickAnimationFrame = tickAnimationFrame;
 
+function updateXrFrame(update) {
+  for (let i = 0; i < windowVms.length; i++) {
+    windowVms[i].updateXrFrame(update);
+  }
+}
+module.exports.updateXrFrame = updateXrFrame;
+
 function postEvent(type, data) {
   for (let i = 0; i < windowVms.length; i++) {
     windowVms[i].postEvent(type, data);

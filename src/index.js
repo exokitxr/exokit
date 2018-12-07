@@ -47,7 +47,7 @@ const {version} = require('../package.json');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const nativeBindings = require('./native-bindings.js');
-const {postEvent} = require('./WindowVm.js');
+const {updateXrFrame, postEvent} = require('./WindowVm.js');
 const {VRFrameData, VRStageParameters, getAllGamepads} = require('./VR.js');
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 const vmOne = require('vm-one');
@@ -650,7 +650,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
 
       // update vr frame
-      window.top.updateVrFrame({
+      updateXrFrame({
         depthNear,
         depthFar,
         renderWidth,
@@ -771,7 +771,7 @@ const _bindWindow = (window, newWindowCb) => {
         gamepads[1] = rightGamepad;
 
         // update ml frame
-        window.top.updateVrFrame({
+        updateXrFrame({
           depthNear,
           depthFar,
           frameData,
