@@ -723,13 +723,13 @@ class Worker {
   get onmessage() {
     return this.worker.onmessage;
   }
-  set onmessage() {
+  set onmessage(onmessage) {
     this.worker.onmessage = onmessage;
   }
   get onerror() {
     return this.worker.onerror;
   }
-  set onerror() {
+  set onerror(onerror) {
     this.worker.onerror = onerror;
   }
 }
