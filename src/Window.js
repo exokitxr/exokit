@@ -119,7 +119,7 @@ if (nativeVr) {
           canvas.removeListener('attribute', _attribute);
         });
 
-        window.top.updateVrFrame({
+        window.top.updateXrFrame({
           renderWidth,
           renderHeight,
           force: true,
@@ -263,7 +263,7 @@ if (nativeMl) {
             canvas.removeListener('attribute', _attribute);
           });
 
-          window.top.updateVrFrame({
+          window.top.updateXrFrame({
             renderWidth,
             renderHeight,
             force: true,
