@@ -47,6 +47,7 @@ const {version} = require('../package.json');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const nativeBindings = require('./native-bindings.js');
+const {VRFrameData, VRStageParameters, getAllGamepads} = require('./VR.js');
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 const vmOne = require('vm-one');
 
@@ -1129,10 +1130,10 @@ const _bindWindow = (window, newWindowCb) => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = DEFAULT_FPS;
-  const [leftGamepad, rightGamepad] = core.getAllGamepads();
+  const [leftGamepad, rightGamepad] = getAllGamepads();
   const gamepads = [null, null];
-  const frameData = new window.VRFrameData();
-  const stageParameters = new window.VRStageParameters();
+  const frameData = new VRFrameData();
+  const stageParameters = new VRStageParameters();
   /* let timeout = null;
   let numDirtyFrames = 0;
   const dirtyFrameContexts = [];
