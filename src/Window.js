@@ -13,6 +13,7 @@ const util = require('util');
 const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
 const {performance} = require('perf_hooks');
+
 const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
 const fetch = require('window-fetch');
@@ -23,7 +24,23 @@ const WebSocket = require('ws/lib/websocket');
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
 const parseXml = require('@rgrove/parse-xml');
-const THREE = require('../lib/three-min.js');
+
+const {
+  nativeWindow,
+  nativeGl,
+  nativeGl2,
+  nativeCanvasRenderingContext2D,
+  nativeImage,
+  nativeImageData,
+  nativeImageBitmap,
+  nativeAudio,
+  nativeVideo,
+  nativePath2D,
+  nativeCanvasGradient,
+  nativeVr,
+  nativeMl,
+} = require('./native-bindings.js');
+
 const {
   MRDisplay,
   VRDisplay,
@@ -35,7 +52,7 @@ const {
   GamepadButton,
   getGamepads,
   getAllGamepads,
-} = require('vr-display')(THREE);
+} = require('./VR.js');
 
 const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
@@ -119,11 +136,11 @@ let nativeVm = GlobalContext.nativeVm = null;
 
 class MonitorManager {
   getList() {
-    return nativeBindings.nativeWindow.getMonitors();
+    return nativeWindow.getMonitors();
   }
 
   select(index) {
-    nativeBindings.nativeWindow.setMonitor(index);
+    nativeWindow.setMonitor(index);
   }
 }
 
@@ -334,7 +351,200 @@ class MLDisplay extends MRDisplay {
   }
 }
 
-class AudioContext extends nativeBindings.nativeAudio.AudioContext {
+const _onGlContextConstruct = (gl, canvas) => {
+  const canvasWidth = canvas.width || innerWidth;
+  const canvasHeight = canvas.height || innerHeight;
+
+  const windowSpec = (() => {
+    try {
+      const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
+      const {hidden} = canvas.ownerDocument;
+      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+      return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
+    } catch (err) {
+      console.warn(err.message);
+      return null;
+    }
+  })();
+
+  if (windowSpec) {
+    const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture, vao] = windowSpec;
+
+    gl.setWindowHandle(windowHandle);
+    gl.setDefaultVao(vao);
+
+    gl.canvas = canvas;
+
+    const document = canvas.ownerDocument;
+    const window = document.defaultView;
+
+    const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
+    const nativeWindowHeight = nativeWindowSize.height;
+    const nativeWindowWidth = nativeWindowSize.width;
+
+    // Calculate devicePixelRatio.
+    window.devicePixelRatio = nativeWindowWidth / canvasWidth;
+
+    // Tell DOM how large the window is.
+    window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
+    window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
+
+    const title = `Exokit ${version}`;
+    nativeWindow.setWindowTitle(windowHandle, title);
+
+    const {hidden} = document;
+    if (hidden) {
+      const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
+
+      gl.setDefaultFramebuffer(msFbo);
+
+      gl.resize = (width, height) => {
+        nativeWindow.setCurrentWindowContext(windowHandle);
+        nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+      };
+
+      // TODO: handle multiple child canvases
+      document.framebuffer = {
+        canvas,
+        msTex,
+        msDepthTex,
+        tex,
+        depthTex,
+      };
+    } else {
+      gl.resize = (width, height) => {
+        nativeWindow.setCurrentWindowContext(windowHandle);
+        nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
+      };
+    }
+    Object.defineProperty(gl, 'drawingBufferWidth', {
+      get() {
+        return canvas.width;
+      },
+    });
+    Object.defineProperty(gl, 'drawingBufferHeight', {
+      get() {
+        return canvas.height;
+      },
+    });
+
+    const ondomchange = () => {
+      process.nextTick(() => { // show/hide synchronously emits events
+        if (!hidden) {
+          const domVisible = canvas.ownerDocument.documentElement.contains(canvas);
+          const windowVisible = nativeWindow.isVisible(windowHandle);
+          if (domVisible) {
+            if (!windowVisible) {
+              nativeWindow.show(windowHandle);
+            }
+          } else {
+            if (windowVisible) {
+              nativeWindow.hide(windowHandle);
+            }
+          }
+        }
+      });
+    };
+    canvas.ownerDocument.on('domchange', ondomchange);
+
+    gl.destroy = (destroy => function() {
+      destroy.call(this);
+
+      nativeWindow.setCurrentWindowContext(windowHandle);
+
+      if (gl === vrPresentState.glContext) {
+        nativeVr.VR_Shutdown();
+
+        vrPresentState.glContext = null;
+        vrPresentState.system = null;
+        vrPresentState.compositor = null;
+      }
+      if (gl === mlPresentState.mlGlContext) {
+        mlPresentState.mlGlContext = null;
+      }
+
+      nativeWindow.destroy(windowHandle);
+      canvas._context = null;
+
+      if (hidden) {
+        document._emit('framebuffer', null);
+      }
+      canvas.ownerDocument.removeListener('domchange', ondomchange);
+
+      contexts.splice(contexts.indexOf(gl), 1);
+
+      if (!contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // no more windows
+        process.exit();
+      }
+    })(gl.destroy);
+
+    contexts.push(gl);
+    fps = nativeWindow.getRefreshRate();
+
+    canvas.ownerDocument.defaultView.on('unload', () => {
+      gl.destroy();
+    });
+  } else {
+    throw new Error('WebGLRenderingContext failed to create backing context');
+  }
+};
+class WebGLRenderingContext extends nativeGl {
+  constructor(canvas) {
+    super();
+    _onGlContextConstruct(this, canvas);
+  }
+}
+class WebGL2RenderingContext extends nativeGl2 {
+  constructor(canvas) {
+    super();
+    _onGlContextConstruct(this, canvas);
+  }
+}
+
+const _onCanvasContextConstruct = (ctx, canvas) => {
+  const canvasWidth = canvas.width || innerWidth;
+  const canvasHeight = canvas.height || innerHeight;
+
+  const windowSpec = (() => {
+    try {
+      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+      return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
+    } catch (err) {
+      console.warn(err.message);
+      return null;
+    }
+  })();
+
+  if (windowSpec) {
+    const [windowHandle, tex] = windowSpec;
+
+    ctx.setWindowHandle(windowHandle);
+    ctx.setTexture(tex, canvasWidth, canvasHeight);
+    
+    ctx.canvas = canvas;
+    
+    contexts.push(ctx);
+    
+    ctx.destroy = (destroy => function() {
+      destroy.call(this);
+      
+      nativeWindow.destroy(windowHandle);
+      canvas._context = null;
+      
+      contexts.splice(contexts.indexOf(ctx), 1);
+    })(ctx.destroy);
+  } else {
+    throw new Error('CanvasRenderingContext2D failed to create backing context');
+  }
+};
+class CanvasRenderingContext2D extends nativeCanvasRenderingContext2D {
+  constructor(canvas) {
+    super();
+    _onCanvasContextConstruct(this, canvas);
+  }
+}
+
+class AudioContext extends nativeAudio.AudioContext {
   /**
    * Wrap AudioContext.DecodeAudioDataSync binding with promises and callbacks.
    */
@@ -632,7 +842,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     if (src.constructor.name === 'HTMLImageElement') {
       image = src.image;
     } else if (src.constructor.name === 'Blob') {
-      image = new nativeBindings.nativeImage();
+      image = new nativeImage();
       try {
         image.load(src.buffer);
       } catch (err) {
@@ -652,7 +862,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     w = w || image.width;
     h = h || image.height;
     const flipY = !!options && options.imageOrientation === 'flipY';
-    const imageBitmap = new nativeBindings.nativeImageBitmap(
+    const imageBitmap = new nativeImageBitmap(
       image,
       x,
       y,
@@ -711,7 +921,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     mediaDevices: {
       getUserMedia(constraints) {
         if (constraints.audio) {
-          return Promise.resolve(new nativeBindings.nativeAudio.MicrophoneMediaStream());
+          return Promise.resolve(new nativeAudio.MicrophoneMediaStream());
         } else if (constraints.video) {
           const dev = new VideoDevice();
           dev.constraints = constraints.video;
@@ -727,10 +937,10 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
       if (fakeVrDisplay) {
         result.push(fakeVrDisplay);
       }
-      if (nativeBindings.nativeMl && nativeBindings.nativeMl.IsPresent()) {
+      if (nativeMl && nativeMl.IsPresent()) {
         result.push(_getMlDisplay(window));
       }
-      if (nativeBindings.nativeVr && nativeBindings.nativeVr.VR_IsHmdPresent()) {
+      if (nativeVr && nativeVr.VR_IsHmdPresent()) {
         result.push(_getVrDisplay(window));
       }
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
@@ -873,6 +1083,10 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   };
   window.scrollX = 0;
   window.scrollY = 0;
+
+  window.btoa = btoa;
+  window.atob = atob;
+
   window[symbols.htmlTagsSymbol] = {
     DOCUMENT: Document,
     BODY: DOM.HTMLBodyElement,
@@ -951,14 +1165,14 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     http,
     // https,
     ws,
-    createRenderTarget: nativeBindings.nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
-    magicleap: nativeBindings.nativeMl ? {
-      RequestMeshing: nativeBindings.nativeMl.RequestMeshing,
-      RequestPlaneTracking: nativeBindings.nativeMl.RequestPlaneTracking,
-      RequestHandTracking: nativeBindings.nativeMl.RequestHandTracking,
-      RequestEyeTracking: nativeBindings.nativeMl.RequestEyeTracking,
-      RequestDepthPopulation: nativeBindings.nativeMl.RequestDepthPopulation,
-      RequestCamera: nativeBindings.nativeMl.RequestCamera,
+    createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
+    magicleap: nativeMl ? {
+      RequestMeshing: nativeMl.RequestMeshing,
+      RequestPlaneTracking: nativeMl.RequestPlaneTracking,
+      RequestHandTracking: nativeMl.RequestHandTracking,
+      RequestEyeTracking: nativeMl.RequestEyeTracking,
+      RequestDepthPopulation: nativeMl.RequestDepthPopulation,
+      RequestCamera: nativeMl.RequestCamera,
     } : null,
     monitors: new MonitorManager(),
   };
@@ -1004,6 +1218,9 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
       return utils._parseDocumentAst(htmlAst, window, false);
     }
   };
+  window.TextEncoder = TextEncoder;
+  window.TextDecoder = TextDecoder;
+
   window.Event = Event;
   window.KeyboardEvent = KeyboardEvent;
   window.MouseEvent = MouseEvent;
@@ -1016,14 +1233,14 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
   window.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(window);
   window.Image = HTMLImageElementBound;
-  window.ImageData = nativeBindings.nativeImageData;
-  window.ImageBitmap = nativeBindings.nativeImageBitmap;
-  window.Path2D = nativeBindings.nativePath2D;
-  window.CanvasGradient = nativeBindings.nativeCanvasGradient;
-  window.CanvasRenderingContext2D = nativeBindings.nativeCanvasRenderingContext2D;
-  window.WebGLRenderingContext = nativeBindings.nativeGl;
+  window.ImageData = nativeImageData;
+  window.ImageBitmap = nativeImageBitmap;
+  window.Path2D = nativePath2D;
+  window.CanvasGradient = nativeCanvasGradient;
+  window.CanvasRenderingContext2D = CanvasRenderingContext2D;
+  window.WebGLRenderingContext = WebGLRenderingContext;
   if (global.args.webgl !== '1') {
-    window.WebGL2RenderingContext = nativeBindings.nativeGl2;
+    window.WebGL2RenderingContext = WebGL2RenderingContext;
   }
   window.Audio = HTMLAudioElementBound;
   window.MediaRecorder = MediaRecorder;
@@ -1058,13 +1275,8 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     window.XRStageBounds = XR.XRStageBounds;
     window.XRStageBoundsPoint = XR.XRStageBoundsPoint;
   }
-  window.btoa = btoa;
-  window.atob = atob;
-  window.TextEncoder = TextEncoder;
-  window.TextDecoder = TextDecoder;
-  window.AudioContext = AudioContext;
 
-  const {nativeAudio} = nativeBindings;
+  window.AudioContext = AudioContext;
   window.AudioNode = nativeAudio.AudioNode;
   window.AudioBufferSourceNode = nativeAudio.AudioBufferSourceNode;
   window.OscillatorNode = nativeAudio.OscillatorNode;
@@ -1076,7 +1288,6 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
   window.PannerNode = nativeAudio.PannerNode;
   window.StereoPannerNode = nativeAudio.StereoPannerNode;
 
-  const {nativeVideo} = nativeBindings;
   window.Video = nativeVideo.Video;
   window.VideoDevice = nativeVideo.VideoDevice;
 
@@ -1094,6 +1305,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
       window._emit('message', new MessageEvent('message', {data}));
     });
   };
+
   /*
     Treat function onload() as a special case that disables automatic event attach for onload, because this is how browsers work. E.g.
       <!doctype html><html><head><script>
@@ -1243,15 +1455,15 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
 
     const vrDisplay = new VRDisplay();
     _bindMRDisplay(vrDisplay);
-    vrDisplay.onrequestpresent = layers => nativeBindings.nativeVr.requestPresent(layers);
-    vrDisplay.onexitpresent = () => nativeBindings.nativeVr.exitPresent();
+    vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
+    vrDisplay.onexitpresent = () => nativeVr.exitPresent();
     vrDisplay.onlayers = layers => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
     const xrDisplay = new XR.XRDevice('VR');
-    xrDisplay.onrequestpresent = layers => nativeBindings.nativeVr.requestPresent(layers);
-    xrDisplay.onexitpresent = () => nativeBindings.nativeVr.exitPresent();
+    xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
+    xrDisplay.onexitpresent = () => nativeVr.exitPresent();
     xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     xrDisplay.requestSession = (requestSession => function() {
@@ -1270,15 +1482,15 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
 
     const mlDisplay = new MLDisplay();
     _bindMRDisplay(mlDisplay);
-    mlDisplay.onrequestpresent = layers => nativeBindings.nativeMl.requestPresent(layers);
-    mlDisplay.onexitpresent = () => nativeBindings.nativeMl.exitPresent();
+    mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    mlDisplay.onexitpresent = () => nativeMl.exitPresent();
     mlDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
 
     const xmDisplay = new XR.XRDevice('AR');
-    xmDisplay.onrequestpresent = layers => nativeBindings.nativeMl.requestPresent(layers);
-    xmDisplay.onexitpresent = () => nativeBindings.nativeMl.exitPresent();
+    xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    xmDisplay.onexitpresent = () => nativeMl.exitPresent();
     xmDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xmDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     xmDisplay.requestSession = (requestSession => function() {
@@ -1348,10 +1560,10 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
       arDisplay.update(viewMatrix, projectionMatrix);
     }; */
 
-    if (nativeBindings.nativeMl) {
-      let lastPresent = nativeBindings.nativeMl.IsPresent();
+    if (nativeMl) {
+      let lastPresent = nativeMl.IsPresent();
 
-      nativeBindings.nativeMl.OnPresentChange(isPresent => {
+      nativeMl.OnPresentChange(isPresent => {
         if (isPresent && !lastPresent) {
           const e = new Event('vrdisplayconnect');
           e.display = _getMlDisplay(window);

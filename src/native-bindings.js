@@ -47,32 +47,21 @@ const _decorateGlIntercepts = gl => {
   gl.setCompatibleXRDevice = () => Promise.resolve();
 };
 bindings.nativeGl = (nativeGl => {
-  function WebGLRenderingContext(canvas) {
+  function WebGLRenderingContext() {
     const gl = new nativeGl();
     _decorateGlIntercepts(gl);
-
-    if (WebGLRenderingContext.onconstruct(gl, canvas)) {
-      return gl;
-    } else {
-      return null;
-    }
+    return gl;
   }
   for (const k in nativeGl) {
     WebGLRenderingContext[k] = nativeGl[k];
   }
-  WebGLRenderingContext.onconstruct = null;
   return WebGLRenderingContext;
 })(bindings.nativeGl);
 bindings.nativeGl2 = (nativeGl2 => {
-  function WebGL2RenderingContext(canvas) {
+  function WebGL2RenderingContext() {
     const gl = new nativeGl2();
     _decorateGlIntercepts(gl);
-
-    if (WebGLRenderingContext.onconstruct(gl, canvas)) {
-      return gl;
-    } else {
-      return null;
-    }
+    return gl;
   }
   for (const k in nativeGl2) {
     WebGL2RenderingContext[k] = nativeGl2[k];
@@ -106,19 +95,12 @@ if (global.args.frame || global.args.minimalFrame) {
 }
 
 bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
-  function CanvasRenderingContext2D(canvas) {
-    const ctx = new nativeCanvasRenderingContext2D();
-
-    if (CanvasRenderingContext2D.onconstruct(ctx, canvas)) {
-      return ctx;
-    } else {
-      return null;
-    }
+  function CanvasRenderingContext2D() {
+    return new nativeCanvasRenderingContext2D();
   }
   for (const k in nativeCanvasRenderingContext2D) {
     CanvasRenderingContext2D[k] = nativeCanvasRenderingContext2D[k];
   }
-  CanvasRenderingContext2D.onconstruct = null;
   return CanvasRenderingContext2D;
 })(bindings.nativeCanvasRenderingContext2D);
 
