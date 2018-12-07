@@ -47,7 +47,7 @@ const {version} = require('../package.json');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const nativeBindings = require('./native-bindings.js');
-const {updateXrFrame, postEvent} = require('./WindowVm.js');
+const {tickAnimationFrame, updateXrFrame, postEvent} = require('./WindowVm.js');
 const {VRFrameData, VRStageParameters, getAllGamepads} = require('./VR.js');
 const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 const vmOne = require('vm-one');
@@ -826,7 +826,7 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
-    window.tickAnimationFrame();
+    tickAnimationFrame();
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
