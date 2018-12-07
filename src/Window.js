@@ -994,42 +994,6 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
     this._emit('destroy', {window: this});
   };
   window.URL = URL;
-  window.console = console;
-  window.setTimeout = (fn, timeout, args) => {
-    fn = fn.bind.apply(fn, [window].concat(args));
-    fn[symbols.windowSymbol] = window;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
-    timeouts[_findFreeSlot(timeouts)] = fn;
-    fn[symbols.timeoutSymbol] = setTimeout(fn, timeout, args);
-    return id;
-  };
-  window.clearTimeout = id => {
-    const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
-    if (index !== -1) {
-      clearTimeout(timeouts[index][symbols.timeoutSymbol]);
-      timeouts[index] = null;
-    }
-  };
-  window.setInterval = (fn, interval, args) => {
-    if (interval < 10) {
-      interval = 10;
-    }
-    fn = fn.bind.apply(fn, [window].concat(args));
-    fn[symbols.windowSymbol] = window;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
-    intervals[_findFreeSlot(intervals)] = fn;
-    fn[symbols.timeoutSymbol] = setInterval(fn, interval, args);
-    return id;
-  };
-  window.clearInterval = id => {
-    const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
-    if (index !== -1) {
-      clearInterval(intervals[index][symbols.timeoutSymbol]);
-      intervals[index] = null;
-    }
-  };
   window.fetch = (url, options) => {
     if (typeof url === 'string') {
       const blob = urls.get(url);
