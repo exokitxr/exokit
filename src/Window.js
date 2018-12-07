@@ -1206,6 +1206,72 @@ global.on('message', m => {
       tickAnimationFrame(m.timestamp);
       break;
     }
+    case 'submitAnimationFrame': {
+      for (let i = 0; i < contexts.length; i++) { // XXX use the local contexts
+        const context = contexts[i];
+
+        const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context;
+        if (isDirty) {
+          const windowHandle = context.getWindowHandle();
+
+          nativeWindow.setCurrentWindowContext(windowHandle);
+          if (isMac) {
+            context.flush();
+          }
+
+          const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
+          if (isVisible) {
+            if (vrPresentState.glContext === context && vrPresentState.hasPose) {
+              if (vrPresentState.layers.length > 0) {
+                nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
+              } else {
+                nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
+              }
+
+              vrPresentState.compositor.Submit(context, vrPresentState.tex);
+              vrPresentState.hasPose = false;
+
+              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
+            } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
+              if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
+                nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
+              } else {
+                nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+              }
+
+              mlPresentState.mlContext.SubmitFrame(context, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
+              mlPresentState.mlHasPose = false;
+
+              // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
+            } else if (fakePresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, 0, fakePresentState.layers);
+            }
+          }
+
+          if (isMac) {
+            context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+          }
+          nativeWindow.swapBuffers(windowHandle);
+          if (isMac) {
+            const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+            if (drawFramebuffer) {
+              context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+            }
+
+            const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+            if (readFramebuffer) {
+              context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+            }
+          }
+
+          /* numDirtyFrames++;
+          _checkDirtyFrameTimeout(); */
+
+          context.clearDirty();
+        }
+      }
+      break;
+    }
     case 'event': {
       const {type, data} = m;
       const {windowHandle} = data;

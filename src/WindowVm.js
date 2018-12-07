@@ -49,6 +49,13 @@ module.exports._makeWindowVm = _makeWindowVm;
 const _getWindowVms = () => windowVms;
 module.exports._getWindowVms = _getWindowVms;
 
+function submitAnimationFrame() {
+  for (let i = 0; i < windowVms.length; i++) {
+    windowVms[i].submitAnimationFrame();
+  }
+}
+module.exports.submitAnimationFrame = submitAnimationFrame;
+
 function tickAnimationFrame() {
   if (windowVms.length > 0) {
     const performanceNow = performance.now();
