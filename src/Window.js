@@ -1,3 +1,415 @@
+/* const zeroMatrix = new THREE.Matrix4();
+const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array4 = new Float32Array(16);
+const localOffsetArray = new Float32Array(3);
+const localOffsetArray2 = new Float32Array(3);
+const localFovArray = new Float32Array(4);
+const localFovArray2 = new Float32Array(4);
+const localGamepadArray = new Float32Array(24);
+
+const handEntrySize = (1 + (5 * 5)) * (3 + 3);
+const transformArray = new Float32Array(7 * 2);
+const projectionArray = new Float32Array(16 * 2);
+const handsArray = [
+  new Float32Array(handEntrySize),
+  new Float32Array(handEntrySize),
+];
+const controllersArray = new Float32Array((3 + 4 + 6) * 2);
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
+const _normalizeMatrixArray = float32Array => {
+  if (isNaN(float32Array[0])) {
+    zeroMatrix.toArray(float32Array);
+  }
+};
+
+const vrPresentState = {
+  vrContext: null,
+  isPresenting: false,
+  system: null,
+  compositor: null,
+  glContext: null,
+  msFbo: null,
+  msTex: null,
+  msDepthTex: null,
+  fbo: null,
+  tex: null,
+  depthTex: null,
+  cleanups: null,
+  hasPose: false,
+  lmContext: null,
+  layers: [],
+};
+GlobalContext.vrPresentState = vrPresentState;
+let renderWidth = 0;
+let renderHeight = 0;
+const depthNear = 0.1;
+const depthFar = 10000.0;
+if (nativeVr) {
+  nativeVr.requestPresent = function(layers) {
+    if (!vrPresentState.glContext) {
+      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+      if (layer) {
+        const canvas = layer.source;
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
+        }
+        const window = canvas.ownerDocument.defaultView;
+
+        const windowHandle = context.getWindowHandle();
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
+        fps = VR_FPS;
+
+        const vrContext = vrPresentState.vrContext || nativeVr.getContext();
+        const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+        const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
+
+        const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
+
+        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        const width = halfWidth * 2;
+        renderWidth = halfWidth;
+        renderHeight = height;
+
+        const cleanups = [];
+
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+
+        context.setDefaultFramebuffer(msFbo);
+
+        vrPresentState.isPresenting = true;
+        vrPresentState.vrContext = vrContext;
+        vrPresentState.system = system;
+        vrPresentState.compositor = compositor;
+        vrPresentState.glContext = context;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.msDepthTex = msDepthTex;
+        vrPresentState.fbo = fbo;
+        vrPresentState.tex = tex;
+        vrPresentState.depthTex = depthTex;
+        vrPresentState.cleanups = cleanups;
+
+        vrPresentState.lmContext = lmContext;
+
+        canvas.framebuffer = {
+          msTex,
+          msDepthTex,
+          tex: 0,
+          depthTex: 0,
+        };
+
+        const _attribute = (name, value) => {
+          if (name === 'width' || name === 'height') {
+            nativeWindow.setCurrentWindowContext(windowHandle);
+
+            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+          }
+        };
+        canvas.on('attribute', _attribute);
+        cleanups.push(() => {
+          canvas.removeListener('attribute', _attribute);
+        });
+
+        window.top.updateVrFrame({
+          renderWidth,
+          renderHeight,
+          force: true,
+        });
+
+        return {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+      } else {
+        throw new Error('no HTMLCanvasElement source provided');
+      }
+    } else {
+      /* const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2; */
+
+      const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+      return {
+        width: renderWidth * 2,
+        height: renderHeight,
+        msFbo,
+        msTex,
+        msDepthTex,
+        fbo,
+        tex,
+        depthTex,
+      };
+    }
+  };
+  nativeVr.exitPresent = function() {
+    if (vrPresentState.isPresenting) {
+      nativeVr.VR_Shutdown();
+
+      nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
+      nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
+
+      const context = vrPresentState.glContext;
+      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      context.setDefaultFramebuffer(0);
+
+      for (let i = 0; i < vrPresentState.cleanups.length; i++) {
+        vrPresentState.cleanups[i]();
+      }
+
+      vrPresentState.isPresenting = false;
+      vrPresentState.system = null;
+      vrPresentState.compositor = null;
+      vrPresentState.glContext = null;
+      vrPresentState.msFbo = null;
+      vrPresentState.msTex = null;
+      vrPresentState.msDepthTex = null;
+      vrPresentState.fbo = null;
+      vrPresentState.tex = null;
+      vrPresentState.depthTex = null;
+      vrPresentState.cleanups = null;
+    }
+
+    return Promise.resolve();
+  };
+}
+const mlPresentState = {
+  mlContext: null,
+  mlFbo: null,
+  mlTex: null,
+  mlDepthTex: null,
+  mlMsFbo: null,
+  mlMsTex: null,
+  mlMsDepthTex: null,
+  mlGlContext: null,
+  mlCleanups: null,
+  mlHasPose: false,
+  layers: [],
+};
+GlobalContext.mlPresentState = mlPresentState;
+if (nativeMl) {
+  mlPresentState.mlContext = new nativeMl();
+  nativeMl.requestPresent = function(layers) {
+    if (!mlPresentState.mlGlContext) {
+      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+      if (layer) {
+        const canvas = layer.source;
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
+        }
+        const window = canvas.ownerDocument.defaultView;
+
+        const windowHandle = context.getWindowHandle();
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
+        fps = ML_FPS;
+
+        const initResult = mlPresentState.mlContext.Present(windowHandle, context);
+        if (initResult) {
+          const {
+            width: halfWidth,
+            height,
+            fbo,
+            colorTex: tex,
+            depthStencilTex: depthTex,
+            msFbo,
+            msColorTex: msTex,
+            msDepthStencilTex: msDepthTex,
+          } = initResult;
+          const width = halfWidth * 2;
+          renderWidth = halfWidth;
+          renderHeight = height;
+
+          mlPresentState.mlFbo = fbo;
+          mlPresentState.mlTex = tex;
+          mlPresentState.mlDepthTex = depthTex;
+          mlPresentState.mlMsFbo = msFbo;
+          mlPresentState.mlMsTex = msTex;
+          mlPresentState.mlMsDepthTex = msDepthTex;
+
+          canvas.framebuffer = {
+            msTex,
+            msDepthTex,
+            tex,
+            depthTex,
+          };
+
+          const cleanups = [];
+          mlPresentState.mlCleanups = cleanups;
+
+          const _attribute = (name, value) => {
+            if (name === 'width' || name === 'height') {
+              nativeWindow.setCurrentWindowContext(windowHandle);
+
+              nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+            }
+          };
+          canvas.on('attribute', _attribute);
+          cleanups.push(() => {
+            canvas.removeListener('attribute', _attribute);
+          });
+
+          window.top.updateVrFrame({
+            renderWidth,
+            renderHeight,
+            force: true,
+          });
+
+          context.setDefaultFramebuffer(msFbo);
+
+          mlPresentState.mlGlContext = context;
+
+          return {
+            width,
+            height,
+            msFbo,
+            msTex,
+            msDepthTex,
+            fbo,
+            tex,
+            depthTex,
+          };
+        } else {
+          throw new Error('failed to present ml context');
+        }
+      } else {
+        throw new Error('no HTMLCanvasElement source provided');
+      }
+    } else {
+      return {
+        width: renderWidth * 2,
+        height: renderHeight,
+        msFbo: mlPresentState.mlMsFbo,
+        msTex: mlPresentState.mlMsTex,
+        msDepthTex: mlPresentState.mlMsDepthTex,
+        fbo: mlPresentState.mlFbo,
+        tex: mlPresentState.mlTex,
+        depthTex: mlPresentState.mlDepthTex,
+      };
+    }
+  };
+  nativeMl.exitPresent = function() {
+    nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
+    nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
+
+    nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle());
+    mlPresentState.mlGlContext.setDefaultFramebuffer(0);
+
+    for (let i = 0; i < mlPresentState.mlCleanups.length; i++) {
+      mlPresentState.mlCleanups[i]();
+    }
+
+    mlPresentState.mlFbo = null;
+    mlPresentState.mlTex = null;
+    mlPresentState.mlDepthTex = null;
+    mlPresentState.mlMsFbo = null;
+    mlPresentState.mlMsTex = null;
+    mlPresentState.mlMsDepthTex = null;
+    mlPresentState.mlGlContext = null;
+    mlPresentState.mlCleanups = null;
+    mlPresentState.mlHasPose = false;
+  };
+
+  const _mlLifecycleEvent = e => {
+    console.log('got ml lifecycle event', e);
+
+    switch (e) {
+      case 'newInitArg': {
+        break;
+      }
+      case 'stop':
+      case 'pause': {
+        if (mlPresentState.mlContext) {
+          mlPresentState.mlContext.Exit();
+        }
+        nativeMl.DeinitLifecycle();
+        process.exit();
+        break;
+      }
+      case 'resume': {
+        break;
+      }
+      case 'unloadResources': {
+        break;
+      }
+      default: {
+        console.warn('invalid ml lifecycle event', e);
+        break;
+      }
+    }
+  };
+  const _mlKeyboardEvent = e => {
+    // console.log('got ml keyboard event', e);
+
+    if (mlPresentState.mlGlContext) {
+      const {canvas} = mlPresentState.mlGlContext;
+      const window = canvas.ownerDocument.defaultView;
+
+      switch (e.type) {
+        case 'keydown': {
+          let handled = false;
+          if (e.keyCode === 27) { // ESC
+            if (window.top.document.pointerLockElement) {
+              window.top.document.exitPointerLock();
+              handled = true;
+            }
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            }
+          }
+          if (e.keyCode === 122) { // F11
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            } else {
+              window.top.document.requestFullscreen();
+              handled = true;
+            }
+          }
+
+          if (!handled) {
+            canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+          }
+          break;
+        }
+        case 'keyup':
+        case 'keypress': {
+          canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  };
+  if (!nativeMl.IsSimulated()) {
+    nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+  } else {
+    // try to connect to MLSDK
+    const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
+      s.destroy();
+
+      nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+    });
+    s.on('error', () => {});
+  }
+} */
+
 (() => {
 
 const events = require('events');
