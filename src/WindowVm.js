@@ -20,12 +20,6 @@ const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {urls} = require('./urls');
 
-// Class imports.
-const {Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
-const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
-const {History} = require('./History');
-const {Location} = require('./Location');
-
 let nativeVr = GlobalContext.nativeVr = null;
 let nativeMl = GlobalContext.nativeMl = null;
 let nativeWindow = null;
