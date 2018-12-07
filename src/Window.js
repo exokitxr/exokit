@@ -1206,6 +1206,147 @@ global.on('message', m => {
       tickAnimationFrame(m.timestamp);
       break;
     }
+    case 'event': {
+      const {type, data} = m;
+      const {windowHandle} = data;
+      const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), windowHandle)); // XXX get the right context
+      const {canvas} = context;
+      const window = canvas.ownerDocument.defaultView;
+
+      switch (type) {
+        case 'focus': {
+          const {focused} = data;
+          if (!focused && window.top.document.pointerLockElement) {
+            window.top.document.exitPointerLock();
+          }
+          break;
+        }
+        case 'framebufferResize': {
+          const {width, height} = data;
+          innerWidth = width;
+          innerHeight = height;
+
+          window.innerWidth = innerWidth / window.devicePixelRatio;
+          window.innerHeight = innerHeight / window.devicePixelRatio;
+          window.dispatchEvent(new window.Event('resize'));
+          break;
+        }
+        case 'keydown': {
+          let handled = false;
+          if (data.keyCode === 27) { // ESC
+            if (window.top.document.pointerLockElement) {
+              window.top.document.exitPointerLock();
+              handled = true;
+            }
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            }
+          }
+          if (data.keyCode === 122) { // F11
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            } else {
+              window.top.document.requestFullscreen();
+              handled = true;
+            }
+          }
+
+          if (!handled) {
+            canvas.dispatchEvent(new window.KeyboardEvent(type, data));
+          }
+          break;
+        }
+        case 'keyup':
+        case 'keypress': {
+          canvas.dispatchEvent(new window.KeyboardEvent(type, data));
+          break;
+        }
+        case 'mousedown':
+        case 'mouseup':
+        case 'click': {
+          canvas.dispatchEvent(new window.MouseEvent(type, data));
+          break;
+        }
+        case 'wheel': {
+          canvas.dispatchEvent(new window.WheelEvent(type, data));
+          break;
+        }
+        case 'mousemove': {
+          canvas.dispatchEvent(new window.MouseEvent(type, data));
+          break;
+        }
+        case 'drop': {
+          const _readFiles = paths => {
+            const result = [];
+
+            return Promise.all(paths.map(p =>
+              new Promise((accept, reject) => {
+                fs.lstat(p, (err, stats) => {
+                  if (!err) {
+                    if (stats.isFile()) {
+                      fs.readFile(p, (err, data) => {
+                        if (!err) {
+                          const file = new window.Blob([data]);
+                          file.name = path.basename(p);
+                          file.path = p;
+                          result.push(file);
+
+                          accept();
+                        } else {
+                          reject(err);
+                        }
+                      });
+                    } else if (stats.isDirectory()) {
+                      fs.readdir(p, (err, fileNames) => {
+                        if (!err) {
+                          _readFiles(fileNames.map(fileName => path.join(p, fileName)))
+                            .then(files => {
+                              result.push.apply(result, files);
+
+                              accept();
+                            })
+                            .catch(err => {
+                              reject(err);
+                            });
+                        } else {
+                          reject(err);
+                        }
+                      });
+                    } else {
+                      accept();
+                    }
+                  } else {
+                    reject(err);
+                  }
+                });
+              })
+            ))
+              .then(() => result);
+          };
+
+          _readFiles(data.paths)
+            .then(files => {
+              const dataTransfer = new window.DataTransfer({
+                files,
+              });
+              const e = new window.DragEvent('drop');
+              e.dataTransfer = dataTransfer;
+              canvas.dispatchEvent(e);
+            })
+            .catch(err => {
+              console.warn(err.stack);
+            });
+          break;
+        }
+        case 'quit': {
+          context.destroy();
+          break;
+        }
+      }
+      break;
+    }
     case 'updateXrFrame': {
       updateXrFrame(m.update);
       break;
