@@ -7,15 +7,12 @@ namespace egl {
 // @Module: Window handling
 thread_local NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
-std::map<uintptr_t, Nan::Persistent<Function>> eventHandlers;
+std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 
-void NAN_INLINE(CallEmitter(NATIVEwindow *window, int argc, Local<Value> argv[])) {
-  auto iter = eventHandlers.find((uintptr_t)window);
-  if (iter != eventHandlers.end()) {
-    Nan::Persistent<Function> &persistentFn = iter->second;
-    Local<Function> fn = Nan::New(persistentFn);
-
-    fn->Call(Nan::Null(), argc, argv);
+void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
+  if (eventHandler && !(*eventHandler).IsEmpty()) {
+    Local<Function> eventHandlerFn = Nan::New(*eventHandler);
+    eventHandlerFn->Call(Nan::Null(), argc, argv);
   }
 }
 
@@ -294,25 +291,8 @@ NAN_METHOD(Destroy) {
   delete window;
 }
 
-NAN_METHOD(OnEvent) {
-  if (info[0]->IsArray() && info[1]->IsFunction()) {
-    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-    Local<Function> fn = Local<Function>::Cast(info[1]);
-
-    eventHandlers[(uintptr_t)window].Reset(fn);
-  } else {
-    Nan::ThrowError("GLFW::OnEvent: invalid arguments");
-  }
-}
-
-NAN_METHOD(RemoveEventListener) {
-  if (info[0]->IsArray()) {
-    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-
-    eventHandlers.erase((uintptr_t)window);
-  } else {
-    Nan::ThrowError("GLFW::RemoveEventListener: invalid arguments");
-  }
+NAN_METHOD(SetEventHandler) {
+  // nothing
 }
 
 NAN_METHOD(PollEvents) {

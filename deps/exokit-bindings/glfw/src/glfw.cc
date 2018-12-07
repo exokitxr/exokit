@@ -94,15 +94,12 @@ NAN_METHOD(SetMonitor) {
 /* @Module: Window handling */
 thread_local NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
-std::map<uintptr_t, Nan::Persistent<Function>> eventHandlers;
+std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 
-void NAN_INLINE(CallEmitter(NATIVEwindow *window, int argc, Local<Value> argv[])) {
-  auto iter = eventHandlers.find((uintptr_t)window);
-  if (iter != eventHandlers.end()) {
-    Nan::Persistent<Function> &persistentFn = iter->second;
-    Local<Function> fn = Nan::New(persistentFn);
-
-    fn->Call(Nan::Null(), argc, argv);
+void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
+  if (eventHandler && !(*eventHandler).IsEmpty()) {
+    Local<Function> eventHandlerFn = Nan::New(*eventHandler);
+    eventHandlerFn->Call(Nan::Null(), argc, argv);
   }
 }
 
@@ -114,12 +111,13 @@ void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
   evt->Set(JS_STR("type"),JS_STR("window_pos"));
   evt->Set(JS_STR("xpos"),JS_INT(xpos));
   evt->Set(JS_STR("ypos"),JS_INT(ypos));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("window_pos"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
@@ -129,12 +127,13 @@ void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
   evt->Set(JS_STR("type"),JS_STR("resize"));
   evt->Set(JS_STR("width"),JS_INT(w));
   evt->Set(JS_STR("height"),JS_INT(h));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("windowResize"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowFramebufferSizeCB(NATIVEwindow *window, int w, int h) {
@@ -144,12 +143,13 @@ void APIENTRY windowFramebufferSizeCB(NATIVEwindow *window, int w, int h) {
   evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
   evt->Set(JS_STR("width"),JS_INT(w));
   evt->Set(JS_STR("height"),JS_INT(h));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("framebufferResize"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowDropCB(NATIVEwindow *window, int count, const char **paths) {
@@ -161,25 +161,27 @@ void APIENTRY windowDropCB(NATIVEwindow *window, int count, const char **paths) 
   }
 
   Local<Object> evt = Nan::New<Object>();
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
   evt->Set(JS_STR("paths"), pathsArray);
 
   Local<Value> argv[] = {
     JS_STR("drop"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowCloseCB(NATIVEwindow *window) {
   Nan::HandleScope scope;
 
   Local<Object> evt = Nan::New<Object>();
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("quit"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowRefreshCB(NATIVEwindow *window) {
@@ -193,7 +195,7 @@ void APIENTRY windowRefreshCB(NATIVEwindow *window) {
     JS_STR("refresh"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
@@ -202,12 +204,13 @@ void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("iconified"));
   evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("iconified"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
@@ -216,12 +219,13 @@ void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("focused"));
   evt->Set(JS_STR("focused"),JS_BOOL(focused));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("focus"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 static int jsKeyCode[]={
@@ -471,12 +475,13 @@ void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int
     evt->Set(JS_STR("which"), JS_INT(which));
     evt->Set(JS_STR("keyCode"), JS_INT(key));
     evt->Set(JS_STR("charCode"), JS_INT(charCode));
+    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
       JS_STR(&actionNames[action << 3]), // event name
       evt,
     };
-    CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 
     if (action == GLFW_PRESS && isPrintable) {
       keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
@@ -521,12 +526,13 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
   evt->Set(JS_STR("shiftKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS));
   evt->Set(JS_STR("altKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS));
   evt->Set(JS_STR("metaKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("mousemove"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
@@ -535,12 +541,13 @@ void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
   Local<Object> evt = Nan::New<Object>();
   evt->Set(JS_STR("type"),JS_STR("mouseenter"));
   evt->Set(JS_STR("entered"),JS_INT(entered));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("mouseenter"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mods) {
@@ -561,12 +568,13 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
     evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
     evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
     evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
       JS_STR(action ? "mousedown" : "mouseup"), // event name
       evt
     };
-    CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
   }
 
   if (!action) {
@@ -584,12 +592,13 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
     evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
     evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
     evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
       JS_STR("click"), // event name
       evt,
     };
-    CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
   }
 }
 
@@ -602,12 +611,13 @@ void APIENTRY scrollCB(NATIVEwindow *window, double xoffset, double yoffset) {
   evt->Set(JS_STR("deltaY"),JS_NUM(-yoffset*120));
   evt->Set(JS_STR("deltaZ"),JS_INT(0));
   evt->Set(JS_STR("deltaMode"),JS_INT(0));
+  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
   Local<Value> argv[] = {
     JS_STR("wheel"), // event name
     evt,
   };
-  CallEmitter(window, sizeof(argv)/sizeof(argv[0]), argv);
+  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 /* NAN_METHOD(testJoystick) {
@@ -1265,25 +1275,11 @@ NAN_METHOD(Destroy) {
   glfwDestroyWindow(window);
 }
 
-NAN_METHOD(OnEvent) {
-  if (info[0]->IsArray() && info[1]->IsFunction()) {
-    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-    Local<Function> fn = Local<Function>::Cast(info[1]);
-
-    eventHandlers[(uintptr_t)window].Reset(fn);
-  } else {
-    Nan::ThrowError("GLFW::OnEvent: invalid arguments");
+NAN_METHOD(SetEventHandler) {
+  if (!eventHandler) {
+    eventHandler.reset(new Nan::Persistent<Function>());
   }
-}
-
-NAN_METHOD(RemoveEventListener) {
-  if (info[0]->IsArray()) {
-    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-
-    eventHandlers.erase((uintptr_t)window);
-  } else {
-    Nan::ThrowError("GLFW::RemoveEventListener: invalid arguments");
-  }
+  (*eventHandler).Reset(Local<Function>::Cast(info[0]));
 }
 
 NAN_METHOD(PollEvents) {
@@ -1731,8 +1727,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "getFramebufferSize", glfw::GetFramebufferSize);
   Nan::SetMethod(target, "iconifyWindow", glfw::IconifyWindow);
   Nan::SetMethod(target, "restoreWindow", glfw::RestoreWindow);
-  Nan::SetMethod(target, "onEvent", glfw::OnEvent);
-  Nan::SetMethod(target, "removeEventListener", glfw::RemoveEventListener);
+  Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", glfw::GetRefreshRate);
