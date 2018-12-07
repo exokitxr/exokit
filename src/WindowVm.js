@@ -1,30 +1,8 @@
-const events = require('events');
-const {EventEmitter} = events;
 const path = require('path');
-const fs = require('fs');
-const url = require('url');
-const http = require('http');
-const https = require('https');
-const ws = require('ws');
-const os = require('os');
-const util = require('util');
-const {URL} = url;
-const {TextEncoder, TextDecoder} = util;
 const {performance} = require('perf_hooks');
 
 const vmOne = require('vm-one');
 
-const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
-
-const fetch = require('window-fetch');
-const {Request, Response, Headers, Blob} = fetch;
-
-const WebSocket = require('ws/lib/websocket');
-
-const {LocalStorage} = require('node-localstorage');
-const indexedDB = require('fake-indexeddb');
-const parseXml = require('@rgrove/parse-xml');
-const THREE = require('../lib/three-min.js');
 const {
   MRDisplay,
   VRDisplay,
@@ -38,151 +16,16 @@ const {
   getAllGamepads,
 } = require('./VR.js');
 
-const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {urls} = require('./urls');
 
 // Class imports.
 const {Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
-const DOM = require('./DOM');
-const {DOMRect, Node, NodeList} = require('./DOM');
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {History} = require('./History');
 const {Location} = require('./Location');
-const {XMLHttpRequest} = require('./Network');
-const XR = require('./XR');
-const utils = require('./utils');
-const {_elementGetter, _elementSetter} = require('./utils');
 
-const btoa = s => Buffer.from(s, 'binary').toString('base64');
-const atob = s => Buffer.from(s, 'base64').toString('binary');
-
-class CustomElementRegistry {
-  constructor(window) {
-    this._window = window;
-
-    this.elements = {};
-    this.elementPromises = {};
-  }
-
-  define(name, constructor, options) {
-    name = name.toUpperCase();
-
-    this.elements[name] = constructor;
-
-    this._window.document.traverse(el => {
-      if (el.tagName === name) {
-        this.upgrade(el, constructor);
-      }
-    });
-
-    const promises = this.elementPromises[name];
-    if (promises) {
-      for (let i = 0; i < promises.length; i++) {
-        promises[i].accept();
-      }
-      this.elementPromises[name] = null;
-    }
-  }
-  get(name) {
-    name = name.toUpperCase();
-
-    return this.elements[name];
-  }
-  whenDefined(name) {
-    name = name.toUpperCase();
-
-    if (this.elements[name]) {
-      return Promise.resolve();
-    } else {
-      let promises = this.elementPromises[name];
-      if (!promises) {
-        promises = [];
-        this.elementPromises[name] = promises;
-      }
-      const promise = new Promise((accept, reject) => {
-        promise.accept = accept;
-        promise.reject = reject;
-      });
-      promises.push(promise);
-      return promise;
-    }
-  }
-
-  upgrade(el, constructor) {
-    Object.setPrototypeOf(el, constructor.prototype);
-    constructor.call(el);
-  }
-}
-
-let nativeWorker = null;
-
-class MonitorManager {
-  getList() {
-    return nativeWindow.getMonitors();
-  }
-
-  select(index) {
-    nativeWindow.setMonitor(index);
-  }
-}
-
-class Screen {
-  constructor(window) {
-    this._window = window;
-  }
-
-  get top() {
-    return 0;
-  }
-  set top(top) {}
-  get left() {
-    return 0;
-  }
-  set left(left) {}
-  get width() {
-    return this._window.innerWidth;
-  }
-  set width(width) {}
-  get height() {
-    return this._window.innerHeight;
-  }
-  set height(height) {}
-  get colorDepth() {
-    return 24;
-  }
-  set colorDepth(colorDepth) {}
-  get orientation() {
-    return {
-      angle: 0,
-      type: 'landscape-primary',
-      onchange: null,
-    };
-  }
-  set orientation(orientation) {}
-
-  get pixelDepth() {
-    return this.colorDepth;
-  }
-  set pixelDepth(pixelDepth) {}
-  get availTop() {
-    return this.top;
-  }
-  set availTop(availTop) {}
-  get availLeft() {
-    return this.left;
-  }
-  set availLeft(availLeft) {}
-  get availWidth() {
-    return this.width;
-  }
-  set availWidth(availWidth) {}
-  get availHeight() {
-    return this.height;
-  }
-  set availHeight(availHeight) {}
-}
 let nativeVr = GlobalContext.nativeVr = null;
 let nativeMl = GlobalContext.nativeMl = null;
 let nativeWindow = null;
@@ -335,87 +178,6 @@ class MLDisplay extends MRDisplay {
     if (update.context !== undefined) {
       this._context = update.context;
     }
-  }
-}
-
-class MediaRecorder extends EventEmitter {
-  constructor() {
-    super();
-  }
-
-  start() {}
-
-  stop() {}
-
-  requestData() {}
-}
-
-class DataTransfer {
-  constructor({items = [], files = []} = {}) {
-    this.items = items;
-    this.files = files;
-  }
-}
-class DataTransferItem {
-  constructor(kind = 'string', type = 'text/plain', data = null) {
-    this.kind = kind;
-    this.type = type;
-    this.data = data;
-  }
-
-  getAsFile() {
-    return new Blob([this.data], {
-      type: this.type,
-    });
-  }
-
-  getAsString(callback) {
-    const {data} = this;
-    setImmediate(() => {
-      callback(data);
-    });
-  }
-}
-
-class FileReader extends EventTarget {
-  constructor() {
-    super();
-
-    this.result = null;
-  }
-
-  get onload() {
-    return _elementGetter(this, 'load');
-  }
-  set onload(onload) {
-    _elementSetter(this, 'load', onload);
-  }
-
-  get onerror() {
-    return _elementGetter(this, 'error');
-  }
-  set onerror(onerror) {
-    _elementSetter(this, 'error', onerror);
-  }
-
-  readAsArrayBuffer(file) {
-    this.result = file.buffer.buffer.slice(file.buffer.byteOffset, file.buffer.byteOffset + file.buffer.byteLength);
-
-    process.nextTick(() => {
-      this.dispatchEvent(new Event('load', {
-        target: this,
-      }));
-    });
-  }
-
-  readAsDataURL(file) {
-    this.result = 'data:' + file.type + ';base64,' + file.buffer.toString('base64');
-
-    process.nextTick(() => {
-      this.dispatchEvent(new Event('load', {
-        target: this,
-      }));
-    });
   }
 }
 
