@@ -1265,11 +1265,7 @@ function _makeWindow(window = {}, htmlString = '', options = {}) {
       rafCbs[index] = null;
     }
   };
-  window.postMessage = function(data) {
-    setImmediate(() => {
-      window._emit('message', new MessageEvent('message', {data}));
-    });
-  };
+  // window.postMessage = global.postMessage;
 
   /*
     Treat function onload() as a special case that disables automatic event attach for onload, because this is how browsers work. E.g.
