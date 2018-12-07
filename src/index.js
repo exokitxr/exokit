@@ -2,7 +2,24 @@
 
 (() => {
   if (/^11\./.test(process.versions.node)) {
-    // nothing
+    const hasWorkerThread = (() => {
+      try {
+        require('worker_threads');
+        return true;
+      } catch(err) {
+        return false;
+      }
+    })();
+    if (!hasWorkerThread) {
+      try {
+        require('child_process').execFileSync(process.argv0, ['--experimental-worker'].concat(process.argv.slice(1)), {
+          stdio: 'inherit',
+        });
+        process.exit();
+      } catch(err) {
+        process.exit(err.status);
+      }
+    }
   } else {
     throw new Error('node 11 required');
   }
