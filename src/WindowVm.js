@@ -23,6 +23,13 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
       timestamp,
     });
   };
+  v.postEvent = (type, data) => {
+    v.postMessage({
+      method: 'event',
+      type,
+      data,
+    });
+  };
   v.updateXrFrame = update => {
     v.postMessage({
       method: 'updateXrFrame',
@@ -38,6 +45,9 @@ const _makeWindowVm = (htmlString = '', options = {}) => {
   return v;
 };
 module.exports._makeWindowVm = _makeWindowVm;
+
+const _getWindowVms = () => windowVms;
+module.exports._getWindowVms = _getWindowVms;
 
 function tickAnimationFrame() {
   if (windowVms.length > 0) {
@@ -69,4 +79,11 @@ function tickAnimationFrame() {
   }
 }
 tickAnimationFrame.windowVm = null;
-module.exports.tickAnimationFrame = tickAnimationFrame
+module.exports.tickAnimationFrame = tickAnimationFrame;
+
+function postEvent(type, data) {
+  for (let i = 0; i < windowVms.length; i++) {
+    windowVms[i].postEvent(type, data);
+  }
+}
+module.exports.postEvent = postEvent;
