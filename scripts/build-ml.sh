@@ -57,7 +57,7 @@ cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -j 4 ../
 cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m ../metadata/manifest-device.xml -p --create-package -s ../cert/app.cert ../metadata/app-device.package
 cp ../build/magicleap/app-device/app-device.mpk ../build/magicleap/exokit.mpk
 if [ "$1" == "--unsigned" ]; then
-  rm -Rf ../build/magicleap
+  rm -Rf ../build/magicleap/{program-device,app-device}
   cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -j 4 --allow-unsigned ../metadata/program-device.mabu
   cmd.exe /c "$MLSDK_WIN/mabu.cmd" "MLSDK=$MLSDK_WIN" -v -t release_lumin -m ../metadata/manifest-device.xml -p --create-package --allow-unsigned ../metadata/app-device.package
   cp ../build/magicleap/app-device/app-device.mpk ../build/magicleap/exokit-unsigned.mpk
