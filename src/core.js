@@ -11,6 +11,7 @@ const util = require('util');
 const {URL} = url;
 const {performance} = require('perf_hooks');
 
+const rimraf = require('rimraf');
 const mkdirp = require('mkdirp');
 
 const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
@@ -1021,11 +1022,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       const d = path.join(GlobalContext.args.download, o.host || '.');
       const f = path.join(d, o.pathname === '/' ? 'index.html' : o.pathname);
 
-      mkdirp(path.dirname(f), err => {
+      const dirname = path.dirname(f);
+      rimraf(dirname, err => {
         if (!err) {
-          fs.writeFile(f, bufferifyFn(data), err => {
+          mkdirp(dirname, err => {
             if (!err) {
-              accept(data);
+              fs.writeFile(f, bufferifyFn(data), err => {
+                if (!err) {
+                  accept(data);
+                } else {
+                  reject(err);
+                }
+              });
             } else {
               reject(err);
             }
