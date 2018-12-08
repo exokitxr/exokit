@@ -1037,7 +1037,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     } else {
       accept(data);
     }
-  }) : (m, u, data, bufferifyFn) => data;
+  }) : data;
   window.fetch = (u, options) => {
     const _boundFetch = (u, options) => {
       const req = utils._normalizePrototype(
