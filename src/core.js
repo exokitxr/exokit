@@ -1083,17 +1083,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         });
     };
 
-    if (typeof url === 'string') {
-      const blob = urls.get(url);
+    if (typeof u === 'string') {
+      const blob = urls.get(u);
       if (blob) {
         return Promise.resolve(new Response(blob));
       } else {
-        const oldUrl = url;
-        url = _normalizeUrl(url);
-        return _boundFetch(url, options);
+        u = _normalizeUrl(u);
+        return _boundFetch(u, options);
       }
     } else {
-      return _boundFetch(url, options);
+      return _boundFetch(u, options);
     }
   };
   window.Request = Request;
