@@ -1121,7 +1121,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
             case 'arraybuffer': return Buffer.from(o);
             case 'blob': return o.buffer;
             case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
-            case 'json': return Buffer.from(o, 'utf8');
+            case 'text': return Buffer.from(o, 'utf8');
             default: throw new Error(`cannot download responseType ${responseType}`);
           }
         });
