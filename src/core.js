@@ -1068,7 +1068,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           })(res.arrayBuffer);
           res.blob = (fn => function() {
             return fn.apply(this, arguments)
-              .then(blob => _maybeDownload(req.method, u, utils._normalizePrototype(blob, window), blob => blob.buffer);
+              .then(blob => _maybeDownload(req.method, u, utils._normalizePrototype(blob, window), blob => blob.buffer));
           })(res.blob);
           res.json = (fn => function() {
             return fn.apply(this, arguments)
