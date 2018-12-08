@@ -90,6 +90,7 @@ const args = (() => {
       image: minimistArgs.image,
       require: minimistArgs.require,
       headless: minimistArgs.headless,
+      download: minimistArgs.download,
     };
   } else {
     return {};
