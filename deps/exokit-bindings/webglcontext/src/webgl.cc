@@ -48,6 +48,18 @@ NAN_METHOD(glCallWrap) {
     F(info);
   }
 }
+template<NAN_GETTER(F)>
+NAN_GETTER(glGetterWrap) {
+  Local<Object> glObj = info.This();
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
+  if (gl->live) {
+    if (gl->windowHandle) {
+      windowsystem::SetCurrentWindowContext(gl->windowHandle);
+    }
+
+    F(property, info);
+  }
+}
 /* template<NAN_METHOD(F)>
 NAN_METHOD(glSwitchCallWrap) {
   Local<Object> glObj = info.This();
@@ -865,8 +877,8 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   Nan::SetMethod(proto, "isContextLost", glCallWrap<IsContextLost>);
 
-  Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), DrawingBufferWidthGetter);
-  Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), DrawingBufferHeightGetter);
+  Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), glGetterWrap<DrawingBufferWidthGetter>);
+  Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), glGetterWrap<DrawingBufferHeightGetter>);
 
   /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
