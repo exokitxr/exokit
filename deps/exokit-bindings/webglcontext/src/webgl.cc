@@ -46,6 +46,8 @@ NAN_METHOD(glCallWrap) {
     }
 
     F(info);
+  } else {
+    info.GetReturnValue().Set(JS_STR(""));
   }
 }
 template<NAN_GETTER(F)>
@@ -58,6 +60,8 @@ NAN_GETTER(glGetterWrap) {
     }
 
     F(property, info);
+  } else {
+    info.GetReturnValue().Set(JS_STR(""));
   }
 }
 
