@@ -2025,13 +2025,13 @@ class HTMLCanvasElement extends HTMLElement {
       if (this._context === null) {
         if (GlobalContext.args.webgl === '1') {
           if (contextType === 'webgl' || contextType === 'xrpresent') {
-            this._context = new WebGLRenderingContext(this);
+            this._context = new GlobalContext.WebGLRenderingContext(this);
           }
         } else {
           if (contextType === 'webgl') {
-            this._context = new WebGLRenderingContext(this);
+            this._context = new GlobalContext.WebGLRenderingContext(this);
           } else {
-            this._context = new WebGL2RenderingContext(this);
+            this._context = new GlobalContext.WebGL2RenderingContext(this);
           }
         }
       }
