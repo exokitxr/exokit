@@ -94,6 +94,10 @@ const args = (() => {
   }
 })();
 
+core.setArgs(args);
+core.setVersion(version);
+core.setNativeBindingsModule(nativeBindingsModulePath);
+
 const dataPath = (() => {
   const candidatePathPrefixes = [
     os.homedir(),
@@ -867,8 +871,6 @@ nativeWindow.setEventHandler((type, data) => {
     console.warn('got native window event with no matching context', {type, data});
   }
 });
-
-core.setVersion(version);
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
@@ -1800,17 +1802,12 @@ if (require.main === module) {
     }
   }
 
-  core.setArgs(args);
-  core.setNativeBindingsModule(nativeBindingsModulePath);
-
   _prepare()
     .then(() => _start())
     .catch(err => {
       console.warn(err.stack);
       process.exit(1);
     });
-} else {
-  core.setNativeBindingsModule(nativeBindingsModulePath);
 }
 
 module.exports = core;
