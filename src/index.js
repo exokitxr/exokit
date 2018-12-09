@@ -29,40 +29,6 @@ const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics}
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
 
-const dataPath = (() => {
-  const candidatePathPrefixes = [
-    os.homedir(),
-    __dirname,
-    os.tmpdir(),
-  ];
-  for (let i = 0; i < candidatePathPrefixes.length; i++) {
-    const candidatePathPrefix = candidatePathPrefixes[i];
-    if (candidatePathPrefix) {
-      const ok = (() => {
-        try {
-         fs.accessSync(candidatePathPrefix, fs.constants.W_OK);
-         return true;
-        } catch(err) {
-          return false;
-        }
-      })();
-      if (ok) {
-        return path.join(candidatePathPrefix, '.exokit');
-      }
-    }
-  }
-  return null;
-})();
-const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
-const VR_FPS = 90;
-const ML_FPS = 60;
-const MLSDK_PORT = 17955;
-
-const contexts = [];
-const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
-
-let _takeScreenshot = false;
-
 const args = (() => {
   if (require.main === module) {
     const minimistArgs = minimist(process.argv.slice(2), {
@@ -127,6 +93,40 @@ const args = (() => {
     return {};
   }
 })();
+
+const dataPath = (() => {
+  const candidatePathPrefixes = [
+    os.homedir(),
+    __dirname,
+    os.tmpdir(),
+  ];
+  for (let i = 0; i < candidatePathPrefixes.length; i++) {
+    const candidatePathPrefix = candidatePathPrefixes[i];
+    if (candidatePathPrefix) {
+      const ok = (() => {
+        try {
+         fs.accessSync(candidatePathPrefix, fs.constants.W_OK);
+         return true;
+        } catch(err) {
+          return false;
+        }
+      })();
+      if (ok) {
+        return path.join(candidatePathPrefix, '.exokit');
+      }
+    }
+  }
+  return null;
+})();
+const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
+const VR_FPS = 90;
+const ML_FPS = 60;
+const MLSDK_PORT = 17955;
+
+const contexts = [];
+const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
+
+let _takeScreenshot = false;
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
