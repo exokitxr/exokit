@@ -1007,6 +1007,12 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
+  if (args.download) {
+    window.document.resources.addEventListener('drain', () => {
+      console.log('drain');
+      process.exit();
+    });
+  }
   window.addEventListener('destroy', e => {
     const {window} = e;
     for (let i = 0; i < contexts.length; i++) {
