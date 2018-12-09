@@ -23,6 +23,9 @@ const {version} = require('../package.json');
 const symbols = require('./symbols');
 const {THREE} = core;
 
+const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
+const nativeBindings = require(nativeBindingsModulePath);
+
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
 
@@ -96,9 +99,7 @@ const args = (() => {
 
 core.setArgs(args);
 core.setVersion(version);
-const nativeBindingsModulePath = !args.headless ? path.join(__dirname, 'native-bindings.js') : null;
-const nativeBindings = nativeBindingsModulePath ? require(nativeBindingsModulePath) : {};
-nativeBindingsModulePath && core.setNativeBindingsModule(nativeBindingsModulePath);
+core.setNativeBindingsModule(nativeBindingsModulePath);
 
 const dataPath = (() => {
   const candidatePathPrefixes = [
