@@ -279,6 +279,7 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
+  const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
     try {
       const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
@@ -380,7 +381,7 @@ if (nativeBindings.nativeVr) {
         const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
-        nativeWindow.setCurrentWindowContext(windowHandle);
+        nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
         fps = VR_FPS;
 
@@ -397,7 +398,7 @@ if (nativeBindings.nativeVr) {
 
         const cleanups = [];
 
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
         context.setDefaultFramebuffer(msFbo);
 
@@ -425,9 +426,9 @@ if (nativeBindings.nativeVr) {
 
         const _attribute = (name, value) => {
           if (name === 'width' || name === 'height') {
-            nativeWindow.setCurrentWindowContext(windowHandle);
+            nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
-            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+            nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
           }
         };
         canvas.on('attribute', _attribute);
@@ -475,11 +476,11 @@ if (nativeBindings.nativeVr) {
     if (vrPresentState.isPresenting) {
       nativeBindings.nativeVr.VR_Shutdown();
 
-      nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
-      nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
+      nativeBindings.nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
+      nativeBindings.nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
 
       const context = vrPresentState.glContext;
-      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      nativeBindings.nativeWindow.setCurrentWindowContext(context.getWindowHandle());
       context.setDefaultFramebuffer(0);
 
       for (let i = 0; i < vrPresentState.cleanups.length; i++) {
@@ -530,7 +531,7 @@ if (nativeBindings.nativeMl) {
         const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
-        nativeWindow.setCurrentWindowContext(windowHandle);
+        nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
         fps = ML_FPS;
 
@@ -569,9 +570,9 @@ if (nativeBindings.nativeMl) {
 
           const _attribute = (name, value) => {
             if (name === 'width' || name === 'height') {
-              nativeWindow.setCurrentWindowContext(windowHandle);
+              nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
-              nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+              nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
             }
           };
           canvas.on('attribute', _attribute);
@@ -619,10 +620,10 @@ if (nativeBindings.nativeMl) {
     }
   };
   nativeBindings.nativeMl.exitPresent = function() {
-    nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
-    nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
+    nativeBindings.nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
+    nativeBindings.nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
 
-    nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle());
+    nativeBindings.nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle());
     mlPresentState.mlGlContext.setDefaultFramebuffer(0);
 
     for (let i = 0; i < mlPresentState.mlCleanups.length; i++) {
@@ -731,8 +732,8 @@ const fakePresentState = {
 };
 GlobalContext.fakePresentState = fakePresentState;
 
-if (nativeWindow) {
-  nativeWindow.setEventHandler((type, data) => {
+if (nativeBindings.nativeWindow) {
+  nativeBindings.nativeWindow.setEventHandler((type, data) => {
     const {windowHandle} = data;
     const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), windowHandle));
     const {canvas} = context;
