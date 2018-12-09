@@ -180,6 +180,15 @@ class Resources extends EventTarget {
         });
       
       this.numRunning++;
+    } else {
+      const _isDone = () => this.numRunning === 0 && this.queue.length === 0;
+      if (_isDone()) {
+        process.nextTick(() => { // wait one tick for more resources before emitting drain
+          if (_isDone()) {
+            this.emit('drain');
+          }
+        });
+      }
     }
   }
 }
