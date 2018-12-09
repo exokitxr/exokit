@@ -48,7 +48,7 @@ NAN_METHOD(glCallWrap) {
     F(info);
   }
 }
-template<NAN_METHOD(F)>
+/* template<NAN_METHOD(F)>
 NAN_METHOD(glSwitchCallWrap) {
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
@@ -59,7 +59,7 @@ NAN_METHOD(glSwitchCallWrap) {
 
     F(info);
   }
-}
+} */
 
 template <typename T>
 void setGlConstants(T &proto) {
@@ -868,8 +868,10 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), DrawingBufferWidthGetter);
   Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), DrawingBufferHeightGetter);
 
-  Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
-  Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>);
+  /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
+  Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
+  Nan::SetMethod(proto, "getFramebuffer", glCallWrap<GetFramebuffer>);
+  Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   setGlConstants(proto);
 
