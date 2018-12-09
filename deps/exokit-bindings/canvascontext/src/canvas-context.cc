@@ -24,6 +24,8 @@ NAN_METHOD(ctxCallWrap) {
     windowsystem::SetCurrentWindowContext(ctx->windowHandle);
 
     F(info);
+  } else {
+    info.GetReturnValue().Set(JS_STR(""));
   }
 }
 
