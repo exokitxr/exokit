@@ -20,9 +20,11 @@ template<NAN_METHOD(F)>
 NAN_METHOD(ctxCallWrap) {
   Local<Object> ctxObj = info.This();
   CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(ctxObj);
-  windowsystem::SetCurrentWindowContext(ctx->windowHandle);
+  if (ctx->live) {
+    windowsystem::SetCurrentWindowContext(ctx->windowHandle);
 
-  F(info);
+    F(info);
+  }
 }
 
 bool isImageValue(Local<Value> arg) {
@@ -1269,7 +1271,8 @@ NAN_METHOD(CanvasRenderingContext2D::ToDataURL) {
 }
 
 NAN_METHOD(CanvasRenderingContext2D::Destroy) {
-  // nothing
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  ctx->live = false;
 }
 
 NAN_METHOD(CanvasRenderingContext2D::GetWindowHandle) {
@@ -1411,7 +1414,11 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
   }
 }
 
-CanvasRenderingContext2D::CanvasRenderingContext2D() : tex(0), lineHeight(1) {
+CanvasRenderingContext2D::CanvasRenderingContext2D() :
+  live(true),
+  tex(0),
+  lineHeight(1)
+{
   // flipCanvasY(surface->getCanvas());
 
   strokePaint.setTextSize(12);

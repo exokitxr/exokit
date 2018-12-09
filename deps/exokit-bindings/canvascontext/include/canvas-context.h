@@ -160,6 +160,7 @@ public:
   virtual ~CanvasRenderingContext2D();
 
 // protected:
+  bool live;
   NATIVEwindow *windowHandle;
   GLuint tex;
   sk_sp<GrContext> grContext;
