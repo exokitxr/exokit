@@ -139,15 +139,24 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
+  gl.canvas = canvas;
+
+  const document = canvas.ownerDocument;
+  const window = document.defaultView;
+
   const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    try {
-      const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
-      const {hidden} = canvas.ownerDocument;
-      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-      return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
-    } catch (err) {
-      console.warn(err.message);
+    if (!args.headless) {
+      try {
+        const visible = !args.image && document.documentElement.contains(canvas);
+        const {hidden} = document;
+        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+        return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
+      } catch (err) {
+        console.warn(err.message);
+        return null;
+      }
+    } else {
       return null;
     }
   })();
@@ -157,11 +166,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
-
-    gl.canvas = canvas;
-
-    const document = canvas.ownerDocument;
-    const window = document.defaultView;
 
     const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
     const nativeWindowHeight = nativeWindowSize.height;
@@ -253,30 +257,34 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       }
     })(gl.destroy);
 
-    contexts.push(gl);
-    fps = nativeWindow.getRefreshRate();
-
     canvas.ownerDocument.defaultView.on('unload', () => {
       gl.destroy();
     });
-
-    return true;
   } else {
-    return false;
+    gl.destroy();
   }
+
+  contexts.push(gl);
+  fps = nativeWindow.getRefreshRate();
 };
 
 nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
+  ctx.canvas = canvas;
+
   const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    try {
-      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-      return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
-    } catch (err) {
-      console.warn(err.message);
+    if (!args.headless) {
+      try {
+        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+        return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
+      } catch (err) {
+        console.warn(err.message);
+        return null;
+      }
+    } else {
       return null;
     }
   })();
@@ -287,10 +295,6 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
     ctx.setWindowHandle(windowHandle);
     ctx.setTexture(tex, canvasWidth, canvasHeight);
     
-    ctx.canvas = canvas;
-    
-    contexts.push(ctx);
-    
     ctx.destroy = (destroy => function() {
       destroy.call(this);
       
@@ -299,11 +303,11 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
       
       contexts.splice(contexts.indexOf(ctx), 1);
     })(ctx.destroy);
-
-    return true;
   } else {
-    return false;
+    ctx.destroy();
   }
+
+  contexts.push(ctx);
 };
 
 const zeroMatrix = new THREE.Matrix4();
