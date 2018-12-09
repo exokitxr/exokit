@@ -311,9 +311,6 @@ class Screen {
   }
   set availHeight(availHeight) {}
 }
-let nativeVr = GlobalContext.nativeVr = null;
-let nativeMl = GlobalContext.nativeMl = null;
-let nativeWindow = null;
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -1826,6 +1823,39 @@ exokit.setArgs = newArgs => {
 exokit.setVersion = newVersion => {
   GlobalContext.version = newVersion;
 };
+
+// latch native bindings
+let nativeVm = GlobalContext.nativeVm = null;
+let nativeWorker = null;
+
+let Image = null;
+let ImageData = null;
+let ImageBitmap = null;
+let Path2D = null;
+let CanvasGradient = null;
+let CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = null;
+let WebGLRenderingContext = GlobalContext.WebGLRenderingContext = null;
+let WebGL2RenderingContext = GlobalContext.WebGL2RenderingContext = null;
+
+let AudioContext = null;
+let AudioNode = null;
+let AudioBufferSourceNode = null;
+let OscillatorNode = null;
+let AudioDestinationNode = null;
+let AudioParam = null;
+let AudioListener = null;
+let GainNode = null;
+let AnalyserNode = null;
+let PannerNode = null;
+let StereoPannerNode = null;
+
+let MicrophoneMediaStream = null;
+let Video = null;
+let VideoDevice = null;
+
+let nativeVr = GlobalContext.nativeVr = null;
+let nativeMl = GlobalContext.nativeMl = null;
+let nativeWindow = null;
 
 /**
  * Initialize classes and modules that require native bindings.

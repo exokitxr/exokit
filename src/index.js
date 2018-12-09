@@ -138,6 +138,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
+  const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
     try {
       const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
@@ -236,7 +237,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       nativeWindow.setCurrentWindowContext(windowHandle);
 
       if (gl === vrPresentState.glContext) {
-        nativeVr.VR_Shutdown();
+        nativeBindings.nativeVr.VR_Shutdown();
 
         vrPresentState.glContext = null;
         vrPresentState.system = null;
@@ -366,8 +367,8 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
-if (nativeVr) {
-  nativeVr.requestPresent = function(layers) {
+if (nativeBindings.nativeVr) {
+  nativeBindings.nativeVr.requestPresent = function(layers) {
     if (!vrPresentState.glContext) {
       const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
       if (layer) {
@@ -383,11 +384,11 @@ if (nativeVr) {
 
         fps = VR_FPS;
 
-        const vrContext = vrPresentState.vrContext || nativeVr.getContext();
-        const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+        const vrContext = vrPresentState.vrContext || nativeBindings.nativeVr.getContext();
+        const system = vrPresentState.system || nativeBindings.nativeVr.VR_Init(nativeBindings.nativeVr.EVRApplicationType.Scene);
         const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
 
-        const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
+        const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
@@ -470,9 +471,9 @@ if (nativeVr) {
       };
     }
   };
-  nativeVr.exitPresent = function() {
+  nativeBindings.nativeVr.exitPresent = function() {
     if (vrPresentState.isPresenting) {
-      nativeVr.VR_Shutdown();
+      nativeBindings.nativeVr.VR_Shutdown();
 
       nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
       nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
@@ -515,9 +516,9 @@ const mlPresentState = {
   layers: [],
 };
 GlobalContext.mlPresentState = mlPresentState;
-if (nativeMl) {
-  mlPresentState.mlContext = new nativeMl();
-  nativeMl.requestPresent = function(layers) {
+if (nativeBindings.nativeMl) {
+  mlPresentState.mlContext = new nativeBindings.nativeMl();
+  nativeBindings.nativeMl.requestPresent = function(layers) {
     if (!mlPresentState.mlGlContext) {
       const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
       if (layer) {
@@ -617,7 +618,7 @@ if (nativeMl) {
       };
     }
   };
-  nativeMl.exitPresent = function() {
+  nativeBindings.nativeMl.exitPresent = function() {
     nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
     nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
 
@@ -651,7 +652,7 @@ if (nativeMl) {
         if (mlPresentState.mlContext) {
           mlPresentState.mlContext.Exit();
         }
-        nativeMl.DeinitLifecycle();
+        nativeBindings.nativeMl.DeinitLifecycle();
         process.exit();
         break;
       }
@@ -712,14 +713,14 @@ if (nativeMl) {
       }
     }
   };
-  if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+  if (!nativeBindings.nativeMl.IsSimulated()) {
+    nativeBindings.nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
   } else {
     // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+      nativeBindings.nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
     });
     s.on('error', () => {});
   }
@@ -1489,10 +1490,10 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // update media frames
-    nativeVideo.Video.updateAll();
+    nativeBindings.nativeVideo.Video.updateAll();
     // update magic leap pre state
-    if (nativeMl && mlPresentState.mlGlContext) {
-      nativeMl.PrePollEvents(mlPresentState.mlContext);
+    if (nativeBindings.nativeMl && mlPresentState.mlGlContext) {
+      nativeBindings.nativeMl.PrePollEvents(mlPresentState.mlContext);
     }
     if (args.performance) {
       const now = Date.now();
@@ -1528,8 +1529,8 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // update magic leap post state
-    if (nativeMl && mlPresentState.mlGlContext) {
-      nativeMl.PostPollEvents(mlPresentState.mlContext, mlPresentState.mlGlContext, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
+    if (nativeBindings.nativeMl && mlPresentState.mlGlContext) {
+      nativeBindings.nativeMl.PostPollEvents(mlPresentState.mlContext, mlPresentState.mlGlContext, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
     }
     if (args.performance) {
       const now = Date.now();
@@ -1761,7 +1762,7 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  if (nativeAnalytics) {
+  if (nativeBindings.nativeAnalytics) {
     require(path.join(__dirname, 'bugsnag'));
     require('fault-zone').registerHandler((stack, stackLen) => {
       const message = new Buffer(stack, 0, stackLen).toString('utf8');
