@@ -2097,7 +2097,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
   int width, height;
-  windowsystem::GetWindowSize(gl->windowHandle, &width, &height);
+  windowsystem::GetFramebufferSize(gl->windowHandle, &width, &height);
 
   info.GetReturnValue().Set(JS_INT(width));
 }
@@ -2109,7 +2109,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
   int width, height;
-  windowsystem::GetWindowSize(gl->windowHandle, &width, &height);
+  windowsystem::GetframebufferSize(gl->windowHandle, &width, &height);
 
   info.GetReturnValue().Set(JS_INT(height));
 }

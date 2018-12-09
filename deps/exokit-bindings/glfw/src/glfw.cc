@@ -948,10 +948,14 @@ NAN_METHOD(GetWindowPos) {
   info.GetReturnValue().Set(result);
 }
 
+void GetFramebufferSize(NATIVEwindow *window, int *width, int *height) {
+  glfwGetFramebufferSize(window, width, height);
+}
+
 NAN_METHOD(GetFramebufferSize) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   int width, height;
-  glfwGetFramebufferSize(window, &width, &height);
+  GetFramebufferSize(window, &width, &height);
   Local<Object> result = Nan::New<Object>();
   result->Set(JS_STR("width"),JS_INT(width));
   result->Set(JS_STR("height"),JS_INT(height));
