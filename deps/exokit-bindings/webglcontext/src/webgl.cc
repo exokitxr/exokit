@@ -60,18 +60,6 @@ NAN_GETTER(glGetterWrap) {
     F(property, info);
   }
 }
-/* template<NAN_METHOD(F)>
-NAN_METHOD(glSwitchCallWrap) {
-  Local<Object> glObj = info.This();
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
-  if (gl->live) {
-    if (gl->windowHandle) {
-      windowsystem::SetCurrentWindowContext(gl->windowHandle);
-    }
-
-    F(info);
-  }
-} */
 
 template <typename T>
 void setGlConstants(T &proto) {
