@@ -106,8 +106,8 @@ void GetWindowSize(NATIVEwindow *window, int *width, int *height) {
 
 NAN_METHOD(GetWindowSize) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int width, height;
 
+  int width, height;
   GetWindowSize(window, &width, &height);
 
   Local<Object> result = Nan::New<Object>();
@@ -140,12 +140,20 @@ NAN_METHOD(GetWindowPos) {
   info.GetReturnValue().Set(result);
 }
 
+void GetFramebufferSize(NATIVEwindow *window, int *width, int *height) {
+  *width = window->width;
+  *height = window->height;
+}
+
 NAN_METHOD(GetFramebufferSize) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
+  int width, height;
+  GetFramebufferSize(window, &width, &height);
+
   Local<Object> result = Nan::New<Object>();
-  result->Set(JS_STR("width"),JS_INT(window->width));
-  result->Set(JS_STR("height"),JS_INT(window->height));
+  result->Set(JS_STR("width"),JS_INT(width));
+  result->Set(JS_STR("height"),JS_INT(height));
   info.GetReturnValue().Set(result);
 }
 

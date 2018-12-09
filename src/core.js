@@ -45,8 +45,7 @@ GlobalContext.args = {};
 GlobalContext.version = '';
 
 // Class imports.
-const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType,
-       DOMImplementation, initDocument} = require('./Document');
+const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const DOM = require('./DOM');
 const {DOMRect, Node, NodeList} = require('./DOM');
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
@@ -56,8 +55,6 @@ const {XMLHttpRequest} = require('./Network');
 const XR = require('./XR');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = require('./utils');
-
-let nativeBindings = false;
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
@@ -243,9 +240,6 @@ class CustomElementRegistry {
   }
 }
 
-let nativeVm = GlobalContext.nativeVm = null;
-let nativeWorker = null;
-
 class MonitorManager {
   getList() {
     return nativeWindow.getMonitors();
@@ -311,9 +305,6 @@ class Screen {
   }
   set availHeight(availHeight) {}
 }
-let nativeVr = GlobalContext.nativeVr = null;
-let nativeMl = GlobalContext.nativeMl = null;
-let nativeWindow = null;
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const maxNumPlanes = 32 * 3;
@@ -1430,27 +1421,25 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.createImageBitmap = createImageBitmap;
   window.Worker =  class Worker extends nativeWorker {
     constructor(src, workerOptions = {}) {
-      if (nativeBindings) {
-        workerOptions.startScript = `
-          (() => {
-            ${windowStartScript}
+      workerOptions.startScript = `
+        (() => {
+          ${windowStartScript}
 
-            const bindings = requireNative("nativeBindings");
-            const smiggles = require("smiggles");
-            const events = require("events");
-            const {EventEmitter} = events;
+          const bindings = requireNative("nativeBindings");
+          const smiggles = require("smiggles");
+          const events = require("events");
+          const {EventEmitter} = events;
 
-            smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
+          smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
 
-            global.Image = bindings.nativeImage;
-            global.ImageBitmap = bindings.nativeImageBitmap;
-            global.createImageBitmap = ${createImageBitmap.toString()};
-            global.EventEmitter = EventEmitter;
-            global.EventTarget = ${EventTarget.toString()};
-            global.FileReader = ${FileReader.toString()};
-          })();
-        `;
-      }
+          global.Image = bindings.nativeImage;
+          global.ImageBitmap = bindings.nativeImageBitmap;
+          global.createImageBitmap = ${createImageBitmap.toString()};
+          global.EventEmitter = EventEmitter;
+          global.EventTarget = ${EventTarget.toString()};
+          global.FileReader = ${FileReader.toString()};
+        })();
+      `;
 
       if (src instanceof Blob) {
         super('data:application/javascript,' + src.buffer.toString('utf8'), workerOptions);
@@ -1827,6 +1816,39 @@ exokit.setVersion = newVersion => {
   GlobalContext.version = newVersion;
 };
 
+// latch native bindings
+let nativeVm = GlobalContext.nativeVm = null;
+let nativeWorker = null;
+
+let Image = null;
+let ImageData = null;
+let ImageBitmap = null;
+let Path2D = null;
+let CanvasGradient = null;
+let CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = null;
+let WebGLRenderingContext = GlobalContext.WebGLRenderingContext = null;
+let WebGL2RenderingContext = GlobalContext.WebGL2RenderingContext = null;
+
+let AudioContext = null;
+let AudioNode = null;
+let AudioBufferSourceNode = null;
+let OscillatorNode = null;
+let AudioDestinationNode = null;
+let AudioParam = null;
+let AudioListener = null;
+let GainNode = null;
+let AnalyserNode = null;
+let PannerNode = null;
+let StereoPannerNode = null;
+
+let MicrophoneMediaStream = null;
+let Video = null;
+let VideoDevice = null;
+
+let nativeVr = GlobalContext.nativeVr = null;
+let nativeMl = GlobalContext.nativeMl = null;
+let nativeWindow = null;
+
 /**
  * Initialize classes and modules that require native bindings.
  * Required before creating any windows or documents.
@@ -1836,8 +1858,6 @@ exokit.setVersion = newVersion => {
  * @param {string} nativeBindingsModule - Path to native bindings JS module.
  */
 exokit.setNativeBindingsModule = nativeBindingsModule => {
-  nativeBindings = true;
-
   const bindings = require(nativeBindingsModule);
 
   // Set in binding module to be referenced from other modules.

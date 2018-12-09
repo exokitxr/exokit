@@ -20,14 +20,86 @@ const minimist = require('minimist');
 const UPNG = require('upng-js');
 
 const {version} = require('../package.json');
-const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const symbols = require('./symbols');
 const {THREE} = core;
+
+const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const nativeBindings = require(nativeBindingsModulePath);
-const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
+
+const args = (() => {
+  if (require.main === module) {
+    const minimistArgs = minimist(process.argv.slice(2), {
+      boolean: [
+        'version',
+        'home',
+        'log',
+        'perf',
+        'performance',
+        'frame',
+        'minimalFrame',
+        'quit',
+        'blit',
+        'uncapped',
+        'require',
+        'headless',
+      ],
+      string: [
+        'tab',
+        'webgl',
+        'xr',
+        'size',
+        'image',
+      ],
+      alias: {
+        v: 'version',
+        h: 'home',
+        l: 'log',
+        t: 'tab',
+        w: 'webgl',
+        x: 'xr',
+        p: 'performance',
+        perf: 'performance',
+        s: 'size',
+        f: 'frame',
+        m: 'minimalFrame',
+        q: 'quit',
+        b: 'blit',
+        u: 'uncapped',
+        i: 'image',
+        r: 'require',
+        n: 'headless',
+      },
+    });
+    return {
+      version: minimistArgs.version,
+      url: minimistArgs._[0] || '',
+      home: minimistArgs.home || !!minimistArgs.tab,
+      log: minimistArgs.log,
+      tab: minimistArgs.tab,
+      webgl: minimistArgs.webgl || '2',
+      xr: minimistArgs.xr || 'all',
+      performance: !!minimistArgs.performance,
+      size: minimistArgs.size,
+      frame: minimistArgs.frame,
+      minimalFrame: minimistArgs.minimalFrame,
+      quit: minimistArgs.quit,
+      blit: minimistArgs.blit,
+      uncapped: minimistArgs.uncapped,
+      image: minimistArgs.image,
+      require: minimistArgs.require,
+      headless: minimistArgs.headless,
+    };
+  } else {
+    return {};
+  }
+})();
+
+core.setArgs(args);
+core.setVersion(version);
+core.setNativeBindingsModule(nativeBindingsModulePath);
 
 const dataPath = (() => {
   const candidatePathPrefixes = [
@@ -63,83 +135,28 @@ const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
 let _takeScreenshot = false;
 
-const args = (() => {
-  if (require.main === module) {
-    const minimistArgs = minimist(process.argv.slice(2), {
-      boolean: [
-        'version',
-        'home',
-        'log',
-        'perf',
-        'performance',
-        'frame',
-        'minimalFrame',
-        'quit',
-        'blit',
-        'uncapped',
-        'require',
-      ],
-      string: [
-        'tab',
-        'webgl',
-        'xr',
-        'size',
-        'image',
-      ],
-      alias: {
-        v: 'version',
-        h: 'home',
-        l: 'log',
-        t: 'tab',
-        w: 'webgl',
-        x: 'xr',
-        p: 'performance',
-        perf: 'performance',
-        s: 'size',
-        f: 'frame',
-        m: 'minimalFrame',
-        q: 'quit',
-        b: 'blit',
-        u: 'uncapped',
-        i: 'image',
-        r: 'require',
-      },
-    });
-    return {
-      version: minimistArgs.version,
-      url: minimistArgs._[0] || '',
-      home: minimistArgs.home || !!minimistArgs.tab,
-      log: minimistArgs.log,
-      tab: minimistArgs.tab,
-      webgl: minimistArgs.webgl || '2',
-      xr: minimistArgs.xr || 'all',
-      performance: !!minimistArgs.performance,
-      size: minimistArgs.size,
-      frame: minimistArgs.frame,
-      minimalFrame: minimistArgs.minimalFrame,
-      quit: minimistArgs.quit,
-      blit: minimistArgs.blit,
-      uncapped: minimistArgs.uncapped,
-      image: minimistArgs.image,
-      require: minimistArgs.require,
-    };
-  } else {
-    return {};
-  }
-})();
-
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
+  gl.canvas = canvas;
+
+  const document = canvas.ownerDocument;
+  const window = document.defaultView;
+
+  const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    try {
-      const visible = !args.image && canvas.ownerDocument.documentElement.contains(canvas);
-      const {hidden} = canvas.ownerDocument;
-      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-      return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
-    } catch (err) {
-      console.warn(err.message);
+    if (!args.headless) {
+      try {
+        const visible = !args.image && document.documentElement.contains(canvas);
+        const {hidden} = document;
+        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+        return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
+      } catch (err) {
+        console.warn(err.message);
+        return null;
+      }
+    } else {
       return null;
     }
   })();
@@ -149,11 +166,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
-
-    gl.canvas = canvas;
-
-    const document = canvas.ownerDocument;
-    const window = document.defaultView;
 
     const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
     const nativeWindowHeight = nativeWindowSize.height;
@@ -194,16 +206,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
     }
-    Object.defineProperty(gl, 'drawingBufferWidth', {
-      get() {
-        return canvas.width;
-      },
-    });
-    Object.defineProperty(gl, 'drawingBufferHeight', {
-      get() {
-        return canvas.height;
-      },
-    });
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
@@ -230,7 +232,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       nativeWindow.setCurrentWindowContext(windowHandle);
 
       if (gl === vrPresentState.glContext) {
-        nativeVr.VR_Shutdown();
+        nativeBindings.nativeVr.VR_Shutdown();
 
         vrPresentState.glContext = null;
         vrPresentState.system = null;
@@ -255,29 +257,34 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
       }
     })(gl.destroy);
 
-    contexts.push(gl);
-    fps = nativeWindow.getRefreshRate();
-
     canvas.ownerDocument.defaultView.on('unload', () => {
       gl.destroy();
     });
-
-    return true;
   } else {
-    return false;
+    gl.destroy();
   }
+
+  contexts.push(gl);
+  fps = nativeWindow.getRefreshRate();
 };
 
 nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
+  ctx.canvas = canvas;
+
+  const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    try {
-      const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-      return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
-    } catch (err) {
-      console.warn(err.message);
+    if (!args.headless) {
+      try {
+        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+        return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
+      } catch (err) {
+        console.warn(err.message);
+        return null;
+      }
+    } else {
       return null;
     }
   })();
@@ -288,10 +295,6 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
     ctx.setWindowHandle(windowHandle);
     ctx.setTexture(tex, canvasWidth, canvasHeight);
     
-    ctx.canvas = canvas;
-    
-    contexts.push(ctx);
-    
     ctx.destroy = (destroy => function() {
       destroy.call(this);
       
@@ -300,11 +303,11 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
       
       contexts.splice(contexts.indexOf(ctx), 1);
     })(ctx.destroy);
-
-    return true;
   } else {
-    return false;
+    ctx.destroy();
   }
+
+  contexts.push(ctx);
 };
 
 const zeroMatrix = new THREE.Matrix4();
@@ -360,8 +363,8 @@ let renderWidth = 0;
 let renderHeight = 0;
 const depthNear = 0.1;
 const depthFar = 10000.0;
-if (nativeVr) {
-  nativeVr.requestPresent = function(layers) {
+if (nativeBindings.nativeVr) {
+  nativeBindings.nativeVr.requestPresent = function(layers) {
     if (!vrPresentState.glContext) {
       const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
       if (layer) {
@@ -373,15 +376,15 @@ if (nativeVr) {
         const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
-        nativeWindow.setCurrentWindowContext(windowHandle);
+        nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
         fps = VR_FPS;
 
-        const vrContext = vrPresentState.vrContext || nativeVr.getContext();
-        const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+        const vrContext = vrPresentState.vrContext || nativeBindings.nativeVr.getContext();
+        const system = vrPresentState.system || nativeBindings.nativeVr.VR_Init(nativeBindings.nativeVr.EVRApplicationType.Scene);
         const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
 
-        const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
+        const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
@@ -390,7 +393,7 @@ if (nativeVr) {
 
         const cleanups = [];
 
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
         context.setDefaultFramebuffer(msFbo);
 
@@ -418,9 +421,9 @@ if (nativeVr) {
 
         const _attribute = (name, value) => {
           if (name === 'width' || name === 'height') {
-            nativeWindow.setCurrentWindowContext(windowHandle);
+            nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
-            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+            nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
           }
         };
         canvas.on('attribute', _attribute);
@@ -464,15 +467,15 @@ if (nativeVr) {
       };
     }
   };
-  nativeVr.exitPresent = function() {
+  nativeBindings.nativeVr.exitPresent = function() {
     if (vrPresentState.isPresenting) {
-      nativeVr.VR_Shutdown();
+      nativeBindings.nativeVr.VR_Shutdown();
 
-      nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
-      nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
+      nativeBindings.nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
+      nativeBindings.nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
 
       const context = vrPresentState.glContext;
-      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      nativeBindings.nativeWindow.setCurrentWindowContext(context.getWindowHandle());
       context.setDefaultFramebuffer(0);
 
       for (let i = 0; i < vrPresentState.cleanups.length; i++) {
@@ -509,9 +512,9 @@ const mlPresentState = {
   layers: [],
 };
 GlobalContext.mlPresentState = mlPresentState;
-if (nativeMl) {
-  mlPresentState.mlContext = new nativeMl();
-  nativeMl.requestPresent = function(layers) {
+if (nativeBindings.nativeMl) {
+  mlPresentState.mlContext = new nativeBindings.nativeMl();
+  nativeBindings.nativeMl.requestPresent = function(layers) {
     if (!mlPresentState.mlGlContext) {
       const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
       if (layer) {
@@ -523,7 +526,7 @@ if (nativeMl) {
         const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
-        nativeWindow.setCurrentWindowContext(windowHandle);
+        nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
         fps = ML_FPS;
 
@@ -562,9 +565,9 @@ if (nativeMl) {
 
           const _attribute = (name, value) => {
             if (name === 'width' || name === 'height') {
-              nativeWindow.setCurrentWindowContext(windowHandle);
+              nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
-              nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+              nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
             }
           };
           canvas.on('attribute', _attribute);
@@ -611,11 +614,11 @@ if (nativeMl) {
       };
     }
   };
-  nativeMl.exitPresent = function() {
-    nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
-    nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
+  nativeBindings.nativeMl.exitPresent = function() {
+    nativeBindings.nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
+    nativeBindings.nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
 
-    nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle());
+    nativeBindings.nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle());
     mlPresentState.mlGlContext.setDefaultFramebuffer(0);
 
     for (let i = 0; i < mlPresentState.mlCleanups.length; i++) {
@@ -645,7 +648,7 @@ if (nativeMl) {
         if (mlPresentState.mlContext) {
           mlPresentState.mlContext.Exit();
         }
-        nativeMl.DeinitLifecycle();
+        nativeBindings.nativeMl.DeinitLifecycle();
         process.exit();
         break;
       }
@@ -706,14 +709,14 @@ if (nativeMl) {
       }
     }
   };
-  if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+  if (!nativeBindings.nativeMl.IsSimulated()) {
+    nativeBindings.nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
   } else {
     // try to connect to MLSDK
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+      nativeBindings.nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
     });
     s.on('error', () => {});
   }
@@ -724,7 +727,7 @@ const fakePresentState = {
 };
 GlobalContext.fakePresentState = fakePresentState;
 
-nativeWindow.setEventHandler((type, data) => {
+nativeBindings.nativeWindow.setEventHandler((type, data) => {
   const {windowHandle} = data;
   const context = contexts.find(context => _windowHandleEquals(context.getWindowHandle(), windowHandle));
   const {canvas} = context;
@@ -867,8 +870,6 @@ nativeWindow.setEventHandler((type, data) => {
     console.warn('got native window event with no matching context', {type, data});
   }
 });
-
-core.setVersion(version);
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
@@ -1032,7 +1033,8 @@ const _bindWindow = (window, newWindowCb) => {
       const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context;
       if (isDirty) {
         const windowHandle = context.getWindowHandle();
-        
+
+        const {nativeWindow} = nativeBindings;
         nativeWindow.setCurrentWindowContext(windowHandle);
         if (isMac) {
           context.flush();
@@ -1475,7 +1477,7 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // poll for window events
-    nativeWindow.pollEvents();
+    nativeBindings.nativeWindow.pollEvents();
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -1485,10 +1487,10 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // update media frames
-    nativeVideo.Video.updateAll();
+    nativeBindings.nativeVideo.Video.updateAll();
     // update magic leap pre state
-    if (nativeMl && mlPresentState.mlGlContext) {
-      nativeMl.PrePollEvents(mlPresentState.mlContext);
+    if (nativeBindings.nativeMl && mlPresentState.mlGlContext) {
+      nativeBindings.nativeMl.PrePollEvents(mlPresentState.mlContext);
     }
     if (args.performance) {
       const now = Date.now();
@@ -1524,8 +1526,8 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // update magic leap post state
-    if (nativeMl && mlPresentState.mlGlContext) {
-      nativeMl.PostPollEvents(mlPresentState.mlContext, mlPresentState.mlGlContext, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
+    if (nativeBindings.nativeMl && mlPresentState.mlGlContext) {
+      nativeBindings.nativeMl.PostPollEvents(mlPresentState.mlContext, mlPresentState.mlGlContext, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
     }
     if (args.performance) {
       const now = Date.now();
@@ -1757,7 +1759,7 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  if (nativeAnalytics) {
+  if (nativeBindings.nativeAnalytics) {
     require(path.join(__dirname, 'bugsnag'));
     require('fault-zone').registerHandler((stack, stackLen) => {
       const message = new Buffer(stack, 0, stackLen).toString('utf8');
@@ -1800,17 +1802,12 @@ if (require.main === module) {
     }
   }
 
-  core.setArgs(args);
-  core.setNativeBindingsModule(nativeBindingsModulePath);
-
   _prepare()
     .then(() => _start())
     .catch(err => {
       console.warn(err.stack);
       process.exit(1);
     });
-} else {
-  core.setNativeBindingsModule(nativeBindingsModulePath);
 }
 
 module.exports = core;

@@ -46,10 +46,12 @@ NAN_METHOD(glCallWrap) {
     }
 
     F(info);
+  } else {
+    info.GetReturnValue().Set(JS_STR(""));
   }
 }
-template<NAN_METHOD(F)>
-NAN_METHOD(glSwitchCallWrap) {
+template<NAN_GETTER(F)>
+NAN_GETTER(glGetterWrap) {
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->live) {
@@ -57,7 +59,9 @@ NAN_METHOD(glSwitchCallWrap) {
       windowsystem::SetCurrentWindowContext(gl->windowHandle);
     }
 
-    F(info);
+    F(property, info);
+  } else {
+    info.GetReturnValue().Set(JS_STR(""));
   }
 }
 
@@ -782,42 +786,42 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "drawBuffers", glCallWrap<DrawBuffers>);
   Nan::SetMethod(proto, "drawBuffersWEBGL", glCallWrap<DrawBuffersWEBGL>);
 
-  Nan::SetMethod(proto, "blendColor", BlendColor);
-  Nan::SetMethod(proto, "blendEquationSeparate", BlendEquationSeparate);
-  Nan::SetMethod(proto, "blendFuncSeparate", BlendFuncSeparate);
-  Nan::SetMethod(proto, "clearStencil", ClearStencil);
-  Nan::SetMethod(proto, "colorMask", ColorMask);
-  Nan::SetMethod(proto, "copyTexImage2D", CopyTexImage2D);
-  Nan::SetMethod(proto, "copyTexSubImage2D", CopyTexSubImage2D);
-  Nan::SetMethod(proto, "cullFace", CullFace);
-  Nan::SetMethod(proto, "depthMask", DepthMask);
-  Nan::SetMethod(proto, "depthRange", DepthRange);
-  Nan::SetMethod(proto, "disableVertexAttribArray", DisableVertexAttribArray);
-  Nan::SetMethod(proto, "hint", Hint);
-  Nan::SetMethod(proto, "isEnabled", IsEnabled);
-  Nan::SetMethod(proto, "lineWidth", LineWidth);
-  Nan::SetMethod(proto, "polygonOffset", PolygonOffset);
+  Nan::SetMethod(proto, "blendColor", glCallWrap<BlendColor>);
+  Nan::SetMethod(proto, "blendEquationSeparate", glCallWrap<BlendEquationSeparate>);
+  Nan::SetMethod(proto, "blendFuncSeparate", glCallWrap<BlendFuncSeparate>);
+  Nan::SetMethod(proto, "clearStencil", glCallWrap<ClearStencil>);
+  Nan::SetMethod(proto, "colorMask", glCallWrap<ColorMask>);
+  Nan::SetMethod(proto, "copyTexImage2D", glCallWrap<CopyTexImage2D>);
+  Nan::SetMethod(proto, "copyTexSubImage2D", glCallWrap<CopyTexSubImage2D>);
+  Nan::SetMethod(proto, "cullFace", glCallWrap<CullFace>);
+  Nan::SetMethod(proto, "depthMask", glCallWrap<DepthMask>);
+  Nan::SetMethod(proto, "depthRange", glCallWrap<DepthRange>);
+  Nan::SetMethod(proto, "disableVertexAttribArray", glCallWrap<DisableVertexAttribArray>);
+  Nan::SetMethod(proto, "hint", glCallWrap<Hint>);
+  Nan::SetMethod(proto, "isEnabled", glCallWrap<IsEnabled>);
+  Nan::SetMethod(proto, "lineWidth", glCallWrap<LineWidth>);
+  Nan::SetMethod(proto, "polygonOffset", glCallWrap<PolygonOffset>);
 
-  Nan::SetMethod(proto, "scissor", Scissor);
-  Nan::SetMethod(proto, "stencilFunc", StencilFunc);
-  Nan::SetMethod(proto, "stencilFuncSeparate", StencilFuncSeparate);
-  Nan::SetMethod(proto, "stencilMask", StencilMask);
-  Nan::SetMethod(proto, "stencilMaskSeparate", StencilMaskSeparate);
-  Nan::SetMethod(proto, "stencilOp", StencilOp);
-  Nan::SetMethod(proto, "stencilOpSeparate", StencilOpSeparate);
-  Nan::SetMethod(proto, "bindRenderbuffer", BindRenderbuffer);
-  Nan::SetMethod(proto, "createRenderbuffer", CreateRenderbuffer);
+  Nan::SetMethod(proto, "scissor", glCallWrap<Scissor>);
+  Nan::SetMethod(proto, "stencilFunc", glCallWrap<StencilFunc>);
+  Nan::SetMethod(proto, "stencilFuncSeparate", glCallWrap<StencilFuncSeparate>);
+  Nan::SetMethod(proto, "stencilMask", glCallWrap<StencilMask>);
+  Nan::SetMethod(proto, "stencilMaskSeparate", glCallWrap<StencilMaskSeparate>);
+  Nan::SetMethod(proto, "stencilOp", glCallWrap<StencilOp>);
+  Nan::SetMethod(proto, "stencilOpSeparate", glCallWrap<StencilOpSeparate>);
+  Nan::SetMethod(proto, "bindRenderbuffer", glCallWrap<BindRenderbuffer>);
+  Nan::SetMethod(proto, "createRenderbuffer", glCallWrap<CreateRenderbuffer>);
 
-  Nan::SetMethod(proto, "deleteBuffer", DeleteBuffer);
-  Nan::SetMethod(proto, "deleteFramebuffer", DeleteFramebuffer);
-  Nan::SetMethod(proto, "deleteProgram", DeleteProgram);
-  Nan::SetMethod(proto, "deleteRenderbuffer", DeleteRenderbuffer);
-  Nan::SetMethod(proto, "deleteShader", DeleteShader);
-  Nan::SetMethod(proto, "deleteTexture", DeleteTexture);
-  Nan::SetMethod(proto, "detachShader", DetachShader);
-  Nan::SetMethod(proto, "framebufferRenderbuffer", FramebufferRenderbuffer);
-  Nan::SetMethod(proto, "getVertexAttribOffset", GetVertexAttribOffset);
-  Nan::SetMethod(proto, "getShaderPrecisionFormat", GetShaderPrecisionFormat);
+  Nan::SetMethod(proto, "deleteBuffer", glCallWrap<DeleteBuffer>);
+  Nan::SetMethod(proto, "deleteFramebuffer", glCallWrap<DeleteFramebuffer>);
+  Nan::SetMethod(proto, "deleteProgram", glCallWrap<DeleteProgram>);
+  Nan::SetMethod(proto, "deleteRenderbuffer", glCallWrap<DeleteRenderbuffer>);
+  Nan::SetMethod(proto, "deleteShader", glCallWrap<DeleteShader>);
+  Nan::SetMethod(proto, "deleteTexture", glCallWrap<DeleteTexture>);
+  Nan::SetMethod(proto, "detachShader", glCallWrap<DetachShader>);
+  Nan::SetMethod(proto, "framebufferRenderbuffer", glCallWrap<FramebufferRenderbuffer>);
+  Nan::SetMethod(proto, "getVertexAttribOffset", glCallWrap<GetVertexAttribOffset>);
+  Nan::SetMethod(proto, "getShaderPrecisionFormat", glCallWrap<GetShaderPrecisionFormat>);
 
   Nan::SetMethod(proto, "isBuffer", glCallWrap<IsBuffer>);
   Nan::SetMethod(proto, "isFramebuffer", glCallWrap<IsFramebuffer>);
@@ -865,11 +869,13 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   Nan::SetMethod(proto, "isContextLost", glCallWrap<IsContextLost>);
 
-  Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), DrawingBufferWidthGetter);
-  Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), DrawingBufferHeightGetter);
+  Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), glGetterWrap<DrawingBufferWidthGetter>);
+  Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), glGetterWrap<DrawingBufferHeightGetter>);
 
-  Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
-  Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>);
+  /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
+  Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
+  Nan::SetMethod(proto, "getFramebuffer", glCallWrap<GetFramebuffer>);
+  Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   setGlConstants(proto);
 
@@ -2097,7 +2103,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferWidthGetter) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
   int width, height;
-  windowsystem::GetWindowSize(gl->windowHandle, &width, &height);
+  windowsystem::GetFramebufferSize(gl->windowHandle, &width, &height);
 
   info.GetReturnValue().Set(JS_INT(width));
 }
@@ -2109,7 +2115,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
   int width, height;
-  windowsystem::GetWindowSize(gl->windowHandle, &width, &height);
+  windowsystem::GetFramebufferSize(gl->windowHandle, &width, &height);
 
   info.GetReturnValue().Set(JS_INT(height));
 }

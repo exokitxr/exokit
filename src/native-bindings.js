@@ -53,12 +53,8 @@ bindings.nativeGl = (nativeGl => {
   function WebGLRenderingContext(canvas) {
     const gl = new nativeGl();
     _decorateGlIntercepts(gl);
-
-    if (WebGLRenderingContext.onconstruct(gl, canvas)) {
-      return gl;
-    } else {
-      return null;
-    }
+    WebGLRenderingContext.onconstruct(gl, canvas);
+    return gl;
   }
   for (const k in nativeGl) {
     WebGLRenderingContext[k] = nativeGl[k];
@@ -70,12 +66,8 @@ bindings.nativeGl2 = (nativeGl2 => {
   function WebGL2RenderingContext(canvas) {
     const gl = new nativeGl2();
     _decorateGlIntercepts(gl);
-
-    if (WebGLRenderingContext.onconstruct(gl, canvas)) {
-      return gl;
-    } else {
-      return null;
-    }
+    WebGLRenderingContext.onconstruct(gl, canvas);
+    return gl;
   }
   for (const k in nativeGl2) {
     WebGL2RenderingContext[k] = nativeGl2[k];
@@ -86,12 +78,8 @@ bindings.nativeGl2 = (nativeGl2 => {
 bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
   function CanvasRenderingContext2D(canvas) {
     const ctx = new nativeCanvasRenderingContext2D();
-
-    if (CanvasRenderingContext2D.onconstruct(ctx, canvas)) {
-      return ctx;
-    } else {
-      return null;
-    }
+    CanvasRenderingContext2D.onconstruct(ctx, canvas);
+    return ctx;
   }
   for (const k in nativeCanvasRenderingContext2D) {
     CanvasRenderingContext2D[k] = nativeCanvasRenderingContext2D[k];

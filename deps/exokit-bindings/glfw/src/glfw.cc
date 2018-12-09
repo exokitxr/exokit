@@ -6,8 +6,12 @@ namespace glfw {
 
 GLFWmonitor* _activeMonitor;
 GLFWmonitor* getMonitor() {
-    if (_activeMonitor) return _activeMonitor;
-    else return glfwGetPrimaryMonitor();
+  if (_activeMonitor) {
+    return _activeMonitor;
+  } else {
+    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+    return monitor;
+  }
 }
 
 /* NAN_METHOD(GetVersion) {
@@ -948,10 +952,14 @@ NAN_METHOD(GetWindowPos) {
   info.GetReturnValue().Set(result);
 }
 
+void GetFramebufferSize(NATIVEwindow *window, int *width, int *height) {
+  glfwGetFramebufferSize(window, width, height);
+}
+
 NAN_METHOD(GetFramebufferSize) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   int width, height;
-  glfwGetFramebufferSize(window, &width, &height);
+  GetFramebufferSize(window, &width, &height);
   Local<Object> result = Nan::New<Object>();
   result->Set(JS_STR("width"),JS_INT(width));
   result->Set(JS_STR("height"),JS_INT(height));
@@ -1292,8 +1300,16 @@ NAN_METHOD(SwapBuffers) {
 }
 
 NAN_METHOD(GetRefreshRate) {
-  const GLFWvidmode* mode = glfwGetVideoMode(getMonitor());
-  int refreshRate = mode->refreshRate;
+  int refreshRate;
+
+  GLFWmonitor *monitor = getMonitor();
+  if (monitor) {
+    const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+    refreshRate = mode->refreshRate;
+  } else {
+    refreshRate = 60;
+  }
+  
   info.GetReturnValue().Set(refreshRate);
 }
 
