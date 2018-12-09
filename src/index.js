@@ -97,7 +97,7 @@ const args = (() => {
 core.setArgs(args);
 core.setVersion(version);
 const nativeBindingsModulePath = !args.headless ? path.join(__dirname, 'native-bindings.js') : null;
-const nativeBindings = nativeBindingsModulePath && require(nativeBindingsModulePath);
+const nativeBindings = nativeBindingsModulePath ? require(nativeBindingsModulePath) : {};
 nativeBindingsModulePath && core.setNativeBindingsModule(nativeBindingsModulePath);
 
 const dataPath = (() => {
