@@ -44,6 +44,7 @@ const args = (() => {
         'blit',
         'uncapped',
         'require',
+        'headless',
       ],
       string: [
         'tab',
@@ -69,6 +70,7 @@ const args = (() => {
         u: 'uncapped',
         i: 'image',
         r: 'require',
+        n: 'headless',
       },
     });
     return {
@@ -88,6 +90,7 @@ const args = (() => {
       uncapped: minimistArgs.uncapped,
       image: minimistArgs.image,
       require: minimistArgs.require,
+      headless: minimistArgs.headless,
     };
   } else {
     return {};
