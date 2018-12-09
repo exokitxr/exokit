@@ -45,8 +45,7 @@ GlobalContext.args = {};
 GlobalContext.version = '';
 
 // Class imports.
-const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType,
-       DOMImplementation, initDocument} = require('./Document');
+const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const DOM = require('./DOM');
 const {DOMRect, Node, NodeList} = require('./DOM');
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
