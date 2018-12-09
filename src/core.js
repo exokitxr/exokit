@@ -1019,7 +1019,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const _maybeDownload = (m, u, data, bufferifyFn) => GlobalContext.args.download ? new Promise((accept, reject) => {
     if (m === 'GET' && /^(?:https?|file):/.test(u)) {
       const o = url.parse(u);
-      const d = path.join(GlobalContext.args.download, o.host || '.');
+      const d = path.resolve(path.join(__dirname, '..'), GlobalContext.args.download, o.host || '.');
       const f = path.join(d, o.pathname === '/' ? 'index.html' : o.pathname);
 
       const dirname = path.dirname(f);
