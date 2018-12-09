@@ -243,9 +243,6 @@ class CustomElementRegistry {
   }
 }
 
-let nativeVm = GlobalContext.nativeVm = null;
-let nativeWorker = null;
-
 class MonitorManager {
   getList() {
     return nativeWindow.getMonitors();
