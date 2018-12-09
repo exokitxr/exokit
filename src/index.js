@@ -1040,7 +1040,8 @@ const _bindWindow = (window, newWindowCb) => {
       const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context;
       if (isDirty) {
         const windowHandle = context.getWindowHandle();
-        
+
+        const {nativeWindow} = nativeBindings;
         nativeWindow.setCurrentWindowContext(windowHandle);
         if (isMac) {
           context.flush();
