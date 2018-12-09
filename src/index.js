@@ -134,7 +134,7 @@ const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
 let _takeScreenshot = false;
 
-nativeBindings.nativeGl && nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
+nativeBindings.nativeGl && (nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
@@ -273,9 +273,9 @@ nativeBindings.nativeGl && nativeBindings.nativeGl.onconstruct = (gl, canvas) =>
   } else {
     return false;
   }
-};
+});
 
-nativeBindings.nativeCanvasRenderingContext2D && nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
+nativeBindings.nativeCanvasRenderingContext2D && (nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
@@ -313,7 +313,7 @@ nativeBindings.nativeCanvasRenderingContext2D && nativeBindings.nativeCanvasRend
   } else {
     return false;
   }
-};
+});
 
 const zeroMatrix = new THREE.Matrix4();
 const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
