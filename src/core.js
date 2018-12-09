@@ -56,8 +56,6 @@ const XR = require('./XR');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = require('./utils');
 
-let nativeBindings = false;
-
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 const parseJson = s => {
@@ -1423,27 +1421,25 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.createImageBitmap = createImageBitmap;
   window.Worker =  class Worker extends nativeWorker {
     constructor(src, workerOptions = {}) {
-      if (nativeBindings) {
-        workerOptions.startScript = `
-          (() => {
-            ${windowStartScript}
+      workerOptions.startScript = `
+        (() => {
+          ${windowStartScript}
 
-            const bindings = requireNative("nativeBindings");
-            const smiggles = require("smiggles");
-            const events = require("events");
-            const {EventEmitter} = events;
+          const bindings = requireNative("nativeBindings");
+          const smiggles = require("smiggles");
+          const events = require("events");
+          const {EventEmitter} = events;
 
-            smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
+          smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
 
-            global.Image = bindings.nativeImage;
-            global.ImageBitmap = bindings.nativeImageBitmap;
-            global.createImageBitmap = ${createImageBitmap.toString()};
-            global.EventEmitter = EventEmitter;
-            global.EventTarget = ${EventTarget.toString()};
-            global.FileReader = ${FileReader.toString()};
-          })();
-        `;
-      }
+          global.Image = bindings.nativeImage;
+          global.ImageBitmap = bindings.nativeImageBitmap;
+          global.createImageBitmap = ${createImageBitmap.toString()};
+          global.EventEmitter = EventEmitter;
+          global.EventTarget = ${EventTarget.toString()};
+          global.FileReader = ${FileReader.toString()};
+        })();
+      `;
 
       if (src instanceof Blob) {
         super('data:application/javascript,' + src.buffer.toString('utf8'), workerOptions);
@@ -1862,8 +1858,6 @@ let nativeWindow = null;
  * @param {string} nativeBindingsModule - Path to native bindings JS module.
  */
 exokit.setNativeBindingsModule = nativeBindingsModule => {
-  nativeBindings = true;
-
   const bindings = require(nativeBindingsModule);
 
   // Set in binding module to be referenced from other modules.
