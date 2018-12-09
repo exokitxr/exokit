@@ -68,6 +68,27 @@ NAN_METHOD(BlitFrameBuffer) {
   }
 }
 
+EGLSurface CreateSurface(EGLDisplay display, int width, int height) {
+  EGLint attribs[] = {
+    EGL_WIDTH, width,
+    EGL_HEIGHT, height,
+    EGL_TEXTURE_FORMAT, EGL_TEXTURE_RGB,
+    EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
+    EGL_NONE
+  };
+  EGLConfig egl_config = nullptr;
+  EGLSurface pbuffer = eglCreatePbufferSurface(display, eglConfig, attribs);
+  return pbuffer;
+}
+
+EGLBoolean BindTexSurface(EGLDisplay display, EGLSurface surface) {
+  return eglBindTexImage(display, surface, EGL_BACK_BUFFER);
+}
+
+EGLBoolean UnbindTexSurface(EGLDisplay display, EGLSurface surface) {
+  return eglReleaseTexImage(display, surface, EGL_BACK_BUFFER);
+}
+
 NATIVEwindow *GetCurrentWindowContext() {
   return currentWindow;
 }
