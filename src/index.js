@@ -20,11 +20,8 @@ const minimist = require('minimist');
 const UPNG = require('upng-js');
 
 const {version} = require('../package.json');
-const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const symbols = require('./symbols');
 const {THREE} = core;
-const nativeBindings = require(nativeBindingsModulePath);
-const {nativeVideo, nativeVr, nativeLm, nativeMl, nativeWindow, nativeAnalytics} = nativeBindings;
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
@@ -99,7 +96,9 @@ const args = (() => {
 
 core.setArgs(args);
 core.setVersion(version);
-core.setNativeBindingsModule(nativeBindingsModulePath);
+const nativeBindingsModulePath = args.headless ? path.join(__dirname, 'native-bindings.js') : null;
+const nativeBindings = nativeBindingsModulePath && require(nativeBindingsModulePath);
+nativeBindingsModulePath && core.setNativeBindingsModule(nativeBindingsModulePath);
 
 const dataPath = (() => {
   const candidatePathPrefixes = [
