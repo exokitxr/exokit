@@ -1483,7 +1483,7 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // poll for window events
-    nativeWindow.pollEvents();
+    nativeBindings.nativeWindow.pollEvents();
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
