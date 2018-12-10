@@ -74,6 +74,7 @@ EGLSurface CreateSurface(EGLDisplay display, int width, int height) {
     EGL_HEIGHT, height,
     EGL_TEXTURE_FORMAT, EGL_TEXTURE_RGB,
     EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
+    EGL_BIND_TO_TEXTURE_RGB, EGL_TRUE,
     EGL_NONE
   };
   EGLConfig eglConfig = nullptr;
