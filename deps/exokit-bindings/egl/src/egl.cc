@@ -76,7 +76,7 @@ EGLSurface CreateSurface(EGLDisplay display, int width, int height) {
     EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
     EGL_NONE
   };
-  EGLConfig egl_config = nullptr;
+  EGLConfig eglConfig = nullptr;
   EGLSurface pbuffer = eglCreatePbufferSurface(display, eglConfig, attribs);
   return pbuffer;
 }
