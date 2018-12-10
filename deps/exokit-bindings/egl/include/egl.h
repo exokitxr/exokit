@@ -36,8 +36,8 @@ namespace egl {
   EGLContext GetGLContext(NATIVEwindow *window);
   NATIVEwindow *GetCurrentWindowContext();
   EGLSurface CreateSurface(EGLDisplay display, int width, int height);
-  EGLBoolean BindTexSurface(EGLDisplay display, EGLSurface surface);
-  EGLBoolean UnbindTexSurface(EGLDisplay display, EGLSurface surface);
+  EGLBoolean BindTexImage(EGLDisplay display, EGLSurface surface);
+  EGLBoolean UnbindTexImage(EGLDisplay display, EGLSurface surface);
   void SetCurrentWindowContext(NATIVEwindow *window);
   void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data);
 }
