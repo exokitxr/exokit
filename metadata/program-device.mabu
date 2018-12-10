@@ -204,5 +204,5 @@ ASMFLAGS.msvc = -Zp8
 # flags for linking: note these go to gcc, not "ld", for
 # gcc/clang tools, so use -Wl,... if needed.
 #
-LDFLAGS.gcc,clang = -Wl,-v -Wl,-E
+LDFLAGS.gcc,clang = -Wl,-v -Wl,-E -Xlinker --no-demangle
 LDFLAGS.win = -subsystem:console
