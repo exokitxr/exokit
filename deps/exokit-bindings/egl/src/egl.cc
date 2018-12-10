@@ -82,11 +82,11 @@ EGLSurface CreateSurface(EGLDisplay display, int width, int height) {
   return pbuffer;
 }
 
-EGLBoolean BindTexSurface(EGLDisplay display, EGLSurface surface) {
+EGLBoolean BindTexImage(EGLDisplay display, EGLSurface surface) {
   return eglBindTexImage(display, surface, EGL_BACK_BUFFER);
 }
 
-EGLBoolean UnbindTexSurface(EGLDisplay display, EGLSurface surface) {
+EGLBoolean UnbindTexImage(EGLDisplay display, EGLSurface surface) {
   return eglReleaseTexImage(display, surface, EGL_BACK_BUFFER);
 }
 
