@@ -1865,6 +1865,15 @@ exokit.load = (src, options = {}) => {
       });
     });
 };
+exokit.download = (src, dst) => exokit.load(src, {
+  download: dst,
+  headless: true,
+})
+  .then(window => new Promise((accept, reject) => {
+    window.document.resources.addEventListener('drain', () => {
+      accept();
+    });
+  }));
 exokit.getAllGamepads = getAllGamepads;
 exokit.THREE = THREE;
 exokit.setArgs = newArgs => {
