@@ -1007,7 +1007,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
-  if (args.download) {
+  if (args.quit) {
     window.document.resources.addEventListener('drain', () => {
       console.log('drain');
       process.exit();
@@ -1848,9 +1848,6 @@ const _start = () => {
 
       callback(err, result);
     };
-    if (args.quit) {
-      process.exit();
-    }
     const r = repl.start({
       prompt,
       eval: replEval,
