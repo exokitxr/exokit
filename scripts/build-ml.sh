@@ -27,10 +27,10 @@ export npm_config_arch=arm64
 
 if [ ! -d magicleap-js ]; then
   git clone https://github.com/webmixedreality/magicleap-js
-else
-  pushd magicleap-js
-  git pull --rebase
-  popd
+# else
+#   pushd magicleap-js
+#   git pull --rebase
+#   popd
 fi
 
 ./magicleap-js/hack-toolchain.js
