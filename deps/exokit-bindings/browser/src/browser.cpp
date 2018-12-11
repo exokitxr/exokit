@@ -235,7 +235,7 @@ NAN_METHOD(Browser::New) {
     String::Utf8Value dataPathValue(Local<String>::Cast(info[4]));
     std::string dataPath(*dataPathValue, dataPathValue.length());
 
-    if (!cefInitialized) {
+    if (!embeddedInitialized) {
       browserThread = std::thread([dataPath{std::move(dataPath)}]() -> void {
         // std::cout << "initialize web core manager 1" << std::endl;
         const bool success = initializeCef(dataPath);
@@ -255,10 +255,10 @@ NAN_METHOD(Browser::New) {
             fn();
           }
         } else {
-          std::cerr << "Browser::Browser: failed to initialize CEF" << std::endl;
+          std::cerr << "Browser::Browser: failed to initialize embedded browser" << std::endl;
         }
       });
-      cefInitialized = true;
+      embeddedInitialized = true;
     }
 
     Browser *browser = new Browser(gl, width, height, url);
@@ -437,7 +437,7 @@ void Browser::loadImmediate(const std::string &url, int width, int height) {
 } */
 
 NAN_METHOD(Browser::UpdateAll) {
-  if (cefInitialized) {
+  if (embeddedInitialized) {
     QueueOnBrowserThread([]() -> void {
       // std::cout << "browser update 1" << std::endl;
       CefDoMessageLoopWork2();
@@ -913,7 +913,7 @@ void MainThreadAsync(uv_async_t *handle) {
 
 // variables
 
-bool cefInitialized = false;
+bool embeddedInitialized = false;
 std::thread browserThread;
 
 uv_sem_t constructSem;
