@@ -12,151 +12,19 @@ using namespace std;
 using namespace v8;
 using namespace node;
 
-bool CefInitialize2(const CefMainArgs& args,
-                              const CefSettings& settings,
-                              CefRefPtr<CefApp> application,
-                              void* windows_sandbox_info) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Unverified params: application, windows_sandbox_info
-
-  // Execute
-  int _retval = cef_initialize(
-      &args, &settings, CefAppCppToC::Wrap(application), windows_sandbox_info);
-
-  // Return type: bool
-  return _retval ? true : false;
-}
-
-void CefDoMessageLoopWork2() {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_do_message_loop_work();
-}
-
-CefRefPtr<CefBrowser> CreateBrowserSync(
-    const CefWindowInfo& windowInfo,
-    CefRefPtr<CefClient> client,
-    const CefString& url,
-    const CefBrowserSettings& settings,
-    CefRefPtr<CefRequestContext> request_context) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Unverified params: client, url, request_context
-
-  // Execute
-  cef_browser_t* _retval = cef_browser_host_create_browser_sync(
-      &windowInfo, CefClientCppToC::Wrap(client), url.GetStruct(), &settings,
-      CefRequestContextCToCpp::Unwrap(request_context));
-
-  // Return type: refptr_same
-  return CefBrowserCToCpp::Wrap(_retval);
-}
-
 namespace browser {
 
-// helpers
-
-bool initializeCef(const std::string &dataPath) {
-  CefMainArgs args;
-  
-	CefSettings settings;
-  // settings.log_severity = LOGSEVERITY_VERBOSE;
-  // CefString(&settings.resources_dir_path) = resourcesPath;
-  // CefString(&settings.locales_dir_path) = localesPath;
-  CefString(&settings.cache_path).FromString(dataPath);
-  CefString(&settings.log_file).FromString(dataPath + "/log.txt");
-  settings.no_sandbox = true;
-  
-  SimpleApp *app = new SimpleApp(dataPath);
-  
-	return CefInitialize2(args, settings, app, nullptr);
-}
-
-// SimpleApp
-
-SimpleApp::SimpleApp(const std::string &dataPath) : dataPath(dataPath) {}
-
-void SimpleApp::OnBeforeCommandLineProcessing(const CefString &process_type, CefRefPtr<CefCommandLine> command_line) {
-  command_line->AppendSwitch(CefString("single-process"));
-  // command_line->AppendSwitch(CefString("no-proxy-server"));
-  command_line->AppendSwitch(CefString("winhttp-proxy-resolver"));
-  command_line->AppendSwitch(CefString("no-sandbox"));
-  CefString dataPathString(dataPath);
-  command_line->AppendSwitchWithValue(CefString("user-data-dir"), dataPathString);
-  command_line->AppendSwitchWithValue(CefString("disk-cache-dir"), dataPathString);
-}
-
-void SimpleApp::OnContextInitialized() {
-  // CEF_REQUIRE_UI_THREAD();
-  
-  // std::cout << "SimpleApp::OnContextInitialized" << std::endl;
-}
-
-// LoadHandler
-
-LoadHandler::LoadHandler(std::function<void()> onLoadStart, std::function<void()> onLoadEnd, std::function<void(int, const std::string &, const std::string &)> onLoadError) : onLoadStart(onLoadStart), onLoadEnd(onLoadEnd), onLoadError(onLoadError) {}
-
-LoadHandler::~LoadHandler() {}
-
-void LoadHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) {
-  onLoadStart();
-}
-
-void LoadHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) {
-  onLoadEnd();
-}
-
-void LoadHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString &errorText, const CefString &failedUrl) {
-  onLoadError((int)errorCode, errorText.ToString(), failedUrl.ToString());
-}
-
-// DisplayHandler
-
-DisplayHandler::DisplayHandler(std::function<void(const std::string &, const std::string &, int)> onConsole, std::function<void(const std::string &)> onMessage) : onConsole(onConsole), onMessage(onMessage) {}
-
-DisplayHandler::~DisplayHandler() {}
-
-const std::string postMessageConsolePrefix("<postMessage>");
-bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message, const CefString &source, int line) {
-  std::string m = message.ToString();
-  
-  if (!m.compare(0, postMessageConsolePrefix.size(), postMessageConsolePrefix)) {
-    onMessage(m.substr(postMessageConsolePrefix.size()));
-  } else {
-    onConsole(m, source.length() > 0 ? source.ToString() : std::string("<unknown>"), line);
+// A function which calls the ML logger, suitable for passing into Servo
+void logger2(MLLogLevel lvl, char* msg) {
+  if (MLLoggingLogLevelIsEnabled(lvl)) {
+    MLLoggingLog(lvl, ML_DEFAULT_LOG_TAG, msg);
   }
-  
-  return true;
 }
 
-// RenderHandler
-
-RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height) : onPaint(onPaint), width(width), height(height) {}
-
-RenderHandler::~RenderHandler() {}
-
-/* void RenderHandler::resize(int w, int h) {
-	width = w;
-	height = h;
-} */
-
-bool RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
-	rect = CefRect(0, 0, width, height);
-	return true;
+// A function which updates the history ui, suitable for passing into Servo
+void history2(Servo2D* app, bool canGoBack, char* url, bool canGoForward) {
+  // app->updateHistory(canGoBack, url, canGoForward);
 }
-
-void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects, const void *buffer, int width, int height) {
-  onPaint(dirtyRects, buffer, width, height);
-}
-
-// BrowserClient
-
-BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHandler, RenderHandler *renderHandler/*, LifeSpanHandler *lifespanHandler*/) :
-  m_loadHandler(loadHandler), m_displayHandler(displayHandler), m_renderHandler(renderHandler)/*, m_lifespanHandler(lifespanHandler)*/ {}
-
-BrowserClient::~BrowserClient() {}
 
 // Browser
 
@@ -165,9 +33,16 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
   
   glGenTextures(1, &tex);
 
+  NATIVEwindow *window;
+#ifndef LUMIN
+  window = nullptr;
+#else
+  window = windowsystem::CreateNativeWindow(width, height, true, gl->windowHandle);
+#endif
+  
   QueueOnBrowserThread([&]() -> void {
-    this->loadImmediate(url, width, height);
-    
+    this->loadImmediate(url, window, width, height);
+
     uv_sem_post(&constructSem);
   });
   
@@ -238,7 +113,7 @@ NAN_METHOD(Browser::New) {
     if (!embeddedInitialized) {
       browserThread = std::thread([dataPath{std::move(dataPath)}]() -> void {
         // std::cout << "initialize web core manager 1" << std::endl;
-        const bool success = initializeCef(dataPath);
+        const bool success = initializeEmbedded(dataPath);
         // std::cout << "initialize web core manager 2 " << success << std::endl;
         if (success) {          
           for (;;) {
@@ -283,27 +158,18 @@ void Browser::load(const std::string &url) {
   uv_sem_wait(&constructSem);
 }
 
-void Browser::loadImmediate(const std::string &url, int width, int height) {
-  if (width == 0) {
-    width = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
-  }
-  if (height == 0) {
-    height = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height;
-  }
-  
-  if (browser_) {
-    browser_->GetHost()->CloseBrowser(true);
-    browser_ = nullptr;
-    
-    this->textureWidth = 0;
-    this->textureHeight = 0;
-  }
-  
-  LoadHandler *load_handler_ = new LoadHandler(
+void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int width, int height) {
+  browser_ = createEmbedded(
+    url,
+    gl,
+    window,
+    tex,
+    width,
+    height,
+    &textureWidth,
+    &textureHeight,
     [this]() -> void {
-      browser_->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
-      
-      RunOnMainThread([&]() -> void {
+      RunOnMainThread([this]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onloadstart.IsEmpty()) {
@@ -312,21 +178,21 @@ void Browser::loadImmediate(const std::string &url, int width, int height) {
         }
       });
     },
-    [this]() -> void {
-      RunOnMainThread([&]() -> void {
+    [this](const std::string &url) -> void {
+      RunOnMainThread([this, url]() -> void {
         Nan::HandleScope scope;
-        CefString loadUrl = browser_->GetMainFrame()->GetURL();
-        Local<Value> argv[] = {
-            JS_STR(loadUrl.ToString()),
-          };
+        
         if (!this->onloadend.IsEmpty()) {
+          Local<Value> argv[] = {
+            JS_STR(url),
+          };
           Local<Function> onloadend = Nan::New(this->onloadend);
           onloadend->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
         }
       });
     },
     [this](int errorCode, const std::string &errorString, const std::string &failedUrl) -> void {
-      RunOnMainThread([&]() -> void {
+      RunOnMainThread([this, errorCode, errorString, failedUrl]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onloaderror.IsEmpty()) {
@@ -339,12 +205,9 @@ void Browser::loadImmediate(const std::string &url, int width, int height) {
           onloaderror->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
         }
       });
-    }
-  );
-  
-  DisplayHandler *display_handler_ = new DisplayHandler(
+    },
     [this](const std::string &jsString, const std::string &scriptUrl, int startLine) -> void {
-      RunOnMainThread([&]() -> void {
+      RunOnMainThread([this, jsString, scriptUrl, startLine]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onconsole.IsEmpty()) {
@@ -359,7 +222,7 @@ void Browser::loadImmediate(const std::string &url, int width, int height) {
       });
     },
     [this](const std::string &m) -> void {
-      RunOnMainThread([&]() -> void {
+      RunOnMainThread([this, m]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onmessage.IsEmpty()) {
@@ -372,63 +235,6 @@ void Browser::loadImmediate(const std::string &url, int width, int height) {
       });
     }
   );
-  
-  RenderHandler *render_handler_ = new RenderHandler(
-    [this](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
-      RunOnMainThread([&]() -> void {
-        windowsystem::SetCurrentWindowContext(this->gl->windowHandle);
-        
-        glBindTexture(GL_TEXTURE_2D, this->tex);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
-
-        if (this->textureWidth != width || this->textureHeight != height) {
-          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-          glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-          glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-#ifndef LUMIN
-          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-#else
-          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-#endif
-        
-          this->textureWidth = width;
-          this->textureHeight = height;
-        }
-
-        for (size_t i = 0; i < dirtyRects.size(); i++) {
-          const CefRect &rect = dirtyRects[i];
-          
-          glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
-          glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
-#ifndef LUMIN
-          glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
-#else
-          glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
-#endif
-        }
-
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-        if (this->gl->HasTextureBinding(this->gl->activeTexture, GL_TEXTURE_2D)) {
-          glBindTexture(GL_TEXTURE_2D, this->gl->GetTextureBinding(this->gl->activeTexture, GL_TEXTURE_2D));
-        } else {
-          glBindTexture(GL_TEXTURE_2D, 0);
-        }
-      });
-    },
-    width,
-    height
-  );
-  
-  CefWindowInfo window_info;
-  window_info.SetAsWindowless((CefWindowHandle)NULL);
-  CefBrowserSettings browserSettings;
-  // browserSettings.windowless_frame_rate = 60; // 30 is default
-  BrowserClient *client = new BrowserClient(load_handler_, display_handler_, render_handler_);
-  
-  browser_ = CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
 }
 
 /* void Browser::resize(int w, int h) {
@@ -440,7 +246,7 @@ NAN_METHOD(Browser::UpdateAll) {
   if (embeddedInitialized) {
     QueueOnBrowserThread([]() -> void {
       // std::cout << "browser update 1" << std::endl;
-      CefDoMessageLoopWork2();
+      embeddedDoMessageLoopWork();
       // std::cout << "browser update 2" << std::endl;
     });
   }
@@ -460,8 +266,9 @@ NAN_METHOD(Browser::Load) {
 
 NAN_GETTER(Browser::WidthGetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-  Local<Number> width = Nan::New(((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width);
-  info.GetReturnValue().Set(width);
+  int width = getEmbeddedWidth(browser->browser_);
+  Local<Integer> widthValue = Nan::New<Integer>(width);
+  info.GetReturnValue().Set(widthValue);
 }
 NAN_SETTER(Browser::WidthSetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
@@ -469,16 +276,14 @@ NAN_SETTER(Browser::WidthSetter) {
   int width = value->Int32Value();
   
   QueueOnBrowserThread([browser, width]() -> void {
-    ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
-    
-    browser->browser_->GetHost()->WasResized();
-    // browser->browser_->GetHost()->Invalidate(PET_VIEW);
+    setEmbeddedHeight(browser->browser_, width);
   });
 }
 NAN_GETTER(Browser::HeightGetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-  Local<Number> height = Nan::New(((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height);
-  info.GetReturnValue().Set(height);
+  int height = getEmbeddedHeight(browser->browser_);
+  Local<Integer> heightValue = Nan::New<Integer>(height);
+  info.GetReturnValue().Set(heightValue);
 }
 NAN_SETTER(Browser::HeightSetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
@@ -486,10 +291,7 @@ NAN_SETTER(Browser::HeightSetter) {
   int height = value->Int32Value();
   
   QueueOnBrowserThread([browser, height]() -> void {
-    ((BrowserClient *)browser->browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
-    
-    browser->browser_->GetHost()->WasResized();
-    // browser->browser_->GetHost()->Invalidate(PET_VIEW);
+    setEmbeddedHeight(browser->browser_, height);
   });
 }
 
@@ -573,28 +375,25 @@ NAN_SETTER(Browser::OnMessageSetter) {
 
 NAN_METHOD(Browser::Back) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-  CefBrowser *cefBrowser = browser->browser_.get();
   
-  QueueOnBrowserThread([cefBrowser]() -> void {
-    cefBrowser->GoBack();
+  QueueOnBrowserThread([browser]() -> void {
+    embeddedGoBack(browser->browser_);
   });
 }
 
 NAN_METHOD(Browser::Forward) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-  CefBrowser *cefBrowser = browser->browser_.get();
   
-  QueueOnBrowserThread([cefBrowser]() -> void {
-    cefBrowser->GoForward();
+  QueueOnBrowserThread([browser]() -> void {
+    embeddedGoForward(browser->browser_);
   });
 }
 
 NAN_METHOD(Browser::Reload) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-  CefBrowser *cefBrowser = browser->browser_.get();
   
-  QueueOnBrowserThread([cefBrowser]() -> void {
-    cefBrowser->Reload();
+  QueueOnBrowserThread([browser]() -> void {
+    embeddedReload(browser->browser_);
   });
 }
 
@@ -603,34 +402,13 @@ NAN_METHOD(Browser::SendMouseMove) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int x = info[0]->Int32Value();
     int y = info[1]->Int32Value();
-    CefBrowser *cefBrowser = browser->browser_.get();
     
-    QueueOnBrowserThread([x, y, cefBrowser]() -> void {
-      CefMouseEvent evt;
-      evt.x = x;
-      evt.y = y;
-
-      cefBrowser->GetHost()->SendMouseMoveEvent(evt, false);
+    QueueOnBrowserThread([browser, x, y]() -> void {
+      embeddedMouseMove(browser->browser_, x, y);
     });
   } else {
     return Nan::ThrowError("Browser::SendMouseMove: invalid arguments");
   }
-}
-
-CefBrowserHost::MouseButtonType GetMouseButton(int button){
-	CefBrowserHost::MouseButtonType mouseButton;
-	switch(button){
-		case 0:
-		 mouseButton = CefBrowserHost::MouseButtonType::MBT_LEFT;
-		 break;
-		case 1:
-		 mouseButton = CefBrowserHost::MouseButtonType::MBT_MIDDLE;
-		 break;
-		case 2:
-		 mouseButton = CefBrowserHost::MouseButtonType::MBT_RIGHT;
-		 break;
-	}
-	return mouseButton;
 }
 
 NAN_METHOD(Browser::SendMouseDown) {
@@ -638,15 +416,10 @@ NAN_METHOD(Browser::SendMouseDown) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int x = info[0]->Int32Value();
     int y = info[1]->Int32Value();
-    CefBrowserHost::MouseButtonType button = GetMouseButton(info[2]->Int32Value());
-    CefBrowser *cefBrowser = browser->browser_.get();
+    int button = info[2]->Int32Value();
     
-    QueueOnBrowserThread([x, y, button, cefBrowser]() -> void {
-      CefMouseEvent evt;
-      evt.x = x;
-      evt.y = y;
-
-      cefBrowser->GetHost()->SendMouseClickEvent(evt, button, false, 1);
+    QueueOnBrowserThread([browser, x, y, button]() -> void {
+      embeddedMouseDown(browser->browser_, x, y, button);
     });
   } else {
     return Nan::ThrowError("Browser::SendMouseDown: invalid arguments");
@@ -658,15 +431,10 @@ NAN_METHOD(Browser::SendMouseUp) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int x = info[0]->Int32Value();
     int y = info[1]->Int32Value();
-    CefBrowserHost::MouseButtonType button = GetMouseButton(info[2]->Int32Value());
-    CefBrowser *cefBrowser = browser->browser_.get();
+    int button = info[2]->Int32Value();
     
-    QueueOnBrowserThread([x, y, button, cefBrowser]() -> void {
-      CefMouseEvent evt;
-      evt.x = x;
-      evt.y = y;
-	  
-      cefBrowser->GetHost()->SendMouseClickEvent(evt, button, true, 1);
+    QueueOnBrowserThread([browser, x, y, button]() -> void {
+      embeddedMouseUp(browser->browser_, x, y, button);
     });
   } else {
     return Nan::ThrowError("Browser::SendMouseUp: invalid arguments");
@@ -680,33 +448,25 @@ NAN_METHOD(Browser::SendMouseWheel) {
     int y = info[1]->Int32Value();
     int deltaX = info[2]->Int32Value();
     int deltaY = info[3]->Int32Value();
-	
-    CefBrowser *cefBrowser = browser->browser_.get();
     
-    QueueOnBrowserThread([x, y, deltaX, deltaY, cefBrowser]() -> void {
-      CefMouseEvent evt;
-      evt.x = x;
-      evt.y = y;
-
-      cefBrowser->GetHost()->SendMouseWheelEvent(evt, deltaX, deltaY);
+    QueueOnBrowserThread([browser, x, y, deltaX, deltaY]() -> void {
+      embeddedMouseWheel(browser->browser_, x, y, deltaX, deltaY);
     });
   } else {
     return Nan::ThrowError("Browser::SendMouseUp: invalid arguments");
   }
 }
 
-int GetKeyModifiers(Local<Object> modifiersObj){
+int GetKeyModifiers(Local<Object> modifiersObj) {
   int modifiers = 0;
-  if(modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()){
-    modifiers |= EVENTFLAG_SHIFT_DOWN;
+  if (modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()) {
+    modifiers |= (int)EmbeddedKeyModifiers::SHIFT;
   }
-  
-  if(modifiersObj->Get(JS_STR("ctrlKey"))->BooleanValue()){
-    modifiers |= EVENTFLAG_CONTROL_DOWN;// EVENTFLAG_COMMAND_DOWN  for mac?
+  if (modifiersObj->Get(JS_STR("ctrlKey"))->BooleanValue()) {
+    modifiers |= (int)EmbeddedKeyModifiers::CTRL;
   }
-	
-  if(modifiersObj->Get(JS_STR("altKey"))->BooleanValue()){
-    modifiers |= EVENTFLAG_ALT_DOWN;
+  if (modifiersObj->Get(JS_STR("altKey"))->BooleanValue()) {
+    modifiers |= (int)EmbeddedKeyModifiers::ALT;
   }
   return modifiers;
 }
@@ -736,15 +496,16 @@ map<int, int> keyCodesMap{
 };
 
 int MutateKey(int key, Local<Object> modifiersObj){
-
 	if (modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()){
-	  if(key >= 97 && // a
-         key <= 122){// z
+	  if (
+      key >= 97 && // a
+      key <= 122 // z
+    ) {
 		  key -= 32;
-	  }else if(keyCodesMap.count(key)){
+	  } else if(keyCodesMap.count(key)){
 		  key = keyCodesMap[key];
 	  }
-    }
+  }
 	return key;
 }
 
@@ -755,17 +516,11 @@ NAN_METHOD(Browser::SendKeyDown) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int key = info[0]->Int32Value();
 	
-	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
-	int modifiers = GetKeyModifiers(modifiersObj);
-    CefBrowser *cefBrowser = browser->browser_.get();
-    QueueOnBrowserThread([key, modifiers, cefBrowser]() -> void {
-      CefKeyEvent evt;
-      evt.type = KEYEVENT_RAWKEYDOWN;
-      evt.character = key;
-      evt.native_key_code = key;
-      evt.windows_key_code = key;
-	  evt.modifiers = modifiers;
-      cefBrowser->GetHost()->SendKeyEvent(evt);
+    Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
+    int modifiers = GetKeyModifiers(modifiersObj);
+    
+    QueueOnBrowserThread([browser, key, modifiers]() -> void {
+      embeddedKeyDown(browser->browser_, key, modifiers);
     });
   } else {
     return Nan::ThrowError("Browser::SendKeyDown: invalid arguments");
@@ -778,17 +533,11 @@ NAN_METHOD(Browser::SendKeyUp) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int key = info[0]->Int32Value();
 	
-	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
-	int modifiers = GetKeyModifiers(modifiersObj);
-    CefBrowser *cefBrowser = browser->browser_.get();
-    QueueOnBrowserThread([key, modifiers, cefBrowser]() -> void {
-      CefKeyEvent evt;
-      evt.type = KEYEVENT_KEYUP;
-      evt.character = key;
-      evt.native_key_code = key;
-      evt.windows_key_code = key;
-	  evt.modifiers = modifiers;
-      cefBrowser->GetHost()->SendKeyEvent(evt);
+    Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
+    int modifiers = GetKeyModifiers(modifiersObj);
+    
+    QueueOnBrowserThread([browser, key, modifiers]() -> void {
+      embeddedKeyUp(browser->browser_, key, modifiers);
     });
 
   } else {
@@ -797,23 +546,17 @@ NAN_METHOD(Browser::SendKeyUp) {
 }
 
 NAN_METHOD(Browser::SendKeyPress) {
-  // Nan::HandleScope scope;
+  // Nan::HandleScope scope;fbrowser_
   if (info[0]->IsNumber() && info[1]->IsObject()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     int key = info[0]->Uint32Value();
 	
-	Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
-	int modifiers = GetKeyModifiers(modifiersObj);
-    CefBrowser *cefBrowser = browser->browser_.get();
-    int wkey = MutateKey(key,modifiersObj);
-    QueueOnBrowserThread([key, wkey, modifiers, cefBrowser]() -> void {
-      CefKeyEvent evt;
-      evt.type = KEYEVENT_CHAR;
-      evt.character = key;
-      evt.native_key_code = key;
-      evt.windows_key_code = wkey;
-	  evt.modifiers = modifiers;
-      cefBrowser->GetHost()->SendKeyEvent(evt);
+    Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
+    int modifiers = GetKeyModifiers(modifiersObj);
+    int wkey = MutateKey(key, modifiersObj);
+
+    QueueOnBrowserThread([browser, key, wkey, modifiers]() -> void {
+      embeddedKeyPress(browser->browser_, key, wkey, modifiers);
     });
 
   } else {
@@ -833,11 +576,9 @@ NAN_METHOD(Browser::RunJs) {
     
     int startLine = info[2]->Int32Value();
     
-    CefBrowser *cefBrowser = browser->browser_.get();
-    
-    QueueOnBrowserThread([jsString, scriptUrl, startLine, cefBrowser]() -> void {
-      cefBrowser->GetMainFrame()->ExecuteJavaScript(CefString(jsString), CefString(scriptUrl), startLine);
-      
+    QueueOnBrowserThread([browser, jsString, scriptUrl, startLine]() -> void {
+      embeddedRunJs(browser->browser_, jsString, scriptUrl, startLine);
+
       // uv_sem_post(&constructSem);
     });
     
@@ -855,14 +596,13 @@ NAN_METHOD(Browser::PostMessage) {
     
     String::Utf8Value messageJsonValue(Local<String>::Cast(info[0]));
     string messageJson(*messageJsonValue, messageJsonValue.length());
-    
-    CefBrowser *cefBrowser = browser->browser_.get();
-    
-    QueueOnBrowserThread([messageJson, cefBrowser]() -> void {
+
+    QueueOnBrowserThread([browser, messageJson]() -> void {
       std::string jsString(postMessagePrefix);
       jsString += messageJson;
       jsString += postMessageSuffix;
-      cefBrowser->GetMainFrame()->ExecuteJavaScript(CefString(jsString), CefString("<postMessage>"), 1);
+      
+      embeddedRunJs(browser->browser_, jsString, "<postMessage>", 1);
     });
   } else {
     return Nan::ThrowError("Browser::RunJs: invalid arguments");
