@@ -1862,12 +1862,15 @@ exokit.load = (src, options = {}) => {
         url: options.url || src,
         baseUrl,
         dataPath: options.dataPath,
+        args: options.args,
       });
     });
 };
 exokit.download = (src, dst) => exokit.load(src, {
-  download: dst,
-  headless: true,
+  args: {
+    download: dst,
+    headless: true,
+  },
 })
   .then(window => new Promise((accept, reject) => {
     window.document.resources.addEventListener('drain', () => {
