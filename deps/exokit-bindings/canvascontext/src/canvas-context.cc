@@ -97,7 +97,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   
   Nan::SetMethod(proto, "setTexture", ctxCallWrap<SetTexture>);
 
-  Nan::SetMethod(proto, "destroy", ctxCallWrap<Destroy>);
+  Nan::SetMethod(proto, "destroy", Destroy);
   Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
   Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
 
