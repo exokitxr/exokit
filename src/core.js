@@ -868,7 +868,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   utils._storeOriginalWindowPrototypes(window, symbols.prototypesSymbol);
 
   const windowStartScript = `(() => {
-    ${!GlobalContext.args.require ? 'global.require = undefined;' : ''}
+    ${!options.args.require ? 'global.require = undefined;' : ''}
 
     const _logStack = err => {
       console.warn(err);
@@ -973,14 +973,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
 
   // WebVR enabled.
-  if (['all', 'webvr'].includes(GlobalContext.args.xr)) {
+  if (['all', 'webvr'].includes(options.args.xr)) {
     window.navigator.getVRDisplays = function() {
       return Promise.resolve(this.getVRDisplaysSync());
     }
   }
 
   // WebXR enabled.
-  if (['all', 'webxr'].includes(GlobalContext.args.xr)) {
+  if (['all', 'webxr'].includes(options.args.xr)) {
     window.navigator.xr = new XR.XR(window);
   }
 
@@ -1024,10 +1024,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       intervals[index] = null;
     }
   };
-  const _maybeDownload = (m, u, data, bufferifyFn) => GlobalContext.args.download ? new Promise((accept, reject) => {
+  const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? new Promise((accept, reject) => {
     if (m === 'GET' && /^(?:https?|file):/.test(u)) {
       const o = url.parse(u);
-      const d = path.resolve(path.join(__dirname, '..'), GlobalContext.args.download, o.host || '.');
+      const d = path.resolve(path.join(__dirname, '..'), options.args.download, o.host || '.');
       const f = path.join(d, o.pathname === '/' ? 'index.html' : o.pathname);
 
       console.log(`${u} -> ${f}`);
@@ -1424,7 +1424,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.CanvasGradient = CanvasGradient;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
   window.WebGLRenderingContext = WebGLRenderingContext;
-  if (GlobalContext.args.webgl !== '1') {
+  if (options.args.webgl !== '1') {
     window.WebGL2RenderingContext = WebGL2RenderingContext;
   }
   window.Audio = HTMLAudioElementBound;
@@ -1815,6 +1815,7 @@ const exokit = (s = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1/';
   options.baseUrl = options.baseUrl || options.url;
   options.dataPath = options.dataPath || __dirname;
+  options.args = options.args || {};
   return _makeWindowWithDocument(s, options);
 };
 exokit.load = (src, options = {}) => {

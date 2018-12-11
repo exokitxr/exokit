@@ -2189,7 +2189,9 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
       if (this._context === null) {
-        if (GlobalContext.args.webgl === '1') {
+        const window = this.ownerDocument.defaultView;
+
+        if (window[symbols.optionsSymbol].args.webgl === '1') {
           if (contextType === 'webgl' || contextType === 'xrpresent') {
             this._context = new GlobalContext.WebGLRenderingContext(this);
           }

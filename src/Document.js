@@ -197,7 +197,7 @@ function initDocument (document, window) {
     window.dispatchEvent(new Event('load', {target: window}));
 
     const displays = window.navigator.getVRDisplaysSync();
-    if (displays.length > 0 && ['all', 'webvr', 'webxr'].includes(GlobalContext.args.xr)) {
+    if (displays.length > 0 && ['all', 'webvr', 'webxr'].includes(window[symbols.optionsSymbol].args.xr)) {
       const _initDisplays = () => {
         if (!_tryEmitDisplay()) {
           _delayFrames(() => {

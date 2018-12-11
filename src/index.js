@@ -1765,6 +1765,7 @@ const _start = () => {
     }
     return core.load(u, {
       dataPath,
+      args,
     })
       .then(window => {
         if (args.image) {
