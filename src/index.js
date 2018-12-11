@@ -147,7 +147,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
   const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    if (!args.headless) {
+    if (!window[symbols.optionsSymbol].args.headless) {
       try {
         const visible = !args.image && document.documentElement.contains(canvas);
         const {hidden} = document;
@@ -277,9 +277,11 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 
   ctx.canvas = canvas;
 
+  const window = canvas.ownerDocument.defaultView;
+
   const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    if (!args.headless) {
+    if (!window[symbols.optionsSymbol].args.headless) {
       try {
         const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
         return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
