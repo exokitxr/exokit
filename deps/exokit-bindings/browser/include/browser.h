@@ -220,7 +220,7 @@ void MainThreadAsync(uv_async_t *handle);
 
 // variables
 
-extern bool cefInitialized;
+extern bool embeddedInitialized;
 extern std::thread browserThread;
 
 extern uv_sem_t constructSem;
