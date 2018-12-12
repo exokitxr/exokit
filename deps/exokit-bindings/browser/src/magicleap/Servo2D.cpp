@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+namespace browser {
+
 ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
                                      Servo2D*, MLLogger, MLHistoryUpdate,
                                      const char* url, int width, int height, float hidpi) = nullptr;
@@ -300,5 +302,7 @@ GLvoid *glMapBufferRangeEXT(GLenum target, GLintptr offset, GLsizeiptr length, G
 GLvoid glFlushMappedBufferRangeEXT(GLenum target, GLintptr offset, GLsizeiptr length) {
   return glFlushMappedBufferRange(target, offset, length);
 }
+
+};
 
 #endif
