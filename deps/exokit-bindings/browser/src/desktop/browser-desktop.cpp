@@ -36,7 +36,38 @@ CefRefPtr<CefBrowser> CreateBrowserSync(
   return CefBrowserCToCpp::Wrap(_retval);
 }
 
-/* bool initializeEmbedded(const std::string &dataPath) {
+CefBrowserHost::MouseButtonType GetMouseButton(int button){
+	CefBrowserHost::MouseButtonType mouseButton;
+	switch (button){
+		case 0:
+		 mouseButton = CefBrowserHost::MouseButtonType::MBT_LEFT;
+		 break;
+		case 1:
+		 mouseButton = CefBrowserHost::MouseButtonType::MBT_MIDDLE;
+		 break;
+		case 2:
+		 mouseButton = CefBrowserHost::MouseButtonType::MBT_RIGHT;
+		 break;
+	}
+	return mouseButton;
+}
+
+/* bool CefInitialize(const CefMainArgs& args,
+                              const CefSettings& settings,
+                              CefRefPtr<CefApp> application,
+                              void* windows_sandbox_info) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Unverified params: application, windows_sandbox_info
+
+  // Execute
+  int _retval = cef_initialize(
+      &args, &settings, CefAppCppToC::Wrap(application), windows_sandbox_info);
+
+  // Return type: bool
+  return _retval ? true : false;
+}
+bool initializeEmbedded(const std::string &dataPath) {
   CefMainArgs args;
   
 	CefSettings settings;
@@ -210,14 +241,14 @@ void embeddedMouseDown(EmbeddedBrowser browser_, int x, int y, int button) {
   evt.x = x;
   evt.y = y;
 
-  browser_->GetHost()->SendMouseClickEvent(evt, button, false, 1);
+  browser_->GetHost()->SendMouseClickEvent(evt, GetMouseButton(button), false, 1);
 }
 void embeddedMouseUp(EmbeddedBrowser browser_, int x, int y, int button) {
   CefMouseEvent evt;
   evt.x = x;
   evt.y = y;
 
-  browser_->GetHost()->SendMouseClickEvent(evt, button, true, 1);
+  browser_->GetHost()->SendMouseClickEvent(evt, GetMouseButton(button), true, 1);
 }
 void embeddedMouseWheel(EmbeddedBrowser browser_, int x, int y, int deltaX, int deltaY) {
   CefMouseEvent evt;
@@ -271,38 +302,6 @@ void embeddedKeyPress(EmbeddedBrowser browser_, int key, int wkey, int modifiers
 }
 void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const std::string &scriptUrl, int startLine) {
   browser_->GetMainFrame()->ExecuteJavaScript(CefString(jsString), CefString(scriptUrl), startLine);
-}
-
-CefBrowserHost::MouseButtonType GetMouseButton(int button){
-	CefBrowserHost::MouseButtonType mouseButton;
-	switch (button){
-		case 0:
-		 mouseButton = CefBrowserHost::MouseButtonType::MBT_LEFT;
-		 break;
-		case 1:
-		 mouseButton = CefBrowserHost::MouseButtonType::MBT_MIDDLE;
-		 break;
-		case 2:
-		 mouseButton = CefBrowserHost::MouseButtonType::MBT_RIGHT;
-		 break;
-	}
-	return mouseButton;
-}
-
-bool CefInitialize(const CefMainArgs& args,
-                              const CefSettings& settings,
-                              CefRefPtr<CefApp> application,
-                              void* windows_sandbox_info) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Unverified params: application, windows_sandbox_info
-
-  // Execute
-  int _retval = cef_initialize(
-      &args, &settings, CefAppCppToC::Wrap(application), windows_sandbox_info);
-
-  // Return type: bool
-  return _retval ? true : false;
 }
 
 // SimpleApp
