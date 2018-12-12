@@ -63,7 +63,7 @@ EmbeddedBrowser createEmbedded(
     }
   }
   
-  EmbeddedBrowser browser_ = new Servo2D();
+  browser_ = new Servo2D();
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
