@@ -190,7 +190,7 @@ void setEmbeddedHeight(EmbeddedBrowser browser_, int height) {
   // browser->browser_->GetHost()->Invalidate(PET_VIEW);
 }
 void embeddedGoBack(EmbeddedBrowser browser_) {
-  browser_->browser_->GoBack();
+  browser_->GoBack();
 }
 void embeddedGoForward(EmbeddedBrowser browser_) {
   browser_->GoForward();
