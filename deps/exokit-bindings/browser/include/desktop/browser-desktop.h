@@ -25,8 +25,6 @@ using namespace v8;
 using namespace node;
 
 namespace browser {
-
-typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
   
 bool initializeEmbedded(const std::string &dataPath);
 EmbeddedBrowser createEmbedded(
