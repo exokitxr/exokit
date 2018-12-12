@@ -27,6 +27,12 @@ using namespace node;
 
 namespace browser {
 
+#ifndef LUMIN
+typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
+#else
+typedef Servo2D *EmbeddedBrowser;
+#endif
+
 enum class EmbeddedKeyModifiers {
   SHIFT,
   CTRL,
