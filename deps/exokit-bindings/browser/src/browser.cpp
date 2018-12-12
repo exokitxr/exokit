@@ -631,24 +631,39 @@ void QueueOnBrowserThread(std::function<void()> fn) {
 void RunOnMainThread(std::function<void()> fn) {
   {
     std::lock_guard<std::mutex> lock(mainThreadFnMutex);
-    mainThreadFns.push_back(fn);
+    mainThreadFns.push_back(std::pair<std::function<void()>, bool>(fn, true));
   }
 
   uv_async_send(&mainThreadAsync);
   uv_sem_wait(&mainThreadSem);
 }
 
+void QueueOnMainThread(std::function<void()> fn) {
+  {
+    std::lock_guard<std::mutex> lock(mainThreadFnMutex);
+    mainThreadFns.push_back(std::pair<std::function<void()>, bool>(fn, false));
+  }
+
+  uv_async_send(&mainThreadAsync);
+}
+
 void MainThreadAsync(uv_async_t *handle) {
+  std::deque<std::pair<std::function<void()>, bool>> localMainThreadFns;
   {
     std::lock_guard<std::mutex> lock(mainThreadFnMutex);
     
-    for (size_t i = 0; i < mainThreadFns.size(); i++) {
-      mainThreadFns[i]();
-    }
+    localMainThreadFns = std::move(mainThreadFns);
     mainThreadFns.clear();
   }
-
-  uv_sem_post(&mainThreadSem);
+  
+  for (size_t i = 0; i < localMainThreadFns.size(); i++) {
+    std::pair<std::function<void()>, bool> &o = localMainThreadFns[i];
+    
+    o.first();
+    if (o.second) {
+      uv_sem_post(&mainThreadSem);
+    }
+  }
 }
 
 // variables
@@ -665,6 +680,6 @@ std::deque<std::function<void()>> browserThreadFns;
 
 uv_async_t mainThreadAsync;
 std::mutex mainThreadFnMutex;
-std::deque<std::function<void()>> mainThreadFns;
+std::deque<std::pair<std::function<void()>, bool>> mainThreadFns;
 
 }
