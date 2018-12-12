@@ -6,7 +6,55 @@ using namespace std;
 using namespace v8;
 using namespace node;
 
+// helpers
+
 namespace browser {
+
+void CefDoMessageLoopWork() {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Execute
+  cef_do_message_loop_work();
+}
+
+CefRefPtr<CefBrowser> CreateBrowserSync(
+    const CefWindowInfo& windowInfo,
+    CefRefPtr<CefClient> client,
+    const CefString& url,
+    const CefBrowserSettings& settings,
+    CefRefPtr<CefRequestContext> request_context) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Unverified params: client, url, request_context
+
+  // Execute
+  cef_browser_t* _retval = cef_browser_host_create_browser_sync(
+      &windowInfo, CefClientCppToC::Wrap(client), url.GetStruct(), &settings,
+      CefRequestContextCToCpp::Unwrap(request_context));
+
+  // Return type: refptr_same
+  return CefBrowserCToCpp::Wrap(_retval);
+}
+
+/* bool initializeEmbedded(const std::string &dataPath) {
+  CefMainArgs args;
+  
+	CefSettings settings;
+  // settings.log_severity = LOGSEVERITY_VERBOSE;
+  // CefString(&settings.resources_dir_path) = resourcesPath;
+  // CefString(&settings.locales_dir_path) = localesPath;
+  CefString(&settings.cache_path).FromString(dataPath);
+  CefString(&settings.log_file).FromString(dataPath + "/log.txt");
+  settings.no_sandbox = true;
+  
+  SimpleApp *app = new SimpleApp(dataPath);
+  
+	return CefInitialize(args, settings, app, nullptr);
+}
+
+void embeddedDoMessageLoopWork() {
+  CefDoMessageLoopWork();
+} */
 
 EmbeddedBrowser createEmbedded(
   EmbeddedBrowser browser_,
@@ -257,56 +305,6 @@ bool CefInitialize(const CefMainArgs& args,
   return _retval ? true : false;
 }
 
-void CefDoMessageLoopWork() {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_do_message_loop_work();
-}
-
-CefRefPtr<CefBrowser> CreateBrowserSync(
-    const CefWindowInfo& windowInfo,
-    CefRefPtr<CefClient> client,
-    const CefString& url,
-    const CefBrowserSettings& settings,
-    CefRefPtr<CefRequestContext> request_context) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Unverified params: client, url, request_context
-
-  // Execute
-  cef_browser_t* _retval = cef_browser_host_create_browser_sync(
-      &windowInfo, CefClientCppToC::Wrap(client), url.GetStruct(), &settings,
-      CefRequestContextCToCpp::Unwrap(request_context));
-
-  // Return type: refptr_same
-  return CefBrowserCToCpp::Wrap(_retval);
-}
-
-namespace browser {
-
-// helpers
-
-bool initializeEmbedded(const std::string &dataPath) {
-  CefMainArgs args;
-  
-	CefSettings settings;
-  // settings.log_severity = LOGSEVERITY_VERBOSE;
-  // CefString(&settings.resources_dir_path) = resourcesPath;
-  // CefString(&settings.locales_dir_path) = localesPath;
-  CefString(&settings.cache_path).FromString(dataPath);
-  CefString(&settings.log_file).FromString(dataPath + "/log.txt");
-  settings.no_sandbox = true;
-  
-  SimpleApp *app = new SimpleApp(dataPath);
-  
-	return CefInitialize(args, settings, app, nullptr);
-}
-
-void embeddedDoMessageLoopWork() {
-  CefDoMessageLoopWork();
-}
-
 // SimpleApp
 
 SimpleApp::SimpleApp(const std::string &dataPath) : dataPath(dataPath) {}
@@ -390,8 +388,6 @@ BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHa
   m_loadHandler(loadHandler), m_displayHandler(displayHandler), m_renderHandler(renderHandler)/*, m_lifespanHandler(lifespanHandler)*/ {}
 
 BrowserClient::~BrowserClient() {}
-
-}
 
 };
 
