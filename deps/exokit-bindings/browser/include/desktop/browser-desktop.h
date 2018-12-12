@@ -63,8 +63,6 @@ void embeddedKeyUp(EmbeddedBrowser browser_, int key, int modifiers);
 void embeddedKeyPress(EmbeddedBrowser browser_, int key, int wkey, int modifiers);
 void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const std::string &scriptUrl, int startLine);
 
-CefBrowserHost::MouseButtonType GetMouseButton(int button);
-
 // SimpleApp
 
 class SimpleApp : public CefApp, public CefBrowserProcessHandler {
