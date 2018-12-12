@@ -868,7 +868,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   utils._storeOriginalWindowPrototypes(window, symbols.prototypesSymbol);
 
   const windowStartScript = `(() => {
-    ${!options.args.require ? 'global.require = undefined;' : ''}
+    ${!(options.args && options.args.require) ? 'global.require = undefined;' : ''}
 
     const _logStack = err => {
       console.warn(err);
