@@ -14,18 +14,6 @@ using namespace node;
 
 namespace browser {
 
-// A function which calls the ML logger, suitable for passing into Servo
-void logger2(MLLogLevel lvl, char* msg) {
-  if (MLLoggingLogLevelIsEnabled(lvl)) {
-    MLLoggingLog(lvl, ML_DEFAULT_LOG_TAG, msg);
-  }
-}
-
-// A function which updates the history ui, suitable for passing into Servo
-void history2(Servo2D* app, bool canGoBack, char* url, bool canGoForward) {
-  // app->updateHistory(canGoBack, url, canGoForward);
-}
-
 // Browser
 
 Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : gl(gl), tex(0), textureWidth(0), textureHeight(0) {
