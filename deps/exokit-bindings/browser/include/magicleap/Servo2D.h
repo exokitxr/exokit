@@ -7,6 +7,8 @@
 #include <dlfcn.h>
 // #include <string.h>
 
+namespace browser {
+
 // forward declarations
 
 class Servo2D;
@@ -110,4 +112,6 @@ private:
   ServoInstance *servo_;
   EGLDisplay display;
   EGLSurface surface;
+};
+
 };
