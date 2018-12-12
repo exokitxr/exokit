@@ -2,9 +2,9 @@
 #define _BROWSER_H_
 
 #ifndef LUMIN
-#include <browser-desktop.h>
+#include <desktop/browser-desktop.h>
 #else
-#include <browser-ml.h>
+#include <magicleap/browser-ml.h>
 #endif
 
 #include <webgl.h>
