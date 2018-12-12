@@ -14,9 +14,9 @@ using namespace std;
 using namespace v8;
 using namespace node;
 
-typedef Servo2D *EmbeddedBrowser;
-
 namespace browser {
+
+typedef Servo2D *EmbeddedBrowser;
   
 bool initializeEmbedded(const std::string &dataPath);
 EmbeddedBrowser createEmbedded(
