@@ -39,37 +39,34 @@ EmbeddedBrowser createEmbedded(
   *textureWidth = width;
   *textureHeight = height;
 
+  std::cout << "createEmbedded 1 " << (void *)window << std::endl;
+  
   {
     EGLint error = eglGetError();
-    if (error) {
+    if (error != EGL_SUCCESS) {
       std::cout << "createEmbedded error 1 " << error << std::endl;
     }
   }
-  windowsystem::SetCurrentWindowContext(window);
+  /* windowsystem::SetCurrentWindowContext(window);
   {
     EGLint error = eglGetError();
-    if (error) {
+    if (error != EGL_SUCCESS) {
       std::cout << "createEmbedded error 2 " << error << std::endl;
     }
-  }
-  
-  glBindTexture(GL_TEXTURE_2D, tex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  } */
 
   {
     EGLint error = eglGetError();
-    if (error) {
-      std::cout << "createEmbedded error 3 " << error << std::endl;
+    if (error != EGL_SUCCESS) {
+      std::cout << "createEmbedded error 5 " << error << std::endl;
     }
   }
   
   EmbeddedBrowser browser_ = new Servo2D();
   {
     EGLint error = eglGetError();
-    if (error) {
-      std::cout << "createEmbedded error 4 " << error << std::endl;
+    if (error != EGL_SUCCESS) {
+      std::cout << "createEmbedded error 6 " << error << std::endl;
     }
   }
   browser_->init(url, window, tex, width, height, onloadstart, onloadend, onloaderror, onconsole, onmessage);
@@ -77,8 +74,8 @@ EmbeddedBrowser createEmbedded(
   
   {
     EGLint error = eglGetError();
-    if (error) {
-      std::cout << "createEmbedded error 5 " << error << std::endl;
+    if (error != EGL_SUCCESS) {
+      std::cout << "createEmbedded error 7 " << error << std::endl;
     }
   }
   
@@ -97,10 +94,14 @@ void destroyEmbedded(EmbeddedBrowser browser_) {
   browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
 }
 void embeddedDoMessageLoopWork() {
+  std::cout << "do message loop work 1 " << browsers.size() << std::endl;
+
   for (EmbeddedBrowser browser_ : browsers) {
     heartbeat_servo(browser_->getInstance());
     browser_->flushTexture();
   }
+  
+  std::cout << "do message loop work 2 " << browsers.size() << std::endl;
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return browser_->getWidth();
