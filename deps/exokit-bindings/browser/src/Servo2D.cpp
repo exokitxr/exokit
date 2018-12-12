@@ -118,6 +118,9 @@ int Servo2D::init(
   }
   
   std::cout << "Servo2D Initializing 5 " << std::endl;
+  
+  onloadstart();
+  onloadend(url);
 
   return 0;
 }
