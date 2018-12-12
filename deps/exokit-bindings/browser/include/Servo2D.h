@@ -105,6 +105,8 @@ private:
   std::function<void(const std::string &, const std::string &, int)> onconsole;
   std::function<void(const std::string &)> onmessage;
   
+  GLuint fboOutCache;
+  
   ServoInstance *servo_;
   EGLDisplay display;
   EGLSurface surface;

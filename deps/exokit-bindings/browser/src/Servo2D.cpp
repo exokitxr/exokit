@@ -56,31 +56,10 @@ int Servo2D::init(
   std::cout << "Servo2D Initializing 1" << tex << " " << width << " " << height << std::endl;
   {
     EGLint error = eglGetError();
-    if (error) {
-      std::cout << "Servo2D error 1 " << error << " " << std::endl;
+    if (error != EGL_SUCCESS) {
+      std::cout << "Servo2D error 1 " << error << std::endl;
     }
   }
-  {
-    EGLint error = eglGetError();
-    if (error) {
-      std::cout << "Servo2D error 2 " << error << std::endl;
-    }
-  }
-  int maxTextureSize = -1;
-  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
-  {
-    EGLint error = eglGetError();
-    if (error) {
-      std::cout << "Servo2D error 3 " << error << " " << std::endl;
-    }
-  }
-  {
-    EGLint error = eglGetError();
-    if (error) {
-      std::cout << "Servo2D error 4 " << error << std::endl;
-    }
-  }
-  std::cout << "Servo2D Initializing 2 " << maxTextureSize << std::endl;
 
   this->url = url;
   this->tex = tex;
@@ -98,26 +77,100 @@ int Servo2D::init(
   EGLint attribs[] = {
     EGL_WIDTH, width,
     EGL_HEIGHT, height,
-    EGL_TEXTURE_FORMAT, EGL_TEXTURE_RGB,
-    EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
-    EGL_BIND_TO_TEXTURE_RGBA, EGL_TRUE,
+    // EGL_TEXTURE_FORMAT, EGL_TEXTURE_RGB,
+    // EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
     EGL_NONE
   };
-  EGLConfig eglConfig = nullptr;
+  EGLConfig eglConfig;
+  EGLint eglConfigAttribs[] = {
+    EGL_RED_SIZE, 5,
+    EGL_GREEN_SIZE, 6,
+    EGL_BLUE_SIZE, 5,
+    EGL_ALPHA_SIZE, 0,
+    EGL_DEPTH_SIZE, 24,
+    EGL_STENCIL_SIZE, 8,
+    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+    EGL_SURFACE_TYPE, EGL_WINDOW_BIT|EGL_PBUFFER_BIT,
+    EGL_NONE,
+  };
+  int numConfigs;
+  eglChooseConfig(this->display, eglConfigAttribs, &eglConfig, 1, &numConfigs);
+  {
+    EGLint error = eglGetError();
+    if (error != EGL_SUCCESS) {
+      std::cout << "Servo2D error 3 " << error << std::endl;
+    }
+  }
   this->surface = eglCreatePbufferSurface(this->display, eglConfig, attribs);
+  std::cout << "Servo2D init 4 " << (void *)(this->surface) << std::endl;
+  {
+    EGLint error = eglGetError();
+    if (error != EGL_SUCCESS) {
+      std::cout << "Servo2D error 5 " << error << std::endl;
+    }
+  }
+  /* if (!this->surface) {
+    exit(0);
+  } */
   
-  std::cout << "Servo2D Initializing 3 " << maxTextureSize << std::endl;
+  {
+    windowsystem::SetCurrentWindowContext(window, this->surface);
+    {
+      EGLint error = eglGetError();
+      if (error != EGL_SUCCESS) {
+        std::cout << "Servo2D error 6 " << error << std::endl;
+      }
+    }
+  }
+  {
+    {
+      GLenum error = glGetError();
+      if (error) {
+        std::cout << "Servo2D error 7 " << error << std::endl;
+      }
+    }
+    glBindTexture(GL_TEXTURE_2D, tex);
+    {
+      GLenum error = glGetError();
+      if (error) {
+        std::cout << "Servo2D error 8 " << error << std::endl;
+      }
+    }
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    {
+      GLenum error = glGetError();
+      if (error) {
+        std::cout << "Servo2D error 9 " << error << std::endl;
+      }
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  {
+    glGenFramebuffers(1, &this->fboOutCache);
+    
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->fboOutCache);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->tex, 0);
+
+    {
+      GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+      if (status != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "incomplete out framebuffer " << status << std::endl;
+      }
+    }
+    
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  }
 
   // Hook into servo
   servo_ = init_servo(ctx, this->surface, this->display, this, logger, history, url.c_str(), width, height, 1.0);
-  std::cout << "Servo2D Initializing 4 " << (void *)servo_ << std::endl;
+  std::cout << "Servo2D Initializing 10 " << url << " " << width << " " << height << " " << (void *)servo_ << std::endl;
   if (!servo_) {
     ML_LOG(Error, "Servo2D Failed to init servo instance");
     abort();
     return 1;
   }
-  
-  std::cout << "Servo2D Initializing 5 " << std::endl;
   
   onloadstart();
   onloadend(url);
@@ -150,13 +203,51 @@ ServoInstance *Servo2D::getInstance() const {
 }
 
 void Servo2D::flushTexture() const {
-  glBindTexture(GL_TEXTURE_2D, tex);
+  std::cout << "flush texture start " << (void *)(this->surface) << " " << this->fboOutCache << " " << this->tex << std::endl;
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+  {
+    GLuint error = glGetError();
+    if (error) {
+      std::cout << "flush texture error 0 " << error << std::endl;
+    }
+  }
+  {
+    GLenum status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+      std::cout << "flush incomplete read framebuffer " << status << std::endl;
+    }
+  }
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->fboOutCache);
+  {
+    GLuint error = glGetError();
+    if (error) {
+      std::cout << "flush texture error 1 " << error << std::endl;
+    }
+  }
+  {
+    GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+      std::cout << "flush incomplete draw framebuffer " << status << std::endl;
+    }
+  }
+
+  glBlitFramebuffer(
+    this->width, this->height,
+    0, 0,
+    0, 0,
+    this->width, this->height,
+    GL_COLOR_BUFFER_BIT,
+    GL_NEAREST
+  );
+  {
+    GLuint error = glGetError();
+    if (error) {
+      std::cout << "flush texture error 2 " << error << " " << std::endl;
+    }
+  }
   
-  eglBindTexImage(display, surface, EGL_BACK_BUFFER);
-  
-  // XXX copy textures here
-  
-  eglReleaseTexImage(display, surface, EGL_BACK_BUFFER);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  std::cout << "flush texture end" << std::endl;
 }
 
 void Servo2D::init() {
