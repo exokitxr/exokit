@@ -114,7 +114,7 @@ int Servo2D::init(
   } */
   
   {
-    windowsystem::SetCurrentWindowContext(window, this->surface);
+    eglMakeCurrent(this->display, this->surface, this->surface, context);
     {
       EGLint error = eglGetError();
       if (error != EGL_SUCCESS) {
