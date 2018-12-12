@@ -6,6 +6,8 @@ using namespace std;
 using namespace v8;
 using namespace node;
 
+namespace browser {
+
 EmbeddedBrowser createEmbedded(
   const std::string &url,
   WebGLRenderingContext *gl,
@@ -389,5 +391,7 @@ BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHa
 BrowserClient::~BrowserClient() {}
 
 }
+
+};
 
 #endif
