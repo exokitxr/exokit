@@ -11,6 +11,7 @@ using namespace node;
 namespace browser {
 
 bool initializeEmbedded(const std::string &dataPath) {
+  Servo2D::init();
   return true;
 }
 EmbeddedBrowser createEmbedded(
