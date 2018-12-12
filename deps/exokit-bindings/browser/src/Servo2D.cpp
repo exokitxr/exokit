@@ -8,6 +8,16 @@
 
 #include <iostream>
 
+ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
+                                     Servo2D*, MLLogger, MLHistoryUpdate,
+                                     const char* url, int width, int height, float hidpi) = nullptr;
+void (*heartbeat_servo)(ServoInstance*) = nullptr;
+void (*trigger_servo)(ServoInstance*, float x, float y, bool down) = nullptr;
+void (*move_servo)(ServoInstance*, float x, float y) = nullptr;
+void (*traverse_servo)(ServoInstance*, int delta) = nullptr;
+void (*navigate_servo)(ServoInstance*, const char* text) = nullptr;
+void (*discard_servo)(ServoInstance*) = nullptr;
+
 // A function which calls the ML logger, suitable for passing into Servo
 void logger(MLLogLevel lvl, char* msg) {
   if (MLLoggingLogLevelIsEnabled(lvl)) {
@@ -144,6 +154,26 @@ void Servo2D::flushTexture() const {
   // XXX copy textures here
   
   eglReleaseTexImage(display, surface, EGL_BACK_BUFFER);
+}
+
+void Servo2D::init() {
+  void *libmlservo = dlopen("/package/bin/libmlservo.so", RTLD_LAZY);
+  if (!libmlservo) {
+    std::cout << "failed to dlopen libmlservo.so" << std::endl;
+  }
+  
+  init_servo = (ServoInstance *(*)(EGLContext, EGLSurface, EGLDisplay,
+    Servo2D*, MLLogger, MLHistoryUpdate,
+    const char* url, int width, int height, float hidpi))dlsym(libmlservo, "init_servo");
+  heartbeat_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "heartbeat_servo");
+  trigger_servo = (void (*)(ServoInstance*, float x, float y, bool down))dlsym(libmlservo, "trigger_servo");
+  move_servo = (void (*)(ServoInstance*, float x, float y))dlsym(libmlservo, "move_servo");
+  traverse_servo = (void (*)(ServoInstance*, int delta))dlsym(libmlservo, "traverse_servo");
+  navigate_servo = (void (*)(ServoInstance*, const char* text))dlsym(libmlservo, "navigate_servo");
+  discard_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "discard_servo");
+  if (!init_servo || !heartbeat_servo || !trigger_servo || !move_servo || !traverse_servo || !navigate_servo || !discard_servo) {
+    std::cout << "failed to dlsym libmlservo.so symbols " << (void *)init_servo << " " << (void *)heartbeat_servo << " " << (void *)trigger_servo << " " << (void *)move_servo << " " << (void *)traverse_servo << " " << (void *)navigate_servo << " " << (void *)discard_servo << std::endl;
+  }
 }
 
 // GL extra hacks
