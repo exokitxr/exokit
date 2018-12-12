@@ -8,6 +8,7 @@
 #include <functional>
 
 #include <webgl.h>
+#include <browser.h>
 
 #include <include/capi/cef_app_capi.h>
 #include <include/cef_client.h>
