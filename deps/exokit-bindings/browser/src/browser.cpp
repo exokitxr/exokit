@@ -169,7 +169,7 @@ void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int wi
     &textureWidth,
     &textureHeight,
     [this]() -> void {
-      RunOnMainThread([this]() -> void {
+      QueueOnMainThread([this]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onloadstart.IsEmpty()) {
@@ -179,7 +179,7 @@ void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int wi
       });
     },
     [this](const std::string &url) -> void {
-      RunOnMainThread([this, url]() -> void {
+      QueueOnMainThread([this, url]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onloadend.IsEmpty()) {
@@ -192,7 +192,7 @@ void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int wi
       });
     },
     [this](int errorCode, const std::string &errorString, const std::string &failedUrl) -> void {
-      RunOnMainThread([this, errorCode, errorString, failedUrl]() -> void {
+      QueueOnMainThread([this, errorCode, errorString, failedUrl]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onloaderror.IsEmpty()) {
@@ -207,7 +207,7 @@ void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int wi
       });
     },
     [this](const std::string &jsString, const std::string &scriptUrl, int startLine) -> void {
-      RunOnMainThread([this, jsString, scriptUrl, startLine]() -> void {
+      QueueOnMainThread([this, jsString, scriptUrl, startLine]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onconsole.IsEmpty()) {
@@ -222,7 +222,7 @@ void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int wi
       });
     },
     [this](const std::string &m) -> void {
-      RunOnMainThread([this, m]() -> void {
+      QueueOnMainThread([this, m]() -> void {
         Nan::HandleScope scope;
         
         if (!this->onmessage.IsEmpty()) {
