@@ -100,6 +100,7 @@ protected:
 void QueueOnBrowserThread(std::function<void()> fn);
 
 void RunOnMainThread(std::function<void()> fn);
+void QueueOnMainThread(std::function<void()> fn);
 void MainThreadAsync(uv_async_t *handle);
 
 // variables
@@ -116,7 +117,7 @@ extern std::deque<std::function<void()>> browserThreadFns;
 
 extern uv_async_t mainThreadAsync;
 extern std::mutex mainThreadFnMutex;
-extern std::deque<std::function<void()>> mainThreadFns;
+extern std::deque<std::pair<std::function<void()>, bool>> mainThreadFns;
 
 }
 
