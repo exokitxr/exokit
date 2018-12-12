@@ -8,6 +8,7 @@
 #include <list>
 #include <functional>
 
+#include <browser.h>
 #include <magicleap/Servo2D.h>
 
 using namespace std;
