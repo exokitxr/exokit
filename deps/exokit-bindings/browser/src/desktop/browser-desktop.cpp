@@ -40,31 +40,31 @@ EmbeddedBrowser createEmbedded(
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
-    [this, browser_, onloadstart]() -> void {
+    [browser_, onloadstart]() -> void {
       browser_->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
       
       onloadstart();
     },
-    [this, browser_, onloadend]() -> void {
+    [browser_, onloadend]() -> void {
       CefString loadUrl = browser_->GetMainFrame()->GetURL();
       onloadend(loadUrl.ToString());
     },
-    [this, onloaderror](int errorCode, const std::string &errorString, const std::string &failedUrl) -> void {
+    [onloaderror](int errorCode, const std::string &errorString, const std::string &failedUrl) -> void {
       onloaderror(errorCode, errorString, failedUrl);
     }
   );
   
   DisplayHandler *display_handler_ = new DisplayHandler(
-    [this, onconsole](const std::string &jsString, const std::string &scriptUrl, int startLine) -> void {
+    [onconsole](const std::string &jsString, const std::string &scriptUrl, int startLine) -> void {
       onconsole(jsString, scriptUrl, startLine);
     },
-    [this, onmessage](const std::string &m) -> void {
+    [onmessage](const std::string &m) -> void {
       onmessage(m);
     }
   );
   
   RenderHandler *render_handler_ = new RenderHandler(
-    [this, textureWidth, textureHeight, width, height](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+    [textureWidth, textureHeight, width, height](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
       RunOnMainThread([&]() -> void {
         windowsystem::SetCurrentWindowContext(gl->windowHandle);
         
