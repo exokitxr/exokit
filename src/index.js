@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-const cwd = process.cwd();
-process.chdir(__dirname); // needed for global bin to find libraries
-
 const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
