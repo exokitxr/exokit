@@ -10,16 +10,6 @@
 
 namespace browser {
 
-ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
-                                     Servo2D*, MLLogger, MLHistoryUpdate,
-                                     const char* url, int width, int height, float hidpi) = nullptr;
-void (*heartbeat_servo)(ServoInstance*) = nullptr;
-void (*trigger_servo)(ServoInstance*, float x, float y, bool down) = nullptr;
-void (*move_servo)(ServoInstance*, float x, float y) = nullptr;
-void (*traverse_servo)(ServoInstance*, int delta) = nullptr;
-void (*navigate_servo)(ServoInstance*, const char* text) = nullptr;
-void (*discard_servo)(ServoInstance*) = nullptr;
-
 // A function which calls the ML logger, suitable for passing into Servo
 void logger(MLLogLevel lvl, char* msg) {
   if (MLLoggingLogLevelIsEnabled(lvl)) {
@@ -304,5 +294,17 @@ GLvoid glFlushMappedBufferRangeEXT(GLenum target, GLintptr offset, GLsizeiptr le
 }
 
 };
+
+// externs
+
+browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
+  browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate,
+  const char*url, int width, int height, float hidpi) = nullptr;
+void (*heartbeat_servo)(browser::ServoInstance*) = nullptr;
+void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down) = nullptr;
+void (*move_servo)(browser::ServoInstance*, float x, float y) = nullptr;
+void (*traverse_servo)(browser::ServoInstance*, int delta) = nullptr;
+void (*navigate_servo)(browser::ServoInstance*, const char* text) = nullptr;
+void (*discard_servo)(browser::ServoInstance*) = nullptr;
 
 #endif
