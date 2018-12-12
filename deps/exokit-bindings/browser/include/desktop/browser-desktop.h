@@ -7,6 +7,8 @@
 
 #include <functional>
 
+#include <webgl.h>
+
 #include <include/capi/cef_app_capi.h>
 #include <include/cef_client.h>
 #include <include/cef_app.h>
