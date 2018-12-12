@@ -57,9 +57,9 @@ void embeddedMouseMove(EmbeddedBrowser browser_, int x, int y);
 void embeddedMouseDown(EmbeddedBrowser browser_, int x, int y, int button);
 void embeddedMouseUp(EmbeddedBrowser browser_, int x, int y, int button);
 void embeddedMouseWheel(EmbeddedBrowser browser_, int x, int y, int deltaX, int deltaY);
-void embeddedKeyDown(EmbeddedBrowser browser_, int key, EmbeddedKeyModifiers modifiers);
-void embeddedKeyUp(EmbeddedBrowser browser_, int key, EmbeddedKeyModifiers modifiers);
-void embeddedKeyPress(EmbeddedBrowser browser_, int key, int wkey, EmbeddedKeyModifiers modifiers);
+void embeddedKeyDown(EmbeddedBrowser browser_, int key, int modifiers);
+void embeddedKeyUp(EmbeddedBrowser browser_, int key, int modifiers);
+void embeddedKeyPress(EmbeddedBrowser browser_, int key, int wkey, int modifiers);
 void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const std::string &scriptUrl, int startLine);
 
 CefBrowserHost::MouseButtonType GetMouseButton(int button);
