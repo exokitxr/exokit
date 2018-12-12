@@ -83,18 +83,29 @@ int Servo2D::init(
   };
   EGLConfig eglConfig;
   EGLint eglConfigAttribs[] = {
+    /* EGL_RED_SIZE,   8,
+    EGL_GREEN_SIZE, 8,
+    EGL_BLUE_SIZE,  8,
+    EGL_ALPHA_SIZE, 8,     // if you need the alpha channel
+    EGL_DEPTH_SIZE, 16,    // if you need the depth buffer */
     EGL_RED_SIZE, 5,
     EGL_GREEN_SIZE, 6,
     EGL_BLUE_SIZE, 5,
     EGL_ALPHA_SIZE, 0,
+    /* EGL_RED_SIZE,   8,
+    EGL_GREEN_SIZE, 8,
+    EGL_BLUE_SIZE,  8,
+    // EGL_ALPHA_SIZE, 0, */
     EGL_DEPTH_SIZE, 24,
     EGL_STENCIL_SIZE, 8,
     EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+    // EGL_BIND_TO_TEXTURE_RGBA, EGL_TRUE,
     EGL_SURFACE_TYPE, EGL_WINDOW_BIT|EGL_PBUFFER_BIT,
     EGL_NONE,
   };
   int numConfigs;
   eglChooseConfig(this->display, eglConfigAttribs, &eglConfig, 1, &numConfigs);
+  std::cout << "Servo2D 2 " << numConfigs << std::endl;
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
@@ -122,6 +133,8 @@ int Servo2D::init(
       }
     }
   }
+  glClearColor(1.0, 0.0, 0.0, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT);
   {
     {
       GLenum error = glGetError();
