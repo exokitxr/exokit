@@ -16,16 +16,6 @@ typedef struct Opaque ServoInstance;
 typedef void (*MLLogger)(MLLogLevel lvl, char* msg);
 typedef void (*MLHistoryUpdate)(Servo2D* app, bool canGoBack, char* url, bool canGoForward);
 
-extern "C" ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
-                                     Servo2D*, MLLogger, MLHistoryUpdate,
-                                     const char* url, int width, int height, float hidpi);
-extern "C" void (*heartbeat_servo)(ServoInstance*);
-extern "C" void (*trigger_servo)(ServoInstance*, float x, float y, bool down);
-extern "C" void (*move_servo)(ServoInstance*, float x, float y);
-extern "C" void (*traverse_servo)(ServoInstance*, int delta);
-extern "C" void (*navigate_servo)(ServoInstance*, const char* text);
-extern "C" void (*discard_servo)(ServoInstance*);
-
 /**
  * Servo2D Landscape Application
  */
@@ -115,3 +105,15 @@ private:
 };
 
 };
+
+// externs
+
+extern "C" browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
+                                     browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate,
+                                     const char* url, int width, int height, float hidpi);
+extern "C" void (*heartbeat_servo)(browser::ServoInstance*);
+extern "C" void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down);
+extern "C" void (*move_servo)(browser::ServoInstance*, float x, float y);
+extern "C" void (*traverse_servo)(browser::ServoInstance*, int delta);
+extern "C" void (*navigate_servo)(browser::ServoInstance*, const char* text);
+extern "C" void (*discard_servo)(browser::ServoInstance*);
