@@ -15,6 +15,7 @@ bool initializeEmbedded(const std::string &dataPath) {
   return true;
 }
 EmbeddedBrowser createEmbedded(
+  EmbeddedBrowser browser_,
   const std::string &url,
   WebGLRenderingContext *gl,
   NATIVEwindow *window,

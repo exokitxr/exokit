@@ -20,6 +20,7 @@ typedef Servo2D *EmbeddedBrowser;
   
 bool initializeEmbedded(const std::string &dataPath);
 EmbeddedBrowser createEmbedded(
+  EmbeddedBrowser browser_,
   const std::string &url,
   WebGLRenderingContext *gl,
   NATIVEwindow *window,
