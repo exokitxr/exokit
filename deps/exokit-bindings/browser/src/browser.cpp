@@ -4,8 +4,6 @@
 #include <node.h>
 #include <nan.h>
 
-#include <defines.h>
-
 #include <iostream>
 
 using namespace std;
