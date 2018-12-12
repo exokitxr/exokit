@@ -148,6 +148,7 @@ void Browser::load(const std::string &url) {
 
 void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int width, int height) {
   browser_ = createEmbedded(
+    browser_,
     url,
     gl,
     window,

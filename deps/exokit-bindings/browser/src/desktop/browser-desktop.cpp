@@ -9,6 +9,7 @@ using namespace node;
 namespace browser {
 
 EmbeddedBrowser createEmbedded(
+  EmbeddedBrowser browser_,
   const std::string &url,
   WebGLRenderingContext *gl,
   NATIVEwindow *window,
