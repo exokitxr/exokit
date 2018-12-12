@@ -74,9 +74,9 @@ EmbeddedBrowser createEmbedded(
           glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
           glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 // #ifndef LUMIN
-          // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 // #else
-          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+          // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
 // #endif
         
           *textureWidth = width;
@@ -89,9 +89,9 @@ EmbeddedBrowser createEmbedded(
           glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
           glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
 // #ifndef LUMIN
-          // glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+          glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
 // #else
-          glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
+          // glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
 // #endif
         }
 
