@@ -1,6 +1,6 @@
 #ifndef LUMIN
 
-#include <desktop/browser-desktop.h>
+#include <browser-desktop.h>
 
 using namespace std;
 using namespace v8;
