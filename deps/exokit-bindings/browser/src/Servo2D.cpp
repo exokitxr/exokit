@@ -72,7 +72,7 @@ int Servo2D::init(
   this->onmessage = onmessage;
 
   // Get the EGL context, surface and display.
-  EGLContext ctx = windowsystem::GetGLContext(window);
+  EGLContext context = windowsystem::GetGLContext(window);
   this->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
   EGLint attribs[] = {
     EGL_WIDTH, width,
@@ -164,7 +164,7 @@ int Servo2D::init(
   }
 
   // Hook into servo
-  servo_ = init_servo(ctx, this->surface, this->display, this, logger, history, url.c_str(), width, height, 1.0);
+  servo_ = init_servo(context, this->surface, this->display, this, logger, history, url.c_str(), width, height, 1.0);
   std::cout << "Servo2D Initializing 10 " << url << " " << width << " " << height << " " << (void *)servo_ << std::endl;
   if (!servo_) {
     ML_LOG(Error, "Servo2D Failed to init servo instance");
