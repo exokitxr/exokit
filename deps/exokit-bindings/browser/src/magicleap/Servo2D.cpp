@@ -4,7 +4,7 @@
 
 #ifdef LUMIN
 
-#include <Servo2D.h>
+#include <magicleap/Servo2D.h>
 
 #include <iostream>
 

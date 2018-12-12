@@ -8,7 +8,7 @@
 #include <list>
 #include <functional>
 
-#include <Servo2D.h>
+#include <magicleap/Servo2D.h>
 
 using namespace std;
 using namespace v8;
