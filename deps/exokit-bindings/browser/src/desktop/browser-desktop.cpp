@@ -64,7 +64,7 @@ EmbeddedBrowser createEmbedded(
   );
   
   RenderHandler *render_handler_ = new RenderHandler(
-    [textureWidth, textureHeight, width, height](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+    [gl, tex, textureWidth, textureHeight, width, height](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
       RunOnMainThread([&]() -> void {
         windowsystem::SetCurrentWindowContext(gl->windowHandle);
         
