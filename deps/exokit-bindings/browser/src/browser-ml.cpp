@@ -88,11 +88,6 @@ EmbeddedBrowser createEmbedded(
     glBindTexture(GL_TEXTURE_2D, 0);
   } */
   
-  std::cout << "createEmbedded 6 " << std::endl;
-  
-  onloadstart();
-  std::cout << "createEmbedded 7 " << std::endl;
-  onloadend(url);
   std::cout << "createEmbedded 8 " << std::endl;
   
   return browser_;
