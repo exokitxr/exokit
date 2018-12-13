@@ -223,6 +223,7 @@ function init() {
 init();
 
 let direction = true;
+let lastPresseds = [false, false];
 function animate() {
   if (direction) {
     planeMesh.rotation.y += 0.001;
@@ -238,17 +239,27 @@ function animate() {
     }
   }
 
-  const gamepads = navigator.getGamepads();
-  for (let i = 0; i < gamepads.length; i++) {
-    const gamepad = gamepads[i];
+  if (focused) {
+    const gamepads = navigator.getGamepads();
+    for (let i = 0; i < gamepads.length; i++) {
+      const gamepad = gamepads[i];
 
-    if (gamepad) {
-      const {buttons, axes} = gamepad;
-      const padPressed = buttons[0].pressed;
-      if (padPressed) {
-        console.log('got axes', i, axes[0], axes[1]);
+      if (gamepad) {
+        const {buttons, axes} = gamepad;
 
-        if (focused) {
+        const pressed = buttons[1].pressed;
+        const lastPressed = lastPresseds[i];
+        if (pressed && !lastPressed) {
+          iframe.sendMouseDown(0, 0, 0);
+        } else if (lastPressed && !pressed) {
+          iframe.sendMouseUp(0, 0, 0);
+        }
+        lastPresseds[i] = pressed;
+
+        const padPressed = buttons[0].pressed;
+        if (padPressed) {
+          console.log('got axes', i, axes[0], axes[1]);
+
           let x;
           if (axes[0] > 0) {
             x = -1;
