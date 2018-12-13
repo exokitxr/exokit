@@ -238,6 +238,39 @@ function animate() {
     }
   }
 
+  const gamepads = navigator.getGamepads();
+  for (let i = 0; i < gamepads.length; i++) {
+    const gamepad = gamepads[i];
+
+    if (gamepad) {
+      const {buttons, axes} = gamepad;
+      const padPressed = buttons[0].pressed;
+      if (padPressed) {
+        console.log('got axes', i, axes[0], axes[1]);
+
+        if (focused) {
+          let x;
+          if (axes[0] > 0) {
+            x = -1;
+          } else if (axes[0] < 0) {
+            x = 1;
+          } else {
+            x = 0;
+          }
+          let y;
+          if (axes[1] > 0) {
+            y = 1;
+          } else if (axes[1] < 0) {
+            y = -1;
+          } else {
+            y = 0;
+          }
+          iframe.sendMouseWheel(0, 0, x, y);
+        }
+      }
+    }
+  }
+
   renderer.render(scene, camera);
 }
 
