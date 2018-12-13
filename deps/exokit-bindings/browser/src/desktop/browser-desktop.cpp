@@ -52,7 +52,7 @@ CefBrowserHost::MouseButtonType GetMouseButton(int button){
 	return mouseButton;
 }
 
-/* bool CefInitialize(const CefMainArgs& args,
+bool CefInitialize(const CefMainArgs& args,
                               const CefSettings& settings,
                               CefRefPtr<CefApp> application,
                               void* windows_sandbox_info) {
@@ -85,7 +85,7 @@ bool initializeEmbedded(const std::string &dataPath) {
 
 void embeddedDoMessageLoopWork() {
   CefDoMessageLoopWork();
-} */
+}
 
 EmbeddedBrowser createEmbedded(
   EmbeddedBrowser browser_,
