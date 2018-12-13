@@ -30,7 +30,7 @@
 
 #else
 
-#include <magicleap/Servo2D.h>
+#include <Servo2D.h>
 
 #endif
 
