@@ -155,6 +155,12 @@ void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int wi
     height,
     &textureWidth,
     &textureHeight,
+    [this]() -> EmbededBrowser {
+      return this->browser_;
+    },
+    [this](EmbededBrowser browser_) -> void {
+      this->browser_ = browser_;
+    },
     [this]() -> void {
       QueueOnMainThread([this]() -> void {
         Nan::HandleScope scope;
