@@ -2,6 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+#ifndef _SERVO_2D_H_
+#define _SERVO_2D_H_
+
 #include <webgl.h>
 #include <ml_logging.h>
 #include <dlfcn.h>
@@ -117,3 +120,5 @@ extern "C" void (*move_servo)(browser::ServoInstance*, float x, float y);
 extern "C" void (*traverse_servo)(browser::ServoInstance*, int delta);
 extern "C" void (*navigate_servo)(browser::ServoInstance*, const char* text);
 extern "C" void (*discard_servo)(browser::ServoInstance*);
+
+#endif
