@@ -208,7 +208,7 @@ ServoInstance *Servo2D::getInstance() const {
 }
 
 void Servo2D::flushTexture() const {
-  std::cout << "flush texture start " << (void *)(this->surface) << " " << this->fboOutCache << " " << this->tex << std::endl;
+  // std::cout << "flush texture start " << drawFboId << " " << readFboId << " " << (void *)(this->surface) << " " << this->fboOutCache << " " << this->tex << std::endl;
   glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
   {
     GLuint error = glGetError();
@@ -252,7 +252,7 @@ void Servo2D::flushTexture() const {
   }
   
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  std::cout << "flush texture end" << std::endl;
+  // std::cout << "flush texture end" << std::endl;
 }
 
 void Servo2D::init() {
