@@ -237,8 +237,8 @@ void Servo2D::flushTexture() const {
   }
 
   glBlitFramebuffer(
-    this->width, this->height,
-    0, 0,
+    0, this->height,
+    this->width, 0,
     0, 0,
     this->width, this->height,
     GL_COLOR_BUFFER_BIT,
