@@ -88,7 +88,6 @@ void embeddedDoMessageLoopWork() {
 }
 
 EmbeddedBrowser createEmbedded(
-  EmbeddedBrowser browser_,
   const std::string &url,
   WebGLRenderingContext *gl,
   NATIVEwindow *window,
@@ -97,6 +96,8 @@ EmbeddedBrowser createEmbedded(
   int height,
   int *textureWidth,
   int *textureHeight,
+  std::function<EmbeddedBrowser()> getBrowser,
+  std::function<void(EmbeddedBrowser)> setBrowser,
   std::function<void()> onloadstart,
   std::function<void(const std::string &)> onloadend,
   std::function<void(int, const std::string &, const std::string &)> onloaderror,
@@ -109,23 +110,24 @@ EmbeddedBrowser createEmbedded(
   if (height == 0) {
     height = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height;
   }
-  
+
+  EmbeddedBrowser browser_ = getBrowser();
   if (browser_) {
     browser_->GetHost()->CloseBrowser(true);
-    browser_ = nullptr;
+    setBrowser(nullptr);
     
     *textureWidth = 0;
     *textureHeight = 0;
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
-    [browser_, onloadstart]() -> void {
-      browser_->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
+    [getBrowser, onloadstart]() -> void {
+      getBrowser()->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
       
       onloadstart();
     },
-    [browser_, onloadend]() -> void {
-      CefString loadUrl = browser_->GetMainFrame()->GetURL();
+    [getBrowser, onloadend]() -> void {
+      CefString loadUrl = getBrowser()->GetMainFrame()->GetURL();
       onloadend(loadUrl.ToString());
     },
     [onloaderror](int errorCode, const std::string &errorString, const std::string &failedUrl) -> void {
