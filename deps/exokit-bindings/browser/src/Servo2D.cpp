@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+#ifdef LUMIN
+
 #include <Servo2D.h>
 #include <lumin/node/RootNode.h>
 #include <lumin/node/QuadNode.h>
@@ -356,3 +358,5 @@ void Servo2D::updateHistory(bool canGoBack, const char* url, bool canGoForward) 
   fwd_button_->setEnabled(canGoForward);
   url_bar_->setText(url);
 }
+
+#endif
