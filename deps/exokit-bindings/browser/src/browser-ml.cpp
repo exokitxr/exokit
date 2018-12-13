@@ -1,6 +1,6 @@
 #ifdef LUMIN
 
-#include <magicleap/browser-ml.h>
+#include <browser-ml.h>
 
 #include <iostream>
 
