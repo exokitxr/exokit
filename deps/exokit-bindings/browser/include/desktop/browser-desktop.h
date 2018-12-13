@@ -10,17 +10,6 @@
 #include <webgl.h>
 #include <browser-common.h>
 
-#include <include/capi/cef_app_capi.h>
-#include <include/cef_client.h>
-#include <include/cef_app.h>
-#include <include/cef_load_handler.h>
-#include <include/cef_render_handler.h>
-
-#include <libcef_dll/cpptoc/app_cpptoc.h>
-#include <libcef_dll/cpptoc/client_cpptoc.h>
-#include <libcef_dll/ctocpp/request_context_ctocpp.h>
-#include <libcef_dll/ctocpp/browser_ctocpp.h>
-
 using namespace std;
 using namespace v8;
 using namespace node;
