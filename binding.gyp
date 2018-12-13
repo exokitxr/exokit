@@ -512,13 +512,6 @@
             '-lswresample',
             '-lopus',
             '-llog',
-            '-l:libandroid.so',
-            '-l:libjnigraphics.so',
-            '-l:libart.so',
-            '-l:libsigchain.so',
-            '-l:liblz4.so',
-            '-l:libcef.so',
-            '-lcef_dll_wrapper',
           ],
           'ldflags': [
           ],
