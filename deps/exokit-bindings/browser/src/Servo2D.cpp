@@ -203,6 +203,19 @@ void Servo2D::setHeight(int height) {
   this->height = height;
 }
 
+int Servo2D::getX() {
+  return x;
+}
+void Servo2D::setX(int x) {
+  this->x = x;
+}
+int Servo2D::getY() {
+  return y;
+}
+void Servo2D::setY(int y) {
+  this->y = y;
+}
+
 ServoInstance *Servo2D::getInstance() const {
   return servo_;
 }
