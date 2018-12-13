@@ -388,6 +388,6 @@ BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHa
 
 BrowserClient::~BrowserClient() {}
 
-};
+}
 
 #endif
