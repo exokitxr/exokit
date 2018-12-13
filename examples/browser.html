@@ -223,6 +223,7 @@ function init() {
 init();
 
 let direction = true;
+let x = 0, y = 0;
 let lastPresseds = [false, false];
 function animate() {
   if (direction) {
@@ -258,25 +259,18 @@ function animate() {
 
         const padPressed = buttons[0].pressed;
         if (padPressed) {
-          console.log('got axes', i, axes[0], axes[1]);
-
-          let x;
           if (axes[0] > 0) {
-            x = -1;
+            x++;
           } else if (axes[0] < 0) {
-            x = 1;
-          } else {
-            x = 0;
+            x--;
           }
-          let y;
           if (axes[1] > 0) {
-            y = 1;
+            y--;
           } else if (axes[1] < 0) {
-            y = -1;
-          } else {
-            y = 0;
+            y++;
           }
-          iframe.sendMouseWheel(0, 0, x, y);
+          console.log('got axes', i, x, y, axes[0], axes[1]);
+          iframe.sendMouseMove(x, y);
         }
       }
     }
