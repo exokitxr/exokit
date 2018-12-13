@@ -265,9 +265,9 @@ function animate() {
             x--;
           }
           if (axes[1] > 0) {
-            y--;
-          } else if (axes[1] < 0) {
             y++;
+          } else if (axes[1] < 0) {
+            y--;
           }
           console.log('got axes', i, x, y, axes[0], axes[1]);
           iframe.sendMouseMove(x, y);
