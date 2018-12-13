@@ -84,6 +84,11 @@ public:
   int getHeight() const;
   void setHeight(int height);
   
+  int getX();
+  void setX(int x);
+  int getY();
+  void setY(int y);
+  
   ServoInstance *getInstance() const;
   void flushTexture() const;
   
@@ -94,6 +99,8 @@ private:
   GLuint tex;
   int width;
   int height;
+  int x;
+  int y;
   std::function<void()> onloadstart;
   std::function<void(const std::string &)> onloadend;
   std::function<void(int, const std::string &, const std::string &)> onloaderror;
