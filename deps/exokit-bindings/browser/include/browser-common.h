@@ -56,7 +56,6 @@ enum class EmbeddedKeyModifiers {
 
 bool initializeEmbedded(const std::string &dataPath);
 EmbeddedBrowser createEmbedded(
-  EmbeddedBrowser browser_,
   const std::string &url,
   WebGLRenderingContext *gl,
   NATIVEwindow *window,
@@ -65,6 +64,8 @@ EmbeddedBrowser createEmbedded(
   int height,
   int *textureWidth,
   int *textureHeight,
+  std::function<EmbeddedBrowser()> getBrowser,
+  std::function<void(EmbeddedBrowser)> setBrowser,
   std::function<void()> onloadstart,
   std::function<void(const std::string &)> onloadend,
   std::function<void(int, const std::string &, const std::string &)> onloaderror,
