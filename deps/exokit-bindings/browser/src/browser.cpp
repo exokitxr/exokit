@@ -154,10 +154,10 @@ void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int wi
     height,
     &textureWidth,
     &textureHeight,
-    [this]() -> EmbededBrowser {
+    [this]() -> EmbeddedBrowser {
       return this->browser_;
     },
-    [this](EmbededBrowser browser_) -> void {
+    [this](EmbeddedBrowser browser_) -> void {
       this->browser_ = browser_;
     },
     [this]() -> void {
