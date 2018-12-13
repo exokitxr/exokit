@@ -10,7 +10,7 @@ using namespace node;
 
 namespace browser {
 
-void CefDoMessageLoopWork() {
+void CefDoMessageLoopWork2() {
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
@@ -52,7 +52,7 @@ CefBrowserHost::MouseButtonType GetMouseButton(int button){
 	return mouseButton;
 }
 
-bool CefInitialize(const CefMainArgs& args,
+bool CefInitialize2(const CefMainArgs& args,
                               const CefSettings& settings,
                               CefRefPtr<CefApp> application,
                               void* windows_sandbox_info) {
@@ -80,11 +80,11 @@ bool initializeEmbedded(const std::string &dataPath) {
   
   SimpleApp *app = new SimpleApp(dataPath);
   
-	return CefInitialize(args, settings, app, nullptr);
+	return CefInitialize2(args, settings, app, nullptr);
 }
 
 void embeddedDoMessageLoopWork() {
-  CefDoMessageLoopWork();
+  CefDoMessageLoopWork2();
 }
 
 EmbeddedBrowser createEmbedded(
