@@ -1,12 +1,6 @@
 #ifndef _BROWSER_H_
 #define _BROWSER_H_
 
-#ifndef LUMIN
-#include <desktop/browser-desktop.h>
-#else
-#include <magicleap/browser-ml.h>
-#endif
-
 #include <webgl.h>
 
 #include <v8.h>
@@ -14,6 +8,7 @@
 #include <nan.h>
 
 #include <defines.h>
+#include <browser-common.h>
 
 #include <chrono>
 #include <deque>
@@ -26,18 +21,6 @@ using namespace v8;
 using namespace node;
 
 namespace browser {
-
-#ifndef LUMIN
-typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
-#else
-typedef Servo2D *EmbeddedBrowser;
-#endif
-
-enum class EmbeddedKeyModifiers {
-  SHIFT,
-  CTRL,
-  ALT,
-};
 
 // Browser
 
@@ -100,30 +83,6 @@ protected:
   Nan::Persistent<Function> onconsole;
   Nan::Persistent<Function> onmessage;
 };
-
-// helpers
-
-void QueueOnBrowserThread(std::function<void()> fn);
-
-void RunOnMainThread(std::function<void()> fn);
-void QueueOnMainThread(std::function<void()> fn);
-void MainThreadAsync(uv_async_t *handle);
-
-// variables
-
-extern bool embeddedInitialized;
-extern std::thread browserThread;
-
-extern uv_sem_t constructSem;
-extern uv_sem_t mainThreadSem;
-extern uv_sem_t browserThreadSem;
-
-extern std::mutex browserThreadFnMutex;
-extern std::deque<std::function<void()>> browserThreadFns;
-
-extern uv_async_t mainThreadAsync;
-extern std::mutex mainThreadFnMutex;
-extern std::deque<std::pair<std::function<void()>, bool>> mainThreadFns;
 
 }
 
