@@ -174,7 +174,7 @@ function init() {
     const coord = planeMesh.projectMouse(e.clientX, e.clientY);
 
     if (coord) {
-      iframe.sendMouseDown(coord.x, coord.y,e.button); 
+      iframe.sendMouseDown(coord.x, coord.y, e.button); 
 
       focused = true;
     } else {
