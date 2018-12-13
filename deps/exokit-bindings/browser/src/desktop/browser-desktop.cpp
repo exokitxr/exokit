@@ -104,6 +104,8 @@ EmbeddedBrowser createEmbedded(
   std::function<void(const std::string &, const std::string &, int)> onconsole,
   std::function<void(const std::string &)> onmessage
 ) {
+  EmbeddedBrowser browser_ = getBrowser();
+  
   if (width == 0) {
     width = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
   }
@@ -111,7 +113,6 @@ EmbeddedBrowser createEmbedded(
     height = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height;
   }
 
-  EmbeddedBrowser browser_ = getBrowser();
   if (browser_) {
     browser_->GetHost()->CloseBrowser(true);
     setBrowser(nullptr);
