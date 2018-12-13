@@ -83,11 +83,7 @@ public:
   void setWidth(int width);
   int getHeight() const;
   void setHeight(int height);
-  
-  int getX();
-  void setX(int x);
-  int getY();
-  void setY(int y);
+
   
   ServoInstance *getInstance() const;
   void flushTexture() const;
