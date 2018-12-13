@@ -9,7 +9,6 @@
 #include <functional>
 
 #include <browser-common.h>
-#include <magicleap/Servo2D.h>
 
 using namespace std;
 using namespace v8;
