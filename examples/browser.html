@@ -344,7 +344,7 @@ function animate(timestamp, frame) {
 
       if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 3) {
         const x = xFactor * planeWidth;
-        const y = yFactor * planeHeight;
+        const y = (yFactor * planeHeight)/3; // SCROLL_SCALE in libmlservo
 
         controllerCoords[i][0] = x;
         controllerCoords[i][1] = y;
