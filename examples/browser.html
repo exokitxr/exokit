@@ -324,7 +324,7 @@ function animate(timestamp, frame) {
           iframe.sendMouseMove(x, -y);
 
           planeMesh.boxMesh.position.x = x / planeWidth * planeWorldWidth;
-          planeMesh.boxMesh.position.y = y / planeHeight * planeWorldHeight;
+          planeMesh.boxMesh.position.y = -y / planeHeight * planeWorldHeight;
           planeMesh.boxMesh.updateMatrixWorld();
         }
       }
