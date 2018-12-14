@@ -79,6 +79,8 @@ public:
    */
   int deInit();
   
+  void navigate(const std::string &url);
+  
   int getWidth() const;
   void setWidth(int width);
   int getHeight() const;
