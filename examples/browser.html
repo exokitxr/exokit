@@ -14,6 +14,12 @@ const localLine = new THREE.Line3();
 const localLine2 = new THREE.Line3();
 const localRaycaster = new THREE.Raycaster();
 
+const planeWorldWidth = 0.9;
+const planeWorldHeight = 0.9;
+const boxMeshSize = 0.02;
+const planeWidth = 1280;
+const planeHeight = 1024;
+
 function init() {
   renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -76,8 +82,6 @@ function init() {
     iframe.src = 'https://gmail.com/';
   }, 2000);
 
-  const planeWorldWidth = 0.9;
-  const planeWorldHeight = 0.9;
   planeMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(planeWorldWidth, planeWorldHeight)
       // .applyMatrix(new THREE.Matrix4().makeScale(-1, -1, 1));
@@ -157,6 +161,19 @@ function init() {
         return null;
       }
     };
+
+    const boxMesh = (() => {
+      const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize)
+        .applyMatrix(new THREE.Matrix4().makeTranslation(-planeWorldWidth/2, planeWorldHeight/2, boxMeshSize/2));
+      const material = new THREE.MeshPhongMaterial({
+        color: 0xFF0000,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      return mesh;
+    })();
+    mesh.add(boxMesh);
+    mesh.boxMesh = boxMesh;
+
     return mesh;
   })();
   scene.add(planeMesh);
@@ -251,26 +268,32 @@ function animate() {
         const pressed = buttons[1].pressed;
         const lastPressed = lastPresseds[i];
         if (pressed && !lastPressed) {
-          iframe.sendMouseDown(0, 0, 0);
+          iframe.sendMouseDown(x, y, 0);
         } else if (lastPressed && !pressed) {
-          iframe.sendMouseUp(0, 0, 0);
+          iframe.sendMouseUp(x, y, 0);
         }
         lastPresseds[i] = pressed;
 
         const padPressed = buttons[0].pressed;
         if (padPressed) {
-          if (axes[0] > 0) {
+          if (axes[0] > 0.5) {
             x++;
-          } else if (axes[0] < 0) {
+          } else if (axes[0] < -0.5) {
             x--;
           }
-          if (axes[1] > 0) {
-            y++;
-          } else if (axes[1] < 0) {
+          x = Math.min(Math.max(x, 0), planeWidth);
+          if (axes[1] > 0.5) {
             y--;
+          } else if (axes[1] < -0.5) {
+            y++;
           }
+          y = Math.max(y, 0);
           console.log('got axes', i, x, y, axes[0], axes[1]);
-          iframe.sendMouseMove(x, y);
+          iframe.sendMouseMove(x, -y);
+
+          planeMesh.boxMesh.position.x = x / planeWidth * planeWorldWidth;
+          planeMesh.boxMesh.position.y = y / planeHeight * planeWorldHeight;
+          planeMesh.boxMesh.updateMatrixWorld();
         }
       }
     }
