@@ -169,7 +169,7 @@ int Servo2D::init(
   }
 
   // Hook into servo
-  servo_ = init_servo(context, this->surface, this->display, this, logger, history, url.c_str(), width, height, 1.0);
+  servo_ = init_servo(context, this->surface, this->display, this, logger, history, Servo2D::present, url.c_str(), width, height, 1.0);
   std::cout << "Servo2D Initializing 10 " << url << " " << width << " " << height << " " << (void *)servo_ << std::endl;
   if (!servo_) {
     ML_LOG(Error, "Servo2D Failed to init servo instance");
@@ -259,6 +259,10 @@ void Servo2D::flushTexture() const {
   // std::cout << "flush texture end" << std::endl;
 }
 
+void Servo2D::present(Servo2D *app) {
+  app->flushTexture();
+}
+
 void Servo2D::init() {
   void *libmlservo = dlopen("/package/bin/libmlservo.so", RTLD_LAZY);
   if (!libmlservo) {
@@ -266,7 +270,7 @@ void Servo2D::init() {
   }
   
   init_servo = (ServoInstance *(*)(EGLContext, EGLSurface, EGLDisplay,
-    Servo2D*, MLLogger, MLHistoryUpdate,
+    Servo2D*, MLLogger, MLHistoryUpdate, MLPresentUpdate,
     const char* url, int width, int height, float hidpi))dlsym(libmlservo, "init_servo");
   heartbeat_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "heartbeat_servo");
   trigger_servo = (void (*)(ServoInstance*, float x, float y, bool down))dlsym(libmlservo, "trigger_servo");
@@ -302,7 +306,7 @@ GLvoid glFlushMappedBufferRangeEXT(GLenum target, GLintptr offset, GLsizeiptr le
 // externs
 
 browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
-  browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate,
+  browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
   const char*url, int width, int height, float hidpi) = nullptr;
 void (*heartbeat_servo)(browser::ServoInstance*) = nullptr;
 void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down) = nullptr;

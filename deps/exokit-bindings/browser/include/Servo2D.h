@@ -18,6 +18,7 @@ class Servo2D;
 typedef struct Opaque ServoInstance;
 typedef void (*MLLogger)(MLLogLevel lvl, char* msg);
 typedef void (*MLHistoryUpdate)(Servo2D* app, bool canGoBack, char* url, bool canGoForward);
+typedef void (*MLPresentUpdate)(Servo2D* app);
 
 /**
  * Servo2D Landscape Application
@@ -86,9 +87,9 @@ public:
   int getHeight() const;
   void setHeight(int height);
 
-  
   ServoInstance *getInstance() const;
   void flushTexture() const;
+  static void present(Servo2D *app);
   
   static void init();
 
@@ -117,7 +118,7 @@ private:
 // externs
 
 extern "C" browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
-                                     browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate,
+                                     browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
                                      const char* url, int width, int height, float hidpi);
 extern "C" void (*heartbeat_servo)(browser::ServoInstance*);
 extern "C" void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down);
