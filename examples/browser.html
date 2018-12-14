@@ -3,7 +3,7 @@
   <body>
     <script src="three.js"></script>
     <script>
-let renderer, scene, camera, iframe, planeMesh, controllerMeshes, focused;
+let renderer, scene, camera, iframe, planeMesh, boxMeshes, controllerMeshes, focused;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -29,6 +29,8 @@ const _makeControllerMesh = () => {
   });
 
   const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.y = -1;
+  mesh.updateMatrixWorld();
   // mesh.visible = true;
   mesh.frustumCulled = false;
   return mesh;
@@ -176,27 +178,35 @@ function init() {
       }
     };
 
-    const boxMesh = (() => {
-      const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize)
-        .applyMatrix(new THREE.Matrix4().makeTranslation(-planeWorldWidth/2, planeWorldHeight/2, boxMeshSize/2));
-      const material = new THREE.MeshPhongMaterial({
-        color: 0xFF0000,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-      return mesh;
-    })();
-    mesh.add(boxMesh);
-    mesh.boxMesh = boxMesh;
-
     return mesh;
   })();
   scene.add(planeMesh);
+
+  const _makeBoxMesh = () => {
+    const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize);
+      // .applyMatrix(new THREE.Matrix4().makeTranslation(-planeWorldWidth/2, planeWorldHeight/2, boxMeshSize/2));
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xFF0000,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    return mesh;
+  };
+  boxMeshes = [
+    _makeBoxMesh(),
+    _makeBoxMesh(),
+  ];
+  for (let i = 0; i < boxMeshes.length; i++) {
+    scene.add(boxMeshes[i]);
+  }
 
   controllerMeshes = [
     _makeControllerMesh(),
     _makeControllerMesh(),
   ];
   for (let i = 0; i < controllerMeshes.length; i++) {
+    if (i === 1) { // XXX only use right controller
+      continue;
+    }
     scene.add(controllerMeshes[i]);
   }
 
@@ -262,9 +272,13 @@ function init() {
 init();
 
 let direction = true;
-let x = 0, y = 0;
-let lastPresseds = [false, false];
+const controllerCoords = [
+  [0, 0],
+  [0, 0],
+];
+const lastPresseds = [false, false];
 function animate(timestamp, frame) {
+  try {
   if (direction) {
     planeMesh.rotation.y += 0.001;
 
@@ -281,17 +295,75 @@ function animate(timestamp, frame) {
 
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
+    if (i === 1) { // XXX only use right controller
+      continue;
+    }
+
     const inputSource = inputSources[i];
     const pose = frame.getInputPose(inputSource);
     const controllerMesh = controllerMeshes[i];
     controllerMesh.matrix.fromArray(pose.pointerMatrix);
     controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
     controllerMesh.updateMatrixWorld(true);
+
+    const leftLine = localLine;
+    const topLine = localLine2;
+    const plane = localPlane;
+    const raycaster = localRaycaster;
+
+    leftLine.start
+      .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+      .applyMatrix4(planeMesh.matrixWorld);
+    leftLine.end
+      .set(-planeWorldWidth/2, -planeWorldHeight/2, 0)
+      .applyMatrix4(planeMesh.matrixWorld);
+
+    topLine.start
+      .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+      .applyMatrix4(planeMesh.matrixWorld);
+    topLine.end
+      .set(planeWorldWidth/2, planeWorldHeight / 2, 0)
+      .applyMatrix4(planeMesh.matrixWorld);
+
+    plane.setFromCoplanarPoints(
+      leftLine.start,
+      leftLine.end,
+      topLine.end
+    );
+
+    raycaster.set(controllerMesh.position, localVector.set(0, 0, -1).applyQuaternion(controllerMesh.quaternion));
+    const intersectionPoint = raycaster.ray.intersectPlane(plane, localVector);
+    if (intersectionPoint) {
+      const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+      const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+      const xFactor = topIntersectionPoint.distanceTo(topLine.start) / planeWorldWidth;
+      const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / planeWorldHeight;
+      const distance = raycaster.ray.origin.distanceTo(intersectionPoint);
+
+      if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 3) {
+        const x = xFactor * planeWidth;
+        const y = yFactor * planeHeight;
+
+        controllerCoords[i][0] = x;
+        controllerCoords[i][1] = y;
+
+        iframe.sendMouseMove(x, y);
+
+        boxMeshes[i].position.copy(intersectionPoint);
+        boxMeshes[i].updateMatrixWorld();
+      }
+    }
   }
 
   if (focused) {
     const gamepads = navigator.getGamepads();
     for (let i = 0; i < gamepads.length; i++) {
+      if (i === 1) { // XXX only use right controller
+        continue;
+      }
+
       const gamepad = gamepads[i];
 
       if (gamepad) {
@@ -300,13 +372,15 @@ function animate(timestamp, frame) {
         const pressed = buttons[1].pressed;
         const lastPressed = lastPresseds[i];
         if (pressed && !lastPressed) {
+          const [x, y] = controllerCoords[i];
           iframe.sendMouseDown(x, y, 0);
         } else if (lastPressed && !pressed) {
+          const [x, y] = controllerCoords[i];
           iframe.sendMouseUp(x, y, 0);
         }
         lastPresseds[i] = pressed;
 
-        const padPressed = buttons[0].pressed;
+        /* const padPressed = buttons[0].pressed;
         if (padPressed) {
           if (axes[0] > 0.5) {
             x++;
@@ -326,12 +400,15 @@ function animate(timestamp, frame) {
           planeMesh.boxMesh.position.x = x / planeWidth * planeWorldWidth;
           planeMesh.boxMesh.position.y = -y / planeHeight * planeWorldHeight;
           planeMesh.boxMesh.updateMatrixWorld();
-        }
+        } */
       }
     }
   }
 
   renderer.render(scene, camera);
+  } catch(err) {
+    console.warn(err.stack);
+  }
 }
 
 if (navigator.xr) {
