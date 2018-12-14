@@ -46,7 +46,7 @@ matrix:
         tags: true
       skip_cleanup: true
   - os: osx
-    osx_image: xcode9.2
+    osx_image: xcode10.1
     before_install:
     - brew install glfw glew
     install:
