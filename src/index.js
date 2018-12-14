@@ -930,8 +930,8 @@ const _bindWindow = (window, newWindowCb) => {
         if (context.canvas.ownerDocument.defaultView === window) {
           const windowHandle = context.getWindowHandle();
 
-          if (nativeWindow.isVisible(windowHandle)) {
-            nativeWindow.setCursorMode(windowHandle, false);
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            nativeBindings.nativeWindow.setCursorMode(windowHandle, false);
             break;
           }
         }
@@ -943,8 +943,8 @@ const _bindWindow = (window, newWindowCb) => {
         if (context.canvas.ownerDocument.defaultView === window) {
           const windowHandle = context.getWindowHandle();
 
-          if (nativeWindow.isVisible(windowHandle)) {
-            nativeWindow.setCursorMode(windowHandle, true);
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            nativeBindings.nativeWindow.setCursorMode(windowHandle, true);
             break;
           }
         }
@@ -961,8 +961,8 @@ const _bindWindow = (window, newWindowCb) => {
         if (context.canvas.ownerDocument.defaultView === window) {
           const windowHandle = context.getWindowHandle();
 
-          if (nativeWindow.isVisible(windowHandle)) {
-            nativeWindow.setFullscreen(windowHandle);
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            nativeBindings.nativeWindow.setFullscreen(windowHandle);
             break;
           }
         }
@@ -974,8 +974,8 @@ const _bindWindow = (window, newWindowCb) => {
         if (context.canvas.ownerDocument.defaultView === window) {
           const windowHandle = context.getWindowHandle();
 
-          if (nativeWindow.isVisible(windowHandle)) {
-            nativeWindow.exitFullscreen(windowHandle);
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            nativeBindings.nativeWindow.exitFullscreen(windowHandle);
             break;
           }
         }
