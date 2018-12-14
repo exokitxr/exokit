@@ -299,10 +299,10 @@ void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, floa
 }
 
 void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
-  grContext->resetContext();
-  
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  
+  grContext->resetContext();
   
   GrGLTextureInfo glTexInfo;
   glTexInfo.fID = tex;
