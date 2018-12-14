@@ -1048,13 +1048,13 @@ const _bindWindow = (window, newWindowCb) => {
       const [{leftBounds, rightBounds}] = display.getLayers();
       const offsetMatrix = localMatrix2.compose(localVector.fromArray(layer.xrOffset.position), localQuaternion.fromArray(layer.xrOffset.rotation), localVector2.fromArray(layer.xrOffset.scale));
       
-      o.viewports[0][0] = leftBounds[0]*layer.width;
+      o.viewports[0][0] = leftBounds[0]*layer.width*2;
       o.viewports[0][1] = leftBounds[1]*layer.height;
-      o.viewports[0][2] = leftBounds[2]*layer.width;
+      o.viewports[0][2] = leftBounds[2]*layer.width*2;
       o.viewports[0][3] = leftBounds[3]*layer.height;
-      o.viewports[1][0] = rightBounds[0]*layer.width;
+      o.viewports[1][0] = rightBounds[0]*layer.width*2;
       o.viewports[1][1] = rightBounds[1]*layer.height;
-      o.viewports[1][2] = rightBounds[2]*layer.width;
+      o.viewports[1][2] = rightBounds[2]*layer.width*2;
       o.viewports[1][3] = rightBounds[3]*layer.height;
       localMatrix.fromArray(display._frameData.leftViewMatrix)
         .multiply(offsetMatrix)
