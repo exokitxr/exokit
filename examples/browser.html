@@ -3,7 +3,7 @@
   <body>
     <script src="three.js"></script>
     <script>
-let renderer, scene, camera, iframe, planeMesh, focused;
+let renderer, scene, camera, iframe, planeMesh, controllerMeshes, focused;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -19,6 +19,20 @@ const planeWorldHeight = 0.9;
 const boxMeshSize = 0.02;
 const planeWidth = 1280;
 const planeHeight = 1024;
+
+const _makeControllerMesh = () => {
+  const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x9ccc65,
+  });
+
+  const mesh = new THREE.Mesh(geometry, material);
+  // mesh.visible = true;
+  mesh.frustumCulled = false;
+  return mesh;
+};
 
 function init() {
   renderer = new THREE.WebGLRenderer({
@@ -51,7 +65,7 @@ function init() {
 
   iframe = document.createElement('iframe');
   iframe.d = 2;
-  iframe.src = 'https://google.com';
+  iframe.src = 'http://lol.com';
   iframe.onload = () => {
     iframe.contentWindow.onmessage = m => {
       console.log('parent got message: ' + JSON.stringify(m.data));
@@ -78,9 +92,9 @@ function init() {
     console.log(source + ':' + line + ': ' + message);
   };
   document.body.appendChild(iframe);
-  setTimeout(() => {
+  /* setTimeout(() => {
     iframe.src = 'https://gmail.com/';
-  }, 2000);
+  }, 2000); */
 
   planeMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(planeWorldWidth, planeWorldHeight)
@@ -178,6 +192,14 @@ function init() {
   })();
   scene.add(planeMesh);
 
+  controllerMeshes = [
+    _makeControllerMesh(),
+    _makeControllerMesh(),
+  ];
+  for (let i = 0; i < controllerMeshes.length; i++) {
+    scene.add(controllerMeshes[i]);
+  }
+
   focused = true;
 
   window.addEventListener('mousemove', e => {
@@ -242,7 +264,7 @@ init();
 let direction = true;
 let x = 0, y = 0;
 let lastPresseds = [false, false];
-function animate() {
+function animate(timestamp, frame) {
   if (direction) {
     planeMesh.rotation.y += 0.001;
 
@@ -255,6 +277,16 @@ function animate() {
     if (planeMesh.rotation.y <= -Math.PI/8) {
       direction = true;
     }
+  }
+
+  const inputSources = display.session.getInputSources();
+  for (let i = 0; i < inputSources.length; i++) {
+    const inputSource = inputSources[i];
+    const pose = frame.getInputPose(inputSource);
+    const controllerMesh = controllerMeshes[i];
+    controllerMesh.matrix.fromArray(pose.pointerMatrix);
+    controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+    controllerMesh.updateMatrixWorld(true);
   }
 
   if (focused) {
