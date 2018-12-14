@@ -190,6 +190,10 @@ int Servo2D::deInit() {
   return 0;
 }
 
+void Servo2D::navigate(const std::string &url) {
+  navigate_servo(servo_, url.c_str());
+}
+
 int Servo2D::getWidth() const {
   return width;
 }

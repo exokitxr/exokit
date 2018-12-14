@@ -31,6 +31,8 @@ EmbeddedBrowser createEmbedded(
   std::function<void(const std::string &, const std::string &, int)> onconsole,
   std::function<void(const std::string &)> onmessage
 ) {
+  std::cout << "createEmbedded 0 " << (void *)window << std::endl;
+  
   if (width == 0) {
     width = 1280;
   }
@@ -41,6 +43,8 @@ EmbeddedBrowser createEmbedded(
   *textureWidth = width;
   *textureHeight = height;
 
+  EmbeddedBrowser browser_ = getBrowser();
+  
   std::cout << "createEmbedded 1 " << (void *)window << std::endl;
   
   {
@@ -63,29 +67,33 @@ EmbeddedBrowser createEmbedded(
       std::cout << "createEmbedded error 5 " << error << std::endl;
     }
   }
-  
-  EmbeddedBrowser browser_ = new Servo2D();
-  {
-    EGLint error = eglGetError();
-    if (error != EGL_SUCCESS) {
-      std::cout << "createEmbedded error 6 " << error << std::endl;
+
+  if (!browser_) {
+    browser_ = new Servo2D();
+    {
+      EGLint error = eglGetError();
+      if (error != EGL_SUCCESS) {
+        std::cout << "createEmbedded error 6 " << error << std::endl;
+      }
     }
-  }
-  browser_->init(url, window, tex, width, height, onloadstart, onloadend, onloaderror, onconsole, onmessage);
-  browsers.push_back(browser_);
-  
-  {
-    EGLint error = eglGetError();
-    if (error != EGL_SUCCESS) {
-      std::cout << "createEmbedded error 7 " << error << std::endl;
+    browser_->init(url, window, tex, width, height, onloadstart, onloadend, onloaderror, onconsole, onmessage);
+    browsers.push_back(browser_);
+    
+    {
+      EGLint error = eglGetError();
+      if (error != EGL_SUCCESS) {
+        std::cout << "createEmbedded error 7 " << error << std::endl;
+      }
     }
-  }
-  
-  /* if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+    
+    /* if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+    } else {
+      glBindTexture(GL_TEXTURE_2D, 0);
+    } */
   } else {
-    glBindTexture(GL_TEXTURE_2D, 0);
-  } */
+    browser_->navigate(url);
+  }
   
   std::cout << "createEmbedded 8 " << std::endl;
   
@@ -96,14 +104,16 @@ void destroyEmbedded(EmbeddedBrowser browser_) {
   browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
 }
 void embeddedDoMessageLoopWork() {
-  std::cout << "do message loop work 1 " << browsers.size() << std::endl;
+  // std::cout << "do message loop work 1 " << browsers.size() << std::endl;
 
   for (EmbeddedBrowser browser_ : browsers) {
-    heartbeat_servo(browser_->getInstance());
+    for (int i = 0; i < 100; i++) {
+      heartbeat_servo(browser_->getInstance());
+    }
     browser_->flushTexture();
   }
   
-  std::cout << "do message loop work 2 " << browsers.size() << std::endl;
+  // std::cout << "do message loop work 2 " << browsers.size() << std::endl;
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return browser_->getWidth();
