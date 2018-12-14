@@ -400,11 +400,14 @@ const _makeRig = () => {
         // console.log('update text', urlState.text, urlState.cursor);
 
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(0, 0, menuWidth, menuHeight*2);
+        ctx.fillRect(0, 0, menuWidth*0.8 - 5, menuHeight);
+        ctx.fillRect(menuWidth*0.8, 0, menuWidth, menuHeight);
+        ctx.fillRect(0, menuHeight, menuWidth*0.5, menuHeight);
 
         ctx.fillStyle = '#000';
         ctx.font = `${fontSize}px Arial`;
         ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 10);
+        ctx.fillText('x', menuWidth*0.88, menuHeight*0.7);
 
         urlState.measures.length = 0;
         urlState.measures.push(0);
