@@ -107,10 +107,11 @@ void embeddedDoMessageLoopWork() {
   // std::cout << "do message loop work 1 " << browsers.size() << std::endl;
 
   for (EmbeddedBrowser browser_ : browsers) {
-    for (int i = 0; i < 100; i++) {
+    heartbeat_servo(browser_->getInstance());
+    /* for (int i = 0; i < 100; i++) {
       heartbeat_servo(browser_->getInstance());
     }
-    browser_->flushTexture();
+    browser_->flushTexture(); */
   }
   
   // std::cout << "do message loop work 2 " << browsers.size() << std::endl;
