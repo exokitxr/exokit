@@ -94,11 +94,12 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto, "createImageData", ctxCallWrap<CreateImageData>);
   Nan::SetMethod(proto, "getImageData", ctxCallWrap<GetImageData>);
   Nan::SetMethod(proto, "putImageData", ctxCallWrap<PutImageData>);
+  
+  Nan::SetMethod(proto, "setTexture", ctxCallWrap<SetTexture>);
 
   Nan::SetMethod(proto, "destroy", ctxCallWrap<Destroy>);
   Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
   Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
-  Nan::SetMethod(proto, "setTexture", SetTexture);
 
   Local<Function> ctorFn = ctor->GetFunction();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
@@ -1313,8 +1314,6 @@ NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
     int height = info[2]->Int32Value();
     
     ctx->tex = tex;
-    
-    windowsystem::SetCurrentWindowContext(ctx->windowHandle);
 
     glBindTexture(GL_TEXTURE_2D, tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
