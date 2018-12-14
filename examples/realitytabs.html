@@ -1105,10 +1105,6 @@ function animate(time, frame) {
 
               switch (key) {
                 case 'enter': {
-                  const pose = frame.getInputPose(inputSource);
-                  localMatrix.fromArray(pose.pointerMatrix)
-                    .decompose(localVector, localQuaternion, localVector2);
-
                   const u = urlMesh.urlState.text !== DEFAULT_URL ? urlMesh.urlState.text : 'realitytab.html?color=29b6f6';
                   _openUrl(u, rig.position, rig.quaternion);
                   _closeRig(rig);
