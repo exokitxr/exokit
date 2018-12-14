@@ -16,12 +16,12 @@ void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   }
 }
 
+constexpr EGLint glMajorVersion = 4;
+constexpr EGLint glMinorVersion = 0;
 void Initialize() {
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
-  EGLint major = 4;
-  EGLint minor = 0;
-  eglInitialize(display, &major, &minor);
+  eglInitialize(display, &glMajorVersion, &glMinorVersion);
   eglBindAPI(EGL_OPENGL_API);
 }
 
@@ -206,8 +206,8 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   eglChooseConfig(display, config_attribs, &egl_config, 1, &config_size);
 
   EGLint context_attribs[] = {
-    EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
-    EGL_CONTEXT_MINOR_VERSION_KHR, 2,
+    EGL_CONTEXT_MAJOR_VERSION_KHR, glMajorVersion,
+    EGL_CONTEXT_MINOR_VERSION_KHR, glMinorVersion,
     EGL_NONE
   };
 
