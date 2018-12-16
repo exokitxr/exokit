@@ -605,6 +605,7 @@ NAN_METHOD(Browser::PostMessage) {
 NAN_METHOD(Browser::Destroy) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   destroyEmbedded(browser->browser_);
+  browser->browser_ = nullptr;
 }
 
 NAN_GETTER(Browser::TextureGetter) {
