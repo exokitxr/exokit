@@ -1887,24 +1887,29 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   });
                   
                   let onmessage = null;
+                  const self = this;
                   this.contentWindow = {
                     _emit() {},
                     location: {
                       href: loadedUrl
                     },
                     postMessage(m) {
-                      browser.postMessage(JSON.stringify(m));
+                      self.browser.postMessage(JSON.stringify(m));
                     },
                     get onmessage() {
                       return onmessage;
                     },
                     set onmessage(newOnmessage) {
                       onmessage = newOnmessage;
-                      browser.onmessage = newOnmessage ? m => {
+                      self.browser.onmessage = newOnmessage ? m => {
                         newOnmessage(new MessageEvent('messaage', {
                           data: JSON.parse(m),
                         }));
                       } : null;
+                    },
+                    destroy() {
+                      self.browser.destroy();
+                      self.browser = null;
                     },
                   };
                   this.contentDocument = {
