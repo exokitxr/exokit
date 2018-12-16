@@ -6,7 +6,7 @@
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script>
-let display, fakeDisplay, tabs = ['Tab 1', 'Tab 2'], lastPresseds = [false, false];
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false];
 
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
@@ -156,6 +156,11 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
       _drawOk();
 
       layers.push(iframe);
+
+      tabs.push({
+        url: u,
+        iframe,
+      });
 
       // floorMesh.visible = false;
       // scene.background = null;
@@ -569,6 +574,7 @@ const _makeRig = () => {
 
         for (let i = 0; i < tabs.length; i++) {
           const tab = tabs[i];
+          const {url} = tab;
           const y = menuHeight*i;
 
           ctx.fillStyle = '#FFFFFF';
@@ -577,7 +583,7 @@ const _makeRig = () => {
 
           ctx.font = `${fontSize}px Arial`;
           ctx.fillStyle = '#000000';
-          ctx.fillText(tab, menuHeight - 30, y + menuHeight/2 + 20);
+          ctx.fillText(url, menuHeight - 30, y + menuHeight/2 + 20);
           ctx.fillText('x', menuWidth*0.88, y + menuHeight*0.7);
         }
 
@@ -1204,7 +1210,10 @@ function animate(time, frame) {
                     const pressed = gamepad.buttons[1].pressed;
                     const lastPressed = lastPresseds[i];
                     if (pressed && !lastPressed) {
-                      tabs.splice(j, 1);
+                      const [tab] = tabs.splice(j, 1);
+                      const {iframe} = tab;
+                      _closeUrl(iframe);
+
                       menuMesh.tabsMesh.updateTabs();
                     }
 
