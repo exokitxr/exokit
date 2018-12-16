@@ -171,25 +171,25 @@ void CanvasRenderingContext2D::Clip() {
 
 void CanvasRenderingContext2D::Stroke() {
   surface->getCanvas()->drawPath(path, strokePaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::Stroke(const Path2D &path) {
   surface->getCanvas()->drawPath(path.path, strokePaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::Fill() {
   surface->getCanvas()->drawPath(path, fillPaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::Fill(const Path2D &path) {
   surface->getCanvas()->drawPath(path.path, fillPaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
@@ -199,7 +199,7 @@ void CanvasRenderingContext2D::MoveTo(float x, float y) {
 
 void CanvasRenderingContext2D::LineTo(float x, float y) {
   path.lineTo(x, y);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
@@ -240,7 +240,7 @@ void CanvasRenderingContext2D::StrokeRect(float x, float y, float w, float h) {
   SkPath path;
   path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, strokePaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
@@ -248,7 +248,7 @@ void CanvasRenderingContext2D::ClearRect(float x, float y, float w, float h) {
   SkPath path;
   path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, clearPaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
@@ -287,14 +287,14 @@ float getFontBaseline(const SkPaint &paint, const TextBaseline &textBaseline, fl
 void CanvasRenderingContext2D::FillText(const std::string &text, float x, float y) {
   // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fillPaint, textBaseline, lineHeight), fillPaint);
   surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, fillPaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, float y) {
   // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(strokePaint, textBaseline, lineHeight), strokePaint);
   surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
@@ -324,7 +324,7 @@ void CanvasRenderingContext2D::DrawImage(const SkImage *image, float sx, float s
   paint.setStyle(SkPaint::kFill_Style);
   paint.setBlendMode(SkBlendMode::kSrcOver);
   surface->getCanvas()->drawImageRect(image, SkRect::MakeXYWH(sx, sy, sw, sh), SkRect::MakeXYWH(dx, dy, dw, dh), &paint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
