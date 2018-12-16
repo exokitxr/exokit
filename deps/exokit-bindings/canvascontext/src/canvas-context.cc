@@ -1391,7 +1391,7 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
       int w, h;
       windowsystem::GetWindowSize(gl->windowHandle, &w, &h);
 
-      SkImageInfo info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
+      const SkImageInfo &info = SkImageInfo::Make(w, h, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
       SkBitmap bitmap;
       bool ok = bitmap.tryAllocPixels(info);
       if (ok) {
