@@ -2010,6 +2010,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
     if (application_context.dummy_value == DummyValue::RUNNING) {
       MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+      
+      windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
       GLuint framebuffer = info[1]->Uint32Value();
       GLuint width = info[2]->Uint32Value();
