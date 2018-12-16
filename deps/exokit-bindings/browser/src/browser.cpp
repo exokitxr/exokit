@@ -73,6 +73,7 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "sendKeyPress", SendKeyPress);
   Nan::SetMethod(proto, "runJs", RunJs);
   Nan::SetMethod(proto, "postMessage", PostMessage);
+  Nan::SetMethod(proto, "destroy", Destroy);
 
   Local<Function> ctorFn = ctor->GetFunction();
   Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
@@ -599,6 +600,11 @@ NAN_METHOD(Browser::PostMessage) {
   } else {
     return Nan::ThrowError("Browser::RunJs: invalid arguments");
   }
+}
+
+NAN_METHOD(Browser::Destroy) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  destroyEmbedded(browser->browser_);
 }
 
 NAN_GETTER(Browser::TextureGetter) {

@@ -203,7 +203,7 @@ EmbeddedBrowser createEmbedded(
   return CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
 }
 void destroyEmbedded(EmbeddedBrowser browser_) {
-  // nothing
+  browser_->GetHost()->CloseBrowser(false);
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
