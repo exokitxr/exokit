@@ -112,14 +112,12 @@ NAN_GETTER(ImageData::DataGetter) {
 ImageData::ImageData(unsigned int width, unsigned int height) {
   SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
   unsigned char *address = (unsigned char *)malloc(width * height * 4);
-  SkPixmap pixmap(info, address, width * 4);
-  bitmap.installPixels(pixmap);
+  bitmap.installPixels(info, address, width * 4);
 }
 ImageData::ImageData(const char *data, unsigned int width, unsigned int height) {
   SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kBGRA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
   unsigned char *address = (unsigned char *)malloc(width * height * 4);
   memcpy(address, data, width * height * 4);
-  SkPixmap pixmap(info, address, width * 4);
-  bitmap.installPixels(pixmap);
+  bitmap.installPixels(info, address, width * 4);
 }
 ImageData::~ImageData () {}
