@@ -6,7 +6,7 @@
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script>
-let display, fakeDisplay;
+let display, fakeDisplay, tabs = ['Tab 1', 'Tab 2'], lastPresseds = [false, false];
 
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
@@ -15,7 +15,7 @@ const menuWidth = 1024;
 const menuHeight = menuWidth * 0.1;
 const menuWorldWidth = 1;
 const menuWorldHeight = menuWorldWidth / menuWidth * menuHeight;
-const menuPositionHeight = .3;
+const menuPositionHeight = 0.3;
 const urlBarWidth = menuWorldWidth;
 const urlBarHeight = menuHeight;
 const urlBarOffset = urlBarHeight;
@@ -385,7 +385,7 @@ const _makeRig = () => {
         alphaTest: 0.9,
       });
       const mesh = new THREE.Mesh(geometry, material);
-      // mesh.position.y = -menuWorldHeight/2;
+      mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
 
       const text = DEFAULT_URL;
@@ -482,7 +482,7 @@ const _makeRig = () => {
       });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.y = -menuWorldHeight - (10/menuHeight*menuWorldHeight);
-      // mesh.updateMatrixWorld();
+      mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
       mesh.d = 3;
 
@@ -534,6 +534,88 @@ const _makeRig = () => {
     object.add(optionsMesh);
     object.optionsMesh = optionsMesh;
 
+    const tabsMesh = (() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = menuWidth;
+      canvas.height = menuHeight*4;
+      const ctx = canvas.getContext('2d');
+
+      const geometry = new THREE.PlaneBufferGeometry(menuWorldWidth, menuWorldHeight*4);
+      const texture = new THREE.Texture(
+        canvas,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      texture.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        alphaTest: 0.9,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.y = -menuWorldHeight*3.5 - (10/menuHeight*menuWorldHeight)*2;
+      mesh.updateMatrixWorld();
+      mesh.frustumCulled = false;
+
+      const _updateTabs = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < tabs.length; i++) {
+          const tab = tabs[i];
+          const y = menuHeight*i;
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, y, menuWidth*0.8-10, menuHeight);
+          ctx.fillRect(menuWidth*0.8, y, menuHeight*3, menuHeight);
+
+          ctx.font = `${fontSize}px Arial`;
+          ctx.fillStyle = '#000000';
+          ctx.fillText(tab, menuHeight - 30, y + menuHeight/2 + 20);
+          ctx.fillText('x', menuWidth*0.88, y + menuHeight*0.7);
+        }
+
+        texture.needsUpdate = true;
+      };
+      _updateTabs();
+      mesh.updateTabs = _updateTabs;
+
+      mesh.plane = new THREE.Plane();
+      mesh.leftLine = new THREE.Line3();
+      mesh.topLine = new THREE.Line3();
+      mesh.update = () => {
+        mesh.leftLine.start
+          .set(-menuWorldWidth/2, menuWorldHeight*4/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+        mesh.leftLine.end
+          .set(-menuWorldWidth/2, -menuWorldHeight*4/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+
+        mesh.topLine.start
+          .set(-menuWorldWidth/2, menuWorldHeight*4/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+        mesh.topLine.end
+          .set(menuWorldWidth/2, menuWorldHeight*4/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+
+        mesh.plane.setFromCoplanarPoints(
+          mesh.leftLine.start,
+          mesh.leftLine.end,
+          mesh.topLine.end
+        );
+      };
+
+      return mesh;
+    })();
+    object.add(tabsMesh);
+    object.tabsMesh = tabsMesh;
+
     return object;
   })();
   rig.add(menuMesh);
@@ -574,6 +656,7 @@ const _makeRig = () => {
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.frustumCulled = false;
+      mesh.position.y = -0.5;
       mesh.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 0, 1),
         new THREE.Vector3(0, 1, 1).normalize()
@@ -890,6 +973,7 @@ function animate(time, frame) {
         keyboardMesh.update();
         menuMesh.urlMesh.update();
         menuMesh.optionsMesh.update();
+        menuMesh.tabsMesh.update();
 
         // keyboard
         {
@@ -1054,13 +1138,11 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.optionsMesh.leftLine.start) / menuWorldHeight;
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            // console.log('intersection', menuMesh.optionsMesh.leftLine.start.toArray().join(','), menuMesh.optionsMesh.leftLine.end.toArray().join(','), topIntersectionPoint.toArray().join(','), menuMesh.optionsMesh.topLine.start.toArray().join(','), menuMesh.optionsMesh.leftLine.start.toArray().join(','));
-
             if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight;
 
-              if (y < urlBarOffset*2) {
+              if (y >= 0 && y < urlBarOffset) {
                 intersectionPoints.push(intersectionPoint.clone());
                 intersectionCbs.push(() => {
                   controllerMesh.rayMesh.scale.z = distance;
@@ -1089,8 +1171,53 @@ function animate(time, frame) {
             }
           }
         }
-      }
 
+        // tabs mesh
+        {
+          const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.tabsMesh.plane, localVector) : null;
+          if (intersectionPoint) {
+            const leftIntersectionPoint = menuMesh.tabsMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+            const topIntersectionPoint = menuMesh.tabsMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+            const xFactor = topIntersectionPoint.distanceTo(menuMesh.tabsMesh.topLine.start) / menuWorldWidth;
+            const yFactor = leftIntersectionPoint.distanceTo(menuMesh.tabsMesh.leftLine.start) / (menuWorldHeight*4);
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+              const x = xFactor * menuWidth;
+              const y = yFactor * menuHeight*4;
+
+              for (let j = 0; j < tabs.length; j++) {
+                if (x >= menuWidth*0.8 && y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                  intersectionPoints.push(intersectionPoint.clone());
+                  intersectionCbs.push(() => {
+                    controllerMesh.rayMesh.scale.z = distance;
+                    controllerMesh.updateMatrixWorld();
+
+                    controllerMesh.rayDot.position.z = -distance;
+                    controllerMesh.updateMatrixWorld();
+                    controllerMesh.rayDot.visible = true;
+
+                    const gamepads = navigator.getGamepads();
+                    const gamepad = gamepads[i];
+                    const pressed = gamepad.buttons[1].pressed;
+                    const lastPressed = lastPresseds[i];
+                    if (pressed && !lastPressed) {
+                      tabs.splice(j, 1);
+                      menuMesh.tabsMesh.updateTabs();
+                    }
+
+                    intersectionSpecs[i] = null;
+                  });
+
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
 
       if (intersectionPoints.length > 0) {
         const intersectionCb = intersectionPoints
@@ -1103,6 +1230,8 @@ function animate(time, frame) {
       } else {
         _setIntersectionDefault();
       }
+
+      lastPresseds[i] = navigator.getGamepads()[i].buttons[1].pressed;
     }
   };
   _updateIntersections();
