@@ -1024,7 +1024,7 @@ const _bindWindow = (window, newWindowCb) => {
     console.dir({width, height, image: name, result: result.length});
     fs.writeFileSync(name, result);
   }
-  const _decorateModelViewProjection = (o, layer, display) => {
+  const _decorateModelViewProjection = (o, layer, display, factor) => {
     if (!o.viewports) {
       o.viewports = [
         new Float32Array(4),
@@ -1048,13 +1048,13 @@ const _bindWindow = (window, newWindowCb) => {
       const [{leftBounds, rightBounds}] = display.getLayers();
       const offsetMatrix = localMatrix2.compose(localVector.fromArray(layer.xrOffset.position), localQuaternion.fromArray(layer.xrOffset.rotation), localVector2.fromArray(layer.xrOffset.scale));
       
-      o.viewports[0][0] = leftBounds[0]*layer.width*2;
+      o.viewports[0][0] = leftBounds[0]*layer.width * factor;
       o.viewports[0][1] = leftBounds[1]*layer.height;
-      o.viewports[0][2] = leftBounds[2]*layer.width*2;
+      o.viewports[0][2] = leftBounds[2]*layer.width * factor;
       o.viewports[0][3] = leftBounds[3]*layer.height;
-      o.viewports[1][0] = rightBounds[0]*layer.width*2;
+      o.viewports[1][0] = rightBounds[0]*layer.width * factor;
       o.viewports[1][1] = rightBounds[1]*layer.height;
-      o.viewports[1][2] = rightBounds[2]*layer.width*2;
+      o.viewports[1][2] = rightBounds[2]*layer.width * factor;
       o.viewports[1][3] = rightBounds[3]*layer.height;
       localMatrix.fromArray(display._frameData.leftViewMatrix)
         .multiply(offsetMatrix)
@@ -1080,11 +1080,11 @@ const _bindWindow = (window, newWindowCb) => {
       o.projection[1].set(views[1].projectionMatrix);
     }
   };
-  const _decorateModelViewProjections = (layers, display) => {
+  const _decorateModelViewProjections = (layers, display, factor) => {
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
       if (layer.constructor.name === 'HTMLIFrameElement' && layer.browser) {
-        _decorateModelViewProjection(layer.browser, layer, display);
+        _decorateModelViewProjection(layer.browser, layer, display, factor);
       }
     }
   };
@@ -1107,7 +1107,7 @@ const _bindWindow = (window, newWindowCb) => {
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {vrDisplay, xrDisplay} = window[symbols.mrDisplaysSymbol];
-              _decorateModelViewProjections(vrPresentState.layers, vrDisplay.isPresenting ? vrDisplay : xrDisplay);
+              _decorateModelViewProjections(vrPresentState.layers, vrDisplay.isPresenting ? vrDisplay : xrDisplay, 2);
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
             } else {
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
@@ -1120,7 +1120,7 @@ const _bindWindow = (window, newWindowCb) => {
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
               const {mlDisplay, xmDisplay} = window[symbols.mrDisplaysSymbol];
-              _decorateModelViewProjections(mlPresentState.layers, mlDisplay.isPresenting ? mlDisplay : xmDisplay);
+              _decorateModelViewProjections(mlPresentState.layers, mlDisplay.isPresenting ? mlDisplay : xmDisplay, 2);
               nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
             } else {
               nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
@@ -1132,7 +1132,7 @@ const _bindWindow = (window, newWindowCb) => {
             // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (fakePresentState.layers.length > 0) {
             const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
-            _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay);
+            _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay, 1);
             nativeWindow.composeLayers(context, 0, fakePresentState.layers);
           }
         }
