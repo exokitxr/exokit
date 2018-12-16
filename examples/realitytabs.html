@@ -1139,6 +1139,9 @@ function animate(time, frame) {
                     if (!shiftKey) {
                       c = c.toLowerCase();
                     }
+                    _handleSingleKey(c);
+                  };
+                  const _handleSingleKey = c => {
                     urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + c + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
                     urlMesh.urlState.cursor++;
                     urlMesh.updateText();
@@ -1187,6 +1190,26 @@ function animate(time, frame) {
                     } else if (code === 40) { // down
                       urlMesh.urlState.cursor = urlMesh.urlState.text.length;
                       urlMesh.updateText();
+                    } else if (code === 190) { // .
+                      _handleSingleKey('.');
+                    } else if (code === 188) { // ,
+                      _handleSingleKey(',');
+                    } else if (code === 191) { // /
+                      _handleSingleKey('/');
+                    } else if (code === 186) { // ;
+                      _handleSingleKey(';');
+                    } else if (code === 222) { // ;
+                      _handleSingleKey('\'');
+                    } else if (code === 219) { // [
+                      _handleSingleKey('[');
+                    } else if (code === 221) { // ]
+                      _handleSingleKey(']');
+                    } else if (code === 189) { // -
+                      _handleSingleKey('-');
+                    } else if (code === 187) { // =
+                      _handleSingleKey('=');
+                    } else if (code === 220) { // \
+                      _handleSingleKey('\\');
                     } else if (code === -1) {
                       // nothing
                     } else {
