@@ -232,7 +232,7 @@ void CanvasRenderingContext2D::FillRect(float x, float y, float w, float h) {
   SkPath path;
   path.addRect(SkRect::MakeXYWH(x, y, w, h));
   surface->getCanvas()->drawPath(path, fillPaint);
-  surface->flush();
+  surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
