@@ -66,13 +66,6 @@ int Servo2D::init(
   // Get the EGL context, surface and display.
   EGLContext context = windowsystem::GetGLContext(window);
   this->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-  EGLint attribs[] = {
-    EGL_WIDTH, width,
-    EGL_HEIGHT, height,
-    // EGL_TEXTURE_FORMAT, EGL_TEXTURE_RGB,
-    // EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
-    EGL_NONE
-  };
   EGLConfig eglConfig;
   EGLint eglConfigAttribs[] = {
     /* EGL_RED_SIZE,   8,
@@ -80,10 +73,10 @@ int Servo2D::init(
     EGL_BLUE_SIZE,  8,
     EGL_ALPHA_SIZE, 8,     // if you need the alpha channel
     EGL_DEPTH_SIZE, 16,    // if you need the depth buffer */
-    EGL_RED_SIZE, 5,
-    EGL_GREEN_SIZE, 6,
-    EGL_BLUE_SIZE, 5,
-    EGL_ALPHA_SIZE, 0,
+    EGL_RED_SIZE, 8,
+    EGL_GREEN_SIZE, 8,
+    EGL_BLUE_SIZE, 8,
+    EGL_ALPHA_SIZE, 8,
     /* EGL_RED_SIZE,   8,
     EGL_GREEN_SIZE, 8,
     EGL_BLUE_SIZE,  8,
@@ -104,7 +97,12 @@ int Servo2D::init(
       std::cout << "Servo2D error 3 " << error << std::endl;
     }
   }
-  this->surface = eglCreatePbufferSurface(this->display, eglConfig, attribs);
+  EGLint surfaceAttribs[] = {
+    EGL_WIDTH, width,
+    EGL_HEIGHT, height,
+    EGL_NONE
+  };
+  this->surface = eglCreatePbufferSurface(this->display, eglConfig, surfaceAttribs);
   std::cout << "Servo2D init 4 " << (void *)(this->surface) << std::endl;
   {
     EGLint error = eglGetError();
