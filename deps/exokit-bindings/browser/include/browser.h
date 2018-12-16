@@ -61,6 +61,7 @@ protected:
   static NAN_METHOD(SendKeyPress);
   static NAN_METHOD(RunJs);
   static NAN_METHOD(PostMessage);
+  static NAN_METHOD(Destroy);
   static NAN_GETTER(TextureGetter);
   void load(const std::string &url);
   void loadImmediate(const std::string &url, NATIVEwindow *window = nullptr, int width = 0, int height = 0);
