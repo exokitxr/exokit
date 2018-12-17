@@ -38,6 +38,7 @@ const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
 localEuler.order = 'YXZ';
 const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
 
 function parseQuery(queryString) {
   var query = {};
@@ -232,7 +233,7 @@ for (let i = 0; i < 2; i++) {
     new THREE.Vector3(0, -1, -1)
   );
 
-  const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+  /* const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
     const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
     mesh.position.set(x, y, z);
     mesh.quaternion.set(qx, qy, qz, qw);
@@ -244,7 +245,7 @@ for (let i = 0; i < 2; i++) {
     return mesh;
   };
   const blockMesh = _makeBlockMesh();
-  controllerMesh.add(blockMesh);
+  controllerMesh.add(blockMesh); */
 
   const rayMesh = (() => {
     const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
@@ -951,8 +952,19 @@ function animate(time, frame) {
 
   const _updateGamepads = () => {
     if (fakeDisplay) {
-      const inputSources = display.session.getInputSources();
+      /* const {xrOffset} = window.document;
+      const xrOffsetInverseMatrix = xrOffset ?
+        localMatrix
+          .compose(
+            localVector.fromArray(xrOffset.position),
+            localQuaternion.fromArray(xrOffset.rotation),
+            localVector2.fromArray(xrOffset.scale)
+          )
+          .getInverse(localMatrix)
+      :
+        localMatrix.identity(); */
 
+      const inputSources = display.session.getInputSources();
       for (let i = 0; i < inputSources.length; i++) {
         const gamepad = fakeDisplay.gamepads[i];
         if (gamepad) {
@@ -969,11 +981,14 @@ function animate(time, frame) {
 
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
-        localMatrix.compose(
-          localVector.fromArray(gamepad.pose.position),
-          localQuaternion.fromArray(gamepad.pose.orientation),
-          localVector2.set(1, 1, 1)
-        )
+        localMatrix2
+          .compose(
+            localVector.fromArray(gamepad.pose.position),
+            localQuaternion.fromArray(gamepad.pose.orientation),
+            localVector2.set(1, 1, 1)
+          )
+          .toArray(pose._localPointerMatrix);
+         localMatrix2
           .toArray(pose.pointerMatrix);
       }
     }
@@ -1542,17 +1557,18 @@ function animate(time, frame) {
 
 // bootstrap
 
-const _bootFakeDisplay = () => {
+const _bootFakeDisplay = async () => {
   fakeDisplay = _makeFakeDisplay();
   camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
   fakeDisplay.position.set(0, 1.6, 0);
   // const canvas = renderer.domElement;
-  fakeDisplay.enter({
+  const session = await fakeDisplay.enter({
     renderer,
     animate,
     layers,
   });
+  fakeDisplay.session = session;
 
   display = fakeDisplay;
 
