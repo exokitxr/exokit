@@ -344,7 +344,7 @@ class XRWebGLLayer {
     throw new Error('not implemented'); // XXX
   }
 }
-module.exports.XRWebGLLayer = XRWebGLLayer
+module.exports.XRWebGLLayer = XRWebGLLayer;
 
 class XRPresentationFrame {
   constructor(session) {
