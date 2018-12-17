@@ -1256,6 +1256,10 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.last = now;
     }
 
+    const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
+    if (fakeVrDisplay.isPresenting) {
+      fakeVrDisplay.waitGetPoses();
+    }
     if (vrPresentState.isPresenting && vrPresentState.glContext && vrPresentState.glContext.canvas.ownerDocument.defaultView === window) {
       // wait for frame
       vrPresentState.compositor.WaitGetPoses(

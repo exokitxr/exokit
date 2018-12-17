@@ -474,6 +474,12 @@ class FakeVRDisplay extends MRDisplay {
     }
     return result;
   }
+  
+  waitGetPoses() {
+    if (this.onwaitgetposes) {
+      this.onwaitgetposes();
+    }
+  }
 }
 
 const createVRDisplay = () => new FakeVRDisplay();
