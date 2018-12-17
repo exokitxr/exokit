@@ -1727,7 +1727,7 @@ const _start = () => {
     }
     u = u.replace(/^exokit:/, '');
     if (u && !url.parse(u).protocol) {
-      u = 'file://' + path.resolve(cwd, u);
+      u = 'file://' + path.resolve(process.cwd(), u);
     }
     return core.load(u, {
       dataPath,
