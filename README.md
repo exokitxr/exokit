@@ -154,7 +154,7 @@ you can set `debugger` breakpoints, inspect memory, profile CPU, etc.
 
 ## Community
 
-- [Slack](https://communityinviter.com/apps/exokit/exokit) for development
+- [Slack](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q) for development
 - [Discord](https://discord.gg/Apk6cZN) for hanging out
 - [Twitter](https://twitter.com/webmixedreality) for silliness
 
