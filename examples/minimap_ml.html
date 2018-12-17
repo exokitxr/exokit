@@ -243,7 +243,7 @@
             .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.2/2, 0)),
           new THREE.MeshBasicMaterial({
             // color: 0x0000FF,
-            map: renderTarget,
+            map: renderTarget.texture,
           })
         );
         // planeMesh.position.z = -1;
