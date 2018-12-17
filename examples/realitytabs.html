@@ -161,13 +161,6 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
     if (contentDocument) {
       _drawOk();
 
-      layers.push(iframe);
-
-      tabs.push({
-        url: u,
-        iframe,
-      });
-
       // floorMesh.visible = false;
       // scene.background = null;
     } else {
@@ -185,6 +178,12 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
     // scene.background = _makeBackground();
   });
   document.body.appendChild(iframe);
+
+  tabs.push({
+    url: u,
+    iframe,
+  });
+  layers.push(iframe);
 
   return iframe;
 };
@@ -417,7 +416,7 @@ const _makeRig = () => {
         ctx.fillStyle = '#000';
         ctx.font = `${fontSize}px Arial`;
 
-        ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 10);
+        ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 5);
         ctx.fillText('c', menuWidth*0.68, menuHeight*0.7);
         ctx.fillText('x', menuWidth*0.88, menuHeight*0.7);
 
@@ -604,7 +603,7 @@ const _makeRig = () => {
               const y = menuHeight*i;
 
               ctx.fillStyle = '#FFFFFF';
-              ctx.fillRect(0, y, menuWidth*0.8-10, menuHeight);
+              ctx.fillRect(0, y, menuWidth*0.8 - 5, menuHeight);
               ctx.fillRect(menuWidth*0.8, y, menuHeight*3, menuHeight);
 
               ctx.fillStyle = '#000000';
@@ -1298,6 +1297,10 @@ function animate(time, frame) {
                         const {url} = link;
 
                         _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
+
+                        menuMesh.optionsMesh.list = 'tabs';
+                        menuMesh.optionsMesh.updateOptions();
+                        menuMesh.listMesh.updateList();
                       }
 
                       intersectionSpecs[i] = null;
