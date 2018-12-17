@@ -196,17 +196,46 @@
         }
       };
 
-      if (window.browser && window.browser.magicleap) {
-        mesher = window.browser.magicleap.RequestMeshing();
-        mesher.onmesh = _onMesh;
-      }
-
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
       });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
+
+      if (window.browser && window.browser.magicleap) {
+        mesher = window.browser.magicleap.RequestMeshing();
+        mesher.onmesh = _onMesh;
+      } else {
+        const gl = renderer.getContext();
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.from([]), gl.STATIC_DRAW);
+
+        const normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, Float32Array.from([]), gl.STATIC_DRAW);
+
+        const indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Float32Array.from([]), gl.STATIC_DRAW);
+
+        renderer.state.reset();
+
+        const updates = [
+          {
+            id: 0,
+            type: 'update',
+            positionBuffer,
+            normalBuffer,
+            indexBuffer,
+          },
+        ];
+        setInterval(() => {
+          _onMesh(updates);
+        });
+      }
 
       (() => {
         intersectScene = new THREE.Scene();
@@ -365,46 +394,52 @@
     init();
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
-      console.log('request session');
-      const session = await display.requestSession({
-        exclusive: true,
-      });
-      display.session = session;
-
-      /* session.onselect = e => {
-        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const rayMesh = rayMeshes[controllerIndex];
-        rayMesh.matrixWorld.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
-
-        const objectMesh = _makeControllerMesh(
-          rayMesh.position.x, rayMesh.position.y, rayMesh.position.z,
-          rayMesh.quaternion.x, rayMesh.quaternion.y, rayMesh.quaternion.z, rayMesh.quaternion.w,
-        );
-        scene.add(objectMesh);
-      }; */
-
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+      if (navigator.xr) {
+        console.log('request device');
+        display = await navigator.xr.requestDevice();
+        console.log('request session');
+        const session = await display.requestSession({
+          exclusive: true,
         });
+        display.session = session;
 
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
+        /* session.onselect = e => {
+          const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+          const rayMesh = rayMeshes[controllerIndex];
+          rayMesh.matrixWorld.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
 
-        renderer.setSize(width * 2, height);
+          const objectMesh = _makeControllerMesh(
+            rayMesh.position.x, rayMesh.position.y, rayMesh.position.z,
+            rayMesh.quaternion.x, rayMesh.quaternion.y, rayMesh.quaternion.z, rayMesh.quaternion.w,
+          );
+          scene.add(objectMesh);
+        }; */
 
-        renderer.setAnimationLoop(null);
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
 
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
+          const viewport = session.baseLayer.getViewport(frame.views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
+
+          renderer.setSize(width * 2, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setDevice(display);
+          renderer.vr.setAnimationLoop(animate);
+
+          console.log('running!');
+        });
+      } else {
         renderer.vr.setAnimationLoop(animate);
 
         console.log('running!');
-      });
+      }
     })();
   </script>
   </body>
