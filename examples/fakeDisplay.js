@@ -27,6 +27,33 @@ window._makeFakeDisplay = () => {
       window.dispatchEvent(e);
     });
   };
+  fakeDisplay.onwaitgetposes = () => {
+    fakeDisplay.update();
+
+    const inputSources = fakeDisplay.gamepads;
+    for (let i = 0; i < inputSources.length; i++) {
+      const gamepad = fakeDisplay.gamepads[i];
+      if (gamepad) {
+        localVector.copy(fakeDisplay.position)
+          .add(
+            localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
+              .applyQuaternion(fakeDisplay.quaternion)
+          ).toArray(gamepad.pose.position);
+        fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
+      }
+
+      localMatrix2
+        .compose(
+          localVector.fromArray(gamepad.pose.position),
+          localQuaternion.fromArray(gamepad.pose.orientation),
+          localVector2.set(1, 1, 1)
+        )
+        .toArray(gamepad.pose._localPointerMatrix);
+       localMatrix2
+        .toArray(gamepad.pose.pointerMatrix);
+    }
+    // console.log('gamepade pose', fakeDisplay.gamepads[1].pose.position);
+  };
 
   fakeDisplay.update(); // initialize gamepads
   for (let i = 0; i < fakeDisplay.gamepads.length; i++) {
@@ -118,15 +145,16 @@ window._makeFakeDisplay = () => {
         return this._pose;
       },
       getInputPose(inputSource, coordinateSystem) {
+        localMatrix
+          .compose(
+            localVector.fromArray(inputSource.pose.position),
+            localQuaternion.fromArray(inputSource.pose.orientation),
+            localVector2.set(1, 1, 1)
+          )
+
         if (self.window) {
           const {xrOffset} = self.window.document;
-
           localMatrix
-            .compose(
-              localVector.fromArray(inputSource.pose.position),
-              localQuaternion.fromArray(inputSource.pose.orientation),
-              localVector2.set(1, 1, 1)
-            )
             .premultiply(
               localMatrix2.compose(
                 localVector.fromArray(xrOffset.position),
@@ -134,11 +162,13 @@ window._makeFakeDisplay = () => {
                 localVector2.fromArray(xrOffset.scale)
               )
               .getInverse(localMatrix2)
-            )
-            .toArray(inputSource.pose._localPointerMatrix);
-          localMatrix
-            .toArray(inputSource.pose.pointerMatrix);
+            );
         }
+
+        localMatrix
+          .toArray(inputSource.pose._localPointerMatrix);
+        localMatrix
+          .toArray(inputSource.pose.pointerMatrix);
 
         return inputSource.pose; // XXX or _pose
       },

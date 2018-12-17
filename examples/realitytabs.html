@@ -852,7 +852,7 @@ window.addEventListener('mousemove', e => {
       localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
       fakeDisplay.quaternion.setFromEuler(localEuler);
 
-      fakeDisplay.update();
+      // fakeDisplay.update();
     // }
 
     // _updateGamepads();
@@ -950,30 +950,15 @@ function animate(time, frame) {
   const timeDiff = now - lastTime;
   const startTimeDiff = now - startTime;
 
-  const _updateGamepads = () => {
+  /* const _updateGamepads = () => {
     if (fakeDisplay) {
-      /* const {xrOffset} = window.document;
-      const xrOffsetInverseMatrix = xrOffset ?
-        localMatrix
-          .compose(
-            localVector.fromArray(xrOffset.position),
-            localQuaternion.fromArray(xrOffset.rotation),
-            localVector2.fromArray(xrOffset.scale)
-          )
-          .getInverse(localMatrix)
-      :
-        localMatrix.identity(); */
-
       const inputSources = display.session.getInputSources();
       for (let i = 0; i < inputSources.length; i++) {
         const gamepad = fakeDisplay.gamepads[i];
         if (gamepad) {
-          // const controllerOffset = controllerOffsets[i];
-
           localVector.copy(fakeDisplay.position)
             .add(
               localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
-                // .add(controllerOffset)
                 .applyQuaternion(fakeDisplay.quaternion)
             ).toArray(gamepad.pose.position);
           fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
@@ -993,7 +978,7 @@ function animate(time, frame) {
       }
     }
   };
-  _updateGamepads();
+  _updateGamepads(); */
 
   const _updateControllerMeshes = () => {
     if (renderer.vr.enabled) {
@@ -1524,7 +1509,7 @@ function animate(time, frame) {
             localVector.copy(velocity)
               .applyEuler(localEuler)
           );
-          fakeDisplay.update();
+          // fakeDisplay.update();
         // }
       // }
     }
