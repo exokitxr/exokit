@@ -1,15 +1,17 @@
+const path = require('path');
+const fs = require('fs');
+const url = require('url');
+const util = require('util');
 const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
 const parse5 = require('parse5');
 const parseIntStrict = require('parse-int');
 const selector = require('window-selector');
-const url = require('url');
-const util = require('util');
 
 const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
-const {Event, EventTarget, MouseEvent, ErrorEvent} = require('./Event');
+const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const urls = require('./urls').urls;
@@ -1817,6 +1819,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.contentWindow = null;
     this.contentDocument = null;
     this.live = true;
+    
+    this.d = null;
+    this.browser = null;
+    this.onconsole = null;
     this.xrOffset = {
       position: new Float32Array(3),
       rotation: new Float32Array(4),
@@ -1834,54 +1840,143 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         }
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
-          this.ownerDocument.defaultView.fetch(url)
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.text();
+          (async () => {
+            if (this.d === 2) {
+              if (!this.browser) {
+                const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+                if (context) {
+                  const browser = new GlobalContext.nativeBrowser.Browser(
+                    context,
+                    this.width||context.canvas.ownerDocument.defaultView.innerWidth,
+                    this.height||context.canvas.ownerDocument.defaultView.innerHeight,
+                    url,
+                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef')
+                  );
+                  this.browser = browser;
+                  
+                  let done = false, err = null, loadedUrl = url;
+                  this.browser.onloadend = () => {
+                    done = true;
+                  };
+                  this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
+                    done = true;
+                    err = new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`);
+                  };
+                  this.browser.onconsole = (message, source, line) => {
+                    this.onconsole && this.onconsole(message, source, line);
+                  };
+                  await new Promise((accept, reject) => {
+                    if (!done) {
+                      this.browser.onloadend = (_url) => {
+                        loadedUrl = _url;
+                        if (this.contentWindow) {
+                          this.contentWindow.location.href = _url;
+                        }
+                        accept();
+                      };
+                      this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
+                        reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
+                      };
+                    } else {
+                      if (!err) {
+                        accept();
+                      } else {
+                        reject(err);
+                      }
+                    }
+                  });
+                  
+                  let onmessage = null;
+                  const self = this;
+                  this.contentWindow = {
+                    _emit() {},
+                    location: {
+                      href: loadedUrl
+                    },
+                    postMessage(m) {
+                      self.browser.postMessage(JSON.stringify(m));
+                    },
+                    get onmessage() {
+                      return onmessage;
+                    },
+                    set onmessage(newOnmessage) {
+                      onmessage = newOnmessage;
+                      self.browser.onmessage = newOnmessage ? m => {
+                        newOnmessage(new MessageEvent('messaage', {
+                          data: JSON.parse(m),
+                        }));
+                      } : null;
+                    },
+                    destroy() {
+                      self.browser.destroy();
+                      self.browser = null;
+                    },
+                  };
+                  this.contentDocument = {
+                    _emit() {},
+                  };
+
+                  this.readyState = 'complete';
+                  
+                  this.dispatchEvent(new Event('load', {target: this}));
+
+                  cb();
+                } else {
+                  throw new Error('iframe owner document does not have a WebGL context');
+                }
               } else {
-                return Promise.reject(new Error('iframe src got invalid status code: ' + res.status + ' : ' + url));
+                this.browser.load(url);
               }
-            })
-            .then(htmlString => {
-              if (this.live) {
-                const parentWindow = this.ownerDocument.defaultView;
-                const options = parentWindow[symbols.optionsSymbol];
-
-                url = utils._makeNormalizeUrl(options.baseUrl)(url);
-                const contentWindow = GlobalContext._makeWindow({
-                  url,
-                  baseUrl: url,
-                  dataPath: options.dataPath,
-                }, parentWindow, parentWindow.top);
-                const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
-                contentDocument.hidden = this.hidden;
-                contentDocument.xrOffset = this.xrOffset;
-
-                contentWindow.document = contentDocument;
-
-                this.contentWindow = contentWindow;
-                this.contentDocument = contentDocument;
-
-                contentWindow.on('destroy', e => {
-                  parentWindow.emit('destroy', e);
-                });
+            } else {
+              const res = await this.ownerDocument.defaultView.fetch(url);
+              if (res.status >= 200 && res.status < 300) {
+                const htmlString = await res.text();
                 
-                this.readyState = 'complete';
+                if (this.live) {
+                  const parentWindow = this.ownerDocument.defaultView;
+                  const options = parentWindow[symbols.optionsSymbol];
 
-                this.dispatchEvent(new Event('load', {target: this}));
+                  url = utils._makeNormalizeUrl(options.baseUrl)(url);
+                  const contentWindow = GlobalContext._makeWindow({
+                    url,
+                    baseUrl: url,
+                    dataPath: options.dataPath,
+                  }, parentWindow, parentWindow.top);
+                  const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
+
+                  contentDocument.hidden = this.d === 3;
+
+                  contentDocument.xrOffset = this.xrOffset;
+
+                  contentWindow.document = contentDocument;
+
+                  this.contentWindow = contentWindow;
+                  this.contentDocument = contentDocument;
+
+                  contentWindow.on('destroy', e => {
+                    parentWindow.emit('destroy', e);
+                  });
+
+                  this.readyState = 'complete';
+
+                  this.dispatchEvent(new Event('load', {target: this}));
+                }
+
+                cb();
+              } else {
+                throw new Error('iframe src got invalid status code: ' + res.status + ' : ' + url);
               }
-              
-              cb();
-            })
+            }
+          })()
             .catch(err => {
               console.error(err);
-              
+
               this.readyState = 'complete';
-              
+
               this.dispatchEvent(new Event('load', {target: this}));
-              
+
               cb(err);
-            });
+            })
         });
       } else if (name === 'position' || name === 'rotation' || name === 'scale') {
         const v = _parseVector(value);
@@ -1892,9 +1987,18 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         } else if (name === 'scale' && v.length === 3) {
           this.xrOffset.scale.set(v);
         }
-      } else if (name === 'hidden') {
-        if (this.contentDocument) {
-          this.contentDocument.hidden = value;
+      } else if (name === 'd') {
+        if (value === '2') {
+          this.d = 2;
+        } else if (value === '3') {
+          this.d = 3;
+        } else {
+          this.d = null;
+        }
+      } else if (name === 'width' || name === 'height') {
+        if (this.browser) {
+          this.browser.width = this.width;
+          this.browser.height = this.height;
         }
       }
     });
@@ -1904,8 +2008,38 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         this.contentWindow = null;
       }
       this.contentDocument = null;
+      
+      if (this.browser) {
+        this.browser.destroy(); // XXX support this
+      }
     });
   }
+  
+  get width() {
+    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+  }
+  set width(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('width', value);
+    }
+  }
+  get height() {
+    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
+  }
+  set height(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('height', value);
+    }
+  }
+  
+  get texture() {
+    if (this.d === 2) {
+      return this.browser && this.browser.texture;
+    } else {
+      return null;
+    }
+  }
+  set texture(texture) {}
   
   get position() {
     return this.getAttribute('position');
@@ -1936,14 +2070,46 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
     this.setAttribute('scale', scale);
   }
-
-  get hidden() {
-    return this.getAttribute('hidden');
+  
+  back() { // XXX should use native navigation APIs for these
+    this.browser && this.browser.back();
   }
-  set hidden(hidden) {
-    this.setAttribute('hidden', hidden);
+  forward() {
+    this.browser && this.browser.forward();
   }
-
+  reload() {
+    this.browser && this.browser.reload();
+  }
+  
+  sendMouseMove(x, y) {
+    this.browser && this.browser.sendMouseMove(x, y);
+  }
+  sendMouseDown(x, y, button) {
+    this.browser && this.browser.sendMouseDown(x, y, button);
+  }
+  sendMouseUp(x, y, button) {
+    this.browser && this.browser.sendMouseUp(x, y, button);
+  }
+  sendMouseWheel(x, y, deltaX, deltaY) {
+    this.browser && this.browser.sendMouseWheel(x, y, deltaX, deltaY);
+  }
+  sendKeyDown(key, modifiers) {
+    this.browser && this.browser.sendKeyDown(key, modifiers);
+    if(key === 13){
+      this.browser.sendKeyPress(key, modifiers);
+    }
+  }
+  sendKeyUp(key, modifiers) {
+    this.browser && this.browser.sendKeyUp(key, modifiers);
+  }
+  sendKeyPress(key, modifiers) {
+    this.browser && this.browser.sendKeyPress(key, modifiers);
+  }
+  
+  runJs(jsString = '', scriptUrl = '<unknown>', startLine = 1) {
+    this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
+  }
+  
   destroy() {
     if (this.live) {
       this._emit('destroy');

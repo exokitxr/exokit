@@ -4,7 +4,9 @@
 
 namespace egl {
 
-// @Module: Window handling
+constexpr EGLint glMajorVersion = 3;
+constexpr EGLint glMinorVersion = 2;
+
 thread_local NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
 std::unique_ptr<Nan::Persistent<Function>> eventHandler;
@@ -19,8 +21,7 @@ void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
 void Initialize() {
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
-  EGLint major = 4;
-  EGLint minor = 0;
+  EGLint major, minor;
   eglInitialize(display, &major, &minor);
   eglBindAPI(EGL_OPENGL_API);
 }
@@ -206,8 +207,8 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   eglChooseConfig(display, config_attribs, &egl_config, 1, &config_size);
 
   EGLint context_attribs[] = {
-    EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
-    EGL_CONTEXT_MINOR_VERSION_KHR, 2,
+    EGL_CONTEXT_MAJOR_VERSION_KHR, glMajorVersion,
+    EGL_CONTEXT_MINOR_VERSION_KHR, glMinorVersion,
     EGL_NONE
   };
 

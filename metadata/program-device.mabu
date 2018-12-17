@@ -89,6 +89,7 @@ DATAS = ../package.json : / \
   ../lib/ : /lib/ \
   ../build/Release/exokit.node : /build/Release/exokit.node \
   ../node_modules/ : /node_modules/ \
+  ../node_modules/native-browser-deps/lib5/magicleap/libmlservo.so : /bin/ \
   ../examples/ : /examples/ \
   ../metadata/fonts.xml : /etc/fonts.xml
   # ../app/ : /app/
@@ -168,7 +169,9 @@ STLIBS = node \
 # SHLIBS.win = ole32 winmm
 SHLIBS = ml_privileges \
   ml_camera \
-  ml_audio
+  ml_audio \
+  log \
+  mlservo
 
 # paths for finding libraries above
 #
@@ -179,7 +182,8 @@ LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   ../node_modules/libnode.a \
   ../node_modules/native-canvas-deps\lib2\magicleap \
   ../node_modules/native-audio-deps\lib2\magicleap \
-  ../node_modules/native-video-deps\lib2\magicleap
+  ../node_modules/native-video-deps\lib2\magicleap \
+  ../node_modules/native-browser-deps\lib5\magicleap
 
 # flags for C/C++/assembly preprocessing
 #
@@ -202,5 +206,5 @@ ASMFLAGS.msvc = -Zp8
 # flags for linking: note these go to gcc, not "ld", for
 # gcc/clang tools, so use -Wl,... if needed.
 #
-LDFLAGS.gcc,clang = -Wl,-v -Wl,-E
+LDFLAGS.gcc,clang = -Wl,-v -Wl,-E -Xlinker --no-demangle
 LDFLAGS.win = -subsystem:console

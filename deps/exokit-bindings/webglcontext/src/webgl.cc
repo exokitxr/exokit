@@ -58,7 +58,7 @@ NAN_GETTER(glGetterWrap) {
     if (gl->windowHandle) {
       windowsystem::SetCurrentWindowContext(gl->windowHandle);
     }
-
+    
     F(property, info);
   } else {
     info.GetReturnValue().Set(JS_STR(""));

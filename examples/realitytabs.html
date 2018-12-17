@@ -6,8 +6,14 @@
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script>
-let display, fakeDisplay;
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false];
 
+const links = [
+  {
+    name: 'Minimap',
+    url: 'minimap_ml.html',
+  },
+];
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 const rayDistance = 1;
@@ -15,7 +21,7 @@ const menuWidth = 1024;
 const menuHeight = menuWidth * 0.1;
 const menuWorldWidth = 1;
 const menuWorldHeight = menuWorldWidth / menuWidth * menuHeight;
-const menuPositionHeight = .3;
+const menuPositionHeight = 0.3;
 const urlBarWidth = menuWorldWidth;
 const urlBarHeight = menuHeight;
 const urlBarOffset = urlBarHeight;
@@ -44,7 +50,7 @@ function parseQuery(queryString) {
 }
 const query = parseQuery(window.location.search);
 const FLOOR_SIZE = 20;
-const DEFAULT_URL = 'http://';
+const DEFAULT_URL = 'http://lol.com';
 
 // load
 
@@ -127,7 +133,7 @@ const _makeRenderer = () => {
   };
 };
 
-const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1)) => {
+const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1/window.innerWidth*window.innerHeight, 1), d = 3) => {
   const _drawOk = () => {
     console.log('Load ok: ' + u);
   };
@@ -155,8 +161,6 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
     if (contentDocument) {
       _drawOk();
 
-      layers.push(iframe);
-
       // floorMesh.visible = false;
       // scene.background = null;
     } else {
@@ -167,13 +171,19 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
       layers.splice(layers.indexOf(iframe), 1);
     }
   };
+  iframe.d = d;
   iframe.src = u;
-  iframe.hidden = true;
   iframe.addEventListener('destroy', () => {
     // floorMesh.visible = true;
     // scene.background = _makeBackground();
   });
   document.body.appendChild(iframe);
+
+  tabs.push({
+    url: u,
+    iframe,
+  });
+  layers.push(iframe);
 
   return iframe;
 };
@@ -385,7 +395,7 @@ const _makeRig = () => {
         alphaTest: 0.9,
       });
       const mesh = new THREE.Mesh(geometry, material);
-      // mesh.position.y = -menuWorldHeight/2;
+      mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
 
       const text = DEFAULT_URL;
@@ -397,16 +407,17 @@ const _makeRig = () => {
       mesh.urlState = urlState;
 
       const _updateText = () => {
-        // console.log('update text', urlState.text, urlState.cursor);
-
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(0, 0, menuWidth*0.8 - 5, menuHeight);
-        ctx.fillRect(menuWidth*0.8, 0, menuWidth, menuHeight);
+        ctx.fillRect(0, 0, menuWidth*0.6 - 5, menuHeight);
+        ctx.fillRect(menuWidth*0.6, 0, menuWidth*0.2 - 5, menuHeight);
+        ctx.fillRect(menuWidth*0.8, 0, menuWidth*0.2 - 5, menuHeight);
         ctx.fillRect(0, menuHeight, menuWidth*0.5, menuHeight);
 
         ctx.fillStyle = '#000';
         ctx.font = `${fontSize}px Arial`;
-        ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 10);
+
+        ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 5);
+        ctx.fillText('c', menuWidth*0.68, menuHeight*0.7);
         ctx.fillText('x', menuWidth*0.88, menuHeight*0.7);
 
         urlState.measures.length = 0;
@@ -482,22 +493,37 @@ const _makeRig = () => {
       });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.y = -menuWorldHeight - (10/menuHeight*menuWorldHeight);
-      // mesh.updateMatrixWorld();
+      mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
       mesh.d = 3;
+      mesh.list = 'tabs';
 
       const _updateOptions = () => {
-        ctx.fillStyle = mesh.d === 3 ? '#42a5f5' : '#EEE';
-        ctx.fillRect(0, 0, menuHeight*2, menuHeight);
-        ctx.fillStyle = mesh.d === 3 ? '#FFF' : '#000';
         ctx.font = `${fontSize}px Arial`;
-        ctx.fillText('3D', menuHeight - 30, menuHeight/2 + 20);
 
+        // 3D
+        ctx.fillStyle = mesh.d === 3 ? '#42a5f5' : '#EEE';
+        ctx.fillRect(0, 0, menuWidth*0.2 - 5, menuHeight);
+        ctx.fillStyle = mesh.d === 3 ? '#FFF' : '#000';
+        ctx.fillText('3D', menuWidth*0.2/2 - 30, menuHeight/2 + 20);
+
+        // 2D
         ctx.fillStyle = mesh.d === 2 ? '#42a5f5' : '#EEE';
-        ctx.fillRect(menuHeight*2 + 10, 0, menuHeight*2, menuHeight);
+        ctx.fillRect(menuWidth*0.2, 0, menuWidth*0.2 - 5, menuHeight);
         ctx.fillStyle = mesh.d === 2 ? '#FFF' : '#000';
-        ctx.font = `${fontSize}px Arial`;
-        ctx.fillText('2D', menuHeight*3 - 30, menuHeight/2 + 20);
+        ctx.fillText('2D', menuWidth*0.2 + menuWidth*0.2/2 - 30, menuHeight/2 + 20);
+
+        // Tabs
+        ctx.fillStyle = mesh.list === 'tabs' ? '#42a5f5' : '#EEE';
+        ctx.fillRect(menuWidth*0.4, 0, menuWidth*0.2 - 5, menuHeight);
+        ctx.fillStyle = mesh.list === 'tabs' ? '#FFF' : '#000';
+        ctx.fillText('Tabs', menuWidth*0.4 + menuWidth*0.2/2 - 70, menuHeight/2 + 20);
+
+        // Links
+        ctx.fillStyle = mesh.list === 'links' ? '#42a5f5' : '#EEE';
+        ctx.fillRect(menuWidth*0.6, 0, menuWidth*0.2 - 5, menuHeight);
+        ctx.fillStyle = mesh.list === 'links' ? '#FFF' : '#000';
+        ctx.fillText('Links', menuWidth*0.6 + menuWidth*0.2/2 - 70, menuHeight/2 + 20);
 
         texture.needsUpdate = true;
       };
@@ -533,6 +559,112 @@ const _makeRig = () => {
     })();
     object.add(optionsMesh);
     object.optionsMesh = optionsMesh;
+
+    const listMesh = (() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = menuWidth;
+      canvas.height = menuHeight*4;
+      const ctx = canvas.getContext('2d');
+
+      const geometry = new THREE.PlaneBufferGeometry(menuWorldWidth, menuWorldHeight*4);
+      const texture = new THREE.Texture(
+        canvas,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.NearestFilter,
+        THREE.NearestFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        1
+      );
+      texture.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        alphaTest: 0.9,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.y = -menuWorldHeight*3.5 - (10/menuHeight*menuWorldHeight)*2;
+      mesh.updateMatrixWorld();
+      mesh.frustumCulled = false;
+
+      const _updateList = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.font = `${fontSize}px Arial`;
+
+        if (optionsMesh.list === 'tabs') {
+          if (tabs.length > 0) {
+            for (let i = 0; i < tabs.length; i++) {
+              const tab = tabs[i];
+              const {url} = tab;
+              const y = menuHeight*i;
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, y, menuWidth*0.8 - 5, menuHeight);
+              ctx.fillRect(menuWidth*0.8, y, menuHeight*3, menuHeight);
+
+              ctx.fillStyle = '#000000';
+              ctx.fillText(url, 50, y + menuHeight/2 + 20);
+              ctx.fillText('x', menuWidth*0.88, y + menuHeight*0.7);
+            }
+          } else {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, menuWidth*0.3 - 5, menuHeight);
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText('No tabs', 50, menuHeight/2 + 20);
+          }
+        } else if (optionsMesh.list === 'links') {
+          for (let i = 0; i < links.length; i++) {
+            const link = links[i];
+            const {name} = link;
+            const y = menuHeight*i;
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, y, menuWidth, menuHeight);
+
+            ctx.fillStyle = '#000000';
+            ctx.fillText(name, 50, y + menuHeight/2 + 20);
+          }
+        }
+
+        texture.needsUpdate = true;
+      };
+      _updateList();
+      mesh.updateList = _updateList;
+
+      mesh.plane = new THREE.Plane();
+      mesh.leftLine = new THREE.Line3();
+      mesh.topLine = new THREE.Line3();
+      mesh.update = () => {
+        mesh.leftLine.start
+          .set(-menuWorldWidth/2, menuWorldHeight*4/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+        mesh.leftLine.end
+          .set(-menuWorldWidth/2, -menuWorldHeight*4/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+
+        mesh.topLine.start
+          .set(-menuWorldWidth/2, menuWorldHeight*4/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+        mesh.topLine.end
+          .set(menuWorldWidth/2, menuWorldHeight*4/2, 0)
+          .applyMatrix4(mesh.matrixWorld);
+
+        mesh.plane.setFromCoplanarPoints(
+          mesh.leftLine.start,
+          mesh.leftLine.end,
+          mesh.topLine.end
+        );
+      };
+
+      return mesh;
+    })();
+    object.add(listMesh);
+    object.listMesh = listMesh;
 
     return object;
   })();
@@ -574,6 +706,7 @@ const _makeRig = () => {
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.frustumCulled = false;
+      mesh.position.y = -0.5;
       mesh.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 0, 1),
         new THREE.Vector3(0, 1, 1).normalize()
@@ -890,6 +1023,7 @@ function animate(time, frame) {
         keyboardMesh.update();
         menuMesh.urlMesh.update();
         menuMesh.optionsMesh.update();
+        menuMesh.listMesh.update();
 
         // keyboard
         {
@@ -1054,13 +1188,11 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.optionsMesh.leftLine.start) / menuWorldHeight;
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            // console.log('intersection', menuMesh.optionsMesh.leftLine.start.toArray().join(','), menuMesh.optionsMesh.leftLine.end.toArray().join(','), topIntersectionPoint.toArray().join(','), menuMesh.optionsMesh.topLine.start.toArray().join(','), menuMesh.optionsMesh.leftLine.start.toArray().join(','));
-
             if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight;
 
-              if (y < urlBarOffset*2) {
+              if (y >= 0 && y < urlBarOffset) {
                 intersectionPoints.push(intersectionPoint.clone());
                 intersectionCbs.push(() => {
                   controllerMesh.rayMesh.scale.z = distance;
@@ -1073,13 +1205,21 @@ function animate(time, frame) {
                   const gamepads = navigator.getGamepads();
                   const gamepad = gamepads[i];
                   if (gamepad.buttons[1].pressed) {
-                    const optionX = Math.floor(x/(menuHeight*2+10));
+                    const optionX = Math.floor(x/(menuWidth*0.2));
                     if (optionX === 0) {
                       menuMesh.optionsMesh.d = 3;
                       menuMesh.optionsMesh.updateOptions();
                     } else if (optionX === 1) {
                       menuMesh.optionsMesh.d = 2;
                       menuMesh.optionsMesh.updateOptions();
+                    } else if (optionX === 2) {
+                      menuMesh.optionsMesh.list = 'tabs';
+                      menuMesh.optionsMesh.updateOptions();
+                      menuMesh.listMesh.updateList();
+                    } else if (optionX === 3) {
+                      menuMesh.optionsMesh.list = 'links';
+                      menuMesh.optionsMesh.updateOptions();
+                      menuMesh.listMesh.updateList();
                     }
                   }
 
@@ -1089,8 +1229,91 @@ function animate(time, frame) {
             }
           }
         }
-      }
 
+        // list mesh
+        {
+          const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.listMesh.plane, localVector) : null;
+          if (intersectionPoint) {
+            const leftIntersectionPoint = menuMesh.listMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+            const topIntersectionPoint = menuMesh.listMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+            const xFactor = topIntersectionPoint.distanceTo(menuMesh.listMesh.topLine.start) / menuWorldWidth;
+            const yFactor = leftIntersectionPoint.distanceTo(menuMesh.listMesh.leftLine.start) / (menuWorldHeight*4);
+            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+              const x = xFactor * menuWidth;
+              const y = yFactor * menuHeight*4;
+
+              if (menuMesh.optionsMesh.list === 'tabs') {
+                for (let j = 0; j < tabs.length; j++) {
+                  if (x >= menuWidth*0.8 && y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                    intersectionPoints.push(intersectionPoint.clone());
+                    intersectionCbs.push(() => {
+                      controllerMesh.rayMesh.scale.z = distance;
+                      controllerMesh.updateMatrixWorld();
+
+                      controllerMesh.rayDot.position.z = -distance;
+                      controllerMesh.updateMatrixWorld();
+                      controllerMesh.rayDot.visible = true;
+
+                      const gamepads = navigator.getGamepads();
+                      const gamepad = gamepads[i];
+                      const pressed = gamepad.buttons[1].pressed;
+                      const lastPressed = lastPresseds[i];
+                      if (pressed && !lastPressed) {
+                        const [tab] = tabs.splice(j, 1);
+                        const {iframe} = tab;
+                        _closeUrl(iframe);
+
+                        menuMesh.listMesh.updateList();
+                      }
+
+                      intersectionSpecs[i] = null;
+                    });
+
+                    break;
+                  }
+                }
+              } else if (menuMesh.optionsMesh.list === 'links') {
+                for (let j = 0; j < links.length; j++) {
+                  if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                    intersectionPoints.push(intersectionPoint.clone());
+                    intersectionCbs.push(() => {
+                      controllerMesh.rayMesh.scale.z = distance;
+                      controllerMesh.updateMatrixWorld();
+
+                      controllerMesh.rayDot.position.z = -distance;
+                      controllerMesh.updateMatrixWorld();
+                      controllerMesh.rayDot.visible = true;
+
+                      const gamepads = navigator.getGamepads();
+                      const gamepad = gamepads[i];
+                      const pressed = gamepad.buttons[1].pressed;
+                      const lastPressed = lastPresseds[i];
+                      if (pressed && !lastPressed) {
+                        const link = links[j];
+                        const {url} = link;
+
+                        _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
+
+                        menuMesh.optionsMesh.list = 'tabs';
+                        menuMesh.optionsMesh.updateOptions();
+                        menuMesh.listMesh.updateList();
+                      }
+
+                      intersectionSpecs[i] = null;
+                    });
+
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
 
       if (intersectionPoints.length > 0) {
         const intersectionCb = intersectionPoints
@@ -1103,6 +1326,8 @@ function animate(time, frame) {
       } else {
         _setIntersectionDefault();
       }
+
+      lastPresseds[i] = navigator.getGamepads()[i].buttons[1].pressed;
     }
   };
   _updateIntersections();
@@ -1124,13 +1349,12 @@ function animate(time, frame) {
             const spec = intersectionSpecs[i];
             if (spec && spec.type === 'key') {
               const {data: {key, rig}} = spec;
-              const {menuMesh: {urlMesh}} = rig;
+              const {menuMesh: {urlMesh, optionsMesh}} = rig;
 
               switch (key) {
                 case 'enter': {
-                  const u = urlMesh.urlState.text !== DEFAULT_URL ? urlMesh.urlState.text : 'realitytab.html?color=29b6f6';
-                  _openUrl(u, rig.position, rig.quaternion);
-                  _closeRig(rig);
+                  const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
+                  _openUrl(u, rig.position, rig.quaternion, undefined, optionsMesh.d);
                   break;
                 }
                 default: {
@@ -1139,6 +1363,9 @@ function animate(time, frame) {
                     if (!shiftKey) {
                       c = c.toLowerCase();
                     }
+                    _handleSingleKey(c);
+                  };
+                  const _handleSingleKey = c => {
                     urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + c + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
                     urlMesh.urlState.cursor++;
                     urlMesh.updateText();
@@ -1187,6 +1414,26 @@ function animate(time, frame) {
                     } else if (code === 40) { // down
                       urlMesh.urlState.cursor = urlMesh.urlState.text.length;
                       urlMesh.updateText();
+                    } else if (code === 190) { // .
+                      _handleSingleKey('.');
+                    } else if (code === 188) { // ,
+                      _handleSingleKey(',');
+                    } else if (code === 191) { // /
+                      _handleSingleKey('/');
+                    } else if (code === 186) { // ;
+                      _handleSingleKey(';');
+                    } else if (code === 222) { // ;
+                      _handleSingleKey('\'');
+                    } else if (code === 219) { // [
+                      _handleSingleKey('[');
+                    } else if (code === 221) { // ]
+                      _handleSingleKey(']');
+                    } else if (code === 189) { // -
+                      _handleSingleKey('-');
+                    } else if (code === 187) { // =
+                      _handleSingleKey('=');
+                    } else if (code === 220) { // \
+                      _handleSingleKey('\\');
                     } else if (code === -1) {
                       // nothing
                     } else {
@@ -1291,8 +1538,7 @@ function animate(time, frame) {
 
 // reality tabs
 
-// _openUrl('realitytab.html?color=29b6f6', new THREE.Vector3(0.05, 1.55, -1 + 0.05));
-// _openUrl('realitytab.html?color=ab47bc', new THREE.Vector3(-0.05, 1.45, -1));
+// _openUrl('realitytab.html?color=ab47bc', new THREE.Vector3(-0.05, 0.5, 0), undefined, 2);
 
 // bootstrap
 

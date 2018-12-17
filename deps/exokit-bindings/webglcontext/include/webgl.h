@@ -80,10 +80,9 @@
 using namespace v8;
 using namespace node;
 
-void ensureCurrentGlWindow(WebGLRenderingContext *gl);
-
 enum GlKey {
   GL_KEY_COMPOSE,
+  GL_KEY_PLANE,
 };
 
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);

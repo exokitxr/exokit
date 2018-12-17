@@ -1,0 +1,456 @@
+<!doctype html>
+<html>
+  <body>
+    <script src="three.js"></script>
+    <script>
+let renderer, scene, camera, iframe, planeMesh, boxMeshes, controllerMeshes, focused;
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localCoord = new THREE.Vector2();
+const localPlane = new THREE.Plane();
+const localLine = new THREE.Line3();
+const localLine2 = new THREE.Line3();
+const localRaycaster = new THREE.Raycaster();
+
+const planeWorldWidth = 0.9;
+const planeWorldHeight = 0.9;
+const boxMeshSize = 0.02;
+const planeWidth = 1280;
+const planeHeight = 1024;
+
+const _makeControllerMesh = () => {
+  const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+    .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+    .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x9ccc65,
+  });
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.y = -1;
+  mesh.updateMatrixWorld();
+  // mesh.visible = true;
+  mesh.frustumCulled = false;
+  return mesh;
+};
+
+function init() {
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+  });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // window.browser.magicleap.RequestDepthPopulation(true);
+  // renderer.autoClear = false;
+
+  document.body.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  scene.matrixAutoUpdate = false;
+  // scene.background = new THREE.Color(0x3B3961);
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  // camera.position.set(0, 1, 0);
+  // camera.lookAt(new THREE.Vector3());
+  scene.add(camera);
+
+  const ambientLight = new THREE.AmbientLight(0x808080);
+  scene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+  directionalLight.position.set(1, 1, 1);
+  scene.add(directionalLight);
+
+  iframe = document.createElement('iframe');
+  iframe.d = 2;
+  iframe.src = 'http://lol.com';
+  iframe.onload = () => {
+    iframe.contentWindow.onmessage = m => {
+      console.log('parent got message: ' + JSON.stringify(m.data));
+    };
+
+    iframe.runJs(`
+      document.body.style.background = '#000080';
+      // console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
+
+      window.onmessage = m => {
+        console.log('child got message: ' + JSON.stringify(m.data));
+      };
+
+      window.postMessage({lol: 'zol'});
+    `);
+
+    console.log('post message 1');
+    iframe.contentWindow.postMessage({
+      woot: 'toot',
+    });
+    console.log('post message 2');
+  };
+  iframe.onconsole = (message, source, line) => {
+    console.log(source + ':' + line + ': ' + message);
+  };
+  document.body.appendChild(iframe);
+  setTimeout(() => {
+    iframe.src = 'http://text.com/';
+  }, 2000);
+
+  planeMesh = (() => {
+    const geometry = new THREE.PlaneBufferGeometry(planeWorldWidth, planeWorldHeight)
+      // .applyMatrix(new THREE.Matrix4().makeScale(-1, -1, 1));
+    const uvs = geometry.attributes.uv.array;
+    const numUvs = uvs.length / 2;
+    for (let i = 0; i < numUvs; i++) {
+      uvs[i*2+1] = 1 - uvs[i*2+1];
+    }
+    /* const material = new THREE.MeshPhongMaterial({
+      color: 0xFFFF00,
+    }); */
+    const texture = new THREE.Texture(
+      null,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.NearestFilter,
+      THREE.NearestFilter,
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType,
+      16
+    );
+    const properties = renderer.properties.get(texture);
+    properties.__webglTexture = iframe.texture;
+    properties.__webglInit = true;
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.z = -1;
+    mesh.projectMouse = (x, y) => {
+      const leftLine = localLine;
+      const topLine = localLine2;
+      const plane = localPlane;
+      const raycaster = localRaycaster;
+
+      leftLine.start
+        .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+        .applyMatrix4(mesh.matrixWorld);
+      leftLine.end
+        .set(-planeWorldWidth/2, -planeWorldHeight/2, 0)
+        .applyMatrix4(mesh.matrixWorld);
+
+      topLine.start
+        .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+        .applyMatrix4(mesh.matrixWorld);
+      topLine.end
+        .set(planeWorldWidth/2, planeWorldHeight / 2, 0)
+        .applyMatrix4(mesh.matrixWorld);
+
+      plane.setFromCoplanarPoints(
+        leftLine.start,
+        leftLine.end,
+        topLine.end
+      );
+
+      raycaster.setFromCamera(localCoord.set((x/window.innerWidth - 0.5) * 2, (y/window.innerHeight - 0.5) * 2), camera);
+      const intersectionPoint = raycaster.ray.intersectPlane(plane, localVector);
+      if (intersectionPoint) {
+        const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+        const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+        const xFactor = topIntersectionPoint.distanceTo(topLine.start) / planeWorldWidth;
+        const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / planeWorldHeight;
+        const distance = raycaster.ray.origin.distanceTo(intersectionPoint);
+
+        if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 3) {
+          const x = xFactor * window.innerWidth;
+          const y = (1 - yFactor) * window.innerHeight;
+
+          return localCoord.set(x, y);
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    };
+
+    return mesh;
+  })();
+  scene.add(planeMesh);
+
+  const _makeBoxMesh = () => {
+    const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize);
+      // .applyMatrix(new THREE.Matrix4().makeTranslation(-planeWorldWidth/2, planeWorldHeight/2, boxMeshSize/2));
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xFF0000,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    return mesh;
+  };
+  boxMeshes = [
+    _makeBoxMesh(),
+    _makeBoxMesh(),
+  ];
+  for (let i = 0; i < boxMeshes.length; i++) {
+    scene.add(boxMeshes[i]);
+  }
+
+  controllerMeshes = [
+    _makeControllerMesh(),
+    _makeControllerMesh(),
+  ];
+  for (let i = 0; i < controllerMeshes.length; i++) {
+    if (i === 1) { // XXX only use right controller
+      continue;
+    }
+    scene.add(controllerMeshes[i]);
+  }
+
+  focused = true;
+
+  window.addEventListener('mousemove', e => {
+    const coord = planeMesh.projectMouse(e.clientX, e.clientY);
+
+    if (coord) {
+      iframe.sendMouseMove(coord.x, coord.y);
+    }
+  });
+  window.addEventListener('mousedown', e => {
+    const coord = planeMesh.projectMouse(e.clientX, e.clientY);
+
+    if (coord) {
+      iframe.sendMouseDown(coord.x, coord.y, e.button); 
+
+      focused = true;
+    } else {
+      focused = false;
+    }
+  });
+  window.addEventListener('mouseup', e => {
+    const coord = planeMesh.projectMouse(e.clientX, e.clientY);
+
+    if (coord) {
+      iframe.sendMouseUp(coord.x, coord.y,e.button);
+    }
+  });
+  window.addEventListener('wheel', e => {
+    if (focused) {
+      iframe.sendMouseWheel(e.clientX, e.clientY, e.deltaX, -e.deltaY);
+    }
+  });
+  window.addEventListener('keydown', e => {
+    if (focused) {
+      if (e.keyCode === 37 && e.altKey) { // Alt-Left
+        iframe.back();
+      } else if (e.keyCode === 39 && e.altKey) { // Alt-Right
+        iframe.forward();
+      } else {
+        iframe.sendKeyDown(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
+      }
+    }
+  });
+  window.addEventListener('keyup', e => {
+    if (focused) {
+      iframe.sendKeyUp(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
+    }
+  });
+  window.addEventListener('keypress', e => {
+    if (focused) {
+      if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
+        iframe.reload();
+      } else {
+        iframe.sendKeyPress(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
+      }
+    }
+  });
+}
+
+init();
+
+let direction = true;
+const controllerCoords = [
+  [0, 0],
+  [0, 0],
+];
+const lastPresseds = [false, false];
+function animate(timestamp, frame) {
+  try {
+  if (direction) {
+    planeMesh.rotation.y += 0.001;
+
+    if (planeMesh.rotation.y >= Math.PI/8) {
+      direction = false;
+    }
+  } else {
+    planeMesh.rotation.y -= 0.001;
+
+    if (planeMesh.rotation.y <= -Math.PI/8) {
+      direction = true;
+    }
+  }
+
+  const inputSources = display.session.getInputSources();
+  for (let i = 0; i < inputSources.length; i++) {
+    if (i === 1) { // XXX only use right controller
+      continue;
+    }
+
+    const inputSource = inputSources[i];
+    const pose = frame.getInputPose(inputSource);
+    const controllerMesh = controllerMeshes[i];
+    controllerMesh.matrix.fromArray(pose.pointerMatrix);
+    controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+    controllerMesh.updateMatrixWorld(true);
+
+    const leftLine = localLine;
+    const topLine = localLine2;
+    const plane = localPlane;
+    const raycaster = localRaycaster;
+
+    leftLine.start
+      .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+      .applyMatrix4(planeMesh.matrixWorld);
+    leftLine.end
+      .set(-planeWorldWidth/2, -planeWorldHeight/2, 0)
+      .applyMatrix4(planeMesh.matrixWorld);
+
+    topLine.start
+      .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+      .applyMatrix4(planeMesh.matrixWorld);
+    topLine.end
+      .set(planeWorldWidth/2, planeWorldHeight / 2, 0)
+      .applyMatrix4(planeMesh.matrixWorld);
+
+    plane.setFromCoplanarPoints(
+      leftLine.start,
+      leftLine.end,
+      topLine.end
+    );
+
+    raycaster.set(controllerMesh.position, localVector.set(0, 0, -1).applyQuaternion(controllerMesh.quaternion));
+    const intersectionPoint = raycaster.ray.intersectPlane(plane, localVector);
+    if (intersectionPoint) {
+      const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+      const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+      const xFactor = topIntersectionPoint.distanceTo(topLine.start) / planeWorldWidth;
+      const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / planeWorldHeight;
+      const distance = raycaster.ray.origin.distanceTo(intersectionPoint);
+
+      if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 3) {
+        const SCROLL_SCALE = 3; // constant in libmlservo
+        const x = (xFactor * planeWidth)/SCROLL_SCALE;
+        const y = (yFactor * planeHeight)/SCROLL_SCALE;
+
+        controllerCoords[i][0] = x;
+        controllerCoords[i][1] = y;
+
+        iframe.sendMouseMove(x, y);
+
+        boxMeshes[i].position.copy(intersectionPoint);
+        boxMeshes[i].updateMatrixWorld();
+      }
+    }
+  }
+
+  if (focused) {
+    const gamepads = navigator.getGamepads();
+    for (let i = 0; i < gamepads.length; i++) {
+      if (i === 1) { // XXX only use right controller
+        continue;
+      }
+
+      const gamepad = gamepads[i];
+
+      if (gamepad) {
+        const {buttons, axes} = gamepad;
+
+        const pressed = buttons[1].pressed;
+        const lastPressed = lastPresseds[i];
+        if (pressed && !lastPressed) {
+          const [x, y] = controllerCoords[i];
+          iframe.sendMouseDown(x, y, 0);
+        } else if (lastPressed && !pressed) {
+          const [x, y] = controllerCoords[i];
+          iframe.sendMouseUp(x, y, 0);
+        }
+        lastPresseds[i] = pressed;
+
+        /* const padPressed = buttons[0].pressed;
+        if (padPressed) {
+          if (axes[0] > 0.5) {
+            x++;
+          } else if (axes[0] < -0.5) {
+            x--;
+          }
+          x = Math.min(Math.max(x, 0), planeWidth);
+          if (axes[1] > 0.5) {
+            y--;
+          } else if (axes[1] < -0.5) {
+            y++;
+          }
+          y = Math.max(y, 0);
+          console.log('got axes', i, x, y, axes[0], axes[1]);
+          iframe.sendMouseMove(x, -y);
+
+          planeMesh.boxMesh.position.x = x / planeWidth * planeWorldWidth;
+          planeMesh.boxMesh.position.y = -y / planeHeight * planeWorldHeight;
+          planeMesh.boxMesh.updateMatrixWorld();
+        } */
+      }
+    }
+  }
+
+  renderer.render(scene, camera);
+  } catch(err) {
+    console.warn(err.stack);
+  }
+}
+
+if (navigator.xr) {
+  (async () => {
+    display = await navigator.xr.requestDevice();
+    const session = await display.requestSession({
+      exclusive: true,
+    });
+    display.session = session;
+
+    session.onselect = e => {
+      console.log('select'); // XXX
+    };
+
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const viewport = session.baseLayer.getViewport(frame.views[0]);
+      const width = viewport.width;
+      const height = viewport.height;
+
+      renderer.setSize(width * 2, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setDevice(display);
+      renderer.vr.setAnimationLoop(animate);
+
+      console.log('running!');
+    });
+  })()
+    .catch(err => {
+      console.warn(err.stack);
+    });
+} else {
+  renderer.setAnimationLoop(animate);
+}
+
+    </script>
+  </body>
+</html>

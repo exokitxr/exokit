@@ -26,20 +26,34 @@ public:
   GLuint msDepthTex;
   GLuint tex;
   GLuint depthTex;
-  bool blit;
+  float *viewports[2];
+  float *modelView[2];
+  float *projection[2];
 };
 
 class ComposeSpec {
 public:
   GLuint composeVao;
-  GLuint composeReadFbo;
-  GLuint composeWriteFbo;
   GLuint composeProgram;
   GLint positionLocation;
   GLint uvLocation;
   GLint msTexLocation;
   GLint msDepthTexLocation;
   GLint texSizeLocation;
+  GLuint positionBuffer;
+  GLuint uvBuffer;
+  GLuint indexBuffer;
+};
+
+class PlaneSpec {
+public:
+  GLuint planeVao;
+  GLuint planeProgram;
+  GLint positionLocation;
+  GLint uvLocation;
+  GLint modelViewMatrixLocation;
+  GLint projectionMatrixLocation;
+  GLint texLocation;
   GLuint positionBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;
