@@ -413,10 +413,14 @@ if (nativeBindings.nativeVr) {
         vrPresentState.lmContext = lmContext;
 
         canvas.framebuffer = {
+          width,
+          height,
+          msFbo,
           msTex,
           msDepthTex,
-          tex: 0,
-          depthTex: 0,
+          fbo,
+          tex,
+          depthTex,
         };
 
         const _attribute = (name, value) => {
@@ -554,8 +558,12 @@ if (nativeBindings.nativeMl) {
           mlPresentState.mlMsDepthTex = msDepthTex;
 
           canvas.framebuffer = {
+            width,
+            height,
+            msFbo,
             msTex,
             msDepthTex,
+            fbo,
             tex,
             depthTex,
           };
