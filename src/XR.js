@@ -330,7 +330,6 @@ class XRWebGLLayer {
         tex: 0,
         depthTex: 0,
       };
-    console.log('construct xrwebgllayer', presentSpec, new Error().stack);
     const {width, height, msFbo} = presentSpec;
 
     this.framebuffer = msFbo !== null ? {
