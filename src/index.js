@@ -365,10 +365,11 @@ const depthNear = 0.1;
 const depthFar = 10000.0;
 if (nativeBindings.nativeVr) {
   nativeBindings.nativeVr.requestPresent = function(layers) {
-    if (!vrPresentState.glContext) {
-      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
-      if (layer) {
-        const canvas = layer.source;
+    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+    if (layer) {
+      const canvas = layer.source;
+      
+      if (!vrPresentState.glContext) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
@@ -452,23 +453,23 @@ if (nativeBindings.nativeVr) {
           depthTex,
         };
       } else {
-        throw new Error('no HTMLCanvasElement source provided');
+        /* const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
+        const width = halfWidth * 2; */
+
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+        return {
+          width: renderWidth * 2,
+          height: renderHeight,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
       }
     } else {
-      /* const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
-      const width = halfWidth * 2; */
-
-      const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
-      return {
-        width: renderWidth * 2,
-        height: renderHeight,
-        msFbo,
-        msTex,
-        msDepthTex,
-        fbo,
-        tex,
-        depthTex,
-      };
+      throw new Error('no HTMLCanvasElement source provided');
     }
   };
   nativeBindings.nativeVr.exitPresent = function() {
@@ -519,10 +520,11 @@ GlobalContext.mlPresentState = mlPresentState;
 if (nativeBindings.nativeMl) {
   mlPresentState.mlContext = new nativeBindings.nativeMl();
   nativeBindings.nativeMl.requestPresent = function(layers) {
-    if (!mlPresentState.mlGlContext) {
-      const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
-      if (layer) {
-        const canvas = layer.source;
+    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+    if (layer) {
+      const canvas = layer.source;
+      
+      if (!mlPresentState.mlGlContext) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
@@ -607,19 +609,19 @@ if (nativeBindings.nativeMl) {
           throw new Error('failed to present ml context');
         }
       } else {
-        throw new Error('no HTMLCanvasElement source provided');
+        return {
+          width: renderWidth * 2,
+          height: renderHeight,
+          msFbo: mlPresentState.mlMsFbo,
+          msTex: mlPresentState.mlMsTex,
+          msDepthTex: mlPresentState.mlMsDepthTex,
+          fbo: mlPresentState.mlFbo,
+          tex: mlPresentState.mlTex,
+          depthTex: mlPresentState.mlDepthTex,
+        };
       }
     } else {
-      return {
-        width: renderWidth * 2,
-        height: renderHeight,
-        msFbo: mlPresentState.mlMsFbo,
-        msTex: mlPresentState.mlMsTex,
-        msDepthTex: mlPresentState.mlMsDepthTex,
-        fbo: mlPresentState.mlFbo,
-        tex: mlPresentState.mlTex,
-        depthTex: mlPresentState.mlDepthTex,
-      };
+      throw new Error('no HTMLCanvasElement source provided');
     }
   };
   nativeBindings.nativeMl.exitPresent = function() {
