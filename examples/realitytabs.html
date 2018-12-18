@@ -134,7 +134,11 @@ const _makeRenderer = () => {
   };
 };
 
-const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1/window.innerWidth*window.innerHeight, 1), d = 3) => {
+const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale, d = 3) => {
+  if (scale === undefined) {
+    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1)
+  }
+
   const _drawOk = () => {
     console.log('Load ok: ' + u);
   };
