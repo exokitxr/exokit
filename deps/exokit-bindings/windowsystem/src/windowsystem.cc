@@ -683,14 +683,25 @@ NAN_METHOD(ComposeLayers) {
 
       if (element->IsObject()) {
         Local<Object> elementObj = Local<Object>::Cast(element);
-
-        if (
-          elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))
-        ) {
+        
+        LayerType layerType = LayerType::NONE;
+        if (elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))) {
           if (
             elementObj->Get(JS_STR("contentDocument"))->IsObject() &&
             elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject()
           ) {
+            layerType = LayerType::IFRAME_3D;
+          } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
+            layerType = LayerType::IFRAME_2D;
+          }
+        } else if (elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
+          if (elementObj->Get(JS_STR("framebuffer"))->IsObject()) {
+            layerType = LayerType::RAW_CANVAS;
+          }
+        }
+        
+        switch (layerType) {
+          case LayerType::IFRAME_3D: {
             Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer")));
             GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
             GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
@@ -710,7 +721,9 @@ NAN_METHOD(ComposeLayers) {
               {nullptr,nullptr},
               {nullptr,nullptr}
             });
-          } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
+            break;
+          }
+          case LayerType::IFRAME_2D: {
             Local<Object> browserObj = Local<Object>::Cast(elementObj->Get(JS_STR("browser")));
             GLuint tex = Local<Object>::Cast(browserObj->Get(JS_STR("texture")))->Get(JS_STR("id"))->Uint32Value();
             Local<Array> viewportsArray = Local<Array>::Cast(browserObj->Get(JS_STR("viewports")));
@@ -751,15 +764,9 @@ NAN_METHOD(ComposeLayers) {
                 (float *)((char *)(projectionFloat32Arrays[1]->Buffer()->GetContents().Data()) + projectionFloat32Arrays[1]->ByteOffset())
               }
             });
-          } else { // iframe not ready
-            // nothing
+            break;
           }
-        } else if (
-          elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))
-        ) {
-          if (
-            elementObj->Get(JS_STR("framebuffer"))->IsObject()
-          ) {
+          case LayerType::RAW_CANVAS: {
             Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("framebuffer")));
             GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
             GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
@@ -779,11 +786,12 @@ NAN_METHOD(ComposeLayers) {
               {nullptr,nullptr},
               {nullptr,nullptr}
             });
-          } else { // canvas not ready
-            // nothing
+            break;
           }
-        } else {
-          return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer object");
+          default: {
+            // nothing
+            break;
+          }
         }
       } else {
         return Nan::ThrowError("WindowSystem::ComposeLayers: invalid layer element");

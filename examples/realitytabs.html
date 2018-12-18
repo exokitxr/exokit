@@ -38,6 +38,7 @@ const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
 localEuler.order = 'YXZ';
 const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
 
 function parseQuery(queryString) {
   var query = {};
@@ -133,12 +134,16 @@ const _makeRenderer = () => {
   };
 };
 
-const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1/window.innerWidth*window.innerHeight, 1), d = 3) => {
+const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale, d = 3) => {
+  if (scale === undefined) {
+    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1)
+  }
+
   const _drawOk = () => {
-    console.log('Load ok: ' + u);
+    console.log('reality tab load ok: ' + u);
   };
   const _drawFail = () => {
-    console.log('Load error: ' + u);
+    console.log('reality tab load error: ' + u);
   };
 
   const iframe = document.createElement('iframe');
@@ -232,7 +237,7 @@ for (let i = 0; i < 2; i++) {
     new THREE.Vector3(0, -1, -1)
   );
 
-  const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+  /* const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
     const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
     mesh.position.set(x, y, z);
     mesh.quaternion.set(qx, qy, qz, qw);
@@ -244,7 +249,7 @@ for (let i = 0; i < 2; i++) {
     return mesh;
   };
   const blockMesh = _makeBlockMesh();
-  controllerMesh.add(blockMesh);
+  controllerMesh.add(blockMesh); */
 
   const rayMesh = (() => {
     const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
@@ -851,7 +856,7 @@ window.addEventListener('mousemove', e => {
       localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
       fakeDisplay.quaternion.setFromEuler(localEuler);
 
-      fakeDisplay.update();
+      // fakeDisplay.update();
     // }
 
     // _updateGamepads();
@@ -949,19 +954,15 @@ function animate(time, frame) {
   const timeDiff = now - lastTime;
   const startTimeDiff = now - startTime;
 
-  const _updateGamepads = () => {
+  /* const _updateGamepads = () => {
     if (fakeDisplay) {
       const inputSources = display.session.getInputSources();
-
       for (let i = 0; i < inputSources.length; i++) {
         const gamepad = fakeDisplay.gamepads[i];
         if (gamepad) {
-          // const controllerOffset = controllerOffsets[i];
-
           localVector.copy(fakeDisplay.position)
             .add(
               localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
-                // .add(controllerOffset)
                 .applyQuaternion(fakeDisplay.quaternion)
             ).toArray(gamepad.pose.position);
           fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
@@ -969,16 +970,19 @@ function animate(time, frame) {
 
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
-        localMatrix.compose(
-          localVector.fromArray(gamepad.pose.position),
-          localQuaternion.fromArray(gamepad.pose.orientation),
-          localVector2.set(1, 1, 1)
-        )
+        localMatrix2
+          .compose(
+            localVector.fromArray(gamepad.pose.position),
+            localQuaternion.fromArray(gamepad.pose.orientation),
+            localVector2.set(1, 1, 1)
+          )
+          .toArray(pose._localPointerMatrix);
+         localMatrix2
           .toArray(pose.pointerMatrix);
       }
     }
   };
-  _updateGamepads();
+  _updateGamepads(); */
 
   const _updateControllerMeshes = () => {
     if (renderer.vr.enabled) {
@@ -1509,7 +1513,7 @@ function animate(time, frame) {
             localVector.copy(velocity)
               .applyEuler(localEuler)
           );
-          fakeDisplay.update();
+          // fakeDisplay.update();
         // }
       // }
     }
@@ -1542,19 +1546,22 @@ function animate(time, frame) {
 
 // bootstrap
 
-const _bootFakeDisplay = () => {
+const _bootFakeDisplay = async () => {
   fakeDisplay = _makeFakeDisplay();
   camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
   fakeDisplay.position.set(0, 1.6, 0);
   // const canvas = renderer.domElement;
-  fakeDisplay.enter({
+  const session = await fakeDisplay.enter({
     renderer,
     animate,
     layers,
   });
+  fakeDisplay.session = session;
 
   display = fakeDisplay;
+
+  _openUrl('realitytab.html'); // XXX
 
   console.log('loaded root in 2D');
 };
@@ -1598,6 +1605,8 @@ if (navigator.xr && !query.fake) {
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
+
+        _openUrl('realitytab.html'); // XXX
 
         console.log('loaded root in XR');
       });
