@@ -442,6 +442,10 @@ if (nativeBindings.nativeVr) {
           force: true,
         });
 
+        return canvas.framebuffer;
+      } else if (canvas.ownerDocument.framebuffer) {
+        const {width, height} = canvas;
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
         return {
           width,
           height,
@@ -595,19 +599,24 @@ if (nativeBindings.nativeMl) {
 
           mlPresentState.mlGlContext = context;
 
-          return {
-            width,
-            height,
-            msFbo,
-            msTex,
-            msDepthTex,
-            fbo,
-            tex,
-            depthTex,
-          };
+          return canvas.framebuffer;
         } else {
           throw new Error('failed to present ml context');
         }
+      } else if (canvas.ownerDocument.framebuffer) {
+        const {width, height} = canvas;
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
+        
+        return {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
       } else {
         return {
           width: renderWidth * 2,
