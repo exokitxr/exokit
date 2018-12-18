@@ -246,6 +246,7 @@ class XRSession extends EventTarget {
     for (const k in this) {
       o[k] = this[k];
     }
+    o.baseLayer = null;
     o._frame = o._frame.clone();
     o._frame.session = o;
     return o;
