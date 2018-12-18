@@ -29,6 +29,7 @@
 #include <ml_meshing2.h>
 #include <ml_planes.h>
 #include <ml_camera.h>
+#include <ml_image_tracking.h>
 #include <ml_eye_tracking.h>
 #include <ml_privilege_ids.h>
 #include <ml_privilege_functions.h>
@@ -204,6 +205,28 @@ public:
   Nan::Persistent<ArrayBuffer> data;
 };
 
+class MLImageTracker : public ObjectWrap {
+public:
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLImageTracker(MLHandle trackerHandle, float size);
+  ~MLImageTracker();
+
+  static NAN_METHOD(New);
+  static NAN_GETTER(OnTrackGetter);
+  static NAN_SETTER(OnTrackSetter);
+  static NAN_METHOD(Destroy);
+
+  void Poll(MLSnapshot *snapshot);
+
+// protected:
+  MLHandle trackerHandle;
+  float size;
+  Nan::Persistent<Function> cb;
+  MLTransform transform;
+  bool valid;
+};
+
 class MLContext : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
@@ -229,6 +252,7 @@ public:
   static NAN_METHOD(RequestDepthPopulation);
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
+  static NAN_METHOD(RequestImageTracking);
   static NAN_METHOD(PrePollEvents);
   static NAN_METHOD(PostPollEvents);
 
