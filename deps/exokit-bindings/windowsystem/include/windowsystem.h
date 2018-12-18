@@ -17,6 +17,13 @@ typedef unsigned int GLuint;
 typedef int GLint;
 
 namespace windowsystembase {
+  
+enum class LayerType {
+  NONE,
+  IFRAME_3D,
+  IFRAME_2D,
+  RAW_CANVAS,
+};
 
 class LayerSpec {
 public:
