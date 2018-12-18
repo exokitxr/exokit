@@ -64,7 +64,6 @@ window._makeFakeDisplay = () => {
   const onends = [];
   fakeDisplay.requestSession = function({
     exclusive = true,
-    // xrOffset = null,
     stereo = false,
   } = {}) {
     const self = this;

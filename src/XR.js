@@ -216,7 +216,7 @@ class XRSession extends EventTarget {
             localQuaternion.fromArray(gamepad.pose.orientation),
             scale
           );
-          inputMatrix.toArray(inputSource._pose.pointerMatrix);
+          inputMatrix.toArray(inputSource._pose._localPointerMatrix);
           inputMatrix.toArray(inputSource._pose.gripMatrix);
 
           const pressed = gamepad.buttons[1].pressed;
@@ -361,6 +361,26 @@ class XRPresentationFrame {
     return this._pose;
   }
   getInputPose(inputSource, coordinateSystem) {
+    localMatrix.fromArray(inputSource._pose._localPointerMatrix);
+
+    if (this.session.baseLayer) {
+      const {xrOffset} = this.session.baseLayer.context.canvas.ownerDocument;
+      
+      if (xrOffset) {
+        localMatrix
+          .premultiply(
+            localMatrix2.compose(
+              localVector.fromArray(xrOffset.position),
+              localQuaternion.fromArray(xrOffset.rotation),
+              localVector2.fromArray(xrOffset.scale)
+            )
+            .getInverse(localMatrix2)
+          );
+      }
+    }
+
+    localMatrix.toArray(inputSource._pose.pointerMatrix);
+    
     return inputSource._pose;
   }
   clone() {
@@ -459,6 +479,7 @@ class XRInputPose {
     this.emulatedPosition = false;
     this.pointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this._localPointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 }
 module.exports.XRInputPose = XRInputPose;
