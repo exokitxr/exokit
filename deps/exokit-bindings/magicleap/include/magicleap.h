@@ -253,8 +253,7 @@ public:
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(RequestImageTracking);
-  static NAN_METHOD(PrePollEvents);
-  static NAN_METHOD(PostPollEvents);
+  static NAN_METHOD(Update);
 
 // protected:
   // EGL

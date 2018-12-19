@@ -1383,8 +1383,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
-  Nan::SetMethod(ctorFn, "PrePollEvents", PrePollEvents);
-  Nan::SetMethod(ctorFn, "PostPollEvents", PostPollEvents);
+  Nan::SetMethod(ctorFn, "Update", Update);
 
   return scope.Escape(ctorFn);
 }
@@ -2628,9 +2627,22 @@ void setFingerValue(float data[1 + 3]) {
   floatData[3] = position.z;
 }
 
-NAN_METHOD(MLContext::PrePollEvents) {
+NAN_METHOD(MLContext::Update) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
-  MLSnapshot *snapshot = nullptr;
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+  Local<Value> xrOffsetValue = info[2];
+
+  float transformMatrixArray[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+  if (
+    xrOffsetValue->IsObject() &&
+    Local<Object>::Cast(xrOffsetValue)->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRRigidTransform"))
+  ) {
+    Local<Object> xrOffset = Local<Object>::Cast(xrOffsetValue);
+    Local<Float32Array> matrixFloat32Array = Local<Float32Array>::Cast(xrOffset->Get(JS_STR("matrix")));
+    memcpy(transformMatrixArray, (char *)matrixFloat32Array->Buffer()->GetContents().Data() + matrixFloat32Array->ByteOffset(), sizeof(transformMatrixArray));
+  }
+  
+  windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
   if (handTrackers.size() > 0) {
     MLResult result = MLHandTrackingGetData(handTracker, &handData);
@@ -2659,7 +2671,6 @@ NAN_METHOD(MLContext::PrePollEvents) {
         setFingerValue(handStaticData.right.ring, snapshot, fingerBones[1][3]);
         setFingerValue(handStaticData.right.pinky, snapshot, fingerBones[1][4]);
 
-        float transformMatrixArray[16] = {0}; // XXX pass in real data
         std::for_each(handTrackers.begin(), handTrackers.end(), [&](MLHandTracker *h) {
           h->Poll(transformMatrixArray);
         });
@@ -2753,19 +2764,6 @@ NAN_METHOD(MLContext::PrePollEvents) {
       cameraRequestConditionVariable.notify_one();
     }
   }
-
-  if (snapshot) {
-    if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
-      ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
-    }
-  }
-}
-
-NAN_METHOD(MLContext::PostPollEvents) {
-  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
-
-  GLuint fbo = info[2]->Uint32Value();
 
   if (meshInfoRequestPending) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
@@ -2905,6 +2903,12 @@ NAN_METHOD(MLContext::PostPollEvents) {
       ML_LOG(Error, "%s: Planes request failed! %x", application_name, result);
 
       planesRequestPending = false;
+    }
+  }
+  
+  if (snapshot) {
+    if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
+      ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
     }
   }
 }
