@@ -1831,7 +1831,7 @@ exokit.load = (src, options = {}) => {
       if (res.status >= 200 && res.status < 300) {
         return res.text()
           .then(t => {
-            if (options.args.download) {
+            if (options.args && options.args.download) {
               return _download('GET', src, t, t => Buffer.from(t, 'utf8'), options.args.download);
             } else {
               return Promise.resolve(t);
