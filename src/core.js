@@ -998,14 +998,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
 
   // WebVR enabled.
-  if (['all', 'webvr'].includes(options.args.xr)) {
+  if (options.args && ['all', 'webvr'].includes(options.args.xr)) {
     window.navigator.getVRDisplays = function() {
       return Promise.resolve(this.getVRDisplaysSync());
     }
   }
 
   // WebXR enabled.
-  if (['all', 'webxr'].includes(options.args.xr)) {
+  if (options.args && ['all', 'webxr'].includes(options.args.xr)) {
     window.navigator.xr = new XR.XR(window);
   }
 
