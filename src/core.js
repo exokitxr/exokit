@@ -1425,7 +1425,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.CanvasGradient = CanvasGradient;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
   window.WebGLRenderingContext = WebGLRenderingContext;
-  if (options.args.webgl !== '1') {
+  if (options.args && options.args.webgl !== '1') {
     window.WebGL2RenderingContext = WebGL2RenderingContext;
   }
   window.Audio = HTMLAudioElementBound;
