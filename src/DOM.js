@@ -17,6 +17,7 @@ const symbols = require('./symbols');
 const {urls} = require('./urls');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = utils;
+const {XRRigidTransform} = require('./XR');
 
 he.encode.options.useNamedReferences = true;
 
@@ -1823,11 +1824,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.d = null;
     this.browser = null;
     this.onconsole = null;
-    this.xrOffset = {
-      position: new Float32Array(3),
-      rotation: new Float32Array(4),
-      scale: new Float32Array(3),
-    };
+    this.xrOffset = new XRRigidTransform();
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
