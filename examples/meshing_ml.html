@@ -126,7 +126,10 @@
         mesh.frustumCulled = false;
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
+      const _loadTerrainMesh = (terrainMesh, {transformMatrix: transformMatrixArray, positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
+        terrainMesh.matrix.fromArray(ransformMatrixArray);
+        terrainMesh.matrixWorldNeedsUpdate = true;
+
         const {geometry} = terrainMesh;
         const attributes = renderer.getAttributes();
 
@@ -152,7 +155,7 @@
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
-          const {id, type} = update;
+          const {transformMatrix, id, type} = update;
 
           if (type === 'new' || type === 'update') {
             _loadTerrainMesh(_getTerrainMesh(id), update);
