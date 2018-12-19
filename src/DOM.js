@@ -14,9 +14,9 @@ const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const urls = require('./urls').urls;
+const {urls} = require('./urls');
 const utils = require('./utils');
-const {_elementGetter, _elementSetter} = require('./utils');
+const {_elementGetter, _elementSetter} = utils;
 
 he.encode.options.useNamedReferences = true;
 
