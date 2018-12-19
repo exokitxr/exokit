@@ -163,7 +163,7 @@ public:
   static NAN_SETTER(OnGestureSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll();
+  void Poll(float transformMatrixArray[16]);
 
 // protected:
   Nan::Persistent<Function> cb;

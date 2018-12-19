@@ -672,7 +672,7 @@ NAN_SETTER(MLHandTracker::OnGestureSetter) {
   }
 }
 
-void MLHandTracker::Poll() {
+void MLHandTracker::Poll(float transformMatrixArray[16]) {
   if (!this->cb.IsEmpty()) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
@@ -2659,8 +2659,9 @@ NAN_METHOD(MLContext::PrePollEvents) {
         setFingerValue(handStaticData.right.ring, snapshot, fingerBones[1][3]);
         setFingerValue(handStaticData.right.pinky, snapshot, fingerBones[1][4]);
 
+        float transformMatrixArray[16] = {0}; // XXX pass in real data
         std::for_each(handTrackers.begin(), handTrackers.end(), [&](MLHandTracker *h) {
-          h->Poll();
+          h->Poll(transformMatrixArray);
         });
       } else {
         ML_LOG(Error, "%s: Hand static data get failed! %x", application_name, result);
