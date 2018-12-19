@@ -127,7 +127,7 @@
         return mesh;
       };
       const _loadTerrainMesh = (terrainMesh, {transformMatrix: transformMatrixArray, positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
-        terrainMesh.matrix.fromArray(ransformMatrixArray);
+        terrainMesh.matrix.fromArray(transformMatrixArray);
         terrainMesh.matrixWorldNeedsUpdate = true;
 
         const {geometry} = terrainMesh;
