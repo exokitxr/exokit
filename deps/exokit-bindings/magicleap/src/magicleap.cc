@@ -2871,6 +2871,7 @@ NAN_METHOD(MLContext::PostPollEvents) {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
       }
 
+      float transformMatrixArray[16] = {0}; // XXX pass in real data
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
         m->Poll(transformMatrixArray);
       });
