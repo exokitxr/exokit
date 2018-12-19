@@ -254,7 +254,11 @@
                 .copy(pinchedObjectStart.rotation)
                 .inverse()
                 .premultiply(localQuaternion.fromArray(handSpec.rotation));
-              pinchedObject.matrix.compose(pinchedObject.position, pinchedObject.quaternion, pinchedObject.scale);
+              pinchedObject.matrix
+                .compose(pinchedObject.position, pinchedObject.quaternion, pinchedObject.scale)
+                .premultiply(
+                  localMatrix.fromArray(handSpec.transformMatrix)
+                );
               pinchedObject.updateMatrixWorld(true);
             }
           }
