@@ -51,6 +51,7 @@
       const localVector2 = new THREE.Vector3();
       const localQuaternion = new THREE.Quaternion();
       const localMatrix = new THREE.Matrix4();
+      const localMatrix2 = new THREE.Matrix4();
       const handMesh = (() => {
         const pointerGeometry = (() => {
           const geometries = [
@@ -155,8 +156,10 @@
 
           for (let i = 0; i < hands.length; i++) {
             const hand = hands[i];
-            const {pointer, grip, wrist, fingers} = hand;
+            const {transformMatrix: transformMatrixArray, pointer, grip, wrist, fingers} = hand;
+            const transformMatrix = localMatrix.fromArray(transformMatrixArray);
             const allFingers = [wrist].concat(fingers);
+
             for (let j = 0; j < allFingers.length; j++) {
               const bones = allFingers[j];
               for (let k = 0; k < bones.length; k++) {
@@ -165,7 +168,9 @@
                   const position = localVector.fromArray(positionFloat32Array);
                   const newGeometry = boneGeometry.clone()
                     .applyMatrix(
-                      localMatrix.makeTranslation(position.x, position.y, position.z)
+                      localMatrix2
+                        .makeTranslation(position.x, position.y, position.z)
+                        .premultiply(transformMatrix)
                     );
 
                   _shiftIndex(newGeometry.index.array);
@@ -182,11 +187,13 @@
             if (pointer) {
               const newGeometry = pointerGeometry.clone()
                 .applyMatrix(
-                  localMatrix.compose(
-                    localVector.fromArray(pointer.position),
-                    localQuaternion.fromArray(pointer.rotation),
-                    localVector2.set(1, 1, 1),
-                  )
+                  localMatrix2
+                    .compose(
+                      localVector.fromArray(pointer.position),
+                      localQuaternion.fromArray(pointer.rotation),
+                      localVector2.set(1, 1, 1),
+                    )
+                    .premultiply(transformMatrix)
                 );
 
               _shiftIndex(newGeometry.index.array);
@@ -201,11 +208,13 @@
             if (grip) {
               const newGeometry = pointerGeometry.clone()
                 .applyMatrix(
-                  localMatrix.compose(
-                    localVector.fromArray(grip.position),
-                    localQuaternion.fromArray(grip.rotation),
-                    localVector2.set(1, 1, 1),
-                  )
+                  localMatrix2
+                    .compose(
+                      localVector.fromArray(grip.position),
+                      localQuaternion.fromArray(grip.rotation),
+                      localVector2.set(1, 1, 1),
+                    )
+                    .premultiply(transformMatrix)
                 );
 
               _shiftIndex(newGeometry.index.array);
