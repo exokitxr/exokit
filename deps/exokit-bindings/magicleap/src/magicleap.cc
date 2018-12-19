@@ -2644,6 +2644,7 @@ NAN_METHOD(MLContext::Update) {
   
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
+  MLSnapshot *snapshot = nullptr;
   if (handTrackers.size() > 0) {
     MLResult result = MLHandTrackingGetData(handTracker, &handData);
     if (result == MLResult_Ok) {
