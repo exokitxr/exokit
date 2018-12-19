@@ -125,7 +125,7 @@ public:
   static NAN_SETTER(OnMeshSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll();
+  void Poll(float transformMatrix[16]);
 
 // protected:
   Nan::Persistent<Function> cb;
