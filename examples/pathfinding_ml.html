@@ -1,0 +1,346 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script>
+    let container, scene, camera, display, model;
+    let mesher = null;
+
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localEuler = new THREE.Euler();
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 0, 1);
+      // camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      /* (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xE91E63,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 0.5;
+        // mesh.position.z = -1;
+        mesh.frustumCuled = false;
+        scene.add(mesh);
+      })();
+      (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x4CAF50,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 1 + 0.1;
+        // mesh.position.z = -1;
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+      })(); */
+
+      /* controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      }); */
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      const terrainMeshes = [];
+      const terrainMaterial = new THREE.MeshPhongMaterial({
+        color: 0x666666,
+      });
+      const _getTerrainMesh = meshId => {
+        let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
+        if (!terrainMesh) {
+          terrainMesh = _makeTerrainMesh(meshId);
+          terrainMeshes.push(terrainMesh);
+          scene.add(terrainMesh);
+        }
+        return terrainMesh;
+      };
+      const fakeArrayBuffer = new ArrayBuffer(3 * 4);
+      const fakeFloat32Array = new Float32Array(fakeArrayBuffer, 0, 3);
+      const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
+      const _makeTerrainMesh = meshId => {
+        const geometry = new THREE.BufferGeometry();
+        const gl = renderer.getContext();
+        const attributes = renderer.getAttributes();
+
+        geometry.addAttribute('position', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
+        geometry.addAttribute('normal', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.normal, gl.ARRAY_BUFFER);
+        geometry.setIndex(new THREE.BufferAttribute(fakeUint16Array, 1));
+        attributes.update(geometry.index, gl.ELEMENT_ARRAY_BUFFER);
+
+        const material = terrainMaterial;
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.meshId = meshId;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
+        const {geometry} = terrainMesh;
+        const attributes = renderer.getAttributes();
+
+        attributes.get(geometry.attributes.position).buffer = positionBuffer;
+        geometry.attributes.position.count = positionCount / 3;
+
+        attributes.get(geometry.attributes.normal).buffer = normalBuffer;
+        geometry.attributes.normal.count = normalCount / 3;
+
+        attributes.get(geometry.index).buffer = indexBuffer;
+        geometry.index.count = count / 1;
+      };
+      const _removeTerrainMesh = terrainMesh => {
+        scene.remove(terrainMesh);
+        terrainMesh.geometry.dispose();
+      };
+      const _clearTerrainMeshes = () => {
+        for (let i = 0; i < terrainMeshes.length; i++) {
+          _removeTerrainMesh(terrainMeshes[i]);
+        }
+        terrainMeshes.length = 0;
+      };
+      const _onMesh = updates => {
+        for (let i = 0; i < updates.length; i++) {
+          const update = updates[i];
+          const {id, type} = update;
+
+          if (type === 'new' || type === 'update') {
+            _loadTerrainMesh(_getTerrainMesh(id), update);
+          } else if (type === 'unchanged') {
+            // nothing
+          } else {
+            const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+            if (index !== -1) {
+              const terrainMesh = terrainMeshes[index];
+              _removeTerrainMesh(terrainMesh);
+              terrainMeshes.splice(index, 1);
+            }
+          }
+        }
+      };
+
+      if (window.browser && window.browser.magicleap) {
+        mesher = window.browser.magicleap.RequestMeshing();
+        mesher.onmesh = _onMesh;
+      } else {
+        const gl = renderer.getContext();
+
+        const numCubes = 100;
+        const cubeSize = 0.2;
+        const cubeRange = 1;
+
+        const geometryPositions = Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]);
+        const geometryNormals = Float32Array.from([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]);
+        const geometryIndices = Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]);
+
+        for (let j = 0; j < geometryPositions.length; j += 3) {
+          localVector
+            .fromArray(geometryPositions, j)
+            .multiplyScalar(cubeSize)
+            .toArray(geometryPositions, j);
+        }
+
+        const positions = new Float32Array(new ArrayBuffer(numCubes * geometryPositions.length * Float32Array.BYTES_PER_ELEMENT));
+        const normals = new Float32Array(new ArrayBuffer(numCubes * geometryNormals.length * Float32Array.BYTES_PER_ELEMENT));
+        const indices = new Uint16Array(new ArrayBuffer(numCubes * geometryIndices.length * Float32Array.BYTES_PER_ELEMENT));
+        for (let i = 0; i < numCubes; i++) {
+          const positionDstOffset = i*geometryPositions.length;
+          const offsetVector = localVector2.set((Math.random()-0.5)*2*cubeRange, (Math.random()-0.5), (Math.random()-0.5)*2*cubeRange);
+          const offsetEuler = localEuler.set((Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, 'YXZ');
+          for (let j = 0; j < geometryPositions.length; j += 3) {
+            localVector
+              .fromArray(geometryPositions, j)
+              // .multiplyScalar(cubeSize)
+              .applyEuler(offsetEuler)
+              .add(offsetVector)
+              .toArray(positions, positionDstOffset + j);
+          }
+
+          const normalDstOffset = i*geometryNormals.length;
+          for (let j = 0; j < geometryNormals.length; j++) {
+            normals[normalDstOffset + j] = geometryNormals[j];
+          }
+
+          const indexDstOffset = i*geometryIndices.length;
+          const indexSrcOffset = i*geometryPositions.length/3;
+          for (let j = 0; j < geometryIndices.length; j++) {
+            indices[indexDstOffset + j] = geometryIndices[j] + indexSrcOffset;
+          }
+        }
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+        const positionCount = positions.length;
+
+        const normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+        const normalCount = normals.length;
+
+        const indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+        const count = indices.length;
+
+        renderer.state.reset();
+
+        const updates = [
+          {
+            id: 0,
+            type: 'update',
+            positionBuffer,
+            positionCount,
+            normalBuffer,
+            normalCount,
+            indexBuffer,
+            count,
+          },
+        ];
+        setInterval(() => {
+          _onMesh(updates);
+        }, 100);
+      }
+
+      window.addEventListener('keydown', e => {
+        if (e.keyCode === 13) { // enter
+          if (enabled) {
+            _disable();
+          } else {
+            _enable();
+          }
+        }
+      });
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    function animate(time, frame) {
+      if (model) {
+        const animationTime = 4000;
+        const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
+        model.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
+        );
+        model.updateMatrixWorld();
+      }
+      /* if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.updateMatrixWorld(true);
+        }
+      } */
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      /* session.onselect = e => {
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+        const objectMesh = _makeControllerMesh(
+          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+        );
+        scene.add(objectMesh);
+      }; */
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+
+    renderer.setAnimationLoop(animate);
+  </script>
+  </body>
+</html>
