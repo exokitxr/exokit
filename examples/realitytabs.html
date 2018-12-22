@@ -1313,6 +1313,9 @@ function animate(time, frame) {
                           const {iframe} = tab;
                           _closeUrl(iframe);
 
+                          if (menuMesh.listMesh.scrollIndex > tabs.length-1) {
+                            menuMesh.listMesh.scrollIndex = tabs.length-1;
+                          }
                           menuMesh.listMesh.updateList();
                         }
 
