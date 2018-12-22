@@ -1080,7 +1080,7 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor < 1 && yFactor > 0 && yFactor < 1 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
               const x = xFactor * keyboardWidth;
               const y = yFactor * keyboardHeight;
 
@@ -1158,7 +1158,7 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / menuWorldHeight;
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor < 1 && yFactor > 0 && yFactor < 1 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight;
 
@@ -1231,7 +1231,7 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.optionsMesh.leftLine.start) / menuWorldHeight;
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor < 1 && yFactor > 0 && yFactor < 1 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight;
 
@@ -1285,7 +1285,7 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.listMesh.leftLine.start) / (menuWorldHeight*4);
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor < 1 && yFactor > 0 && yFactor < 1 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight*4;
 
