@@ -616,16 +616,28 @@ const _makeRig = () => {
       mesh.position.y = -menuWorldHeight*3.5 - (10/menuHeight*menuWorldHeight)*2;
       mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
+      mesh.scrollIndex = 0;
 
       const _updateList = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         ctx.font = `${fontSize}px Arial`;
 
+        const _renderScrollbar = listLength => {
+          ctx.fillStyle = '#808080';
+          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight*4);
+          const fullBarHeight = menuHeight*4;
+          const barHeight = fullBarHeight/Math.min(listLength > 0 ? listLength : 1, 4);
+          const barSpace = fullBarHeight - barHeight;
+          ctx.fillStyle = '#42a5f5';
+          ctx.fillRect(menuWidth*0.99, mesh.scrollIndex*barSpace/(listLength > 1 ? (listLength-1) : 1), menuWidth*0.01, barHeight);
+        };
+
         if (optionsMesh.list === 'tabs') {
           if (tabs.length > 0) {
-            for (let i = 0; i < tabs.length; i++) {
-              const tab = tabs[i];
+            const localTabs = tabs.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
+            for (let i = 0; i < localTabs.length; i++) {
+              const tab = localTabs[i];
               const {url} = tab;
               const y = menuHeight*i;
 
@@ -645,13 +657,11 @@ const _makeRig = () => {
             ctx.fillText('No tabs', 50, menuHeight/2 + 20);
           }
 
-          ctx.fillStyle = '#808080';
-          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight*4);
-          ctx.fillStyle = '#42a5f5';
-          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight);
+          _renderScrollbar(tabs.length);
         } else if (optionsMesh.list === 'links') {
-          for (let i = 0; i < links.length; i++) {
-            const link = links[i];
+          const localLinks = links.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
+          for (let i = 0; i < localLinks.length; i++) {
+            const link = localLinks[i];
             const {name} = link;
             const y = menuHeight*i;
 
@@ -662,10 +672,7 @@ const _makeRig = () => {
             ctx.fillText(name, 50, y + menuHeight/2 + 20);
           }
 
-          ctx.fillStyle = '#808080';
-          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight*4);
-          ctx.fillStyle = '#42a5f5';
-          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight);
+          _renderScrollbar(links.length);
         }
 
         texture.needsUpdate = true;
@@ -1155,7 +1162,7 @@ function animate(time, frame) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight;
 
-              if (y < urlBarOffset*2) {
+              if (y < urlBarOffset) {
                 if (x < menuWidth*0.8) {
                   intersectionPoints.push(intersectionPoint.clone());
                   intersectionCbs.push(() => {
@@ -1361,7 +1368,12 @@ function animate(time, frame) {
                   const gamepad = gamepads[i];
                   const pressed = gamepad.buttons[1].pressed;
                   if (pressed) {
-                    console.log('scroll', yFactor); // XXX
+                    const list = menuMesh.optionsMesh.list === 'tabs' ? tabs : links;
+                    menuMesh.listMesh.scrollIndex = Math.floor(yFactor*list.length);
+                    if (menuMesh.listMesh.scrollIndex >= list.length) {
+                      menuMesh.listMesh.scrollIndex = list.length;
+                    }
+                    menuMesh.listMesh.updateList();
                   }
 
                   intersectionSpecs[i] = null;
