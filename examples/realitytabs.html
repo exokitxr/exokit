@@ -437,8 +437,7 @@ const _makeRig = () => {
 
       const _updateText = () => {
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(0, 0, menuWidth*0.6 - 5, menuHeight);
-        ctx.fillRect(menuWidth*0.6, 0, menuWidth*0.2 - 5, menuHeight);
+        ctx.fillRect(0, 0, menuWidth*0.8 - 5, menuHeight);
         ctx.fillRect(menuWidth*0.8, 0, menuWidth*0.2 - 5, menuHeight);
         ctx.fillRect(0, menuHeight, menuWidth*0.5, menuHeight);
 
@@ -446,7 +445,6 @@ const _makeRig = () => {
         ctx.font = `${fontSize}px Arial`;
 
         ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 5);
-        ctx.fillText('c', menuWidth*0.68, menuHeight*0.7);
         ctx.fillText('x', menuWidth*0.88, menuHeight*0.7);
 
         urlState.measures.length = 0;
@@ -618,22 +616,34 @@ const _makeRig = () => {
       mesh.position.y = -menuWorldHeight*3.5 - (10/menuHeight*menuWorldHeight)*2;
       mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
+      mesh.scrollIndex = 0;
 
       const _updateList = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         ctx.font = `${fontSize}px Arial`;
 
+        const _renderScrollbar = listLength => {
+          ctx.fillStyle = '#808080';
+          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight*4);
+          const fullBarHeight = menuHeight*4;
+          const barHeight = fullBarHeight/Math.min(listLength > 0 ? listLength : 1, 4);
+          const barSpace = fullBarHeight - barHeight;
+          ctx.fillStyle = '#42a5f5';
+          ctx.fillRect(menuWidth*0.99, mesh.scrollIndex*barSpace/(listLength > 1 ? (listLength-1) : 1), menuWidth*0.01, barHeight);
+        };
+
         if (optionsMesh.list === 'tabs') {
           if (tabs.length > 0) {
-            for (let i = 0; i < tabs.length; i++) {
-              const tab = tabs[i];
+            const localTabs = tabs.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
+            for (let i = 0; i < localTabs.length; i++) {
+              const tab = localTabs[i];
               const {url} = tab;
               const y = menuHeight*i;
 
               ctx.fillStyle = '#FFFFFF';
               ctx.fillRect(0, y, menuWidth*0.8 - 5, menuHeight);
-              ctx.fillRect(menuWidth*0.8, y, menuHeight*3, menuHeight);
+              ctx.fillRect(menuWidth*0.8, y, menuWidth*0.18, menuHeight);
 
               ctx.fillStyle = '#000000';
               ctx.fillText(url, 50, y + menuHeight/2 + 20);
@@ -646,18 +656,23 @@ const _makeRig = () => {
             ctx.fillStyle = '#FFFFFF';
             ctx.fillText('No tabs', 50, menuHeight/2 + 20);
           }
+
+          _renderScrollbar(tabs.length);
         } else if (optionsMesh.list === 'links') {
-          for (let i = 0; i < links.length; i++) {
-            const link = links[i];
+          const localLinks = links.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
+          for (let i = 0; i < localLinks.length; i++) {
+            const link = localLinks[i];
             const {name} = link;
             const y = menuHeight*i;
 
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, y, menuWidth, menuHeight);
+            ctx.fillRect(0, y, menuWidth*0.98, menuHeight);
 
             ctx.fillStyle = '#000000';
             ctx.fillText(name, 50, y + menuHeight/2 + 20);
           }
+
+          _renderScrollbar(links.length);
         }
 
         texture.needsUpdate = true;
@@ -1065,7 +1080,7 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
               const x = xFactor * keyboardWidth;
               const y = yFactor * keyboardHeight;
 
@@ -1143,11 +1158,11 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / menuWorldHeight;
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight;
 
-              if (y < urlBarOffset*2) {
+              if (y < urlBarOffset) {
                 if (x < menuWidth*0.8) {
                   intersectionPoints.push(intersectionPoint.clone());
                   intersectionCbs.push(() => {
@@ -1216,7 +1231,7 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.optionsMesh.leftLine.start) / menuWorldHeight;
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight;
 
@@ -1243,10 +1258,12 @@ function animate(time, frame) {
                     } else if (optionX === 2) {
                       menuMesh.optionsMesh.list = 'tabs';
                       menuMesh.optionsMesh.updateOptions();
+                      menuMesh.listMesh.scrollIndex = 0;
                       menuMesh.listMesh.updateList();
                     } else if (optionX === 3) {
                       menuMesh.optionsMesh.list = 'links';
                       menuMesh.optionsMesh.updateOptions();
+                      menuMesh.listMesh.scrollIndex = 0;
                       menuMesh.listMesh.updateList();
                     }
                   }
@@ -1270,73 +1287,102 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.listMesh.leftLine.start) / (menuWorldHeight*4);
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight*4;
 
-              if (menuMesh.optionsMesh.list === 'tabs') {
-                for (let j = 0; j < tabs.length; j++) {
-                  if (x >= menuWidth*0.8 && y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
-                    intersectionPoints.push(intersectionPoint.clone());
-                    intersectionCbs.push(() => {
-                      controllerMesh.rayMesh.scale.z = distance;
-                      controllerMesh.updateMatrixWorld();
+              if (x < menuWidth * 0.98) {
+                if (menuMesh.optionsMesh.list === 'tabs') {
+                  for (let j = 0; j < tabs.length; j++) {
+                    if (x >= menuWidth*0.8 && y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
 
-                      controllerMesh.rayDot.position.z = -distance;
-                      controllerMesh.updateMatrixWorld();
-                      controllerMesh.rayDot.visible = true;
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
 
-                      const gamepads = navigator.getGamepads();
-                      const gamepad = gamepads[i];
-                      const pressed = gamepad.buttons[1].pressed;
-                      const lastPressed = lastPresseds[i];
-                      if (pressed && !lastPressed) {
-                        const [tab] = tabs.splice(j, 1);
-                        const {iframe} = tab;
-                        _closeUrl(iframe);
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          const [tab] = tabs.splice(j, 1);
+                          const {iframe} = tab;
+                          _closeUrl(iframe);
 
-                        menuMesh.listMesh.updateList();
-                      }
+                          if (menuMesh.listMesh.scrollIndex > tabs.length-1) {
+                            menuMesh.listMesh.scrollIndex = tabs.length-1;
+                          }
+                          menuMesh.listMesh.updateList();
+                        }
 
-                      intersectionSpecs[i] = null;
-                    });
+                        intersectionSpecs[i] = null;
+                      });
 
-                    break;
+                      break;
+                    }
+                  }
+                } else if (menuMesh.optionsMesh.list === 'links') {
+                  for (let j = 0; j < links.length; j++) {
+                    if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
+
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
+
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          const link = links[j];
+                          const {url} = link;
+
+                          _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
+
+                          menuMesh.optionsMesh.list = 'tabs';
+                          menuMesh.optionsMesh.updateOptions();
+                          menuMesh.listMesh.updateList();
+                        }
+
+                        intersectionSpecs[i] = null;
+                      });
+
+                      break;
+                    }
                   }
                 }
-              } else if (menuMesh.optionsMesh.list === 'links') {
-                for (let j = 0; j < links.length; j++) {
-                  if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
-                    intersectionPoints.push(intersectionPoint.clone());
-                    intersectionCbs.push(() => {
-                      controllerMesh.rayMesh.scale.z = distance;
-                      controllerMesh.updateMatrixWorld();
+              } else {
+                intersectionPoints.push(intersectionPoint.clone());
+                intersectionCbs.push(() => {
+                  controllerMesh.rayMesh.scale.z = distance;
+                  controllerMesh.updateMatrixWorld();
 
-                      controllerMesh.rayDot.position.z = -distance;
-                      controllerMesh.updateMatrixWorld();
-                      controllerMesh.rayDot.visible = true;
+                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.updateMatrixWorld();
+                  controllerMesh.rayDot.visible = true;
 
-                      const gamepads = navigator.getGamepads();
-                      const gamepad = gamepads[i];
-                      const pressed = gamepad.buttons[1].pressed;
-                      const lastPressed = lastPresseds[i];
-                      if (pressed && !lastPressed) {
-                        const link = links[j];
-                        const {url} = link;
-
-                        _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
-
-                        menuMesh.optionsMesh.list = 'tabs';
-                        menuMesh.optionsMesh.updateOptions();
-                        menuMesh.listMesh.updateList();
-                      }
-
-                      intersectionSpecs[i] = null;
-                    });
-
-                    break;
+                  const gamepads = navigator.getGamepads();
+                  const gamepad = gamepads[i];
+                  const pressed = gamepad.buttons[1].pressed;
+                  if (pressed) {
+                    const list = menuMesh.optionsMesh.list === 'tabs' ? tabs : links;
+                    menuMesh.listMesh.scrollIndex = Math.floor(yFactor*list.length);
+                    if (menuMesh.listMesh.scrollIndex >= list.length) {
+                      menuMesh.listMesh.scrollIndex = list.length;
+                    }
+                    menuMesh.listMesh.updateList();
                   }
-                }
+
+                  intersectionSpecs[i] = null;
+                });
               }
             }
           }
