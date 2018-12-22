@@ -437,8 +437,7 @@ const _makeRig = () => {
 
       const _updateText = () => {
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(0, 0, menuWidth*0.6 - 5, menuHeight);
-        ctx.fillRect(menuWidth*0.6, 0, menuWidth*0.2 - 5, menuHeight);
+        ctx.fillRect(0, 0, menuWidth*0.8 - 5, menuHeight);
         ctx.fillRect(menuWidth*0.8, 0, menuWidth*0.2 - 5, menuHeight);
         ctx.fillRect(0, menuHeight, menuWidth*0.5, menuHeight);
 
@@ -446,7 +445,6 @@ const _makeRig = () => {
         ctx.font = `${fontSize}px Arial`;
 
         ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 5);
-        ctx.fillText('c', menuWidth*0.68, menuHeight*0.7);
         ctx.fillText('x', menuWidth*0.88, menuHeight*0.7);
 
         urlState.measures.length = 0;
