@@ -644,6 +644,11 @@ const _makeRig = () => {
             ctx.fillStyle = '#FFFFFF';
             ctx.fillText('No tabs', 50, menuHeight/2 + 20);
           }
+
+          ctx.fillStyle = '#808080';
+          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight*4);
+          ctx.fillStyle = '#42a5f5';
+          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight);
         } else if (optionsMesh.list === 'links') {
           for (let i = 0; i < links.length; i++) {
             const link = links[i];
@@ -651,11 +656,16 @@ const _makeRig = () => {
             const y = menuHeight*i;
 
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, y, menuWidth, menuHeight);
+            ctx.fillRect(0, y, menuWidth*0.98, menuHeight);
 
             ctx.fillStyle = '#000000';
             ctx.fillText(name, 50, y + menuHeight/2 + 20);
           }
+
+          ctx.fillStyle = '#808080';
+          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight*4);
+          ctx.fillStyle = '#42a5f5';
+          ctx.fillRect(menuWidth*0.99, 0, menuWidth*0.01, menuHeight);
         }
 
         texture.needsUpdate = true;
@@ -1268,73 +1278,94 @@ function animate(time, frame) {
             const yFactor = leftIntersectionPoint.distanceTo(menuMesh.listMesh.leftLine.start) / (menuWorldHeight*4);
             const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < rayDistance) {
+            if (xFactor > 0 && xFactor < 1 && yFactor > 0 && yFactor < 1 && distance < rayDistance) {
               const x = xFactor * menuWidth;
               const y = yFactor * menuHeight*4;
 
-              if (menuMesh.optionsMesh.list === 'tabs') {
-                for (let j = 0; j < tabs.length; j++) {
-                  if (x >= menuWidth*0.8 && y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
-                    intersectionPoints.push(intersectionPoint.clone());
-                    intersectionCbs.push(() => {
-                      controllerMesh.rayMesh.scale.z = distance;
-                      controllerMesh.updateMatrixWorld();
+              if (x < menuWidth * 0.98) {
+                if (menuMesh.optionsMesh.list === 'tabs') {
+                  for (let j = 0; j < tabs.length; j++) {
+                    if (x >= menuWidth*0.8 && y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
 
-                      controllerMesh.rayDot.position.z = -distance;
-                      controllerMesh.updateMatrixWorld();
-                      controllerMesh.rayDot.visible = true;
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
 
-                      const gamepads = navigator.getGamepads();
-                      const gamepad = gamepads[i];
-                      const pressed = gamepad.buttons[1].pressed;
-                      const lastPressed = lastPresseds[i];
-                      if (pressed && !lastPressed) {
-                        const [tab] = tabs.splice(j, 1);
-                        const {iframe} = tab;
-                        _closeUrl(iframe);
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          const [tab] = tabs.splice(j, 1);
+                          const {iframe} = tab;
+                          _closeUrl(iframe);
 
-                        menuMesh.listMesh.updateList();
-                      }
+                          menuMesh.listMesh.updateList();
+                        }
 
-                      intersectionSpecs[i] = null;
-                    });
+                        intersectionSpecs[i] = null;
+                      });
 
-                    break;
+                      break;
+                    }
+                  }
+                } else if (menuMesh.optionsMesh.list === 'links') {
+                  for (let j = 0; j < links.length; j++) {
+                    if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
+
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
+
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          const link = links[j];
+                          const {url} = link;
+
+                          _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
+
+                          menuMesh.optionsMesh.list = 'tabs';
+                          menuMesh.optionsMesh.updateOptions();
+                          menuMesh.listMesh.updateList();
+                        }
+
+                        intersectionSpecs[i] = null;
+                      });
+
+                      break;
+                    }
                   }
                 }
-              } else if (menuMesh.optionsMesh.list === 'links') {
-                for (let j = 0; j < links.length; j++) {
-                  if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
-                    intersectionPoints.push(intersectionPoint.clone());
-                    intersectionCbs.push(() => {
-                      controllerMesh.rayMesh.scale.z = distance;
-                      controllerMesh.updateMatrixWorld();
+              } else {
+                intersectionPoints.push(intersectionPoint.clone());
+                intersectionCbs.push(() => {
+                  controllerMesh.rayMesh.scale.z = distance;
+                  controllerMesh.updateMatrixWorld();
 
-                      controllerMesh.rayDot.position.z = -distance;
-                      controllerMesh.updateMatrixWorld();
-                      controllerMesh.rayDot.visible = true;
+                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.updateMatrixWorld();
+                  controllerMesh.rayDot.visible = true;
 
-                      const gamepads = navigator.getGamepads();
-                      const gamepad = gamepads[i];
-                      const pressed = gamepad.buttons[1].pressed;
-                      const lastPressed = lastPresseds[i];
-                      if (pressed && !lastPressed) {
-                        const link = links[j];
-                        const {url} = link;
-
-                        _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
-
-                        menuMesh.optionsMesh.list = 'tabs';
-                        menuMesh.optionsMesh.updateOptions();
-                        menuMesh.listMesh.updateList();
-                      }
-
-                      intersectionSpecs[i] = null;
-                    });
-
-                    break;
+                  const gamepads = navigator.getGamepads();
+                  const gamepad = gamepads[i];
+                  const pressed = gamepad.buttons[1].pressed;
+                  if (pressed) {
+                    console.log('scroll', yFactor); // XXX
                   }
-                }
+
+                  intersectionSpecs[i] = null;
+                });
               }
             }
           }
