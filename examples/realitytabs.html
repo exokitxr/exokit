@@ -1258,10 +1258,12 @@ function animate(time, frame) {
                     } else if (optionX === 2) {
                       menuMesh.optionsMesh.list = 'tabs';
                       menuMesh.optionsMesh.updateOptions();
+                      menuMesh.listMesh.scrollIndex = 0;
                       menuMesh.listMesh.updateList();
                     } else if (optionX === 3) {
                       menuMesh.optionsMesh.list = 'links';
                       menuMesh.optionsMesh.updateOptions();
+                      menuMesh.listMesh.scrollIndex = 0;
                       menuMesh.listMesh.updateList();
                     }
                   }
