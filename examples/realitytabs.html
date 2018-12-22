@@ -1310,7 +1310,7 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
-                          const [tab] = tabs.splice(scrollIndex + j, 1);
+                          const [tab] = tabs.splice(menuMesh.listMesh.scrollIndex + j, 1);
                           const {iframe} = tab;
                           _closeUrl(iframe);
 
