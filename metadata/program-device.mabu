@@ -89,7 +89,7 @@ DATAS = ../package.json : / \
   ../lib/ : /lib/ \
   ../build/Release/exokit.node : /build/Release/exokit.node \
   ../node_modules/ : /node_modules/ \
-  ../node_modules/native-browser-deps/lib5/magicleap/libmlservo.so : /bin/ \
+  ../node_modules/native-browser-deps-magicleap/lib5/magicleap/libmlservo.so : /bin/ \
   ../examples/ : /examples/ \
   ../metadata/fonts.xml : /etc/fonts.xml
   # ../app/ : /app/
@@ -183,7 +183,7 @@ LIBPATHS = $(MLSDK)/lumin/stl/libc++/lib \
   ../node_modules/native-canvas-deps\lib2\magicleap \
   ../node_modules/native-audio-deps\lib2\magicleap \
   ../node_modules/native-video-deps\lib2\magicleap \
-  ../node_modules/native-browser-deps\lib5\magicleap
+  ../node_modules/native-browser-deps-magicleap\lib5\magicleap
 
 # flags for C/C++/assembly preprocessing
 #
