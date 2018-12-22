@@ -11,12 +11,15 @@
   <script src="skin.js"></script>
   <script src="astar.js"></script>
   <script>
-    let container, scene, camera, display, model, avatarMesh;
+    let container, scene, camera, display, model, path, avatarMesh;
     let mesher = null;
     const waypoints = {};
+    let animation = null;
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
 
     /* const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
@@ -206,7 +209,7 @@
           const key2 = keys[Math.floor(Math.random() * keys.length)];
           const waypoint2 = waypoints[key2];
 
-          const path = astar(waypoint1, waypoint2, {
+          const newPath = astar(waypoint1, waypoint2, {
             id (node) {
               return `${node.x}:${node.y}:${node.z}`;
             },
@@ -238,7 +241,8 @@
             }
           });
 
-          if (path.length > 1) {
+          if (newPath.length > 1) {
+            path = newPath;
             for (let i = 0; i < path.length - 1; i++) {
               const waypoint1 = path[i];
               const waypoint2 = path[i+1];
@@ -265,6 +269,8 @@
                 limbs: true,
               });
               mesh.scale.multiplyScalar(0.2);
+              mesh.frustumCulled = false;
+              mesh.pathIndex = 0;
 
               new Promise((accept, reject) => {
                 const skinImg = new Image();
@@ -436,6 +442,57 @@
           controllerMesh.updateMatrixWorld(true);
         }
       } */
+      if (path) {
+        if (!animation) {
+          const walkRate = 1000;
+          const animationTime = 1000;
+
+          const now = Date.now();
+          animation = {
+            startTime: now,
+            endTime: now + animationTime,
+            startPosition: path[avatarMesh.pathIndex]
+              .clone()
+              .add(localVector2.set(cubeSize/2, cubeSize/2, cubeSize/2)),
+            startQuaternion: avatarMesh.quaternion.clone(),
+            update() {
+              const now = Date.now();
+              const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
+              const nextPathIndex = (avatarMesh.pathIndex + 1) % path.length;
+              const {startPosition} = this;
+              const endPosition = localVector.copy(path[nextPathIndex]).add(localVector2.set(cubeSize/2, cubeSize/2, cubeSize/2));
+              avatarMesh.position
+                .copy(startPosition)
+                .lerp(endPosition, factor);
+
+              const {startQuaternion} = this;
+              localEuler.setFromQuaternion(
+                localQuaternion.setFromUnitVectors(
+                  localVector2.set(0, 0, -1),
+                  localVector3
+                    .copy(endPosition)
+                    .sub(startPosition)
+                    .normalize()
+                ),
+                'YXZ'
+              );
+              localEuler.x = localEuler.z = 0;
+              const endQuaternion = localQuaternion.setFromEuler(localEuler);
+              avatarMesh.quaternion
+                .copy(startQuaternion)
+                .slerp(endQuaternion, factor);
+
+              avatarMesh.material.uniforms.theta.value = Math.sin((now%walkRate)/walkRate * Math.PI*2);
+
+              if (factor >= 1) {
+                avatarMesh.pathIndex = nextPathIndex;
+                animation = null;
+              }
+            },
+          };
+        }
+        animation.update();
+      }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
