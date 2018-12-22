@@ -8,9 +8,10 @@
   </head>
   <body>
   <script src="three.js"></script>
+  <script src="skin.js"></script>
   <script src="astar.js"></script>
   <script>
-    let container, scene, camera, display, model;
+    let container, scene, camera, display, model, avatarMesh;
     let mesher = null;
     const waypoints = {};
 
@@ -256,6 +257,33 @@
               lineMesh.frustumCulled = false;
               scene.add(lineMesh);
             }
+
+            avatarMesh = (() => {
+              const DEFAULT_SKIN_URL = 'skin.png';
+
+              const mesh = skin({
+                limbs: true,
+              });
+              mesh.scale.multiplyScalar(0.2);
+
+              new Promise((accept, reject) => {
+                const skinImg = new Image();
+                skinImg.crossOrigin = 'Anonymous';
+                skinImg.src = DEFAULT_SKIN_URL;
+                skinImg.onload = () => {
+                  accept(skinImg);
+                };
+                skinImg.onerror = err => {
+                  reject(err);
+                };
+              })
+                .then(skinImg => {
+                  mesh.setImage(skinImg);
+                });
+
+              return mesh;
+            })();
+            scene.add(avatarMesh);
 
             first = false;
           }
