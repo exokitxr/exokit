@@ -1293,7 +1293,8 @@ function animate(time, frame) {
 
               if (x < menuWidth * 0.98) {
                 if (menuMesh.optionsMesh.list === 'tabs') {
-                  for (let j = 0; j < tabs.length; j++) {
+                  const localTabs = links.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
+                  for (let j = 0; j < localTabs.length; j++) {
                     if (x >= menuWidth*0.8 && y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
                       intersectionPoints.push(intersectionPoint.clone());
                       intersectionCbs.push(() => {
@@ -1309,7 +1310,7 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
-                          const [tab] = tabs.splice(j, 1);
+                          const [tab] = tabs.splice(scrollIndex + j, 1);
                           const {iframe} = tab;
                           _closeUrl(iframe);
 
@@ -1326,7 +1327,8 @@ function animate(time, frame) {
                     }
                   }
                 } else if (menuMesh.optionsMesh.list === 'links') {
-                  for (let j = 0; j < links.length; j++) {
+                  const localLinks = links.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
+                  for (let j = 0; j < localLinks.length; j++) {
                     if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
                       intersectionPoints.push(intersectionPoint.clone());
                       intersectionCbs.push(() => {
@@ -1342,7 +1344,7 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
-                          const link = links[j];
+                          const link = localLinks[j];
                           const {url} = link;
 
                           _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
