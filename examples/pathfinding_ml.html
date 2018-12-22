@@ -11,12 +11,13 @@
   <script>
     let container, scene, camera, display, model;
     let mesher = null;
+    const waypoints = {};
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localEuler = new THREE.Euler();
 
-    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    /* const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
       color: 0x4caf50,
     });
@@ -30,7 +31,16 @@
       mesh.matrixAutoUpdate = false;
       mesh.frustumCulled = false;
       return mesh;
-    };
+    }; */
+
+    /* const geometryPositions = Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]);
+    const geometryNormals = Float32Array.from([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]);
+    const geometryIndices = Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]); */
+    const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+    const pointGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01, 0.01, 0.01));
+    const pointMaterial = new THREE.MeshPhongMaterial({
+      color: 0x42a5f5,
+    });
 
     function init() {
       container = document.createElement('div');
@@ -130,18 +140,58 @@
         mesh.frustumCulled = false;
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
-        const {geometry} = terrainMesh;
-        const attributes = renderer.getAttributes();
+      const _loadTerrainMesh = (terrainMesh, {positionArray, positionBuffer, positionCount, normalArray, normalBuffer, normalCount, indexArray, indexBuffer, count}) => {
+        {
+          const {geometry} = terrainMesh;
+          const attributes = renderer.getAttributes();
 
-        attributes.get(geometry.attributes.position).buffer = positionBuffer;
-        geometry.attributes.position.count = positionCount / 3;
+          attributes.get(geometry.attributes.position).buffer = positionBuffer;
+          geometry.attributes.position.count = positionCount / 3;
 
-        attributes.get(geometry.attributes.normal).buffer = normalBuffer;
-        geometry.attributes.normal.count = normalCount / 3;
+          attributes.get(geometry.attributes.normal).buffer = normalBuffer;
+          geometry.attributes.normal.count = normalCount / 3;
 
-        attributes.get(geometry.index).buffer = indexBuffer;
-        geometry.index.count = count / 1;
+          attributes.get(geometry.index).buffer = indexBuffer;
+          geometry.index.count = count / 1;
+        }
+
+        const waypointResolution = 0.2;
+        const waypointHalfResolution = waypointResolution/2;
+
+        const filledPoints = {};
+        for (let i = 0; i < positionCount; i += 3) {
+          localVector.set(
+            Math.floor(positionArray[i]/waypointResolution)*waypointResolution,
+            Math.floor(positionArray[i+1]/waypointResolution)*waypointResolution,
+            Math.floor(positionArray[i+2]/waypointResolution)*waypointResolution
+          );
+          const key = `${localVector.x}:${localVector.y}:${localVector.z}`;
+
+          if (!filledPoints[key]) {            
+            filledPoints[key] = localVector.clone();
+          }
+        }
+        for (const key in filledPoints) {
+          const filledPoint = filledPoints[key];
+          localVector.copy(filledPoint);
+          for (;;) {
+            localVector.y += waypointResolution;
+            const key2 = `${localVector.x}:${localVector.y}:${localVector.z}`;
+            if (!filledPoints[key2]) {
+              if (!waypoints[key2]) {
+                const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
+                pointMesh.position
+                  .copy(localVector)
+                  .add(localVector2.set(waypointHalfResolution, waypointHalfResolution, waypointHalfResolution));
+                pointMesh.frustumCulled = false;
+                scene.add(pointMesh);
+
+                waypoints[key2] = localVector.clone();
+              }
+              break;
+            }
+          }
+        }
       };
       const _removeTerrainMesh = terrainMesh => {
         scene.remove(terrainMesh);
@@ -183,20 +233,20 @@
         const cubeSize = 0.2;
         const cubeRange = 1;
 
-        const geometryPositions = Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]);
-        const geometryNormals = Float32Array.from([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]);
-        const geometryIndices = Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]);
+        const geometryPositions = cubeGeometry.attributes.position.array;
+        const geometryNormals = cubeGeometry.attributes.normal.array;
+        const geometryIndices = cubeGeometry.index.array;
 
-        for (let j = 0; j < geometryPositions.length; j += 3) {
+        /* for (let j = 0; j < geometryPositions.length; j += 3) {
           localVector
             .fromArray(geometryPositions, j)
             .multiplyScalar(cubeSize)
             .toArray(geometryPositions, j);
-        }
+        } */
 
-        const positions = new Float32Array(new ArrayBuffer(numCubes * geometryPositions.length * Float32Array.BYTES_PER_ELEMENT));
-        const normals = new Float32Array(new ArrayBuffer(numCubes * geometryNormals.length * Float32Array.BYTES_PER_ELEMENT));
-        const indices = new Uint16Array(new ArrayBuffer(numCubes * geometryIndices.length * Float32Array.BYTES_PER_ELEMENT));
+        const positionArray = new Float32Array(new ArrayBuffer(numCubes * geometryPositions.length * Float32Array.BYTES_PER_ELEMENT));
+        const normalArray = new Float32Array(new ArrayBuffer(numCubes * geometryNormals.length * Float32Array.BYTES_PER_ELEMENT));
+        const indexArray = new Uint16Array(new ArrayBuffer(numCubes * geometryIndices.length * Float32Array.BYTES_PER_ELEMENT));
         for (let i = 0; i < numCubes; i++) {
           const positionDstOffset = i*geometryPositions.length;
           const offsetVector = localVector2.set((Math.random()-0.5)*2*cubeRange, (Math.random()-0.5), (Math.random()-0.5)*2*cubeRange);
@@ -204,38 +254,38 @@
           for (let j = 0; j < geometryPositions.length; j += 3) {
             localVector
               .fromArray(geometryPositions, j)
-              // .multiplyScalar(cubeSize)
+              .multiplyScalar(cubeSize)
               .applyEuler(offsetEuler)
               .add(offsetVector)
-              .toArray(positions, positionDstOffset + j);
+              .toArray(positionArray, positionDstOffset + j);
           }
 
           const normalDstOffset = i*geometryNormals.length;
           for (let j = 0; j < geometryNormals.length; j++) {
-            normals[normalDstOffset + j] = geometryNormals[j];
+            normalArray[normalDstOffset + j] = geometryNormals[j];
           }
 
           const indexDstOffset = i*geometryIndices.length;
           const indexSrcOffset = i*geometryPositions.length/3;
           for (let j = 0; j < geometryIndices.length; j++) {
-            indices[indexDstOffset + j] = geometryIndices[j] + indexSrcOffset;
+            indexArray[indexDstOffset + j] = geometryIndices[j] + indexSrcOffset;
           }
         }
 
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-        const positionCount = positions.length;
+        gl.bufferData(gl.ARRAY_BUFFER, positionArray, gl.STATIC_DRAW);
+        const positionCount = positionArray.length;
 
         const normalBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
-        const normalCount = normals.length;
+        gl.bufferData(gl.ARRAY_BUFFER, normalArray, gl.STATIC_DRAW);
+        const normalCount = normalArray.length;
 
         const indexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-        const count = indices.length;
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+        const count = indexArray.length;
 
         renderer.state.reset();
 
@@ -243,10 +293,13 @@
           {
             id: 0,
             type: 'update',
+            positionArray,
             positionBuffer,
             positionCount,
+            normalArray,
             normalBuffer,
             normalCount,
+            indexArray,
             indexBuffer,
             count,
           },
