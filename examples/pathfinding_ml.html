@@ -21,6 +21,7 @@
     const localVector3 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
+    const localMatrix = new THREE.Matrix4();
 
     /* const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -179,7 +180,9 @@
               Math.floor(positionArray[i+1]/waypointResolution)*waypointResolution,
               Math.floor(positionArray[i+2]/waypointResolution)*waypointResolution
             )
-            .applyMatrix4(transformMatrix);
+            .applyMatrix4(
+              localMatrix.fromArray(transformMatrix)
+            );
           const key = `${localVector.x}:${localVector.y}:${localVector.z}`;
 
           if (!filledPoints[key]) {            
