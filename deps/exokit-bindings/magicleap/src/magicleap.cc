@@ -1091,7 +1091,7 @@ NAN_GETTER(MLEyeTracker::EyesGetter) {
   info.GetReturnValue().Set(array);
 }
 
-void MLEyeTracker::Poll(MLSnapshot *snapshot) {
+void MLEyeTracker::Poll(MLSnapshot *snapshot, const MLMat4f &transformMatrix) {
   if (MLSnapshotGetTransform(snapshot, &eyeStaticData.fixation, &this->transform) == MLResult_Ok) {
     // nothing
   } else {
@@ -1111,6 +1111,27 @@ void MLEyeTracker::Poll(MLSnapshot *snapshot) {
     ML_LOG(Error, "%s: ML failed to get right eye center transform!", application_name);
   }
   this->rightBlink = eyeState.right_blink;
+  
+  if (!isIdentityMatrix(transformMatrix)) {
+    {
+      MLVec3f &position = this->leftTransform.position;
+      MLQuaternionf &rotation = this->leftTransform.rotation;
+      MLVec3f scale = {1, 1, 1};
+      if (!isIdentityMatrix(transformMatrix)) {
+        MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+        decomposeMatrix(transform, position, rotation, scale);
+      }
+    }
+    {
+      MLVec3f &position = this->rightTransform.position;
+      MLQuaternionf &rotation = this->rightTransform.rotation;
+      MLVec3f scale = {1, 1, 1};
+      if (!isIdentityMatrix(transformMatrix)) {
+        MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+        decomposeMatrix(transform, position, rotation, scale);
+      }
+    }
+  }
 }
 
 NAN_METHOD(MLEyeTracker::Destroy) {
@@ -2803,7 +2824,7 @@ NAN_METHOD(MLContext::Update) {
       }
     }
     std::for_each(eyeTrackers.begin(), eyeTrackers.end(), [&](MLEyeTracker *e) {
-      e->Poll(snapshot);
+      e->Poll(snapshot, transformMatrix);
     });
   }
 

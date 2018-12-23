@@ -182,7 +182,7 @@ public:
   static NAN_GETTER(EyesGetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(MLSnapshot *snapshot);
+  void Poll(MLSnapshot *snapshot, const MLMat4f &transformMatrix);
 
 // protected:
   MLTransform transform;
