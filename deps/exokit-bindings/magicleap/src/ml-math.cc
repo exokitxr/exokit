@@ -55,12 +55,10 @@ MLVec3f normalizeVector(const MLVec3f &v) {
 }
 
 MLVec3f applyVectorMatrix(const MLVec3f &v, const MLMat4f &m) {
-  MLVec3f result;
+  const float x = v.x, y = v.y, z = v.z;
+  const float *e = m.matrix_colmajor;
 
-  float x = v.x, y = v.y, z = v.z;
-  float *e = m.matrix_colmajor;
-
-  float w = 1.0f / ( e[ 3 ] * x + e[ 7 ] * y + e[ 11 ] * z + e[ 15 ] );
+  const float w = 1.0f / ( e[ 3 ] * x + e[ 7 ] * y + e[ 11 ] * z + e[ 15 ] );
 
   return MLVec3f{
     ( e[ 0 ] * x + e[ 4 ] * y + e[ 8 ] * z + e[ 12 ] ) * w,
@@ -491,24 +489,24 @@ MLMat4f multiplyMatrices(const MLMat4f &a, const MLMat4f &b) {
 
 const MLMat4f identityMatrix = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 bool isIdentityMatrix(const MLMat4f &m) {
-  return memcmp(m.matrix_colmajor, identityMatrix.matrix_colmajor) === 0;
+  return memcmp(m.matrix_colmajor, identityMatrix.matrix_colmajor, sizeof(m.matrix_colmajor)) == 0;
 }
 
 // hands
 
-bool getHandBone(MLVec3f &position, int handIndex, float wristBones[2][4][1 + 3], float fingerBones[2][5][4][1 + 3], const MLMat4f &transform) {
+bool getHandBone(MLVec3f &position, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLMat4f &transform) {
   for (size_t i = 0; i < 4; i++) {
-    if (*(uint32_t *)&wristBones[handIndex][i][0]) {
+    if (*(uint32_t *)&wristBones[i][0]) {
       return true;
     }
   }
   for (size_t i = 0; i < 5; i++) {
     for (size_t j = 0; j < 4; j++) {
-      if (*(uint32_t *)&fingerBones[handIndex][i][j][0]) {
-        position = {
-          fingerBones[handIndex][i][j][1],
-          fingerBones[handIndex][i][j][2],
-          fingerBones[handIndex][i][j][3]
+      if (*(uint32_t *)&fingerBones[i][j][0]) {
+        position = MLVec3f{
+          fingerBones[i][j][1],
+          fingerBones[i][j][2],
+          fingerBones[i][j][3]
         };
         if (!isIdentityMatrix(transform)) {
           position = applyVectorMatrix(position, transform);
@@ -631,7 +629,7 @@ bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 
   }
 }
 
-bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform) {
+bool getHandPointerTransform(MLTransform &result, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform) {
   std::vector<std::vector<float *>> fingers = {
     { // index
       fingerBones[1][0],
@@ -652,10 +650,10 @@ bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3],
       fingerBones[0][3],
     },
   };
-  return getFingerRayTransform(transform, fingers, normal, transform);
+  return getFingerRayTransform(result, fingers, normal, transform);
 }
 
-bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform) {
+bool getHandGripTransform(MLTransform &result, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform) {
   std::vector<std::vector<float *>> fingers = {
     { // wrist center, middleFinger
       wristBones[0],
@@ -671,27 +669,27 @@ bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], fl
       fingerBones[0][3],
     },
   };
-  return getFingerRayTransform(transform, fingers, normal, transform);
+  return getFingerRayTransform(result, fingers, normal, transform);
 }
 
-void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int handIndex, int boneIndex, const MLMat4f &transform) {
-  float *positionValues = (float *)&wristBones[handIndex][boneIndex][1];
+void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int boneIndex, const MLMat4f &transform) {
+  float *positionValues = (float *)&wristBones[boneIndex][1];
   position.x = positionValues[0];
   position.y = positionValues[1];
   position.z = positionValues[2];
   
-  if (!isIdentityMatrix(m)) {
+  if (!isIdentityMatrix(transform)) {
     position = applyVectorMatrix(position, transform);
   }
 }
 
-void getFingerBonePosition(MLVec3f &position, float fingerBones[5][4][1 + 3], int handIndex, int fingerIndex, int boneIndex, const MLMat4f &transform) {
-  float *positionValues = (float *)&fingerBones[handIndex][fingerIndex][boneIndex][1];
+void getFingerBonePosition(MLVec3f &position, float fingerBones[5][4][1 + 3], int fingerIndex, int boneIndex, const MLMat4f &transform) {
+  float *positionValues = (float *)&fingerBones[fingerIndex][boneIndex][1];
   position.x = positionValues[0];
   position.y = positionValues[1];
   position.z = positionValues[2];
 
-  if (!isIdentityMatrix(m)) {
+  if (!isIdentityMatrix(transform)) {
     position = applyVectorMatrix(position, transform);
   }
 } 
