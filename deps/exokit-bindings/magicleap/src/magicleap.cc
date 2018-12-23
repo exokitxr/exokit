@@ -687,21 +687,13 @@ void MLHandTracker::Poll(const MLMat4f &m) {
     Local<Array> array = Nan::New<Array>();
     uint32_t numResults = 0;
 
-    MLVec3f leftHandCenter;
-    MLVec3f leftHandNormal;
-    MLTransform leftPointerTransform;
-    MLTransform leftGripTransform;
-
-    MLVec3f rightHandCenter;
-    MLVec3f rightHandNormal;
-    MLTransform rightPointerTransform;
-    MLTransform rightGripTransform;
-
     if (getHandBone(wristBones[0], fingerBones[0])) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("left"));
 
+      MLVec3f leftHandCenter;
+      MLVec3f leftHandNormal;
       bool leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0], true, m);
       if (leftHandTransformValid) {
         obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)leftHandCenter.values, 3 * sizeof(float)), 0, 3));
@@ -710,6 +702,7 @@ void MLHandTracker::Poll(const MLMat4f &m) {
         leftHandNormal = {0, 1, 0};
       }
 
+      MLTransform leftPointerTransform;
       bool leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0], leftHandNormal, m);
       if (leftPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
@@ -719,6 +712,8 @@ void MLHandTracker::Poll(const MLMat4f &m) {
       } else {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
+      
+      MLTransform leftGripTransform;
       bool leftGripTransformValid = getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0], leftHandNormal, m);
       if (leftGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
@@ -805,6 +800,8 @@ void MLHandTracker::Poll(const MLMat4f &m) {
 
       obj->Set(JS_STR("hand"), JS_STR("right"));
 
+      MLVec3f rightHandCenter;
+      MLVec3f rightHandNormal;
       bool rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false, m);
       if (rightHandTransformValid) {
         obj->Set(JS_STR("center"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightHandCenter.values, 3 * sizeof(float)), 0, 3));
@@ -813,6 +810,7 @@ void MLHandTracker::Poll(const MLMat4f &m) {
         rightHandNormal = {0, 1, 0};
       }
 
+      MLTransform rightPointerTransform;
       bool rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1], rightHandNormal, m);
       if (rightPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
@@ -822,6 +820,8 @@ void MLHandTracker::Poll(const MLMat4f &m) {
       } else {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
+      
+      MLTransform rightGripTransform;
       bool rightGripTransformValid = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1], rightHandNormal, m);
       if (rightGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
