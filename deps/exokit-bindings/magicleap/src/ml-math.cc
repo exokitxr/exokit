@@ -434,6 +434,11 @@ MLMat4f invertMatrix(const MLMat4f &matrix) {
   return result;
 }
 
+const MLMat4f identityMatrix = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+bool isIdentityMatrix(const MLMat4f &m) {
+  return memcmp(m.matrix_colmajor, identityMatrix.matrix_colmajor) === 0;
+}
+
 // hands
 
 bool getHandBone(MLVec3f &position, int handIndex, float wristBones[2][4][1 + 3], float fingerBones[2][5][4][1 + 3]) {
