@@ -122,8 +122,9 @@
         const material = terrainMaterial;
 
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.meshId = meshId;
+        mesh.matrixAutoUpdate = false;
         mesh.frustumCulled = false;
+        mesh.meshId = meshId;
         return mesh;
       };
       const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
