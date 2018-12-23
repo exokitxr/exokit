@@ -267,7 +267,10 @@
         mesh.meshId = meshId;
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
+      const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
+        terrainMesh.matrix.fromArray(transformMatrix);
+        terrainMesh.matrixWorldNeedsUpdate = true;
+
         const {geometry} = terrainMesh;
         const attributes = renderer.getAttributes();
 
