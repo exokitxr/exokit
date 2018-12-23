@@ -488,44 +488,18 @@ module.exports.XRInputSourceEvent = XRInputSourceEvent;
 
 class XRRigidTransform {
   constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 0}, scale = {x: 1, y: 1, z: 1}) {
-    this._position = Float32Array.from([position.x, position.y, position.z]);
-    this._orientation = Float32Array.from([orientation.x, orientation.y, orientation.z, orientation.w]);
-    this._scale = Float32Array.from([scale.x, scale.y, scale.z]); // non-standard
-    this._matrix = localMatrix
-      .compose(localVector.fromArray(this._position), localQuaternion.fromArray(this._orientation), localVector2.fromArray(this._scale))
+    this.position = Float32Array.from([position.x, position.y, position.z]);
+    this.orientation = Float32Array.from([orientation.x, orientation.y, orientation.z, orientation.w]);
+    this.scale = Float32Array.from([scale.x, scale.y, scale.z]); // non-standard
+    this.matrix = localMatrix
+      .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
       .toArray(new Float32Array(16));
   }
 
-  get position() {
-    return this._position;
-  }
-  set position(position) {
-    this._position = position;
-    this.updateMatrix();
-  }
-  get orientation() {
-    return this._orientation;
-  }
-  set orientation(orientation) {
-    this._orientation = orientation;
-    this.updateMatrix();
-  }
-  get scale() {
-    return this._scale;
-  }
-  set scale(scale) {
-    this._scale = scale;
-    this.updateMatrix();
-  }
-  get matrix() {
-    return this._matrix;
-  }
-  set matrix(matrix) {}
-
   updateMatrix() {
     localMatrix
-      .compose(localVector.fromArray(this._position), localQuaternion.fromArray(this._orientation), localVector2.fromArray(this._scale))
-      .toArray(this._matrix);
+      .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
+      .toArray(this.matrix);
   }
 }
 module.exports.XRRigidTransform = XRRigidTransform;

@@ -1980,10 +1980,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
           this.xrOffset.position.set(v);
+          this.xrOffset.updateMatrix();
         } else if (name === 'orientation' && v.length === 4) {
           this.xrOffset.orientation.set(v);
+          this.xrOffset.updateMatrix();
         } else if (name === 'scale' && v.length === 3) {
           this.xrOffset.scale.set(v);
+          this.xrOffset.updateMatrix();
         }
       } else if (name === 'd') {
         if (value === '2') {
@@ -2049,14 +2052,14 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.setAttribute('position', position);
   }
   
-  get rotation() {
-    return this.getAttribute(rotation);
+  get orientation() {
+    return this.getAttribute(orientation);
   }
-  set rotation(rotation) {
-    if (Array.isArray(rotation)) {
-      rotation = rotation.join(' ');
+  set orientation(orientation) {
+    if (Array.isArray(orientation)) {
+      orientation = orientation.join(' ');
     }
-    this.setAttribute('rotation', rotation);
+    this.setAttribute('orientation', orientation);
   }
   
   get scale() {
