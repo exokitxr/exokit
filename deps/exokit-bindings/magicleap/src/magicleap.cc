@@ -533,7 +533,7 @@ NAN_SETTER(MLPlaneTracker::OnPlanesSetter) {
   }
 }
 
-void MLPlaneTracker::Poll() {
+void MLPlaneTracker::Poll(float transformMatrixArray[16]) {
   if (!this->cb.IsEmpty()) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
@@ -2893,7 +2893,7 @@ NAN_METHOD(MLContext::Update) {
     MLResult result = MLPlanesQueryGetResults(planesTracker, planesRequestHandle, planeResults, &numPlanesResults);
     if (result == MLResult_Ok) {
       std::for_each(planeTrackers.begin(), planeTrackers.end(), [&](MLPlaneTracker *p) {
-        p->Poll();
+        p->Poll(transformMatrixArray);
       });
 
       planesRequestPending = false;
