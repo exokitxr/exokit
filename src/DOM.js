@@ -1940,6 +1940,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   const contentWindow = GlobalContext._makeWindow({
                     url,
                     baseUrl: url,
+                    args: options.args,
                     dataPath: options.dataPath,
                   }, parentWindow, parentWindow.top);
                   const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
