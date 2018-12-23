@@ -557,22 +557,23 @@ void MLPlaneTracker::Poll(const MLMat4f &m) {
       const std::string &id = id2String(planeId);
       obj->Set(JS_STR("id"), JS_STR(id));
 
-      Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 3 * sizeof(float)), 0, 3);
-      positionArray->Set(0, JS_NUM(position.x));
-      positionArray->Set(1, JS_NUM(position.y));
-      positionArray->Set(2, JS_NUM(position.z));
+      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4+2)*sizeof(float));
+      memcpy((float *)arrayBuffer->GetContents().Data(), position.values, 3*sizeof(float));
+      memcpy((float *)arrayBuffer->GetContents().Data() + 3, rotation.values, 4*sizeof(float));
+      ((float *)arrayBuffer->GetContents().Data() + 3 + 4)[0] = width;
+      ((float *)arrayBuffer->GetContents().Data() + 3 + 4)[1] = height;
+
+      size_t index = 0;
+      Local<Float32Array> positionArray = Float32Array::New(arrayBuffer, index, 3);
+      index += 3*sizeof(float);
       obj->Set(JS_STR("position"), positionArray);
-
-      Local<Float32Array> rotationArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 4 * sizeof(float)), 0, 4);
-      rotationArray->Set(0, JS_NUM(rotation.x));
-      rotationArray->Set(1, JS_NUM(rotation.y));
-      rotationArray->Set(2, JS_NUM(rotation.z));
-      rotationArray->Set(3, JS_NUM(rotation.w));
+      
+      Local<Float32Array> rotationArray = Float32Array::New(arrayBuffer, index, 4);
+      index += 4*sizeof(float);
       obj->Set(JS_STR("rotation"), rotationArray);
-
-      Local<Float32Array> sizeArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), 2 * sizeof(float)), 0, 2);
-      sizeArray->Set(0, JS_NUM(width));
-      sizeArray->Set(1, JS_NUM(height));
+      
+      Local<Float32Array> sizeArray = Float32Array::New(arrayBuffer, index, 2);
+      index += 2*sizeof(float);
       obj->Set(JS_STR("size"), sizeArray);
 
       array->Set(i, obj);
