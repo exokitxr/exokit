@@ -1049,7 +1049,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       intervals[index] = null;
     }
   };
-  const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
+  const _maybeDownload = (m, u, data, bufferifyFn) => (options.args && options.args.download) ? _download(m, u, data, bufferifyFn, options.args.download) : data;
   window.fetch = (u, options) => {
     const _boundFetch = (u, options) => {
       const req = utils._normalizePrototype(
