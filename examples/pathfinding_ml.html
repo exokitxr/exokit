@@ -150,8 +150,11 @@
         mesh.frustumCulled = false;
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {positionArray, positionBuffer, positionCount, normalArray, normalBuffer, normalCount, indexArray, indexBuffer, count}) => {
+      const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionArray, positionBuffer, positionCount, normalArray, normalBuffer, normalCount, indexArray, indexBuffer, count}) => {
         {
+          terrainMesh.matrix.fromArray(transformMatrix);
+          terrainMesh.matrixWorldNeedsUpdate = true;
+
           const {geometry} = terrainMesh;
           const attributes = renderer.getAttributes();
 
@@ -170,11 +173,13 @@
 
         const filledPoints = {};
         for (let i = 0; i < positionCount; i += 3) {
-          localVector.set(
-            Math.floor(positionArray[i]/waypointResolution)*waypointResolution,
-            Math.floor(positionArray[i+1]/waypointResolution)*waypointResolution,
-            Math.floor(positionArray[i+2]/waypointResolution)*waypointResolution
-          );
+          localVector
+            .set(
+              Math.floor(positionArray[i]/waypointResolution)*waypointResolution,
+              Math.floor(positionArray[i+1]/waypointResolution)*waypointResolution,
+              Math.floor(positionArray[i+2]/waypointResolution)*waypointResolution
+            )
+            .applyMatrix4(transformMatrix);
           const key = `${localVector.x}:${localVector.y}:${localVector.z}`;
 
           if (!filledPoints[key]) {            
@@ -370,6 +375,8 @@
           }
         }
 
+        const transformMatrix = window.document.xrOffset.matrix;
+
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, positionArray, gl.STATIC_DRAW);
@@ -391,6 +398,7 @@
           {
             id: 0,
             type: 'update',
+            transformMatrix,
             positionArray,
             positionBuffer,
             positionCount,
