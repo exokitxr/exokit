@@ -495,12 +495,12 @@ class XRInputSourceEvent extends Event {
 module.exports.XRInputSourceEvent = XRInputSourceEvent;
 
 class XRRigidTransform {
-  constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 0}, scale = {x: 0, y: 0, z: 0}) {
     this.position = Float32Array.from([position.x, position.y, position.z]);
     this.orientation = Float32Array.from([orientation.x, orientation.y, orientation.z, orientation.w]);
     this.scale = Float32Array.from([scale.x, scale.y, scale.z]); // non-standard
     this.matrix = localMatrix
       .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
+  constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 0}, scale = {x: 1, y: 1, z: 1}) {
       .toArray(new Float32Array(16));
   }
 }
