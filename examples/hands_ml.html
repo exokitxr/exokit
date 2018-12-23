@@ -156,8 +156,7 @@
 
           for (let i = 0; i < hands.length; i++) {
             const hand = hands[i];
-            const {transformMatrix: transformMatrixArray, pointer, grip, wrist, fingers} = hand;
-            const transformMatrix = localMatrix.fromArray(transformMatrixArray);
+            const {pointer, grip, wrist, fingers} = hand;
             const allFingers = [wrist].concat(fingers);
 
             for (let j = 0; j < allFingers.length; j++) {
@@ -168,9 +167,7 @@
                   const position = localVector.fromArray(positionFloat32Array);
                   const newGeometry = boneGeometry.clone()
                     .applyMatrix(
-                      localMatrix2
-                        .makeTranslation(position.x, position.y, position.z)
-                        .premultiply(transformMatrix)
+                      localMatrix2.makeTranslation(position.x, position.y, position.z)
                     );
 
                   _shiftIndex(newGeometry.index.array);
@@ -193,7 +190,6 @@
                       localQuaternion.fromArray(pointer.rotation),
                       localVector2.set(1, 1, 1),
                     )
-                    .premultiply(transformMatrix)
                 );
 
               _shiftIndex(newGeometry.index.array);
@@ -214,7 +210,6 @@
                       localQuaternion.fromArray(grip.rotation),
                       localVector2.set(1, 1, 1),
                     )
-                    .premultiply(transformMatrix)
                 );
 
               _shiftIndex(newGeometry.index.array);
@@ -256,9 +251,6 @@
                 .premultiply(localQuaternion.fromArray(handSpec.rotation));
               pinchedObject.matrix
                 .compose(pinchedObject.position, pinchedObject.quaternion, pinchedObject.scale)
-                .premultiply(
-                  localMatrix.fromArray(handSpec.transformMatrix)
-                );
               pinchedObject.updateMatrixWorld(true);
             }
           }
