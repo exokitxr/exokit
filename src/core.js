@@ -893,7 +893,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   utils._storeOriginalWindowPrototypes(window, symbols.prototypesSymbol);
 
   const windowStartScript = `(() => {
-    ${!(options.args && options.args.require) ? 'global.require = undefined;' : ''}
+    ${!options.args.require ? 'global.require = undefined;' : ''}
 
     const _logStack = err => {
       console.warn(err);
@@ -998,14 +998,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
 
   // WebVR enabled.
-  if (options.args && ['all', 'webvr'].includes(options.args.xr)) {
+  if (['all', 'webvr'].includes(options.args.xr)) {
     window.navigator.getVRDisplays = function() {
       return Promise.resolve(this.getVRDisplaysSync());
     }
   }
 
   // WebXR enabled.
-  if (options.args && ['all', 'webxr'].includes(options.args.xr)) {
+  if (['all', 'webxr'].includes(options.args.xr)) {
     window.navigator.xr = new XR.XR(window);
   }
 
@@ -1049,7 +1049,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       intervals[index] = null;
     }
   };
-  const _maybeDownload = (m, u, data, bufferifyFn) => (options.args && options.args.download) ? _download(m, u, data, bufferifyFn, options.args.download) : data;
+  const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
   window.fetch = (u, options) => {
     const _boundFetch = (u, options) => {
       const req = utils._normalizePrototype(
@@ -1425,7 +1425,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.CanvasGradient = CanvasGradient;
   window.CanvasRenderingContext2D = CanvasRenderingContext2D;
   window.WebGLRenderingContext = WebGLRenderingContext;
-  if (options.args && options.args.webgl !== '1') {
+  if (options.args.webgl !== '1') {
     window.WebGL2RenderingContext = WebGL2RenderingContext;
   }
   window.Audio = HTMLAudioElementBound;
@@ -1831,7 +1831,7 @@ exokit.load = (src, options = {}) => {
       if (res.status >= 200 && res.status < 300) {
         return res.text()
           .then(t => {
-            if (options.args && options.args.download) {
+            if (options.args.download) {
               return _download('GET', src, t, t => Buffer.from(t, 'utf8'), options.args.download);
             } else {
               return Promise.resolve(t);
