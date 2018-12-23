@@ -369,11 +369,7 @@ class XRPresentationFrame {
       if (xrOffset) {
         localMatrix
           .premultiply(
-            localMatrix2.compose(
-              localVector.fromArray(xrOffset.position),
-              localQuaternion.fromArray(xrOffset.orientation),
-              localVector2.fromArray(xrOffset.scale)
-            )
+            localMatrix2.fromArray(xrOffset.matrix)
             .getInverse(localMatrix2)
           );
       }
@@ -442,11 +438,7 @@ class XRDevicePose {
       localMatrix
         .fromArray(view._viewMatrix)
         .multiply(
-          localMatrix2.compose(
-            localVector.fromArray(xrOffset.position),
-            localQuaternion.fromArray(xrOffset.orientation),
-            localVector2.fromArray(xrOffset.scale)
-          )
+          localMatrix2.fromArray(xrOffset.matrix)
         )
         .toArray(view._localViewMatrix);
     } else {
