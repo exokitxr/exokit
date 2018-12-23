@@ -22,6 +22,7 @@
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
+    const localFloat32Array = new Float32Array(16);
 
     /* const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -147,8 +148,9 @@
         const material = terrainMaterial;
 
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.meshId = meshId;
+        mesh.matrixAutoUpdate = false;
         mesh.frustumCulled = false;
+        mesh.meshId = meshId;
         return mesh;
       };
       const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionArray, positionBuffer, positionCount, normalArray, normalBuffer, normalCount, indexArray, indexBuffer, count}) => {
@@ -378,7 +380,10 @@
           }
         }
 
-        const transformMatrix = window.document.xrOffset.matrix;
+        const transformMatrix = localMatrix
+          .fromArray(window.document.xrOffset.matrix)
+          .getInverse(localMatrix)
+          .toArray(localFloat32Array);
 
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
