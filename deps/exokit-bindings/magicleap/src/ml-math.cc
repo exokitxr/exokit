@@ -496,7 +496,7 @@ bool isIdentityMatrix(const MLMat4f &m) {
 
 // hands
 
-bool getHandBone(MLVec3f &position, int handIndex, float wristBones[2][4][1 + 3], float fingerBones[2][5][4][1 + 3]) {
+bool getHandBone(MLVec3f &position, int handIndex, float wristBones[2][4][1 + 3], float fingerBones[2][5][4][1 + 3], const MLMat4f &transform) {
   for (size_t i = 0; i < 4; i++) {
     if (*(uint32_t *)&wristBones[handIndex][i][0]) {
       return true;
@@ -510,6 +510,9 @@ bool getHandBone(MLVec3f &position, int handIndex, float wristBones[2][4][1 + 3]
           fingerBones[handIndex][i][j][2],
           fingerBones[handIndex][i][j][3]
         };
+        if (!isIdentityMatrix(transform)) {
+          position = applyVectorMatrix(position, transform);
+        }
         return true;
       }
     }
@@ -517,7 +520,7 @@ bool getHandBone(MLVec3f &position, int handIndex, float wristBones[2][4][1 + 3]
   return false;
 }
 
-bool getFingerRayTransform(MLTransform &transform, std::vector<std::vector<float *>> &fingers, const MLVec3f &normal) {
+bool getFingerRayTransform(MLTransform &result, std::vector<std::vector<float *>> &fingers, const MLVec3f &normal, const MLMat4f &transform) {
   return std::any_of(fingers.begin(), fingers.end(), [&](std::vector<float *> &bones) -> bool {
     std::vector<float *> validBones(bones);
     validBones.erase(std::remove_if(validBones.begin(), validBones.end(), [&](float *bone) -> bool {
@@ -545,8 +548,14 @@ bool getFingerRayTransform(MLTransform &transform, std::vector<std::vector<float
       // const MLQuaternionf &rotation = getQuaternionFromRotationMatrix(lookMatrix);
       const MLQuaternionf &rotation = getLookAtQuaternion(subVectors(endBone, startBone), normal);
 
-      transform.position = endBone;
-      transform.rotation = rotation;
+      result.position = endBone;
+      result.rotation = rotation;
+      
+      if (!isIdentityMatrix(transform)) {
+        MLVec3f scale = {1, 1, 1};
+        MLMat4f tempMatrix = multiplyMatrices(transform, composeMatrix(result.position, result.rotation, scale));
+        decomposeMatrix(tempMatrix, result.position, result.rotation, scale);
+      }
 
       return true;
     } else {
@@ -555,7 +564,7 @@ bool getFingerRayTransform(MLTransform &transform, std::vector<std::vector<float
   });
 }
 
-bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], bool left) {
+bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], bool left, const MLMat4f &transform) {
   float (&thumb)[4][1 + 3] = fingerBones[0];
   float *thumbTip = thumb[3];
 
@@ -605,6 +614,11 @@ bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 
           normal = multiplyVector(normal, -1);
         }
         
+        if (!isIdentityMatrix(transform)) {
+          center = applyVectorMatrix(center, transform);
+          normal = applyVectorMatrix(normal, transform);
+        }
+        
         return true;
       } else {
         return false;
@@ -617,7 +631,7 @@ bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 
   }
 }
 
-bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal) {
+bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform) {
   std::vector<std::vector<float *>> fingers = {
     { // index
       fingerBones[1][0],
@@ -638,10 +652,10 @@ bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3],
       fingerBones[0][3],
     },
   };
-  return getFingerRayTransform(transform, fingers, normal);
+  return getFingerRayTransform(transform, fingers, normal, transform);
 }
 
-bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal) {
+bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform) {
   std::vector<std::vector<float *>> fingers = {
     { // wrist center, middleFinger
       wristBones[0],
@@ -657,7 +671,7 @@ bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], fl
       fingerBones[0][3],
     },
   };
-  return getFingerRayTransform(transform, fingers, normal);
+  return getFingerRayTransform(transform, fingers, normal, transform);
 }
 
 void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int handIndex, int boneIndex, const MLMat4f &transform) {
