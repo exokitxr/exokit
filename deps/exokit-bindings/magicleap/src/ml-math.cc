@@ -660,6 +660,28 @@ bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], fl
   return getFingerRayTransform(transform, fingers, normal);
 }
 
+void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int handIndex, int boneIndex, const MLMat4f &transform) {
+  float *positionValues = (float *)&wristBones[handIndex][boneIndex][1];
+  position.x = positionValues[0];
+  position.y = positionValues[1];
+  position.z = positionValues[2];
+  
+  if (!isIdentityMatrix(m)) {
+    position = applyVectorMatrix(position, transform);
+  }
+}
+
+void getFingerBonePosition(MLVec3f &position, float fingerBones[5][4][1 + 3], int handIndex, int fingerIndex, int boneIndex, const MLMat4f &transform) {
+  float *positionValues = (float *)&fingerBones[handIndex][fingerIndex][boneIndex][1];
+  position.x = positionValues[0];
+  position.y = positionValues[1];
+  position.z = positionValues[2];
+
+  if (!isIdentityMatrix(m)) {
+    position = applyVectorMatrix(position, transform);
+  }
+} 
+
 }
 
 #endif

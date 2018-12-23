@@ -49,6 +49,8 @@ bool getFingerRayTransform(MLTransform &transform, std::vector<std::vector<float
 bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], bool left);
 bool getHandPointerTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal);
 bool getHandGripTransform(MLTransform &transform, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal);
+void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int handIndex, int boneIndex, const MLMat4f &transform);
+void getFingerBonePosition(MLVec3f &position, float fingerBones[5][4][1 + 3], int handIndex, int fingerIndex, int boneIndex, const MLMat4f &transform);
 
 }
 
