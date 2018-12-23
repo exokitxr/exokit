@@ -1823,6 +1823,8 @@ exokit.load = (src, options = {}) => {
   if (!url.parse(src).protocol) {
     src = 'http://' + src;
   }
+  options.args = options.args || {};
+
   let redirectCount = 0;
   const _fetchTextFollow = src => fetch(src, {
     redirect: 'manual',
