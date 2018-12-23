@@ -422,9 +422,6 @@ void MLMesher::Poll(const MLMat4f &transformMatrix) {
           Local<Object> positionBuffer = Nan::New<Object>();
           positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
 
-          Local<Float32Array> transformMatrix = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), transformMatrixArray, sizeof(transformMatrixArray)), 0, sizeof(transformMatrixArray)/sizeof(transformMatrixArray[0]));
-          obj->Set(JS_STR("transformMatrix"), transformMatrix);
-
           obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.positions, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
           obj->Set(JS_STR("positionArray"), positionArray);
