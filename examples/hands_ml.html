@@ -51,7 +51,6 @@
       const localVector2 = new THREE.Vector3();
       const localQuaternion = new THREE.Quaternion();
       const localMatrix = new THREE.Matrix4();
-      const localMatrix2 = new THREE.Matrix4();
       const handMesh = (() => {
         const pointerGeometry = (() => {
           const geometries = [
@@ -167,7 +166,7 @@
                   const position = localVector.fromArray(positionFloat32Array);
                   const newGeometry = boneGeometry.clone()
                     .applyMatrix(
-                      localMatrix2.makeTranslation(position.x, position.y, position.z)
+                      localMatrix.makeTranslation(position.x, position.y, position.z)
                     );
 
                   _shiftIndex(newGeometry.index.array);
@@ -184,7 +183,7 @@
             if (pointer) {
               const newGeometry = pointerGeometry.clone()
                 .applyMatrix(
-                  localMatrix2
+                  localMatrix
                     .compose(
                       localVector.fromArray(pointer.position),
                       localQuaternion.fromArray(pointer.rotation),
@@ -204,7 +203,7 @@
             if (grip) {
               const newGeometry = pointerGeometry.clone()
                 .applyMatrix(
-                  localMatrix2
+                  localMatrix
                     .compose(
                       localVector.fromArray(grip.position),
                       localQuaternion.fromArray(grip.rotation),
@@ -249,8 +248,7 @@
                 .copy(pinchedObjectStart.rotation)
                 .inverse()
                 .premultiply(localQuaternion.fromArray(handSpec.rotation));
-              pinchedObject.matrix
-                .compose(pinchedObject.position, pinchedObject.quaternion, pinchedObject.scale)
+              pinchedObject.matrix.compose(pinchedObject.position, pinchedObject.quaternion, pinchedObject.scale)
               pinchedObject.updateMatrixWorld(true);
             }
           }
