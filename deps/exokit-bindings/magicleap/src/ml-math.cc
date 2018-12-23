@@ -494,7 +494,7 @@ bool isIdentityMatrix(const MLMat4f &m) {
 
 // hands
 
-bool getHandBone(MLVec3f &position, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLMat4f &transform) {
+bool getHandBone(float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]) {
   for (size_t i = 0; i < 4; i++) {
     if (*(uint32_t *)&wristBones[i][0]) {
       return true;
@@ -503,14 +503,6 @@ bool getHandBone(MLVec3f &position, float wristBones[4][1 + 3], float fingerBone
   for (size_t i = 0; i < 5; i++) {
     for (size_t j = 0; j < 4; j++) {
       if (*(uint32_t *)&fingerBones[i][j][0]) {
-        position = MLVec3f{
-          fingerBones[i][j][1],
-          fingerBones[i][j][2],
-          fingerBones[i][j][3]
-        };
-        if (!isIdentityMatrix(transform)) {
-          position = applyVectorMatrix(position, transform);
-        }
         return true;
       }
     }

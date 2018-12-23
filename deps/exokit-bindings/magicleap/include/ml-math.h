@@ -44,7 +44,7 @@ bool isIdentityMatrix(const MLMat4f &m);
 
 // hands
 
-bool getHandBone(MLVec3f &position, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLMat4f &transform);
+bool getHandBone(float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3]);
 bool getFingerRayTransform(MLTransform &result, std::vector<std::vector<float *>> &fingers, const MLVec3f &normal, const MLMat4f &transform);
 bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], bool left, const MLMat4f &transform);
 bool getHandPointerTransform(MLTransform &result, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform);
