@@ -1976,12 +1976,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               cb(err);
             })
         });
-      } else if (name === 'position' || name === 'rotation' || name === 'scale') {
+      } else if (name === 'position' || name === 'orientation' || name === 'scale') {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
           this.xrOffset.position.set(v);
-        } else if (name === 'rotation' && v.length === 4) {
-          this.xrOffset.rotation.set(v);
+        } else if (name === 'orientation' && v.length === 4) {
+          this.xrOffset.orientation.set(v);
         } else if (name === 'scale' && v.length === 3) {
           this.xrOffset.scale.set(v);
         }
