@@ -545,9 +545,15 @@ void MLPlaneTracker::Poll(const MLMat4f &m) {
       // uint32_t flags = plane.flags;
       float width = plane.width;
       float height = plane.height;
-      MLVec3f &position = plane.position;
-      MLQuaternionf &rotation = plane.rotation;
+      MLVec3f position = plane.position;
+      MLQuaternionf rotation = plane.rotation;
+      MLVec3f scale = {1, 1, 1};
 
+      if (!isIdentityMatrix(m)) {
+        MLMat4f transform = multiplyMatrices(m, composeMatrix(position, rotation, scale));
+        decomposeMatrix(transform, position, rotation, scale);
+      }
+      
       const std::string &id = id2String(planeId);
       obj->Set(JS_STR("id"), JS_STR(id));
 
