@@ -387,7 +387,7 @@ NAN_SETTER(MLMesher::OnMeshSetter) {
   }
 }
 
-void MLMesher::Poll(float transformMatrixArray[16]) {
+void MLMesher::Poll(const MLMat4f &transformMatrix) {
   if (!this->cb.IsEmpty()) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Poll");
@@ -533,7 +533,7 @@ NAN_SETTER(MLPlaneTracker::OnPlanesSetter) {
   }
 }
 
-void MLPlaneTracker::Poll(float transformMatrixArray[16]) {
+void MLPlaneTracker::Poll(const MLMat4f &m) {
   if (!this->cb.IsEmpty()) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
@@ -672,7 +672,7 @@ NAN_SETTER(MLHandTracker::OnGestureSetter) {
   }
 }
 
-void MLHandTracker::Poll(float transformMatrixArray[16]) {
+void MLHandTracker::Poll(const MLMat4f &m) {
   if (!this->cb.IsEmpty()) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
@@ -2632,14 +2632,14 @@ NAN_METHOD(MLContext::Update) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
   Local<Value> xrOffsetValue = info[2];
 
-  float transformMatrixArray[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+  MLMat4f transformMatrix = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
   if (
     xrOffsetValue->IsObject() &&
     Local<Object>::Cast(xrOffsetValue)->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRRigidTransform"))
   ) {
     Local<Object> xrOffset = Local<Object>::Cast(xrOffsetValue);
     Local<Float32Array> matrixFloat32Array = Local<Float32Array>::Cast(xrOffset->Get(JS_STR("matrix")));
-    memcpy(transformMatrixArray, (char *)matrixFloat32Array->Buffer()->GetContents().Data() + matrixFloat32Array->ByteOffset(), sizeof(transformMatrixArray));
+    memcpy(transformMatrix.matrix_colmajor, (char *)matrixFloat32Array->Buffer()->GetContents().Data() + matrixFloat32Array->ByteOffset(), sizeof(transformMatrixArray));
   }
   
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
@@ -2673,7 +2673,7 @@ NAN_METHOD(MLContext::Update) {
         setFingerValue(handStaticData.right.pinky, snapshot, fingerBones[1][4]);
 
         std::for_each(handTrackers.begin(), handTrackers.end(), [&](MLHandTracker *h) {
-          h->Poll(transformMatrixArray);
+          h->Poll(transformMatrix);
         });
       } else {
         ML_LOG(Error, "%s: Hand static data get failed! %x", application_name, result);
@@ -2872,7 +2872,7 @@ NAN_METHOD(MLContext::Update) {
       }
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
-        m->Poll(transformMatrixArray);
+        m->Poll(transformMatrix);
       });
 
       meshRequestsPending = true;
@@ -2893,7 +2893,7 @@ NAN_METHOD(MLContext::Update) {
     MLResult result = MLPlanesQueryGetResults(planesTracker, planesRequestHandle, planeResults, &numPlanesResults);
     if (result == MLResult_Ok) {
       std::for_each(planeTrackers.begin(), planeTrackers.end(), [&](MLPlaneTracker *p) {
-        p->Poll(transformMatrixArray);
+        p->Poll(transformMatrix);
       });
 
       planesRequestPending = false;

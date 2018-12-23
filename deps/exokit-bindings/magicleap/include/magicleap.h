@@ -125,7 +125,7 @@ public:
   static NAN_SETTER(OnMeshSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(float transformMatrix[16]);
+  void Poll(const MLMat4f &m);
 
 // protected:
   Nan::Persistent<Function> cb;
@@ -143,7 +143,7 @@ public:
   static NAN_SETTER(OnPlanesSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(float transformMatrixArray[16]);
+  void Poll(const MLMat4f &m);
 
 // protected:
   Nan::Persistent<Function> cb;
@@ -163,7 +163,7 @@ public:
   static NAN_SETTER(OnGestureSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(float transformMatrixArray[16]);
+  void Poll(const MLMat4f &m);
 
 // protected:
   Nan::Persistent<Function> cb;
