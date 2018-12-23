@@ -561,23 +561,20 @@ void MLPlaneTracker::Poll(const MLMat4f &transformMatrix) {
       obj->Set(JS_STR("id"), JS_STR(id));
 
       Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4+2)*sizeof(float));
-      memcpy((float *)arrayBuffer->GetContents().Data(), position.values, 3*sizeof(float));
-      memcpy((float *)arrayBuffer->GetContents().Data() + 3, rotation.values, 4*sizeof(float));
-      ((float *)arrayBuffer->GetContents().Data() + 3 + 4)[0] = width;
-      ((float *)arrayBuffer->GetContents().Data() + 3 + 4)[1] = height;
-
+      char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
       size_t index = 0;
-      Local<Float32Array> positionArray = Float32Array::New(arrayBuffer, index, 3);
-      index += 3*sizeof(float);
-      obj->Set(JS_STR("position"), positionArray);
+
+      memcpy(arrayBufferData + index, position.values, sizeof(position.values));
+      obj->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
+      index += sizeof(position.values);
       
-      Local<Float32Array> rotationArray = Float32Array::New(arrayBuffer, index, 4);
-      index += 4*sizeof(float);
-      obj->Set(JS_STR("rotation"), rotationArray);
-      
-      Local<Float32Array> sizeArray = Float32Array::New(arrayBuffer, index, 2);
+      obj->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
+      index += sizeof(rotation.values);
+
+      ((float *)(arrayBufferData + index))[0] = width;
+      ((float *)(arrayBufferData + index))[1] = height;
+      obj->Set(JS_STR("size"), Float32Array::New(arrayBuffer, index, 2));
       index += 2*sizeof(float);
-      obj->Set(JS_STR("size"), sizeArray);
 
       array->Set(i, obj);
     }
