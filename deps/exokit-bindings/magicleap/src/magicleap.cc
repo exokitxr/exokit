@@ -697,7 +697,7 @@ void MLHandTracker::Poll(const MLMat4f &m) {
     MLTransform rightPointerTransform;
     MLTransform rightGripTransform;
 
-    if (getHandBone(leftHandCenter, 0, wristBones, fingerBones, m)) {
+    if (getHandBone(leftHandCenter, wristBones[0], fingerBones[0], m)) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("left"));
@@ -800,7 +800,7 @@ void MLHandTracker::Poll(const MLMat4f &m) {
       array->Set(JS_INT(numResults++), obj);
     }
 
-    if (getHandBone(rightHandCenter, 1, wristBones, fingerBones)) {
+    if (getHandBone(rightHandCenter, wristBones[1], fingerBones[1], m)) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("right"));
