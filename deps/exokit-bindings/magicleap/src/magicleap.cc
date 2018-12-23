@@ -2633,7 +2633,9 @@ NAN_METHOD(MLContext::Update) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
   Local<Value> xrOffsetValue = info[2];
 
-  MLMat4f transformMatrix = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+  MLMat4f transformMatrix = {
+    {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
+  };
   if (
     xrOffsetValue->IsObject() &&
     Local<Object>::Cast(xrOffsetValue)->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRRigidTransform"))
