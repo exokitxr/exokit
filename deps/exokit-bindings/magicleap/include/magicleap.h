@@ -217,7 +217,7 @@ public:
   static NAN_SETTER(OnTrackSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(MLSnapshot *snapshot);
+  void Poll(MLSnapshot *snapshot, const MLMat4f &transformMatrix);
 
 // protected:
   MLHandle trackerHandle;

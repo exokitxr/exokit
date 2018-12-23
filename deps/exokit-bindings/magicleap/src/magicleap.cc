@@ -1346,7 +1346,7 @@ NAN_SETTER(MLImageTracker::OnTrackSetter) {
   }
 }
 
-void MLImageTracker::Poll(MLSnapshot *snapshot) {
+void MLImageTracker::Poll(MLSnapshot *snapshot, const MLMat4f &transformMatrix) {
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker");
 
@@ -1373,11 +1373,31 @@ void MLImageTracker::Poll(MLSnapshot *snapshot) {
         MLResult result = MLSnapshotGetTransform(snapshot, &trackerTargetStaticData.coord_frame_target, &transform);
 
         if (result == MLResult_Ok) {
+          MLVec3f &position = transform.position;
+          MLQuaternionf &rotation = transform.rotation;
+          MLVec3f scale = {1, 1, 1};
+          if (!isIdentityMatrix(transformMatrix)) {
+            MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+            decomposeMatrix(transform, position, rotation, scale);
+          }
+          
           Local<Function> cbFn = Nan::New(cb);
           Local<Object> objVal = Nan::New<Object>();
-          objVal->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transform.position.values, 3 * sizeof(float)), 0, 3));
-          objVal->Set(JS_STR("rotation"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transform.rotation.values, 4 * sizeof(float)), 0, 4));
+          
+          Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4)*sizeof(float));
+          char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
+          size_t index = 0;
+
+          memcpy(arrayBufferData + index, position.values, sizeof(position.values));
+          objVal->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
+          index += sizeof(position.values);
+          
+          memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
+          objVal->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
+          index += sizeof(rotation.values);
+
           objVal->Set(JS_STR("size"), JS_NUM(size));
+          
           Local<Value> argv[] = {
             objVal,
           };
@@ -2794,7 +2814,7 @@ NAN_METHOD(MLContext::Update) {
       }
     }
     std::for_each(imageTrackers.begin(), imageTrackers.end(), [&](MLImageTracker *i) {
-      i->Poll(snapshot);
+      i->Poll(snapshot, transformMatrix);
     });
   }
 
