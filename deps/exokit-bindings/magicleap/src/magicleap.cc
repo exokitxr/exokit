@@ -533,7 +533,7 @@ NAN_SETTER(MLPlaneTracker::OnPlanesSetter) {
   }
 }
 
-void MLPlaneTracker::Poll(const MLMat4f &m) {
+void MLPlaneTracker::Poll(const MLMat4f &transformMatrix) {
   if (!this->cb.IsEmpty()) {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
@@ -552,8 +552,8 @@ void MLPlaneTracker::Poll(const MLMat4f &m) {
       MLQuaternionf rotation = plane.rotation;
       MLVec3f scale = {1, 1, 1};
 
-      if (!isIdentityMatrix(m)) {
-        MLMat4f transform = multiplyMatrices(m, composeMatrix(position, rotation, scale));
+      if (!isIdentityMatrix(transformMatrix)) {
+        MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
         decomposeMatrix(transform, position, rotation, scale);
       }
       
