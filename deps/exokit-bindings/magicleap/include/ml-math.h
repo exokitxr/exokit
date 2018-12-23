@@ -38,6 +38,7 @@ void decomposeMatrix(
   MLVec3f &scale
 );
 MLMat4f invertMatrix(const MLMat4f &matrix);
+MLMat4f multiplyMatrices(const MLMat4f &a, const MLMat4f &b);
 bool isIdentityMatrix(const MLMat4f &m);
 
 // hands
