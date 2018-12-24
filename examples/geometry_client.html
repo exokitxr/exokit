@@ -509,8 +509,9 @@ const _makeTerrainMesh = meshId => {
   const material = terrainMaterial;
 
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.meshId = meshId;
+  mesh.matrixAutoUpdate = false;
   mesh.frustumCulled = false;
+  mesh.meshId = meshId;
   return mesh;
 };
 const _loadTerrainMesh = (terrainMesh, {positionArray, positionCount, normalArray, normalCount, indexArray, count}) => {

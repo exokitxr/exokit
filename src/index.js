@@ -1078,7 +1078,7 @@ const _bindWindow = (window, newWindowCb) => {
     
     if (display.isPresenting) {
       const [{leftBounds, rightBounds}] = display.getLayers();
-      const offsetMatrix = localMatrix2.compose(localVector.fromArray(layer.xrOffset.position), localQuaternion.fromArray(layer.xrOffset.rotation), localVector2.fromArray(layer.xrOffset.scale));
+      const offsetMatrix = localMatrix2.compose(localVector.fromArray(layer.xrOffset.position), localQuaternion.fromArray(layer.xrOffset.orientation), localVector2.fromArray(layer.xrOffset.scale));
       
       o.viewports[0][0] = leftBounds[0]*layer.width * factor;
       o.viewports[0][1] = leftBounds[1]*layer.height;
@@ -1593,9 +1593,9 @@ const _bindWindow = (window, newWindowCb) => {
     // update media frames
     nativeBindings.nativeVideo.Video.updateAll();
     nativeBindings.nativeBrowser.Browser.updateAll();
-    // update magic leap pre state
-    if (nativeBindings.nativeMl && mlPresentState.mlGlContext) {
-      nativeBindings.nativeMl.PrePollEvents(mlPresentState.mlContext);
+    // update magic leap state
+    if (mlPresentState.mlGlContext) {
+      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext, window, window.document.xrOffset);
     }
     if (args.performance) {
       const now = Date.now();
@@ -1626,18 +1626,6 @@ const _bindWindow = (window, newWindowCb) => {
       const now = Date.now();
       const diff = now - timestamps.last;
       timestamps.submit += diff;
-      timestamps.total += diff;
-      timestamps.last = now;
-    }
-
-    // update magic leap post state
-    if (nativeBindings.nativeMl && mlPresentState.mlGlContext) {
-      nativeBindings.nativeMl.PostPollEvents(mlPresentState.mlContext, mlPresentState.mlGlContext, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
-    }
-    if (args.performance) {
-      const now = Date.now();
-      const diff = now - timestamps.last;
-      timestamps.media += diff;
       timestamps.total += diff;
       timestamps.last = now;
     }

@@ -157,7 +157,7 @@ window._makeFakeDisplay = () => {
             .premultiply(
               localMatrix2.compose(
                 localVector.fromArray(xrOffset.position),
-                localQuaternion.fromArray(xrOffset.rotation),
+                localQuaternion.fromArray(xrOffset.orientation),
                 localVector2.fromArray(xrOffset.scale)
               )
               .getInverse(localMatrix2)
@@ -195,7 +195,7 @@ window._makeFakeDisplay = () => {
             .multiply(
               localMatrix2.compose(
                 localVector.fromArray(xrOffset.position),
-                localQuaternion.fromArray(xrOffset.rotation),
+                localQuaternion.fromArray(xrOffset.orientation),
                 localVector2.fromArray(xrOffset.scale)
               )
             )

@@ -157,6 +157,7 @@
             const hand = hands[i];
             const {pointer, grip, wrist, fingers} = hand;
             const allFingers = [wrist].concat(fingers);
+
             for (let j = 0; j < allFingers.length; j++) {
               const bones = allFingers[j];
               for (let k = 0; k < bones.length; k++) {
@@ -182,11 +183,12 @@
             if (pointer) {
               const newGeometry = pointerGeometry.clone()
                 .applyMatrix(
-                  localMatrix.compose(
-                    localVector.fromArray(pointer.position),
-                    localQuaternion.fromArray(pointer.rotation),
-                    localVector2.set(1, 1, 1),
-                  )
+                  localMatrix
+                    .compose(
+                      localVector.fromArray(pointer.position),
+                      localQuaternion.fromArray(pointer.rotation),
+                      localVector2.set(1, 1, 1),
+                    )
                 );
 
               _shiftIndex(newGeometry.index.array);
@@ -201,11 +203,12 @@
             if (grip) {
               const newGeometry = pointerGeometry.clone()
                 .applyMatrix(
-                  localMatrix.compose(
-                    localVector.fromArray(grip.position),
-                    localQuaternion.fromArray(grip.rotation),
-                    localVector2.set(1, 1, 1),
-                  )
+                  localMatrix
+                    .compose(
+                      localVector.fromArray(grip.position),
+                      localQuaternion.fromArray(grip.rotation),
+                      localVector2.set(1, 1, 1),
+                    )
                 );
 
               _shiftIndex(newGeometry.index.array);
@@ -245,7 +248,7 @@
                 .copy(pinchedObjectStart.rotation)
                 .inverse()
                 .premultiply(localQuaternion.fromArray(handSpec.rotation));
-              pinchedObject.matrix.compose(pinchedObject.position, pinchedObject.quaternion, pinchedObject.scale);
+              pinchedObject.matrix.compose(pinchedObject.position, pinchedObject.quaternion, pinchedObject.scale)
               pinchedObject.updateMatrixWorld(true);
             }
           }

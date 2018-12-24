@@ -1320,7 +1320,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
     magicleap: nativeMl ? {
       RequestMeshing() {
-        const mesher = nativeMl.RequestMeshing.apply(nativeMl, arguments);
+        const mesher = nativeMl.RequestMeshing(window);
         return {
           get onmesh() {
             return mesher.onmesh;
@@ -1344,11 +1344,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           },
         };
       },
-      RequestPlaneTracking: nativeMl.RequestPlaneTracking,
-      RequestHandTracking: nativeMl.RequestHandTracking,
-      RequestEyeTracking: nativeMl.RequestEyeTracking,
-      RequestImageTracking: nativeMl.RequestImageTracking,
-      RequestDepthPopulation: nativeMl.RequestDepthPopulation,
+      RequestPlaneTracking: () => nativeMl.RequestPlaneTracking(window),
+      RequestHandTracking: () => nativeMl.RequestHandTracking(window),
+      RequestEyeTracking: () => nativeMl.RequestEyeTracking(window),
+      RequestImageTracking: () => nativeMl.RequestImageTracking(window),
+      RequestDepthPopulation: () => nativeMl.RequestDepthPopulation(window),
       RequestCamera(cb) {
         if (typeof cb === 'function') {
           cb = (cb => function(datas) {

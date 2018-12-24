@@ -369,11 +369,7 @@ class XRPresentationFrame {
       if (xrOffset) {
         localMatrix
           .premultiply(
-            localMatrix2.compose(
-              localVector.fromArray(xrOffset.position),
-              localQuaternion.fromArray(xrOffset.rotation),
-              localVector2.fromArray(xrOffset.scale)
-            )
+            localMatrix2.fromArray(xrOffset.matrix)
             .getInverse(localMatrix2)
           );
       }
@@ -442,11 +438,7 @@ class XRDevicePose {
       localMatrix
         .fromArray(view._viewMatrix)
         .multiply(
-          localMatrix2.compose(
-            localVector.fromArray(xrOffset.position),
-            localQuaternion.fromArray(xrOffset.rotation),
-            localVector2.fromArray(xrOffset.scale)
-          )
+          localMatrix2.fromArray(xrOffset.matrix)
         )
         .toArray(view._localViewMatrix);
     } else {
@@ -493,6 +485,24 @@ class XRInputSourceEvent extends Event {
   }
 }
 module.exports.XRInputSourceEvent = XRInputSourceEvent;
+
+class XRRigidTransform {
+  constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 0}, scale = {x: 1, y: 1, z: 1}) {
+    this.position = Float32Array.from([position.x, position.y, position.z]);
+    this.orientation = Float32Array.from([orientation.x, orientation.y, orientation.z, orientation.w]);
+    this.scale = Float32Array.from([scale.x, scale.y, scale.z]); // non-standard
+    this.matrix = localMatrix
+      .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
+      .toArray(new Float32Array(16));
+  }
+
+  updateMatrix() {
+    localMatrix
+      .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
+      .toArray(this.matrix);
+  }
+}
+module.exports.XRRigidTransform = XRRigidTransform;
 
 class XRCoordinateSystem {
   getTransformTo(other) {

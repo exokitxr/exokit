@@ -17,6 +17,9 @@
       // _makeControllerMesh(0.1),
     ];
 
+    const localMatrix = new THREE.Matrix4();
+    const localFloat32Array = new Float32Array(16);
+
     function init() {
       container = document.createElement('div');
       document.body.appendChild(container);
@@ -160,11 +163,15 @@
         const material = terrainMaterial;
 
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.meshId = meshId;
+        mesh.matrixAutoUpdate = false;
         mesh.frustumCulled = false;
+        mesh.meshId = meshId;
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {positionBuffer, positionArray, positionCount, normalBuffer, normalArray, normalCount, indexBuffer, indexArray, count}) => {
+      const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
+        terrainMesh.matrix.fromArray(transformMatrix);
+        terrainMesh.matrixWorldNeedsUpdate = true;
+
         const {geometry} = terrainMesh;
         const attributes = renderer.getAttributes();
 
@@ -226,6 +233,11 @@
       } else {
         const gl = renderer.getContext();
 
+        const transformMatrix = localMatrix
+          .fromArray(window.document.xrOffset.matrix)
+          .getInverse(localMatrix)
+          .toArray(localFloat32Array);
+
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         const positions = Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]);
@@ -250,6 +262,7 @@
           {
             id: 0,
             type: 'update',
+            transformMatrix,
             positionBuffer,
             positionCount,
             normalBuffer,

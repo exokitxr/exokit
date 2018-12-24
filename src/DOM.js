@@ -14,9 +14,10 @@ const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const urls = require('./urls').urls;
+const {urls} = require('./urls');
 const utils = require('./utils');
-const {_elementGetter, _elementSetter} = require('./utils');
+const {_elementGetter, _elementSetter} = utils;
+const {XRRigidTransform} = require('./XR');
 
 he.encode.options.useNamedReferences = true;
 
@@ -1823,11 +1824,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.d = null;
     this.browser = null;
     this.onconsole = null;
-    this.xrOffset = {
-      position: new Float32Array(3),
-      rotation: new Float32Array(4),
-      scale: new Float32Array(3),
-    };
+    this.xrOffset = new XRRigidTransform();
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
@@ -1979,14 +1976,17 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               cb(err);
             })
         });
-      } else if (name === 'position' || name === 'rotation' || name === 'scale') {
+      } else if (name === 'position' || name === 'orientation' || name === 'scale') {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
           this.xrOffset.position.set(v);
-        } else if (name === 'rotation' && v.length === 4) {
-          this.xrOffset.rotation.set(v);
+          this.xrOffset.updateMatrix();
+        } else if (name === 'orientation' && v.length === 4) {
+          this.xrOffset.orientation.set(v);
+          this.xrOffset.updateMatrix();
         } else if (name === 'scale' && v.length === 3) {
           this.xrOffset.scale.set(v);
+          this.xrOffset.updateMatrix();
         }
       } else if (name === 'd') {
         if (value === '2') {
@@ -2052,14 +2052,14 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.setAttribute('position', position);
   }
   
-  get rotation() {
-    return this.getAttribute(rotation);
+  get orientation() {
+    return this.getAttribute(orientation);
   }
-  set rotation(rotation) {
-    if (Array.isArray(rotation)) {
-      rotation = rotation.join(' ');
+  set orientation(orientation) {
+    if (Array.isArray(orientation)) {
+      orientation = orientation.join(' ');
     }
-    this.setAttribute('rotation', rotation);
+    this.setAttribute('orientation', orientation);
   }
   
   get scale() {
