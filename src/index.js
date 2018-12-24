@@ -1594,15 +1594,8 @@ const _bindWindow = (window, newWindowCb) => {
     nativeBindings.nativeVideo.Video.updateAll();
     nativeBindings.nativeBrowser.Browser.updateAll();
     // update magic leap state
-    if (nativeBindings.nativeMl && window[symbols.mrDisplaysSymbol].mlDisplay.session) {
-      const display = window[symbols.mrDisplaysSymbol].mlDisplay;
-      const {session} = display;
-      
-      if (session.baseLayer) {
-        const document = session.baseLayer.context.canvas.ownerDocument;
-        const {xrOffset} = document;
-        nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext, xrOffset);
-      }
+    if (mlPresentState.mlGlContext) {
+      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext, window, window.document.xrOffset);
     }
     if (args.performance) {
       const now = Date.now();
