@@ -1076,41 +1076,25 @@ const _bindWindow = (window, newWindowCb) => {
       ];
     }
     
-    if (display.isPresenting) {
-      const [{leftBounds, rightBounds}] = display.getLayers();
-      const offsetMatrix = localMatrix2.compose(localVector.fromArray(layer.xrOffset.position), localQuaternion.fromArray(layer.xrOffset.orientation), localVector2.fromArray(layer.xrOffset.scale));
-      
-      o.viewports[0][0] = leftBounds[0]*layer.width * factor;
-      o.viewports[0][1] = leftBounds[1]*layer.height;
-      o.viewports[0][2] = leftBounds[2]*layer.width * factor;
-      o.viewports[0][3] = leftBounds[3]*layer.height;
-      o.viewports[1][0] = rightBounds[0]*layer.width * factor;
-      o.viewports[1][1] = rightBounds[1]*layer.height;
-      o.viewports[1][2] = rightBounds[2]*layer.width * factor;
-      o.viewports[1][3] = rightBounds[3]*layer.height;
-      localMatrix.fromArray(display._frameData.leftViewMatrix)
-        .multiply(offsetMatrix)
-        .toArray(o.modelView[0]);
-      localMatrix.fromArray(display._frameData.rightViewMatrix)
-        .multiply(offsetMatrix)
-        .toArray(o.modelView[1]);
-      o.projection[0].set(display._frameData.leftProjectionMatrix);
-      o.projection[1].set(display._frameData.rightProjectionMatrix);
-    } else {
-      const {session: {_frame: {views}}} = display;
-      for (let i = 0; i < 2; i++) {
-        const dstViewport = o.viewports[i];
-        const srcViewport = views[i]._viewport;
-        dstViewport[0] = srcViewport.x*layer.width;
-        dstViewport[1] = srcViewport.y*layer.height;
-        dstViewport[2] = srcViewport.width*layer.width;
-        dstViewport[3] = srcViewport.height*layer.height;
-      }
-      o.modelView[0].set(views[0]._viewMatrix);
-      o.modelView[1].set(views[1]._viewMatrix);
-      o.projection[0].set(views[0].projectionMatrix);
-      o.projection[1].set(views[1].projectionMatrix);
-    }
+    const [{leftBounds, rightBounds}] = display.getLayers();
+    const offsetMatrix = localMatrix2.compose(localVector.fromArray(layer.xrOffset.position), localQuaternion.fromArray(layer.xrOffset.orientation), localVector2.fromArray(layer.xrOffset.scale));
+    
+    o.viewports[0][0] = leftBounds[0]*layer.width * factor;
+    o.viewports[0][1] = leftBounds[1]*layer.height;
+    o.viewports[0][2] = leftBounds[2]*layer.width * factor;
+    o.viewports[0][3] = leftBounds[3]*layer.height;
+    o.viewports[1][0] = rightBounds[0]*layer.width * factor;
+    o.viewports[1][1] = rightBounds[1]*layer.height;
+    o.viewports[1][2] = rightBounds[2]*layer.width * factor;
+    o.viewports[1][3] = rightBounds[3]*layer.height;
+    localMatrix.fromArray(display._frameData.leftViewMatrix)
+      .multiply(offsetMatrix)
+      .toArray(o.modelView[0]);
+    localMatrix.fromArray(display._frameData.rightViewMatrix)
+      .multiply(offsetMatrix)
+      .toArray(o.modelView[1]);
+    o.projection[0].set(display._frameData.leftProjectionMatrix);
+    o.projection[1].set(display._frameData.rightProjectionMatrix);
   };
   const _decorateModelViewProjections = (layers, display, factor) => {
     for (let i = 0; i < layers.length; i++) {
@@ -1139,7 +1123,7 @@ const _bindWindow = (window, newWindowCb) => {
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {vrDisplay, xrDisplay} = window[symbols.mrDisplaysSymbol];
-              _decorateModelViewProjections(vrPresentState.layers, vrDisplay.isPresenting ? vrDisplay : xrDisplay, 2);
+              _decorateModelViewProjections(vrPresentState.layers, vrDisplay, 2); // note: vrDisplay mirrors xrDisplay
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
             } else {
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
@@ -1152,7 +1136,7 @@ const _bindWindow = (window, newWindowCb) => {
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
               const {mlDisplay, xmDisplay} = window[symbols.mrDisplaysSymbol];
-              _decorateModelViewProjections(mlPresentState.layers, mlDisplay.isPresenting ? mlDisplay : xmDisplay, 2);
+              _decorateModelViewProjections(mlPresentState.layers, mlDisplay, 2); // note: mlDisplay mirrors xmDisplay
               nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
             } else {
               nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
