@@ -1493,9 +1493,9 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
   Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
+  Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
-  Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
   Nan::SetMethod(ctorFn, "Update", Update);
 
   return scope.Escape(ctorFn);
@@ -2584,6 +2584,28 @@ NAN_METHOD(MLContext::RequestEyeTracking) {
   info.GetReturnValue().Set(mlEyeTrackerObj);
 }
 
+NAN_METHOD(MLContext::RequestImageTracking) {
+  if (info[0]->IsObject() && info[1]->IsNumber()) {
+    Local<Object> imageObj = Local<Object>::Cast(info[0]);
+
+    if (
+      imageObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement")) &&
+      imageObj->Get(JS_STR("image"))->IsObject() &&
+      imageObj->Get(JS_STR("image"))->ToObject()->Get(JS_STR("data"))->IsUint8ClampedArray()
+    ) {
+      Local<Function> mlImageTrackerCons = Nan::New(mlImageTrackerConstructor);
+      Local<Value> argv[] = {
+        imageObj->Get(JS_STR("image")),
+        info[1],
+      };
+      Local<Object> mlImageTrackerObj = mlImageTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+      info.GetReturnValue().Set(mlImageTrackerObj);
+    }
+  } else {
+    Nan::ThrowError("MLContext::RequestImageTracking: invalid arguments");
+  }
+}
+
 NAN_METHOD(MLContext::RequestDepthPopulation) {
   if (info[0]->IsBoolean()) {
     depthEnabled = info[0]->BooleanValue();
@@ -2653,27 +2675,6 @@ NAN_METHOD(MLContext::CancelCamera) {
 }
 
 NAN_METHOD(MLContext::RequestImageTracking) {
-  if (info[0]->IsObject() && info[1]->IsNumber()) {
-    Local<Object> imageObj = Local<Object>::Cast(info[0]);
-
-    if (
-      imageObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement")) &&
-      imageObj->Get(JS_STR("image"))->IsObject() &&
-      imageObj->Get(JS_STR("image"))->ToObject()->Get(JS_STR("data"))->IsUint8ClampedArray()
-    ) {
-      Local<Function> mlImageTrackerCons = Nan::New(mlImageTrackerConstructor);
-      Local<Value> argv[] = {
-        imageObj->Get(JS_STR("image")),
-        info[1],
-      };
-      Local<Object> mlImageTrackerObj = mlImageTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
-      info.GetReturnValue().Set(mlImageTrackerObj);
-    }
-  } else {
-    Nan::ThrowError("MLContext::RequestImageTracking: invalid arguments");
-  }
-}
-
 void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]);
 void setFingerValue(const MLThumbState &thumbState, MLSnapshot *snapshot, float data[4][1 + 3]);
 void setFingerValue(const MLFingerState &fingerState, MLSnapshot *snapshot, float data[4][1 + 3]);
