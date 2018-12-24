@@ -196,8 +196,10 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
       _drawFail();
 
       _closeUrl(iframe);
-
+      tabs.splice(tabs.indexOf(tab), 1);
       layers.splice(layers.indexOf(iframe), 1);
+
+      _updateRigLists();
     }
   };
   iframe.d = d;
@@ -208,10 +210,11 @@ const _openUrl = (u, position = new THREE.Vector3(), rotation = new THREE.Quater
   });
   document.body.appendChild(iframe);
 
-  tabs.push({
+  const tab = {
     url: u,
     iframe,
-  });
+  };
+  tabs.push(tab);
   layers.push(iframe);
 
   return iframe;
@@ -222,6 +225,16 @@ const _closeUrl = iframe => {
   }
 
   document.body.removeChild(iframe);
+};
+const _updateRigLists = () => {
+  for (let i = 0; i < rigs.length; i++) {
+    const rig = rigs[i];
+    const {menuMesh} = rig;
+    if (menuMesh.listMesh.scrollIndex > tabs.length - 1) {
+      menuMesh.listMesh.scrollIndex = tabs.length - 1;
+    }
+    menuMesh.listMesh.updateList();
+  }
 };
 
 // main
@@ -1314,10 +1327,7 @@ function animate(time, frame) {
                           const {iframe} = tab;
                           _closeUrl(iframe);
 
-                          if (menuMesh.listMesh.scrollIndex > tabs.length-1) {
-                            menuMesh.listMesh.scrollIndex = tabs.length-1;
-                          }
-                          menuMesh.listMesh.updateList();
+                          _updateRigLists();
                         }
 
                         intersectionSpecs[i] = null;
@@ -1352,7 +1362,8 @@ function animate(time, frame) {
                           menuMesh.optionsMesh.list = 'tabs';
                           menuMesh.optionsMesh.updateOptions();
                           menuMesh.listMesh.scrollIndex = 0;
-                          menuMesh.listMesh.updateList();
+
+                          _updateRigLists();
                         }
 
                         intersectionSpecs[i] = null;
@@ -1432,6 +1443,8 @@ function animate(time, frame) {
                 case 'enter': {
                   const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
                   _openUrl(u, rig.position, rig.quaternion, undefined, optionsMesh.d);
+
+                  _updateRigLists();
                   break;
                 }
                 default: {
@@ -1635,6 +1648,7 @@ const _bootFakeDisplay = async () => {
   display = fakeDisplay;
 
   _openUrl('realitytab.html'); // XXX
+  _updateRigLists();
 
   console.log('loaded root in 2D');
 };
@@ -1680,6 +1694,7 @@ if (navigator.xr && !query.fake) {
         renderer.vr.setAnimationLoop(animate);
 
         _openUrl('realitytab.html'); // XXX
+        _updateRigLists();
 
         console.log('loaded root in XR');
       });
