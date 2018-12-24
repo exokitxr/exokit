@@ -1488,12 +1488,12 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
-  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
-  Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
+  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
   Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
   Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
+  Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "Update", Update);
