@@ -567,7 +567,8 @@ void MLPlaneTracker::Poll(Local<Object> windowObj, const MLMat4f &transformMatri
       memcpy(arrayBufferData + index, position.values, sizeof(position.values));
       obj->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
       index += sizeof(position.values);
-      
+
+      memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
       obj->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
       index += sizeof(rotation.values);
 
