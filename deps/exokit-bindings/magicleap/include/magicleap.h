@@ -117,7 +117,7 @@ class MLMesher : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLMesher();
+  MLMesher(Local<Object> windowObj);
   ~MLMesher();
 
   static NAN_METHOD(New);
@@ -125,9 +125,10 @@ public:
   static NAN_SETTER(OnMeshSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(const MLMat4f &transformMatrix);
+  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
 
 // protected:
+  Nan::Persistent<Object> windowObj;
   Nan::Persistent<Function> cb;
 };
 
@@ -135,7 +136,7 @@ class MLPlaneTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLPlaneTracker();
+  MLPlaneTracker(Local<Object> windowObj);
   ~MLPlaneTracker();
 
   static NAN_METHOD(New);
@@ -143,9 +144,10 @@ public:
   static NAN_SETTER(OnPlanesSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(const MLMat4f &transformMatrix);
+  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
 
 // protected:
+  Nan::Persistent<Object> windowObj;
   Nan::Persistent<Function> cb;
 };
 
@@ -153,7 +155,7 @@ class MLHandTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLHandTracker();
+  MLHandTracker(Local<Object> windowObj);
   ~MLHandTracker();
 
   static NAN_METHOD(New);
@@ -163,9 +165,10 @@ public:
   static NAN_SETTER(OnGestureSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(const MLMat4f &transformMatrix);
+  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
 
 // protected:
+  Nan::Persistent<Object> windowObj;
   Nan::Persistent<Function> cb;
   Nan::Persistent<Function> ongesture;
 };
@@ -174,7 +177,7 @@ class MLEyeTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLEyeTracker();
+  MLEyeTracker(Local<Object> windowObj);
   ~MLEyeTracker();
 
   static NAN_METHOD(New);
@@ -182,9 +185,10 @@ public:
   static NAN_GETTER(EyesGetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(MLSnapshot *snapshot, const MLMat4f &transformMatrix);
+  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix, MLSnapshot *snapshot);
 
 // protected:
+  Nan::Persistent<Object> windowObj;
   MLTransform transform;
   MLTransform leftTransform;
   bool leftBlink;
@@ -209,7 +213,7 @@ class MLImageTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLImageTracker(MLHandle trackerHandle, float size);
+  MLImageTracker(Local<Object> windowObj, MLHandle trackerHandle, float size);
   ~MLImageTracker();
 
   static NAN_METHOD(New);
@@ -217,9 +221,10 @@ public:
   static NAN_SETTER(OnTrackSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(MLSnapshot *snapshot, const MLMat4f &transformMatrix);
+  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix, MLSnapshot *snapshot);
 
 // protected:
+  Nan::Persistent<Object> windowObj;
   MLHandle trackerHandle;
   float size;
   Nan::Persistent<Function> cb;
