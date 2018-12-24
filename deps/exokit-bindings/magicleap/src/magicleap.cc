@@ -2756,7 +2756,7 @@ NAN_METHOD(MLContext::Update) {
     Local<Object> xrOffset = Local<Object>::Cast(xrOffsetValue);
     Local<Float32Array> matrixFloat32Array = Local<Float32Array>::Cast(xrOffset->Get(JS_STR("matrix")));
     memcpy(transformMatrix.matrix_colmajor, (char *)matrixFloat32Array->Buffer()->GetContents().Data() + matrixFloat32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
-    
+
     if (!isIdentityMatrix(transformMatrix)) {
       transformMatrix = invertMatrix(transformMatrix);
     }
