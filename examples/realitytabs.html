@@ -968,6 +968,14 @@ window.addEventListener('keydown', e => {
         fakeDisplay.gamepads[1].buttons[2].pressed = true;
         break;
       }
+      case 32: { // space
+        keys.space = true;
+        break;
+      }
+      case 17: { // ctrl
+        keys.ctrl = true;
+        break;
+      }
     }
   // }
 });
@@ -992,6 +1000,14 @@ window.addEventListener('keyup', e => {
       }
       case 69: { // E
         fakeDisplay.gamepads[1].buttons[2].pressed = false;
+        break;
+      }
+      case 32: { // space
+        keys.space = false;
+        break;
+      }
+      case 17: { // ctrl
+        keys.ctrl = false;
         break;
       }
     }
@@ -1588,6 +1604,14 @@ function animate(time, frame) {
         }
         if (keys.right) {
           velocity.x += speed * timeDiff;
+          // moving = true;
+        }
+        if (keys.space) {
+          velocity.y += speed * timeDiff;
+          // moving = true;
+        }
+        if (keys.ctrl) {
+          velocity.y -= speed * timeDiff;
           // moving = true;
         }
 
