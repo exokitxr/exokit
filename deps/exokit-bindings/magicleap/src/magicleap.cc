@@ -1114,19 +1114,15 @@ void MLEyeTracker::Poll(MLSnapshot *snapshot, const MLMat4f &transformMatrix) {
       MLVec3f &position = this->leftTransform.position;
       MLQuaternionf &rotation = this->leftTransform.rotation;
       MLVec3f scale = {1, 1, 1};
-      if (!isIdentityMatrix(transformMatrix)) {
-        MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
-        decomposeMatrix(transform, position, rotation, scale);
-      }
+      MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+      decomposeMatrix(transform, position, rotation, scale);
     }
     {
       MLVec3f &position = this->rightTransform.position;
       MLQuaternionf &rotation = this->rightTransform.rotation;
       MLVec3f scale = {1, 1, 1};
-      if (!isIdentityMatrix(transformMatrix)) {
-        MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
-        decomposeMatrix(transform, position, rotation, scale);
-      }
+      MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+      decomposeMatrix(transform, position, rotation, scale);
     }
   }
 }
