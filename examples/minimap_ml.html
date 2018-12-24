@@ -17,6 +17,9 @@
       // _makeControllerMesh(0.1),
     ];
 
+    const localMatrix = new THREE.Matrix4();
+    const localFloat32Array = new Float32Array(16);
+
     function init() {
       container = document.createElement('div');
       document.body.appendChild(container);

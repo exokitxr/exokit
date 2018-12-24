@@ -12,6 +12,9 @@
     let container, scene, camera, display, model, controllerMeshes;
     let mesher = null;
 
+    const localMatrix = new THREE.Matrix4();
+    const localFloat32Array = new Float32Array(16);
+
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
       color: 0x4caf50,
