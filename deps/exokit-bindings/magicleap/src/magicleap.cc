@@ -1319,7 +1319,7 @@ NAN_METHOD(MLImageTracker::New) {
 
     imageTrackers.push_back(mlImageTracker);
   } else {
-    Nan::ThrowError("MLContext::RequestImageTracking: failed to create tracker");
+    Nan::ThrowError("MLImageTracker::New: failed to create tracker");
   }
 }
 
