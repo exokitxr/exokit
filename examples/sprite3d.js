@@ -151,10 +151,10 @@ const makeSpriteMesh = img => {
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(pixelSize, 0, 0);
-  mesh.quaternion.setFromAxisAngle(
+  /* mesh.quaternion.setFromAxisAngle(
     new THREE.Vector3(0, 0, 1),
     Math.PI / 4
-  );
+  ); */
   return mesh;
 };
 module.exports.makeSpriteMesh = makeSpriteMesh;
