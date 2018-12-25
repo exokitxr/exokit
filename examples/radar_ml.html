@@ -10,10 +10,56 @@
   <script src="three.js"></script>
   <script src="sprite3d.js"></script>
   <script>
-    let container, scene, camera, renderer, display;
+    let container, scene, camera, radarScene, radarCamera, renderer, display, controllerMeshes;
     let swordMesh = null;
 
     let scaleFactor = 1;
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.01)
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0));
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0xCCCCCC,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const object = new THREE.Object3D();
+      object.position.set(x, y, z);
+      object.quaternion.set(qx, qy, qz, qw);
+      object.rotation.order = 'YXZ';
+
+      const innerMesh = (() => {
+        const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+        // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+        // mesh.updateMatrix();
+        // mesh.updateMatrixWorld();
+        // mesh.matrixAutoUpdate = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      object.add(innerMesh);
+      object.innerMesh = innerMesh;
+
+      const planeMesh = (() => {
+        const renderTarget = new THREE.WebGLRenderTarget(512, 512, {
+          // XXX
+        });
+
+        const mesh = new THREE.Mesh(
+          new THREE.PlaneBufferGeometry(0.1, 0.1)
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.01)),
+          new THREE.MeshBasicMaterial({
+            // color: 0x0000FF,
+            map: renderTarget.texture,
+          })
+        );
+        mesh.frustumCulled = false;
+        mesh.renderTarget = renderTarget;
+        return mesh;
+      })();
+      object.add(planeMesh);
+      object.planeMesh = planeMesh;
+
+      return object;
+    };
 
     const _requestSpriteMesh = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -38,35 +84,60 @@
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
       scene.add(camera);
 
-      const ambientLight = new THREE.AmbientLight(0x808080);
-      scene.add(ambientLight);
+      {
+        const ambientLight = new THREE.AmbientLight(0x808080);
+        scene.add(ambientLight);
 
-      const directionalLight = new THREE.DirectionalLight(0x808080, 1);
-      directionalLight.position.set(1, 1, 1);
-      scene.add(directionalLight);
+        const directionalLight = new THREE.DirectionalLight(0x808080, 1);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+      }
 
-      woodMesh = new THREE.Object3D();
-
+      const woodMesh = new THREE.Object3D();
       _requestSpriteMesh('wood.png')
         .then(newWoodMesh => {
-          /* newWoodMesh.position.set(0.05, 0.11, -0.15);
-          newWoodMesh.quaternion.setFromUnitVectors(
-            new THREE.Vector3(1, 1, 0).normalize(),
-            new THREE.Vector3(0, 1, 0),
-          ).premultiply(
-            new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 1, 0),
-              new THREE.Vector3(0, 1, -1).normalize(),
-             )
-          ); */
           newWoodMesh.frustumCulled = false;
-
           woodMesh.add(newWoodMesh);
-          scene.add(woodMesh);
         })
         .catch(err => {
           console.warn(err.stack);
         });
+      scene.add(woodMesh);
+
+      radarScene = new THREE.Scene();
+      radarScene.matrixAutoUpdate = false;
+
+      radarCamera = new THREE.PerspectiveCamera(80, 1, 0.1, 1000);
+      radarCamera.rotation.order = 'YXZ';
+      radarScene.add(radarCamera);
+
+      {
+        const ambientLight = new THREE.AmbientLight(0x808080);
+        radarScene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0x808080, 1);
+        directionalLight.position.set(1, 1, 1);
+        radarScene.add(directionalLight);
+      }
+
+      const woodMesh2 = new THREE.Object3D();
+      _requestSpriteMesh('wood.png')
+        .then(newWoodMesh => {
+          newWoodMesh.frustumCulled = false;
+          woodMesh2.add(newWoodMesh);
+        })
+        .catch(err => {
+          console.warn(err.stack);
+        });
+      radarScene.add(woodMesh2);
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -81,6 +152,32 @@
     }
 
     function animate(time, frame) {
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+          controllerMesh.updateMatrixWorld(true);
+
+          const oldVrEnabled = renderer.vr.enabled;
+          renderer.vr.enabled = false;
+          radarCamera.position.copy(controllerMesh.position);
+          radarCamera.position.y = 3;
+
+          radarCamera.rotation.x = -Math.PI/2;
+          radarCamera.rotation.y = controllerMesh.rotation.y;
+          radarCamera.rotation.z = 0;
+
+          renderer.render(radarScene, radarCamera, controllerMesh.planeMesh.renderTarget);
+          renderer.setRenderTarget(null);
+          renderer.vr.enabled = oldVrEnabled;
+        }
+      }
       /* if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
         const inputSource = inputSources[0];
