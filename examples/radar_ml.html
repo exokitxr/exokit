@@ -13,6 +13,7 @@
     let container, scene, camera, radarScene, radarCamera, renderer, display, controllerMeshes;
     let swordMesh = null;
 
+    const FLOOR_SIZE = 20;
     let scaleFactor = 1;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.01)
@@ -40,8 +41,9 @@
 
       const planeMesh = (() => {
         const renderTarget = new THREE.WebGLRenderTarget(512, 512, {
-          // XXX
+          format: THREE.RGBFormat,
         });
+        renderTarget.transparent = false;
 
         const mesh = new THREE.Mesh(
           new THREE.PlaneBufferGeometry(0.1, 0.1)
@@ -130,6 +132,53 @@
           console.warn(err.stack);
         });
       radarScene.add(woodMesh2);
+
+      const floorMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, 1),
+              new THREE.Vector3(0, 1, 0)
+            )
+          ));
+        const uvs = geometry.attributes.uv.array;
+        const numUvs = uvs.length / 2;
+        for (let i = 0; i < numUvs; i++) {
+          uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
+          uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
+        }
+
+        const texture = new THREE.Texture(
+          null,
+          THREE.UVMapping,
+          THREE.RepeatWrapping,
+          THREE.RepeatWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+
+        const graphImg = new Image();
+        graphImg.crossOrigin = 'Anonymous';
+        graphImg.src = 'graphy.png';
+        graphImg.onload = () => {
+          texture.image = graphImg;
+          texture.needsUpdate = true;
+        };
+        graphImg.onerror = err => {
+          console.warn(err.stack);
+        };
+
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      radarScene.add(floorMesh);
 
       controllerMeshes = [
         _makeControllerMesh(-0.1),
