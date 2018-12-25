@@ -177,14 +177,13 @@
         const filledPoints = {};
         for (let i = 0; i < positionCount; i += 3) {
           localVector
-            .set(
-              Math.floor(positionArray[i]/waypointResolution)*waypointResolution,
-              Math.floor(positionArray[i+1]/waypointResolution)*waypointResolution,
-              Math.floor(positionArray[i+2]/waypointResolution)*waypointResolution
-            )
+            .fromArray(positionArray, i)
             .applyMatrix4(
               localMatrix.fromArray(transformMatrix)
             );
+          localVector.x = Math.floor(localVector.x/waypointResolution)*waypointResolution;
+          localVector.y = Math.floor(localVector.y/waypointResolution)*waypointResolution;
+          localVector.z = Math.floor(localVector.z/waypointResolution)*waypointResolution;
           const key = `${localVector.x}:${localVector.y}:${localVector.z}`;
 
           if (!filledPoints[key]) {            
