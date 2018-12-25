@@ -1,0 +1,602 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="skin.js"></script>
+  <script src="astar.js"></script>
+  <script>
+    let container, scene, camera, display, model, avatarMesh;
+    let mesher = null;
+    const waypoints = {};
+    let waypointsValid = false;
+    const lineMeshes = [];
+    let animation = null;
+
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler();
+    const localMatrix = new THREE.Matrix4();
+    const localFloat32Array = new Float32Array(16);
+
+    /* const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    }; */
+
+    const numCubes = 100;
+    const cubeSize = 0.2;
+    const cubeRange = 1;
+    const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+    const pointGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01, 0.01, 0.01));
+    const pointMaterial = new THREE.MeshPhongMaterial({
+      color: 0x42a5f5,
+    });
+    const lineGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01/2, 0.01/2, 1));
+    const lineMaterial = new THREE.MeshPhongMaterial({
+      color: 0xFFFFFF,
+    });
+    let pathValid = true;
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 0, 1);
+      // camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      /* (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xE91E63,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 0.5;
+        // mesh.position.z = -1;
+        mesh.frustumCuled = false;
+        scene.add(mesh);
+      })();
+      (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x4CAF50,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 1 + 0.1;
+        // mesh.position.z = -1;
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+      })(); */
+
+      /* controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      }); */
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      avatarMesh = (() => {
+        const DEFAULT_SKIN_URL = 'skin.png';
+
+        const mesh = skin({
+          limbs: true,
+        });
+        mesh.scale.multiplyScalar(0.2);
+        mesh.frustumCulled = false;
+        mesh.node = null;
+
+        new Promise((accept, reject) => {
+          const skinImg = new Image();
+          skinImg.crossOrigin = 'Anonymous';
+          skinImg.src = DEFAULT_SKIN_URL;
+          skinImg.onload = () => {
+            accept(skinImg);
+          };
+          skinImg.onerror = err => {
+            reject(err);
+          };
+        })
+          .then(skinImg => {
+            mesh.setImage(skinImg);
+          });
+
+        return mesh;
+      })();
+      scene.add(avatarMesh);
+
+      const terrainMeshes = [];
+      const terrainMaterial = new THREE.MeshPhongMaterial({
+        color: 0x666666,
+      });
+      const _getTerrainMesh = meshId => {
+        let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
+        if (!terrainMesh) {
+          terrainMesh = _makeTerrainMesh(meshId);
+          terrainMeshes.push(terrainMesh);
+          scene.add(terrainMesh);
+        }
+        return terrainMesh;
+      };
+      const fakeArrayBuffer = new ArrayBuffer(3 * 4);
+      const fakeFloat32Array = new Float32Array(fakeArrayBuffer, 0, 3);
+      const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
+      const _makeTerrainMesh = meshId => {
+        const geometry = new THREE.BufferGeometry();
+        const gl = renderer.getContext();
+        const attributes = renderer.getAttributes();
+
+        geometry.addAttribute('position', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
+        geometry.addAttribute('normal', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.normal, gl.ARRAY_BUFFER);
+        geometry.setIndex(new THREE.BufferAttribute(fakeUint16Array, 1));
+        attributes.update(geometry.index, gl.ELEMENT_ARRAY_BUFFER);
+
+        const material = terrainMaterial;
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.matrixAutoUpdate = false;
+        mesh.frustumCulled = false;
+        mesh.meshId = meshId;
+        return mesh;
+      };
+      const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionArray, positionBuffer, positionCount, normalArray, normalBuffer, normalCount, indexArray, indexBuffer, count}) => {
+        {
+          terrainMesh.matrix.fromArray(transformMatrix);
+          terrainMesh.matrixWorldNeedsUpdate = true;
+
+          const {geometry} = terrainMesh;
+          const attributes = renderer.getAttributes();
+
+          attributes.get(geometry.attributes.position).buffer = positionBuffer;
+          geometry.attributes.position.count = positionCount / 3;
+
+          attributes.get(geometry.attributes.normal).buffer = normalBuffer;
+          geometry.attributes.normal.count = normalCount / 3;
+
+          attributes.get(geometry.index).buffer = indexBuffer;
+          geometry.index.count = count / 1;
+        }
+
+        if (!waypointsValid) {
+          const waypointResolution = 0.2;
+          const waypointHalfResolution = waypointResolution/2;
+
+          const filledPoints = {};
+          for (let i = 0; i < positionCount; i += 3) {
+            localVector
+              .fromArray(positionArray, i)
+              .applyMatrix4(
+                localMatrix.fromArray(transformMatrix)
+              );
+            localVector.x = Math.floor(localVector.x/waypointResolution)*waypointResolution;
+            localVector.y = Math.floor(localVector.y/waypointResolution)*waypointResolution;
+            localVector.z = Math.floor(localVector.z/waypointResolution)*waypointResolution;
+            const key = `${localVector.x}:${localVector.y}:${localVector.z}`;
+
+            if (!filledPoints[key]) {
+              filledPoints[key] = localVector.clone();
+            }
+          }
+          for (const key in filledPoints) {
+            const filledPoint = filledPoints[key];
+            localVector.copy(filledPoint);
+            for (;;) {
+              localVector.y += waypointResolution;
+              const key2 = `${localVector.x}:${localVector.y}:${localVector.z}`;
+              if (!filledPoints[key2]) {
+                if (!waypoints[key2]) {
+                  const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
+                  pointMesh.position
+                    .copy(localVector)
+                    .add(localVector2.set(waypointHalfResolution, waypointHalfResolution, waypointHalfResolution));
+                  pointMesh.frustumCulled = false;
+                  scene.add(pointMesh);
+
+                  waypoints[key2] = localVector.clone();
+                }
+                break;
+              }
+            }
+          }
+
+          waypointsValid = true;
+        }
+      };
+      const _removeTerrainMesh = terrainMesh => {
+        scene.remove(terrainMesh);
+        terrainMesh.geometry.dispose();
+      };
+      const _clearTerrainMeshes = () => {
+        for (let i = 0; i < terrainMeshes.length; i++) {
+          _removeTerrainMesh(terrainMeshes[i]);
+        }
+        terrainMeshes.length = 0;
+      };
+      const _onMesh = updates => {
+        for (let i = 0; i < updates.length; i++) {
+          const update = updates[i];
+          const {id, type} = update;
+
+          if (type === 'new' || type === 'update') {
+            _loadTerrainMesh(_getTerrainMesh(id), update);
+          } else if (type === 'unchanged') {
+            // nothing
+          } else {
+            const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+            if (index !== -1) {
+              const terrainMesh = terrainMeshes[index];
+              _removeTerrainMesh(terrainMesh);
+              terrainMeshes.splice(index, 1);
+            }
+          }
+        }
+      };
+
+      if (window.browser && window.browser.magicleap) {
+        mesher = window.browser.magicleap.RequestMeshing();
+        mesher.onmesh = _onMesh;
+      } else {
+        const gl = renderer.getContext();
+
+        const geometryPositions = cubeGeometry.attributes.position.array;
+        const geometryNormals = cubeGeometry.attributes.normal.array;
+        const geometryIndices = cubeGeometry.index.array;
+
+        /* for (let j = 0; j < geometryPositions.length; j += 3) {
+          localVector
+            .fromArray(geometryPositions, j)
+            .multiplyScalar(cubeSize)
+            .toArray(geometryPositions, j);
+        } */
+
+        const positionArray = new Float32Array(new ArrayBuffer(numCubes * geometryPositions.length * Float32Array.BYTES_PER_ELEMENT));
+        const normalArray = new Float32Array(new ArrayBuffer(numCubes * geometryNormals.length * Float32Array.BYTES_PER_ELEMENT));
+        const indexArray = new Uint16Array(new ArrayBuffer(numCubes * geometryIndices.length * Float32Array.BYTES_PER_ELEMENT));
+        for (let i = 0; i < numCubes; i++) {
+          const positionDstOffset = i*geometryPositions.length;
+          const offsetVector = localVector2.set((Math.random()-0.5)*2*cubeRange, (Math.random()-0.5), (Math.random()-0.5)*2*cubeRange);
+          const offsetEuler = localEuler.set((Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, 'YXZ');
+          for (let j = 0; j < geometryPositions.length; j += 3) {
+            localVector
+              .fromArray(geometryPositions, j)
+              .multiplyScalar(cubeSize)
+              .applyEuler(offsetEuler)
+              .add(offsetVector)
+              .toArray(positionArray, positionDstOffset + j);
+          }
+
+          const normalDstOffset = i*geometryNormals.length;
+          for (let j = 0; j < geometryNormals.length; j++) {
+            normalArray[normalDstOffset + j] = geometryNormals[j];
+          }
+
+          const indexDstOffset = i*geometryIndices.length;
+          const indexSrcOffset = i*geometryPositions.length/3;
+          for (let j = 0; j < geometryIndices.length; j++) {
+            indexArray[indexDstOffset + j] = geometryIndices[j] + indexSrcOffset;
+          }
+        }
+
+        const transformMatrix = localMatrix
+          .fromArray(window.document.xrOffset.matrix)
+          .getInverse(localMatrix)
+          .toArray(localFloat32Array);
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positionArray, gl.STATIC_DRAW);
+        const positionCount = positionArray.length;
+
+        const normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, normalArray, gl.STATIC_DRAW);
+        const normalCount = normalArray.length;
+
+        const indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+        const count = indexArray.length;
+
+        renderer.state.reset();
+
+        const updates = [
+          {
+            id: 0,
+            type: 'update',
+            transformMatrix,
+            positionArray,
+            positionBuffer,
+            positionCount,
+            normalArray,
+            normalBuffer,
+            normalCount,
+            indexArray,
+            indexBuffer,
+            count,
+          },
+        ];
+        setInterval(() => {
+          _onMesh(updates);
+        }, 100);
+      }
+
+      window.addEventListener('keydown', e => {
+        if (e.keyCode === 13) { // enter
+          if (enabled) {
+            _disable();
+          } else {
+            _enable();
+          }
+        }
+      });
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    let path = null;
+    let pathIndex = 0;
+    const walkRate = 500;
+    const animationTime = 500;
+    function animate(time, frame) {
+      if (model) {
+        const animationTime = 4000;
+        const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
+        model.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
+        );
+        model.updateMatrixWorld();
+      }
+      /* if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.updateMatrixWorld(true);
+        }
+      } */
+      if (waypointsValid) {
+        const _getRandomWaypoint = () => {
+          const keys = Object.keys(waypoints);
+          const key = keys[Math.floor(Math.random() * keys.length)];
+          return waypoints[key];
+        };
+        const _getPath = (waypoint1, waypoint2) => {
+          const path = astar(waypoint1, waypoint2, {
+            id (node) {
+              return `${node.x}:${node.y}:${node.z}`;
+            },
+            isGoal(node) {
+              return node === waypoint2;
+            },
+            getSuccessors(node) {
+              let result = [];
+              for (let dz = -1; dz <= 1; dz++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                  for (let dx = -1; dx <= 1; dx++) {
+                    if (dz !== 0 || dy !== 0 || dx !== 0) {
+                      const key = `${node.x + dx*cubeSize}:${node.y + dy*cubeSize}:${node.z + dz*cubeSize}`;
+                      const neighbor = waypoints[key];
+                      if (neighbor) {
+                        result.push(neighbor);
+                      }
+                    }
+                  }
+                }
+              }
+              return result;
+            },
+            distance(nodeA, nodeB) {
+              return 1;
+            },
+            estimate(node, goal) {
+              return node.distanceToSquared(goal);
+            }
+          });
+
+          if (path.length > 1) {
+            return path;
+          } else {
+            return null;
+          }
+        };
+        const _highlightPath = path => {
+          for (let i = 0; i < lineMeshes.length; i++) {
+            scene.remove(lineMeshes[i]);
+          }
+          lineMeshes.length = 0;
+
+          for (let i = 0; i < path.length - 1; i++) {
+            const waypoint1 = path[i];
+            const waypoint2 = path[i+1];
+
+            const lineMesh = new THREE.Mesh(lineGeometry, lineMaterial);
+            lineMesh.position
+              .copy(waypoint1)
+              .add(waypoint2)
+              .divideScalar(2)
+              .add(localVector.set(cubeSize/2, cubeSize/2, cubeSize/2));
+            lineMesh.quaternion.setFromUnitVectors(
+              localVector.set(0, 0, -1),
+              localVector2.copy(waypoint2).sub(waypoint1).normalize()
+            );
+            lineMesh.scale.z = waypoint1.distanceTo(waypoint2) * 0.8;
+            lineMesh.frustumCulled = false;
+            scene.add(lineMesh);
+
+            lineMeshes.push(lineMesh);
+          }
+        };
+
+        if (!path) {
+          if (!avatarMesh.node) {
+            avatarMesh.node = _getRandomWaypoint();
+          }
+          const startNode = avatarMesh.node;
+          let endNode = null;
+          for (let i = 0; i < 300 && !path; i++) {
+            endNode = _getRandomWaypoint();
+            path = _getPath(startNode, endNode);
+          }
+          if (path) {
+            _highlightPath(path);
+            pathIndex = 0;
+          }
+        }
+        if (path && !animation) {
+          const now = Date.now();
+          animation = {
+            startTime: now,
+            endTime: now + animationTime,
+            startPosition: avatarMesh.node
+              .clone()
+              .add(localVector2.set(cubeSize/2, cubeSize/2, cubeSize/2)),
+            startQuaternion: avatarMesh.quaternion.clone(),
+            update() {
+              const now = Date.now();
+              const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
+              const nextPathIndex = pathIndex + 1;
+              const {startPosition} = this;
+              const endPosition = localVector.copy(path[nextPathIndex]).add(localVector2.set(cubeSize/2, cubeSize/2, cubeSize/2));
+              avatarMesh.position
+                .copy(startPosition)
+                .lerp(endPosition, factor);
+
+              const {startQuaternion} = this;
+              localEuler.setFromQuaternion(
+                localQuaternion.setFromUnitVectors(
+                  localVector2.set(0, 0, -1),
+                  localVector3
+                    .copy(endPosition)
+                    .sub(startPosition)
+                    .normalize()
+                ),
+                'YXZ'
+              );
+              localEuler.x = localEuler.z = 0;
+              const endQuaternion = localQuaternion.setFromEuler(localEuler);
+              avatarMesh.quaternion
+                .copy(startQuaternion)
+                .slerp(endQuaternion, factor);
+
+              avatarMesh.material.uniforms.theta.value = Math.sin((now%walkRate)/walkRate * Math.PI*2);
+
+              if (factor >= 1) {
+                avatarMesh.node = path[nextPathIndex];
+                animation = null;
+
+                if ((nextPathIndex + 1) < path.length) {
+                  pathIndex = nextPathIndex;
+                } else {
+                  path = null;
+                }
+              }
+            },
+          };
+        }
+        if (animation) {
+          animation.update();
+        }
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      /* session.onselect = e => {
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+        const objectMesh = _makeControllerMesh(
+          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+        );
+        scene.add(objectMesh);
+      }; */
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+
+    renderer.setAnimationLoop(animate);
+  </script>
+  </body>
+</html>
