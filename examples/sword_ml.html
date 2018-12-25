@@ -1,0 +1,143 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="sprite3d.js"></script>
+  <script>
+    let container, scene, camera, renderer, display;
+    let swordMesh = null;
+
+    let scaleFactor = 1;
+
+    const _requestSpriteMesh = url => new Promise((accept, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.src = url;
+      img.onload = () => {
+        const spriteMesh = sprite3d.makeSpriteMesh(img);
+        accept(spriteMesh);
+      };
+      img.onerror = err => {
+        reject(err);
+      };
+    });
+    /* const _makeLeaperMesh = () => {
+      const mesh = model.clone();
+      mesh.startTime = Date.now();
+      // mesh.endTime = mesh.startTime + 10000;
+      mesh.size = 1;
+      return mesh;
+    }; */
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      // camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      // const ambientLight = new THREE.AmbientLight(0x333333);
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0x808080, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      swordMesh = new THREE.Object3D();
+
+      _requestSpriteMesh('sword.png')
+        .then(newSwordMesh => {
+          newSwordMesh.position.set(0.05, 0.11, -0.15);
+          newSwordMesh.quaternion.setFromUnitVectors(
+            new THREE.Vector3(1, 1, 0).normalize(),
+            new THREE.Vector3(0, 1, 0),
+          ).premultiply(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, 1, -1).normalize(),
+             )
+          );
+          newSwordMesh.frustumCulled = false;
+
+          swordMesh.add(newSwordMesh);
+          scene.add(swordMesh);
+        })
+        .catch(err => {
+          console.warn(err.stack);
+        });
+
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      container.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    function animate(time, frame) {
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+        const inputSource = inputSources[0];
+        const pose = frame.getInputPose(inputSource);
+
+        swordMesh.matrix.fromArray(pose.pointerMatrix);
+        swordMesh.matrix.decompose(swordMesh.position, swordMesh.quaternion, swordMesh.scale);
+        swordMesh.updateMatrixWorld(true);
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+  </script>
+  </body>
+</html>
