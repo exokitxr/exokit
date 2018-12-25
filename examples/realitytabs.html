@@ -655,11 +655,24 @@ const _makeRig = () => {
               const y = menuHeight*i;
 
               ctx.fillStyle = '#FFFFFF';
-              ctx.fillRect(0, y, menuWidth*0.8 - 5, menuHeight);
+              ctx.fillRect(0, y, menuWidth*0.6 - 5, menuHeight);
+              ctx.fillRect(menuWidth*0.6, y, menuWidth*0.2 - 5, menuHeight);
               ctx.fillRect(menuWidth*0.8, y, menuWidth*0.18, menuHeight);
 
               ctx.fillStyle = '#000000';
               ctx.fillText(url, 50, y + menuHeight/2 + 20);
+
+              ctx.strokeStyle = '#000000';
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.moveTo(menuWidth*0.7 - 5, y + menuHeight*0.5 - 20);
+              ctx.lineTo(menuWidth*0.7 - 5, y + menuHeight*0.5 + 20);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(menuWidth*0.7 - 5 - 20, y + menuHeight*0.5);
+              ctx.lineTo(menuWidth*0.7 - 5 + 20, y + menuHeight*0.5);
+              ctx.stroke();
+
               ctx.fillText('x', menuWidth*0.88, y + menuHeight*0.7);
             }
           } else {
@@ -876,6 +889,8 @@ const _handleRigToggle = (position, quaternion) => {
   }
 }; */
 
+const moves = [null, null];
+
 window.addEventListener('click', () => {
   renderer.domElement.requestPointerLock();
 });
@@ -1052,6 +1067,27 @@ function animate(time, frame) {
   };
   _updateGamepads(); */
 
+  const inputSources = display.session.getInputSources();
+  for (let i = 0; i < inputSources.length; i++) {
+    const tab = moves[i];
+    if (tab) {
+      const inputSource = inputSources[i];
+      const pose = frame.getInputPose(inputSource);
+      const {iframe} = tab;
+
+      localQuaternion.fromArray(pose.orientation);
+      localVector
+        .fromArray(pose.position)
+        .add(
+          localVector2.set(0, 0, -1)
+            .applyQuaternion(localQuaternion)
+        );
+
+      iframe.position = localVector.toArray();
+      iframe.orientation = localQuaternion.toArray();
+    }
+  }
+
   const _updateControllerMeshes = () => {
     if (renderer.vr.enabled) {
       const inputSources = display.session.getInputSources();
@@ -1080,6 +1116,14 @@ function animate(time, frame) {
         // controllerMesh.rayDot.visible = false;
         for (let r = 0; r < rigs.length; r++) {
           rigs[r].keyboardMesh.planeMesh.keyMeshes[i].visible = false;
+        }
+
+        const gamepads = navigator.getGamepads();
+        for (let i = 0; i < gamepads.length; i++) {
+          const gamepad = gamepads[i];
+          if (gamepad.buttons[1].pressed) {
+            moves[i] = null;
+          }
         }
 
         intersectionSpecs[i] = null;
@@ -1324,30 +1368,50 @@ function animate(time, frame) {
                 if (menuMesh.optionsMesh.list === 'tabs') {
                   const localTabs = links.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
                   for (let j = 0; j < localTabs.length; j++) {
-                    if (x >= menuWidth*0.8 && y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
-                      intersectionPoints.push(intersectionPoint.clone());
-                      intersectionCbs.push(() => {
-                        controllerMesh.rayMesh.scale.z = distance;
-                        controllerMesh.updateMatrixWorld();
+                    if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                      if (x >= menuWidth*0.8) {
+                        intersectionPoints.push(intersectionPoint.clone());
+                        intersectionCbs.push(() => {
+                          controllerMesh.rayMesh.scale.z = distance;
+                          controllerMesh.updateMatrixWorld();
 
-                        controllerMesh.rayDot.position.z = -distance;
-                        controllerMesh.updateMatrixWorld();
-                        controllerMesh.rayDot.visible = true;
+                          controllerMesh.rayDot.position.z = -distance;
+                          controllerMesh.updateMatrixWorld();
+                          controllerMesh.rayDot.visible = true;
 
-                        const gamepads = navigator.getGamepads();
-                        const gamepad = gamepads[i];
-                        const pressed = gamepad.buttons[1].pressed;
-                        const lastPressed = lastPresseds[i];
-                        if (pressed && !lastPressed) {
-                          const [tab] = tabs.splice(menuMesh.listMesh.scrollIndex + j, 1);
-                          const {iframe} = tab;
-                          _closeUrl(iframe);
+                          const gamepads = navigator.getGamepads();
+                          const gamepad = gamepads[i];
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
+                            const [tab] = tabs.splice(menuMesh.listMesh.scrollIndex + j, 1);
+                            const {iframe} = tab;
+                            _closeUrl(iframe);
 
-                          _updateRigLists();
-                        }
+                            _updateRigLists();
+                          }
 
-                        intersectionSpecs[i] = null;
-                      });
+                          intersectionSpecs[i] = null;
+                        });
+                      } else if (x >= menuWidth*0.6) {
+                        intersectionPoints.push(intersectionPoint.clone());
+                        intersectionCbs.push(() => {
+                          controllerMesh.rayMesh.scale.z = distance;
+                          controllerMesh.updateMatrixWorld();
+
+                          controllerMesh.rayDot.position.z = -distance;
+                          controllerMesh.updateMatrixWorld();
+                          controllerMesh.rayDot.visible = true;
+
+                          const gamepads = navigator.getGamepads();
+                          const gamepad = gamepads[i];
+                          if (gamepad.buttons[1].pressed) {
+                            moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
+                          }
+
+                          intersectionSpecs[i] = null;
+                        });
+                      }
 
                       break;
                     }
