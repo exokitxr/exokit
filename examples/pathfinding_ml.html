@@ -11,9 +11,11 @@
   <script src="skin.js"></script>
   <script src="astar.js"></script>
   <script>
-    let container, scene, camera, display, model, path, avatarMesh;
+    let container, scene, camera, display, model, avatarMesh;
     let mesher = null;
     const waypoints = {};
+    let waypointsValid = false;
+    const lineMeshes = [];
     let animation = null;
 
     const localVector = new THREE.Vector3();
@@ -52,7 +54,7 @@
     const lineMaterial = new THREE.MeshPhongMaterial({
       color: 0xFFFFFF,
     });
-    let first = true;
+    let pathValid = true;
 
     function init() {
       container = document.createElement('div');
@@ -117,6 +119,35 @@
 
       container.appendChild(renderer.domElement);
 
+      avatarMesh = (() => {
+        const DEFAULT_SKIN_URL = 'skin.png';
+
+        const mesh = skin({
+          limbs: true,
+        });
+        mesh.scale.multiplyScalar(0.2);
+        mesh.frustumCulled = false;
+        mesh.node = null;
+
+        new Promise((accept, reject) => {
+          const skinImg = new Image();
+          skinImg.crossOrigin = 'Anonymous';
+          skinImg.src = DEFAULT_SKIN_URL;
+          skinImg.onload = () => {
+            accept(skinImg);
+          };
+          skinImg.onerror = err => {
+            reject(err);
+          };
+        })
+          .then(skinImg => {
+            mesh.setImage(skinImg);
+          });
+
+        return mesh;
+      })();
+      scene.add(avatarMesh);
+
       const terrainMeshes = [];
       const terrainMaterial = new THREE.MeshPhongMaterial({
         color: 0x666666,
@@ -171,137 +202,49 @@
           geometry.index.count = count / 1;
         }
 
-        const waypointResolution = 0.2;
-        const waypointHalfResolution = waypointResolution/2;
+        if (!waypointsValid) {
+          const waypointResolution = 0.2;
+          const waypointHalfResolution = waypointResolution/2;
 
-        const filledPoints = {};
-        for (let i = 0; i < positionCount; i += 3) {
-          localVector
-            .fromArray(positionArray, i)
-            .applyMatrix4(
-              localMatrix.fromArray(transformMatrix)
-            );
-          localVector.x = Math.floor(localVector.x/waypointResolution)*waypointResolution;
-          localVector.y = Math.floor(localVector.y/waypointResolution)*waypointResolution;
-          localVector.z = Math.floor(localVector.z/waypointResolution)*waypointResolution;
-          const key = `${localVector.x}:${localVector.y}:${localVector.z}`;
-
-          if (!filledPoints[key]) {            
-            filledPoints[key] = localVector.clone();
-          }
-        }
-        for (const key in filledPoints) {
-          const filledPoint = filledPoints[key];
-          localVector.copy(filledPoint);
-          for (;;) {
-            localVector.y += waypointResolution;
-            const key2 = `${localVector.x}:${localVector.y}:${localVector.z}`;
-            if (!filledPoints[key2]) {
-              if (!waypoints[key2]) {
-                const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
-                pointMesh.position
-                  .copy(localVector)
-                  .add(localVector2.set(waypointHalfResolution, waypointHalfResolution, waypointHalfResolution));
-                pointMesh.frustumCulled = false;
-                scene.add(pointMesh);
-
-                waypoints[key2] = localVector.clone();
-              }
-              break;
-            }
-          }
-        }
-        if (first) {
-          const keys = Object.keys(waypoints);
-          const key1 = keys[Math.floor(Math.random() * keys.length)];
-          const waypoint1 = waypoints[key1];
-          const key2 = keys[Math.floor(Math.random() * keys.length)];
-          const waypoint2 = waypoints[key2];
-
-          const newPath = astar(waypoint1, waypoint2, {
-            id (node) {
-              return `${node.x}:${node.y}:${node.z}`;
-            },
-            isGoal(node) {
-              return node === waypoint2;
-            },
-            getSuccessors(node) {
-              let result = [];
-              for (let dz = -1; dz < 1; dz++) {
-                for (let dy = -1; dy < 1; dy++) {
-                  for (let dx = -1; dx < 1; dx++) {
-                    if (dz !== 0 || dy !== 0 || dx !== 0) {
-                      const key = `${node.x + dx*cubeSize}:${node.y + dy*cubeSize}:${node.z + dz*cubeSize}`;
-                      const neighbor = waypoints[key];
-                      if (neighbor) {
-                        result.push(neighbor);
-                      }
-                    }
-                  }
-                }
-              }
-              return result;
-            },
-            distance(nodeA, nodeB) {
-              return 1;
-            },
-            estimate(node, goal) {
-              return node.distanceToSquared(goal);
-            }
-          });
-
-          if (newPath.length > 1) {
-            path = newPath;
-            for (let i = 0; i < path.length - 1; i++) {
-              const waypoint1 = path[i];
-              const waypoint2 = path[i+1];
-
-              const lineMesh = new THREE.Mesh(lineGeometry, lineMaterial);
-              lineMesh.position
-                .copy(waypoint1)
-                .add(waypoint2)
-                .divideScalar(2)
-                .add(localVector.set(cubeSize/2, cubeSize/2, cubeSize/2));
-              lineMesh.quaternion.setFromUnitVectors(
-                localVector.set(0, 0, -1),
-                localVector2.copy(waypoint2).sub(waypoint1).normalize()
+          const filledPoints = {};
+          for (let i = 0; i < positionCount; i += 3) {
+            localVector
+              .fromArray(positionArray, i)
+              .applyMatrix4(
+                localMatrix.fromArray(transformMatrix)
               );
-              lineMesh.scale.z = waypoint1.distanceTo(waypoint2) * 0.8;
-              lineMesh.frustumCulled = false;
-              scene.add(lineMesh);
+            localVector.x = Math.floor(localVector.x/waypointResolution)*waypointResolution;
+            localVector.y = Math.floor(localVector.y/waypointResolution)*waypointResolution;
+            localVector.z = Math.floor(localVector.z/waypointResolution)*waypointResolution;
+            const key = `${localVector.x}:${localVector.y}:${localVector.z}`;
+
+            if (!filledPoints[key]) {
+              filledPoints[key] = localVector.clone();
             }
-
-            avatarMesh = (() => {
-              const DEFAULT_SKIN_URL = 'skin.png';
-
-              const mesh = skin({
-                limbs: true,
-              });
-              mesh.scale.multiplyScalar(0.2);
-              mesh.frustumCulled = false;
-              mesh.pathIndex = 0;
-
-              new Promise((accept, reject) => {
-                const skinImg = new Image();
-                skinImg.crossOrigin = 'Anonymous';
-                skinImg.src = DEFAULT_SKIN_URL;
-                skinImg.onload = () => {
-                  accept(skinImg);
-                };
-                skinImg.onerror = err => {
-                  reject(err);
-                };
-              })
-                .then(skinImg => {
-                  mesh.setImage(skinImg);
-                });
-
-              return mesh;
-            })();
-            scene.add(avatarMesh);
-
-            first = false;
           }
+          for (const key in filledPoints) {
+            const filledPoint = filledPoints[key];
+            localVector.copy(filledPoint);
+            for (;;) {
+              localVector.y += waypointResolution;
+              const key2 = `${localVector.x}:${localVector.y}:${localVector.z}`;
+              if (!filledPoints[key2]) {
+                if (!waypoints[key2]) {
+                  const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
+                  pointMesh.position
+                    .copy(localVector)
+                    .add(localVector2.set(waypointHalfResolution, waypointHalfResolution, waypointHalfResolution));
+                  pointMesh.frustumCulled = false;
+                  scene.add(pointMesh);
+
+                  waypoints[key2] = localVector.clone();
+                }
+                break;
+              }
+            }
+          }
+
+          waypointsValid = true;
         }
       };
       const _removeTerrainMesh = terrainMesh => {
@@ -435,6 +378,10 @@
       renderer.setAnimationLoop(animate);
     }
 
+    let path = null;
+    let pathIndex = 0;
+    const walkRate = 500;
+    const animationTime = 500;
     function animate(time, frame) {
       if (model) {
         const animationTime = 4000;
@@ -457,23 +404,107 @@
           controllerMesh.updateMatrixWorld(true);
         }
       } */
-      if (path) {
-        if (!animation) {
-          const walkRate = 1000;
-          const animationTime = 1000;
+      if (waypointsValid) {
+        const _getRandomWaypoint = () => {
+          const keys = Object.keys(waypoints);
+          const key = keys[Math.floor(Math.random() * keys.length)];
+          return waypoints[key];
+        };
+        const _getPath = (waypoint1, waypoint2) => {
+          const path = astar(waypoint1, waypoint2, {
+            id (node) {
+              return `${node.x}:${node.y}:${node.z}`;
+            },
+            isGoal(node) {
+              return node === waypoint2;
+            },
+            getSuccessors(node) {
+              let result = [];
+              for (let dz = -1; dz <= 1; dz++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                  for (let dx = -1; dx <= 1; dx++) {
+                    if (dz !== 0 || dy !== 0 || dx !== 0) {
+                      const key = `${node.x + dx*cubeSize}:${node.y + dy*cubeSize}:${node.z + dz*cubeSize}`;
+                      const neighbor = waypoints[key];
+                      if (neighbor) {
+                        result.push(neighbor);
+                      }
+                    }
+                  }
+                }
+              }
+              return result;
+            },
+            distance(nodeA, nodeB) {
+              return 1;
+            },
+            estimate(node, goal) {
+              return node.distanceToSquared(goal);
+            }
+          });
 
+          if (path.length > 1) {
+            return path;
+          } else {
+            return null;
+          }
+        };
+        const _highlightPath = path => {
+          for (let i = 0; i < lineMeshes.length; i++) {
+            scene.remove(lineMeshes[i]);
+          }
+          lineMeshes.length = 0;
+
+          for (let i = 0; i < path.length - 1; i++) {
+            const waypoint1 = path[i];
+            const waypoint2 = path[i+1];
+
+            const lineMesh = new THREE.Mesh(lineGeometry, lineMaterial);
+            lineMesh.position
+              .copy(waypoint1)
+              .add(waypoint2)
+              .divideScalar(2)
+              .add(localVector.set(cubeSize/2, cubeSize/2, cubeSize/2));
+            lineMesh.quaternion.setFromUnitVectors(
+              localVector.set(0, 0, -1),
+              localVector2.copy(waypoint2).sub(waypoint1).normalize()
+            );
+            lineMesh.scale.z = waypoint1.distanceTo(waypoint2) * 0.8;
+            lineMesh.frustumCulled = false;
+            scene.add(lineMesh);
+
+            lineMeshes.push(lineMesh);
+          }
+        };
+
+        if (!path) {
+          if (!avatarMesh.node) {
+            avatarMesh.node = _getRandomWaypoint();
+          }
+          const startNode = avatarMesh.node;
+          let endNode = null;
+          for (let i = 0; i < 300 && !path; i++) {
+            endNode = _getRandomWaypoint();
+            path = _getPath(startNode, endNode);
+          }
+          if (path) {
+            _highlightPath(path);
+            pathIndex = 0;
+          }
+        }
+        if (path && !animation) {
           const now = Date.now();
           animation = {
             startTime: now,
             endTime: now + animationTime,
-            startPosition: path[avatarMesh.pathIndex]
+            startPosition: avatarMesh.node
               .clone()
               .add(localVector2.set(cubeSize/2, cubeSize/2, cubeSize/2)),
             startQuaternion: avatarMesh.quaternion.clone(),
             update() {
               const now = Date.now();
               const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
-              const nextPathIndex = (avatarMesh.pathIndex + 1) % path.length;
+              const nextPathIndex = pathIndex + 1;
               const {startPosition} = this;
               const endPosition = localVector.copy(path[nextPathIndex]).add(localVector2.set(cubeSize/2, cubeSize/2, cubeSize/2));
               avatarMesh.position
@@ -500,13 +531,21 @@
               avatarMesh.material.uniforms.theta.value = Math.sin((now%walkRate)/walkRate * Math.PI*2);
 
               if (factor >= 1) {
-                avatarMesh.pathIndex = nextPathIndex;
+                avatarMesh.node = path[nextPathIndex];
                 animation = null;
+
+                if ((nextPathIndex + 1) < path.length) {
+                  pathIndex = nextPathIndex;
+                } else {
+                  path = null;
+                }
               }
             },
           };
         }
-        animation.update();
+        if (animation) {
+          animation.update();
+        }
       }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
