@@ -672,7 +672,8 @@ const _makeRig = () => {
 
               ctx.fillStyle = '#FFFFFF';
               ctx.fillRect(0, y, menuWidth*0.6 - 5, menuHeight);
-              ctx.fillRect(menuWidth*0.6, y, menuWidth*0.2 - 5, menuHeight);
+              ctx.fillRect(menuWidth*0.6, y, menuWidth*0.1 - 5, menuHeight);
+              ctx.fillRect(menuWidth*0.7, y, menuWidth*0.1 - 5, menuHeight);
               ctx.fillRect(menuWidth*0.8, y, menuWidth*0.18, menuHeight);
 
               ctx.fillStyle = '#000000';
@@ -681,12 +682,21 @@ const _makeRig = () => {
               ctx.strokeStyle = '#000000';
               ctx.lineWidth = 3;
               ctx.beginPath();
-              ctx.moveTo(menuWidth*0.7 - 5, y + menuHeight*0.5 - 20);
-              ctx.lineTo(menuWidth*0.7 - 5, y + menuHeight*0.5 + 20);
+              ctx.moveTo(menuWidth*0.65 - 5, y + menuHeight*0.5 - 20);
+              ctx.lineTo(menuWidth*0.65 - 5, y + menuHeight*0.5 + 20);
               ctx.stroke();
               ctx.beginPath();
-              ctx.moveTo(menuWidth*0.7 - 5 - 20, y + menuHeight*0.5);
-              ctx.lineTo(menuWidth*0.7 - 5 + 20, y + menuHeight*0.5);
+              ctx.moveTo(menuWidth*0.65 - 5 - 20, y + menuHeight*0.5);
+              ctx.lineTo(menuWidth*0.65 - 5 + 20, y + menuHeight*0.5);
+              ctx.stroke();
+
+              ctx.beginPath();
+              ctx.moveTo(menuWidth*0.75 - 5, y + menuHeight*0.5 - 20);
+              ctx.lineTo(menuWidth*0.75 - 5 + 20, y + menuHeight*0.5);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(menuWidth*0.75 - 5 + 20, y + menuHeight*0.5);
+              ctx.lineTo(menuWidth*0.75 - 5, y + menuHeight*0.5 + 20);
               ctx.stroke();
 
               ctx.fillText('x', menuWidth*0.88, y + menuHeight*0.7);
