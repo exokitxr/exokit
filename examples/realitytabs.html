@@ -999,6 +999,14 @@ window.addEventListener('keydown', e => {
         fakeDisplay.gamepads[1].buttons[2].pressed = true;
         break;
       }
+      case 73: { // I
+        if (e.shiftKey && e.ctrlKey) {
+          const devTools = window.browser.devTools.createDevTools();
+          const u = devTools.getUrl();
+          _openUrl(u, camera.position, camera.quaternion, camera.scale, 2);
+        }
+        break;
+      }
       case 32: { // space
         keys.space = true;
         break;
