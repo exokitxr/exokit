@@ -261,8 +261,8 @@ void embeddedMouseWheel(EmbeddedBrowser browser_, int x, int y, int deltaX, int 
   browser_->GetHost()->SendMouseWheelEvent(evt, deltaX, deltaY);
 }
 int modifiers2int(int modifiers) {
-  int result;
   if (modifiers & (int)EmbeddedKeyModifiers::SHIFT) {
+  int result = 0;
     result |= EVENTFLAG_SHIFT_DOWN;
   }
   if (modifiers & (int)EmbeddedKeyModifiers::CTRL) {
