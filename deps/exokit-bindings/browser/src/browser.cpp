@@ -511,9 +511,10 @@ NAN_METHOD(Browser::SendKeyDown) {
 	
     Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
     int modifiers = GetKeyModifiers(modifiersObj);
+    int wkey = MutateKey(key, modifiersObj);
     
-    QueueOnBrowserThread([browser, key, modifiers]() -> void {
-      embeddedKeyDown(browser->browser_, key, modifiers);
+    QueueOnBrowserThread([browser, key, wkey, modifiers]() -> void {
+      embeddedKeyDown(browser->browser_, key, wkey, modifiers);
     });
   } else {
     return Nan::ThrowError("Browser::SendKeyDown: invalid arguments");
@@ -528,9 +529,10 @@ NAN_METHOD(Browser::SendKeyUp) {
 	
     Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
     int modifiers = GetKeyModifiers(modifiersObj);
+    int wkey = MutateKey(key, modifiersObj);
     
-    QueueOnBrowserThread([browser, key, modifiers]() -> void {
-      embeddedKeyUp(browser->browser_, key, modifiers);
+    QueueOnBrowserThread([browser, key, wkey, modifiers]() -> void {
+      embeddedKeyUp(browser->browser_, key, wkey, modifiers);
     });
 
   } else {

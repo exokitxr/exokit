@@ -273,32 +273,41 @@ int modifiers2int(int modifiers) {
   }
   return result;
 }
-void embeddedKeyDown(EmbeddedBrowser browser_, int key, int modifiers) {
-  CefKeyEvent evt;
+void embeddedKeyDown(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
+  CefKeyEvent evt = {};
   evt.type = KEYEVENT_RAWKEYDOWN;
   evt.character = key;
   evt.native_key_code = key;
-  evt.windows_key_code = key;
+  evt.windows_key_code = wkey;
+  evt.unmodified_character = key;
+  // evt.is_system_key = false;
+  // evt.focus_on_editable_field = true;
   evt.modifiers = modifiers2int(modifiers);
   
   browser_->GetHost()->SendKeyEvent(evt);
 }
-void embeddedKeyUp(EmbeddedBrowser browser_, int key, int modifiers) {
-  CefKeyEvent evt;
+void embeddedKeyUp(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
+  CefKeyEvent evt = {};
   evt.type = KEYEVENT_KEYUP;
   evt.character = key;
   evt.native_key_code = key;
-  evt.windows_key_code = key;
+  evt.windows_key_code = wkey;
+  evt.unmodified_character = key;
+  // evt.is_system_key = false;
+  // evt.focus_on_editable_field = true;
   evt.modifiers = modifiers2int(modifiers);
 
   browser_->GetHost()->SendKeyEvent(evt);
 }
 void embeddedKeyPress(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
-  CefKeyEvent evt;
+  CefKeyEvent evt = {};
   evt.type = KEYEVENT_CHAR;
   evt.character = key;
   evt.native_key_code = key;
   evt.windows_key_code = wkey;
+  evt.unmodified_character = key;
+  // evt.is_system_key = false;
+  // evt.focus_on_editable_field = true;
   evt.modifiers = modifiers2int(modifiers);
 
   browser_->GetHost()->SendKeyEvent(evt);
