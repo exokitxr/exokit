@@ -149,10 +149,10 @@ void embeddedMouseUp(EmbeddedBrowser browser_, int x, int y, int button) {
 void embeddedMouseWheel(EmbeddedBrowser browser_, int x, int y, int deltaX, int deltaY) {
   // nothing
 }
-void embeddedKeyDown(EmbeddedBrowser browser_, int key, int modifiers) {
+void embeddedKeyDown(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
   // nothing
 }
-void embeddedKeyUp(EmbeddedBrowser browser_, int key, int modifiers) {
+void embeddedKeyUp(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
   // nothing
 }
 void embeddedKeyPress(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
