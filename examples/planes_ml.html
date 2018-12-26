@@ -1,0 +1,279 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="GLTFLoader.js"></script>
+  <script>
+    let container, scene, camera, display, model, controllerMeshes;
+    let planeTracker = null;
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      const plantMeshes = (() => {
+        const result = [];
+
+        const loader = new THREE.GLTFLoader();
+        loader.load('plants.glb', o => {
+          o = o.scene;
+          o.traverse(e => {
+            if (e.isMesh) {
+              e.frustumCulled = false;
+              result.push(e);
+            }
+            // e.castShadow = true;
+          });
+        });
+
+        return result;
+      })();
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
+
+      const planeMeshes = [];
+      const planeGeometry1 = new THREE.PlaneBufferGeometry(1, 1)
+        .applyMatrix(
+          new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, -1),
+              new THREE.Vector3(0, 1, 0),
+            )
+          )
+        );
+      const planeMaterial1 = new THREE.MeshPhongMaterial({
+        color: 0xe91e63,
+      });
+      const planeGeometry2 = planeGeometry1.clone()
+        .applyMatrix(
+          new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, -1, 0),
+            )
+          )
+        );
+      const planeMaterial2 = new THREE.MeshPhongMaterial({
+        color: 0x673ab7,
+      });
+      const _loadPlanes = planes => {
+        _clearPlanes();
+
+        for (let i = 0; i < planes.length; i++) {
+          const plane = planes[i];
+
+          const object = new THREE.Object3D();
+          object.position.fromArray(plane.position);
+          object.quaternion.fromArray(plane.rotation);
+
+          const frontMesh = (() => {
+            const mesh = new THREE.Mesh(planeGeometry1, planeMaterial1);
+            mesh.scale.set(plane.size[0], 1, plane.size[1]);
+            mesh.frustumCulled = false;
+            // mesh.updateMatrix();
+            // mesh.updateMatrixWorld();
+            return mesh;
+          })();
+          object.add(frontMesh);
+          const backMesh = (() => {
+            const mesh = new THREE.Mesh(planeGeometry2, planeMaterial2);
+            mesh.scale.set(plane.size[0], 1, plane.size[1]);
+            mesh.frustumCulled = false;
+            // mesh.updateMatrix();
+            // mesh.updateMatrixWorld();
+            return mesh;
+          })();
+          object.add(backMesh);
+
+          const plantMesh = (() => {
+            if (plantMeshes.length > 0) {
+              const index = Math.floor(Math.random() * plantMeshes.length);
+              const plantMesh = plantMeshes[index];
+              return plantMesh.clone();
+            } else {
+              return null;
+            }
+          })();
+          if (plantMesh) {
+            object.add(plantMesh);
+          }
+
+          scene.add(object);
+          planeMeshes.push(object);
+        }
+      };
+      const _clearPlanes = () => {
+        for (let i = 0; i < planeMeshes.length; i++) {
+          const planeMesh = planeMeshes[i];
+          // const {plantMesh} = planeMesh;
+          scene.remove(planeMesh);
+        }
+        planeMeshes.length = 0;
+      };
+      const _onPlanes = planes => {
+        _loadPlanes(planes);
+      };
+
+      if (window.browser && window.browser.magicleap) {
+        planeTracker = window.browser.magicleap.RequestPlaneTracking();
+        planeTracker.onplanes = _onPlanes;
+      } else {
+        const updates = Array(10);
+        for (let i = 0; i < updates.length; i++) {
+          updates[i] = {
+            position: Float32Array.from([(-0.5+Math.random())*3, (-0.5+Math.random())*2, (-0.5+Math.random())*2*3]),
+            rotation: new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              (() => {
+                const index = Math.floor(Math.random() * 6);
+                switch (index) {
+                  case 0: return new THREE.Vector3(1, 0, 0);
+                  case 1: return new THREE.Vector3(-1, 0, 0);
+                  case 2: return new THREE.Vector3(0, 1, 0);
+                  case 3: return new THREE.Vector3(0, -1, 0);
+                  case 4: return new THREE.Vector3(0, 0, 1);
+                  case 5: return new THREE.Vector3(0, 0, -1);
+                  default: return null;
+                }
+              })()
+            ).toArray(new Float32Array(4)),
+            size: Float32Array.from([0.2 + Math.random()*0.8, 0.2 + Math.random()*0.8]),
+          };
+        }
+        setInterval(() => {
+          _onPlanes(updates);
+        }, 100);
+      }
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    function animate(time, frame) {
+      if (model) {
+        const animationTime = 4000;
+        const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
+        model.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
+        );
+        model.updateMatrixWorld();
+      }
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.updateMatrixWorld(true);
+        }
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      session.onselect = e => {
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+        const objectMesh = _makeControllerMesh(
+          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+        );
+        scene.add(objectMesh);
+      };
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+  </script>
+  </body>
+</html>
