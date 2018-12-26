@@ -1860,7 +1860,11 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     err = new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`);
                   };
                   this.browser.onconsole = (message, source, line) => {
-                    this.onconsole && this.onconsole(message, source, line);
+                    if (this.onconsole) {
+                      this.onconsole(message, source, line);
+                    } else {
+                      console.log(`${source}:${line}: ${message}`);
+                    }
                   };
                   await new Promise((accept, reject) => {
                     if (!done) {
