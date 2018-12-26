@@ -18,8 +18,8 @@ const _getReplServer = () => {
 
 let id = 0;
 class DevTools {
-  constructor(iframe) {
-    this.iframe = iframe;
+  constructor(context) {
+    this.context = context;
     this.id = (++id) + '';
     this.repls = [];
 
@@ -38,8 +38,19 @@ class DevTools {
   onRepl(r) {
     if (r.url === this.getPath()) {
       r.setEval((s, context, filename, cb) => {
-        console.log('devtools eval', s);
-        cb(null, 'lol');
+        let err = null, result;
+        try {
+          result = (function() {
+            return eval(s);
+          }).call(this.context);
+        } catch (e) {
+          err = e;
+        }
+        if (!err) {
+          cb(null, result);
+        } else {
+          cb(err);
+        }
       });
     }
   }
