@@ -1431,7 +1431,9 @@ function animate(time, frame) {
 
                           const gamepads = navigator.getGamepads();
                           const gamepad = gamepads[i];
-                          if (gamepad.buttons[1].pressed) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
                             const tab = tabs[menuMesh.listMesh.scrollIndex + j];
                             const {iframe} = tab;
                             if (iframe.d === 3) {
@@ -1456,7 +1458,9 @@ function animate(time, frame) {
 
                           const gamepads = navigator.getGamepads();
                           const gamepad = gamepads[i];
-                          if (gamepad.buttons[1].pressed) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
                             moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
                           }
 
