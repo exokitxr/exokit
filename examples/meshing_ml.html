@@ -12,6 +12,11 @@
     let container, scene, camera, display, model, controllerMeshes;
     let mesher = null;
 
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
     const localFloat32Array = new Float32Array(16);
 
@@ -30,6 +35,11 @@
       mesh.frustumCulled = false;
       return mesh;
     };
+
+    const numCubes = 100;
+    const cubeSize = 0.2;
+    const cubeRange = 1;
+    const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
 
     function init() {
       container = document.createElement('div');
@@ -182,6 +192,45 @@
       } else {
         const gl = renderer.getContext();
 
+        const geometryPositions = cubeGeometry.attributes.position.array;
+        const geometryNormals = cubeGeometry.attributes.normal.array;
+        const geometryIndices = cubeGeometry.index.array;
+
+        /* for (let j = 0; j < geometryPositions.length; j += 3) {
+          localVector
+            .fromArray(geometryPositions, j)
+            .multiplyScalar(cubeSize)
+            .toArray(geometryPositions, j);
+        } */
+
+        const positionArray = new Float32Array(new ArrayBuffer(numCubes * geometryPositions.length * Float32Array.BYTES_PER_ELEMENT));
+        const normalArray = new Float32Array(new ArrayBuffer(numCubes * geometryNormals.length * Float32Array.BYTES_PER_ELEMENT));
+        const indexArray = new Uint16Array(new ArrayBuffer(numCubes * geometryIndices.length * Float32Array.BYTES_PER_ELEMENT));
+        for (let i = 0; i < numCubes; i++) {
+          const positionDstOffset = i*geometryPositions.length;
+          const offsetVector = localVector2.set((Math.random()-0.5)*2*cubeRange, (Math.random()-0.5), (Math.random()-0.5)*2*cubeRange);
+          const offsetEuler = localEuler.set((Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, 'YXZ');
+          for (let j = 0; j < geometryPositions.length; j += 3) {
+            localVector
+              .fromArray(geometryPositions, j)
+              .multiplyScalar(cubeSize)
+              .applyEuler(offsetEuler)
+              .add(offsetVector)
+              .toArray(positionArray, positionDstOffset + j);
+          }
+
+          const normalDstOffset = i*geometryNormals.length;
+          for (let j = 0; j < geometryNormals.length; j++) {
+            normalArray[normalDstOffset + j] = geometryNormals[j];
+          }
+
+          const indexDstOffset = i*geometryIndices.length;
+          const indexSrcOffset = i*geometryPositions.length/3;
+          for (let j = 0; j < geometryIndices.length; j++) {
+            indexArray[indexDstOffset + j] = geometryIndices[j] + indexSrcOffset;
+          }
+        }
+
         const transformMatrix = localMatrix
           .fromArray(window.document.xrOffset.matrix)
           .getInverse(localMatrix)
@@ -189,21 +238,18 @@
 
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        const positions = Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-        const positionCount = positions.length;
+        gl.bufferData(gl.ARRAY_BUFFER, positionArray, gl.STATIC_DRAW);
+        const positionCount = positionArray.length;
 
         const normalBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        const normals = Float32Array.from([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]);
-        gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
-        const normalCount = normals.length;
+        gl.bufferData(gl.ARRAY_BUFFER, normalArray, gl.STATIC_DRAW);
+        const normalCount = normalArray.length;
 
         const indexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        const indices = Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-        const count = indices.length;
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+        const count = indexArray.length;
 
         renderer.state.reset();
 
@@ -212,10 +258,13 @@
             id: 0,
             type: 'update',
             transformMatrix,
+            positionArray,
             positionBuffer,
             positionCount,
+            normalArray,
             normalBuffer,
             normalCount,
+            indexArray,
             indexBuffer,
             count,
           },
