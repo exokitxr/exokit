@@ -1000,7 +1000,7 @@ window.addEventListener('keydown', e => {
         break;
       }
       case 73: { // I
-        if (e.shiftKey && e.ctrlKey) {
+        if (e.shiftKey && e.ctrlKey) { // XXX
           const devTools = window.browser.devTools.createDevTools();
           const u = devTools.getUrl();
           _openUrl(u, camera.position, camera.quaternion, camera.scale, 2);
