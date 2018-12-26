@@ -29,7 +29,7 @@
       return mesh;
     };
 
-    function init() {
+    async function init() {
       container = document.createElement('div');
       document.body.appendChild(container);
 
@@ -49,23 +49,22 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      const plantMeshes = (() => {
-        const result = [];
-
+      const plantMeshes = await new Promise((accept, reject) => {
         const loader = new THREE.GLTFLoader();
         loader.load('plants.glb', o => {
           o = o.scene;
+
+          const result = [];
           o.traverse(e => {
             if (e.isMesh) {
               e.frustumCulled = false;
               result.push(e);
             }
-            // e.castShadow = true;
           });
-        });
 
-        return result;
-      })();
+          accept(result);
+        });
+      });
 
       controllerMeshes = [
         _makeControllerMesh(-0.1),
@@ -76,6 +75,7 @@
       });
 
       const planeMeshes = [];
+      const planeMeshesCache = {};
       const planeGeometry1 = new THREE.PlaneBufferGeometry(1, 1)
         .applyMatrix(
           new THREE.Matrix4().makeRotationFromQuaternion(
@@ -106,41 +106,47 @@
         for (let i = 0; i < planes.length; i++) {
           const plane = planes[i];
 
-          const object = new THREE.Object3D();
-          object.position.fromArray(plane.position);
-          object.quaternion.fromArray(plane.rotation);
+          const object = (() => {
+            const cachedObject = planeMeshesCache[plane.id];
 
-          const frontMesh = (() => {
-            const mesh = new THREE.Mesh(planeGeometry1, planeMaterial1);
-            mesh.scale.set(plane.size[0], 1, plane.size[1]);
-            mesh.frustumCulled = false;
-            // mesh.updateMatrix();
-            // mesh.updateMatrixWorld();
-            return mesh;
-          })();
-          object.add(frontMesh);
-          const backMesh = (() => {
-            const mesh = new THREE.Mesh(planeGeometry2, planeMaterial2);
-            mesh.scale.set(plane.size[0], 1, plane.size[1]);
-            mesh.frustumCulled = false;
-            // mesh.updateMatrix();
-            // mesh.updateMatrixWorld();
-            return mesh;
-          })();
-          object.add(backMesh);
-
-          const plantMesh = (() => {
-            if (plantMeshes.length > 0) {
-              const index = Math.floor(Math.random() * plantMeshes.length);
-              const plantMesh = plantMeshes[index];
-              return plantMesh.clone();
+            if (cachedObject) {
+              return cachedObject;
             } else {
-              return null;
+              const object = new THREE.Object3D();
+              object.position.fromArray(plane.position);
+              object.quaternion.fromArray(plane.rotation);
+
+              const frontMesh = (() => {
+                const mesh = new THREE.Mesh(planeGeometry1, planeMaterial1);
+                mesh.scale.set(plane.size[0], 1, plane.size[1]);
+                mesh.frustumCulled = false;
+                // mesh.updateMatrix();
+                // mesh.updateMatrixWorld();
+                return mesh;
+              })();
+              object.add(frontMesh);
+              const backMesh = (() => {
+                const mesh = new THREE.Mesh(planeGeometry2, planeMaterial2);
+                mesh.scale.set(plane.size[0], 1, plane.size[1]);
+                mesh.frustumCulled = false;
+                // mesh.updateMatrix();
+                // mesh.updateMatrixWorld();
+                return mesh;
+              })();
+              object.add(backMesh);
+
+              const plantMesh = (() => {
+                const index = Math.floor(Math.random() * plantMeshes.length);
+                const plantMesh = plantMeshes[index];
+                return plantMesh.clone();
+              })();
+              object.add(plantMesh);
+
+              planeMeshesCache[plane.id] = object;
+
+              return object;
             }
           })();
-          if (plantMesh) {
-            object.add(plantMesh);
-          }
 
           scene.add(object);
           planeMeshes.push(object);
@@ -148,9 +154,7 @@
       };
       const _clearPlanes = () => {
         for (let i = 0; i < planeMeshes.length; i++) {
-          const planeMesh = planeMeshes[i];
-          // const {plantMesh} = planeMesh;
-          scene.remove(planeMesh);
+          scene.remove(planeMeshes[i]);
         }
         planeMeshes.length = 0;
       };
@@ -165,6 +169,7 @@
         const updates = Array(10);
         for (let i = 0; i < updates.length; i++) {
           updates[i] = {
+            id: i + '',
             position: Float32Array.from([(-0.5+Math.random())*3, (-0.5+Math.random())*2, (-0.5+Math.random())*2*3]),
             rotation: new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 1, 0),
@@ -230,12 +235,12 @@
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 
-    init();
-
     (async () => {
-      console.log('request device');
+      await init();
+
+      // console.log('request device');
       display = await navigator.xr.requestDevice();
-      console.log('request session');
+      // console.log('request session');
       const session = await display.requestSession({
         exclusive: true,
       });
