@@ -489,17 +489,17 @@ map<int, int> keyCodesMap{
 };
 
 int MutateKey(int key, Local<Object> modifiersObj){
-	if (modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()){
-	  if (
+  if (modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()){
+    if (
       key >= 97 && // a
       key <= 122 // z
     ) {
-		  key -= 32;
-	  } else if(keyCodesMap.count(key)){
-		  key = keyCodesMap[key];
-	  }
+      key -= 32;
+    } else if(keyCodesMap.count(key)){
+      key = keyCodesMap[key];
+    }
   }
-	return key;
+  return key;
 }
 
 
