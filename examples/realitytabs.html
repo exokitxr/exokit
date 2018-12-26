@@ -1427,6 +1427,31 @@ function animate(time, frame) {
 
                           intersectionSpecs[i] = null;
                         });
+                      } else if (x >= menuWidth*0.7) {
+                        intersectionPoints.push(intersectionPoint.clone());
+                        intersectionCbs.push(() => {
+                          controllerMesh.rayMesh.scale.z = distance;
+                          controllerMesh.updateMatrixWorld();
+
+                          controllerMesh.rayDot.position.z = -distance;
+                          controllerMesh.updateMatrixWorld();
+                          controllerMesh.rayDot.visible = true;
+
+                          const gamepads = navigator.getGamepads();
+                          const gamepad = gamepads[i];
+                          if (gamepad.buttons[1].pressed) {
+                            const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                            const {iframe} = tab;
+                            if (iframe.d === 3) {
+                              const {contentWindow} = iframe;
+                              const devTools = window.browser.devTools.createDevTools(contentWindow);
+                              const url = devTools.getUrl();
+                              _openUrl(url, rig.position, rig.quaternion, undefined, 2);
+                            }
+                          }
+
+                          intersectionSpecs[i] = null;
+                        });
                       } else if (x >= menuWidth*0.6) {
                         intersectionPoints.push(intersectionPoint.clone());
                         intersectionCbs.push(() => {
