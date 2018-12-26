@@ -975,7 +975,7 @@ const intersectionSpecs = [
   null,
 ];
 window.addEventListener('keydown', e => {
-  // if (window.document.pointerLockElement) {
+  if (window.document.pointerLockElement) {
     switch (e.which) {
       case 87: { // W
         keys.up = true;
@@ -1018,10 +1018,20 @@ window.addEventListener('keydown', e => {
         break;
       }
     }
-  // }
+  } else {
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i];
+      const {iframe} = tab;
+      iframe.sendKeyDown(e.which, {
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+      });
+    }
+  }
 });
 window.addEventListener('keyup', e => {
-  // if (window.document.pointerLockElement) {
+  if (window.document.pointerLockElement) {
     switch (e.which) {
       case 87: { // W
         keys.up = false;
@@ -1052,7 +1062,30 @@ window.addEventListener('keyup', e => {
         break;
       }
     }
-  // }
+  } else {
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i];
+      const {iframe} = tab;
+      iframe.sendKeyUp(e.which, {
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+      });
+    }
+  }
+});
+window.addEventListener('keypress', e => {
+  if (!window.document.pointerLockElement) {
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i];
+      const {iframe} = tab;
+      iframe.sendKeyPress(e.which, {
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+      });
+    }
+  }
 });
 
 // let renderTarget = null;
