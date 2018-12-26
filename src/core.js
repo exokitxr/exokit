@@ -56,6 +56,7 @@ const {History} = require('./History');
 const {Location} = require('./Location');
 const {XMLHttpRequest} = require('./Network');
 const XR = require('./XR');
+const DevTools = require('./DevTools');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = require('./utils');
 
@@ -1256,6 +1257,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     return styleSpec.style;
   };
   window.browser = {
+    devTools: DevTools,
     http: (() => {
       const httpProxy = {};
       for (const k in http) {
