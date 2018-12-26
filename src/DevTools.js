@@ -40,9 +40,7 @@ class DevTools {
       r.setEval((s, context, filename, cb) => {
         let err = null, result;
         try {
-          result = (function() {
-            return eval(s);
-          }).call(this.context);
+          result = this.context.vm.run(s);
         } catch (e) {
           err = e;
         }
