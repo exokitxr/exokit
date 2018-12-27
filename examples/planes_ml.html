@@ -167,26 +167,100 @@
         planeTracker.onplanes = _onPlanes;
       } else {
         const updates = Array(10);
+        /* let lastPoint = new THREE.Vector3(
+          -0.5+Math.random())*2*3,
+          (-0.5+Math.random())*2,
+          (-0.5+Math.random())*2*3
+        );
+        const _makeNormal = () => {
+          const index = Math.floor(Math.random() * 6);
+          switch (index) {
+            case 0: return new THREE.Vector3(1, 0, 0);
+            case 1: return new THREE.Vector3(-1, 0, 0);
+            case 2: return new THREE.Vector3(0, 1, 0);
+            case 3: return new THREE.Vector3(0, -1, 0);
+            case 4: return new THREE.Vector3(0, 0, 1);
+            case 5: return new THREE.Vector3(0, 0, -1);
+            default: return null;
+          }
+        }; */
+        const _makeSize = () => new THREE.Vector2(1 + Math.random()*2, 1 + Math.random()*2);
+        const _makeOffset = (oldPosition, oldNormal, oldSize) => {
+          const corner = (() => {
+            const index = Math.floor(Math.random() * 4);
+            switch (index) {
+              case 0: return new THREE.Vector3(1, 0, 0);
+              case 1: return new THREE.Vector3(-1, 0, 0);
+              case 2: return new THREE.Vector3(0, 0, 1);
+              case 3: return new THREE.Vector3(0, 0, -1);
+              default: return null;
+            }
+          })();
+          const direction = Math.random() < 0.5 ? 1 : -1;
+
+          const newNormal = corner.clone()
+            .applyQuaternion(
+              new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                oldNormal
+              )
+            )
+            .multiplyScalar(direction);
+          const newSize = _makeSize();
+          const newPosition = oldPosition.clone()
+            .add(
+              corner.clone()
+                .multiply(new THREE.Vector3(oldSize.x/2, 1, oldSize.y/2))
+                .applyQuaternion(
+                  new THREE.Quaternion().setFromUnitVectors(
+                    new THREE.Vector3(0, 1, 0),
+                    oldNormal
+                  )
+                )
+            )
+            .sub(
+              oldNormal.clone()
+                .multiplyScalar(direction)
+                .multiply(
+                  new THREE.Vector3(newSize.x/2, 1, newSize.y/2)
+                    .applyQuaternion(
+                      new THREE.Quaternion().setFromUnitVectors(
+                        new THREE.Vector3(0, 1, 0),
+                        newNormal
+                      )
+                    )
+                )
+            );
+
+          return {
+            position: newPosition,
+            normal: newNormal,
+            size: newSize,
+          };
+        };
+        let position = null;
+        let normal = null;
+        let size = null;
         for (let i = 0; i < updates.length; i++) {
+          if (!position) {
+            position = new THREE.Vector3(0, 0, 0);
+            normal = new THREE.Vector3(0, 1, 0);
+            size = _makeSize();
+          } else {
+            const offset = _makeOffset(position, normal, size);
+
+            position = offset.position;
+            normal = offset.normal;
+            size = offset.size;
+          }
           updates[i] = {
             id: i + '',
-            position: Float32Array.from([(-0.5+Math.random())*3, (-0.5+Math.random())*2, (-0.5+Math.random())*2*3]),
+            position: position.toArray(new Float32Array(3)),
             rotation: new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 1, 0),
-              (() => {
-                const index = Math.floor(Math.random() * 6);
-                switch (index) {
-                  case 0: return new THREE.Vector3(1, 0, 0);
-                  case 1: return new THREE.Vector3(-1, 0, 0);
-                  case 2: return new THREE.Vector3(0, 1, 0);
-                  case 3: return new THREE.Vector3(0, -1, 0);
-                  case 4: return new THREE.Vector3(0, 0, 1);
-                  case 5: return new THREE.Vector3(0, 0, -1);
-                  default: return null;
-                }
-              })()
+              normal
             ).toArray(new Float32Array(4)),
-            size: Float32Array.from([0.2 + Math.random()*0.8, 0.2 + Math.random()*0.8]),
+            size: size.toArray(new Float32Array(2)),
           };
         }
         setInterval(() => {
