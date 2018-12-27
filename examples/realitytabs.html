@@ -65,6 +65,8 @@ const menuPositionHeight = 0.3;
 const urlBarWidth = menuWorldWidth;
 const urlBarHeight = menuHeight;
 const urlBarOffset = urlBarHeight;
+const fontFamily = 'Arial';
+// const fontFamily = 'monospace';
 const fontSize = 60;
 const keyboardWidth = 2048;
 const keyboardHeight = 716;
@@ -480,7 +482,7 @@ const _makeRig = () => {
         ctx.fillRect(0, menuHeight, menuWidth*0.5, menuHeight);
 
         ctx.fillStyle = '#000';
-        ctx.font = `${fontSize}px Arial`;
+        ctx.font = `${fontSize}px ${fontFamily}`;
 
         ctx.fillText(urlState.text, 10, urlBarHeight - 10*2 - 5);
         ctx.fillText('x', menuWidth*0.88, menuHeight*0.7);
@@ -564,7 +566,7 @@ const _makeRig = () => {
       mesh.list = 'tabs';
 
       const _updateOptions = () => {
-        ctx.font = `${fontSize}px Arial`;
+        ctx.font = `${fontSize}px ${fontFamily}`;
 
         // 3D
         ctx.fillStyle = mesh.d === 3 ? '#42a5f5' : '#EEE';
@@ -659,7 +661,7 @@ const _makeRig = () => {
       const _updateList = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        ctx.font = `${fontSize}px Arial`;
+        ctx.font = `${fontSize}px ${fontFamily}`;
 
         const _renderScrollbar = listLength => {
           ctx.fillStyle = '#808080';
