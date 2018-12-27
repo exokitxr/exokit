@@ -91,7 +91,7 @@
         const inputSource = inputSources[0];
         const pose = frame.getInputPose(inputSource);
 
-        swordMesh.matrix.fromArray(pose.pointerMatrix);
+        swordMesh.matrix.fromArray(pose.targetRay.transformMatrix);
         swordMesh.matrix.decompose(swordMesh.position, swordMesh.quaternion, swordMesh.scale);
         swordMesh.updateMatrixWorld(true);
       }

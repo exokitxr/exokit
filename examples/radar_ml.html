@@ -209,7 +209,7 @@
           const pose = frame.getInputPose(inputSource);
 
           const controllerMesh = controllerMeshes[i];
-          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
           controllerMesh.updateMatrixWorld(true);
 
@@ -232,7 +232,7 @@
         const inputSource = inputSources[0];
         const pose = frame.getInputPose(inputSource);
 
-        woodMesh.matrix.fromArray(pose.pointerMatrix);
+        woodMesh.matrix.fromArray(pose.targetRay.transformMatrix);
         woodMesh.matrix.decompose(woodMesh.position, woodMesh.quaternion, woodMesh.scale);
         woodMesh.updateMatrixWorld(true);
       } */

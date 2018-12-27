@@ -302,7 +302,7 @@ function animate(timestamp, frame) {
     const inputSource = inputSources[i];
     const pose = frame.getInputPose(inputSource);
     const controllerMesh = controllerMeshes[i];
-    controllerMesh.matrix.fromArray(pose.pointerMatrix);
+    controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
     controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
     controllerMesh.updateMatrixWorld(true);
 
