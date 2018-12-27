@@ -2154,7 +2154,7 @@ NAN_METHOD(MLContext::Present) {
 
   if (MLPerceptionStartup(&perception_settings) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to startup perception.", application_name);
-    info.GetReturnValue().Set(JS_BOOL(false));
+    info.GetReturnValue().Set(Nan::Null());
     return;
   }
 
