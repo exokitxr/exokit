@@ -52,7 +52,6 @@ window._makeFakeDisplay = () => {
        localMatrix2
         .toArray(gamepad.pose.pointerMatrix);
     }
-    // console.log('gamepade pose', fakeDisplay.gamepads[1].pose.position);
   };
 
   fakeDisplay.update(); // initialize gamepads
