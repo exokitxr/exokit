@@ -42,6 +42,15 @@ window._makeFakeDisplay = () => {
         fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
       }
 
+      if (!gamepad.pose._localPointerMatrix) {
+        gamepad.pose._localPointerMatrix = new Float32Array(32);
+      }
+      if (!gamepad.pose.targetRay) {
+        gamepad.pose.targetRay = {
+          transformMatrix: new Float32Array(32),
+        };
+      }
+
       localMatrix2
         .compose(
           localVector.fromArray(gamepad.pose.position),
