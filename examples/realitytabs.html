@@ -243,23 +243,14 @@ const _closeUrl = iframe => {
   document.body.removeChild(iframe);
 };
 const _updateRigLists = () => {
-  for (let i = 0; i < rigs.length; i++) {
-    const rig = rigs[i];
-    const {menuMesh} = rig;
-    if (menuMesh.listMesh.scrollIndex > tabs.length - 1) {
-      menuMesh.listMesh.scrollIndex = tabs.length - 1;
-    }
-    menuMesh.listMesh.updateList();
+  const {menuMesh} = rig;
+  if (menuMesh.listMesh.scrollIndex > tabs.length - 1) {
+    menuMesh.listMesh.scrollIndex = tabs.length - 1;
   }
+  menuMesh.listMesh.updateList();
 };
 
 // main
-
-/* (() => { // XXX
-  const {scene, camera, renderer, destroy} = _makeRenderer();
-  renderer.render(scene, camera);
-  destroy();
-})(); */
 
 const {scene, camera, renderer, destroy} = _makeRenderer();
 const layers = [renderer.domElement];
@@ -875,45 +866,17 @@ const _makeRig = () => {
 
   return rig;
 };
+const rig =  _makeRig();
 
-const rigs = [];
 const _openRig = (position, quaternion) => {
-  const rig =  _makeRig();
-  // rig.position.set(0, 0.5, 0);
   rig.position.copy(position);
   rig.quaternion.copy(quaternion);
 
-  /* const _recurse = () => {
-    requestAnimationFrame(_recurse);
-
-    rig.position.y += 0.001;
-    rig.updateMatrix();
-    rig.updateMatrixWorld(true);
-  };
-  requestAnimationFrame(_recurse); */
-
-  // console.log('map 1', rig.position.toArray().join(','), rig.quaternion.toArray().join(','), rig.matrixWorld.toArray().join(','));
-  rig.updateMatrix();
-  rig.updateMatrixWorld(true);
-
-  // console.log('map 2', rig.matrixWorld.toArray().join(','), rig.children.map(child => child.matrixWorld.toArray().join(',')));
-
   scene.add(rig);
-  rigs.push(rig);
 };
-const _closeRig = rig => {
+const _closeRig = () => {
   scene.remove(rig);
-  rigs.splice(rigs.indexOf(rig), 1);
 };
-/* const _findRig = position => rigs.find(rig => rig.position.distanceTo(position) < 0.5);
-const _handleRigToggle = (position, quaternion) => {
-  const rig = _findRig(position);
-  if (rig) {
-    _closeRig(rig);
-  } else {
-    _openRig(position, quaternion);
-  }
-}; */
 
 const moves = [null, null];
 
@@ -1172,10 +1135,7 @@ function animate(time, frame) {
         controllerMesh.rayMesh.scale.z = rayDistance;
         controllerMesh.rayMesh.updateMatrixWorld();
 
-        // controllerMesh.rayDot.visible = false;
-        for (let r = 0; r < rigs.length; r++) {
-          rigs[r].keyboardMesh.planeMesh.keyMeshes[i].visible = false;
-        }
+        rig.keyboardMesh.planeMesh.keyMeshes[i].visible = false;
 
         const gamepads = navigator.getGamepads();
         for (let i = 0; i < gamepads.length; i++) {
@@ -1190,184 +1150,110 @@ function animate(time, frame) {
 
       const intersectionPoints = [];
       const intersectionCbs = [];
-      for (let r = 0; r < rigs.length; r++) {
-        const rig = rigs[r];
-        const {keyboardMesh, menuMesh} = rig;
-        const {planeMesh} = keyboardMesh;
-        const keyMesh = planeMesh.keyMeshes[i];
-        keyboardMesh.update();
-        menuMesh.urlMesh.update();
-        menuMesh.optionsMesh.update();
-        menuMesh.listMesh.update();
+      const {keyboardMesh, menuMesh} = rig;
+      const {planeMesh} = keyboardMesh;
+      const keyMesh = planeMesh.keyMeshes[i];
+      keyboardMesh.update();
+      menuMesh.urlMesh.update();
+      menuMesh.optionsMesh.update();
+      menuMesh.listMesh.update();
 
-        // keyboard
-        {
-          const intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
-          if (intersectionPoint) {
-            const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+      // keyboard
+      {
+        const intersectionPoint = keyboardMesh.visible ? controllerMesh.ray.intersectPlane(keyboardMesh.plane, localVector) : null;
+        if (intersectionPoint) {
+          const leftIntersectionPoint = keyboardMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-            const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+          const topIntersectionPoint = keyboardMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
-            const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
-            const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
-            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+          const xFactor = topIntersectionPoint.distanceTo(keyboardMesh.topLine.start) / (1);
+          const yFactor = leftIntersectionPoint.distanceTo(keyboardMesh.leftLine.start) / (keyboardHeight / keyboardWidth);
+          const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
-              const x = xFactor * keyboardWidth;
-              const y = yFactor * keyboardHeight;
+          if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
+            const x = xFactor * keyboardWidth;
+            const y = yFactor * keyboardHeight;
 
-              intersectionPoints.push(intersectionPoint.clone());
-              intersectionCbs.push(() => {
-                controllerMesh.rayMesh.scale.z = distance;
-                controllerMesh.updateMatrixWorld();
+            intersectionPoints.push(intersectionPoint.clone());
+            intersectionCbs.push(() => {
+              controllerMesh.rayMesh.scale.z = distance;
+              controllerMesh.updateMatrixWorld();
 
-                controllerMesh.rayDot.position.z = -distance;
-                controllerMesh.updateMatrixWorld();
-                controllerMesh.rayDot.visible = true;
+              controllerMesh.rayDot.position.z = -distance;
+              controllerMesh.updateMatrixWorld();
+              controllerMesh.rayDot.visible = true;
 
-                for (let j = 0; j < keyMap.length; j++) {
-                  const [key, kx1, ky1, kx2, ky2] = keyMap[j];
-                  if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
-                    if (keyboardHighlightCanvasCtx) {
-                      const width = kx2 - kx1;
-                      const height = ky2 - ky1;
-                      let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
-                      /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
-                        const canvas = document.createElement('canvas');
-                        canvas.width = imageData.width;
-                        canvas.height = imageData.height;
+              for (let j = 0; j < keyMap.length; j++) {
+                const [key, kx1, ky1, kx2, ky2] = keyMap[j];
+                if (x >= kx1 && x < kx2 && y >= ky1 && y < ky2) {
+                  if (keyboardHighlightCanvasCtx) {
+                    const width = kx2 - kx1;
+                    const height = ky2 - ky1;
+                    let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
+                    /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                      const canvas = document.createElement('canvas');
+                      canvas.width = imageData.width;
+                      canvas.height = imageData.height;
 
-                        const ctx = canvas.getContext('2d');
-                        ctx.putImageData(imageData, 0, 0);
-                        ctx.clearRect(0, 0, 80, 140);
+                      const ctx = canvas.getContext('2d');
+                      ctx.putImageData(imageData, 0, 0);
+                      ctx.clearRect(0, 0, 80, 140);
 
-                        imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
-                      } */
+                      imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+                    } */
 
-                      keyMesh.material.map.image = imageData;
-                      keyMesh.material.map.needsUpdate = true;
+                    keyMesh.material.map.image = imageData;
+                    keyMesh.material.map.needsUpdate = true;
 
-                      keyMesh.position
-                        .set(
-                          -1/2 + ((width/2 + kx1) / keyboardWidth),
-                          (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
-                           0.01 * (1)
-                        );
-                      keyMesh.scale.set(
-                        width / keyboardWidth,
-                        height / keyboardHeight * (keyboardHeight / keyboardWidth),
-                        1
+                    keyMesh.position
+                      .set(
+                        -1/2 + ((width/2 + kx1) / keyboardWidth),
+                        (keyboardHeight / keyboardWidth)/2 - ((height/2 + ky1) / keyboardHeight * (keyboardHeight / keyboardWidth)),
+                         0.01 * (1)
                       );
-                      keyMesh.updateMatrixWorld();
-                      keyMesh.visible = true;
-                    }
-
-                    intersectionSpecs[i] = {
-                      type: 'key',
-                      data: {
-                        key,
-                        rig,
-                      },
-                    };
-
-                    break;
+                    keyMesh.scale.set(
+                      width / keyboardWidth,
+                      height / keyboardHeight * (keyboardHeight / keyboardWidth),
+                      1
+                    );
+                    keyMesh.updateMatrixWorld();
+                    keyMesh.visible = true;
                   }
-                }
-              });
-            }
-          }
-        }
 
-        // menu mesh
-        {
-          const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.urlMesh.plane, localVector) : null;
-          if (intersectionPoint) {
-            const leftIntersectionPoint = menuMesh.urlMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+                  intersectionSpecs[i] = {
+                    type: 'key',
+                    data: {
+                      key,
+                      rig,
+                    },
+                  };
 
-            const topIntersectionPoint = menuMesh.urlMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
-
-            const xFactor = topIntersectionPoint.distanceTo(menuMesh.urlMesh.topLine.start) / menuWorldWidth;
-            const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / menuWorldHeight;
-            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
-
-            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
-              const x = xFactor * menuWidth;
-              const y = yFactor * menuHeight;
-
-              if (y < urlBarOffset) {
-                if (x < menuWidth*0.8) {
-                  intersectionPoints.push(intersectionPoint.clone());
-                  intersectionCbs.push(() => {
-                    controllerMesh.rayMesh.scale.z = distance;
-                    controllerMesh.updateMatrixWorld();
-
-                    controllerMesh.rayDot.position.z = -distance;
-                    controllerMesh.updateMatrixWorld();
-                    controllerMesh.rayDot.visible = true;
-
-                    const gamepads = navigator.getGamepads();
-                    const gamepad = gamepads[i];
-                    if (gamepad.buttons[1].pressed) {
-                      const textX = x - cursorWidth;
-                      let closestIndex = -1;
-                      let closestDistance = Infinity;
-                      for (let i = 0; i < menuMesh.urlMesh.urlState.measures.length; i++) {
-                        const urlMeasure = menuMesh.urlMesh.urlState.measures[i];
-                        const distance = Math.abs(urlMeasure - textX);
-                        if (distance < closestDistance) {
-                          closestIndex = i;
-                          closestDistance = distance;
-                        }
-                      }
-                      if (closestIndex !== -1) {
-                        menuMesh.urlMesh.urlState.cursor = closestIndex;
-                        menuMesh.urlMesh.updateText();
-                      }
-                    }
-
-                    intersectionSpecs[i] = null;
-                  });
-                } else {
-                  intersectionPoints.push(intersectionPoint.clone());
-                  intersectionCbs.push(() => {
-                    controllerMesh.rayMesh.scale.z = distance;
-                    controllerMesh.updateMatrixWorld();
-
-                    controllerMesh.rayDot.position.z = -distance;
-                    controllerMesh.updateMatrixWorld();
-                    controllerMesh.rayDot.visible = true;
-
-                    const gamepads = navigator.getGamepads();
-                    const gamepad = gamepads[i];
-                    if (gamepad.buttons[1].pressed) {
-                      _closeRig(rig);
-                    }
-
-                    intersectionSpecs[i] = null;
-                  });
+                  break;
                 }
               }
-            }
+            });
           }
         }
+      }
 
-        // options mesh
-        {
-          const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.optionsMesh.plane, localVector) : null;
-          if (intersectionPoint) {
-            const leftIntersectionPoint = menuMesh.optionsMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+      // menu mesh
+      {
+        const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.urlMesh.plane, localVector) : null;
+        if (intersectionPoint) {
+          const leftIntersectionPoint = menuMesh.urlMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-            const topIntersectionPoint = menuMesh.optionsMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+          const topIntersectionPoint = menuMesh.urlMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
-            const xFactor = topIntersectionPoint.distanceTo(menuMesh.optionsMesh.topLine.start) / menuWorldWidth;
-            const yFactor = leftIntersectionPoint.distanceTo(menuMesh.optionsMesh.leftLine.start) / menuWorldHeight;
-            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+          const xFactor = topIntersectionPoint.distanceTo(menuMesh.urlMesh.topLine.start) / menuWorldWidth;
+          const yFactor = leftIntersectionPoint.distanceTo(menuMesh.urlMesh.leftLine.start) / menuWorldHeight;
+          const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
-              const x = xFactor * menuWidth;
-              const y = yFactor * menuHeight;
+          if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
+            const x = xFactor * menuWidth;
+            const y = yFactor * menuHeight;
 
-              if (y >= 0 && y < urlBarOffset) {
+            if (y < urlBarOffset) {
+              if (x < menuWidth*0.8) {
                 intersectionPoints.push(intersectionPoint.clone());
                 intersectionCbs.push(() => {
                   controllerMesh.rayMesh.scale.z = distance;
@@ -1380,24 +1266,39 @@ function animate(time, frame) {
                   const gamepads = navigator.getGamepads();
                   const gamepad = gamepads[i];
                   if (gamepad.buttons[1].pressed) {
-                    const optionX = Math.floor(x/(menuWidth*0.2));
-                    if (optionX === 0) {
-                      menuMesh.optionsMesh.d = 3;
-                      menuMesh.optionsMesh.updateOptions();
-                    } else if (optionX === 1) {
-                      menuMesh.optionsMesh.d = 2;
-                      menuMesh.optionsMesh.updateOptions();
-                    } else if (optionX === 2) {
-                      menuMesh.optionsMesh.list = 'tabs';
-                      menuMesh.optionsMesh.updateOptions();
-                      menuMesh.listMesh.scrollIndex = 0;
-                      menuMesh.listMesh.updateList();
-                    } else if (optionX === 3) {
-                      menuMesh.optionsMesh.list = 'links';
-                      menuMesh.optionsMesh.updateOptions();
-                      menuMesh.listMesh.scrollIndex = 0;
-                      menuMesh.listMesh.updateList();
+                    const textX = x - cursorWidth;
+                    let closestIndex = -1;
+                    let closestDistance = Infinity;
+                    for (let i = 0; i < menuMesh.urlMesh.urlState.measures.length; i++) {
+                      const urlMeasure = menuMesh.urlMesh.urlState.measures[i];
+                      const distance = Math.abs(urlMeasure - textX);
+                      if (distance < closestDistance) {
+                        closestIndex = i;
+                        closestDistance = distance;
+                      }
                     }
+                    if (closestIndex !== -1) {
+                      menuMesh.urlMesh.urlState.cursor = closestIndex;
+                      menuMesh.urlMesh.updateText();
+                    }
+                  }
+
+                  intersectionSpecs[i] = null;
+                });
+              } else {
+                intersectionPoints.push(intersectionPoint.clone());
+                intersectionCbs.push(() => {
+                  controllerMesh.rayMesh.scale.z = distance;
+                  controllerMesh.updateMatrixWorld();
+
+                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.updateMatrixWorld();
+                  controllerMesh.rayDot.visible = true;
+
+                  const gamepads = navigator.getGamepads();
+                  const gamepad = gamepads[i];
+                  if (gamepad.buttons[1].pressed) {
+                    _closeRig(rig);
                   }
 
                   intersectionSpecs[i] = null;
@@ -1406,108 +1307,86 @@ function animate(time, frame) {
             }
           }
         }
+      }
 
-        // list mesh
-        {
-          const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.listMesh.plane, localVector) : null;
-          if (intersectionPoint) {
-            const leftIntersectionPoint = menuMesh.listMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+      // options mesh
+      {
+        const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.optionsMesh.plane, localVector) : null;
+        if (intersectionPoint) {
+          const leftIntersectionPoint = menuMesh.optionsMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-            const topIntersectionPoint = menuMesh.listMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+          const topIntersectionPoint = menuMesh.optionsMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
-            const xFactor = topIntersectionPoint.distanceTo(menuMesh.listMesh.topLine.start) / menuWorldWidth;
-            const yFactor = leftIntersectionPoint.distanceTo(menuMesh.listMesh.leftLine.start) / (menuWorldHeight*4);
-            const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+          const xFactor = topIntersectionPoint.distanceTo(menuMesh.optionsMesh.topLine.start) / menuWorldWidth;
+          const yFactor = leftIntersectionPoint.distanceTo(menuMesh.optionsMesh.leftLine.start) / menuWorldHeight;
+          const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
 
-            if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
-              const x = xFactor * menuWidth;
-              const y = yFactor * menuHeight*4;
+          if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
+            const x = xFactor * menuWidth;
+            const y = yFactor * menuHeight;
 
-              if (x < menuWidth * 0.98) {
-                if (menuMesh.optionsMesh.list === 'tabs') {
-                  const localTabs = links.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
-                  for (let j = 0; j < localTabs.length; j++) {
-                    if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
-                      if (x >= menuWidth*0.8) {
-                        intersectionPoints.push(intersectionPoint.clone());
-                        intersectionCbs.push(() => {
-                          controllerMesh.rayMesh.scale.z = distance;
-                          controllerMesh.updateMatrixWorld();
+            if (y >= 0 && y < urlBarOffset) {
+              intersectionPoints.push(intersectionPoint.clone());
+              intersectionCbs.push(() => {
+                controllerMesh.rayMesh.scale.z = distance;
+                controllerMesh.updateMatrixWorld();
 
-                          controllerMesh.rayDot.position.z = -distance;
-                          controllerMesh.updateMatrixWorld();
-                          controllerMesh.rayDot.visible = true;
+                controllerMesh.rayDot.position.z = -distance;
+                controllerMesh.updateMatrixWorld();
+                controllerMesh.rayDot.visible = true;
 
-                          const gamepads = navigator.getGamepads();
-                          const gamepad = gamepads[i];
-                          const pressed = gamepad.buttons[1].pressed;
-                          const lastPressed = lastPresseds[i];
-                          if (pressed && !lastPressed) {
-                            const [tab] = tabs.splice(menuMesh.listMesh.scrollIndex + j, 1);
-                            const {iframe} = tab;
-                            _closeUrl(iframe);
-
-                            _updateRigLists();
-                          }
-
-                          intersectionSpecs[i] = null;
-                        });
-                      } else if (x >= menuWidth*0.7) {
-                        intersectionPoints.push(intersectionPoint.clone());
-                        intersectionCbs.push(() => {
-                          controllerMesh.rayMesh.scale.z = distance;
-                          controllerMesh.updateMatrixWorld();
-
-                          controllerMesh.rayDot.position.z = -distance;
-                          controllerMesh.updateMatrixWorld();
-                          controllerMesh.rayDot.visible = true;
-
-                          const gamepads = navigator.getGamepads();
-                          const gamepad = gamepads[i];
-                          const pressed = gamepad.buttons[1].pressed;
-                          const lastPressed = lastPresseds[i];
-                          if (pressed && !lastPressed) {
-                            const tab = tabs[menuMesh.listMesh.scrollIndex + j];
-                            const {iframe} = tab;
-                            if (iframe.d === 3) {
-                              const {contentWindow} = iframe;
-                              const devTools = window.browser.devTools.createDevTools(contentWindow);
-                              const url = devTools.getUrl();
-                              _openUrl(url, rig.position, rig.quaternion, undefined, 2);
-                            }
-                          }
-
-                          intersectionSpecs[i] = null;
-                        });
-                      } else if (x >= menuWidth*0.6) {
-                        intersectionPoints.push(intersectionPoint.clone());
-                        intersectionCbs.push(() => {
-                          controllerMesh.rayMesh.scale.z = distance;
-                          controllerMesh.updateMatrixWorld();
-
-                          controllerMesh.rayDot.position.z = -distance;
-                          controllerMesh.updateMatrixWorld();
-                          controllerMesh.rayDot.visible = true;
-
-                          const gamepads = navigator.getGamepads();
-                          const gamepad = gamepads[i];
-                          const pressed = gamepad.buttons[1].pressed;
-                          const lastPressed = lastPresseds[i];
-                          if (pressed && !lastPressed) {
-                            moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
-                          }
-
-                          intersectionSpecs[i] = null;
-                        });
-                      }
-
-                      break;
-                    }
+                const gamepads = navigator.getGamepads();
+                const gamepad = gamepads[i];
+                if (gamepad.buttons[1].pressed) {
+                  const optionX = Math.floor(x/(menuWidth*0.2));
+                  if (optionX === 0) {
+                    menuMesh.optionsMesh.d = 3;
+                    menuMesh.optionsMesh.updateOptions();
+                  } else if (optionX === 1) {
+                    menuMesh.optionsMesh.d = 2;
+                    menuMesh.optionsMesh.updateOptions();
+                  } else if (optionX === 2) {
+                    menuMesh.optionsMesh.list = 'tabs';
+                    menuMesh.optionsMesh.updateOptions();
+                    menuMesh.listMesh.scrollIndex = 0;
+                    menuMesh.listMesh.updateList();
+                  } else if (optionX === 3) {
+                    menuMesh.optionsMesh.list = 'links';
+                    menuMesh.optionsMesh.updateOptions();
+                    menuMesh.listMesh.scrollIndex = 0;
+                    menuMesh.listMesh.updateList();
                   }
-                } else if (menuMesh.optionsMesh.list === 'links') {
-                  const localLinks = links.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
-                  for (let j = 0; j < localLinks.length; j++) {
-                    if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                }
+
+                intersectionSpecs[i] = null;
+              });
+            }
+          }
+        }
+      }
+
+      // list mesh
+      {
+        const intersectionPoint = menuMesh.visible ? controllerMesh.ray.intersectPlane(menuMesh.listMesh.plane, localVector) : null;
+        if (intersectionPoint) {
+          const leftIntersectionPoint = menuMesh.listMesh.leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+
+          const topIntersectionPoint = menuMesh.listMesh.topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+
+          const xFactor = topIntersectionPoint.distanceTo(menuMesh.listMesh.topLine.start) / menuWorldWidth;
+          const yFactor = leftIntersectionPoint.distanceTo(menuMesh.listMesh.leftLine.start) / (menuWorldHeight*4);
+          const distance = controllerMesh.ray.origin.distanceTo(intersectionPoint);
+
+          if (xFactor > 0 && xFactor < 0.99999 && yFactor > 0 && yFactor < 0.99999 && distance < rayDistance) {
+            const x = xFactor * menuWidth;
+            const y = yFactor * menuHeight*4;
+
+            if (x < menuWidth * 0.98) {
+              if (menuMesh.optionsMesh.list === 'tabs') {
+                const localTabs = links.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
+                for (let j = 0; j < localTabs.length; j++) {
+                  if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                    if (x >= menuWidth*0.8) {
                       intersectionPoints.push(intersectionPoint.clone());
                       intersectionCbs.push(() => {
                         controllerMesh.rayMesh.scale.z = distance;
@@ -1522,50 +1401,128 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
-                          const link = localLinks[j];
-                          const {url} = link;
-
-                          _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
-
-                          menuMesh.optionsMesh.list = 'tabs';
-                          menuMesh.optionsMesh.updateOptions();
-                          menuMesh.listMesh.scrollIndex = 0;
+                          const [tab] = tabs.splice(menuMesh.listMesh.scrollIndex + j, 1);
+                          const {iframe} = tab;
+                          _closeUrl(iframe);
 
                           _updateRigLists();
                         }
 
                         intersectionSpecs[i] = null;
                       });
+                    } else if (x >= menuWidth*0.7) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
 
-                      break;
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
+
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                          const {iframe} = tab;
+                          if (iframe.d === 3) {
+                            const {contentWindow} = iframe;
+                            const devTools = window.browser.devTools.createDevTools(contentWindow);
+                            const url = devTools.getUrl();
+                            _openUrl(url, rig.position, rig.quaternion, undefined, 2);
+                          }
+                        }
+
+                        intersectionSpecs[i] = null;
+                      });
+                    } else if (x >= menuWidth*0.6) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
+
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
+
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
+                        }
+
+                        intersectionSpecs[i] = null;
+                      });
                     }
+
+                    break;
                   }
                 }
-              } else {
-                intersectionPoints.push(intersectionPoint.clone());
-                intersectionCbs.push(() => {
-                  controllerMesh.rayMesh.scale.z = distance;
-                  controllerMesh.updateMatrixWorld();
+              } else if (menuMesh.optionsMesh.list === 'links') {
+                const localLinks = links.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
+                for (let j = 0; j < localLinks.length; j++) {
+                  if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                    intersectionPoints.push(intersectionPoint.clone());
+                    intersectionCbs.push(() => {
+                      controllerMesh.rayMesh.scale.z = distance;
+                      controllerMesh.updateMatrixWorld();
 
-                  controllerMesh.rayDot.position.z = -distance;
-                  controllerMesh.updateMatrixWorld();
-                  controllerMesh.rayDot.visible = true;
+                      controllerMesh.rayDot.position.z = -distance;
+                      controllerMesh.updateMatrixWorld();
+                      controllerMesh.rayDot.visible = true;
 
-                  const gamepads = navigator.getGamepads();
-                  const gamepad = gamepads[i];
-                  const pressed = gamepad.buttons[1].pressed;
-                  if (pressed) {
-                    const list = menuMesh.optionsMesh.list === 'tabs' ? tabs : links;
-                    menuMesh.listMesh.scrollIndex = Math.floor(yFactor*list.length);
-                    if (menuMesh.listMesh.scrollIndex >= list.length) {
-                      menuMesh.listMesh.scrollIndex = list.length;
-                    }
-                    menuMesh.listMesh.updateList();
+                      const gamepads = navigator.getGamepads();
+                      const gamepad = gamepads[i];
+                      const pressed = gamepad.buttons[1].pressed;
+                      const lastPressed = lastPresseds[i];
+                      if (pressed && !lastPressed) {
+                        const link = localLinks[j];
+                        const {url} = link;
+
+                        _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
+
+                        menuMesh.optionsMesh.list = 'tabs';
+                        menuMesh.optionsMesh.updateOptions();
+                        menuMesh.listMesh.scrollIndex = 0;
+
+                        _updateRigLists();
+                      }
+
+                      intersectionSpecs[i] = null;
+                    });
+
+                    break;
                   }
-
-                  intersectionSpecs[i] = null;
-                });
+                }
               }
+            } else {
+              intersectionPoints.push(intersectionPoint.clone());
+              intersectionCbs.push(() => {
+                controllerMesh.rayMesh.scale.z = distance;
+                controllerMesh.updateMatrixWorld();
+
+                controllerMesh.rayDot.position.z = -distance;
+                controllerMesh.updateMatrixWorld();
+                controllerMesh.rayDot.visible = true;
+
+                const gamepads = navigator.getGamepads();
+                const gamepad = gamepads[i];
+                const pressed = gamepad.buttons[1].pressed;
+                if (pressed) {
+                  const list = menuMesh.optionsMesh.list === 'tabs' ? tabs : links;
+                  menuMesh.listMesh.scrollIndex = Math.floor(yFactor*list.length);
+                  if (menuMesh.listMesh.scrollIndex >= list.length) {
+                    menuMesh.listMesh.scrollIndex = list.length;
+                  }
+                  menuMesh.listMesh.updateList();
+                }
+
+                intersectionSpecs[i] = null;
+              });
             }
           }
         }
@@ -1717,7 +1674,6 @@ function animate(time, frame) {
             localMatrix.fromArray(pose.pointerMatrix)
               .decompose(localVector, localQuaternion, localVector2);
 
-            // _handleRigToggle(localVector, localQuaternion);
             _openRig(localVector, localQuaternion);
           }
 
