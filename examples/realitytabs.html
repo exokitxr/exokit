@@ -672,7 +672,8 @@ const _makeRig = () => {
 
               ctx.fillStyle = '#FFFFFF';
               ctx.fillRect(0, y, menuWidth*0.6 - 5, menuHeight);
-              ctx.fillRect(menuWidth*0.6, y, menuWidth*0.2 - 5, menuHeight);
+              ctx.fillRect(menuWidth*0.6, y, menuWidth*0.1 - 5, menuHeight);
+              ctx.fillRect(menuWidth*0.7, y, menuWidth*0.1 - 5, menuHeight);
               ctx.fillRect(menuWidth*0.8, y, menuWidth*0.18, menuHeight);
 
               ctx.fillStyle = '#000000';
@@ -681,12 +682,21 @@ const _makeRig = () => {
               ctx.strokeStyle = '#000000';
               ctx.lineWidth = 3;
               ctx.beginPath();
-              ctx.moveTo(menuWidth*0.7 - 5, y + menuHeight*0.5 - 20);
-              ctx.lineTo(menuWidth*0.7 - 5, y + menuHeight*0.5 + 20);
+              ctx.moveTo(menuWidth*0.65 - 5, y + menuHeight*0.5 - 20);
+              ctx.lineTo(menuWidth*0.65 - 5, y + menuHeight*0.5 + 20);
               ctx.stroke();
               ctx.beginPath();
-              ctx.moveTo(menuWidth*0.7 - 5 - 20, y + menuHeight*0.5);
-              ctx.lineTo(menuWidth*0.7 - 5 + 20, y + menuHeight*0.5);
+              ctx.moveTo(menuWidth*0.65 - 5 - 20, y + menuHeight*0.5);
+              ctx.lineTo(menuWidth*0.65 - 5 + 20, y + menuHeight*0.5);
+              ctx.stroke();
+
+              ctx.beginPath();
+              ctx.moveTo(menuWidth*0.75 - 5, y + menuHeight*0.5 - 20);
+              ctx.lineTo(menuWidth*0.75 - 5 + 20, y + menuHeight*0.5);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(menuWidth*0.75 - 5 + 20, y + menuHeight*0.5);
+              ctx.lineTo(menuWidth*0.75 - 5, y + menuHeight*0.5 + 20);
               ctx.stroke();
 
               ctx.fillText('x', menuWidth*0.88, y + menuHeight*0.7);
@@ -965,7 +975,7 @@ const intersectionSpecs = [
   null,
 ];
 window.addEventListener('keydown', e => {
-  // if (window.document.pointerLockElement) {
+  if (window.document.pointerLockElement) {
     switch (e.which) {
       case 87: { // W
         keys.up = true;
@@ -1008,10 +1018,20 @@ window.addEventListener('keydown', e => {
         break;
       }
     }
-  // }
+  } else {
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i];
+      const {iframe} = tab;
+      iframe.sendKeyDown(e.which, {
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+      });
+    }
+  }
 });
 window.addEventListener('keyup', e => {
-  // if (window.document.pointerLockElement) {
+  if (window.document.pointerLockElement) {
     switch (e.which) {
       case 87: { // W
         keys.up = false;
@@ -1042,7 +1062,30 @@ window.addEventListener('keyup', e => {
         break;
       }
     }
-  // }
+  } else {
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i];
+      const {iframe} = tab;
+      iframe.sendKeyUp(e.which, {
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+      });
+    }
+  }
+});
+window.addEventListener('keypress', e => {
+  if (!window.document.pointerLockElement) {
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i];
+      const {iframe} = tab;
+      iframe.sendKeyPress(e.which, {
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+      });
+    }
+  }
 });
 
 // let renderTarget = null;
@@ -1409,6 +1452,33 @@ function animate(time, frame) {
 
                           intersectionSpecs[i] = null;
                         });
+                      } else if (x >= menuWidth*0.7) {
+                        intersectionPoints.push(intersectionPoint.clone());
+                        intersectionCbs.push(() => {
+                          controllerMesh.rayMesh.scale.z = distance;
+                          controllerMesh.updateMatrixWorld();
+
+                          controllerMesh.rayDot.position.z = -distance;
+                          controllerMesh.updateMatrixWorld();
+                          controllerMesh.rayDot.visible = true;
+
+                          const gamepads = navigator.getGamepads();
+                          const gamepad = gamepads[i];
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
+                            const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                            const {iframe} = tab;
+                            if (iframe.d === 3) {
+                              const {contentWindow} = iframe;
+                              const devTools = window.browser.devTools.createDevTools(contentWindow);
+                              const url = devTools.getUrl();
+                              _openUrl(url, rig.position, rig.quaternion, undefined, 2);
+                            }
+                          }
+
+                          intersectionSpecs[i] = null;
+                        });
                       } else if (x >= menuWidth*0.6) {
                         intersectionPoints.push(intersectionPoint.clone());
                         intersectionCbs.push(() => {
@@ -1421,7 +1491,9 @@ function animate(time, frame) {
 
                           const gamepads = navigator.getGamepads();
                           const gamepad = gamepads[i];
-                          if (gamepad.buttons[1].pressed) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
                             moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
                           }
 
