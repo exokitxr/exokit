@@ -1140,11 +1140,13 @@ function animate(time, frame) {
       const pose = frame.getInputPose(inputSource);
       const {iframe} = tab;
 
-      localQuaternion.fromArray(pose.orientation);
+      localMatrix
+        .fromArray(pose.targetRay.transformMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+
       localVector
-        .fromArray(pose.position)
         .add(
-          localVector2.set(0, 0, -1)
+          localVector2.set(0, 0, -1.5)
             .applyQuaternion(localQuaternion)
         );
 
