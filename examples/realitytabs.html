@@ -1385,7 +1385,7 @@ function animate(time, frame) {
 
             if (x < menuWidth * 0.98) {
               if (menuMesh.optionsMesh.list === 'tabs') {
-                const localTabs = links.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
+                const localTabs = tabs.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
                 for (let j = 0; j < localTabs.length; j++) {
                   if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
                     if (x >= menuWidth*0.8) {
