@@ -913,10 +913,6 @@ const _animateRig = () => {
   const startTime = Date.now();
   const endTime = startTime + 150;
   rig.animation = {
-    /* startScale,
-    endScale,
-    startTime,
-    endTime, */
     update() {
       const now = Date.now();
       const factor = Math.min(Math.max(Math.pow((now - startTime) / (endTime - startTime), 0.2), 0), 1);
