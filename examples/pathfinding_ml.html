@@ -13,7 +13,8 @@
   <script>
     let container, scene, camera, display, model, avatarMesh;
     let mesher = null;
-    const waypoints = [];
+    const waypoints = {};
+    let numWaypoints = 0;
     let waypointsValid = false;
     const lineMeshes = [];
     let animation = null;
@@ -27,7 +28,7 @@
     const localFloat32Array = new Float32Array(16);
 
     const waypointResolution = 0.2;
-    const waypointResolutionSq = waypointResolution*waypointResolution;
+    // const waypointResolutionSq = waypointResolution*waypointResolution;
 
     const numCubes = 100;
     // const cubeSize = 0.2;
@@ -194,18 +195,72 @@
 
             for (let x = Math.ceil(-scale.x/2/waypointResolution)*waypointResolution; x < scale.x/2; x += waypointResolution) {
               for (let z = Math.ceil(-scale.z/2/waypointResolution)*waypointResolution; z < scale.z/2; z += waypointResolution) {
-                const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
-                pointMesh.position
-                  .copy(position)
+                const waypoint = position.clone()
                   .add(
                     localVector.set(x, waypointResolution/2, z)
                       .applyQuaternion(quaternion)
-                  )
+                  );
+                waypoint.x = Math.floor(waypoint.x/waypointResolution)*waypointResolution;
+                waypoint.y = Math.floor(waypoint.y/waypointResolution)*waypointResolution;
+                waypoint.z = Math.floor(waypoint.z/waypointResolution)*waypointResolution;
+
+                waypoint.id = (++numWaypoints) + '';
+                waypoint.neighbors = [];
+                waypoint.island = null;
+
+                const key = `${waypoint.x.toFixed(5)}:${waypoint.y.toFixed(5)}:${waypoint.z.toFixed(5)}`;
+                waypoints[key] = waypoint;
+
+                const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
+                pointMesh.position.copy(waypoint);
                 pointMesh.frustumCulled = false;
                 scene.add(pointMesh);
-
-                waypoints.push(pointMesh.position);
               }
+            }
+          }
+
+          for (const key in waypoints) {
+            const waypoint = waypoints[key];
+
+            for (let dz = -1; dz <= 1; dz++) {
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  if (dz !== 0 || dy !== 0 || dx !== 0) {
+                    const key = `${(waypoint.x + dx*waypointResolution).toFixed(5)}:${(waypoint.y + dy*waypointResolution).toFixed(5)}:${(waypoint.z + dz*waypointResolution).toFixed(5)}`;
+                    const neighbor = waypoints[key];
+                    if (neighbor) {
+                      waypoint.neighbors.push(neighbor);
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          for (const key in waypoints) {
+            const waypoint = waypoints[key];
+
+            if (!waypoint.island) {
+              const island = [];
+              const set = new Set();
+              const queue = [waypoint];
+
+              while (queue.length > 0) {
+                const waypoint = queue.pop();
+                island.push(waypoint);
+                waypoint.island = island;
+
+                const {neighbors} = waypoint;
+                for (let i = 0; i < neighbors.length; i++) {
+                  const neighbor = neighbors[i];
+
+                  if (!neighbor.island) {
+                    queue.push(neighbor);
+                  }
+                }
+              }
+            } else {
+              continue;
             }
           }
 
@@ -326,11 +381,11 @@
 
     let path = null;
     let pathIndex = 0;
-    const walkRate = 500;
-    const animationTime = 500;
+    const thetaRate = 200;
+    const animationTime = 50;
     function animate(time, frame) {
       if (model) {
-        const animationTime = 4000;
+        // const animationTime = 4000;
         const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
         model.quaternion.setFromUnitVectors(
           new THREE.Vector3(0, 0, 1),
@@ -351,20 +406,39 @@
         }
       } */
       if (waypointsValid) {
-        const _getRandomWaypoint = () => waypoints[Math.floor(Math.random() * waypoints.length)];
+        const _getRandomWaypoint = () => {
+          const keys = Object.keys(waypoints);
+          const key = keys[Math.floor(Math.random() * keys.length)];
+          return waypoints[key];
+        };
+        const _getFurthestWaypoint = (startNode, position) => {
+          const {island} = startNode;
+
+          let result = island[0];
+          let resultDistanceSq = result.distanceToSquared(position);
+          for (let i = 1; i < island.length; i++) {
+            const waypoint = island[i];
+            const distanceSq = waypoint.distanceToSquared(position);
+            if (distanceSq < resultDistanceSq) {
+              result = waypoint;
+              resultDistanceSq = distanceSq;
+            }
+          }
+          return result;
+        };
         const _getPath = (waypoint1, waypoint2) => {
           const path = astar(waypoint1, waypoint2, {
             id (node) {
-              return `${node.x}:${node.y}:${node.z}`;
+              return node.id;
             },
             isGoal(node) {
               return node === waypoint2;
             },
             getSuccessors(node) {
-              return waypoints.filter(waypoint => waypoint !== node && waypoint.distanceToSquared(node) <= waypointResolutionSq*1.5);
+              return node.neighbors;
             },
             distance(nodeA, nodeB) {
-              return nodeA.distanceToSquared(nodeB);
+              return 1;
             },
             estimate(node, goal) {
               return node.distanceToSquared(goal);
@@ -410,8 +484,11 @@
           }
           const startNode = avatarMesh.node;
           let endNode = null;
-          for (let i = 0; i < 300 && !path; i++) {
-            endNode = _getRandomWaypoint();
+          {
+            const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
+            vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+
+            endNode = _getFurthestWaypoint(startNode, localVector);
             path = _getPath(startNode, endNode);
           }
           if (path) {
@@ -455,7 +532,7 @@
                 .copy(startQuaternion)
                 .slerp(endQuaternion, factor);
 
-              avatarMesh.material.uniforms.theta.value = Math.sin((now%walkRate)/walkRate * Math.PI*2);
+              avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
 
               if (factor >= 1) {
                 avatarMesh.node = path[nextPathIndex];
