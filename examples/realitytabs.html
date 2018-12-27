@@ -233,6 +233,9 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   tabs.push(tab);
   layers.push(iframe);
 
+  focusedTab = tab;
+  rig.menuMesh.listMesh.updateList();
+
   return iframe;
 };
 const _closeUrl = iframe => {
@@ -661,16 +664,19 @@ const _makeRig = () => {
               const {url} = tab;
               const y = menuHeight*i;
 
-              ctx.fillStyle = '#FFFFFF';
+              ctx.fillStyle = tab === focusedTab ? '#2196f3' : '#FFF';
               ctx.fillRect(0, y, menuWidth*0.6 - 5, menuHeight);
+
+              ctx.fillStyle = '#FFF';
               ctx.fillRect(menuWidth*0.6, y, menuWidth*0.1 - 5, menuHeight);
               ctx.fillRect(menuWidth*0.7, y, menuWidth*0.1 - 5, menuHeight);
               ctx.fillRect(menuWidth*0.8, y, menuWidth*0.18, menuHeight);
 
-              ctx.fillStyle = '#000000';
+              ctx.fillStyle = tab === focusedTab ? '#FFF' : '#000';
               ctx.fillText(url, 50, y + menuHeight/2 + 20);
 
-              ctx.strokeStyle = '#000000';
+              ctx.fillStyle = '#000';
+              ctx.strokeStyle = '#000';
               ctx.lineWidth = 3;
               ctx.beginPath();
               ctx.moveTo(menuWidth*0.65 - 5, y + menuHeight*0.5 - 20);
@@ -867,6 +873,8 @@ const _makeRig = () => {
   return rig;
 };
 const rig =  _makeRig();
+
+let focusedTab = null;
 
 const _openRig = (position, quaternion) => {
   rig.position.copy(position);
@@ -1453,6 +1461,28 @@ function animate(time, frame) {
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
                           moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
+                        }
+
+                        intersectionSpecs[i] = null;
+                      });
+                    } else {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
+
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
+
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          focusedTab = tabs[menuMesh.listMesh.scrollIndex + j];
+
+                          menuMesh.listMesh.updateList();
                         }
 
                         intersectionSpecs[i] = null;
