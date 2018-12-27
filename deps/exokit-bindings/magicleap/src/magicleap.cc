@@ -1881,15 +1881,33 @@ NAN_METHOD(MLContext::Present) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
 
-  application_context.mlContext = mlContext;
-  application_context.window = window;
-  application_context.gl = gl;
-
   if (lifecycle_status != MLResult_Ok) {
     ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
+  
+  application_context.mlContext = mlContext;
+  application_context.window = window;
+  application_context.gl = gl;
+  
+  // initialize perception system
+  
+  MLPerceptionSettings perception_settings;
+
+  if (MLPerceptionInitSettings(&perception_settings) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to initialize perception.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  if (MLPerceptionStartup(&perception_settings) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to startup perception.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+  
+  // initialize graphics subsystem
 
   MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
   MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(window));
@@ -1899,6 +1917,15 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
+  
+  // Now that graphics is connected, the app is ready to go
+  if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+  
+  // initialize local graphics stack
 
   MLGraphicsRenderTargetsInfo renderTargetsInfo;
   if (MLGraphicsGetRenderTargets(mlContext->graphics_client, &renderTargetsInfo) != MLResult_Ok) {
@@ -1910,8 +1937,6 @@ NAN_METHOD(MLContext::Present) {
   unsigned int halfWidth = renderTargetsInfo.buffers[0].color.width;
   unsigned int width = halfWidth * 2;
   unsigned int height = renderTargetsInfo.buffers[0].color.height;
-
-  // std::cout << "render info " << halfWidth << " " << height << std::endl;
 
   GLuint fbo;
   GLuint colorTex;
@@ -2143,20 +2168,7 @@ NAN_METHOD(MLContext::Present) {
     }
   }
 
-  // initialize perception system
-  MLPerceptionSettings perception_settings;
-
-  if (MLPerceptionInitSettings(&perception_settings) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to initialize perception.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-
-  if (MLPerceptionStartup(&perception_settings) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to startup perception.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
+  // initialize subsystems
 
   if (MLHeadTrackingCreate(&mlContext->head_tracker) != MLResult_Ok || MLHeadTrackingGetStaticData(mlContext->head_tracker, &mlContext->head_static_data) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create head tracker.", application_name);
@@ -2237,13 +2249,6 @@ NAN_METHOD(MLContext::Present) {
 
   if (MLEyeTrackingCreate(&eyeTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to create eye handle", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-
-  // Now that graphics is connected, the app is ready to go
-  if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
