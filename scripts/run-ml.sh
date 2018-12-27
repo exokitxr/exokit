@@ -2,6 +2,8 @@
 
 set -e
 
+cd "$(dirname "$0")"
+
 source ./version-ml.sh
 
 cmd.exe /c "$MLSDK_WIN/tools/mldb/mldb.exe" terminate -f com.webmr.exokit
