@@ -1,6 +1,9 @@
 #!/bin/bash
 
-export MLSDK=${MLSDK:-/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.18.0}
-export MLSDK_WIN=$(echo "$MLSDK" | sed 's/^\/mnt\/\([a-z]\)\//\1:\\/' | sed 's/\//\\/g')
+set -e
 
-cmd.exe /c "$MLSDK_WIN/tools/mldb/mldb.exe" install -u build/magicleap/exokit.mpk
+cd "$(dirname "$0")"
+
+source ./version-ml.sh
+
+cmd.exe /c "$MLSDK_WIN/tools/mldb/mldb.exe" install -u ../build/magicleap/exokit.mpk
