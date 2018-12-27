@@ -1186,7 +1186,9 @@ function animate(time, frame) {
         const gamepads = navigator.getGamepads();
         for (let i = 0; i < gamepads.length; i++) {
           const gamepad = gamepads[i];
-          if (gamepad.buttons[1].pressed) {
+          const pressed = gamepad.buttons[1].pressed;
+          const lastPressed = lastPresseds[i];
+          if (pressed && !lastPressed) {
             moves[i] = null;
           }
         }
