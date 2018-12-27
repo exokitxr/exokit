@@ -1,5 +1,7 @@
 #!/bin/bash
 
-export MLSDK=${MLSDK:-/mnt/c/Users/avaer/MagicLeap/mlsdk/v0.18.0}
+set -e
+
+source ./version-ml.sh
 
 "$MLSDK/tools/mldb/mldb.exe" -d install -u build/magicleap/app-device/app-device.mpk
