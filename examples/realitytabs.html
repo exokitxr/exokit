@@ -1741,9 +1741,12 @@ function animate(time, frame) {
           const lastBumper = lastButtons[i].bumper;
 
           if (bumper && !lastBumper) {
-            const pose = frame.getInputPose(inputSource);
-            localMatrix.fromArray(pose.pointerMatrix)
-              .decompose(localVector, localQuaternion, localVector2);
+            const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
+            vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+            localVector.add(
+              localVector2.set(0, 0, -1.5)
+                .applyQuaternion(localQuaternion)
+            );
 
             _openRig(localVector, localQuaternion);
           }
