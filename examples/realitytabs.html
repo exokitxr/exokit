@@ -234,6 +234,7 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   layers.push(iframe);
 
   focusedTab = tab;
+  rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
 
   return iframe;
@@ -414,6 +415,7 @@ scene.add(cubeMesh);
 
 // rig
 
+let focusedTab = null;
 const _makeRig = () => {
   const rig = new THREE.Object3D();
 
@@ -450,6 +452,8 @@ const _makeRig = () => {
       mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
 
+      focusedTab = mesh;
+
       const text = DEFAULT_URL;
       const urlState = {
         text,
@@ -461,6 +465,13 @@ const _makeRig = () => {
       const _updateText = () => {
         ctx.fillStyle = '#EEE';
         ctx.fillRect(0, 0, menuWidth*0.8 - 5, menuHeight);
+
+        if (focusedTab === mesh) {
+          ctx.fillStyle = '#42a5f5';
+          ctx.fillRect(0, menuHeight - 5, menuWidth*0.8 - 5, 5);
+        }
+
+        ctx.fillStyle = '#EEE';
         ctx.fillRect(menuWidth*0.8, 0, menuWidth*0.2 - 5, menuHeight);
         ctx.fillRect(0, menuHeight, menuWidth*0.5, menuHeight);
 
@@ -874,8 +885,6 @@ const _makeRig = () => {
 };
 const rig = _makeRig();
 
-let focusedTab = rig.menuMesh.urlMesh;
-
 const _openRig = (position, quaternion) => {
   rig.position.copy(position);
   rig.quaternion.copy(quaternion);
@@ -1281,8 +1290,12 @@ function animate(time, frame) {
                     }
                     if (closestIndex !== -1) {
                       menuMesh.urlMesh.urlState.cursor = closestIndex;
-                      menuMesh.urlMesh.updateText();
                     }
+
+                    focusedTab = menuMesh.urlMesh;
+
+                    menuMesh.urlMesh.updateText();
+                    menuMesh.listMesh.updateList();
                   }
 
                   intersectionSpecs[i] = null;
@@ -1476,6 +1489,7 @@ function animate(time, frame) {
                         if (pressed && !lastPressed) {
                           focusedTab = tabs[menuMesh.listMesh.scrollIndex + j];
 
+                          menuMesh.urlMesh.updateText();
                           menuMesh.listMesh.updateList();
                         }
 
