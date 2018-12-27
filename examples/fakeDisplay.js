@@ -58,8 +58,6 @@ window._makeFakeDisplay = () => {
           localVector2.set(1, 1, 1)
         )
         .toArray(gamepad.pose._localPointerMatrix);
-       localMatrix2
-        .toArray(gamepad.pose.pointerMatrix);
     }
   };
 
@@ -153,12 +151,7 @@ window._makeFakeDisplay = () => {
         return this._pose;
       },
       getInputPose(inputSource, coordinateSystem) {
-        localMatrix
-          .compose(
-            localVector.fromArray(inputSource.pose.position),
-            localQuaternion.fromArray(inputSource.pose.orientation),
-            localVector2.set(1, 1, 1)
-          )
+        localMatrix.fromArray(inputSource.pose._localPointerMatrix);
 
         if (self.window) {
           const {xrOffset} = self.window.document;
@@ -173,10 +166,7 @@ window._makeFakeDisplay = () => {
             );
         }
 
-        localMatrix
-          .toArray(inputSource.pose._localPointerMatrix);
-        localMatrix
-          .toArray(inputSource.pose.pointerMatrix);
+        localMatrix.toArray(inputSource.pose.targetRay.transformMatrix);
 
         return inputSource.pose; // XXX or _pose
       },
