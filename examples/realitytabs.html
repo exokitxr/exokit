@@ -874,7 +874,7 @@ const _makeRig = () => {
 };
 const rig = _makeRig();
 
-let focusedTab = null;
+let focusedTab = rig.menuMesh.urlMesh;
 
 const _openRig = (position, quaternion) => {
   rig.position.copy(position);
