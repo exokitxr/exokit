@@ -990,10 +990,8 @@ window.addEventListener('keydown', e => {
       }
     }
   } else {
-    for (let i = 0; i < tabs.length; i++) {
-      const tab = tabs[i];
-      const {iframe} = tab;
-      iframe.sendKeyDown(e.which, {
+    if (focusedTab && focusedTab.iframe) {
+      focusedTab.iframe.sendKeyDown(e.which, {
         shiftKey: e.shiftKey,
         ctrlKey: e.ctrlKey,
         altKey: e.altKey,
@@ -1034,10 +1032,8 @@ window.addEventListener('keyup', e => {
       }
     }
   } else {
-    for (let i = 0; i < tabs.length; i++) {
-      const tab = tabs[i];
-      const {iframe} = tab;
-      iframe.sendKeyUp(e.which, {
+    if (focusedTab && focusedTab.iframe) {
+      focusedTab.iframe.sendKeyUp(e.which, {
         shiftKey: e.shiftKey,
         ctrlKey: e.ctrlKey,
         altKey: e.altKey,
@@ -1047,10 +1043,8 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('keypress', e => {
   if (!window.document.pointerLockElement) {
-    for (let i = 0; i < tabs.length; i++) {
-      const tab = tabs[i];
-      const {iframe} = tab;
-      iframe.sendKeyPress(e.which, {
+    if (focusedTab && focusedTab.iframe) {
+      focusedTab.iframe.sendKeyPress(e.which, {
         shiftKey: e.shiftKey,
         ctrlKey: e.ctrlKey,
         altKey: e.altKey,
