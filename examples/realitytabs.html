@@ -418,6 +418,10 @@ scene.add(cubeMesh);
 let focusedTab = null;
 const _makeRig = () => {
   const rig = new THREE.Object3D();
+  rig.scale.set(0, 0, 0);
+  rig.visible = false;
+  rig.open = false;
+  rig.animation = null;
 
   const menuMesh = (() => {
     const object = new THREE.Object3D();
@@ -884,15 +888,48 @@ const _makeRig = () => {
   return rig;
 };
 const rig = _makeRig();
+scene.add(rig);
 
 const _openRig = (position, quaternion) => {
-  rig.position.copy(position);
-  rig.quaternion.copy(quaternion);
+  if (!rig.open) {
+    rig.position.copy(position);
+    rig.quaternion.copy(quaternion);
 
-  scene.add(rig);
+    rig.open = true;
+  } else {
+    rig.open = false;
+  }
+
+  _animateRig();
 };
 const _closeRig = () => {
-  scene.remove(rig);
+  rig.open = false;
+
+  _animateRig();
+};
+const _animateRig = () => {
+  const startScale = rig.scale.x;
+  const endScale = rig.open ? 1 : 0;
+  const startTime = Date.now();
+  const endTime = startTime + 150;
+  rig.animation = {
+    /* startScale,
+    endScale,
+    startTime,
+    endTime, */
+    update() {
+      const now = Date.now();
+      const factor = Math.min(Math.max(Math.pow((now - startTime) / (endTime - startTime), 0.2), 0), 1);
+      const scaleFactor = startScale*(1-factor) + endScale*factor;
+
+      rig.scale.set(scaleFactor, scaleFactor, scaleFactor);
+      rig.visible = rig.scale.x > 0.00001;
+
+      if (factor >= 1) {
+        rig.animation = null;
+      }
+    },
+  };
 };
 
 const moves = [null, null];
@@ -1775,6 +1812,13 @@ function animate(time, frame) {
     }
   };
   _updateMovement();
+
+  const _updateRig = () => {
+    if (rig.animation) {
+      rig.animation.update();
+    }
+  };
+  _updateRig();
 
   /* const _updateFakeDisplay = () => {
     if (fakeDisplay) {
