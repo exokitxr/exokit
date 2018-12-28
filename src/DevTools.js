@@ -6,26 +6,36 @@ const {HTMLIframeElement} = DOM;
 
 const DEVTOOLS_PORT = 9223;
 
-let replServer = null;
-const _getReplServer = () => {
-  if (!replServer) {
-    replServer = htermRepl({
-      port: DEVTOOLS_PORT,
-    });
-  }
-  return replServer;
-};
+const _getReplServer = (() => {
+  let replServer = null;
+  return () => new Promise((accept, reject) => {
+    if (!replServer) {
+      htermRepl({
+        port: DEVTOOLS_PORT,
+      }, (err, newReplServer) => {
+        if (!err) {
+          replServer = newReplServer;
+          accept(replServer);
+        } else  {
+          reject(err);
+        }
+      });
+    } else {
+      accept(replServer);
+    }
+  });
+})();
 
 let id = 0;
 class DevTools {
-  constructor(context) {
+  constructor(context, replServer) {
     this.context = context;
+    this.replServer = replServer;
     this.id = (++id) + '';
     this.repls = [];
 
-    const replServer = _getReplServer();
     this.onRepl = this.onRepl.bind(this);
-    replServer.on('repl', this.onRepl);
+    this.replServer.on('repl', this.onRepl);
   }
 
   getPath() {
@@ -54,8 +64,7 @@ class DevTools {
   }
 
   destroy() {
-    const replServer = _getReplServer();
-    replServer.removeListener('repl', this.onRepl);
+    this.replServer.removeListener('repl', this.onRepl);
 
     for (let i = 0; i < this.repls.length; i++) {
       this.repls[i].close();
@@ -65,7 +74,8 @@ class DevTools {
 }
 
 module.exports = {
-  createDevTools(iframe) {
-    return new DevTools(iframe);
+  async requestDevTools(iframe) {
+    const replServer = await _getReplServer();
+    return new DevTools(iframe, replServer);
   },
 };
