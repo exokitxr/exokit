@@ -8,13 +8,21 @@ const DEVTOOLS_PORT = 9223;
 
 const _getReplServer = (() => {
   let replServer = null;
-  return () => {
+  return new Promise((accept, reject) => {
     if (!replServer) {
-      replServer = htermRepl({
+      htermRepl({
         port: DEVTOOLS_PORT,
+      }, (err, newReplServer) => {
+        if (!err) {
+          replServer = newReplServer;
+          accept(replServer);
+        } else  {
+          reject(err);
+        }
       });
+    } else {
+      accept(replServer);
     }
-    return replServer;
   };
 })();
 
