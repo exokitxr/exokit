@@ -15,6 +15,7 @@ const _getFakeVrDisplay = window => {
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
@@ -154,6 +155,17 @@ class XRSession extends EventTarget {
       return result;
     }
   }
+  requestHitTest(ray, coordinateSystem) {
+    return new Promise((accept, reject) => {
+      if (this.device.onrequesthittest)  {
+        this.device.onrequesthittest(ray, coordinateSystem, result => {
+          accept(result);
+        });
+      } else {
+        reject(new Error('api not supported'));
+      }
+    });
+  }
   end() {
     this.emit('end');
     return Promise.resolve();
@@ -205,17 +217,23 @@ class XRSession extends EventTarget {
       this._frameOfReference.emulatedHeight = stageParameters.position.y; // XXX
     } */
     if (gamepads !== undefined) {
-      const scale = localVector2.set(1, 1, 1);
+      const scale = localVector3.set(1, 1, 1);
 
       for (let i = 0; i < 2; i++) {
         const gamepad = gamepads[i];
         if (gamepad) {
           const inputSource = this._inputSources[i];
-          const inputMatrix = localMatrix.compose(
-            localVector.fromArray(gamepad.pose.position),
-            localQuaternion.fromArray(gamepad.pose.orientation),
-            scale
-          );
+          const position = localVector.fromArray(gamepad.pose.position);
+          const quaternion = localQuaternion.fromArray(gamepad.pose.orientation);
+          const direction = localVector2.set(0, 0, -1).applyQuaternion(quaternion);
+          const inputMatrix = localMatrix.compose(position, quaternion, scale);
+          inputSource._pose.targetRay.origin.x = position.x;
+          inputSource._pose.targetRay.origin.y = position.y;
+          inputSource._pose.targetRay.origin.z = position.z;
+          inputSource._pose.targetRay.direction.x = direction.x;
+          inputSource._pose.targetRay.direction.y = direction.y;
+          inputSource._pose.targetRay.direction.z = direction.z;
+          inputMatrix.toArray(inputSource._pose.targetRay.transformMatrix);
           inputMatrix.toArray(inputSource._pose._localPointerMatrix);
           inputMatrix.toArray(inputSource._pose.gripMatrix);
 
@@ -375,7 +393,7 @@ class XRPresentationFrame {
       }
     }
 
-    localMatrix.toArray(inputSource._pose.pointerMatrix);
+    localMatrix.toArray(inputSource._pose.targetRay.transformMatrix);
     
     return inputSource._pose;
   }
@@ -466,10 +484,19 @@ class XRInputSource {
 }
 module.exports.XRInputSource = XRInputSource;
 
+class XRRay {
+  constructor() {
+    this.origin = new GlobalContext.DOMPoint(0, 0, 0, 1);
+    this.direction = new GlobalContext.DOMPoint(0, 0, 1, 0);
+    this.transformMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  }
+}
+module.exports.XRRay = XRRay;
+
 class XRInputPose {
   constructor() {
     this.emulatedPosition = false;
-    this.pointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.targetRay = new XRRay();
     this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     this._localPointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }

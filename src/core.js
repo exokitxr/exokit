@@ -601,6 +601,16 @@ class FileReader extends EventTarget {
   }
 }
 
+class DOMPoint {
+  constructor(x = 0, y = 0, z = 0, w = 1) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.w = w;
+  }
+}
+GlobalContext.DOMPoint = DOMPoint;
+
 const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   if (node.nodeName === '#text') {
     const text = new DOM.Text(node.value);
@@ -1446,6 +1456,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
+  window.DOMPoint = DOMPoint;
   if (window.navigator.xr) {
     window.XR = XR.XR;
     window.XRDevice = XR.XRDevice;
@@ -1456,6 +1467,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     window.XRViewport = XR.XRViewport;
     window.XRDevicePose = XR.XRDevicePose;
     window.XRInputSource = XR.XRInputSource;
+    window.XRRay = XR.XRRay;
     window.XRInputPose = XR.XRInputPose;
     window.XRInputSourceEvent = XR.XRInputSourceEvent;
     window.XRCoordinateSystem = XR.XRCoordinateSystem;
@@ -1705,6 +1717,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
+    mlDisplay.onrequesthittest = function() { return nativeMl.requestHitTest.apply(this, arguments); };
     mlDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
@@ -1724,6 +1737,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xmDisplay.requestSession);
+    xmDisplay.onrequesthittest = function() { return nativeMl.requestHitTest.apply(this, arguments); };
     xmDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };

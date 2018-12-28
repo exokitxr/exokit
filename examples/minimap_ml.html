@@ -352,29 +352,28 @@
           const pose = frame.getInputPose(inputSource);
 
           const controllerMesh = controllerMeshes[i];
-          controllerMesh.matrix.fromArray(pose.pointerMatrix);
+          controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           // controllerMesh.updateMatrixWorld();
           controllerMesh.matrixWorldNeedsUpdate = true;
           // controllerMesh.matrixWorld.multiplyMatrices(controllerMesh.parent.matrixWorld, controllerMesh.matrix);
-          // controllerMesh.matrixWorld.fromArray(pose.pointerMatrix);
+          // controllerMesh.matrixWorld.fromArray(pose.targetRay.transformMatrix);
           // controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
           // controllerMesh.updateMatrixWorld(true);
 
           // console.log('controller position', controllerMesh.position.toArray().join(','));
 
           if (i === 0) { // left
-            intersectCamera.matrix.fromArray(pose.pointerMatrix);
+            intersectCamera.matrix.fromArray(pose.targetRay.transformMatrix);
             intersectCamera.matrix.decompose(intersectCamera.position, intersectCamera.quaternion, intersectCamera.scale);
             // console.log('position', intersectCamera.position.toArray().join(','));
             intersectCamera.updateMatrixWorld(true);
 
             if (planeMesh.visible) {
-              planeMesh.matrix.fromArray(pose.pointerMatrix);
-              planeMesh.matrixWorldNeedsUpdate = true;
-              // planeMesh.matrix.decompose(planeMesh.position, planeMesh.quaternion, planeMesh.scale);
-              // planeMesh.updateMatrixWorld(true);
+              planeMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+              planeMesh.matrix.decompose(planeMesh.position, planeMesh.quaternion, planeMesh.scale);
+              planeMesh.updateMatrixWorld(true);
             } else {
-              containerMesh.matrix.fromArray(pose.pointerMatrix);
+              containerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
               containerMesh.matrix.decompose(containerMesh.position, containerMesh.quaternion, containerMesh.scale);
               containerMesh.position.y += 0.1;
               localEuler.setFromQuaternion(containerMesh.quaternion, 'YXZ');

@@ -1121,15 +1121,12 @@ function animate(time, frame) {
 
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
-        localMatrix2
-          .compose(
-            localVector.fromArray(gamepad.pose.position),
-            localQuaternion.fromArray(gamepad.pose.orientation),
-            localVector2.set(1, 1, 1)
-          )
-          .toArray(pose._localPointerMatrix);
-         localMatrix2
-          .toArray(pose.pointerMatrix);
+        localMatrix.compose(
+          localVector.fromArray(gamepad.pose.position),
+          localQuaternion.fromArray(gamepad.pose.orientation),
+          localVector2.set(1, 1, 1)
+        )
+          .toArray(pose.targetRay.transformMatrix);
       }
     }
   };
@@ -1143,11 +1140,13 @@ function animate(time, frame) {
       const pose = frame.getInputPose(inputSource);
       const {iframe} = tab;
 
-      localQuaternion.fromArray(pose.orientation);
+      localMatrix
+        .fromArray(pose.targetRay.transformMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+
       localVector
-        .fromArray(pose.position)
         .add(
-          localVector2.set(0, 0, -1)
+          localVector2.set(0, 0, -1.5)
             .applyQuaternion(localQuaternion)
         );
 
@@ -1164,7 +1163,7 @@ function animate(time, frame) {
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
         const controllerMesh = controllerMeshes[i];
-        controllerMesh.matrix.fromArray(pose.pointerMatrix);
+        controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
         controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
         controllerMesh.updateMatrixWorld(true);
       }

@@ -398,17 +398,17 @@
           const pose = frame.getInputPose(inputSource);
 
           const rayMesh = rayMeshes[i];
-          rayMesh.matrix.fromArray(pose.pointerMatrix);
+          rayMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           rayMesh.matrix.decompose(localVector, localQuaternion, localVector2);
           rayMesh.updateMatrixWorld(true);
 
           if (i === 0) { // left
-            // intersectCamera.matrix.fromArray(pose.pointerMatrix);
+            // intersectCamera.matrix.fromArray(pose.targetRay.transformMatrix);
             // intersectCamera.matrix.decompose(intersectCamera.position, intersectCamera.quaternion, intersectCamera.scale);
             // console.log('position', intersectCamera.position.toArray().join(','));
             // intersectCamera.updateMatrixWorld(true);
 
-            planeMesh.matrix.fromArray(pose.pointerMatrix);
+            planeMesh.matrix.fromArray(pose.targetRay.transformMatrix);
             planeMesh.matrix.decompose(planeMesh.position, planeMesh.quaternion, planeMesh.scale);
             planeMesh.updateMatrixWorld(true);
           }

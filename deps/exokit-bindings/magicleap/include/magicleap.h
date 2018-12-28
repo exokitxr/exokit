@@ -34,6 +34,7 @@
 #include <ml_privilege_ids.h>
 #include <ml_privilege_functions.h>
 #include <ml_input.h>
+#include <ml_raycast.h>
 #include <ml_gesture.h>
 #include <ml_lifecycle.h>
 #include <ml_logging.h>
@@ -92,6 +93,18 @@ public:
   uint32_t char_utf32;
   MLKeyCode key_code;
   uint32_t modifier_mask;
+};
+
+class MLRaycaster : public ObjectWrap {
+public:
+  MLRaycaster(MLHandle requestHandle, Local<Function> cb);
+  ~MLRaycaster();
+
+  bool Poll();
+
+// protected:
+  MLHandle requestHandle;
+  Nan::Persistent<Function> cb;
 };
 
 class MeshBuffer {
@@ -252,6 +265,7 @@ public:
   static NAN_METHOD(OnPresentChange);
   static NAN_METHOD(RequestMeshing);
   static NAN_METHOD(RequestPlaneTracking);
+  static NAN_METHOD(RequestHitTest);
   static NAN_METHOD(RequestHandTracking);
   static NAN_METHOD(RequestEyeTracking);
   static NAN_METHOD(RequestImageTracking);

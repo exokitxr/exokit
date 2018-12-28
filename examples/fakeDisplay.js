@@ -42,6 +42,15 @@ window._makeFakeDisplay = () => {
         fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
       }
 
+      if (!gamepad.pose._localPointerMatrix) {
+        gamepad.pose._localPointerMatrix = new Float32Array(32);
+      }
+      if (!gamepad.pose.targetRay) {
+        gamepad.pose.targetRay = {
+          transformMatrix: new Float32Array(32),
+        };
+      }
+
       localMatrix2
         .compose(
           localVector.fromArray(gamepad.pose.position),
@@ -49,16 +58,14 @@ window._makeFakeDisplay = () => {
           localVector2.set(1, 1, 1)
         )
         .toArray(gamepad.pose._localPointerMatrix);
-       localMatrix2
-        .toArray(gamepad.pose.pointerMatrix);
     }
-    // console.log('gamepade pose', fakeDisplay.gamepads[1].pose.position);
   };
 
   fakeDisplay.update(); // initialize gamepads
   for (let i = 0; i < fakeDisplay.gamepads.length; i++) {
-    fakeDisplay.gamepads[i].pose.pointerMatrix = new Float32Array(16);
-    fakeDisplay.gamepads[i].pose._localPointerMatrix = new Float32Array(16);
+    fakeDisplay.gamepads[i].pose.targetRay = {
+      transformMatrix: new Float32Array(16),
+    };
   }
 
   const onends = [];
@@ -144,12 +151,7 @@ window._makeFakeDisplay = () => {
         return this._pose;
       },
       getInputPose(inputSource, coordinateSystem) {
-        localMatrix
-          .compose(
-            localVector.fromArray(inputSource.pose.position),
-            localQuaternion.fromArray(inputSource.pose.orientation),
-            localVector2.set(1, 1, 1)
-          )
+        localMatrix.fromArray(inputSource.pose._localPointerMatrix);
 
         if (self.window) {
           const {xrOffset} = self.window.document;
@@ -164,10 +166,7 @@ window._makeFakeDisplay = () => {
             );
         }
 
-        localMatrix
-          .toArray(inputSource.pose._localPointerMatrix);
-        localMatrix
-          .toArray(inputSource.pose.pointerMatrix);
+        localMatrix.toArray(inputSource.pose.targetRay.transformMatrix);
 
         return inputSource.pose; // XXX or _pose
       },

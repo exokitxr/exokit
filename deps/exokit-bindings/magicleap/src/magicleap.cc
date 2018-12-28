@@ -66,6 +66,10 @@ std::vector<MLHandTracker *> handTrackers;
 float wristBones[2][4][1 + 3];
 float fingerBones[2][5][4][1 + 3];
 
+MLHandle raycastTracker;
+MLRaycastQuery raycastQuery;
+std::vector<MLRaycaster *> raycasters;
+
 MLHandle meshTracker;
 std::vector<MLMesher *> meshers;
 MLMeshingExtents meshExtents;
@@ -284,6 +288,54 @@ static void onUnloadResources(void* application_context) {
   events.push_back(Event::UNLOAD_RESOURCES);
   uv_async_send(&eventsAsync);
 }
+
+// MLRaycaster
+
+MLRaycaster::MLRaycaster(MLHandle requestHandle, Local<Function> cb) : requestHandle(requestHandle), cb(cb) {}
+
+MLRaycaster::~MLRaycaster() {}
+
+bool MLRaycaster::Poll() {
+  MLRaycastResult raycastResult;
+  MLResult result = MLRaycastGetResult(raycastTracker, this->requestHandle, &raycastResult);
+  if (result == MLResult_Ok) {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
+    Local<Function> cb = Nan::New(this->cb);
+    
+    if (raycastResult.state == MLRaycastResultState_HitObserved) {
+      const MLVec3f &position = raycastResult.hitpoint;
+      const MLVec3f &normal = raycastResult.normal;
+      const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, normal);
+      const MLVec3f &scale = {1, 1, 1};
+      const MLMat4f &hitMatrix = composeMatrix(position, quaternion, scale);
+
+      Local<Object> xrHitResult = Nan::New<Object>();
+      Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)hitMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
+      xrHitResult->Set(JS_STR("hitMatrix"), hitMatrixArray);
+      Local<Array> array = Nan::New<Array>(1);
+      array->Set(0, xrHitResult);
+      Local<Value> argv[] = {
+        array,
+      };
+      asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+    } else {
+      Local<Value> argv[] = {
+        Nan::New<Array>(0),
+      };
+      asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+    }
+
+    return true;
+  } else if (result == MLResult_Pending) {
+    return false;
+  } else {
+    ML_LOG(Error, "%s: Raycast request failed! %x", application_name, result);
+
+    return true;
+  }
+}
+
 
 // MeshBuffer
 
@@ -1495,6 +1547,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
+  Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
   Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
@@ -2225,6 +2278,15 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
+  
+  {
+    MLResult result = MLRaycastCreate(&raycastTracker);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to create raycast handle %x", application_name, result);
+      Nan::ThrowError("MLContext::Present failed to create raycast handle");
+      return;
+    }
+  }
 
   MLMeshingSettings meshingSettings;
   if (MLMeshingInitSettings(&meshingSettings) != MLResult_Ok) {
@@ -2297,6 +2359,11 @@ NAN_METHOD(MLContext::Exit) {
   if (MLHandTrackingDestroy(handTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to destroy hand tracker.", application_name);
     info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+  
+  if (MLRaycastDestroy(raycastTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to destroy raycast handle", application_name);
     return;
   }
 
@@ -2598,6 +2665,45 @@ NAN_METHOD(MLContext::RequestPlaneTracking) {
   }
 }
 
+NAN_METHOD(MLContext::RequestHitTest) {
+  if (
+    info[0]->IsObject() && Local<Object>::Cast(info[0])->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRRay")) &&
+    info[1]->IsFunction()
+  ) {
+    Local<Object> xrRay = Local<Object>::Cast(info[0]);
+    Local<Object> origin = Local<Object>::Cast(xrRay->Get(JS_STR("origin")));
+    Local<Object> direction = Local<Object>::Cast(xrRay->Get(JS_STR("direction")));
+    Local<Function> cb = Local<Function>::Cast(info[1]);
+
+    raycastQuery.position = MLVec3f{
+      (float)origin->Get(JS_STR("x"))->NumberValue(),
+      (float)origin->Get(JS_STR("y"))->NumberValue(),
+      (float)origin->Get(JS_STR("z"))->NumberValue(),
+    };
+    raycastQuery.direction = MLVec3f{
+      (float)direction->Get(JS_STR("x"))->NumberValue(),
+      (float)direction->Get(JS_STR("y"))->NumberValue(),
+      (float)direction->Get(JS_STR("z"))->NumberValue(),
+    };
+    raycastQuery.up_vector = MLVec3f{0, 1, 0};
+    raycastQuery.width = 1;
+    raycastQuery.height = 1;
+    raycastQuery.collide_with_unobserved = false;
+    
+    MLHandle requestHandle;
+    MLResult result = MLRaycastRequest(raycastTracker, &raycastQuery, &requestHandle);
+    if (result == MLResult_Ok) {
+      MLRaycaster *raycaster = new MLRaycaster(requestHandle, cb);
+      raycasters.push_back(raycaster);
+    } else {
+      ML_LOG(Error, "%s: Failed to request raycast: %x", application_name, result);
+      Nan::ThrowError("failed to request raycast");
+    }
+  } else {
+    Nan::ThrowError("MLContext::RequestHitTest: invalid arguments");
+  }
+}
+
 NAN_METHOD(MLContext::RequestHandTracking) {
   if (info[0]->IsObject()) {
     Local<Function> mlHandTrackerCons = Nan::New(mlHandTrackerConstructor);
@@ -2807,6 +2913,18 @@ NAN_METHOD(MLContext::Update) {
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
   MLSnapshot *snapshot = nullptr;
+
+  if (raycasters.size() > 0) {
+    raycasters.erase(std::remove_if(raycasters.begin(), raycasters.end(), [&](MLRaycaster *r) -> bool {
+      if (r->Poll()) {
+        delete r;
+        return true;
+      } else {
+        return false;
+      }
+    }), raycasters.end());
+  }
+
   if (handTrackers.size() > 0) {
     MLResult result = MLHandTrackingGetData(handTracker, &handData);
     if (result == MLResult_Ok) {

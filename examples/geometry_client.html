@@ -259,7 +259,7 @@ function animate(time, frame) {
     const pose = frame.getInputPose(inputSource);
 
     const controllerMesh = controllerMeshes[i];
-    controllerMesh.matrix.fromArray(pose.pointerMatrix);
+    controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
     controllerMesh.updateMatrixWorld(true);
   }
 
@@ -276,7 +276,7 @@ function animate(time, frame) {
       const inputSource = inputSources[paintControllerIndex];
       const pose = frame.getInputPose(inputSource);
 
-      localMatrix.fromArray(pose.pointerMatrix)
+      localMatrix.fromArray(pose.targetRay.transformMatrix)
         .decompose(localVector, localQuaternion, localVector2);
       localVector.sub(scene2.position);
     }
@@ -349,7 +349,7 @@ function animate(time, frame) {
         const inputSource = inputSources[controllerIndex];
         const pose = frame.getInputPose(inputSource);
 
-        localMatrix.fromArray(pose.pointerMatrix)
+        localMatrix.fromArray(pose.targetRay.transformMatrix)
           .decompose(localVector, localQuaternion, localVector2);
 
         _teleportStart(localVector, localQuaternion);
@@ -398,7 +398,7 @@ function animate(time, frame) {
     const rotation = localQuaternion.toArray();
     const controllers = inputSources.map(inputSource => {
       const pose = frame.getInputPose(inputSource);
-      localMatrix.fromArray(pose.pointerMatrix)
+      localMatrix.fromArray(pose.targetRay.transformMatrix)
         .decompose(localVector, localQuaternion, localVector2);
 
       return {
