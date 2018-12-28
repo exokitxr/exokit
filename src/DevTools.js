@@ -23,7 +23,7 @@ const _getReplServer = (() => {
     } else {
       accept(replServer);
     }
-  };
+  });
 })();
 
 let id = 0;
