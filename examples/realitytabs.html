@@ -1479,10 +1479,14 @@ function animate(time, frame) {
                           const tab = tabs[menuMesh.listMesh.scrollIndex + j];
                           const {iframe} = tab;
                           if (iframe.d === 3) {
-                            const {contentWindow} = iframe;
-                            const devTools = window.browser.devTools.createDevTools(contentWindow);
-                            const url = devTools.getUrl();
-                            _openUrl(url, rig.position, rig.quaternion, undefined, 2);
+                            window.browser.devTools.requestDevTools(iframe.contentWindow)
+                              .then(devTools => {
+                                const url = devTools.getUrl();
+                                _openUrl(url, rig.position, rig.quaternion, undefined, 2);
+                              })
+                              .catch(err => {
+                                console.warn(err.stack);
+                              });
                           }
                         }
 
