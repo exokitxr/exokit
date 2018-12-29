@@ -68,7 +68,9 @@ void Image::RunInMainThread(uv_async_t *handle) {
   image->arrayBuffer.Reset();
   image->error = "";
 
-  uv_close((uv_handle_t *)handle, nullptr);
+  uv_close((uv_handle_t *)handle, [](uv_handle_t *handle) {
+    free(handle);
+  });
 }
 
 void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn) {
@@ -79,9 +81,10 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
     this->cbFn.Reset(cbFn);
     this->error = "";
 
-    uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
+    threadAsyncHandle = (uv_async_t *)malloc(sizeof(uv_async_t));
+    uv_async_init(uv_default_loop(), threadAsyncHandle, RunInMainThread);
 
-    handleToImageMap[&threadAsync] = this;
+    handleToImageMap[threadAsyncHandle] = this;
 
     std::thread([this, buffer, byteLength]() -> void {
       sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, byteLength);
@@ -132,7 +135,7 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
         }
       }
 
-      uv_async_send(&this->threadAsync);
+      uv_async_send(this->threadAsyncHandle);
     }).detach();
   } else {
     Local<String> arg0 = Nan::New<String>("already loading").ToLocalChecked();
