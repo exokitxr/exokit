@@ -222,10 +222,10 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   };
   iframe.d = d;
   iframe.src = u;
-  iframe.addEventListener('destroy', () => {
+  /* iframe.addEventListener('destroy', () => {
     // floorMesh.visible = true;
     // scene.background = _makeBackground();
-  });
+  }); */
   document.body.appendChild(iframe);
 
   const tab = {
