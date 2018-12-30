@@ -272,10 +272,11 @@ void Servo2D::init() {
   heartbeat_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "heartbeat_servo");
   trigger_servo = (void (*)(ServoInstance*, float x, float y, bool down))dlsym(libmlservo, "trigger_servo");
   move_servo = (void (*)(ServoInstance*, float x, float y))dlsym(libmlservo, "move_servo");
+  keyboard_servo = (void (*)(ServoInstance*, uint32_t keycode, bool shift, bool ctrl, bool alt, bool logo, bool down))dlsym(libmlservo, "keyboard_servo");
   traverse_servo = (void (*)(ServoInstance*, int delta))dlsym(libmlservo, "traverse_servo");
   navigate_servo = (void (*)(ServoInstance*, const char* text))dlsym(libmlservo, "navigate_servo");
   discard_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "discard_servo");
-  if (!init_servo || !heartbeat_servo || !trigger_servo || !move_servo || !traverse_servo || !navigate_servo || !discard_servo) {
+  if (!init_servo || !heartbeat_servo || !trigger_servo || !move_servo || !keyboard_servo || !traverse_servo || !navigate_servo || !discard_servo) {
     std::cout << "failed to dlsym libmlservo.so symbols " << (void *)init_servo << " " << (void *)heartbeat_servo << " " << (void *)trigger_servo << " " << (void *)move_servo << " " << (void *)traverse_servo << " " << (void *)navigate_servo << " " << (void *)discard_servo << std::endl;
   }
 }
@@ -308,6 +309,7 @@ browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
 void (*heartbeat_servo)(browser::ServoInstance*) = nullptr;
 void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down) = nullptr;
 void (*move_servo)(browser::ServoInstance*, float x, float y) = nullptr;
+void (*keyboard_servo)(browser::ServoInstance*, uint32_t keycode, bool shift, bool ctrl, bool alt, bool logo, bool down) = nullptr;
 void (*traverse_servo)(browser::ServoInstance*, int delta) = nullptr;
 void (*navigate_servo)(browser::ServoInstance*, const char* text) = nullptr;
 void (*discard_servo)(browser::ServoInstance*) = nullptr;

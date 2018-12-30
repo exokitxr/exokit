@@ -123,6 +123,7 @@ extern "C" browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisp
 extern "C" void (*heartbeat_servo)(browser::ServoInstance*);
 extern "C" void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down);
 extern "C" void (*move_servo)(browser::ServoInstance*, float x, float y);
+extern "C" void (*keyboard_servo)(browser::ServoInstance*, uint32_t keycode, bool shift, bool ctrl, bool alt, bool logo, bool down);
 extern "C" void (*traverse_servo)(browser::ServoInstance*, int delta);
 extern "C" void (*navigate_servo)(browser::ServoInstance*, const char* text);
 extern "C" void (*discard_servo)(browser::ServoInstance*);
