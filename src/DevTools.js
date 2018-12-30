@@ -64,6 +64,10 @@ class DevTools {
       });
     }
   }
+  
+  getIframe() {
+    return this.iframe;
+  }
 
   destroy() {
     this.replServer.removeListener('repl', this.onRepl);
