@@ -65,7 +65,7 @@
     "native-browser-deps": "0.0.16",
     "native-browser-deps-linux": "0.0.4",
     "native-browser-deps-macos": "0.0.1",
-    "native-browser-deps-magicleap": "0.0.1",
+    "native-browser-deps-magicleap": "0.0.2",
     "native-browser-deps-windows": "0.0.1",
     "native-canvas-deps": "0.0.50",
     "native-graphics-deps": "0.0.20",
