@@ -48,7 +48,7 @@ class DevTools {
   }
 
   onRepl(r) {
-    if (r.url === this.getPath()) {
+    if (r.id === this.id) {
       r.setEval((s, context, filename, cb) => {
         let err = null, result;
         try {
