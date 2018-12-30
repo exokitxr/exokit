@@ -28,8 +28,9 @@ const _getReplServer = (() => {
 
 let id = 0;
 class DevTools {
-  constructor(context, replServer) {
+  constructor(context, document, replServer) {
     this.context = context;
+    this.document = document;
     this.replServer = replServer;
     this.id = (++id) + '';
     this.repls = [];
@@ -74,8 +75,8 @@ class DevTools {
 }
 
 module.exports = {
-  async requestDevTools(iframe) {
+  async requestDevTools(context, document) {
     const replServer = await _getReplServer();
-    return new DevTools(iframe, replServer);
+    return new DevTools(context, document, replServer);
   },
 };
