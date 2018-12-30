@@ -93,6 +93,7 @@ void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const 
 // helpers
 
 void QueueOnBrowserThread(std::function<void()> fn);
+void QueueOnBrowserThreadFront(std::function<void()> fn);
 
 void RunOnMainThread(std::function<void()> fn);
 void QueueOnMainThread(std::function<void()> fn);
