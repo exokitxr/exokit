@@ -26,7 +26,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
   window = windowsystem::CreateNativeWindow(width, height, true, gl->windowHandle);
 #endif
   
-  QueueOnBrowserThread([&]() -> void {
+  QueueOnBrowserThreadFront([&]() -> void {
     this->loadImmediate(url, window, width, height);
 
     uv_sem_post(&constructSem);
@@ -136,7 +136,7 @@ NAN_METHOD(Browser::New) {
 }
 
 void Browser::load(const std::string &url) {
-  QueueOnBrowserThread([&]() -> void {
+  QueueOnBrowserThreadFront([&]() -> void {
     this->loadImmediate(url);
   
     uv_sem_post(&constructSem);
