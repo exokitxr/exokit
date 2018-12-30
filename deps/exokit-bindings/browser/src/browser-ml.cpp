@@ -173,7 +173,7 @@ void embeddedKeyPress(EmbeddedBrowser browser_, int key, int wkey, int modifiers
   // nothing; servo handles keypress events internally
 }
 void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const std::string &scriptUrl, int startLine) {
-  // nothing
+  executejs_servo(browser_->getInstance(), (const uint8_t *)jsString.c_str(), jsString.length());
 }
 
 std::list<EmbeddedBrowser> browsers;
