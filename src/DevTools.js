@@ -60,12 +60,8 @@ class DevTools {
     this.replServer.on('repl', this.onRepl);
   }
 
-  /* getPath() {
-    return `/?id=${this.id}`;
-  } */
   getUrl() {
      return `${this.replServer.url}&id=${this.id}`;
-    // return `http://127.0.0.1:${DEVTOOLS_PORT}${this.getPath()}`;
   }
 
   onRepl(r) {
