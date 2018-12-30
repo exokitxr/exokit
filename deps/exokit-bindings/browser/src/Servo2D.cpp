@@ -11,10 +11,14 @@
 namespace browser {
 
 // A function which calls the ML logger, suitable for passing into Servo
-void logger(MLLogLevel lvl, char* msg) {
-  if (MLLoggingLogLevelIsEnabled(lvl)) {
+void logger(Servo2D *app, MLLogLevel lvl, char *msg, size_t size) {
+  std::string jsString(msg, size);
+  std::string scriptUrl;
+  int startLine = 0;
+  app->onconsole(jsString, scriptUrl, startLine);
+  /* if (MLLoggingLogLevelIsEnabled(lvl)) {
     MLLoggingLog(lvl, ML_DEFAULT_LOG_TAG, msg);
-  }
+  } */
 }
 
 // A function which updates the history ui, suitable for passing into Servo

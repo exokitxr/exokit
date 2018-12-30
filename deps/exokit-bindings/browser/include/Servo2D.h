@@ -93,7 +93,7 @@ public:
   
   static void init();
 
-private:
+// private:
   std::string url;
   GLuint tex;
   int width;
