@@ -189,9 +189,9 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   };
 
   const iframe = document.createElement('iframe');
-  iframe.position = position.toArray();
-  iframe.orientation = orientation.toArray();
-  iframe.scale = scale.toArray();
+  iframe.onconsole = (jsString, scriptUrl, startLine) => {
+    console.log('parent got console', {jsString, scriptUrl, startLine});
+  };
   iframe.onload = function() {
     const contentDocument = (() => {
       try {
@@ -207,6 +207,23 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     })();
     if (contentDocument) {
       _drawOk();
+
+      iframe.contentWindow.onmessage = m => {
+        console.log('parent got message: ' + JSON.stringify(m.data));
+      };
+
+      iframe.runJs(`
+        console.log('child run js');
+
+        // document.body.style.background = '#000080';
+        // console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
+
+        /* window.onmessage = m => {
+          console.log('child got message: ' + JSON.stringify(m.data));
+        };
+
+        window.postMessage({lol: 'zol'}); */
+      `);
 
       // floorMesh.visible = false;
       // scene.background = null;
@@ -226,20 +243,30 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     // floorMesh.visible = true;
     // scene.background = _makeBackground();
   }); */
+
+  _addTab(iframe, position, orientation, scale, d);
+  rig.menuMesh.urlMesh.updateText();
+  rig.menuMesh.listMesh.updateList();
+};
+const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
+  if (scale === undefined) {
+    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1)
+  }
+
+  iframe.position = position.toArray();
+  iframe.orientation = orientation.toArray();
+  iframe.scale = scale.toArray();
+
   document.body.appendChild(iframe);
 
   const tab = {
-    url: u,
+    url: iframe.src,
     iframe,
   };
   tabs.push(tab);
   layers.push(iframe);
 
   focusedTab = tab;
-  rig.menuMesh.urlMesh.updateText();
-  rig.menuMesh.listMesh.updateList();
-
-  return iframe;
 };
 const _closeUrl = iframe => {
   if (iframe.destroy) {
@@ -1479,10 +1506,9 @@ function animate(time, frame) {
                           const tab = tabs[menuMesh.listMesh.scrollIndex + j];
                           const {iframe} = tab;
                           if (iframe.d === 3) {
-                            window.browser.devTools.requestDevTools(iframe.contentWindow)
+                            window.browser.devTools.requestDevTools(iframe.contentWindow, document)
                               .then(devTools => {
-                                const url = devTools.getUrl();
-                                _openUrl(url, rig.position, rig.quaternion, undefined, 2);
+                                _addTab(devTools.getIframe(), rig.position, rig.quaternion, undefined, 2);
                               })
                               .catch(err => {
                                 console.warn(err.stack);
