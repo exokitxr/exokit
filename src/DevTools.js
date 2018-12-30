@@ -5,15 +5,13 @@ const htermRepl = require('hterm-repl');
 const DOM = require('./DOM');
 const {HTMLIframeElement} = DOM;
 
-const DEVTOOLS_PORT = 9223;
+// const DEVTOOLS_PORT = 9223;
 
 const _getReplServer = (() => {
   let replServer = null;
   return () => new Promise((accept, reject) => {
     if (!replServer) {
-      htermRepl({
-        port: DEVTOOLS_PORT,
-      }, (err, newReplServer) => {
+      htermRepl(null, (err, newReplServer) => {
         if (!err) {
           replServer = newReplServer;
           accept(replServer);
