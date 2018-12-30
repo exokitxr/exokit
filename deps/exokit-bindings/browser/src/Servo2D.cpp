@@ -273,6 +273,7 @@ void Servo2D::init() {
   trigger_servo = (void (*)(ServoInstance*, float x, float y, bool down))dlsym(libmlservo, "trigger_servo");
   move_servo = (void (*)(ServoInstance*, float x, float y))dlsym(libmlservo, "move_servo");
   keyboard_servo = (void (*)(ServoInstance*, uint32_t keycode, bool shift, bool ctrl, bool alt, bool logo, bool down))dlsym(libmlservo, "keyboard_servo");
+  executejs_servo = (void (*)(ServoInstance*, const uint8_t *data, size_t length))dlsym(libmlservo, "executejs_servo");
   traverse_servo = (void (*)(ServoInstance*, int delta))dlsym(libmlservo, "traverse_servo");
   navigate_servo = (void (*)(ServoInstance*, const char* text))dlsym(libmlservo, "navigate_servo");
   discard_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "discard_servo");
@@ -310,6 +311,7 @@ void (*heartbeat_servo)(browser::ServoInstance*) = nullptr;
 void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down) = nullptr;
 void (*move_servo)(browser::ServoInstance*, float x, float y) = nullptr;
 void (*keyboard_servo)(browser::ServoInstance*, uint32_t keycode, bool shift, bool ctrl, bool alt, bool logo, bool down) = nullptr;
+void (*executejs_servo)(browser::ServoInstance*, const uint8_t *data, size_t length) = nullptr;
 void (*traverse_servo)(browser::ServoInstance*, int delta) = nullptr;
 void (*navigate_servo)(browser::ServoInstance*, const char* text) = nullptr;
 void (*discard_servo)(browser::ServoInstance*) = nullptr;
