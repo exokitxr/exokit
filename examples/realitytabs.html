@@ -208,23 +208,6 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     if (contentDocument) {
       _drawOk();
 
-      iframe.contentWindow.onmessage = m => {
-        console.log('parent got message: ' + JSON.stringify(m.data));
-      };
-
-      iframe.runJs(`
-        console.log('child run js');
-
-        // document.body.style.background = '#000080';
-        // console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
-
-        /* window.onmessage = m => {
-          console.log('child got message: ' + JSON.stringify(m.data));
-        };
-
-        window.postMessage({lol: 'zol'}); */
-      `);
-
       // floorMesh.visible = false;
       // scene.background = null;
     } else {
