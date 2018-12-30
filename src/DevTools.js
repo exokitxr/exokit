@@ -33,6 +33,28 @@ class DevTools {
     this.replServer = replServer;
     this.id = (++id) + '';
     this.repls = [];
+    this.iframe = (() => {
+      const iframe = document.createElement('iframe');
+      iframe.d = 2;
+      iframe.onload = () => {
+        const socket = this.replServer.createConnection(this.getUrl());
+        socket.on('data', d => {
+          this.iframe.runJs(`window.dispatchEvent(new MessageEvent('message', {data: '${d.toString('base64')}'}));`);
+        });
+        iframe.onconsole = m => {
+          const match = m.match(/^POSTMESSAGE:([\s\S]+)$/);
+          if (match) {
+            const bMessage = Buffer.from(match[1], 'utf8');
+            const b = Buffer.from(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT + bMessage.byteLength));
+            new Uint32Array(b.buffer, b.byteOffset, 1)[0] = bMessage.byteLength;
+            b.set(bMessage, Uint32Array.BYTES_PER_ELEMENT);
+            socket.write(b);
+          }
+        };
+      };
+      iframe.src = this.getUrl();
+      return iframe;
+    })();
 
     this.onRepl = this.onRepl.bind(this);
     this.replServer.on('repl', this.onRepl);
