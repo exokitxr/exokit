@@ -22,7 +22,7 @@ void logger(Servo2D *app, MLLogLevel lvl, char *msg, size_t size) {
 }
 
 // A function which updates the history ui, suitable for passing into Servo
-void history(Servo2D* app, bool canGoBack, char* url, bool canGoForward) {
+void history(Servo2D *app, bool canGoBack, char* url, bool canGoForward) {
   // app->updateHistory(canGoBack, url, canGoForward);
 }
 
