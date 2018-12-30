@@ -17,8 +17,8 @@ namespace browser {
 class Servo2D;
 typedef struct Opaque ServoInstance;
 typedef void (*MLLogger)(MLLogLevel lvl, char* msg);
-typedef void (*MLHistoryUpdate)(Servo2D* app, bool canGoBack, char* url, bool canGoForward);
-typedef void (*MLPresentUpdate)(Servo2D* app);
+typedef void (*MLHistoryUpdate)(Servo2D *app, bool canGoBack, char* url, bool canGoForward);
+typedef void (*MLPresentUpdate)(Servo2D *app);
 
 /**
  * Servo2D Landscape Application
