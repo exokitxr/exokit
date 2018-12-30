@@ -2584,7 +2584,7 @@ class HTMLAudioElement extends HTMLMediaElement {
   }
 
   get loop() {
-    return this.audio && this.audio.loop;
+    return this.audio ? this.audio.loop : false;
   }
 
   set loop(loop) {
