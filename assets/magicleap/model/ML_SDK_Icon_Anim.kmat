@@ -1,0 +1,24 @@
+{
+  "global": {
+    "color": [
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "materials": [
+    {
+      "albedo": "res/Icon_Grid/model/Leaper.png",
+      "name": "ui_toggles_Kali_MAT",
+			"blendmode" : "transparent",
+      "shaderName" : "UnlitTextured"
+    },
+    {
+      "albedo": "res/Icon_Grid/model/white.png",
+      "name": "ui_toggles_ML_txt_MAT",
+			"blendmode" : "opaque",
+      "shaderName" : "UnlitTextured"
+    }
+  ]
+}
