@@ -131,7 +131,7 @@ void Browser::load(const std::string &url) {
   // uv_sem_wait(&constructSem);
 }
 
-void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int width, int height) {
+void Browser::loadImmediate(const std::string &url) {
   browser_ = createEmbedded(
     url,
     gl,
