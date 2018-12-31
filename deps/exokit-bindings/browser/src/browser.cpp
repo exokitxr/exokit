@@ -28,7 +28,7 @@ Browser::~Browser() {}
 
 Handle<Object> Browser::Initialize(Isolate *isolate) {
   uv_async_init(uv_default_loop(), &mainThreadAsync, MainThreadAsync);
-  uv_sem_init(&constructSem, 0);
+  // uv_sem_init(&constructSem, 0);
   uv_sem_init(&mainThreadSem, 0);
   uv_sem_init(&browserThreadSem, 0);
   
@@ -125,10 +125,10 @@ void Browser::load(const std::string &url) {
   QueueOnBrowserThreadFront([&]() -> void {
     this->loadImmediate(url);
   
-    uv_sem_post(&constructSem);
+    // uv_sem_post(&constructSem);
   });
   
-  uv_sem_wait(&constructSem);
+  // uv_sem_wait(&constructSem);
 }
 
 void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int width, int height) {
