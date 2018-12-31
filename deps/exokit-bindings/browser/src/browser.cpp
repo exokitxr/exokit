@@ -122,7 +122,7 @@ NAN_METHOD(Browser::New) {
 }
 
 void Browser::load(const std::string &url) {
-  QueueOnBrowserThreadFront([&]() -> void {
+  QueueOnBrowserThread([this, url]() -> void {
     this->loadImmediate(url);
   
     // uv_sem_post(&constructSem);
