@@ -1,18 +1,17 @@
+const url = require('url');
 const http = require('http');
 const htermRepl = require('hterm-repl');
 
 const DOM = require('./DOM');
 const {HTMLIframeElement} = DOM;
 
-const DEVTOOLS_PORT = 9223;
+// const DEVTOOLS_PORT = 9223;
 
 const _getReplServer = (() => {
   let replServer = null;
   return () => new Promise((accept, reject) => {
     if (!replServer) {
-      htermRepl({
-        port: DEVTOOLS_PORT,
-      }, (err, newReplServer) => {
+      htermRepl(null, (err, newReplServer) => {
         if (!err) {
           replServer = newReplServer;
           accept(replServer);
@@ -28,25 +27,45 @@ const _getReplServer = (() => {
 
 let id = 0;
 class DevTools {
-  constructor(context, replServer) {
+  constructor(context, document, replServer) {
     this.context = context;
+    this.document = document;
     this.replServer = replServer;
     this.id = (++id) + '';
     this.repls = [];
+    this.iframe = (() => {
+      const iframe = document.createElement('iframe');
+      iframe.d = 2;
+      iframe.onload = () => {
+        const socket = this.replServer.createConnection(this.getUrl());
+        socket.on('data', d => {
+          this.iframe.runJs(`window.dispatchEvent(new MessageEvent('message', {data: '${d.toString('base64')}'}));`);
+        });
+        iframe.onconsole = m => {
+          const match = m.match(/^POSTMESSAGE:([\s\S]+)$/);
+          if (match) {
+            const bMessage = Buffer.from(match[1], 'utf8');
+            const b = Buffer.from(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT + bMessage.byteLength));
+            new Uint32Array(b.buffer, b.byteOffset, 1)[0] = bMessage.byteLength;
+            b.set(bMessage, Uint32Array.BYTES_PER_ELEMENT);
+            socket.write(b);
+          }
+        };
+      };
+      iframe.src = this.getUrl();
+      return iframe;
+    })();
 
     this.onRepl = this.onRepl.bind(this);
     this.replServer.on('repl', this.onRepl);
   }
 
-  getPath() {
-    return `/?id=${this.id}`;
-  }
   getUrl() {
-    return `http://127.0.0.1:${DEVTOOLS_PORT}${this.getPath()}`;
+     return `${this.replServer.url}&id=${this.id}`;
   }
 
   onRepl(r) {
-    if (r.url === this.getPath()) {
+    if (r.id === this.id) {
       r.setEval((s, context, filename, cb) => {
         let err = null, result;
         try {
@@ -62,6 +81,10 @@ class DevTools {
       });
     }
   }
+  
+  getIframe() {
+    return this.iframe;
+  }
 
   destroy() {
     this.replServer.removeListener('repl', this.onRepl);
@@ -74,8 +97,8 @@ class DevTools {
 }
 
 module.exports = {
-  async requestDevTools(iframe) {
+  async requestDevTools(context, document) {
     const replServer = await _getReplServer();
-    return new DevTools(iframe, replServer);
+    return new DevTools(context, document, replServer);
   },
 };
