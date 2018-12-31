@@ -9,6 +9,7 @@
 
 #include <defines.h>
 
+#include <memory>
 #include <chrono>
 #include <deque>
 #include <thread>
@@ -43,7 +44,7 @@ namespace browser {
 #ifndef LUMIN
 typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
 #else
-typedef Servo2D *EmbeddedBrowser;
+typedef std::shared_ptr<Servo2D> EmbeddedBrowser;
 #endif
 
 enum class EmbeddedKeyModifiers {
