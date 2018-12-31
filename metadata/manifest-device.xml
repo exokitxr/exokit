@@ -30,8 +30,8 @@
       ml:binary_name="bin/program-device"
       ml:type="Fullscreen">
       <icon
-        ml:model_folder="assets/magicleap/model/"
-        ml:portal_folder="assets/magicleap/portal/" />
+        ml:model_folder="res/Icon_Grid/model"
+        ml:portal_folder="res/Icon_Grid/portal" />
     </component>
   </application>
 </manifest>
