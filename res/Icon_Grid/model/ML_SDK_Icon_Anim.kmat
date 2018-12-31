@@ -1,0 +1,24 @@
+{
+  "global": {
+    "color": [
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "materials": [
+    {
+      "albedo": "res/Icon_Grid/model/black.png",
+      "name": "black",
+			"blendmode" : "transparent",
+      "shaderName" : "UnlitTextured"
+    },
+    {
+      "albedo": "res/Icon_Grid/model/white.png",
+      "name": "white",
+			"blendmode" : "opaque",
+      "shaderName" : "UnlitTextured"
+    }
+  ]
+}
