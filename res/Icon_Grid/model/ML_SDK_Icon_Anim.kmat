@@ -11,7 +11,7 @@
     {
       "albedo": "res/Icon_Grid/model/black.png",
       "name": "black",
-			"blendmode" : "transparent",
+			"blendmode" : "opaque",
       "shaderName" : "UnlitTextured"
     },
     {
