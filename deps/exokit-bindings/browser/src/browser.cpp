@@ -19,9 +19,9 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), win
   
   glGenTextures(1, &tex);
 
-/* #ifdef LUMIN
+#ifdef LUMIN
   window = windowsystem::CreateNativeWindow(width, height, true, gl->windowHandle);
-#endif */
+#endif
 }
 
 Browser::~Browser() {}

@@ -63,7 +63,7 @@ public:
    */
   int init(
     const std::string &url,
-    WebGLRenderingContext *gl,
+    NATIVEwindow *window,
     GLuint tex,
     int width,
     int height,
