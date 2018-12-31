@@ -39,7 +39,7 @@ Servo2D::~Servo2D() {
 // Initialize a Servo instance
 int Servo2D::init(
   const std::string &url,
-  NATIVEwindow *window,
+  WebGLRenderingContext *gl,
   GLuint tex,
   int width,
   int height,
@@ -68,7 +68,7 @@ int Servo2D::init(
   this->onmessage = onmessage;
 
   // Get the EGL context, surface and display.
-  EGLContext context = windowsystem::GetGLContext(window);
+  EGLContext context = windowsystem::GetGLContext(gl->windowHandle);
   this->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
   EGLConfig eglConfig;
   EGLint eglConfigAttribs[] = {
