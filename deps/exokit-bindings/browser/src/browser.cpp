@@ -14,25 +14,14 @@ namespace browser {
 
 // Browser
 
-Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : gl(gl), tex(0), textureWidth(0), textureHeight(0) {
+Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), window(nullptr), width(width), height(height), tex(0), textureWidth(0), textureHeight(0) {
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
   
   glGenTextures(1, &tex);
 
-  NATIVEwindow *window;
-#ifndef LUMIN
-  window = nullptr;
-#else
+#ifdef LUMIN
   window = windowsystem::CreateNativeWindow(width, height, true, gl->windowHandle);
 #endif
-  
-  QueueOnBrowserThreadFront([&]() -> void {
-    this->loadImmediate(url, window, width, height);
-
-    uv_sem_post(&constructSem);
-  });
-  
-  uv_sem_wait(&constructSem);
 }
 
 Browser::~Browser() {}
