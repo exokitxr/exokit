@@ -47,8 +47,6 @@ EmbeddedBrowser createEmbedded(
   
   std::cout << "createEmbedded 1 " << (void *)window << std::endl;
   
-  // windowsystem::SetCurrentWindowContext(window);
-  
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
