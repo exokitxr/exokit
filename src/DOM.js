@@ -1846,20 +1846,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     context,
                     this.width||context.canvas.ownerDocument.defaultView.innerWidth,
                     this.height||context.canvas.ownerDocument.defaultView.innerHeight,
-                    url,
                     path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef')
                   );
-                  this.browser = browser;
                   
-                  let done = false, err = null, loadedUrl = url;
-                  this.browser.onloadend = () => {
-                    done = true;
-                  };
-                  this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
-                    done = true;
-                    err = new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`);
-                  };
-                  this.browser.onconsole = (message, source, line) => {
+                  browser.onconsole = (message, source, line) => {
                     if (this.onconsole) {
                       this.onconsole(message, source, line);
                     } else {
@@ -1885,7 +1875,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         reject(err);
                       }
                     }
+                    };
                   });
+                  
+                  this.browser = browser;
                   
                   let onmessage = null;
                   const self = this;
