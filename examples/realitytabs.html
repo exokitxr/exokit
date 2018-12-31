@@ -513,6 +513,90 @@ const _makeRig = () => {
       _updateText();
       mesh.updateText = _updateText;
 
+      const _handleDefaultKey = (code, shiftKey) => {
+        let c = String.fromCharCode(code);
+        if (!shiftKey) {
+          c = c.toLowerCase();
+        }
+        _handleSingleKey(c);
+      };
+      const _handleSingleKey = c => {
+        mesh.urlState.text = mesh.urlState.text.slice(0, mesh.urlState.cursor) + c + mesh.urlState.text.slice(mesh.urlState.cursor);
+        mesh.urlState.cursor++;
+        mesh.updateText();
+      };
+      const _handleKey = (code, shiftKey) => {
+        if (code === 8) { // backspace
+          if (mesh.urlState.cursor > 0) {
+            mesh.urlState.text = mesh.urlState.text.slice(0, mesh.urlState.cursor - 1) + mesh.urlState.text.slice(mesh.urlState.cursor);
+            mesh.urlState.cursor--;
+            mesh.updateText();
+          } else {
+            if (mesh.urlState.text.length === 0) {
+              _closeRig(rig);
+            }
+          }
+        } else if (code === 46) { // delete
+          if (mesh.urlState.cursor < mesh.urlState.text.length) {
+            mesh.urlState.text = mesh.urlState.text.slice(0, mesh.urlState.cursor) + mesh.urlState.text.slice(mesh.urlState.cursor + 1);
+            _updateText();
+          }
+        } else if (code === 32) { // space
+          mesh.urlState.text = mesh.urlState.text.slice(0, mesh.urlState.cursor) + ' ' + mesh.urlState.text.slice(mesh.urlState.cursor);
+          mesh.urlState.cursor++;
+          _updateText();
+        } else if (code === 13) { // enter
+          mesh.urlState.submit();
+        } else if (
+          code === 9 || // tab
+          code === 16 || // shift
+          code === 17 || // ctrl
+          code === 18 || // alt
+          code === 20 || // capslock
+          code === 27 || // esc
+          code === 91 // win
+        ) {
+          // nothing
+        } else if (code === 37) { // left
+          mesh.urlState.cursor = Math.max(mesh.urlState.cursor - 1, 0);
+          _updateText();
+        } else if (code === 39) { // right
+          mesh.urlState.cursor = Math.min(mesh.urlState.cursor + 1, mesh.urlState.text.length);
+          _updateText();
+        } else if (code === 38) { // up
+          mesh.urlState.cursor = 0;
+          _updateText();
+        } else if (code === 40) { // down
+          mesh.urlState.cursor = mesh.urlState.text.length;
+          _updateText();
+        } else if (code === 190) { // .
+          _handleSingleKey('.');
+        } else if (code === 188) { // ,
+          _handleSingleKey(',');
+        } else if (code === 191) { // /
+          _handleSingleKey('/');
+        } else if (code === 186) { // ;
+          _handleSingleKey(';');
+        } else if (code === 222) { // ;
+          _handleSingleKey('\'');
+        } else if (code === 219) { // [
+          _handleSingleKey('[');
+        } else if (code === 221) { // ]
+          _handleSingleKey(']');
+        } else if (code === 189) { // -
+          _handleSingleKey('-');
+        } else if (code === 187) { // =
+          _handleSingleKey('=');
+        } else if (code === 220) { // \
+          _handleSingleKey('\\');
+        } else if (code === -1) {
+          // nothing
+        } else {
+          _handleDefaultKey(code, shiftKey);
+        }
+      };
+      mesh.handleKey = _handleKey;
+
       mesh.plane = new THREE.Plane();
       mesh.leftLine = new THREE.Line3();
       mesh.topLine = new THREE.Line3();
@@ -1044,12 +1128,16 @@ window.addEventListener('keydown', e => {
       }
     }
   } else {
-    if (focusedTab && focusedTab.iframe) {
-      focusedTab.iframe.sendKeyDown(e.which, {
-        shiftKey: e.shiftKey,
-        ctrlKey: e.ctrlKey,
-        altKey: e.altKey,
-      });
+    if (focusedTab) {
+      if (focusedTab === rig.menuMesh.urlMesh) {
+        rig.menuMesh.urlMesh.handleKey(e.keyCode, e.shiftKey);
+      } else if (focusedTab.iframe) {
+        focusedTab.iframe.sendKeyDown(e.which, {
+          shiftKey: e.shiftKey,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+        });
+      }
     }
   }
 });
@@ -1097,12 +1185,16 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('keypress', e => {
   if (!window.document.pointerLockElement) {
-    if (focusedTab && focusedTab.iframe) {
-      focusedTab.iframe.sendKeyPress(e.which, {
-        shiftKey: e.shiftKey,
-        ctrlKey: e.ctrlKey,
-        altKey: e.altKey,
-      });
+    if (focusedTab) {
+      /* if (focusedTab === rig.menuMesh.urlMesh) {
+        rig.menuMesh.urlMesh.handleKey(e.keyCode, e.shiftKey);
+      } else */if (focusedTab.iframe) {
+        focusedTab.iframe.sendKeyPress(e.which, {
+          shiftKey: e.shiftKey,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+        });
+      }
     }
   }
 });
@@ -1660,90 +1752,8 @@ function animate(time, frame) {
                   break;
                 }
                 default: {
-                  const _handleDefaultKey = (code, shiftKey) => {
-                    let c = String.fromCharCode(code);
-                    if (!shiftKey) {
-                      c = c.toLowerCase();
-                    }
-                    _handleSingleKey(c);
-                  };
-                  const _handleSingleKey = c => {
-                    urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + c + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
-                    urlMesh.urlState.cursor++;
-                    urlMesh.updateText();
-                  };
-                  const _handleKey = (code, shiftKey) => {
-                    if (code === 8) { // backspace
-                      if (urlMesh.urlState.cursor > 0) {
-                        urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor - 1) + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
-                        urlMesh.urlState.cursor--;
-                        urlMesh.updateText();
-                      } else {
-                        if (urlMesh.urlState.text.length === 0) {
-                          _closeRig(rig);
-                        }
-                      }
-                    } else if (code === 46) { // delete
-                      if (urlMesh.urlState.cursor < urlMesh.urlState.text.length) {
-                        urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + urlMesh.urlState.text.slice(urlMesh.urlState.cursor + 1);
-                        urlMesh.updateText();
-                      }
-                    } else if (code === 32) { // space
-                      urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + ' ' + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
-                      urlMesh.urlState.cursor++;
-                      urlMesh.updateText();
-                    } else if (code === 13) { // enter
-                      urlMesh.urlState.submit();
-                    } else if (
-                      code === 9 || // tab
-                      code === 16 || // shift
-                      code === 17 || // ctrl
-                      code === 18 || // alt
-                      code === 20 || // capslock
-                      code === 27 || // esc
-                      code === 91 // win
-                    ) {
-                      // nothing
-                    } else if (code === 37) { // left
-                      urlMesh.urlState.cursor = Math.max(urlMesh.urlState.cursor - 1, 0);
-                      urlMesh.updateText();
-                    } else if (code === 39) { // right
-                      urlMesh.urlState.cursor = Math.min(urlMesh.urlState.cursor + 1, urlMesh.urlState.text.length);
-                      urlMesh.updateText();
-                    } else if (code === 38) { // up
-                      urlMesh.urlState.cursor = 0;
-                      urlMesh.updateText();
-                    } else if (code === 40) { // down
-                      urlMesh.urlState.cursor = urlMesh.urlState.text.length;
-                      urlMesh.updateText();
-                    } else if (code === 190) { // .
-                      _handleSingleKey('.');
-                    } else if (code === 188) { // ,
-                      _handleSingleKey(',');
-                    } else if (code === 191) { // /
-                      _handleSingleKey('/');
-                    } else if (code === 186) { // ;
-                      _handleSingleKey(';');
-                    } else if (code === 222) { // ;
-                      _handleSingleKey('\'');
-                    } else if (code === 219) { // [
-                      _handleSingleKey('[');
-                    } else if (code === 221) { // ]
-                      _handleSingleKey(']');
-                    } else if (code === 189) { // -
-                      _handleSingleKey('-');
-                    } else if (code === 187) { // =
-                      _handleSingleKey('=');
-                    } else if (code === 220) { // \
-                      _handleSingleKey('\\');
-                    } else if (code === -1) {
-                      // nothing
-                    } else {
-                      _handleDefaultKey(code, shiftKey);
-                    }
-                  };
                   const code = keyCode(key);
-                  _handleKey(code, false);
+                  urlMesh.handleKey(code, false);
                   break;
                 }
               }
@@ -1873,7 +1883,9 @@ const _bootFakeDisplay = async () => {
   display = fakeDisplay;
 
   _openUrl('realitytab.html'); // XXX
-  _updateRigLists();
+  focusedTab = rig.menuMesh.urlMesh;
+  rig.menuMesh.urlMesh.updateText();
+  rig.menuMesh.listMesh.updateList();
 
   console.log('loaded root in 2D');
 };
