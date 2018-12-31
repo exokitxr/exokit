@@ -1856,25 +1856,14 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       console.log(`${source}:${line}: ${message}`);
                     }
                   };
-                  await new Promise((accept, reject) => {
-                    if (!done) {
-                      this.browser.onloadend = (_url) => {
-                        loadedUrl = _url;
-                        if (this.contentWindow) {
-                          this.contentWindow.location.href = _url;
-                        }
-                        accept();
-                      };
-                      this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
-                        reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
-                      };
-                    } else {
-                      if (!err) {
-                        accept();
-                      } else {
-                        reject(err);
-                      }
-                    }
+                  
+                  const loadedUrl = await new Promise((accept, reject) => {
+                    this.browser.onloadend = (_url) => {
+                      accept(_url);
+                    };
+                    this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
+                      reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
+                    };
                   });
                   
                   this.browser = browser;
