@@ -1875,7 +1875,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         reject(err);
                       }
                     }
-                    };
                   });
                   
                   this.browser = browser;
