@@ -593,11 +593,50 @@ const _makeRig = () => {
           mesh.urlState.cursor = Math.min(mesh.urlState.cursor + 1, mesh.urlState.text.length);
           _updateText();
         } else if (code === 38) { // up
-          mesh.urlState.cursor = 0;
+          if (focusedTab === urlMesh) {
+            // nothing
+          } else {
+            let tabIndex = tabs.indexOf(focusedTab);
+            if (tabIndex === 0) {
+              focusedTab = urlMesh;
+            } else {
+              tabIndex--;
+              focusedTab = tabs[tabIndex];
+
+              if (tabIndex < listMesh.scrollIndex) {
+                listMesh.scrollIndex = tabIndex;
+              } else if (tabIndex > listMesh.scrollIndex + 4) {
+                listMesh.scrollIndex = tabIndex - 4;
+              }
+            }
+          }
           _updateText();
+          listMesh.updateList();
         } else if (code === 40) { // down
-          mesh.urlState.cursor = mesh.urlState.text.length;
+          if (focusedTab === urlMesh) {
+            if (tabs.length > 0) {
+              focusedTab = tabs[0];
+              listMesh.scrollIndex = 0;
+            } else {
+              // nothing
+            }
+          } else {
+            let tabIndex = tabs.indexOf(focusedTab);
+            if (tabIndex === tabs.length - 1) {
+              // nothing
+            } else {
+              tabIndex++;
+              focusedTab = tabs[tabIndex];
+
+              if (tabIndex < listMesh.scrollIndex) {
+                listMesh.scrollIndex = tabIndex;
+              } else if (tabIndex > listMesh.scrollIndex + 4) {
+                listMesh.scrollIndex = tabIndex - 4;
+              }
+            }
+          }
           _updateText();
+          listMesh.updateList();
         } else if (code === 190) { // .
           _handleSingleKey('.');
         } else if (code === 188) { // ,
