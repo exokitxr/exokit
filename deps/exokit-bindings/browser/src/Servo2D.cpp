@@ -170,7 +170,7 @@ int Servo2D::init(
   }
 
   // Hook into servo
-  servo_ = init_servo(context, this->surface, this->display, this, logger, history, Servo2D::present, url.c_str(), width, height, 1.0);
+  servo_ = init_servo(context, this->surface, this->display, this, load, logger, history, Servo2D::present, url.c_str(), width, height, 1.0);
   std::cout << "Servo2D Initializing 10 " << url << " " << width << " " << height << " " << (void *)servo_ << std::endl;
   if (!servo_) {
     ML_LOG(Error, "Servo2D Failed to init servo instance");
