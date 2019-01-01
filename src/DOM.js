@@ -1858,7 +1858,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   };
                   
                   const loadedUrl = await new Promise((accept, reject) => {
-                    browser.onloadend = (_url) => {
+                    browser.onloadend = _url => {
                       accept(_url);
                     };
                     browser.onloaderror = (errorCode, errorString, failedUrl) => {
