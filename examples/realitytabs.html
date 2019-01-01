@@ -1744,34 +1744,25 @@ function animate(time, frame) {
               const {data: {key, rig}} = spec;
               const {menuMesh: {urlMesh, optionsMesh}} = rig;
 
-              switch (key) {
-                case 'enter': {
+              if (focusedTab === rig.menuMesh.urlMesh) {
+                if (key !== 'enter') {
+                  const code = keyCode(key);
+                  rig.menuMesh.urlMesh.handleKey(code, false);
+                } else {
                   const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
                   _openUrl(u, rig.position, rig.quaternion, undefined, optionsMesh.d);
-
                   _updateRigLists();
-                  break;
                 }
-                default: {
-                  let code = keyCode(key);
-
-                  if (focusedTab) {
-                    if (focusedTab === rig.menuMesh.urlMesh) {
-                      rig.menuMesh.urlMesh.handleKey(code, false);
-                    } else if (focusedTab.iframe) {
-                      const opts = {
-                        shiftKey: false,
-                        ctrlKey: false,
-                        altKey: false,
-                      };
-                      focusedTab.iframe.sendKeyDown(code, opts);
-                      focusedTab.iframe.sendKeyPress(code + 32, opts);
-                      focusedTab.iframe.sendKeyUp(code, opts);
-                    }
-                  }
-
-                  break;
-                }
+              } else if (focusedTab.iframe) {
+                let code = keyCode(key);
+                const opts = {
+                  shiftKey: false,
+                  ctrlKey: false,
+                  altKey: false,
+                };
+                focusedTab.iframe.sendKeyDown(code, opts);
+                focusedTab.iframe.sendKeyPress(code + 32, opts);
+                focusedTab.iframe.sendKeyUp(code, opts);
               }
             }
           }
