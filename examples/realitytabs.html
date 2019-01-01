@@ -228,8 +228,6 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   }); */
 
   _addTab(iframe, position, orientation, scale, d);
-  rig.menuMesh.urlMesh.updateText();
-  rig.menuMesh.listMesh.updateList();
 };
 const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
   if (scale === undefined) {
@@ -250,6 +248,9 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
   layers.push(iframe);
 
   focusedTab = tab;
+
+  rig.menuMesh.urlMesh.updateText();
+  rig.menuMesh.listMesh.updateList();
 };
 const _closeUrl = iframe => {
   if (iframe.destroy) {
