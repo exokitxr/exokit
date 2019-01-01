@@ -23,14 +23,14 @@ void QueueOnBrowserThread(std::function<void()> fn) {
   uv_sem_post(&browserThreadSem);
 }
 
-void QueueOnBrowserThreadFront(std::function<void()> fn) {
+/* void QueueOnBrowserThreadFront(std::function<void()> fn) {
   {
     std::lock_guard<std::mutex> lock(browserThreadFnMutex);
     browserThreadFns.push_front(fn);
   }
   
   uv_sem_post(&browserThreadSem);
-}
+} */
 
 void RunOnMainThread(std::function<void()> fn) {
   {

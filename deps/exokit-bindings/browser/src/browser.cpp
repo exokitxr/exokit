@@ -14,32 +14,21 @@ namespace browser {
 
 // Browser
 
-Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url) : gl(gl), tex(0), textureWidth(0), textureHeight(0) {
+Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), window(nullptr), width(width), height(height), tex(0), textureWidth(0), textureHeight(0) {
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
   
   glGenTextures(1, &tex);
 
-  NATIVEwindow *window;
-#ifndef LUMIN
-  window = nullptr;
-#else
+#ifdef LUMIN
   window = windowsystem::CreateNativeWindow(width, height, true, gl->windowHandle);
 #endif
-  
-  QueueOnBrowserThreadFront([&]() -> void {
-    this->loadImmediate(url, window, width, height);
-
-    uv_sem_post(&constructSem);
-  });
-  
-  uv_sem_wait(&constructSem);
 }
 
 Browser::~Browser() {}
 
 Handle<Object> Browser::Initialize(Isolate *isolate) {
   uv_async_init(uv_default_loop(), &mainThreadAsync, MainThreadAsync);
-  uv_sem_init(&constructSem, 0);
+  // uv_sem_init(&constructSem, 0);
   uv_sem_init(&mainThreadSem, 0);
   uv_sem_init(&browserThreadSem, 0);
   
@@ -86,15 +75,12 @@ NAN_METHOD(Browser::New) {
     info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) &&
     info[1]->IsNumber() &&
     info[2]->IsNumber() &&
-    info[3]->IsString() &&
-    info[4]->IsString()
+    info[3]->IsString()
   ) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
     int width = info[1]->Int32Value();
     int height = info[2]->Int32Value();
-    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[3]));
-    std::string url(*urlUtf8Value, urlUtf8Value.length());
-    String::Utf8Value dataPathValue(Local<String>::Cast(info[4]));
+    String::Utf8Value dataPathValue(Local<String>::Cast(info[3]));
     std::string dataPath(*dataPathValue, dataPathValue.length());
 
     if (!embeddedInitialized) {
@@ -123,7 +109,7 @@ NAN_METHOD(Browser::New) {
       embeddedInitialized = true;
     }
 
-    Browser *browser = new Browser(gl, width, height, url);
+    Browser *browser = new Browser(gl, width, height);
     Local<Object> browserObj = info.This();
     browser->Wrap(browserObj);
     
@@ -136,16 +122,16 @@ NAN_METHOD(Browser::New) {
 }
 
 void Browser::load(const std::string &url) {
-  QueueOnBrowserThreadFront([&]() -> void {
+  QueueOnBrowserThread([this, url]() -> void {
     this->loadImmediate(url);
   
-    uv_sem_post(&constructSem);
+    // uv_sem_post(&constructSem);
   });
   
-  uv_sem_wait(&constructSem);
+  // uv_sem_wait(&constructSem);
 }
 
-void Browser::loadImmediate(const std::string &url, NATIVEwindow *window, int width, int height) {
+void Browser::loadImmediate(const std::string &url) {
   browser_ = createEmbedded(
     url,
     gl,

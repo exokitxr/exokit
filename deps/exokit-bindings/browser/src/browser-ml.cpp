@@ -69,7 +69,7 @@ EmbeddedBrowser createEmbedded(
   }
 
   if (!browser_) {
-    browser_ = new Servo2D();
+    browser_.reset(new Servo2D());
     {
       EGLint error = eglGetError();
       if (error != EGL_SUCCESS) {
@@ -150,16 +150,30 @@ void embeddedMouseWheel(EmbeddedBrowser browser_, int x, int y, int deltaX, int 
   // nothing
 }
 void embeddedKeyDown(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
-  // nothing
+  uint32_t keycode = (uint32_t)key;
+  bool shift = (bool)(modifiers & (int)EmbeddedKeyModifiers::SHIFT);
+  bool ctrl = (bool)(modifiers & (int)EmbeddedKeyModifiers::CTRL);
+  bool alt = (bool)(modifiers & (int)EmbeddedKeyModifiers::ALT);
+  bool logo = false;
+  bool down = true;
+
+  keyboard_servo(browser_->getInstance(), keycode, shift, ctrl, alt, logo, down);
 }
 void embeddedKeyUp(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
-  // nothing
+  uint32_t keycode = (uint32_t)key;
+  bool shift = (bool)(modifiers & (int)EmbeddedKeyModifiers::SHIFT);
+  bool ctrl = (bool)(modifiers & (int)EmbeddedKeyModifiers::CTRL);
+  bool alt = (bool)(modifiers & (int)EmbeddedKeyModifiers::ALT);
+  bool logo = false;
+  bool down = false;
+
+  keyboard_servo(browser_->getInstance(), keycode, shift, ctrl, alt, logo, down);
 }
 void embeddedKeyPress(EmbeddedBrowser browser_, int key, int wkey, int modifiers) {
-  // nothing
+  // nothing; servo handles keypress events internally
 }
 void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const std::string &scriptUrl, int startLine) {
-  // nothing
+  executejs_servo(browser_->getInstance(), (const uint8_t *)jsString.c_str(), jsString.length());
 }
 
 std::list<EmbeddedBrowser> browsers;

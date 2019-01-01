@@ -1846,46 +1846,29 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     context,
                     this.width||context.canvas.ownerDocument.defaultView.innerWidth,
                     this.height||context.canvas.ownerDocument.defaultView.innerHeight,
-                    url,
                     path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef')
                   );
-                  this.browser = browser;
                   
-                  let done = false, err = null, loadedUrl = url;
-                  this.browser.onloadend = () => {
-                    done = true;
-                  };
-                  this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
-                    done = true;
-                    err = new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`);
-                  };
-                  this.browser.onconsole = (message, source, line) => {
+                  browser.onconsole = (message, source, line) => {
                     if (this.onconsole) {
                       this.onconsole(message, source, line);
                     } else {
                       console.log(`${source}:${line}: ${message}`);
                     }
                   };
-                  await new Promise((accept, reject) => {
-                    if (!done) {
-                      this.browser.onloadend = (_url) => {
-                        loadedUrl = _url;
-                        if (this.contentWindow) {
-                          this.contentWindow.location.href = _url;
-                        }
-                        accept();
-                      };
-                      this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
-                        reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
-                      };
-                    } else {
-                      if (!err) {
-                        accept();
-                      } else {
-                        reject(err);
-                      }
-                    }
+                  
+                  const loadedUrl = await new Promise((accept, reject) => {
+                    browser.onloadend = _url => {
+                      accept(_url);
+                    };
+                    browser.onloaderror = (errorCode, errorString, failedUrl) => {
+                      reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
+                    };
+                    
+                    browser.load(url);
                   });
+                  
+                  this.browser = browser;
                   
                   let onmessage = null;
                   const self = this;
