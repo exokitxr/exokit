@@ -234,6 +234,11 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
       tabs.splice(tabs.indexOf(tab), 1);
       layers.splice(layers.indexOf(iframe), 1);
 
+      if (focusedTab === tab) {
+        focusedTab = rig.menuMesh.urlMesh;
+      }
+
+      rig.menuMesh.urlMesh.updateText();
       _updateRigLists();
     }
   };
@@ -1579,6 +1584,11 @@ function animate(time, frame) {
                           const {iframe} = tab;
                           _closeUrl(iframe);
 
+                          if (focusedTab === tab) {
+                            focusedTab = rig.menuMesh.urlMesh;
+                          }
+
+                          rig.menuMesh.urlMesh.updateText();
                           _updateRigLists();
                         }
 
