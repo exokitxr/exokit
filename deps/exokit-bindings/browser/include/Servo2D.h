@@ -16,6 +16,7 @@ namespace browser {
 
 class Servo2D;
 typedef struct Opaque ServoInstance;
+typedef void (*MLLoad)(Servo2D *app);
 typedef void (*MLLogger)(Servo2D *app, MLLogLevel lvl, char *msg, size_t size);
 typedef void (*MLHistoryUpdate)(Servo2D *app, bool canGoBack, char* url, bool canGoForward);
 typedef void (*MLPresentUpdate)(Servo2D *app);
@@ -118,7 +119,7 @@ public:
 // externs
 
 extern "C" browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
-                                     browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
+                                     browser::Servo2D*, browser::MLLoad, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
                                      const char* url, int width, int height, float hidpi);
 extern "C" void (*heartbeat_servo)(browser::ServoInstance*);
 extern "C" void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down);

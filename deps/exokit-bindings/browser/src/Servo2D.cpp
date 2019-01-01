@@ -9,6 +9,10 @@
 #include <iostream>
 
 namespace browser {
+  
+void load(Servo2D *app) {
+  app->onloadend(app->url);
+}
 
 // A function which calls the ML logger, suitable for passing into Servo
 void logger(Servo2D *app, MLLogLevel lvl, char *msg, size_t size) {
@@ -175,7 +179,6 @@ int Servo2D::init(
   }
   
   onloadstart();
-  onloadend(url);
 
   return 0;
 }
@@ -267,7 +270,7 @@ void Servo2D::init() {
   }
   
   init_servo = (ServoInstance *(*)(EGLContext, EGLSurface, EGLDisplay,
-    Servo2D*, MLLogger, MLHistoryUpdate, MLPresentUpdate,
+    Servo2D*, MLLoad, MLLogger, MLHistoryUpdate, MLPresentUpdate,
     const char* url, int width, int height, float hidpi))dlsym(libmlservo, "init_servo");
   heartbeat_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "heartbeat_servo");
   trigger_servo = (void (*)(ServoInstance*, float x, float y, bool down))dlsym(libmlservo, "trigger_servo");
@@ -305,7 +308,7 @@ GLvoid glFlushMappedBufferRangeEXT(GLenum target, GLintptr offset, GLsizeiptr le
 // externs
 
 browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
-  browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
+  browser::Servo2D*, browser::MLLoad, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
   const char*url, int width, int height, float hidpi) = nullptr;
 void (*heartbeat_servo)(browser::ServoInstance*) = nullptr;
 void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down) = nullptr;
