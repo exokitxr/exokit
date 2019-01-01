@@ -1053,6 +1053,11 @@ const _animateRig = () => {
   };
 };
 
+const cacheCanvas = document.createElement('canvas');
+cacheCanvas.width = 256;
+cacheCanvas.height = 256;
+const cacheCanvasCtx = cacheCanvas.getContext('2d');
+
 const moves = [null, null];
 
 window.addEventListener('click', () => {
@@ -1368,17 +1373,12 @@ function animate(time, frame) {
                     const width = kx2 - kx1;
                     const height = ky2 - ky1;
                     let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
-                    /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
-                      const canvas = document.createElement('canvas');
-                      canvas.width = imageData.width;
-                      canvas.height = imageData.height;
+                    if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                      cacheCanvasCtx.putImageData(imageData, 0, 0);
+                      cacheCanvasCtx.clearRect(0, 0, 80, 140);
 
-                      const ctx = canvas.getContext('2d');
-                      ctx.putImageData(imageData, 0, 0);
-                      ctx.clearRect(0, 0, 80, 140);
-
-                      imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
-                    } */
+                      imageData = cacheCanvasCtx.getImageData(0, 0, imageData.width, imageData.height);
+                    }
 
                     keyMesh.material.map.image = imageData;
                     keyMesh.material.map.needsUpdate = true;
