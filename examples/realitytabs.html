@@ -1753,8 +1753,23 @@ function animate(time, frame) {
                   break;
                 }
                 default: {
-                  const code = keyCode(key);
-                  urlMesh.handleKey(code, false);
+                  let code = keyCode(key);
+
+                  if (focusedTab) {
+                    if (focusedTab === rig.menuMesh.urlMesh) {
+                      rig.menuMesh.urlMesh.handleKey(code, false);
+                    } else if (focusedTab.iframe) {
+                      const opts = {
+                        shiftKey: false,
+                        ctrlKey: false,
+                        altKey: false,
+                      };
+                      focusedTab.iframe.sendKeyDown(code, opts);
+                      focusedTab.iframe.sendKeyPress(code + 32, opts);
+                      focusedTab.iframe.sendKeyUp(code, opts);
+                    }
+                  }
+
                   break;
                 }
               }
