@@ -175,10 +175,27 @@ const _makeRenderer = () => {
     },
   };
 };
+const _getFrontOfCamera = () => {
+  const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
+  vrCamera.cameras[0].matrixWorld.decompose(localVector, localQuaternion, localVector2);
+  localVector.add(
+    localVector2.set(0, 0, -1.5)
+      .applyQuaternion(localQuaternion)
+  );
+
+  return {
+    position: localVector.clone(),
+    quaternion: localQuaternion.clone(),
+    scale: localVector2.clone(),
+  };
+};
 
 const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
   if (scale === undefined) {
-    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1)
+    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
+    if (d !== 3) {
+      scale.multiplyScalar(0.7);
+    }
   }
 
   const _drawOk = () => {
@@ -231,7 +248,10 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
 };
 const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
   if (scale === undefined) {
-    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1)
+    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
+    if (d !== 3) {
+      scale.multiplyScalar(0.7);
+    }
   }
 
   iframe.position = position.toArray();
@@ -1584,7 +1604,9 @@ function animate(time, frame) {
                           if (iframe.d === 3) {
                             window.browser.devTools.requestDevTools(iframe.contentWindow, document)
                               .then(devTools => {
-                                _addTab(devTools.getIframe(), rig.position, rig.quaternion, undefined, 2);
+                                const {position, quaternion} = _getFrontOfCamera();
+                                // position.add(localVector.set(0, -0.3, 0).applyQuaternion(quaternion));
+                                _addTab(devTools.getIframe(), position, quaternion, undefined, 2);
                               })
                               .catch(err => {
                                 console.warn(err.stack);
@@ -1663,7 +1685,8 @@ function animate(time, frame) {
                         const link = localLinks[j];
                         const {url} = link;
 
-                        _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
+                        const {position, quaternion} = _getFrontOfCamera();
+                        _openUrl(url, position, quaternion, undefined, menuMesh.optionsMesh.d);
 
                         menuMesh.optionsMesh.list = 'tabs';
                         menuMesh.optionsMesh.updateOptions();
@@ -1750,7 +1773,8 @@ function animate(time, frame) {
                   rig.menuMesh.urlMesh.handleKey(code, false);
                 } else {
                   const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
-                  _openUrl(u, rig.position, rig.quaternion, undefined, optionsMesh.d);
+                  const {position, quaternion} = _getFrontOfCamera();
+                  _openUrl(u, position, quaternion, undefined, optionsMesh.d);
                   _updateRigLists();
                 }
               } else if (focusedTab.iframe) {
@@ -1774,14 +1798,8 @@ function animate(time, frame) {
           const lastBumper = lastButtons[i].bumper;
 
           if (bumper && !lastBumper) {
-            const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
-            vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-            localVector.add(
-              localVector2.set(0, 0, -1.5)
-                .applyQuaternion(localQuaternion)
-            );
-
-            _openRig(localVector, localQuaternion);
+            const {position, quaternion} = _getFrontOfCamera();
+            _openRig(position, quaternion);
           }
 
           lastButtons[i].bumper = bumper;
