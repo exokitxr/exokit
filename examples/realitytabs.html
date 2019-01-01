@@ -572,7 +572,10 @@ const _makeRig = () => {
           mesh.urlState.cursor++;
           _updateText();
         } else if (code === 13) { // enter
-          mesh.urlState.submit();
+          const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
+          const {position, quaternion} = _getFrontOfCamera();
+          _openUrl(u, position, quaternion, undefined, optionsMesh.d);
+          _updateRigLists();
         } else if (
           code === 9 || // tab
           code === 16 || // shift
