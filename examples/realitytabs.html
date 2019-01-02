@@ -6,7 +6,7 @@
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [0.5, 0.5];
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false];
 
 const links = [
   {
@@ -1823,15 +1823,24 @@ function animate(time, frame) {
       const gamepad = navigator.getGamepads()[i];
       lastPresseds[i] = gamepad.buttons[1].pressed;
       const padTouched = gamepad.buttons[0].touched;
+      const {axes} = gamepad;
+      const lastAxis = lastAxes[i];
+      const lastAxisValid = lastAxesValid[i];
+
+      if (padTouched && lastAxisValid) {
+        const dx = axes[0] - lastAxis[0];
+        const dy = axes[1] - lastAxis[1];
+
+        console.log('update wheel', axes[1], lastAxes[1], dy);
+
+        rig.menuMesh.listMesh.updateWheel(dx*4, dy*4);
+      }
       if (padTouched) {
-        const {axes} = gamepad;
-        const dx = axes[0] - lastAxes[0];
-        const dy = axes[1] - lastAxes[1];
-
-        rig.menuMesh.listMesh.updateWheel(dx, dy);
-
-        lastAxes[0] = axes[0];
-        lastAxes[1] = axes[1];
+        lastAxis[0] = axes[0];
+        lastAxis[1] = axes[1];
+        lastAxesValid[i] = true;
+      } else {
+        lastAxesValid[i] = false;
       }
     }
   };
