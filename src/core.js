@@ -12,6 +12,8 @@ const {URL} = url;
 const {performance} = require('perf_hooks');
 
 const mkdirp = require('mkdirp');
+const parse5 = require('parse5');
+const selector = require('window-selector');
 
 const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
@@ -1266,7 +1268,36 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return styleSpec.style;
   };
+  const gwf = require('favicon-get');
+  // const gwf = require('/home/a/favicon-get');
+  const querySelectorAll = (document, s) => {
+    s = s + '';
+    return selector.find({
+      traverse: fn => {
+        for (let i = 0; i < document.childNodes.length; i++) {
+          document.childNodes[i].traverse(fn);
+        }
+      },
+    }, s);
+  };
   window.browser = {
+    favicon: u => gwf(u, async u => {
+      const res = await fetch(u);
+      if (res.ok) {
+        const text = await res.text();
+        let document = parse5.parse(text)
+        const ownerDocument = {
+          defaultView: {
+            Element: window.Element,
+          },
+        };
+        document = GlobalContext._fromAST(document, null, null, ownerDocument, true);
+        document.baseURI = u; // XXX is this correct?
+        return document;
+      } else {
+        throw new Error(`invalid status code: ${res.status}`);
+      }
+    }, fetch, querySelectorAll),
     devTools: DevTools,
     http: (() => {
       const httpProxy = {};
