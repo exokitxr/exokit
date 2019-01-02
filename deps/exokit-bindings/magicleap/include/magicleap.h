@@ -139,7 +139,7 @@ public:
   static NAN_SETTER(OnMeshSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
+  void Poll();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -158,7 +158,7 @@ public:
   static NAN_SETTER(OnPlanesSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
+  void Poll();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -179,7 +179,7 @@ public:
   static NAN_SETTER(OnGestureSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
+  void Poll();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -199,7 +199,7 @@ public:
   static NAN_GETTER(EyesGetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix, MLSnapshot *snapshot);
+  void Poll(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -235,7 +235,7 @@ public:
   static NAN_SETTER(OnTrackSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix, MLSnapshot *snapshot);
+  void Poll(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Object> windowObj;
