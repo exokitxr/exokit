@@ -521,12 +521,17 @@ class XRRigidTransform {
     this.matrix = localMatrix
       .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
       .toArray(new Float32Array(16));
+    this.matrixInverse = localMatrix
+      .getInverse(localMatrix)
+      .toArray(new Float32Array(16));
   }
 
   updateMatrix() {
     localMatrix
       .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
-      .toArray(this.matrix);
+      .toArray(this.matrix)
+      .getInverse(localMatrix)
+      .toArray(this.matrixInverse);
   }
 }
 module.exports.XRRigidTransform = XRRigidTransform;
