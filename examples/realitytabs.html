@@ -1831,8 +1831,6 @@ function animate(time, frame) {
         const dx = axes[0] - lastAxis[0];
         const dy = axes[1] - lastAxis[1];
 
-        console.log('update wheel', axes[1], lastAxes[1], dy);
-
         rig.menuMesh.listMesh.updateWheel(dx*4, dy*4);
       }
       if (padTouched) {
