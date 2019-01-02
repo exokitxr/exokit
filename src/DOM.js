@@ -1842,14 +1842,14 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               if (!this.browser) {
                 const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
                 if (context) {
-                  const browser = new GlobalContext.nativeBrowser.Browser(
+                  this.browser = new GlobalContext.nativeBrowser.Browser(
                     context,
                     this.width||context.canvas.ownerDocument.defaultView.innerWidth,
                     this.height||context.canvas.ownerDocument.defaultView.innerHeight,
                     path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef')
                   );
                   
-                  browser.onconsole = (message, source, line) => {
+                  this.browser.onconsole = (message, source, line) => {
                     if (this.onconsole) {
                       this.onconsole(message, source, line);
                     } else {
@@ -1858,17 +1858,15 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   };
                   
                   const loadedUrl = await new Promise((accept, reject) => {
-                    browser.onloadend = _url => {
+                    this.browser.onloadend = _url => {
                       accept(_url);
                     };
-                    browser.onloaderror = (errorCode, errorString, failedUrl) => {
+                    this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
                       reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
                     };
                     
-                    browser.load(url);
+                    this.browser.load(url);
                   });
-                  
-                  this.browser = browser;
                   
                   let onmessage = null;
                   const self = this;
