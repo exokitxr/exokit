@@ -320,8 +320,6 @@ bool MLRaycaster::Poll() {
       Local<Object> asyncObject = Nan::New<Object>();
       AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
       
-      MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj)); // XXX needs to be used
-      
       Local<Function> cb = Nan::New(this->cb);
       
       if (raycastResult.state == MLRaycastResultState_HitObserved) {
@@ -329,7 +327,12 @@ bool MLRaycaster::Poll() {
         const MLVec3f &normal = raycastResult.normal;
         const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, normal);
         const MLVec3f &scale = {1, 1, 1};
-        const MLMat4f &hitMatrix = composeMatrix(position, quaternion, scale);
+        MLMat4f hitMatrix = composeMatrix(position, quaternion, scale);
+
+        MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
+        if (!isIdentityMatrix(transformMatrix)) {
+          hitMatrix = multiplyMatrices(transformMatrix, hitMatrix);
+        }
 
         Local<Object> xrHitResult = Nan::New<Object>();
         Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)hitMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
