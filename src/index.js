@@ -1581,8 +1581,8 @@ const _bindWindow = (window, newWindowCb) => {
     nativeBindings.nativeVideo.Video.updateAll();
     nativeBindings.nativeBrowser.Browser.updateAll();
     // update magic leap state
-    if (mlPresentState.mlGlContext) {
-      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext, window, window.document.xrOffset);
+    if (mlPresentState.mlGlContext && mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
+      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
     }
     if (args.performance) {
       const now = Date.now();
