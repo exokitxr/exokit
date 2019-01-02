@@ -628,7 +628,7 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
       tagName = tagName.toUpperCase();
     }
     let {attrs, value, content, childNodes, sourceCodeLocation} = node;
-    const HTMLElementTemplate = window[symbols.htmlTagsSymbol][tagName];
+    const HTMLElementTemplate = window && window[symbols.htmlTagsSymbol][tagName];
     const location = sourceCodeLocation  ? {
       line: sourceCodeLocation.startLine,
       col: sourceCodeLocation.startCol,
