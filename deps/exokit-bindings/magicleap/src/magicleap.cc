@@ -289,53 +289,74 @@ static void onUnloadResources(void* application_context) {
   uv_async_send(&eventsAsync);
 }
 
+MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
+  Local<Object> localDocumentObj = Local<Object>::Cast(windowObj->Get(JS_STR("document")));
+  Local<Value> xrOffsetValue = localDocumentObj->Get(JS_STR("xrOffset"));
+  if (xrOffsetValue->IsObject()) {
+    Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
+    Local<Float32Array> matrixInverseFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrixInverse")));
+    
+    MLMat4f transformMatrix;
+    memcpy(transformMatrix.matrix_colmajor, (char *)matrixInverseFloat32Array->Buffer()->GetContents().Data() + matrixInverseFloat32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
+    return transformMatrix;
+  } else {
+    return MLMat4f{
+      {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
+    };
+  }
+}
+
 // MLRaycaster
 
-MLRaycaster::MLRaycaster(MLHandle requestHandle, Local<Function> cb) : requestHandle(requestHandle), cb(cb) {}
+MLRaycaster::MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<Function> cb) : windowObj(windowObj), requestHandle(requestHandle), cb(cb) {}
 
 MLRaycaster::~MLRaycaster() {}
 
 bool MLRaycaster::Poll() {
-  MLRaycastResult raycastResult;
-  MLResult result = MLRaycastGetResult(raycastTracker, this->requestHandle, &raycastResult);
-  if (result == MLResult_Ok) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
-    Local<Function> cb = Nan::New(this->cb);
-    
-    if (raycastResult.state == MLRaycastResultState_HitObserved) {
-      const MLVec3f &position = raycastResult.hitpoint;
-      const MLVec3f &normal = raycastResult.normal;
-      const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, normal);
-      const MLVec3f &scale = {1, 1, 1};
-      const MLMat4f &hitMatrix = composeMatrix(position, quaternion, scale);
+  if (!this->cb.IsEmpty()) {
+    MLRaycastResult raycastResult;
+    MLResult result = MLRaycastGetResult(raycastTracker, this->requestHandle, &raycastResult);
+    if (result == MLResult_Ok) {
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
+      
+      MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj)); // XXX needs to be used
+      
+      Local<Function> cb = Nan::New(this->cb);
+      
+      if (raycastResult.state == MLRaycastResultState_HitObserved) {
+        const MLVec3f &position = raycastResult.hitpoint;
+        const MLVec3f &normal = raycastResult.normal;
+        const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, normal);
+        const MLVec3f &scale = {1, 1, 1};
+        const MLMat4f &hitMatrix = composeMatrix(position, quaternion, scale);
 
-      Local<Object> xrHitResult = Nan::New<Object>();
-      Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)hitMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
-      xrHitResult->Set(JS_STR("hitMatrix"), hitMatrixArray);
-      Local<Array> array = Nan::New<Array>(1);
-      array->Set(0, xrHitResult);
-      Local<Value> argv[] = {
-        array,
-      };
-      asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+        Local<Object> xrHitResult = Nan::New<Object>();
+        Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)hitMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
+        xrHitResult->Set(JS_STR("hitMatrix"), hitMatrixArray);
+        Local<Array> array = Nan::New<Array>(1);
+        array->Set(0, xrHitResult);
+        Local<Value> argv[] = {
+          array,
+        };
+        asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+      } else {
+        Local<Value> argv[] = {
+          Nan::New<Array>(0),
+        };
+        asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+      }
+
+      return true;
+    } else if (result == MLResult_Pending) {
+      return false;
     } else {
-      Local<Value> argv[] = {
-        Nan::New<Array>(0),
-      };
-      asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+      ML_LOG(Error, "%s: Raycast request failed! %x", application_name, result);
+
+      return true;
     }
-
-    return true;
-  } else if (result == MLResult_Pending) {
-    return false;
-  } else {
-    ML_LOG(Error, "%s: Raycast request failed! %x", application_name, result);
-
-    return true;
   }
 }
-
 
 // MeshBuffer
 

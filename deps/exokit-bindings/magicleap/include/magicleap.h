@@ -97,12 +97,13 @@ public:
 
 class MLRaycaster : public ObjectWrap {
 public:
-  MLRaycaster(MLHandle requestHandle, Local<Function> cb);
+  MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<Function> cb);
   ~MLRaycaster();
 
   bool Poll();
 
 // protected:
+  Nan::Persistent<Object> windowObj;
   MLHandle requestHandle;
   Nan::Persistent<Function> cb;
 };
