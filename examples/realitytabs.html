@@ -6,7 +6,7 @@
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false];
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [0.5, 0.5];
 
 const links = [
   {
@@ -286,8 +286,13 @@ const _closeUrl = iframe => {
 };
 const _updateRigLists = () => {
   const {menuMesh} = rig;
-  if (menuMesh.listMesh.scrollIndex > tabs.length - 1) {
-    menuMesh.listMesh.scrollIndex = tabs.length - 1;
+  if (menuMesh.listMesh.scrollIndex < 0) {
+    menuMesh.listMesh.scrollIndex = 0;
+  } else {
+    const items = menuMesh.optionsMesh.list === 'tabs' ? tabs : links;
+    if (menuMesh.listMesh.scrollIndex > items.length - 1) {
+      menuMesh.listMesh.scrollIndex = items.length - 1;
+    }
   }
   menuMesh.listMesh.updateList();
 };
@@ -819,6 +824,7 @@ const _makeRig = () => {
       mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
       mesh.scrollIndex = 0;
+      mesh.scrollIndexFine = 0;
 
       const _updateList = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -907,6 +913,20 @@ const _makeRig = () => {
       };
       _updateList();
       mesh.updateList = _updateList;
+
+      const _updateWheel = (dx, dy) => {
+        mesh.scrollIndexFine += dy;
+        while (mesh.scrollIndexFine >= 0) {
+          mesh.scrollIndexFine--;
+          mesh.scrollIndex--;
+        }
+        while (rig.menuMesh.listMesh.scrollIndexFine <= -1) {
+          mesh.scrollIndexFine++;
+          mesh.scrollIndex++;
+        }
+        _updateRigLists();
+      };
+      mesh.updateWheel = _updateWheel;
 
       mesh.plane = new THREE.Plane();
       mesh.leftLine = new THREE.Line3();
@@ -1135,6 +1155,11 @@ window.addEventListener('mousemove', e => {
     // }
 
     // _updateGamepads();
+  }
+});
+window.addEventListener('wheel', e => {
+  if (window.document.pointerLockElement) {
+    rig.menuMesh.listMesh.updateWheel(e.deltaX/100, -e.deltaY/100);
   }
 });
 
@@ -1795,7 +1820,19 @@ function animate(time, frame) {
         _setIntersectionDefault();
       }
 
-      lastPresseds[i] = navigator.getGamepads()[i].buttons[1].pressed;
+      const gamepad = navigator.getGamepads()[i];
+      lastPresseds[i] = gamepad.buttons[1].pressed;
+      const padTouched = gamepad.buttons[0].touched;
+      if (padTouched) {
+        const {axes} = gamepad;
+        const dx = axes[0] - lastAxes[0];
+        const dy = axes[1] - lastAxes[1];
+
+        rig.menuMesh.listMesh.updateWheel(dx, dy);
+
+        lastAxes[0] = axes[0];
+        lastAxes[1] = axes[1];
+      }
     }
   };
   _updateIntersections();
