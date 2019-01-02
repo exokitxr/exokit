@@ -29,7 +29,7 @@ public:
   static Handle<Object> Initialize(Isolate *isolate);
 
 protected:
-  Browser(WebGLRenderingContext *gl, int width, int height, const std::string &url);
+  Browser(WebGLRenderingContext *gl, int width, int height);
   ~Browser();
 
   static NAN_METHOD(New);
@@ -64,10 +64,13 @@ protected:
   static NAN_METHOD(Destroy);
   static NAN_GETTER(TextureGetter);
   void load(const std::string &url);
-  void loadImmediate(const std::string &url, NATIVEwindow *window = nullptr, int width = 0, int height = 0);
+  void loadImmediate(const std::string &url);
   // void resize(int w, int h);
 protected:
   WebGLRenderingContext *gl;
+  NATIVEwindow *window;
+  int width;
+  int height;
   GLuint tex;
   int textureWidth;
   int textureHeight;

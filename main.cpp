@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
       if (access("/package/app/index.html", F_OK) != -1) {
         jsString = "/package/app/index.html";
       } else {
-        jsString = "examples/hello_ml.html";
+        jsString = "examples/realitytabs.html";
       }
       
       const char *nodeString = "node";

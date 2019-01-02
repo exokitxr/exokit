@@ -6,7 +6,7 @@
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false];
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false];
 
 const links = [
   {
@@ -175,10 +175,27 @@ const _makeRenderer = () => {
     },
   };
 };
+const _getFrontOfCamera = () => {
+  const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
+  vrCamera.cameras[0].matrixWorld.decompose(localVector, localQuaternion, localVector2);
+  localVector.add(
+    localVector2.set(0, 0, -1.5)
+      .applyQuaternion(localQuaternion)
+  );
+
+  return {
+    position: localVector.clone(),
+    quaternion: localQuaternion.clone(),
+    scale: localVector2.clone(),
+  };
+};
 
 const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
   if (scale === undefined) {
-    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1)
+    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
+    if (d !== 3) {
+      scale.multiplyScalar(0.7);
+    }
   }
 
   const _drawOk = () => {
@@ -189,9 +206,9 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   };
 
   const iframe = document.createElement('iframe');
-  iframe.position = position.toArray();
-  iframe.orientation = orientation.toArray();
-  iframe.scale = scale.toArray();
+  iframe.onconsole = (jsString, scriptUrl, startLine) => {
+    console.log('parent got console', {jsString, scriptUrl, startLine});
+  };
   iframe.onload = function() {
     const contentDocument = (() => {
       try {
@@ -217,29 +234,48 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
       tabs.splice(tabs.indexOf(tab), 1);
       layers.splice(layers.indexOf(iframe), 1);
 
+      if (focusedTab === tab) {
+        focusedTab = rig.menuMesh.urlMesh;
+      }
+
+      rig.menuMesh.urlMesh.updateText();
       _updateRigLists();
     }
   };
   iframe.d = d;
   iframe.src = u;
-  iframe.addEventListener('destroy', () => {
+  /* iframe.addEventListener('destroy', () => {
     // floorMesh.visible = true;
     // scene.background = _makeBackground();
-  });
+  }); */
+
+  _addTab(iframe, position, orientation, scale, d);
+};
+const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
+  if (scale === undefined) {
+    scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
+    if (d !== 3) {
+      scale.multiplyScalar(0.7);
+    }
+  }
+
+  iframe.position = position.toArray();
+  iframe.orientation = orientation.toArray();
+  iframe.scale = scale.toArray();
+
   document.body.appendChild(iframe);
 
   const tab = {
-    url: u,
+    url: iframe.src,
     iframe,
   };
   tabs.push(tab);
   layers.push(iframe);
 
   focusedTab = tab;
+
   rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
-
-  return iframe;
 };
 const _closeUrl = iframe => {
   if (iframe.destroy) {
@@ -250,8 +286,13 @@ const _closeUrl = iframe => {
 };
 const _updateRigLists = () => {
   const {menuMesh} = rig;
-  if (menuMesh.listMesh.scrollIndex > tabs.length - 1) {
-    menuMesh.listMesh.scrollIndex = tabs.length - 1;
+  if (menuMesh.listMesh.scrollIndex < 0) {
+    menuMesh.listMesh.scrollIndex = 0;
+  } else {
+    const items = menuMesh.optionsMesh.list === 'tabs' ? tabs : links;
+    if (menuMesh.listMesh.scrollIndex > items.length - 1) {
+      menuMesh.listMesh.scrollIndex = items.length - 1;
+    }
   }
   menuMesh.listMesh.updateList();
 };
@@ -503,6 +544,132 @@ const _makeRig = () => {
       _updateText();
       mesh.updateText = _updateText;
 
+      const _handleDefaultKey = (code, shiftKey) => {
+        let c = String.fromCharCode(code);
+        if (!shiftKey) {
+          c = c.toLowerCase();
+        }
+        _handleSingleKey(c);
+      };
+      const _handleSingleKey = c => {
+        mesh.urlState.text = mesh.urlState.text.slice(0, mesh.urlState.cursor) + c + mesh.urlState.text.slice(mesh.urlState.cursor);
+        mesh.urlState.cursor++;
+        mesh.updateText();
+      };
+      const _handleKey = (code, shiftKey) => {
+        if (code === 8) { // backspace
+          if (mesh.urlState.cursor > 0) {
+            mesh.urlState.text = mesh.urlState.text.slice(0, mesh.urlState.cursor - 1) + mesh.urlState.text.slice(mesh.urlState.cursor);
+            mesh.urlState.cursor--;
+            mesh.updateText();
+          } else {
+            if (mesh.urlState.text.length === 0) {
+              _closeRig(rig);
+            }
+          }
+        } else if (code === 46) { // delete
+          if (mesh.urlState.cursor < mesh.urlState.text.length) {
+            mesh.urlState.text = mesh.urlState.text.slice(0, mesh.urlState.cursor) + mesh.urlState.text.slice(mesh.urlState.cursor + 1);
+            _updateText();
+          }
+        } else if (code === 32) { // space
+          mesh.urlState.text = mesh.urlState.text.slice(0, mesh.urlState.cursor) + ' ' + mesh.urlState.text.slice(mesh.urlState.cursor);
+          mesh.urlState.cursor++;
+          _updateText();
+        } else if (code === 13) { // enter
+          const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
+          const {position, quaternion} = _getFrontOfCamera();
+          _openUrl(u, position, quaternion, undefined, optionsMesh.d);
+          _updateRigLists();
+        } else if (
+          code === 9 || // tab
+          code === 16 || // shift
+          code === 17 || // ctrl
+          code === 18 || // alt
+          code === 20 || // capslock
+          code === 27 || // esc
+          code === 91 // win
+        ) {
+          // nothing
+        } else if (code === 37) { // left
+          mesh.urlState.cursor = Math.max(mesh.urlState.cursor - 1, 0);
+          _updateText();
+        } else if (code === 39) { // right
+          mesh.urlState.cursor = Math.min(mesh.urlState.cursor + 1, mesh.urlState.text.length);
+          _updateText();
+        } else if (code === 38) { // up
+          if (focusedTab === urlMesh) {
+            // nothing
+          } else {
+            let tabIndex = tabs.indexOf(focusedTab);
+            if (tabIndex === 0) {
+              focusedTab = urlMesh;
+            } else {
+              tabIndex--;
+              focusedTab = tabs[tabIndex];
+
+              if (tabIndex < listMesh.scrollIndex) {
+                listMesh.scrollIndex = tabIndex;
+              } else if (tabIndex > listMesh.scrollIndex + 4) {
+                listMesh.scrollIndex = tabIndex - 4;
+              }
+            }
+          }
+          _updateText();
+          listMesh.updateList();
+        } else if (code === 40) { // down
+          if (focusedTab === urlMesh) {
+            if (tabs.length > 0) {
+              focusedTab = tabs[0];
+              listMesh.scrollIndex = 0;
+            } else {
+              // nothing
+            }
+          } else {
+            let tabIndex = tabs.indexOf(focusedTab);
+            if (tabIndex === tabs.length - 1) {
+              // nothing
+            } else {
+              tabIndex++;
+              focusedTab = tabs[tabIndex];
+
+              if (tabIndex < listMesh.scrollIndex) {
+                listMesh.scrollIndex = tabIndex;
+              } else if (tabIndex > listMesh.scrollIndex + 4) {
+                listMesh.scrollIndex = tabIndex - 4;
+              }
+            }
+          }
+          _updateText();
+          listMesh.updateList();
+        } else if (code === 190) { // .
+          _handleSingleKey('.');
+        } else if (code === 188) { // ,
+          _handleSingleKey(',');
+        } else if (code === 191) { // /
+          _handleSingleKey('/');
+        } else if (code === 186) { // ;
+          _handleSingleKey(';');
+        } else if (code === 222) { // ;
+          _handleSingleKey('\'');
+        } else if (code === 219) { // [
+          _handleSingleKey('[');
+        } else if (code === 221) { // ]
+          _handleSingleKey(']');
+        } else if (code === 189) { // -
+          _handleSingleKey('-');
+        } else if (code === 187) { // =
+          _handleSingleKey('=');
+        } else if (code === 220) { // \
+          _handleSingleKey('\\');
+        } else if (code === -1) {
+          // nothing
+        } else {
+          _handleDefaultKey(code, shiftKey);
+        }
+      };
+      mesh.handleKey = _handleKey;
+
       mesh.plane = new THREE.Plane();
       mesh.leftLine = new THREE.Line3();
       mesh.topLine = new THREE.Line3();
@@ -657,6 +824,7 @@ const _makeRig = () => {
       mesh.updateMatrixWorld();
       mesh.frustumCulled = false;
       mesh.scrollIndex = 0;
+      mesh.scrollIndexFine = 0;
 
       const _updateList = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -745,6 +913,20 @@ const _makeRig = () => {
       };
       _updateList();
       mesh.updateList = _updateList;
+
+      const _updateWheel = (dx, dy) => {
+        mesh.scrollIndexFine += dy;
+        while (mesh.scrollIndexFine >= 0) {
+          mesh.scrollIndexFine--;
+          mesh.scrollIndex--;
+        }
+        while (rig.menuMesh.listMesh.scrollIndexFine <= -1) {
+          mesh.scrollIndexFine++;
+          mesh.scrollIndex++;
+        }
+        _updateRigLists();
+      };
+      mesh.updateWheel = _updateWheel;
 
       mesh.plane = new THREE.Plane();
       mesh.leftLine = new THREE.Line3();
@@ -930,6 +1112,11 @@ const _animateRig = () => {
   };
 };
 
+const cacheCanvas = document.createElement('canvas');
+cacheCanvas.width = 256;
+cacheCanvas.height = 256;
+const cacheCanvasCtx = cacheCanvas.getContext('2d');
+
 const moves = [null, null];
 
 window.addEventListener('click', () => {
@@ -968,6 +1155,11 @@ window.addEventListener('mousemove', e => {
     // }
 
     // _updateGamepads();
+  }
+});
+window.addEventListener('wheel', e => {
+  if (window.document.pointerLockElement) {
+    rig.menuMesh.listMesh.updateWheel(e.deltaX/100, -e.deltaY/100);
   }
 });
 
@@ -1034,12 +1226,16 @@ window.addEventListener('keydown', e => {
       }
     }
   } else {
-    if (focusedTab && focusedTab.iframe) {
-      focusedTab.iframe.sendKeyDown(e.which, {
-        shiftKey: e.shiftKey,
-        ctrlKey: e.ctrlKey,
-        altKey: e.altKey,
-      });
+    if (focusedTab) {
+      if (focusedTab === rig.menuMesh.urlMesh) {
+        rig.menuMesh.urlMesh.handleKey(e.keyCode, e.shiftKey);
+      } else if (focusedTab.iframe) {
+        focusedTab.iframe.sendKeyDown(e.which, {
+          shiftKey: e.shiftKey,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+        });
+      }
     }
   }
 });
@@ -1087,12 +1283,16 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('keypress', e => {
   if (!window.document.pointerLockElement) {
-    if (focusedTab && focusedTab.iframe) {
-      focusedTab.iframe.sendKeyPress(e.which, {
-        shiftKey: e.shiftKey,
-        ctrlKey: e.ctrlKey,
-        altKey: e.altKey,
-      });
+    if (focusedTab) {
+      /* if (focusedTab === rig.menuMesh.urlMesh) {
+        rig.menuMesh.urlMesh.handleKey(e.keyCode, e.shiftKey);
+      } else */if (focusedTab.iframe) {
+        focusedTab.iframe.sendKeyPress(e.which, {
+          shiftKey: e.shiftKey,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+        });
+      }
     }
   }
 });
@@ -1237,17 +1437,12 @@ function animate(time, frame) {
                     const width = kx2 - kx1;
                     const height = ky2 - ky1;
                     let imageData = keyboardHighlightCanvasCtx.getImageData(kx1, ky1, width, height);
-                    /* if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
-                      const canvas = document.createElement('canvas');
-                      canvas.width = imageData.width;
-                      canvas.height = imageData.height;
+                    if (key === 'enter') { // special case the enter key; it has a non-rectangular shape
+                      cacheCanvasCtx.putImageData(imageData, 0, 0);
+                      cacheCanvasCtx.clearRect(0, 0, 80, 140);
 
-                      const ctx = canvas.getContext('2d');
-                      ctx.putImageData(imageData, 0, 0);
-                      ctx.clearRect(0, 0, 80, 140);
-
-                      imageData = ctx.getImageData(0, 0, imageData.width, imageData.height);
-                    } */
+                      imageData = cacheCanvasCtx.getImageData(0, 0, imageData.width, imageData.height);
+                    }
 
                     keyMesh.material.map.image = imageData;
                     keyMesh.material.map.needsUpdate = true;
@@ -1456,6 +1651,11 @@ function animate(time, frame) {
                           const {iframe} = tab;
                           _closeUrl(iframe);
 
+                          if (focusedTab === tab) {
+                            focusedTab = rig.menuMesh.urlMesh;
+                          }
+
+                          rig.menuMesh.urlMesh.updateText();
                           _updateRigLists();
                         }
 
@@ -1479,10 +1679,11 @@ function animate(time, frame) {
                           const tab = tabs[menuMesh.listMesh.scrollIndex + j];
                           const {iframe} = tab;
                           if (iframe.d === 3) {
-                            window.browser.devTools.requestDevTools(iframe.contentWindow)
+                            window.browser.devTools.requestDevTools(iframe.contentWindow, document)
                               .then(devTools => {
-                                const url = devTools.getUrl();
-                                _openUrl(url, rig.position, rig.quaternion, undefined, 2);
+                                const {position, quaternion} = _getFrontOfCamera();
+                                // position.add(localVector.set(0, -0.3, 0).applyQuaternion(quaternion));
+                                _addTab(devTools.getIframe(), position, quaternion, undefined, 2);
                               })
                               .catch(err => {
                                 console.warn(err.stack);
@@ -1561,7 +1762,8 @@ function animate(time, frame) {
                         const link = localLinks[j];
                         const {url} = link;
 
-                        _openUrl(url, rig.position, rig.quaternion, undefined, menuMesh.optionsMesh.d);
+                        const {position, quaternion} = _getFrontOfCamera();
+                        _openUrl(url, position, quaternion, undefined, menuMesh.optionsMesh.d);
 
                         menuMesh.optionsMesh.list = 'tabs';
                         menuMesh.optionsMesh.updateOptions();
@@ -1618,7 +1820,26 @@ function animate(time, frame) {
         _setIntersectionDefault();
       }
 
-      lastPresseds[i] = navigator.getGamepads()[i].buttons[1].pressed;
+      const gamepad = navigator.getGamepads()[i];
+      lastPresseds[i] = gamepad.buttons[1].pressed;
+      const padTouched = gamepad.buttons[0].touched;
+      const {axes} = gamepad;
+      const lastAxis = lastAxes[i];
+      const lastAxisValid = lastAxesValid[i];
+
+      if (padTouched && lastAxisValid) {
+        const dx = axes[0] - lastAxis[0];
+        const dy = axes[1] - lastAxis[1];
+
+        rig.menuMesh.listMesh.updateWheel(dx*4, dy*4);
+      }
+      if (padTouched) {
+        lastAxis[0] = axes[0];
+        lastAxis[1] = axes[1];
+        lastAxesValid[i] = true;
+      } else {
+        lastAxesValid[i] = false;
+      }
     }
   };
   _updateIntersections();
@@ -1642,101 +1863,26 @@ function animate(time, frame) {
               const {data: {key, rig}} = spec;
               const {menuMesh: {urlMesh, optionsMesh}} = rig;
 
-              switch (key) {
-                case 'enter': {
-                  const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
-                  _openUrl(u, rig.position, rig.quaternion, undefined, optionsMesh.d);
-
-                  _updateRigLists();
-                  break;
-                }
-                default: {
-                  const _handleDefaultKey = (code, shiftKey) => {
-                    let c = String.fromCharCode(code);
-                    if (!shiftKey) {
-                      c = c.toLowerCase();
-                    }
-                    _handleSingleKey(c);
-                  };
-                  const _handleSingleKey = c => {
-                    urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + c + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
-                    urlMesh.urlState.cursor++;
-                    urlMesh.updateText();
-                  };
-                  const _handleKey = (code, shiftKey) => {
-                    if (code === 8) { // backspace
-                      if (urlMesh.urlState.cursor > 0) {
-                        urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor - 1) + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
-                        urlMesh.urlState.cursor--;
-                        urlMesh.updateText();
-                      } else {
-                        if (urlMesh.urlState.text.length === 0) {
-                          _closeRig(rig);
-                        }
-                      }
-                    } else if (code === 46) { // delete
-                      if (urlMesh.urlState.cursor < urlMesh.urlState.text.length) {
-                        urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + urlMesh.urlState.text.slice(urlMesh.urlState.cursor + 1);
-                        urlMesh.updateText();
-                      }
-                    } else if (code === 32) { // space
-                      urlMesh.urlState.text = urlMesh.urlState.text.slice(0, urlMesh.urlState.cursor) + ' ' + urlMesh.urlState.text.slice(urlMesh.urlState.cursor);
-                      urlMesh.urlState.cursor++;
-                      urlMesh.updateText();
-                    } else if (code === 13) { // enter
-                      urlMesh.urlState.submit();
-                    } else if (
-                      code === 9 || // tab
-                      code === 16 || // shift
-                      code === 17 || // ctrl
-                      code === 18 || // alt
-                      code === 20 || // capslock
-                      code === 27 || // esc
-                      code === 91 // win
-                    ) {
-                      // nothing
-                    } else if (code === 37) { // left
-                      urlMesh.urlState.cursor = Math.max(urlMesh.urlState.cursor - 1, 0);
-                      urlMesh.updateText();
-                    } else if (code === 39) { // right
-                      urlMesh.urlState.cursor = Math.min(urlMesh.urlState.cursor + 1, urlMesh.urlState.text.length);
-                      urlMesh.updateText();
-                    } else if (code === 38) { // up
-                      urlMesh.urlState.cursor = 0;
-                      urlMesh.updateText();
-                    } else if (code === 40) { // down
-                      urlMesh.urlState.cursor = urlMesh.urlState.text.length;
-                      urlMesh.updateText();
-                    } else if (code === 190) { // .
-                      _handleSingleKey('.');
-                    } else if (code === 188) { // ,
-                      _handleSingleKey(',');
-                    } else if (code === 191) { // /
-                      _handleSingleKey('/');
-                    } else if (code === 186) { // ;
-                      _handleSingleKey(';');
-                    } else if (code === 222) { // ;
-                      _handleSingleKey('\'');
-                    } else if (code === 219) { // [
-                      _handleSingleKey('[');
-                    } else if (code === 221) { // ]
-                      _handleSingleKey(']');
-                    } else if (code === 189) { // -
-                      _handleSingleKey('-');
-                    } else if (code === 187) { // =
-                      _handleSingleKey('=');
-                    } else if (code === 220) { // \
-                      _handleSingleKey('\\');
-                    } else if (code === -1) {
-                      // nothing
-                    } else {
-                      _handleDefaultKey(code, shiftKey);
-                    }
-                  };
+              if (focusedTab === rig.menuMesh.urlMesh) {
+                if (key !== 'enter') {
                   const code = keyCode(key);
-                  _handleKey(code, false);
-                  break;
+                  rig.menuMesh.urlMesh.handleKey(code, false);
+                } else {
+                  const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
+                  const {position, quaternion} = _getFrontOfCamera();
+                  _openUrl(u, position, quaternion, undefined, optionsMesh.d);
+                  _updateRigLists();
                 }
+              } else if (focusedTab.iframe) {
+                let code = keyCode(key);
+                const opts = {
+                  shiftKey: false,
+                  ctrlKey: false,
+                  altKey: false,
+                };
+                focusedTab.iframe.sendKeyDown(code, opts);
+                focusedTab.iframe.sendKeyPress(code + 32, opts);
+                focusedTab.iframe.sendKeyUp(code, opts);
               }
             }
           }
@@ -1748,14 +1894,8 @@ function animate(time, frame) {
           const lastBumper = lastButtons[i].bumper;
 
           if (bumper && !lastBumper) {
-            const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
-            vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-            localVector.add(
-              localVector2.set(0, 0, -1.5)
-                .applyQuaternion(localQuaternion)
-            );
-
-            _openRig(localVector, localQuaternion);
+            const {position, quaternion} = _getFrontOfCamera();
+            _openRig(position, quaternion);
           }
 
           lastButtons[i].bumper = bumper;
@@ -1864,7 +2004,9 @@ const _bootFakeDisplay = async () => {
   display = fakeDisplay;
 
   _openUrl('realitytab.html'); // XXX
-  _updateRigLists();
+  focusedTab = rig.menuMesh.urlMesh;
+  rig.menuMesh.urlMesh.updateText();
+  rig.menuMesh.listMesh.updateList();
 
   console.log('loaded root in 2D');
 };

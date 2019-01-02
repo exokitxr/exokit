@@ -9,6 +9,7 @@
 
 #include <defines.h>
 
+#include <memory>
 #include <chrono>
 #include <deque>
 #include <thread>
@@ -43,7 +44,7 @@ namespace browser {
 #ifndef LUMIN
 typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
 #else
-typedef Servo2D *EmbeddedBrowser;
+typedef std::shared_ptr<Servo2D> EmbeddedBrowser;
 #endif
 
 enum class EmbeddedKeyModifiers {
@@ -93,6 +94,7 @@ void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const 
 // helpers
 
 void QueueOnBrowserThread(std::function<void()> fn);
+// void QueueOnBrowserThreadFront(std::function<void()> fn);
 
 void RunOnMainThread(std::function<void()> fn);
 void QueueOnMainThread(std::function<void()> fn);

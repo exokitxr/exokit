@@ -2457,13 +2457,15 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
         if (result == MLResult_Ok) {
           for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
-            MLInputControllerState &controllerState = controllerStates[i];
-            MLVec3f &position = controllerState.position;
-            MLQuaternionf &orientation = controllerState.orientation;
-            float trigger = controllerState.trigger_normalized;
-            float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
-            float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
-            MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
+            const MLInputControllerState &controllerState = controllerStates[i];
+            const MLVec3f &position = controllerState.position;
+            const MLQuaternionf &orientation = controllerState.orientation;
+            const float trigger = controllerState.trigger_normalized;
+            const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
+            const float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
+            const bool isTouchActive = controllerState.is_touch_active[0];
+            const MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
+            const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
 
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 1, JS_NUM(position.y));
@@ -2477,7 +2479,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 9, JS_NUM(home));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 10, JS_NUM(touchPosAndForce.x));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 11, JS_NUM(touchPosAndForce.y));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 12, JS_NUM(touchPosAndForce.z));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 12, JS_NUM(touchForceZ));
           }
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);

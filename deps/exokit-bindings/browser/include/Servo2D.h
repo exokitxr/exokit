@@ -16,9 +16,10 @@ namespace browser {
 
 class Servo2D;
 typedef struct Opaque ServoInstance;
-typedef void (*MLLogger)(MLLogLevel lvl, char* msg);
-typedef void (*MLHistoryUpdate)(Servo2D* app, bool canGoBack, char* url, bool canGoForward);
-typedef void (*MLPresentUpdate)(Servo2D* app);
+typedef void (*MLLoad)(Servo2D *app);
+typedef void (*MLLogger)(Servo2D *app, MLLogLevel lvl, char *msg, size_t size);
+typedef void (*MLHistoryUpdate)(Servo2D *app, bool canGoBack, char* url, bool canGoForward);
+typedef void (*MLPresentUpdate)(Servo2D *app);
 
 /**
  * Servo2D Landscape Application
@@ -93,7 +94,7 @@ public:
   
   static void init();
 
-private:
+// private:
   std::string url;
   GLuint tex;
   int width;
@@ -118,11 +119,13 @@ private:
 // externs
 
 extern "C" browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
-                                     browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
+                                     browser::Servo2D*, browser::MLLoad, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
                                      const char* url, int width, int height, float hidpi);
 extern "C" void (*heartbeat_servo)(browser::ServoInstance*);
 extern "C" void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down);
 extern "C" void (*move_servo)(browser::ServoInstance*, float x, float y);
+extern "C" void (*keyboard_servo)(browser::ServoInstance*, uint32_t keycode, bool shift, bool ctrl, bool alt, bool logo, bool down);
+extern "C" void (*executejs_servo)(browser::ServoInstance*, const uint8_t *data, size_t length);
 extern "C" void (*traverse_servo)(browser::ServoInstance*, int delta);
 extern "C" void (*navigate_servo)(browser::ServoInstance*, const char* text);
 extern "C" void (*discard_servo)(browser::ServoInstance*);

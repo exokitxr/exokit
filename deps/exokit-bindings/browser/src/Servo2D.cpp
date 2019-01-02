@@ -9,16 +9,24 @@
 #include <iostream>
 
 namespace browser {
+  
+void load(Servo2D *app) {
+  app->onloadend(app->url);
+}
 
 // A function which calls the ML logger, suitable for passing into Servo
-void logger(MLLogLevel lvl, char* msg) {
-  if (MLLoggingLogLevelIsEnabled(lvl)) {
+void logger(Servo2D *app, MLLogLevel lvl, char *msg, size_t size) {
+  std::string jsString(msg, size);
+  std::string scriptUrl;
+  int startLine = 0;
+  app->onconsole(jsString, scriptUrl, startLine);
+  /* if (MLLoggingLogLevelIsEnabled(lvl)) {
     MLLoggingLog(lvl, ML_DEFAULT_LOG_TAG, msg);
-  }
+  } */
 }
 
 // A function which updates the history ui, suitable for passing into Servo
-void history(Servo2D* app, bool canGoBack, char* url, bool canGoForward) {
+void history(Servo2D *app, bool canGoBack, char* url, bool canGoForward) {
   // app->updateHistory(canGoBack, url, canGoForward);
 }
 
@@ -162,7 +170,7 @@ int Servo2D::init(
   }
 
   // Hook into servo
-  servo_ = init_servo(context, this->surface, this->display, this, logger, history, Servo2D::present, url.c_str(), width, height, 1.0);
+  servo_ = init_servo(context, this->surface, this->display, this, load, logger, history, Servo2D::present, url.c_str(), width, height, 1.0);
   std::cout << "Servo2D Initializing 10 " << url << " " << width << " " << height << " " << (void *)servo_ << std::endl;
   if (!servo_) {
     ML_LOG(Error, "Servo2D Failed to init servo instance");
@@ -171,7 +179,6 @@ int Servo2D::init(
   }
   
   onloadstart();
-  onloadend(url);
 
   return 0;
 }
@@ -263,15 +270,17 @@ void Servo2D::init() {
   }
   
   init_servo = (ServoInstance *(*)(EGLContext, EGLSurface, EGLDisplay,
-    Servo2D*, MLLogger, MLHistoryUpdate, MLPresentUpdate,
+    Servo2D*, MLLoad, MLLogger, MLHistoryUpdate, MLPresentUpdate,
     const char* url, int width, int height, float hidpi))dlsym(libmlservo, "init_servo");
   heartbeat_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "heartbeat_servo");
   trigger_servo = (void (*)(ServoInstance*, float x, float y, bool down))dlsym(libmlservo, "trigger_servo");
   move_servo = (void (*)(ServoInstance*, float x, float y))dlsym(libmlservo, "move_servo");
+  keyboard_servo = (void (*)(ServoInstance*, uint32_t keycode, bool shift, bool ctrl, bool alt, bool logo, bool down))dlsym(libmlservo, "keyboard_servo");
+  executejs_servo = (void (*)(ServoInstance*, const uint8_t *data, size_t length))dlsym(libmlservo, "executejs_servo");
   traverse_servo = (void (*)(ServoInstance*, int delta))dlsym(libmlservo, "traverse_servo");
   navigate_servo = (void (*)(ServoInstance*, const char* text))dlsym(libmlservo, "navigate_servo");
   discard_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "discard_servo");
-  if (!init_servo || !heartbeat_servo || !trigger_servo || !move_servo || !traverse_servo || !navigate_servo || !discard_servo) {
+  if (!init_servo || !heartbeat_servo || !trigger_servo || !move_servo || !keyboard_servo || !traverse_servo || !navigate_servo || !discard_servo) {
     std::cout << "failed to dlsym libmlservo.so symbols " << (void *)init_servo << " " << (void *)heartbeat_servo << " " << (void *)trigger_servo << " " << (void *)move_servo << " " << (void *)traverse_servo << " " << (void *)navigate_servo << " " << (void *)discard_servo << std::endl;
   }
 }
@@ -299,11 +308,13 @@ GLvoid glFlushMappedBufferRangeEXT(GLenum target, GLintptr offset, GLsizeiptr le
 // externs
 
 browser::ServoInstance *(*init_servo)(EGLContext, EGLSurface, EGLDisplay,
-  browser::Servo2D*, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
+  browser::Servo2D*, browser::MLLoad, browser::MLLogger, browser::MLHistoryUpdate, browser::MLPresentUpdate,
   const char*url, int width, int height, float hidpi) = nullptr;
 void (*heartbeat_servo)(browser::ServoInstance*) = nullptr;
 void (*trigger_servo)(browser::ServoInstance*, float x, float y, bool down) = nullptr;
 void (*move_servo)(browser::ServoInstance*, float x, float y) = nullptr;
+void (*keyboard_servo)(browser::ServoInstance*, uint32_t keycode, bool shift, bool ctrl, bool alt, bool logo, bool down) = nullptr;
+void (*executejs_servo)(browser::ServoInstance*, const uint8_t *data, size_t length) = nullptr;
 void (*traverse_servo)(browser::ServoInstance*, int delta) = nullptr;
 void (*navigate_servo)(browser::ServoInstance*, const char* text) = nullptr;
 void (*discard_servo)(browser::ServoInstance*) = nullptr;
