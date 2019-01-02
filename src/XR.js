@@ -31,7 +31,7 @@ class XR extends EventEmitter {
     if (fakeVrDisplay) {
       return Promise.resolve(fakeVrDisplay);
     } else if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
-      return Promise.resolve();
+      return Promise.resolve(_getXrDisplay(this._window));
     } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
       return Promise.resolve(_getXmDisplay(this._window));
     } else {
