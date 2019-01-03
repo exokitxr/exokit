@@ -732,15 +732,15 @@ void MLPlaneTracker::Poll() {
   std::vector<std::string> ids;
   ids.reserve(numPlanes);
   std::vector<float> widths;
-  widths.reserve(numPlanesResults);
+  widths.reserve(numPlanes);
   std::vector<float> heights;
-  heights.reserve(numPlanesResults);
+  heights.reserve(numPlanes);
   std::vector<MLVec3f> positions;
-  positions.reserve(numPlanesResults);
+  positions.reserve(numPlanes);
   std::vector<MLQuaternionf> rotations;
-  rotations.reserve(numPlanesResults);
+  rotations.reserve(numPlanes);
 
-  for (uint32_t i = 0; i < numPlanesResults; i++) {
+  for (uint32_t i = 0; i < numPlanes; i++) {
     MLPlane &plane = planeResults[i];
 
     uint64_t planeId = (uint64_t)plane.id;
