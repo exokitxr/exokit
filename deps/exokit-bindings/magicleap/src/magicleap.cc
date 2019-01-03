@@ -949,7 +949,7 @@ void MLHandTracker::Poll() {
         leftWristPositions[i] = position;
         leftWristPositionsValid[i] = true;
       } else {
-        leftWristPositions[i] = false;
+        leftWristPositionsValid[i] = false;
       }
     }
 
@@ -988,7 +988,7 @@ void MLHandTracker::Poll() {
         rightWristPositions[i] = position;
         rightWristPositionsValid[i] = true;
       } else {
-        rightWristPositions[i] = false;
+        rightWristPositionsValid[i] = false;
       }
     }
 
