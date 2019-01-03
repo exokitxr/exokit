@@ -530,6 +530,7 @@ class XRRigidTransform {
     localMatrix
       .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
       .toArray(this.matrix)
+    localMatrix
       .getInverse(localMatrix)
       .toArray(this.matrixInverse);
   }
