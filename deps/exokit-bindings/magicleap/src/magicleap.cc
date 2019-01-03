@@ -766,7 +766,8 @@ void MLPlaneTracker::Poll() {
   Local<Object> localWindowObj = Nan::New(this->windowObj);
 
   polls.emplace_back(localWindowObj, [
-    numPlanesResults,
+    this,
+    numPlanes,
     ids{std::move(ids)},
     positions{std::move(positions)},
     rotations{std::move(rotations)},
