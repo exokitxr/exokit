@@ -1067,9 +1067,6 @@ void MLHandTracker::Poll() {
         memcpy(arrayBufferData + index, leftHandNormal.values, sizeof(leftHandNormal.values));
         obj->Set(JS_STR("normal"), Float32Array::New(arrayBuffer, index, sizeof(leftHandNormal.values)/sizeof(leftHandNormal.values[0])));
         index += sizeof(leftHandNormal.values);
-      } else {
-        leftHandCenter = {0, 0, 0};
-        leftHandNormal = {0, 1, 0};
       }
 
       if (leftPointerTransformValid) {
@@ -1208,9 +1205,6 @@ void MLHandTracker::Poll() {
         memcpy(arrayBufferData + index, rightHandNormal.values, sizeof(rightHandNormal.values));
         obj->Set(JS_STR("normal"), Float32Array::New(arrayBuffer, index, sizeof(rightHandNormal.values)/sizeof(rightHandNormal.values[0])));
         index += sizeof(rightHandNormal.values);
-      } else {
-        rightHandCenter = {0, 0, 0};
-        rightHandNormal = {0, 1, 0};
       }
 
       if (rightPointerTransformValid) {
