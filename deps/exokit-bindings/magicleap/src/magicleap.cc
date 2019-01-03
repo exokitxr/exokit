@@ -39,6 +39,8 @@ Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
 Nan::Persistent<Function> mlImageTrackerConstructor;
 
+std::deque<MLPoll> polls;
+
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
 std::condition_variable  cameraRequestConditionVariable;

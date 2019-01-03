@@ -95,6 +95,12 @@ public:
   uint32_t modifier_mask;
 };
 
+class MLPoll {
+public:
+  Nan::Persistent<Object> windowObj;
+  std::function<void()> cb;
+};
+
 class MLRaycaster : public ObjectWrap {
 public:
   MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<Function> cb);
