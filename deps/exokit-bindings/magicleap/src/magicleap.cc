@@ -771,7 +771,7 @@ void MLPlaneTracker::Poll() {
     positions{std::move(positions)},
     rotations{std::move(rotations)},
     widths{std::move(widths)},
-    heights{std::move(heights)},
+    heights{std::move(heights)}
   ]() -> void {
     if (!this->cb.IsEmpty()) {
       Local<Object> asyncObject = Nan::New<Object>();
@@ -1042,7 +1042,7 @@ void MLHandTracker::Poll() {
     rightFingerPositions{std::move(rightFingerPositions)},
     rightFingerPositionsValid{std::move(rightFingerPositionsValid)},
     keyposeRight,
-    keyposeRightNew,
+    keyposeRightNew
   ]() -> void {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
