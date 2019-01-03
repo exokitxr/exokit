@@ -758,7 +758,7 @@ void MLPlaneTracker::Poll() {
     }
 
     positions[i] = position;
-    rotation[i] = rotation;
+    rotations[i] = rotation;
     widths[i] = width;
     heights[i] = height;
   }
