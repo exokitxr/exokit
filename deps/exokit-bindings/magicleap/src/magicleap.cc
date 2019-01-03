@@ -39,7 +39,7 @@ Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
 Nan::Persistent<Function> mlImageTrackerConstructor;
 
-std::list<MLPoll> polls;
+std::list<MLPoll *> polls;
 
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
@@ -331,7 +331,7 @@ bool MLRaycaster::Update() {
         hitMatrix = multiplyMatrices(transformMatrix, hitMatrix);
       }
 
-      polls.emplace_back(localWindowObj, [this, hitMatrix]() -> void {
+      polls.push_back(new MLPoll(localWindowObj, [this, hitMatrix]() -> void {
         if (!this->cb.IsEmpty()) {
           Local<Object> asyncObject = Nan::New<Object>();
           AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
@@ -348,11 +348,11 @@ bool MLRaycaster::Update() {
           };
           asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
         }
-      });
+      }));
     } else {
       Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-      polls.emplace_back(localWindowObj, [this]() -> void {
+      polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
         if (!this->cb.IsEmpty()) {
           Local<Object> asyncObject = Nan::New<Object>();
           AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
@@ -364,7 +364,7 @@ bool MLRaycaster::Update() {
           };
           asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
         }
-      });
+      }));
     }
 
     return true;
@@ -568,7 +568,7 @@ void MLMesher::Update() {
 
   Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.emplace_back(localWindowObj, [
+  polls.push_back(new MLPoll(localWindowObj, [
     this,
     transformMatrix,
     types{std::move(types)},
@@ -660,7 +660,7 @@ void MLMesher::Update() {
       };
       asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  });
+  }));
 }
 
 NAN_METHOD(MLMesher::Destroy) {
@@ -774,7 +774,7 @@ void MLPlaneTracker::Update() {
 
   Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.emplace_back(localWindowObj, [
+  polls.push_back(new MLPoll(localWindowObj, [
     this,
     numPlanes,
     ids{std::move(ids)},
@@ -823,7 +823,7 @@ void MLPlaneTracker::Update() {
       };
       asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  });
+  }));
 }
 
 NAN_METHOD(MLPlaneTracker::Destroy) {
@@ -1028,7 +1028,7 @@ void MLHandTracker::Update() {
 
   Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.emplace_back(localWindowObj, [
+  polls.push_back(new MLPoll(localWindowObj, [
     this,
     transformMatrix,
     leftHandBoneValid,
@@ -1345,7 +1345,7 @@ void MLHandTracker::Update() {
       };
       asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  });
+  }));
 }
 
 NAN_METHOD(MLHandTracker::Destroy) {
@@ -1600,7 +1600,7 @@ void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
   this->data.Reset(arrayBuffer);
 }
 
-void CameraRequest::Poll() {
+void CameraRequest::Update() {
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
 
@@ -1762,7 +1762,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
 
           Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-          polls.emplace_back(localWindowObj, [this, position, rotation]() -> void {
+          polls.push_back(new MLPoll(localWindowObj, [this, position, rotation]() -> void {
             if (!this->cb.IsEmpty()) {
               Local<Object> asyncObject = Nan::New<Object>();
               AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
@@ -1790,7 +1790,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
 
               asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
             }
-          });
+          }));
 
           valid = newValid;
         } else {
@@ -1803,7 +1803,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
       if (lastValid) {
         Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-        polls.emplace_back(localWindowObj, [this]() -> void {
+        polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
           if (!this->cb.IsEmpty()) {
             Local<Object> asyncObject = Nan::New<Object>();
             AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
@@ -1816,7 +1816,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
 
             asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
           }
-        });
+        }));
       }
 
       valid = newValid;
