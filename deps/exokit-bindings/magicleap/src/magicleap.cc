@@ -626,26 +626,25 @@ void MLMesher::Poll() {
           obj->Set(JS_STR("transformMatrix"), transformMatrixArray);
 
           Local<Object> positionBuffer = Nan::New<Object>();
-          positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
-
+          positionBuffer->Set(JS_STR("id"), JS_INT(positionBuffers[i]));
           obj->Set(JS_STR("positionBuffer"), positionBuffer);
-          Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.positions, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
+          Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), positionArrays[i], positionCounts[i] * sizeof(float)), 0, positionCounts[i]);
           obj->Set(JS_STR("positionArray"), positionArray);
-          obj->Set(JS_STR("positionCount"), JS_INT(meshBuffer.numPositions));
+          obj->Set(JS_STR("positionCount"), JS_INT(positionCounts[i]));
 
           Local<Object> normalBuffer = Nan::New<Object>();
-          normalBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.normalBuffer));
+          normalBuffer->Set(JS_STR("id"), JS_INT(normalBuffers[i]));
           obj->Set(JS_STR("normalBuffer"), normalBuffer);
-          Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.normals, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
+          Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normalArrays[i], normalCounts[i] * sizeof(float)), 0, normalCounts[i]);
           obj->Set(JS_STR("normalArray"), normalArray);
-          obj->Set(JS_STR("normalCount"), JS_INT(meshBuffer.numPositions));
+          obj->Set(JS_STR("normalCount"), JS_INT(positionCounts[i]));
 
           Local<Object> indexBuffer = Nan::New<Object>();
-          indexBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.indexBuffer));
+          indexBuffer->Set(JS_STR("id"), JS_INT(indexBuffers[i]));
           obj->Set(JS_STR("indexBuffer"), indexBuffer);
-          Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.indices, meshBuffer.numIndices * sizeof(uint16_t)), 0, meshBuffer.numIndices);
+          Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), indexArrays[i], counts[i] * sizeof(uint16_t)), 0, counts[i]);
           obj->Set(JS_STR("indexArray"), indexArray);
-          obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
+          obj->Set(JS_STR("count"), JS_INT(counts[i]));
         } else {
           Local<Object> obj = Nan::New<Object>();
           obj->Set(JS_STR("id"), JS_STR(id));
