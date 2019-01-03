@@ -478,44 +478,141 @@ NAN_SETTER(MLMesher::OnMeshSetter) {
 }
 
 void MLMesher::Poll() {
-  if (!this->cb.IsEmpty()) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Poll");
+  MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
 
-    MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
-    
-    MLMeshingBlockMesh *blockMeshes = mesh.data;
-    uint32_t dataCount = mesh.data_count;
+  MLMeshingBlockMesh *blockMeshes = mesh.data;
+  uint32_t dataCount = mesh.data_count;
 
-    Local<Array> array = Nan::New<Array>();
-    uint32_t numResults = 0;
-    for (uint32_t i = 0; i < dataCount; i++) {
-      MLMeshingBlockMesh &blockMesh = blockMeshes[i];
-      const std::string &id = id2String(blockMesh.id);
+  std::vector<MLUpdateType> types;
+  types.reserve(dataCount);
+  std::vector<std::string> ids;
+  ids.reserve(dataCount);
+  std::vector<int> positionBuffers;
+  positionBuffers.reserve(dataCount);
+  std::vector<float> positionArrays;
+  positionArrays.reserve(dataCount);
+  std::vector<int> positionCounts;
+  positionCounts.reserve(dataCount);
+  std::vector<int> normalBuffers;
+  normalBuffers.reserve(dataCount);
+  std::vector<float> normalArrays;
+  normalArrays.reserve(dataCount);
+  std::vector<int> normalCounts;
+  normalCounts.reserve(dataCount);
+  std::vector<int> indexBuffers;
+  indexBuffers.reserve(dataCount);
+  std::vector<uint16_t> indexArrays;
+  indexArrays.reserve(dataCount);
+  std::vector<int> counts;
+  counts.reserve(dataCount);
+  uint32_t numResults = 0;
 
-      if (!meshRequestRemovedMap[id]) {
-        auto iter = meshBuffers.find(id);
+  for (uint32_t i = 0; i < dataCount; i++) {
+    MLMeshingBlockMesh &blockMesh = blockMeshes[i];
+    std::string &id = id2String(blockMesh.id);
 
-        if (iter != meshBuffers.end()) {
-          const MeshBuffer &meshBuffer = iter->second;
+    if (!meshRequestRemovedMap[id]) {
+      auto iter = meshBuffers.find(id);
 
-          Local<Object> obj = Nan::New<Object>();
-          obj->Set(JS_STR("id"), JS_STR(id));
-          const char *type;
-          if (meshBuffer.isNew) {
-            type = "new";
-          } else if (meshBuffer.isUnchanged) {
-            type = "unchanged";
-          } else {
-            type = "update";
+      if (iter != meshBuffers.end()) {
+        const MeshBuffer &meshBuffer = iter->second;
+
+        MLUpdateType type;
+        if (meshBuffer.isNew) {
+          type = MLUpdateType::NEW;
+        } else if (meshBuffer.isUnchanged) {
+          type = MLUpdateType::UNCHANGED;
+        } else {
+          type = MLUpdateType::UPDATE;
+        }
+        types[i] = type;
+        ids[i] = std::move(id);
+        positionBuffers[i] = meshBuffer.positionBuffer;
+        positionArrays[i] = meshBuffer.positions;
+        positionCounts[i] = meshBuffer.numPositions;
+        normalBuffers[i] = meshBuffer.normalBuffer;
+        normalArrays[i] = meshBuffer.normals;
+        normalCounts[i] = meshBuffer.numPositions;
+        indexBuffers[i] = meshBuffer.indexBuffer;
+        indexArrays[i] = meshBuffer.indices;
+        counts[i] = meshBuffer.numIndices;
+      } else {
+        ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, id.c_str());
+      }
+    } else {
+      types[i] = MLUpdateType::REMOVE;
+      ids[i] = std::move(id);
+      positionBuffers[i] = 0;
+      positionArrays[i] = nullptr;
+      positionCounts[i] = 0;
+      normalBuffers[i] = 0;
+      normalArrays[i] = nullptr;
+      normalCounts[i] = 0;
+      indexBuffers[i] = 0;
+      indexArrays[i] = nullptr;
+      counts[i] = 0;
+    }
+  }
+
+  Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+  polls.emplace_back(localWindowObj, [
+    this,
+    transformMatrix,
+    types{std::move(types)},
+    ids{std::move(ids)},
+    positionBuffers{std::move(positionBuffers)},
+    positionArrays{std::move(positionArrays)},
+    positionCounts{std::move(positionCounts)},
+    normalBuffers{std::move(normalBuffers)},
+    normalArrays{std::move(normalArrays)},
+    normalCounts{std::move(normalCounts)},
+    indexBuffers{std::move(indexBuffers)},
+    indexArrays{std::move(indexArrays)},
+    counts{std::move(counts)},
+  ]() -> void {
+    if (!this->cb.IsEmpty()) {
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Poll");
+
+      Local<Array> array = Nan::New<Array>(numResults);
+      for (uint32_t i = 0; i < numResults; i++) {
+        const string &id = ids[i];
+
+        Local<Object> obj = Nan::New<Object>();
+        obj->Set(JS_STR("id"), JS_STR(id));
+
+        const char *typeString;
+        switch (type) {
+          case MLUpdateType::NEW: {
+            typeString = "new";
+            break;
           }
-          obj->Set(JS_STR("type"), JS_STR(type));
+          case MLUpdateType::UNCHANGED: {
+            typeString = "unchanged";
+            break;
+          }
+          case MLUpdateType::UPDATE: {
+            typeString = "update";
+            break;
+          }
+          case MLUpdateType::REMOVE: {
+            typeString = "remove";
+            break;
+          }
+          default: {
+            typeString = "";
+            break;
+          }
+        }
+        obj->Set(JS_STR("type"), JS_STR(typeString));
+
+        if (type != MLUpdateType::REMOVE) {
+          Local<Float32Array> transformMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transformMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
+          obj->Set(JS_STR("transformMatrix"), transformMatrixArray);
 
           Local<Object> positionBuffer = Nan::New<Object>();
           positionBuffer->Set(JS_STR("id"), JS_INT(meshBuffer.positionBuffer));
-          
-          Local<Float32Array> transformMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transformMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
-          obj->Set(JS_STR("transformMatrix"), transformMatrixArray);
 
           obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.positions, meshBuffer.numPositions * sizeof(float)), 0, meshBuffer.numPositions);
@@ -535,26 +632,22 @@ void MLMesher::Poll() {
           Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), meshBuffer.indices, meshBuffer.numIndices * sizeof(uint16_t)), 0, meshBuffer.numIndices);
           obj->Set(JS_STR("indexArray"), indexArray);
           obj->Set(JS_STR("count"), JS_INT(meshBuffer.numIndices));
-
-          array->Set(numResults++, obj);
         } else {
-          ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, id.c_str());
+          Local<Object> obj = Nan::New<Object>();
+          obj->Set(JS_STR("id"), JS_STR(id));
+          obj->Set(JS_STR("type"), JS_STR("remove"));
         }
-      } else {
-        Local<Object> obj = Nan::New<Object>();
-        obj->Set(JS_STR("id"), JS_STR(id));
-        obj->Set(JS_STR("type"), JS_STR("remove"));
 
-        array->Set(numResults++, obj);
+        array->Set(i, obj);
       }
-    }
 
-    Local<Function> cbFn = Nan::New(this->cb);
-    Local<Value> argv[] = {
-      array,
-    };
-    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-  }
+      Local<Function> cbFn = Nan::New(this->cb);
+      Local<Value> argv[] = {
+        array,
+      };
+      asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+    }
+  });
 }
 
 NAN_METHOD(MLMesher::Destroy) {
