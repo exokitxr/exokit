@@ -896,11 +896,150 @@ NAN_SETTER(MLHandTracker::OnGestureSetter) {
 }
 
 void MLHandTracker::Poll() {
-  if (!this->cb.IsEmpty()) {
+  MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
+
+  bool leftHandBoneValid;
+  MLVec3f leftHandCenter;
+  MLVec3f leftHandNormal;
+  bool leftHandTransformValid;
+  MLTransform leftPointerTransform;
+  bool leftPointerTransformValid;
+  MLTransform leftGripTransform;
+  bool leftGripTransformValid;
+  std::vector<MLVec3f> leftWristPositions(4);
+  std::vector<bool> leftWristPositionsValid(4);
+  std::vector<MLVec3f> leftFingerPositions(5*4);
+  std::vector<bool> leftFingerPositionsValid(5*4);
+  MLHandTrackingKeyPose keyposeLeft;
+  bool keyposeLeftNew;
+
+  MLVec3f rightHandCenter;
+  MLVec3f rightHandNormal;
+  bool rightHandTransformValid
+  MLTransform rightPointerTransform;
+  bool rightPointerTransformValid;
+  MLTransform rightGripTransform;
+  bool rightGripTransformValid;
+  std::vector<MLVec3f> rightWristPositions(4);
+  std::vector<bool> rightWristPositionsValid(4);
+  std::vector<MLVec3f> rightFingerPositions(5*4);
+  std::vector<bool> rightFingerPositionsValid(5*4);
+  MLHandTrackingKeyPose keyposeRight;
+  bool keyposeRightNew;
+
+  leftHandBoneValid = getHandBone(wristBones[0], fingerBones[0]);
+  if (leftHandBoneValid) {
+    leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0], true, transformMatrix);
+    leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0], leftHandNormal, transformMatrix);
+    leftGripTransformValid = getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0], leftHandNormal, transformMatrix);
+
+    for (size_t i = 0; i < 4; i++) {
+      if (*(uint32_t *)&wristBones[0][i][0]) {
+        MLVec3f position;
+        getWristBonePosition(position, wristBones[0], i, transformMatrix);
+
+        leftWristPositions[i] = position;
+        leftWristPositionsValid[i] = true;
+      } else {
+        leftWristPositions[i] = false;
+      }
+    }
+
+    for (size_t i = 0; i < 5; i++) {
+      for (size_t j = 0; j < 4; j++) {
+        uint32_t k = i*4 + j;
+
+        if (*(uint32_t *)&fingerBones[0][i][j][0]) {
+          MLVec3f position;
+          getFingerBonePosition(position, fingerBones[0], i, j, transformMatrix);
+
+          leftFingerPositions[k] = position;
+          leftFingerPositionsValid[k] = true;
+        } else {
+          leftFingerPositionsValid[k] = false;
+        }
+      }
+    }
+
+    keyposeLeft = handData.left_hand_state.keypose;
+    keyposeLeftNew = keyposeLeft != lastKeyposeLeft;
+    lastKeyposeLeft = handData.left_hand_state.keypose;
+  }
+
+  rightHandBoneValid = getHandBone(wristBones[1], fingerBones[1]);
+  if (rightHandBoneValid) {
+    rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false, transformMatrix);
+    rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1], rightHandNormal, transformMatrix);
+    rightGripTransformValid = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1], rightHandNormal, transformMatrix);
+
+    for (size_t i = 0; i < 4; i++) {
+      if (*(uint32_t *)&wristBones[1][i][0]) {
+        MLVec3f position;
+        getWristBonePosition(position, wristBones[1], i, transformMatrix);
+
+        rightWristPositions[i] = position;
+        rightWristPositionsValid[i] = true;
+      } else {
+        rightWristPositions[i] = false;
+      }
+    }
+
+    for (size_t i = 0; i < 5; i++) {
+      for (size_t j = 0; j < 4; j++) {
+        uint32_t k = i*4 + j;
+
+        if (*(uint32_t *)&fingerBones[1][i][j][0]) {
+          MLVec3f position;
+          getFingerBonePosition(position, fingerBones[1], i, j, transformMatrix);
+
+          rightFingerPositions[k] = position;
+          rightFingerPositionsValid[k] = true;
+        } else {
+          rightFingerPositionsValid[k] = false;
+        }
+      }
+    }
+
+    keyposeRight = handData.right_hand_state.keypose;
+    keyposeRightNew = keyposeRight != lastKeyposeRight;
+    lastKeyposeRight = handData.right_hand_state.keypose;
+  }
+
+  Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+  polls.emplace_back(localWindowObj, [
+    this,
+    transformMatrix,
+    leftHandBoneValid,
+    leftHandCenter,
+    leftHandNormal,
+    leftHandTransformValid,
+    leftPointerTransform,
+    leftPointerTransformValid,
+    leftGripTransform,
+    leftGripTransformValid,
+    leftWristPositions{std::move(leftWristPositions)},
+    leftWristPositionsValid{std::move(leftWristPositionsValid)},
+    leftFingerPositions{std::move(leftFingerPositions)},
+    leftFingerPositionsValid{std::move(leftFingerPositionsValid)},
+    keyposeLeft,
+    keyposeLeftNew,
+    rightHandCenter,
+    rightHandNormal,
+    rightHandTransformValid,
+    rightPointerTransform,
+    rightPointerTransformValid,
+    rightGripTransform,
+    rightGripTransformValid,
+    rightWristPositions{std::move(rightWristPositions)},
+    rightWristPositionsValid{std::move(rightWristPositionsValid)},
+    rightFingerPositions{std::move(rightFingerPositions)},
+    rightFingerPositionsValid{std::move(rightFingerPositionsValid)},
+    keyposeRight,
+    keyposeRightNew,
+  ]() -> void {
     Local<Object> asyncObject = Nan::New<Object>();
     AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
-    
-    MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
 
     Local<Array> array = Nan::New<Array>();
     uint32_t numResults = 0;
@@ -909,14 +1048,11 @@ void MLHandTracker::Poll() {
     char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
     size_t index = 0;
 
-    if (getHandBone(wristBones[0], fingerBones[0])) {
+    if (leftHandBoneValid) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("left"));
 
-      MLVec3f leftHandCenter;
-      MLVec3f leftHandNormal;
-      bool leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0], true, transformMatrix);
       if (leftHandTransformValid) {
         memcpy(arrayBufferData + index, leftHandCenter.values, sizeof(leftHandCenter.values));
         obj->Set(JS_STR("center"), Float32Array::New(arrayBuffer, index, sizeof(leftHandCenter.values)/sizeof(leftHandCenter.values[0])));
@@ -930,8 +1066,6 @@ void MLHandTracker::Poll() {
         leftHandNormal = {0, 1, 0};
       }
 
-      MLTransform leftPointerTransform;
-      bool leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0], leftHandNormal, transformMatrix);
       if (leftPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
 
@@ -948,8 +1082,6 @@ void MLHandTracker::Poll() {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
       
-      MLTransform leftGripTransform;
-      bool leftGripTransformValid = getHandGripTransform(leftGripTransform, wristBones[0], fingerBones[0], leftHandNormal, transformMatrix);
       if (leftGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
 
@@ -970,9 +1102,8 @@ void MLHandTracker::Poll() {
       for (size_t i = 0; i < 4; i++) {
         Local<Value> boneVal;
 
-        if (*(uint32_t *)&wristBones[0][i][0]) {
-          MLVec3f position;
-          getWristBonePosition(position, wristBones[0], i, transformMatrix);
+        if (leftWristPositionsValid[i]) {
+          const MLVec3f &position = leftWristPositions[i];
           
           memcpy(arrayBufferData + index, position.values, sizeof(position.values));
           boneVal = Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0]));
@@ -992,9 +1123,9 @@ void MLHandTracker::Poll() {
         for (size_t j = 0; j < 4; j++) {
           Local<Value> boneVal;
 
-          if (*(uint32_t *)&fingerBones[0][i][j][0]) {
-            MLVec3f position;
-            getFingerBonePosition(position, fingerBones[0], i, j, transformMatrix);
+          uint32_t k = j*4 + i;
+          if (leftFingerPositionsValid[k]) {
+            const MLVec3f &position = leftFingerPositions[k];
 
             memcpy(arrayBufferData + index, position.values, sizeof(position.values));
             boneVal = Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0]));
@@ -1010,10 +1141,10 @@ void MLHandTracker::Poll() {
       }
       obj->Set(JS_STR("fingers"), fingersArray);
 
-      Local<Value> gestureVal = gestureCategoryToJsValue(handData.left_hand_state.keypose);
+      Local<Value> gestureVal = gestureCategoryToJsValue(keyposeLeft);
       obj->Set(JS_STR("gesture"), gestureVal);
 
-      if (handData.left_hand_state.keypose != lastKeyposeLeft && !this->ongesture.IsEmpty()) {
+      if (keyposeLeftNew && !this->ongesture.IsEmpty()) {
         Local<Object> gestureObj = Nan::New<Object>();
 
         gestureObj->Set(JS_STR("hand"), JS_STR("left"));
@@ -1058,14 +1189,11 @@ void MLHandTracker::Poll() {
       array->Set(JS_INT(numResults++), obj);
     }
 
-    if (getHandBone(wristBones[1], fingerBones[1])) {
+    if (rightHandBoneValid) {
       Local<Object> obj = Nan::New<Object>();
 
       obj->Set(JS_STR("hand"), JS_STR("right"));
 
-      MLVec3f rightHandCenter;
-      MLVec3f rightHandNormal;
-      bool rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false, transformMatrix);
       if (rightHandTransformValid) {
         memcpy(arrayBufferData + index, rightHandCenter.values, sizeof(rightHandCenter.values));
         obj->Set(JS_STR("center"), Float32Array::New(arrayBuffer, index, sizeof(rightHandCenter.values)/sizeof(rightHandCenter.values[0])));
@@ -1079,8 +1207,6 @@ void MLHandTracker::Poll() {
         rightHandNormal = {0, 1, 0};
       }
 
-      MLTransform rightPointerTransform;
-      bool rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1], rightHandNormal, transformMatrix);
       if (rightPointerTransformValid) {
         Local<Object> pointerObj = Nan::New<Object>();
         pointerObj->Set(JS_STR("position"), Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)rightPointerTransform.position.values, 3 * sizeof(float)), 0, 3));
@@ -1089,9 +1215,7 @@ void MLHandTracker::Poll() {
       } else {
         obj->Set(JS_STR("pointer"), Nan::Null());
       }
-      
-      MLTransform rightGripTransform;
-      bool rightGripTransformValid = getHandGripTransform(rightGripTransform, wristBones[1], fingerBones[1], rightHandNormal, transformMatrix);
+
       if (rightGripTransformValid) {
         Local<Object> gripObj = Nan::New<Object>();
 
@@ -1112,9 +1236,8 @@ void MLHandTracker::Poll() {
       for (size_t i = 0; i < 4; i++) {
         Local<Value> boneVal;
 
-        if (*(uint32_t *)&wristBones[1][i][0]) {
-          MLVec3f position;
-          getWristBonePosition(position, wristBones[1], i, transformMatrix);
+        if (rightWristPositionsValid[i]) {
+          const MLVec3f &position = rightWristPositions[i];
           
           memcpy(arrayBufferData + index, position.values, sizeof(position.values));
           boneVal = Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0]));
@@ -1134,10 +1257,10 @@ void MLHandTracker::Poll() {
         for (size_t j = 0; j < 4; j++) {
           Local<Value> boneVal;
 
-          if (*(uint32_t *)&fingerBones[1][i][j][0]) {
-            MLVec3f position;
-            getFingerBonePosition(position, fingerBones[1], i, j, transformMatrix);
-            
+          uint32_t k = j*4 + i;
+          if (leftFingerPositionsValid[k]) {
+            const MLVec3f &position = leftFingerPositions[k];
+
             memcpy(arrayBufferData + index, position.values, sizeof(position.values));
             boneVal = Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0]));
             index += sizeof(position.values);
@@ -1152,10 +1275,10 @@ void MLHandTracker::Poll() {
       }
       obj->Set(JS_STR("fingers"), fingersArray);
 
-      Local<Value> gestureVal = gestureCategoryToJsValue(handData.right_hand_state.keypose);
+      Local<Value> gestureVal = gestureCategoryToJsValue(keyposeRight);
       obj->Set(JS_STR("gesture"), gestureVal);
 
-      if (handData.right_hand_state.keypose != lastKeyposeRight && !this->ongesture.IsEmpty()) {
+      if (keyposeRightNew && !this->ongesture.IsEmpty()) {
         Local<Object> gestureObj = Nan::New<Object>();
 
         gestureObj->Set(JS_STR("hand"), JS_STR("right"));
@@ -1199,12 +1322,14 @@ void MLHandTracker::Poll() {
       array->Set(JS_INT(numResults++), obj);
     }
 
-    Local<Function> cb = Nan::New(this->cb);
-    Local<Value> argv[] = {
-      array,
-    };
-    asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
-  }
+    if (!this->cb.IsEmpty()) {
+      Local<Function> cb = Nan::New(this->cb);
+      Local<Value> argv[] = {
+        array,
+      };
+      asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+    }
+  });
 }
 
 NAN_METHOD(MLHandTracker::Destroy) {
