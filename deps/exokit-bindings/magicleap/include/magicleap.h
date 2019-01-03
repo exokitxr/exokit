@@ -15,6 +15,7 @@
 #include <dlfcn.h>
 #include <cmath>
 #include <vector>
+#include <list>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
