@@ -314,7 +314,7 @@ MLRaycaster::MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<
 
 MLRaycaster::~MLRaycaster() {}
 
-bool MLRaycaster::Poll() {
+bool MLRaycaster::Update() {
   MLRaycastResult raycastResult;
   MLResult result = MLRaycastGetResult(raycastTracker, this->requestHandle, &raycastResult);
   if (result == MLResult_Ok) {
@@ -485,7 +485,7 @@ NAN_SETTER(MLMesher::OnMeshSetter) {
   }
 }
 
-void MLMesher::Poll() {
+void MLMesher::Update() {
   MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
 
   MLMeshingBlockMesh *blockMeshes = mesh.data;
@@ -731,7 +731,7 @@ NAN_SETTER(MLPlaneTracker::OnPlanesSetter) {
   }
 }
 
-void MLPlaneTracker::Poll() {
+void MLPlaneTracker::Update() {
   MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
 
   uint32_t numPlanes = numPlanesResults;
@@ -915,7 +915,7 @@ NAN_SETTER(MLHandTracker::OnGestureSetter) {
   }
 }
 
-void MLHandTracker::Poll() {
+void MLHandTracker::Update() {
   MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
 
   bool leftHandBoneValid;
@@ -1450,7 +1450,7 @@ NAN_GETTER(MLEyeTracker::EyesGetter) {
   info.GetReturnValue().Set(array);
 }
 
-void MLEyeTracker::Poll(MLSnapshot *snapshot) {
+void MLEyeTracker::Update(MLSnapshot *snapshot) {
   if (MLSnapshotGetTransform(snapshot, &eyeStaticData.fixation, &this->transform) == MLResult_Ok) {
     // nothing
   } else {
@@ -1726,7 +1726,7 @@ NAN_SETTER(MLImageTracker::OnTrackSetter) {
   }
 }
 
-void MLImageTracker::Poll(MLSnapshot *snapshot) {
+void MLImageTracker::Update(MLSnapshot *snapshot) {
   MLImageTrackerTargetResult trackerTargetResult;
   MLResult result = MLImageTrackerGetTargetResult(
     imageTrackerHandle,
@@ -2104,7 +2104,7 @@ void RunCameraConvertInMainThread(uv_async_t *handle) {
 
   std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
     c->Set(CAMERA_SIZE[0], CAMERA_SIZE[1], cameraRequestJpeg, cameraRequestSize);
-    c->Poll();
+    c->Update();
   });
 
   if (cameraRequestSize > 0) {
@@ -3226,7 +3226,7 @@ NAN_METHOD(MLContext::Update) {
 
   if (raycasters.size() > 0) {
     raycasters.erase(std::remove_if(raycasters.begin(), raycasters.end(), [&](MLRaycaster *r) -> bool {
-      if (r->Poll()) {
+      if (r->Update()) {
         delete r;
         return true;
       } else {
@@ -3263,7 +3263,7 @@ NAN_METHOD(MLContext::Update) {
         setFingerValue(handStaticData.right.pinky, snapshot, fingerBones[1][4]);
 
         std::for_each(handTrackers.begin(), handTrackers.end(), [&](MLHandTracker *h) {
-          h->Poll();
+          h->Update();
         });
       } else {
         ML_LOG(Error, "%s: Hand static data get failed! %x", application_name, result);
@@ -3288,7 +3288,7 @@ NAN_METHOD(MLContext::Update) {
       }
     }
     std::for_each(eyeTrackers.begin(), eyeTrackers.end(), [&](MLEyeTracker *e) {
-      e->Poll(snapshot);
+      e->Update(snapshot);
     });
   }
 
@@ -3299,7 +3299,7 @@ NAN_METHOD(MLContext::Update) {
       }
     }
     std::for_each(imageTrackers.begin(), imageTrackers.end(), [&](MLImageTracker *i) {
-      i->Poll(snapshot);
+      i->Update(snapshot);
     });
   }
 
@@ -3462,7 +3462,6 @@ NAN_METHOD(MLContext::Update) {
       }
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
-        m->Poll();
       });
 
       meshRequestsPending = true;
@@ -3483,7 +3482,7 @@ NAN_METHOD(MLContext::Update) {
     MLResult result = MLPlanesQueryGetResults(planesTracker, planesRequestHandle, planeResults, &numPlanesResults);
     if (result == MLResult_Ok) {
       std::for_each(planeTrackers.begin(), planeTrackers.end(), [&](MLPlaneTracker *p) {
-        p->Poll();
+        p->Update();
       });
 
       planesRequestPending = false;

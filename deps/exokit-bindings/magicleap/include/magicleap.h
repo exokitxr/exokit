@@ -110,7 +110,7 @@ public:
   MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<Function> cb);
   ~MLRaycaster();
 
-  bool Poll();
+  bool Update();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -156,7 +156,7 @@ public:
   static NAN_SETTER(OnMeshSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll();
+  void Update();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -175,7 +175,7 @@ public:
   static NAN_SETTER(OnPlanesSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll();
+  void Update();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -196,7 +196,7 @@ public:
   static NAN_SETTER(OnGestureSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll();
+  void Update();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -216,7 +216,7 @@ public:
   static NAN_GETTER(EyesGetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(MLSnapshot *snapshot);
+  void Update(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -231,7 +231,7 @@ class CameraRequest {
 public:
   CameraRequest(Local<Function> cbFn);
   void Set(int width, int height, uint8_t *data, size_t size);
-  void Poll();
+  void Update();
 
 // protected:
   Nan::Persistent<Function> cbFn;
@@ -252,7 +252,7 @@ public:
   static NAN_SETTER(OnTrackSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(MLSnapshot *snapshot);
+  void Update(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Object> windowObj;
