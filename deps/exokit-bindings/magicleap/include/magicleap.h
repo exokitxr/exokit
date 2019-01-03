@@ -291,6 +291,7 @@ public:
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(Update);
+  static NAN_METHOD(Poll);
 
 // protected:
   // EGL
