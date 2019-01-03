@@ -919,6 +919,7 @@ void MLHandTracker::Poll() {
   MLHandTrackingKeyPose keyposeLeft;
   bool keyposeLeftNew;
 
+  bool rightHandBoneValid;
   MLVec3f rightHandCenter;
   MLVec3f rightHandNormal;
   bool rightHandTransformValid;
@@ -1030,6 +1031,7 @@ void MLHandTracker::Poll() {
     leftFingerPositionsValid{std::move(leftFingerPositionsValid)},
     keyposeLeft,
     keyposeLeftNew,
+    rightHandBoneValid,
     rightHandCenter,
     rightHandNormal,
     rightHandTransformValid,
