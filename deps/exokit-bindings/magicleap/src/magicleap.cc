@@ -759,17 +759,17 @@ void MLPlaneTracker::Update() {
     MLVec3f scale = {1, 1, 1};
 
     std::string id = id2String(planeId);
-    ids[i] = std::move(id);
+    ids.push_back(std::move(id));
 
     if (!isIdentityMatrix(transformMatrix)) {
       MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
       decomposeMatrix(transform, position, rotation, scale);
     }
 
-    positions[i] = position;
-    rotations[i] = rotation;
-    widths[i] = width;
-    heights[i] = height;
+    positions.push_back(position);
+    rotations.push_back(rotation);
+    widths.push_back(width);
+    heights.push_back(height);
   }
 
   Local<Object> localWindowObj = Nan::New(this->windowObj);
