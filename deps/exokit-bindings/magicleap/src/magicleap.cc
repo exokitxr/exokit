@@ -751,7 +751,7 @@ void MLPlaneTracker::Poll() {
     MLQuaternionf rotation = plane.rotation;
     MLVec3f scale = {1, 1, 1};
 
-    std::string &id = id2String(planeId);
+    std::string id = id2String(planeId);
     ids[i] = std::move(id);
 
     if (!isIdentityMatrix(transformMatrix)) {
