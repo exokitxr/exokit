@@ -1274,8 +1274,8 @@ void MLHandTracker::Update() {
           Local<Value> boneVal;
 
           uint32_t k = j*4 + i;
-          if (leftFingerPositionsValid[k]) {
-            const MLVec3f &position = leftFingerPositions[k];
+          if (rightFingerPositionsValid[k]) {
+            const MLVec3f &position = rightFingerPositions[k];
 
             memcpy(arrayBufferData + index, position.values, sizeof(position.values));
             boneVal = Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0]));
