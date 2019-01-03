@@ -727,8 +727,10 @@ NAN_SETTER(MLPlaneTracker::OnPlanesSetter) {
 void MLPlaneTracker::Poll() {
   MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
 
+  uint32_t numPlanes = numPlanesResults;
+  
   std::vector<std::string> ids;
-  ids.reserve(numPlanesResults);
+  ids.reserve(numPlanes);
   std::vector<float> widths;
   widths.reserve(numPlanesResults);
   std::vector<float> heights;
