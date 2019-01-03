@@ -362,7 +362,7 @@ bool MLRaycaster::Poll() {
           };
           asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
         }
-      );
+      });
     }
 
     return true;
