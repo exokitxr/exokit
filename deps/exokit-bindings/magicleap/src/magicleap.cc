@@ -522,6 +522,8 @@ void MLMesher::Poll() {
 
       if (iter != meshBuffers.end()) {
         const MeshBuffer &meshBuffer = iter->second;
+        
+        uint32_t index = numResults++;
 
         MLUpdateType type;
         if (meshBuffer.isNew) {
@@ -531,32 +533,34 @@ void MLMesher::Poll() {
         } else {
           type = MLUpdateType::UPDATE;
         }
-        types[i] = type;
-        ids[i] = std::move(id);
-        positionBuffers[i] = meshBuffer.positionBuffer;
-        positionArrays[i] = meshBuffer.positions;
-        positionCounts[i] = meshBuffer.numPositions;
-        normalBuffers[i] = meshBuffer.normalBuffer;
-        normalArrays[i] = meshBuffer.normals;
-        normalCounts[i] = meshBuffer.numPositions;
-        indexBuffers[i] = meshBuffer.indexBuffer;
-        indexArrays[i] = meshBuffer.indices;
-        counts[i] = meshBuffer.numIndices;
+        types[index] = type;
+        ids[index] = std::move(id);
+        positionBuffers[index] = meshBuffer.positionBuffer;
+        positionArrays[index] = meshBuffer.positions;
+        positionCounts[index] = meshBuffer.numPositions;
+        normalBuffers[index] = meshBuffer.normalBuffer;
+        normalArrays[index] = meshBuffer.normals;
+        normalCounts[index] = meshBuffer.numPositions;
+        indexBuffers[index] = meshBuffer.indexBuffer;
+        indexArrays[index] = meshBuffer.indices;
+        counts[index] = meshBuffer.numIndices;
       } else {
         ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, id.c_str());
       }
     } else {
-      types[i] = MLUpdateType::REMOVE;
-      ids[i] = std::move(id);
-      positionBuffers[i] = 0;
-      positionArrays[i] = nullptr;
-      positionCounts[i] = 0;
-      normalBuffers[i] = 0;
-      normalArrays[i] = nullptr;
-      normalCounts[i] = 0;
-      indexBuffers[i] = 0;
-      indexArrays[i] = nullptr;
-      counts[i] = 0;
+      uint32_t index = numResults++;
+      
+      types[index] = MLUpdateType::REMOVE;
+      ids[index] = std::move(id);
+      positionBuffers[index] = 0;
+      positionArrays[index] = nullptr;
+      positionCounts[index] = 0;
+      normalBuffers[index] = 0;
+      normalArrays[index] = nullptr;
+      normalCounts[index] = 0;
+      indexBuffers[index] = 0;
+      indexArrays[index] = nullptr;
+      counts[index] = 0;
     }
   }
 
