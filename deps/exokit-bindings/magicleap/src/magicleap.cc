@@ -719,60 +719,91 @@ NAN_SETTER(MLPlaneTracker::OnPlanesSetter) {
 }
 
 void MLPlaneTracker::Poll() {
-  if (!this->cb.IsEmpty()) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
-    
-    MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
+  MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
 
-    Local<Array> array = Nan::New<Array>(numPlanesResults);
-    for (uint32_t i = 0; i < numPlanesResults; i++) {
-      MLPlane &plane = planeResults[i];
+  std::vector<std::string> ids;
+  ids.reserve(numPlanesResults);
+  std::vector<float> widths;
+  widths.reserve(numPlanesResults);
+  std::vector<float> heights;
+  heights.reserve(numPlanesResults);
+  std::vector<MLVec3f> positions;
+  positions.reserve(numPlanesResults);
+  std::vector<MLQuaternionf> rotations;
+  rotations.reserve(numPlanesResults);
 
-      Local<Object> obj = Nan::New<Object>();
+  for (uint32_t i = 0; i < numPlanesResults; i++) {
+    MLPlane &plane = planeResults[i];
 
-      uint64_t planeId = (uint64_t)plane.id;
-      // uint32_t flags = plane.flags;
-      float width = plane.width;
-      float height = plane.height;
-      MLVec3f position = plane.position;
-      MLQuaternionf rotation = plane.rotation;
-      MLVec3f scale = {1, 1, 1};
+    uint64_t planeId = (uint64_t)plane.id;
+    // uint32_t flags = plane.flags;
+    float width = plane.width;
+    float height = plane.height;
+    MLVec3f position = plane.position;
+    MLQuaternionf rotation = plane.rotation;
+    MLVec3f scale = {1, 1, 1};
 
-      if (!isIdentityMatrix(transformMatrix)) {
-        MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
-        decomposeMatrix(transform, position, rotation, scale);
-      }
-      
-      const std::string &id = id2String(planeId);
-      obj->Set(JS_STR("id"), JS_STR(id));
+    std::string &id = id2String(planeId);
+    ids[i] = std::move(id);
 
-      Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4+2)*sizeof(float));
-      char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
-      size_t index = 0;
-
-      memcpy(arrayBufferData + index, position.values, sizeof(position.values));
-      obj->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
-      index += sizeof(position.values);
-
-      memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
-      obj->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
-      index += sizeof(rotation.values);
-
-      ((float *)(arrayBufferData + index))[0] = width;
-      ((float *)(arrayBufferData + index))[1] = height;
-      obj->Set(JS_STR("size"), Float32Array::New(arrayBuffer, index, 2));
-      index += 2*sizeof(float);
-
-      array->Set(i, obj);
+    if (!isIdentityMatrix(transformMatrix)) {
+      MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+      decomposeMatrix(transform, position, rotation, scale);
     }
 
-    Local<Function> cb = Nan::New(this->cb);
-    Local<Value> argv[] = {
-      array,
-    };
-    asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+    positions[i] = position;
+    rotation[i] = rotation;
+    widths[i] = width;
+    heights[i] = height;
   }
+
+  Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+  polls.emplace_back(localWindowObj, [
+    numPlanesResults,
+    ids{std::move(ids)},
+    positions{std::move(positions)},
+    rotations{std::move(rotations)},
+    widths{std::move(widths)},
+    heights{std::move(heights)},
+  ]() -> void {
+    if (!this->cb.IsEmpty()) {
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
+
+      for (uint32_t i = 0; i < numPlanesResults; i++) {
+        const std::string &id = ids[i];
+        obj->Set(JS_STR("id"), JS_STR(id));
+
+        Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4+2)*sizeof(float));
+        char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
+        size_t index = 0;
+
+        const MLVec3f &position = positions[i];
+        memcpy(arrayBufferData + index, position.values, sizeof(position.values));
+        obj->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
+        index += sizeof(position.values);
+
+        const MLQuaternionf &rotation = rotations[i];
+        memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
+        obj->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
+        index += sizeof(rotation.values);
+
+        ((float *)(arrayBufferData + index))[0] = widths[i];
+        ((float *)(arrayBufferData + index))[1] = heights[i];
+        obj->Set(JS_STR("size"), Float32Array::New(arrayBuffer, index, 2));
+        index += 2*sizeof(float);
+
+        array->Set(i, obj);
+      }
+
+      Local<Function> cb = Nan::New(this->cb);
+      Local<Value> argv[] = {
+        array,
+      };
+      asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+    }
+  });
 }
 
 NAN_METHOD(MLPlaneTracker::Destroy) {
