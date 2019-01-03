@@ -593,6 +593,7 @@ void MLMesher::Poll() {
         Local<Object> obj = Nan::New<Object>();
         obj->Set(JS_STR("id"), JS_STR(id));
 
+        const MLUpdateType &type = types[i];
         const char *typeString;
         switch (type) {
           case MLUpdateType::NEW: {
