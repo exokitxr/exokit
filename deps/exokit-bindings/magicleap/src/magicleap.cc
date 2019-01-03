@@ -921,7 +921,7 @@ void MLHandTracker::Poll() {
 
   MLVec3f rightHandCenter;
   MLVec3f rightHandNormal;
-  bool rightHandTransformValid
+  bool rightHandTransformValid;
   MLTransform rightPointerTransform;
   bool rightPointerTransformValid;
   MLTransform rightGripTransform;
