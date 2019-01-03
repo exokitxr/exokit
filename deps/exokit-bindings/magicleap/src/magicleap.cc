@@ -524,8 +524,6 @@ void MLMesher::Update() {
 
       if (iter != meshBuffers.end()) {
         const MeshBuffer &meshBuffer = iter->second;
-        
-        uint32_t index = numResults++;
 
         MLUpdateType type;
         if (meshBuffer.isNew) {
@@ -535,34 +533,36 @@ void MLMesher::Update() {
         } else {
           type = MLUpdateType::UPDATE;
         }
-        types[index] = type;
-        ids[index] = std::move(id);
-        positionBuffers[index] = meshBuffer.positionBuffer;
-        positionArrays[index] = meshBuffer.positions;
-        positionCounts[index] = meshBuffer.numPositions;
-        normalBuffers[index] = meshBuffer.normalBuffer;
-        normalArrays[index] = meshBuffer.normals;
-        normalCounts[index] = meshBuffer.numPositions;
-        indexBuffers[index] = meshBuffer.indexBuffer;
-        indexArrays[index] = meshBuffer.indices;
-        counts[index] = meshBuffer.numIndices;
+        types.push_back(type);
+        ids.push_back(std::move(id));
+        positionBuffers.push_back(meshBuffer.positionBuffer);
+        positionArrays.push_back(meshBuffer.positions);
+        positionCounts.push_back(meshBuffer.numPositions);
+        normalBuffers.push_back(meshBuffer.normalBuffer);
+        normalArrays.push_back(meshBuffer.normals);
+        normalCounts.push_back(meshBuffer.numPositions);
+        indexBuffers.push_back(meshBuffer.indexBuffer);
+        indexArrays.push_back(meshBuffer.indices);
+        counts.push_back(meshBuffer.numIndices);
+        
+        numResults++;
       } else {
         ML_LOG(Error, "%s: ML mesh poll failed to find mesh: %s", application_name, id.c_str());
       }
     } else {
-      uint32_t index = numResults++;
+      types.push_back(MLUpdateType::REMOVE);
+      ids.push_back(std::move(id));
+      positionBuffers.push_back(0);
+      positionArrays.push_back(nullptr);
+      positionCounts.push_back(0);
+      normalBuffers.push_back(0);
+      normalArrays.push_back(nullptr);
+      normalCounts.push_back(0);
+      indexBuffers.push_back(0);
+      indexArrays.push_back(nullptr);
+      counts.push_back(0);
       
-      types[index] = MLUpdateType::REMOVE;
-      ids[index] = std::move(id);
-      positionBuffers[index] = 0;
-      positionArrays[index] = nullptr;
-      positionCounts[index] = 0;
-      normalBuffers[index] = 0;
-      normalArrays[index] = nullptr;
-      normalCounts[index] = 0;
-      indexBuffers[index] = 0;
-      indexArrays[index] = nullptr;
-      counts[index] = 0;
+      numResults++;
     }
   }
 
