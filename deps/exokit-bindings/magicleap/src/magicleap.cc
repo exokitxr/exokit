@@ -580,6 +580,7 @@ void MLMesher::Poll() {
     indexBuffers{std::move(indexBuffers)},
     indexArrays{std::move(indexArrays)},
     counts{std::move(counts)},
+    numResults
   ]() -> void {
     if (!this->cb.IsEmpty()) {
       Local<Object> asyncObject = Nan::New<Object>();
