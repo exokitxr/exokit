@@ -100,6 +100,9 @@ class MLPoll {
 public:
   Nan::Persistent<Object> windowObj;
   std::function<void()> cb;
+  
+  MLPoll(Local<Object> windowObj, std::function<void()> cb);
+  ~MLPoll();
 };
 
 class MLRaycaster : public ObjectWrap {

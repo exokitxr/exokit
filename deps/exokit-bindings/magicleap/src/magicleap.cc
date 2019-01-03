@@ -375,6 +375,12 @@ bool MLRaycaster::Poll() {
   }
 }
 
+// MLPoll
+
+MLPoll::MLPoll(Local<Object> windowObj, std::function<void()> cb) : windowObj(windowObj), cb(cb) {}
+
+MLPoll::~MLPoll() {}
+
 // MeshBuffer
 
 MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) :
