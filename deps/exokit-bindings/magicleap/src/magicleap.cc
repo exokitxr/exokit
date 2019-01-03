@@ -357,6 +357,8 @@ bool MLRaycaster::Poll() {
           Local<Object> asyncObject = Nan::New<Object>();
           AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
 
+          Local<Function> cb = Nan::New(this->cb);
+          
           Local<Value> argv[] = {
             Nan::New<Array>(0),
           };
