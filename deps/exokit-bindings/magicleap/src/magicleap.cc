@@ -788,7 +788,11 @@ void MLPlaneTracker::Poll() {
       Local<Object> asyncObject = Nan::New<Object>();
       AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
 
-      for (uint32_t i = 0; i < numPlanesResults; i++) {
+      Local<Array> array = Nan::New<Array>();
+      
+      for (uint32_t i = 0; i < numPlanes; i++) {
+        Local<Object> obj = Nan::New<Object>();
+        
         const std::string &id = ids[i];
         obj->Set(JS_STR("id"), JS_STR(id));
 
