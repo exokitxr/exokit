@@ -133,6 +133,13 @@ public:
   bool isUnchanged;
 };
 
+enum class MLUpdateType {
+  NEW,
+  UNCHANGED,
+  UPDATE,
+  REMOVE,
+};
+
 class MLMesher : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
