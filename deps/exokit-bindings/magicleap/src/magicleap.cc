@@ -1711,11 +1711,6 @@ NAN_SETTER(MLImageTracker::OnTrackSetter) {
 }
 
 void MLImageTracker::Poll(MLSnapshot *snapshot) {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker");
-  
-  MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
-
   MLImageTrackerTargetResult trackerTargetResult;
   MLResult result = MLImageTrackerGetTargetResult(
     imageTrackerHandle,
@@ -1742,33 +1737,44 @@ void MLImageTracker::Poll(MLSnapshot *snapshot) {
           MLVec3f &position = transform.position;
           MLQuaternionf &rotation = transform.rotation;
           MLVec3f scale = {1, 1, 1};
+
+          MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
           if (!isIdentityMatrix(transformMatrix)) {
             MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
             decomposeMatrix(transform, position, rotation, scale);
           }
-          
-          Local<Function> cbFn = Nan::New(cb);
-          Local<Object> objVal = Nan::New<Object>();
-          
-          Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4)*sizeof(float));
-          char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
-          size_t index = 0;
 
-          memcpy(arrayBufferData + index, position.values, sizeof(position.values));
-          objVal->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
-          index += sizeof(position.values);
-          
-          memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
-          objVal->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
-          index += sizeof(rotation.values);
+          Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-          objVal->Set(JS_STR("size"), JS_NUM(size));
-          
-          Local<Value> argv[] = {
-            objVal,
-          };
+          polls.emplace_back(localWindowObj, [this, position, rotation]() -> void {
+            if (!this->cb.IsEmpty()) {
+              Local<Object> asyncObject = Nan::New<Object>();
+              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Poll");
 
-          asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+              Local<Function> cbFn = Nan::New(this->cb);
+              Local<Object> objVal = Nan::New<Object>();
+
+              Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4)*sizeof(float));
+              char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
+              size_t index = 0;
+
+              memcpy(arrayBufferData + index, position.values, sizeof(position.values));
+              objVal->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
+              index += sizeof(position.values);
+
+              memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
+              objVal->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
+              index += sizeof(rotation.values);
+
+              objVal->Set(JS_STR("size"), JS_NUM(this->size));
+
+              Local<Value> argv[] = {
+                objVal,
+              };
+
+              asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+            }
+          });
 
           valid = newValid;
         } else {
@@ -1779,13 +1785,22 @@ void MLImageTracker::Poll(MLSnapshot *snapshot) {
       }
     } else {
       if (lastValid) {
-        Local<Function> cbFn = Nan::New(cb);
-        Local<Value> objVal = Nan::Null();
-        Local<Value> argv[] = {
-          objVal,
-        };
+        Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-        asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+        polls.emplace_back(localWindowObj, [this]() -> void {
+          if (!this->cb.IsEmpty()) {
+            Local<Object> asyncObject = Nan::New<Object>();
+            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Poll");
+
+            Local<Function> cbFn = Nan::New(cb);
+            Local<Value> objVal = Nan::Null();
+            Local<Value> argv[] = {
+              objVal,
+            };
+
+            asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+          }
+        });
       }
 
       valid = newValid;
