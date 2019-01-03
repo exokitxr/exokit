@@ -515,7 +515,7 @@ void MLMesher::Poll() {
 
   for (uint32_t i = 0; i < dataCount; i++) {
     MLMeshingBlockMesh &blockMesh = blockMeshes[i];
-    std::string &id = id2String(blockMesh.id);
+    std::string id = id2String(blockMesh.id);
 
     if (!meshRequestRemovedMap[id]) {
       auto iter = meshBuffers.find(id);
