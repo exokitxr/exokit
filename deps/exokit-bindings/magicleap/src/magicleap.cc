@@ -1881,6 +1881,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "Update", Update);
+  Nan::SetMethod(ctorFn, "Poll", Poll);
 
   return scope.Escape(ctorFn);
 }
