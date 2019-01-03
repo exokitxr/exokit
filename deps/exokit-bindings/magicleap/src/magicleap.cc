@@ -3462,6 +3462,7 @@ NAN_METHOD(MLContext::Update) {
       }
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
+        m->Update();
       });
 
       meshRequestsPending = true;
