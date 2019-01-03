@@ -352,7 +352,7 @@ bool MLRaycaster::Poll() {
     } else {
       Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-      polls.emplace_back(localWindowObj, [this, hitMatrix]() -> void {
+      polls.emplace_back(localWindowObj, [this]() -> void {
         if (!this->cb.IsEmpty()) {
           Local<Object> asyncObject = Nan::New<Object>();
           AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
