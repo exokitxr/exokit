@@ -334,7 +334,7 @@ bool MLRaycaster::Update() {
       polls.emplace_back(localWindowObj, [this, hitMatrix]() -> void {
         if (!this->cb.IsEmpty()) {
           Local<Object> asyncObject = Nan::New<Object>();
-          AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
+          AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
 
           Local<Function> cb = Nan::New(this->cb);
 
@@ -355,7 +355,7 @@ bool MLRaycaster::Update() {
       polls.emplace_back(localWindowObj, [this]() -> void {
         if (!this->cb.IsEmpty()) {
           Local<Object> asyncObject = Nan::New<Object>();
-          AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Poll");
+          AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
 
           Local<Function> cb = Nan::New(this->cb);
           
@@ -586,7 +586,7 @@ void MLMesher::Update() {
   ]() -> void {
     if (!this->cb.IsEmpty()) {
       Local<Object> asyncObject = Nan::New<Object>();
-      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Poll");
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLMesher::Update");
 
       Local<Array> array = Nan::New<Array>(numResults);
       for (uint32_t i = 0; i < numResults; i++) {
@@ -785,7 +785,7 @@ void MLPlaneTracker::Update() {
   ]() -> void {
     if (!this->cb.IsEmpty()) {
       Local<Object> asyncObject = Nan::New<Object>();
-      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Poll");
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLPlaneTracker::Update");
 
       Local<Array> array = Nan::New<Array>();
       
@@ -1061,7 +1061,7 @@ void MLHandTracker::Update() {
     keyposeRightNew
   ]() -> void {
     Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Poll");
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLHandTracker::Update");
 
     Local<Array> array = Nan::New<Array>();
     uint32_t numResults = 0;
@@ -1765,7 +1765,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
           polls.emplace_back(localWindowObj, [this, position, rotation]() -> void {
             if (!this->cb.IsEmpty()) {
               Local<Object> asyncObject = Nan::New<Object>();
-              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Poll");
+              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
 
               Local<Function> cbFn = Nan::New(this->cb);
               Local<Object> objVal = Nan::New<Object>();
@@ -1806,7 +1806,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
         polls.emplace_back(localWindowObj, [this]() -> void {
           if (!this->cb.IsEmpty()) {
             Local<Object> asyncObject = Nan::New<Object>();
-            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Poll");
+            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
 
             Local<Function> cbFn = Nan::New(cb);
             Local<Value> objVal = Nan::Null();
