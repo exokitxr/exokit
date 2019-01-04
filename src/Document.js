@@ -103,7 +103,8 @@ function initDocument (document, window) {
     if (command === 'copy') {
       // nothing
     } else if (command === 'paste') {
-      document.dispatchEvent(new Event('paste'));
+      // do we still need this?
+      // document.dispatchEvent(new Event('paste'));
     }
   };
   document[symbols.pointerLockElementSymbol] = null;
