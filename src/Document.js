@@ -100,12 +100,11 @@ function initDocument (document, window) {
     }
   };
   document.execCommand = command => {
-    if (command === 'copy') {
-      // nothing
-    } else if (command === 'paste') {
-      // do we still need this?
-      // document.dispatchEvent(new Event('paste'));
-    }
+    if (command === 'copy') { 
+      // nothing 
+    } else if (command === 'paste') { 
+      document.dispatchEvent(new Event('paste')); 
+    } 
   };
   document[symbols.pointerLockElementSymbol] = null;
   document[symbols.fullscreenElementSymbol] = null;
