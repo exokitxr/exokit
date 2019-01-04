@@ -983,6 +983,24 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return fakeVrDisplay;
     },
     getGamepads,
+    clipboard:{
+      read:() => Promise.resolve(), // Not implemented yet
+      readText: () => new Promise(resolve => {
+        if (GlobalContext.contexts && GlobalContext.contexts.length){
+          const windowHandle = GlobalContext.contexts[0].getWindowHandle();
+          const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);// why do we slice this?
+          resolve(clipboardContents);
+        }
+      }),
+      write:() => Promise.resolve(), // Not implemented yet
+      writeText: clipboardContents => new Promise(resolve => {
+        if (GlobalContext.contexts && GlobalContext.contexts.length){
+          const windowHandle = GlobalContext.contexts[0].getWindowHandle();
+          nativeWindow.setClipboard(windowHandle,clipboardContents);
+          resolve();
+        }
+      })
+    }
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
