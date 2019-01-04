@@ -3512,8 +3512,6 @@ NAN_METHOD(MLContext::Update) {
 }
 
 NAN_METHOD(MLContext::Poll) {
-  std::cout << "MLContext::Poll 0 " << polls.size() << std::endl;
-
   std::for_each(polls.begin(), polls.end(), [&](MLPoll *poll) {
     poll->cb();
     delete poll;
