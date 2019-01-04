@@ -5,6 +5,7 @@
     <script src="fakeDisplay.js"></script>
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
+    <script src="sprite3d.js"></script>
     <script>
 let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false];
 
@@ -53,7 +54,7 @@ const links = [
     name: 'Microphone',
     url: 'microphone.html',
   },
-];
+].map(({name, url}) => ({name, url, iconMesh: null}));
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 const rayDistance = 3;
@@ -98,7 +99,7 @@ const DEFAULT_URL = 'http://lol.com';
 // load
 
 const keyMap = [];
-fetch('../assets/keyboard.svg')
+fetch('keyboard.svg')
   .then(res => res.text())
   .then(keyboardText => {
     const div = document.createElement('div');
@@ -130,7 +131,7 @@ let keyboardHighlightCanvasCtx = null;
 new Promise((accept, reject) => {
   const img = new Image();
   img.crossOrigin = 'Anonymous';
-  img.src = '../assets/keyboard-hightlight.png';
+  img.src = 'keyboard-highlight.png';
   img.onload = () => {
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth;
@@ -149,6 +150,21 @@ new Promise((accept, reject) => {
   .catch(err => {
     console.warn(err.stack);
   });
+
+const iconMeshes = [];
+
+const _requestSpriteMesh = url => new Promise((accept, reject) => {
+  const img = new Image();
+  img.crossOrigin = 'Anonymous';
+  img.src = url;
+  img.onload = () => {
+    const spriteMesh = sprite3d.makeSpriteMesh(img);
+    accept(spriteMesh);
+  };
+  img.onerror = err => {
+    reject(err);
+  };
+});
 
 // helpers
 
@@ -841,6 +857,12 @@ const _makeRig = () => {
           ctx.fillRect(menuWidth*0.99, mesh.scrollIndex*barSpace/(listLength > 1 ? (listLength-1) : 1), menuWidth*0.01, barHeight);
         };
 
+        for (let i = 0; i < iconMeshes.length; i++) {
+          const iconMesh = iconMeshes[i];
+          if (iconMesh.parent) {
+            iconMesh.parent.remove(iconMesh);
+          }
+        }
         if (optionsMesh.list === 'tabs') {
           if (tabs.length > 0) {
             const localTabs = tabs.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
@@ -858,7 +880,7 @@ const _makeRig = () => {
               ctx.fillRect(menuWidth*0.8, y, menuWidth*0.18, menuHeight);
 
               ctx.fillStyle = tab === focusedTab ? '#FFF' : '#000';
-              ctx.fillText(url, 50, y + menuHeight/2 + 20);
+              ctx.fillText(url, 100, y + menuHeight/2 + 20);
 
               ctx.fillStyle = '#000';
               ctx.strokeStyle = '#000';
@@ -903,7 +925,32 @@ const _makeRig = () => {
             ctx.fillRect(0, y, menuWidth*0.98, menuHeight);
 
             ctx.fillStyle = '#000000';
-            ctx.fillText(name, 50, y + menuHeight/2 + 20);
+            ctx.fillText(name, 100, y + menuHeight/2 + 20);
+
+            if (!link.iconMesh) {
+              const iconMesh = (() => {
+                const iconMesh = new THREE.Object3D();
+
+                function pad(n, width) {
+                  return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+                }
+
+                _requestSpriteMesh(`../assets/icons/Food_${pad((4+mesh.scrollIndex+i) + '', 2)}.png`)
+                  .then(spriteMesh => {
+                    spriteMesh.position.set(-0.45, 0.15 - i*0.1, 0.05);
+                    spriteMesh.rotation.order = 'YXZ';
+                    spriteMesh.scale.set(0.16, 0.16, 0.16);
+                    spriteMesh.frustumCulled = false;
+                    iconMesh.add(spriteMesh);
+                  });
+
+                return iconMesh;
+              })();
+              link.iconMesh = iconMesh;
+              iconMeshes.push(iconMesh);
+            }
+            mesh.add(link.iconMesh);
+            link.iconMesh.children[0] && (link.iconMesh.children[0].position.y = 0.15 - i*0.1);
           }
 
           _renderScrollbar(links.length);
@@ -969,7 +1016,7 @@ const _makeRig = () => {
     const planeMesh = (() => {
       const img = new Image();
       img.crossOrigin = 'Anonymous';
-      img.src = '../assets/keyboard.png';
+      img.src = 'keyboard.png';
       img.onload = () => {
         texture.needsUpdate = true;
       };
@@ -1962,6 +2009,15 @@ function animate(time, frame) {
   const _updateRig = () => {
     if (rig.animation) {
       rig.animation.update();
+    }
+
+    const iconMeshRotation = (Date.now() % 1000) / 1000 * Math.PI * 2;
+    for (let i = 0; i < iconMeshes.length; i++) {
+      const iconMesh = iconMeshes[i];
+      const child = iconMesh.children[0];
+      if (child) {
+        child.rotation.y = iconMeshRotation;
+      }
     }
   };
   _updateRig();
