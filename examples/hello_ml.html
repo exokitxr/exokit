@@ -365,16 +365,18 @@
 
         enabled = false;
       };
-      _enable();
-      window.addEventListener('keydown', e => {
-        if (e.keyCode === 13) { // enter
-          if (enabled) {
-            _disable();
-          } else {
-            _enable();
+      if (window.browser && window.browser.magicleap) {
+        _enable();
+        window.addEventListener('keydown', e => {
+          if (e.keyCode === 13) { // enter
+            if (enabled) {
+              _disable();
+            } else {
+              _enable();
+            }
           }
-        }
-      });
+        });
+      }
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
