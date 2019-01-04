@@ -1475,6 +1475,13 @@ void MLEyeTracker::Update(MLSnapshot *snapshot) {
 
   if (!isIdentityMatrix(transformMatrix)) {
     {
+      MLVec3f &position = this->transform.position;
+      MLQuaternionf &rotation = this->transform.rotation;
+      MLVec3f scale = {1, 1, 1};
+      MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+      decomposeMatrix(transform, position, rotation, scale);
+    }
+    {
       MLVec3f &position = this->leftTransform.position;
       MLQuaternionf &rotation = this->leftTransform.rotation;
       MLVec3f scale = {1, 1, 1};
