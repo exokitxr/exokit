@@ -1582,7 +1582,10 @@ const _bindWindow = (window, newWindowCb) => {
     nativeBindings.nativeBrowser.Browser.updateAll();
     // update magic leap state
     if (mlPresentState.mlGlContext) {
-      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext, window, window.document.xrOffset);
+      if (mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
+        nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
+      }
+      nativeBindings.nativeMl.Poll();
     }
     if (args.performance) {
       const now = Date.now();

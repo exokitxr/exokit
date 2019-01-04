@@ -514,19 +514,25 @@ class XRInputSourceEvent extends Event {
 module.exports.XRInputSourceEvent = XRInputSourceEvent;
 
 class XRRigidTransform {
-  constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 0}, scale = {x: 1, y: 1, z: 1}) {
+  constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 1}, scale = {x: 1, y: 1, z: 1}) {
     this.position = Float32Array.from([position.x, position.y, position.z]);
     this.orientation = Float32Array.from([orientation.x, orientation.y, orientation.z, orientation.w]);
     this.scale = Float32Array.from([scale.x, scale.y, scale.z]); // non-standard
     this.matrix = localMatrix
       .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
       .toArray(new Float32Array(16));
+    this.matrixInverse = localMatrix
+      .getInverse(localMatrix)
+      .toArray(new Float32Array(16));
   }
 
   updateMatrix() {
     localMatrix
       .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
-      .toArray(this.matrix);
+      .toArray(this.matrix)
+    localMatrix
+      .getInverse(localMatrix)
+      .toArray(this.matrixInverse);
   }
 }
 module.exports.XRRigidTransform = XRRigidTransform;

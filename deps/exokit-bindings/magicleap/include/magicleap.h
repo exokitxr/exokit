@@ -15,6 +15,7 @@
 #include <dlfcn.h>
 #include <cmath>
 #include <vector>
+#include <list>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -95,14 +96,24 @@ public:
   uint32_t modifier_mask;
 };
 
+class MLPoll {
+public:
+  Nan::Persistent<Object> windowObj;
+  std::function<void()> cb;
+  
+  MLPoll(Local<Object> windowObj, std::function<void()> cb);
+  ~MLPoll();
+};
+
 class MLRaycaster : public ObjectWrap {
 public:
-  MLRaycaster(MLHandle requestHandle, Local<Function> cb);
+  MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<Function> cb);
   ~MLRaycaster();
 
-  bool Poll();
+  bool Update();
 
 // protected:
+  Nan::Persistent<Object> windowObj;
   MLHandle requestHandle;
   Nan::Persistent<Function> cb;
 };
@@ -126,6 +137,13 @@ public:
   bool isUnchanged;
 };
 
+enum class MLUpdateType {
+  NEW,
+  UNCHANGED,
+  UPDATE,
+  REMOVE,
+};
+
 class MLMesher : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
@@ -138,7 +156,7 @@ public:
   static NAN_SETTER(OnMeshSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
+  void Update();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -157,7 +175,7 @@ public:
   static NAN_SETTER(OnPlanesSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
+  void Update();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -178,7 +196,7 @@ public:
   static NAN_SETTER(OnGestureSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix);
+  void Update();
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -198,7 +216,7 @@ public:
   static NAN_GETTER(EyesGetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix, MLSnapshot *snapshot);
+  void Update(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -213,7 +231,7 @@ class CameraRequest {
 public:
   CameraRequest(Local<Function> cbFn);
   void Set(int width, int height, uint8_t *data, size_t size);
-  void Poll();
+  void Update();
 
 // protected:
   Nan::Persistent<Function> cbFn;
@@ -234,7 +252,7 @@ public:
   static NAN_SETTER(OnTrackSetter);
   static NAN_METHOD(Destroy);
 
-  void Poll(Local<Object> windowObj, const MLMat4f &transformMatrix, MLSnapshot *snapshot);
+  void Update(MLSnapshot *snapshot);
 
 // protected:
   Nan::Persistent<Object> windowObj;
@@ -273,6 +291,7 @@ public:
   static NAN_METHOD(RequestCamera);
   static NAN_METHOD(CancelCamera);
   static NAN_METHOD(Update);
+  static NAN_METHOD(Poll);
 
 // protected:
   // EGL
