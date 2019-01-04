@@ -2059,7 +2059,7 @@ const _bootFakeDisplay = async () => {
 
   display = fakeDisplay;
 
-  _openUrl('realitytab.html'); // XXX
+  _openUrl('exobot.html');
   focusedTab = rig.menuMesh.urlMesh;
   rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
@@ -2107,7 +2107,7 @@ if (navigator.xr && !query.fake) {
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
 
-        _openUrl('realitytab.html'); // XXX
+        _openUrl('exobot.html');
         _updateRigLists();
 
         console.log('loaded root in XR');
