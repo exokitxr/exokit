@@ -98,7 +98,7 @@ const DEFAULT_URL = 'http://lol.com';
 // load
 
 const keyMap = [];
-fetch('../assets/keyboard.svg')
+fetch('keyboard.svg')
   .then(res => res.text())
   .then(keyboardText => {
     const div = document.createElement('div');
