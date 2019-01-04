@@ -939,7 +939,7 @@ const _makeRig = () => {
                   return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
                 }
 
-                _requestSpriteMesh(`../assets/icons/Food_${pad((4+mesh.scrollIndex+i) + '', 2)}.png`)
+                _requestSpriteMesh(`icons/Food_${pad((4+mesh.scrollIndex+i) + '', 2)}.png`)
                   .then(spriteMesh => {
                     spriteMesh.position.set(-0.45, 0.15 - i*0.1, 0.05);
                     spriteMesh.rotation.order = 'YXZ';
