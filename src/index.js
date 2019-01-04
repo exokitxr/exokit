@@ -1585,7 +1585,7 @@ const _bindWindow = (window, newWindowCb) => {
       if (mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
         nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
       }
-      nativeBindings.nativeMl.Poll(window);
+      nativeBindings.nativeMl.Poll();
     }
     if (args.performance) {
       const now = Date.now();

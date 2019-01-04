@@ -3505,22 +3505,13 @@ NAN_METHOD(MLContext::Update) {
 }
 
 NAN_METHOD(MLContext::Poll) {
-  if (info[0]->IsObject()) {
-    Local<Object> windowObj = Local<Object>::Cast(info[0]);
+  std::cout << "MLContext::Poll 0 " << polls.size() << std::endl;
 
-    polls.erase(std::remove_if(polls.begin(), polls.end(), [&](MLPoll *poll) -> bool {
-      Local<Object> localWindowObj = Nan::New(poll->windowObj);
-      if (localWindowObj->StrictEquals(windowObj)) {
-        poll->cb();
-        delete poll;
-        return true;
-      } else {
-        return false;
-      }
-    }), polls.end());
-  } else {
-    Nan::ThrowError("MLMesher::OnMeshSetter: invalid arguments");
-  }
+  std::for_each(polls.begin(), polls.end(), [&](MLPoll *poll) {
+    poll->cb();
+    delete poll;
+  });
+  polls.clear();
 }
 
 }
