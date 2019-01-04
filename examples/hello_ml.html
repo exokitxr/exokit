@@ -8,8 +8,7 @@
   </head>
   <body>
   <script src="three.js"></script>
-  <script src="inflate.min.js"></script>
-  <script src="FBXLoader.js"></script>
+  <script src="GLTFLoader.js"></script>
   <script>
     let container, scene, camera, display, model, controllerMeshes, eyeMesh;
     let mesher = null, planeTracker = null, handTracker = null, eyeTracker = null;
@@ -50,48 +49,41 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      /* (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0xE91E63,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 0.5;
-        // mesh.position.z = -1;
-        mesh.frustumCuled = false;
-        scene.add(mesh);
-      })();
-      (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x4CAF50,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 1 + 0.1;
-        // mesh.position.z = -1;
-        mesh.frustumCulled = false;
-        scene.add(mesh);
-      })(); */
+      {
+        const loader = new THREE.GLTFLoader(); // .setPath( 'models/' );
+        loader.load( 'exobot.glb', function ( o ) {
 
-      const loader = new THREE.FBXLoader();
-      loader.load('exokit.fbx', object => {
-        /* object.quaternion.setFromUnitVectors(
-          new THREE.Vector3(0, 0, 1),
-          new THREE.Vector3(0.5, 0, 1).normalize()
-        ); */
-        object.scale.multiplyScalar(0.001);
-        object.matrix.compose(object.position, object.quaternion, object.scale);
-        object.updateMatrixWorld(true);
-        // object.frustumCulled = false;
+          o = o.scene;
 
-        object.traverse(child => {
-          child.frustumCulled = false;
-        });
+          // o.position.z = -1;
+          o.rotation.order = 'YXZ';
+          o.scale.set(0.2, 0.2, 0.2);
+          /* o.traverse(e => {
+            e.castShadow = true;
+          }); */
 
-        model = object;
+          /* o.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 0, -1),
+            new THREE.Vector3(0, 0, 1)
+          ); */
+          o.updateMatrixWorld();
+          // o.frustumCulled = false;
+          for (let i = 0; i < o.children.length; i++) {
+            o.children[i].frustumCulled = false;
+          }
 
-        scene.add(object);
-      });
+          model = o;
+
+          scene.add(o);
+          // scene.add(o.children[0]);
+          // scene.add(o.children[0]);
+
+        }, undefined, function ( e ) {
+
+          console.error( e );
+
+        } );
+      }
 
       controllerMeshes = [
         _makeControllerMesh(-0.1),
@@ -373,16 +365,18 @@
 
         enabled = false;
       };
-      _enable();
-      window.addEventListener('keydown', e => {
-        if (e.keyCode === 13) { // enter
-          if (enabled) {
-            _disable();
-          } else {
-            _enable();
+      if (window.browser && window.browser.magicleap) {
+        _enable();
+        window.addEventListener('keydown', e => {
+          if (e.keyCode === 13) { // enter
+            if (enabled) {
+              _disable();
+            } else {
+              _enable();
+            }
           }
-        }
-      });
+        });
+      }
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -403,10 +397,14 @@
       if (model) {
         const animationTime = 4000;
         const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
-        model.quaternion.setFromUnitVectors(
+        model.position.y = Math.sin(f) * 0.05;
+        // model.rotation.x = Math.sin(f*4) * Math.PI*2*0.05;
+        model.rotation.y = Math.sin(f*2) * Math.PI*2*0.05;
+        model.rotation.z = Math.cos(f*2) * Math.PI*2*0.05;
+        /* model.quaternion.setFromUnitVectors(
           new THREE.Vector3(0, 0, 1),
           new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
-        );
+        ); */
         model.updateMatrixWorld();
       }
       if (eyeTracker) {
