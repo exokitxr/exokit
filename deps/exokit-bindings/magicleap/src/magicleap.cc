@@ -15,6 +15,8 @@ namespace ml {
 
 const char application_name[] = "com.exokit.app";
 constexpr int CAMERA_SIZE[] = {960, 540};
+constexpr float meshingRange = 3.0f;
+constexpr float planeRange = 10.0f;
 
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
@@ -3344,9 +3346,9 @@ NAN_METHOD(MLContext::Update) {
       // meshExtents.rotation =  mlContext->rotation;
       meshExtents.rotation = {0, 0, 0, 1};
     }
-    meshExtents.extents.x = 3;
-    meshExtents.extents.y = 3;
-    meshExtents.extents.z = 3;
+    meshExtents.extents.x = meshingRange;
+    meshExtents.extents.y = meshingRange;
+    meshExtents.extents.z = meshingRange;
 
     MLResult result = MLMeshingRequestMeshInfo(meshTracker, &meshExtents, &meshInfoRequestHandle);
     if (result == MLResult_Ok) {
@@ -3364,9 +3366,9 @@ NAN_METHOD(MLContext::Update) {
       // planesRequest.bounds_rotation = mlContext->rotation;
       planesRequest.bounds_rotation = {0, 0, 0, 1};
     }
-    planesRequest.bounds_extents.x = 3;
-    planesRequest.bounds_extents.y = 3;
-    planesRequest.bounds_extents.z = 3;
+    planesRequest.bounds_extents.x = planeRange;
+    planesRequest.bounds_extents.y = planeRange;
+    planesRequest.bounds_extents.z = planeRange;
 
     planesRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All | MLPlanesQueryFlag_OrientToGravity;
     // planesRequest.min_hole_length = 0.5;
