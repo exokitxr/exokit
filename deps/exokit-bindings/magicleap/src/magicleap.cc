@@ -2788,9 +2788,10 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         for (int i = 0; i < 2; i++) {
           const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
           const MLTransform &transform = cameraInfo.transform;
-          transformArray->Set(i*7 + 0, JS_NUM(transform.position.x));
-          transformArray->Set(i*7 + 1, JS_NUM(transform.position.y));
-          transformArray->Set(i*7 + 2, JS_NUM(transform.position.z));
+          const MLVec3f &position = OffsetFloor(transform.position);
+          transformArray->Set(i*7 + 0, JS_NUM(position.x));
+          transformArray->Set(i*7 + 1, JS_NUM(position.y));
+          transformArray->Set(i*7 + 2, JS_NUM(position.z));
           transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
           transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
           transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
@@ -2807,7 +2808,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
           const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
-          mlContext->position = leftCameraTransform.position;
+          mlContext->position = OffsetFloor(leftCameraTransform.position);
           mlContext->rotation = leftCameraTransform.rotation;
         }
 
@@ -2817,7 +2818,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         if (result == MLResult_Ok) {
           for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
             const MLInputControllerState &controllerState = controllerStates[i];
-            const MLVec3f &position = controllerState.position;
+            const MLVec3f &position = OffsetFloor(controllerState.position);
             const MLQuaternionf &orientation = controllerState.orientation;
             const float trigger = controllerState.trigger_normalized;
             const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
