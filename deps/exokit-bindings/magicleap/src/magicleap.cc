@@ -305,18 +305,24 @@ static void onUnloadResources(void* application_context) {
 MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
   Local<Object> localDocumentObj = Local<Object>::Cast(windowObj->Get(JS_STR("document")));
   Local<Value> xrOffsetValue = localDocumentObj->Get(JS_STR("xrOffset"));
+
+  MLMat4f result;
   if (xrOffsetValue->IsObject()) {
     Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
     Local<Float32Array> matrixInverseFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrixInverse")));
     
-    MLMat4f transformMatrix;
-    memcpy(transformMatrix.matrix_colmajor, (char *)matrixInverseFloat32Array->Buffer()->GetContents().Data() + matrixInverseFloat32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
-    return transformMatrix;
+    memcpy(result.matrix_colmajor, (char *)matrixInverseFloat32Array->Buffer()->GetContents().Data() + matrixInverseFloat32Array->ByteOffset(), sizeof(result.matrix_colmajor));
   } else {
-    return MLMat4f{
+    result = MLMat4f{
       {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
     };
   }
+
+  if (largestPlaneY != 0) {
+    result = multiplyMatrices(makeTranslationMatrix(MLVec3f{0, largestPlaneY, 0}), result);
+  }
+
+  return result;
 }
 
 // MLRaycaster
