@@ -392,6 +392,17 @@ void decomposeMatrix(
   scale.z = sz;
 }
 
+MLMat4f makeTranslationMatrix(const MLVec3f &translation) {
+  return MLMat4f{
+    {
+      1, 0, 0, translation.x,
+      0, 1, 0, translation.y,
+      0, 0, 1, translation.z,
+      0, 0, 0, 1
+    }
+  };
+}
+
 MLMat4f invertMatrix(const MLMat4f &matrix) {
   MLMat4f result;
 
