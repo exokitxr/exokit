@@ -72,6 +72,15 @@ MLHandle raycastTracker;
 MLRaycastQuery raycastQuery;
 std::vector<MLRaycaster *> raycasters;
 
+MLHandle floorTracker;
+MLPlanesQuery floorRequest;
+MLHandle floorRequestHandle;
+MLPlane floorResults[MAX_NUM_PLANES];
+uint32_t numFloorResults;
+bool floorRequestPending = false;
+float largestPlaneY = 0;
+float largestPlaneSizeSq = 0;
+
 MLHandle meshTracker;
 std::vector<MLMesher *> meshers;
 MLMeshingExtents meshExtents;
@@ -2620,6 +2629,12 @@ NAN_METHOD(MLContext::Present) {
     }
   }
 
+  if (MLPlanesCreate(&floorTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create floor handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
   MLMeshingSettings meshingSettings;
   if (MLMeshingInitSettings(&meshingSettings) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to initialize meshing settings", application_name);
@@ -2696,6 +2711,12 @@ NAN_METHOD(MLContext::Exit) {
   
   if (MLRaycastDestroy(raycastTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to destroy raycast handle", application_name);
+    return;
+  }
+
+  if (MLPlanesDestroy(floorTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to destroy floor handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
     return;
   }
 
@@ -3232,6 +3253,8 @@ NAN_METHOD(MLContext::Update) {
 
   MLSnapshot *snapshot = nullptr;
 
+  // requests
+
   if (raycasters.size() > 0) {
     raycasters.erase(std::remove_if(raycasters.begin(), raycasters.end(), [&](MLRaycaster *r) -> bool {
       if (r->Update()) {
@@ -3311,6 +3334,31 @@ NAN_METHOD(MLContext::Update) {
     });
   }
 
+  if (!floorRequestPending) {
+    {
+      // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+
+      floorRequest.bounds_center = mlContext->position;
+      // floorRequest.bounds_rotation = mlContext->rotation;
+      floorRequest.bounds_rotation = {0, 0, 0, 1};
+    }
+    floorRequest.bounds_extents.x = 10;
+    floorRequest.bounds_extents.y = 10;
+    floorRequest.bounds_extents.z = 10;
+
+    floorRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor | MLPlanesQueryFlag_OrientToGravity;
+    // floorRequest.min_hole_length = 0.5;
+    floorRequest.min_plane_area = 0.25;
+    floorRequest.max_results = MAX_NUM_PLANES;
+
+    MLResult result = MLPlanesQueryBegin(floorTracker, &floorRequest, &floorRequestHandle);
+    if (result == MLResult_Ok) {
+      floorRequestPending = true;
+    } else {
+      ML_LOG(Error, "%s: Floor request failed! %x", application_name, result);
+    }
+  }
+
   if ((meshers.size() > 0 || depthEnabled) && !meshInfoRequestPending && !meshRequestsPending) {
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
@@ -3361,6 +3409,31 @@ NAN_METHOD(MLContext::Update) {
 
     if (cameraRequests.size() > 0) {
       cameraRequestConditionVariable.notify_one();
+    }
+  }
+
+  // responses
+
+  if (floorRequestPending) {
+    MLResult result = MLPlanesQueryGetResults(floorTracker, floorRequestHandle, floorResults, &numFloorResults);
+    if (result == MLResult_Ok) {
+      for (uint32_t i = 0; i < numFloorResults; i++) {
+        const MLPlane &plane = floorResults[i];
+        const float planeSizeSq = plane.width*plane.width + plane.height*plane.height;
+
+        if (planeSizeSq > largestPlaneSizeSq) {
+          largestPlaneY = plane.position.y;
+          largestPlaneSizeSq = planeSizeSq;
+        }
+      }
+
+      floorRequestPending = false;
+    } else if (result == MLResult_Pending) {
+      // nothing
+    } else {
+      ML_LOG(Error, "%s: Floor request failed! %x", application_name, result);
+
+      floorRequestPending = false;
     }
   }
 
