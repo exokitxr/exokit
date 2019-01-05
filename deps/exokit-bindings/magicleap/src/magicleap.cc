@@ -2782,6 +2782,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
 
       if (result == MLResult_Ok) {
+        TickFloor();
+
         // transform
         for (int i = 0; i < 2; i++) {
           const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
