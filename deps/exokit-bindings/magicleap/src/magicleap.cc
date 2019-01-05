@@ -80,8 +80,8 @@ MLHandle floorRequestHandle;
 MLPlane floorResults[MAX_NUM_PLANES];
 uint32_t numFloorResults;
 bool floorRequestPending = false;
-float largestPlaneY = 0;
-float largestPlaneSizeSq = 0;
+float largestFloorY = 0;
+float largestFloorSizeSq = 0;
 
 MLHandle meshTracker;
 std::vector<MLMesher *> meshers;
@@ -318,8 +318,8 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
     };
   }
 
-  if (largestPlaneY != 0) {
-    result = multiplyMatrices(makeTranslationMatrix(MLVec3f{0, largestPlaneY, 0}), result);
+  if (largestFloorY != 0) {
+    result = multiplyMatrices(makeTranslationMatrix(MLVec3f{0, largestFloorY, 0}), result);
   }
 
   return result;
@@ -3588,11 +3588,11 @@ void MLContext::TickFloor() {
     if (result == MLResult_Ok) {
       for (uint32_t i = 0; i < numFloorResults; i++) {
         const MLPlane &plane = floorResults[i];
-        const float planeSizeSq = plane.width*plane.width + plane.height*plane.height;
+        const float floorSizeSq = plane.width*plane.width + plane.height*plane.height;
 
-        if (planeSizeSq > largestPlaneSizeSq) {
-          largestPlaneY = plane.position.y;
-          largestPlaneSizeSq = planeSizeSq;
+        if (floorSizeSq > largestFloorSizeSq) {
+          largestFloorY = plane.position.y;
+          largestFloorSizeSq = floorSizeSq;
         }
       }
 
@@ -3608,7 +3608,7 @@ void MLContext::TickFloor() {
 }
 
 MLVec3f &&MLContext::OffsetFloor(const MLVec3f &position) {
-  return MLVec3f{position.x, position.y + largestPlaneY, position.z};
+  return MLVec3f{position.x, position.y + largestFloorY, position.z};
 }
 
 }
