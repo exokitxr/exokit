@@ -77,14 +77,14 @@
       const planeMeshes = [];
       const planeMeshesCache = {};
       const planeGeometry1 = new THREE.PlaneBufferGeometry(1, 1)
-        .applyMatrix(
+        /* .applyMatrix(
           new THREE.Matrix4().makeRotationFromQuaternion(
             new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 0, -1),
               new THREE.Vector3(0, 1, 0),
             )
           )
-        );
+        ); */
       const planeMaterial1 = new THREE.MeshPhongMaterial({
         color: 0xe91e63,
       });
@@ -92,8 +92,8 @@
         .applyMatrix(
           new THREE.Matrix4().makeRotationFromQuaternion(
             new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 1, 0),
-              new THREE.Vector3(0, -1, 0),
+              new THREE.Vector3(0, 0, 1),
+              new THREE.Vector3(0, 0, -1),
             )
           )
         );
@@ -184,7 +184,7 @@
           const newNormal = corner.clone()
             .applyQuaternion(
               new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(0, 0, 1),
                 oldNormal
               )
             )
@@ -196,7 +196,7 @@
                 .multiply(new THREE.Vector3(oldSize.x/2, 1, oldSize.y/2))
                 .applyQuaternion(
                   new THREE.Quaternion().setFromUnitVectors(
-                    new THREE.Vector3(0, 1, 0),
+                    new THREE.Vector3(0, 0, 1),
                     oldNormal
                   )
                 )
@@ -208,7 +208,7 @@
                   new THREE.Vector3(newSize.x/2, 1, newSize.y/2)
                     .applyQuaternion(
                       new THREE.Quaternion().setFromUnitVectors(
-                        new THREE.Vector3(0, 1, 0),
+                        new THREE.Vector3(0, 0, 1),
                         newNormal
                       )
                     )
@@ -240,7 +240,7 @@
             id: i + '',
             position: position.toArray(new Float32Array(3)),
             rotation: new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, 0, 1),
               normal
             ).toArray(new Float32Array(4)),
             size: size.toArray(new Float32Array(2)),
