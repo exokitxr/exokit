@@ -2038,7 +2038,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   }
   
   get orientation() {
-    return this.getAttribute(orientation);
+    return this.getAttribute('orientation');
   }
   set orientation(orientation) {
     if (Array.isArray(orientation)) {
