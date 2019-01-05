@@ -1352,7 +1352,6 @@ NAN_METHOD(GetClipboard) {
 NAN_METHOD(SetClipboard) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   if (info.Length() >= 2) {
-    // Don't want to risk passing a null string around, which might create unpredictable behavior.
     Nan::Utf8String utf8_value(info[1]);
     int len = utf8_value.length();
     std::string name(*utf8_value, len);
