@@ -3588,11 +3588,14 @@ void MLContext::TickFloor() {
     if (result == MLResult_Ok) {
       for (uint32_t i = 0; i < numFloorResults; i++) {
         const MLPlane &plane = floorResults[i];
-        const float floorSizeSq = plane.width*plane.width + plane.height*plane.height;
+        const MLVec3f &normal = applyVectorQuaternion(MLVec3f{0, 0, 1}, plane.rotation);
+        if (normal.y > 0) {
+          const float floorSizeSq = plane.width*plane.width + plane.height*plane.height;
 
-        if (floorSizeSq > largestFloorSizeSq) {
-          largestFloorY = plane.position.y;
-          largestFloorSizeSq = floorSizeSq;
+          if (floorSizeSq > largestFloorSizeSq) {
+            largestFloorY = plane.position.y;
+            largestFloorSizeSq = floorSizeSq;
+          }
         }
       }
 
