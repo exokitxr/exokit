@@ -326,6 +326,10 @@
               .slerp(endQuaternion, factor);
 
             avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
+
+            if (factor >= 1) {
+              animation = null;
+            }
           },
         };
       }
