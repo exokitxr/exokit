@@ -273,7 +273,7 @@
         );
         model.updateMatrixWorld();
       } */
-      if (planeMeshes.length) {
+      /* if (planeMeshes.length) {
         const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
         vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
         for (let i = 0; i < planeMeshes.length; i++) {
@@ -288,7 +288,7 @@
             planeMesh.visible = false;
           }
         }
-      }
+      } */
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
 
