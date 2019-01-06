@@ -2670,7 +2670,7 @@ NAN_METHOD(MLContext::Present) {
     return;
   }
 
-  TickFloor();
+  mlContext->TickFloor();
 
   // HACK: force the app to be "running"
   application_context.dummy_value = DummyValue::RUNNING;
@@ -2788,7 +2788,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
 
       if (result == MLResult_Ok) {
-        TickFloor();
+        mlContext->TickFloor();
 
         // transform
         for (int i = 0; i < 2; i++) {
@@ -3562,7 +3562,7 @@ void MLContext::TickFloor() {
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
-      floorRequest.bounds_center = mlContext->position;
+      floorRequest.bounds_center = this->position;
       // floorRequest.bounds_rotation = mlContext->rotation;
       floorRequest.bounds_rotation = {0, 0, 0, 1};
     }
