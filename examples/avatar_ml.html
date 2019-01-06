@@ -280,7 +280,7 @@
     const animationTime = 50;
     function animate(time, frame) {
       const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, (Math.random()-0.5)*2, (Math.random()-0.5)*2).multiplyScalar(3);
-      const _getFurthestWaypoint = (startNode, position) => {
+      /* const _getFurthestWaypoint = (startNode, position) => {
         const {island} = startNode;
 
         let result = island[0];
@@ -294,39 +294,34 @@
           }
         }
         return result;
-      };
+      }; */
       if (!animation) {
         const now = Date.now();
+        const startPosition = avatarMesh.position.clone();
+        const endPosition = _getRandomWaypoint();
         animation = {
           startTime: now,
           endTime: now + animationTime,
-          startPosition: avatarMesh.node
-            .clone(),
-            // .add(localVector2.set(cubeSize/2, cubeSize/2, cubeSize/2)),
+          startPosition,
           startQuaternion: avatarMesh.quaternion.clone(),
+          endQuaternion: new THREE.Quaterion().setFromUnitVectors(
+            new THREE.Vector3(0, 0, -1),
+            localVector
+              .copy(endPosition)
+              .sub(startPosition)
+              .normalize()
+          ),
+          endPosition,
           update() {
             const now = Date.now();
             const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
             const nextPathIndex = pathIndex + 1;
-            const {startPosition} = this;
-            const endPosition = localVector.copy(path[nextPathIndex])//.add(localVector2.set(cubeSize/2, cubeSize/2, cubeSize/2));
+            const {startPosition, endPosition} = this;
             avatarMesh.position
               .copy(startPosition)
               .lerp(endPosition, factor);
 
-            const {startQuaternion} = this;
-            localEuler.setFromQuaternion(
-              localQuaternion.setFromUnitVectors(
-                localVector2.set(0, 0, -1),
-                localVector3
-                  .copy(endPosition)
-                  .sub(startPosition)
-                  .normalize()
-              ),
-              'YXZ'
-            );
-            localEuler.x = localEuler.z = 0;
-            const endQuaternion = localQuaternion.setFromEuler(localEuler);
+            const {startQuaternion, endQuaternion} = this;
             avatarMesh.quaternion
               .copy(startQuaternion)
               .slerp(endQuaternion, factor);
