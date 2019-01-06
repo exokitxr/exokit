@@ -28,6 +28,8 @@
     const localVectorFloat32Array = new Float32Array(3);
     const localVectorFloat32Array2 = new Float32Array(3);
 
+    const avatarHeight = 0.2;
+
     const numCubes = 100;
     const cubeSize = 0.2;
     const cubeRange = 1;
@@ -87,7 +89,7 @@
         const mesh = skin({
           limbs: true,
         });
-        mesh.scale.multiplyScalar(0.2);
+        mesh.scale.multiplyScalar(avatarHeight);
         mesh.frustumCulled = false;
 
         new Promise((accept, reject) => {
