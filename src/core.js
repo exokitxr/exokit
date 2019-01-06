@@ -986,23 +986,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     clipboard:{
       read:() => Promise.resolve(), // Not implemented yet
       readText: () => new Promise((resolve, reject) => {
-        if (GlobalContext.contexts && GlobalContext.contexts.length){
-          const windowHandle = GlobalContext.contexts[0].getWindowHandle();
-          const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);// why do we slice this?
-          resolve(clipboardContents);
-        }else{
-          reject(new Error('No context available.'));
-        }
+        resolve(nativeWindow.getClipboard().slice(0, 256));// why do we slice this?
       }),
       write:() => Promise.resolve(), // Not implemented yet
       writeText: clipboardContents => new Promise((resolve, reject) => {
-        if (GlobalContext.contexts && GlobalContext.contexts.length){
-          const windowHandle = GlobalContext.contexts[0].getWindowHandle();
-          nativeWindow.setClipboard(windowHandle,clipboardContents);
-          resolve();
-        }else{
-          reject(new Error('No context available.'));
-        }
+        nativeWindow.setClipboard(clipboardContents);
+        resolve();
       })
     }
     /* getVRMode: () => vrMode,
