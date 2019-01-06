@@ -416,10 +416,10 @@ void decomposeMatrix(
 MLMat4f makeTranslationMatrix(const MLVec3f &translation) {
   return MLMat4f{
     {
-      1, 0, 0, translation.x,
-      0, 1, 0, translation.y,
-      0, 0, 1, translation.z,
-      0, 0, 0, 1
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      translation.x, translation.y, translation.z, 1
     }
   };
 }
