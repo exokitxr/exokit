@@ -26,11 +26,9 @@
     const localMatrix = new THREE.Matrix4();
     const localFloat32Array = new Float32Array(16);
 
-    const waypointResolution = 0.2;
-    // const waypointResolutionSq = waypointResolution*waypointResolution;
-
     const numCubes = 100;
-    // const cubeSize = 0.2;
+    const cubeSize = 0.2;
+    const cubeRange = 1;
     const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
     const pointGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01, 0.01, 0.01));
     const pointMaterial = new THREE.MeshPhongMaterial({
