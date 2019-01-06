@@ -276,7 +276,6 @@
       if (planeMeshes.length) {
         const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
         vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-        console.log('got camera position', localVector.toArray().join(','));
         for (let i = 0; i < planeMeshes.length; i++) {
           const planeMesh = planeMeshes[i];
           const factor = Math.min(Math.max(planeMesh.position.distanceTo(localVector), 0), 3)/3;
