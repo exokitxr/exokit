@@ -275,8 +275,13 @@
           const planeMesh = planeMeshes[i];
           const factor = Math.min(Math.max(planeMesh.position.distanceTo(vrCamera.position), 0), 3)/3;
           const scaleFactor = 1 - factor;
-          planeMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
-          planeMesh.updateMatrixWorld();
+          if (scaleFactor > 0) {
+            planeMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+            planeMesh.updateMatrixWorld();
+            planeMesh.visible = true;
+          } else {
+            planeMesh.visible = false;
+          }
         }
       }
       if (renderer.vr.enabled) {
