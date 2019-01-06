@@ -3570,7 +3570,7 @@ void MLContext::TickFloor() {
     floorRequest.bounds_extents.y = planeRange;
     floorRequest.bounds_extents.z = planeRange;
 
-    floorRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_Floor | MLPlanesQueryFlag_OrientToGravity;
+    floorRequest.flags = MLPlanesQueryFlag_Horizontal | MLPlanesQueryFlag_Semantic_Floor;
     // floorRequest.min_hole_length = 0.5;
     floorRequest.min_plane_area = 0.25;
     floorRequest.max_results = MAX_NUM_PLANES;
