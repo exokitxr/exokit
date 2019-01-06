@@ -276,7 +276,7 @@
     let path = null;
     let pathIndex = 0;
     const thetaRate = 200;
-    const animationTime = 50;
+    const animationTime = 1000;
     function animate(time, frame) {
       const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
       /* const _getFurthestWaypoint = (startNode, position) => {
@@ -300,7 +300,7 @@
         const endPosition = _getRandomWaypoint();
         animation = {
           startTime: now,
-          endTime: now + animationTime,
+          endTime: now + animationTime*startPosition.distanceTo(endPosition),
           startPosition,
           startQuaternion: avatarMesh.quaternion.clone(),
           endQuaternion: new THREE.Quaternion().setFromUnitVectors(
