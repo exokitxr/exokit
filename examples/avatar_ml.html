@@ -278,7 +278,7 @@
     const thetaRate = 200;
     const animationTime = 50;
     function animate(time, frame) {
-      const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, (Math.random()-0.5)*2, (Math.random()-0.5)*2).multiplyScalar(3);
+      const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
       /* const _getFurthestWaypoint = (startNode, position) => {
         const {island} = startNode;
 
