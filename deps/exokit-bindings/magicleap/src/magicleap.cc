@@ -309,20 +309,23 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
   MLMat4f result;
   if (xrOffsetValue->IsObject()) {
     Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
-    Local<Float32Array> matrixInverseFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrixInverse")));
+    Local<Float32Array> positionFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("position")));
+    MLVec3f position;
+    memcpy(position.values, (char *)positionFloat32Array->Buffer()->GetContents().Data() + positionFloat32Array->ByteOffset(), sizeof(position.values));
+    position.y += largestFloorY;
     
-    memcpy(result.matrix_colmajor, (char *)matrixInverseFloat32Array->Buffer()->GetContents().Data() + matrixInverseFloat32Array->ByteOffset(), sizeof(result.matrix_colmajor));
+    Local<Float32Array> orientationFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("orientation")));
+    MLQuaternionf orientation;
+    memcpy(orientation.values, (char *)orientationFloat32Array->Buffer()->GetContents().Data() + orientationFloat32Array->ByteOffset(), sizeof(orientation.values));
+    
+    Local<Float32Array> scaleFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("scale")));
+    MLVec3f scale;
+    memcpy(scale.values, (char *)scaleFloat32Array->Buffer()->GetContents().Data() + scaleFloat32Array->ByteOffset(), sizeof(scale.values));
+
+    return invertMatrix(composeMatrix(position, orientation, scale));
   } else {
-    result = MLMat4f{
-      {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
-    };
+    return makeTranslationMatrix(MLVec3f{0, -largestFloorY, 0});
   }
-
-  if (largestFloorY != 0) {
-    result = multiplyMatrices(makeTranslationMatrix(MLVec3f{0, -largestFloorY, 0}), result);
-  }
-
-  return result;
 }
 
 // MLRaycaster
