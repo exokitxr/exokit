@@ -1350,12 +1350,10 @@ NAN_METHOD(GetClipboard) {
 }
 
 NAN_METHOD(SetClipboard) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   if (info.Length() >= 2) {
-    Nan::Utf8String utf8_value(info[1]);
-    int len = utf8_value.length();
-    std::string name(*utf8_value, len);
-    glfwSetClipboardString(window, *utf8_value);   
+    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+    String::Utf8Value str(info[1]->ToString());
+    glfwSetClipboardString(window, str);   
   } else {
       return Nan::ThrowTypeError(
             "must provide arg length > 1");

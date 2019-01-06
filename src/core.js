@@ -991,7 +991,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           const clipboardContents = nativeWindow.getClipboard(windowHandle).slice(0, 256);// why do we slice this?
           resolve(clipboardContents);
         }else{
-          reject();
+          reject(new Error('No context available.'));
         }
       }),
       write:() => Promise.resolve(), // Not implemented yet
@@ -1001,7 +1001,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           nativeWindow.setClipboard(windowHandle,clipboardContents);
           resolve();
         }else{
-          reject();
+          reject(new Error('No context available.'));
         }
       })
     }
