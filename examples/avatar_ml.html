@@ -321,9 +321,10 @@
               .lerp(endPosition, factor);
 
             const {startQuaternion, endQuaternion} = this;
-            avatarMesh.quaternion
+            avatarMesh.quaternion.copy(endQuaternion);
+            /* avatarMesh.quaternion
               .copy(startQuaternion)
-              .slerp(endQuaternion, factor);
+              .slerp(endQuaternion, factor); */
 
             avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
 
