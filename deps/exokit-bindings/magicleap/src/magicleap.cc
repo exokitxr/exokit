@@ -319,7 +319,7 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
   }
 
   if (largestFloorY != 0) {
-    result = multiplyMatrices(makeTranslationMatrix(MLVec3f{0, largestFloorY, 0}), result);
+    result = multiplyMatrices(makeTranslationMatrix(MLVec3f{0, -largestFloorY, 0}), result);
   }
 
   return result;
@@ -3608,7 +3608,7 @@ void MLContext::TickFloor() {
 }
 
 MLVec3f MLContext::OffsetFloor(const MLVec3f &position) {
-  return MLVec3f{position.x, position.y + largestFloorY, position.z};
+  return MLVec3f{position.x, position.y - largestFloorY, position.z};
 }
 
 }
