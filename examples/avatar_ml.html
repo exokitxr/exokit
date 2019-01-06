@@ -304,7 +304,7 @@
           endTime: now + animationTime,
           startPosition,
           startQuaternion: avatarMesh.quaternion.clone(),
-          endQuaternion: new THREE.Quaterion().setFromUnitVectors(
+          endQuaternion: new THREE.Quaternion().setFromUnitVectors(
             new THREE.Vector3(0, 0, -1),
             localVector
               .copy(endPosition)
