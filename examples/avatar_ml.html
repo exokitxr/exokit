@@ -336,7 +336,13 @@
               if (display.session && !animation.hitTesting) {
                 const localAnimation = animation;
                 display.session.requestHitTest(
-                  avatarMesh.position.toArray(localVectorFloat32Array),
+                  localVector
+                    .copy(avatarMesh.position)
+                    .add(
+                      localVector2
+                        .set(0, avatarHeight, 0)
+                    )
+                    .toArray(localVectorFloat32Array),
                   localVector.set(0, 0, -1)
                     .applyQuaternion(avatarMesh.quaternion)
                     .toArray(localVectorFloat32Array2)
