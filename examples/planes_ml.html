@@ -13,6 +13,10 @@
     let container, scene, camera, display, controllerMeshes, planeMeshes;
     let planeTracker = null;
 
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
       color: 0x4caf50,
@@ -270,10 +274,12 @@
         model.updateMatrixWorld();
       } */
       if (planeMeshes.length) {
-        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera
+        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+        vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+        console.log('got camera position', localVector.toArray().join(','));
         for (let i = 0; i < planeMeshes.length; i++) {
           const planeMesh = planeMeshes[i];
-          const factor = Math.min(Math.max(planeMesh.position.distanceTo(vrCamera.position), 0), 3)/3;
+          const factor = Math.min(Math.max(planeMesh.position.distanceTo(localVector), 0), 3)/3;
           const scaleFactor = 1 - factor;
           if (scaleFactor > 0) {
             planeMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
