@@ -3607,7 +3607,7 @@ void MLContext::TickFloor() {
   }
 }
 
-MLVec3f &&MLContext::OffsetFloor(const MLVec3f &position) {
+MLVec3f MLContext::OffsetFloor(const MLVec3f &position) {
   return MLVec3f{position.x, position.y + largestFloorY, position.z};
 }
 
