@@ -282,108 +282,110 @@
     const thetaRate = 200;
     const animationTime = 1000;
     function animate(time, frame) {
-      const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
-      /* const _getFurthestWaypoint = (startNode, position) => {
-        const {island} = startNode;
+      if (renderer.vr.enabled) {
+        const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
+        /* const _getFurthestWaypoint = (startNode, position) => {
+          const {island} = startNode;
 
-        let result = island[0];
-        let resultDistanceSq = result.distanceToSquared(position);
-        for (let i = 1; i < island.length; i++) {
-          const waypoint = island[i];
-          const distanceSq = waypoint.distanceToSquared(position);
-          if (distanceSq < resultDistanceSq) {
-            result = waypoint;
-            resultDistanceSq = distanceSq;
-          }
-        }
-        return result;
-      }; */
-      const _animateTo = endPosition => {
-        const now = Date.now();
-        const startPosition = avatarMesh.position.clone();
-        animation = {
-          startTime: now,
-          endTime: now + animationTime*startPosition.distanceTo(endPosition),
-          startPosition,
-          startQuaternion: avatarMesh.quaternion.clone(),
-          endQuaternion: new THREE.Quaternion().setFromUnitVectors(
-            new THREE.Vector3(0, 0, -1),
-            localVector
-              .copy(endPosition)
-              .sub(startPosition)
-              .normalize()
-          ),
-          endPosition,
-          hitTesting: false,
-          update() {
-            const now = Date.now();
-            const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
-            const nextPathIndex = pathIndex + 1;
-            const {startPosition, endPosition} = this;
-            avatarMesh.position
-              .copy(startPosition)
-              .lerp(endPosition, factor);
-
-            const {startQuaternion, endQuaternion} = this;
-            avatarMesh.quaternion.copy(endQuaternion);
-            /* avatarMesh.quaternion
-              .copy(startQuaternion)
-              .slerp(endQuaternion, factor); */
-
-            avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
-
-            if (factor < 1) {
-              if (display.session && !animation.hitTesting) {
-                const localAnimation = animation;
-                display.session.requestHitTest(
-                  localVector
-                    .copy(avatarMesh.position)
-                    .add(
-                      localVector2
-                        .set(0, avatarHeight, 0)
-                    )
-                    .toArray(localVectorFloat32Array),
-                  localVector.set(0, 0, -1)
-                    .applyQuaternion(avatarMesh.quaternion)
-                    .toArray(localVectorFloat32Array2)
-                )
-                  .then(results => {
-                    if (animation === localAnimation) {
-                      if (results.length) {
-                        _animateTo(
-                          localVector
-                            .copy(avatarMesh.position)
-                            .add(
-                              localVector2
-                                .set(0, 0, 0.3)
-                                .applyQuaternion(avatarMesh.quaternion)
-                            )
-                        );
-                      }
-
-                      animation.hitTesting = false;
-                    }
-                  })
-                  .catch(err => {
-                    if (animation === localAnimation) {
-                      console.warn(err);
-
-                      animation.hitTesting = false;
-                    }
-                  });
-                animation.hitTesting = true;
-              }
-            } else {
-              animation = null;
+          let result = island[0];
+          let resultDistanceSq = result.distanceToSquared(position);
+          for (let i = 1; i < island.length; i++) {
+            const waypoint = island[i];
+            const distanceSq = waypoint.distanceToSquared(position);
+            if (distanceSq < resultDistanceSq) {
+              result = waypoint;
+              resultDistanceSq = distanceSq;
             }
-          },
+          }
+          return result;
+        }; */
+        const _animateTo = endPosition => {
+          const now = Date.now();
+          const startPosition = avatarMesh.position.clone();
+          animation = {
+            startTime: now,
+            endTime: now + animationTime*startPosition.distanceTo(endPosition),
+            startPosition,
+            startQuaternion: avatarMesh.quaternion.clone(),
+            endQuaternion: new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, -1),
+              localVector
+                .copy(endPosition)
+                .sub(startPosition)
+                .normalize()
+            ),
+            endPosition,
+            hitTesting: false,
+            update() {
+              const now = Date.now();
+              const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
+              const nextPathIndex = pathIndex + 1;
+              const {startPosition, endPosition} = this;
+              avatarMesh.position
+                .copy(startPosition)
+                .lerp(endPosition, factor);
+
+              const {startQuaternion, endQuaternion} = this;
+              avatarMesh.quaternion.copy(endQuaternion);
+              /* avatarMesh.quaternion
+                .copy(startQuaternion)
+                .slerp(endQuaternion, factor); */
+
+              avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
+
+              if (factor < 1) {
+                if (display.session && !animation.hitTesting) {
+                  const localAnimation = animation;
+                  display.session.requestHitTest(
+                    localVector
+                      .copy(avatarMesh.position)
+                      .add(
+                        localVector2
+                          .set(0, avatarHeight, 0)
+                      )
+                      .toArray(localVectorFloat32Array),
+                    localVector.set(0, 0, -1)
+                      .applyQuaternion(avatarMesh.quaternion)
+                      .toArray(localVectorFloat32Array2)
+                  )
+                    .then(results => {
+                      if (animation === localAnimation) {
+                        if (results.length) {
+                          _animateTo(
+                            localVector
+                              .copy(avatarMesh.position)
+                              .add(
+                                localVector2
+                                  .set(0, 0, 0.3)
+                                  .applyQuaternion(avatarMesh.quaternion)
+                              )
+                          );
+                        }
+
+                        animation.hitTesting = false;
+                      }
+                    })
+                    .catch(err => {
+                      if (animation === localAnimation) {
+                        console.warn(err);
+
+                        animation.hitTesting = false;
+                      }
+                    });
+                  animation.hitTesting = true;
+                }
+              } else {
+                animation = null;
+              }
+            },
+          };
         };
-      };
-      if (!animation) {
-        _animateTo(_getRandomWaypoint());
-      }
-      if (animation) {
-        animation.update();
+        if (!animation) {
+          _animateTo(_getRandomWaypoint());
+        }
+        if (animation) {
+          animation.update();
+        }
       }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
