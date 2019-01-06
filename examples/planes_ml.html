@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script src="GLTFLoader.js"></script>
   <script>
-    let container, scene, camera, display, model, controllerMeshes;
+    let container, scene, camera, display, controllerMeshes, planeMeshes;
     let planeTracker = null;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
@@ -74,17 +74,9 @@
         scene.add(controllerMesh);
       });
 
-      const planeMeshes = [];
+      planeMeshes = [];
       const planeMeshesCache = {};
       const planeGeometry1 = new THREE.PlaneBufferGeometry(1, 1)
-        /* .applyMatrix(
-          new THREE.Matrix4().makeRotationFromQuaternion(
-            new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 0, -1),
-              new THREE.Vector3(0, 1, 0),
-            )
-          )
-        ); */
       const planeMaterial1 = new THREE.MeshPhongMaterial({
         color: 0xe91e63,
       });
@@ -154,7 +146,8 @@
       };
       const _clearPlanes = () => {
         for (let i = 0; i < planeMeshes.length; i++) {
-          scene.remove(planeMeshes[i]);
+          const planeMesh = planeMeshes[i];
+          scene.remove(planeMesh);
         }
         planeMeshes.length = 0;
       };
@@ -267,7 +260,7 @@
     }
 
     function animate(time, frame) {
-      if (model) {
+      /* if (model) {
         const animationTime = 4000;
         const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
         model.quaternion.setFromUnitVectors(
@@ -275,6 +268,16 @@
           new THREE.Vector3(Math.cos(f), 0, Math.sin(f)).normalize()
         );
         model.updateMatrixWorld();
+      } */
+      if (planeMeshes.length) {
+        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera
+        for (let i = 0; i < planeMeshes.length; i++) {
+          const planeMesh = planeMeshes[i];
+          const factor = Math.min(Math.max(planeMesh.position.distanceTo(vrCamera.position), 0), 3)/3;
+          const scaleFactor = 1 - factor;
+          planeMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+          planeMesh.updateMatrixWorld();
+        }
       }
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
@@ -303,7 +306,7 @@
       });
       display.session = session;
 
-      session.onselect = e => {
+      /* session.onselect = e => {
         const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
         const controllerMesh = controllerMeshes[controllerIndex];
         controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
@@ -313,7 +316,7 @@
           controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
         );
         scene.add(objectMesh);
-      };
+      }; */
 
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
