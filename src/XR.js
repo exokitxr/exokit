@@ -387,8 +387,7 @@ class XRPresentationFrame {
       if (xrOffset) {
         localMatrix
           .premultiply(
-            localMatrix2.fromArray(xrOffset.matrix)
-            .getInverse(localMatrix2)
+            localMatrix2.fromArray(xrOffset.matrixInverse)
           );
       }
     }
