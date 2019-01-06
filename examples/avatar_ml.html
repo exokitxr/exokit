@@ -327,17 +327,6 @@
               .slerp(endQuaternion, factor);
 
             avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
-
-            if (factor >= 1) {
-              avatarMesh.node = path[nextPathIndex];
-              animation = null;
-
-              if ((nextPathIndex + 1) < path.length) {
-                pathIndex = nextPathIndex;
-              } else {
-                path = null;
-              }
-            }
           },
         };
       }
