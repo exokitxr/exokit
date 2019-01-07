@@ -496,9 +496,6 @@
               // .add(localVector.set(0, 1, 0).applyQuaternion(grabbable.rotation));
             stringMesh.quaternion.copy(grabbable.rotation)
               .multiply(localStringRotationQuaterions[pose.getVrMode()]);
-            /* stringMesh.position.copy(controllerPosition)
-              .add(localVector.set(0, 0.015 * 4.6 * 3, 0).applyQuaternion(controllerRotation));
-            stringMesh.quaternion.copy(controllerRotation); */
             stringMesh.updateMatrixWorld();
           }
         }; */
