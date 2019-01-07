@@ -368,6 +368,8 @@ bool MLRaycaster::Update() {
           };
           asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
         }
+        
+        delete this;
       }));
     } else {
       Local<Object> localWindowObj = Nan::New(this->windowObj);
@@ -384,15 +386,17 @@ bool MLRaycaster::Update() {
           };
           asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
         }
+        
+        delete this;
       }));
     }
-
+    
     return true;
   } else if (result == MLResult_Pending) {
     return false;
   } else {
     ML_LOG(Error, "%s: Raycast request failed! %x", application_name, result);
-
+    delete this;
     return true;
   }
 }
@@ -3038,27 +3042,22 @@ NAN_METHOD(MLContext::RequestPlaneTracking) {
 
 NAN_METHOD(MLContext::RequestHitTest) {
   if (
-    info[0]->IsObject() && Local<Object>::Cast(info[0])->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("XRRay")) &&
-    info[1]->IsFunction() &&
-    info[2]->IsObject()
+    info[0]->IsFloat32Array() &&
+    info[1]->IsFloat32Array() &&
+    info[2]->IsFunction() &&
+    info[3]->IsObject()
   ) {
-    Local<Object> xrRay = Local<Object>::Cast(info[0]);
-    Local<Object> origin = Local<Object>::Cast(xrRay->Get(JS_STR("origin")));
-    Local<Object> direction = Local<Object>::Cast(xrRay->Get(JS_STR("direction")));
-    Local<Function> cb = Local<Function>::Cast(info[1]);
-    Local<Object> windowObj = Local<Object>::Cast(info[2]);
+    Local<Float32Array> originFloat32Array = Local<Float32Array>::Cast(info[0]);
+    Local<Float32Array> directionFloat32Array = Local<Float32Array>::Cast(info[1]);
+    Local<Function> cb = Local<Function>::Cast(info[2]);
+    Local<Object> windowObj = Local<Object>::Cast(info[3]);
+    
+    // XXX transform from child to parent
 
-    raycastQuery.position = MLVec3f{
-      (float)origin->Get(JS_STR("x"))->NumberValue(),
-      (float)origin->Get(JS_STR("y"))->NumberValue(),
-      (float)origin->Get(JS_STR("z"))->NumberValue(),
-    };
-    raycastQuery.direction = MLVec3f{
-      (float)direction->Get(JS_STR("x"))->NumberValue(),
-      (float)direction->Get(JS_STR("y"))->NumberValue(),
-      (float)direction->Get(JS_STR("z"))->NumberValue(),
-    };
+    memcpy(raycastQuery.position.values, (char *)originFloat32Array->Buffer()->GetContents().Data() + originFloat32Array->ByteOffset(), sizeof(raycastQuery.position.values));
+    memcpy(raycastQuery.direction.values, (char *)directionFloat32Array->Buffer()->GetContents().Data() + directionFloat32Array->ByteOffset(), sizeof(raycastQuery.direction.values));
     raycastQuery.up_vector = MLVec3f{0, 1, 0};
+    raycastQuery.horizontal_fov_degrees = 30;
     raycastQuery.width = 1;
     raycastQuery.height = 1;
     raycastQuery.collide_with_unobserved = false;
@@ -3069,7 +3068,7 @@ NAN_METHOD(MLContext::RequestHitTest) {
       MLRaycaster *raycaster = new MLRaycaster(windowObj, requestHandle, cb);
       raycasters.push_back(raycaster);
     } else {
-      ML_LOG(Error, "%s: Failed to request raycast: %x", application_name, result);
+      ML_LOG(Error, "%s: Failed to request raycast: %x %x", application_name, result);
       Nan::ThrowError("failed to request raycast");
     }
   } else {
@@ -3274,7 +3273,7 @@ NAN_METHOD(MLContext::Update) {
   if (raycasters.size() > 0) {
     raycasters.erase(std::remove_if(raycasters.begin(), raycasters.end(), [&](MLRaycaster *r) -> bool {
       if (r->Update()) {
-        delete r;
+        // deletion is handled by MLRaycaster
         return true;
       } else {
         return false;
