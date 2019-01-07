@@ -15,6 +15,8 @@ namespace ml {
 
 const char application_name[] = "com.exokit.app";
 constexpr int CAMERA_SIZE[] = {960, 540};
+constexpr float meshingRange = 3.0f;
+constexpr float planeRange = 10.0f;
 
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
@@ -71,6 +73,15 @@ float fingerBones[2][5][4][1 + 3];
 MLHandle raycastTracker;
 MLRaycastQuery raycastQuery;
 std::vector<MLRaycaster *> raycasters;
+
+MLHandle floorTracker;
+MLPlanesQuery floorRequest;
+MLHandle floorRequestHandle;
+MLPlane floorResults[MAX_NUM_PLANES];
+uint32_t numFloorResults;
+bool floorRequestPending = false;
+float largestFloorY = 0;
+float largestFloorSizeSq = 0;
 
 MLHandle meshTracker;
 std::vector<MLMesher *> meshers;
@@ -294,17 +305,26 @@ static void onUnloadResources(void* application_context) {
 MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
   Local<Object> localDocumentObj = Local<Object>::Cast(windowObj->Get(JS_STR("document")));
   Local<Value> xrOffsetValue = localDocumentObj->Get(JS_STR("xrOffset"));
+
+  MLMat4f result;
   if (xrOffsetValue->IsObject()) {
     Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
-    Local<Float32Array> matrixInverseFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrixInverse")));
+    Local<Float32Array> positionFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("position")));
+    MLVec3f position;
+    memcpy(position.values, (char *)positionFloat32Array->Buffer()->GetContents().Data() + positionFloat32Array->ByteOffset(), sizeof(position.values));
+    position.y += largestFloorY;
     
-    MLMat4f transformMatrix;
-    memcpy(transformMatrix.matrix_colmajor, (char *)matrixInverseFloat32Array->Buffer()->GetContents().Data() + matrixInverseFloat32Array->ByteOffset(), sizeof(transformMatrix.matrix_colmajor));
-    return transformMatrix;
+    Local<Float32Array> orientationFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("orientation")));
+    MLQuaternionf orientation;
+    memcpy(orientation.values, (char *)orientationFloat32Array->Buffer()->GetContents().Data() + orientationFloat32Array->ByteOffset(), sizeof(orientation.values));
+    
+    Local<Float32Array> scaleFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("scale")));
+    MLVec3f scale;
+    memcpy(scale.values, (char *)scaleFloat32Array->Buffer()->GetContents().Data() + scaleFloat32Array->ByteOffset(), sizeof(scale.values));
+
+    return invertMatrix(composeMatrix(position, orientation, scale));
   } else {
-    return MLMat4f{
-      {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
-    };
+    return makeTranslationMatrix(MLVec3f{0, -largestFloorY, 0});
   }
 }
 
@@ -2620,6 +2640,12 @@ NAN_METHOD(MLContext::Present) {
     }
   }
 
+  if (MLPlanesCreate(&floorTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to create floor handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
   MLMeshingSettings meshingSettings;
   if (MLMeshingInitSettings(&meshingSettings) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to initialize meshing settings", application_name);
@@ -2646,6 +2672,8 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
+
+  mlContext->TickFloor();
 
   // HACK: force the app to be "running"
   application_context.dummy_value = DummyValue::RUNNING;
@@ -2696,6 +2724,12 @@ NAN_METHOD(MLContext::Exit) {
   
   if (MLRaycastDestroy(raycastTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to destroy raycast handle", application_name);
+    return;
+  }
+
+  if (MLPlanesDestroy(floorTracker) != MLResult_Ok) {
+    ML_LOG(Error, "%s: failed to destroy floor handle", application_name);
+    info.GetReturnValue().Set(Nan::Null());
     return;
   }
 
@@ -2757,13 +2791,16 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
 
       if (result == MLResult_Ok) {
+        mlContext->TickFloor();
+
         // transform
         for (int i = 0; i < 2; i++) {
           const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
           const MLTransform &transform = cameraInfo.transform;
-          transformArray->Set(i*7 + 0, JS_NUM(transform.position.x));
-          transformArray->Set(i*7 + 1, JS_NUM(transform.position.y));
-          transformArray->Set(i*7 + 2, JS_NUM(transform.position.z));
+          const MLVec3f &position = OffsetFloor(transform.position);
+          transformArray->Set(i*7 + 0, JS_NUM(position.x));
+          transformArray->Set(i*7 + 1, JS_NUM(position.y));
+          transformArray->Set(i*7 + 2, JS_NUM(position.z));
           transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
           transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
           transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
@@ -2780,7 +2817,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
           const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
-          mlContext->position = leftCameraTransform.position;
+          mlContext->position = OffsetFloor(leftCameraTransform.position);
           mlContext->rotation = leftCameraTransform.rotation;
         }
 
@@ -2790,7 +2827,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         if (result == MLResult_Ok) {
           for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
             const MLInputControllerState &controllerState = controllerStates[i];
-            const MLVec3f &position = controllerState.position;
+            const MLVec3f &position = OffsetFloor(controllerState.position);
             const MLQuaternionf &orientation = controllerState.orientation;
             const float trigger = controllerState.trigger_normalized;
             const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
@@ -3232,6 +3269,8 @@ NAN_METHOD(MLContext::Update) {
 
   MLSnapshot *snapshot = nullptr;
 
+  // requests
+
   if (raycasters.size() > 0) {
     raycasters.erase(std::remove_if(raycasters.begin(), raycasters.end(), [&](MLRaycaster *r) -> bool {
       if (r->Update()) {
@@ -3319,9 +3358,9 @@ NAN_METHOD(MLContext::Update) {
       // meshExtents.rotation =  mlContext->rotation;
       meshExtents.rotation = {0, 0, 0, 1};
     }
-    meshExtents.extents.x = 3;
-    meshExtents.extents.y = 3;
-    meshExtents.extents.z = 3;
+    meshExtents.extents.x = meshingRange;
+    meshExtents.extents.y = meshingRange;
+    meshExtents.extents.z = meshingRange;
 
     MLResult result = MLMeshingRequestMeshInfo(meshTracker, &meshExtents, &meshInfoRequestHandle);
     if (result == MLResult_Ok) {
@@ -3339,12 +3378,12 @@ NAN_METHOD(MLContext::Update) {
       // planesRequest.bounds_rotation = mlContext->rotation;
       planesRequest.bounds_rotation = {0, 0, 0, 1};
     }
-    planesRequest.bounds_extents.x = 3;
-    planesRequest.bounds_extents.y = 3;
-    planesRequest.bounds_extents.z = 3;
+    planesRequest.bounds_extents.x = planeRange;
+    planesRequest.bounds_extents.y = planeRange;
+    planesRequest.bounds_extents.z = planeRange;
 
-    planesRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All;
-    planesRequest.min_hole_length = 0.5;
+    planesRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All | MLPlanesQueryFlag_OrientToGravity;
+    // planesRequest.min_hole_length = 0.5;
     planesRequest.min_plane_area = 0.25;
     planesRequest.max_results = MAX_NUM_PLANES;
 
@@ -3363,6 +3402,8 @@ NAN_METHOD(MLContext::Update) {
       cameraRequestConditionVariable.notify_one();
     }
   }
+
+  // responses
 
   if (meshInfoRequestPending) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
@@ -3517,6 +3558,63 @@ NAN_METHOD(MLContext::Poll) {
     delete poll;
   });
   polls.clear();
+}
+
+void MLContext::TickFloor() {
+  if (!floorRequestPending) {
+    {
+      // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+
+      floorRequest.bounds_center = this->position;
+      // floorRequest.bounds_rotation = mlContext->rotation;
+      floorRequest.bounds_rotation = {0, 0, 0, 1};
+    }
+    floorRequest.bounds_extents.x = planeRange;
+    floorRequest.bounds_extents.y = planeRange;
+    floorRequest.bounds_extents.z = planeRange;
+
+    floorRequest.flags = MLPlanesQueryFlag_Horizontal | MLPlanesQueryFlag_Semantic_Floor;
+    // floorRequest.min_hole_length = 0.5;
+    floorRequest.min_plane_area = 0.25;
+    floorRequest.max_results = MAX_NUM_PLANES;
+
+    MLResult result = MLPlanesQueryBegin(floorTracker, &floorRequest, &floorRequestHandle);
+    if (result == MLResult_Ok) {
+      floorRequestPending = true;
+    } else {
+      ML_LOG(Error, "%s: Floor request failed! %x", application_name, result);
+    }
+  }
+
+  if (floorRequestPending) {
+    MLResult result = MLPlanesQueryGetResults(floorTracker, floorRequestHandle, floorResults, &numFloorResults);
+    if (result == MLResult_Ok) {
+      for (uint32_t i = 0; i < numFloorResults; i++) {
+        const MLPlane &plane = floorResults[i];
+        const MLVec3f &normal = applyVectorQuaternion(MLVec3f{0, 0, 1}, plane.rotation);
+        if (normal.y > 0) {
+          const float floorSizeSq = plane.width*plane.width + plane.height*plane.height;
+
+          if (floorSizeSq > largestFloorSizeSq) {
+            largestFloorY = plane.position.y;
+            largestFloorSizeSq = floorSizeSq;
+          }
+        }
+      }
+
+      floorRequestPending = false;
+    } else if (result == MLResult_Pending) {
+      // nothing
+    } else {
+      ML_LOG(Error, "%s: Floor request failed! %x", application_name, result);
+
+      floorRequestPending = false;
+    }
+  }
+}
+
+MLVec3f MLContext::OffsetFloor(const MLVec3f &position) {
+  return MLVec3f{position.x, position.y - largestFloorY, position.z};
 }
 
 }

@@ -17,6 +17,7 @@ MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b);
 float vectorLengthSq(const MLVec3f &v);
 float vectorLength(const MLVec3f &v);
 MLVec3f normalizeVector(const MLVec3f &v);
+MLVec3f applyVectorQuaternion(const MLVec3f &v, const MLQuaternionf &q);
 MLVec3f applyVectorMatrix(const MLVec3f &v, const MLMat4f &m);
 float quaternionLength(const MLQuaternionf &q);
 MLQuaternionf normalizeQuaternion(const MLQuaternionf &q);
@@ -39,6 +40,7 @@ void decomposeMatrix(
   MLQuaternionf &quaternion,
   MLVec3f &scale
 );
+MLMat4f makeTranslationMatrix(const MLVec3f &translation);
 MLMat4f invertMatrix(const MLMat4f &matrix);
 MLMat4f multiplyMatrices(const MLMat4f &a, const MLMat4f &b);
 bool isIdentityMatrix(const MLMat4f &m);

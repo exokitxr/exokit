@@ -293,6 +293,9 @@ public:
   static NAN_METHOD(Update);
   static NAN_METHOD(Poll);
 
+  void TickFloor();
+  static MLVec3f OffsetFloor(const MLVec3f &position);
+
 // protected:
   // EGL
   NATIVEwindow *window;
