@@ -1717,7 +1717,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
-    mlDisplay.onrequesthittest = (xrRay, cb) => nativeMl.requestHitTest(xrRay, cb, window);
+    mlDisplay.onrequesthittest = (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
     mlDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
@@ -1737,7 +1737,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xmDisplay.requestSession);
-    xmDisplay.onrequesthittest = (xrRay, cb) => nativeMl.requestHitTest(xrRay, cb, window);
+    xmDisplay.onrequesthittest = (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
     xmDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
