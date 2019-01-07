@@ -10,7 +10,8 @@
   <script src="three.js"></script>
   <script src="BufferGeometryUtils.js"></script>
   <script>
-    let container, scene, camera, display, bowMesh;
+(async () => {
+    let container, scene, camera, display;
     // let mesher = null;
 
     const NPC_PLUGIN = 'npc';
@@ -24,9 +25,72 @@
     const ARROW_TTL = 5 * 1000;
     const ARROW_LENGTH = 0.5;
 
-    const dataSymbol = Symbol();
+    const pixelSize = 0.015;
+    const arrowMatrix = (() => {
+      const position = new THREE.Vector3(pixelSize, 0, -pixelSize*16);
+      const rotation = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        -Math.PI / 4
+      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, -1)
+      )).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(0, 1, 0)
+      ));
+      const scale = new THREE.Vector3(2, 2, 2);
+      return new THREE.Matrix4().compose(position, rotation, scale);
+    })();
 
-    function init() {
+    const grabbable = {
+      isGrabbed() {
+        return false;
+      },
+    };
+    let pulling = false;
+    let nockedArrowMesh = null;
+    let drawnArrowMesh = null;
+    const arrows = [];
+
+    const _requestImage = url => new Promise((accept, reject) => {
+      const img = new Image();
+
+      img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(img);
+      };
+
+      img.crossOrigin = 'Anonymous';
+      img.src = url;
+    });
+
+    const _debounce = fn => {
+      let running = false;
+      let queued = false;
+
+      const _go = () => {
+        if (!running) {
+          running = true;
+
+          fn(() => {
+            running = false;
+
+            if (queued) {
+              queued = false;
+
+              _go();
+            }
+          });
+        } else {
+          queued = true;
+        }
+      };
+      return _go;
+    };
+
+    async function init() {
       container = document.createElement('div');
       document.body.appendChild(container);
 
@@ -58,32 +122,10 @@
 
       container.appendChild(renderer.domElement);
 
-      const _debounce = fn => {
-        let running = false;
-        let queued = false;
-
-        const _go = () => {
-          if (!running) {
-            running = true;
-
-            fn(() => {
-              running = false;
-
-              if (queued) {
-                queued = false;
-
-                _go();
-              }
-            });
-          } else {
-            queued = true;
-          }
-        };
-        return _go;
-      };
-
       {
-        const {arrowGeometrySpec} = data;
+        const arrowImg = await _requestImage('icons/Arrow.png');
+        const arrowGeometrySpec = sprite3d.makeSpriteMesh(arrowImg, pixelSize); // XXX account for pixelSize
+        arrowGeometrySpec.applyMatrix(arrowMatrix);
 
         const zeroVector = new THREE.Vector3();
         const oneVector = new THREE.Vector3(1, 1, 1);
@@ -173,8 +215,6 @@
           vertexColors: THREE.VertexColors,
         });
 
-        const arrows = [];
-
         const stringMesh = (() => {
           const geometry = stringGeometry.clone();
           const material = stringMaterial;
@@ -244,7 +284,7 @@
           return arrowMesh;
         };
 
-        const _grab = e => {
+        /* const _grab = e => {
           grabbable.setLocalTransform(localTransformPositionVectors[pose.getVrMode()], localTransformRotationQuaterions[pose.getVrMode()], localTransformScaleVector);
           stringMesh.visible = true;
         };
@@ -255,9 +295,6 @@
         };
         grabbable.on('release', _release);
 
-        let pulling = false;
-        let nockedArrowMesh = null;
-        let drawnArrowMesh = null;
         const _gripdown = e => {
           const {side} = e;
           const otherSide = OTHER_SIDES[side];
@@ -340,7 +377,7 @@
         };
         input.on('triggerup', _triggerup, {
           priority: 1,
-        });
+        }); */
       }
 
       renderer.setAnimationLoop(animate);
@@ -525,6 +562,7 @@
     })();
 
     renderer.setAnimationLoop(animate);
+})();
   </script>
   </body>
 </html>
