@@ -409,6 +409,37 @@
         input.on('triggerup', _triggerup, {
           priority: 1,
         }); */
+
+        const destinationMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
+          const material = new THREE.MeshPhongMaterial({
+            color: 0x2196f3,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.visible = false;
+          mesh.frustumCulled = false;
+          return mesh;
+        })();
+        scene.add(destinationMesh);
+
+        const _onGesture = e => {
+          const {hand, gesture, lastGesture, position, rotation} = e;
+          // console.log('got gesture', {hand, gesture, lastGesture});
+
+          const pinched = gesture === 'pinch';
+
+          if (pinched) {
+            destinationMesh.position.fromArray(position);
+            destinationMesh.quaternion.fromArray(rotation);
+            destinationMesh.visible = true;
+          } else {
+            destinationMesh.visible = false;
+          }
+        };
+
+        const handTracker = window.browser.magicleap.RequestHandTracking();
+        // handTracker.onhands = _onHands;
+        handTracker.ongesture = _onGesture;
       }
 
       renderer.setAnimationLoop(animate);
