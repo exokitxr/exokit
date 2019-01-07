@@ -199,7 +199,7 @@
               new THREE.Vector3(1, 0, 0)
             ))
           ))
-          .applyMatrix(new THREE.Matrix4().makeTranslation(-pixelSize, 0, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(pixelSize, 0, 0));
         scene.add(bowMesh);
 
         const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
