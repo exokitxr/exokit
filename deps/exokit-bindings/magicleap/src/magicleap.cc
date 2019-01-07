@@ -3069,7 +3069,7 @@ NAN_METHOD(MLContext::RequestHitTest) {
       MLRaycaster *raycaster = new MLRaycaster(windowObj, requestHandle, cb);
       raycasters.push_back(raycaster);
     } else {
-      ML_LOG(Error, "%s: Failed to request raycast: %x", application_name, result);
+      ML_LOG(Error, "%s: Failed to request raycast: %x %x", application_name, result);
       Nan::ThrowError("failed to request raycast");
     }
   } else {
