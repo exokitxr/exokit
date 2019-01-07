@@ -1256,7 +1256,7 @@ NAN_METHOD(CanvasRenderingContext2D::ToArrayBuffer) {
   sk_sp<SkImage> image = getImageFromContext(context);
   sk_sp<SkData> data = image->encodeToData(format, quality);
 
-  Local<ArrayBuffer> result = Nan::New<ArrayBuffer>(data->size());
+  Local<ArrayBuffer> result = ArrayBuffer::New(Isolate::GetCurrent(), data->size());
   memcpy(result->GetContents().Data(), data->data(), data->size());
   result->Set(JS_STR("type"), JS_STR(type));
   info.GetReturnValue().Set(result);
