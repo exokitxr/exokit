@@ -8,7 +8,8 @@
   </head>
   <body>
   <script src="three.js"></script>
-  <script src="BufferGeometryUtils.js"></script>
+  <script src="sprite3d.js"></script>
+  <!-- <script src="BufferGeometryUtils.js"></script> -->
   <script>
 (async () => {
     let container, scene, camera, display;
@@ -177,7 +178,7 @@
           _requestImage('icons/Arrow.png'),
         ]);
 
-        const bowMesh = sprite3d.makeSpriteMesh(bowImg)
+        const bowMesh = sprite3d.makeSpriteMesh(bowImg);
         bowMesh.geometry
           .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
             new THREE.Quaternion().setFromAxisAngle(
@@ -188,11 +189,11 @@
               new THREE.Vector3(1, 0, 0)
             ))
           ))
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0.015/2 * 3, 0, 0));
+          .applyMatrix(new THREE.Matrix4().makeTranslation(-pixelSize, 0, 0));
         scene.add(bowMesh);
 
-        const arrowMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
-        arrowMesh.geometry
+        const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
+        arrowTemplateMesh.geometry
           .applyMatrix(arrowMatrix);
 
         const stringGeometry = (() => {
@@ -201,7 +202,7 @@
               new THREE.Vector3(0, 1, 0),
               new THREE.Vector3(0, 0, -1)
             ))) */
-            .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.275, 3));
+            .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3));
           geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
           return geometry;
         })();
@@ -220,7 +221,7 @@
             );
           }
         }
-        const arrowGeometry = (() => {
+        /* const arrowGeometry = (() => {
           const {positions, normals, colors, dys} = arrowGeometrySpec;
           const geometry = new THREE.BufferGeometry();
           geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -232,13 +233,13 @@
             1
           );
           return geometry;
-        })();
+        })(); */
         const stringMaterial = new THREE.MeshBasicMaterial({
           vertexColors: THREE.VertexColors,
         });
 
         const stringMesh = (() => {
-          const geometry = stringGeometry.clone();
+          const geometry = stringGeometry;
           const material = stringMaterial;
 
           const stringMesh = new THREE.Mesh(geometry, material);
@@ -265,12 +266,10 @@
           return stringMesh;
         })();
         scene.add(stringMesh);
+        console.log('scene add string mesh');
 
         const _makeArrowMesh = () => {
-          const geometry = arrowGeometry;
-          const material = stringMaterial;
-
-          const arrowMesh = new THREE.Mesh(geometry, material);
+          const arrowMesh = arrowTemplateMesh.clone();
           arrowMesh.startTime = 0;
           arrowMesh.lastTime = 0;
           arrowMesh.velocity = new THREE.Vector3();
@@ -538,53 +537,54 @@
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 
-    init();
+    await init();
 
-    (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
-      console.log('request session');
-      const session = await display.requestSession({
-        exclusive: true,
+    console.log('request device');
+    display = await navigator.xr.requestDevice();
+    console.log('request session');
+    const session = await display.requestSession({
+      exclusive: true,
+    });
+    display.session = session;
+
+    /* session.onselect = e => {
+      const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+      const controllerMesh = controllerMeshes[controllerIndex];
+      controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+      const objectMesh = _makeControllerMesh(
+        controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+        controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+      );
+      scene.add(objectMesh);
+    }; */
+
+    // console.log('request first frame');
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
       });
-      display.session = session;
 
-      /* session.onselect = e => {
-        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const controllerMesh = controllerMeshes[controllerIndex];
-        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+      const viewport = session.baseLayer.getViewport(frame.views[0]);
+      const width = viewport.width;
+      const height = viewport.height;
 
-        const objectMesh = _makeControllerMesh(
-          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
-          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
-        );
-        scene.add(objectMesh);
-      }; */
+      renderer.setSize(width * 2, height);
 
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
-        });
+      renderer.setAnimationLoop(null);
 
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
+      renderer.vr.enabled = true;
+      renderer.vr.setDevice(display);
+      renderer.vr.setAnimationLoop(animate);
 
-        renderer.setSize(width * 2, height);
-
-        renderer.setAnimationLoop(null);
-
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
-
-        console.log('running!');
-      });
-    })();
+      console.log('running!');
+    });
 
     renderer.setAnimationLoop(animate);
-})();
+})()
+  .catch(err => {
+    console.warn(err.stack);
+  });
   </script>
   </body>
 </html>
