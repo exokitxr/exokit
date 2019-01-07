@@ -11,9 +11,22 @@
   <script src="sprite3d.js"></script>
   <script>
     let container, scene, camera, renderer, display;
-    let swordMesh = null;
+    let swordMesh;
 
-    let scaleFactor = 1;
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localMatrix = new THREE.Matrix4();
+
+    const _makeButtons = () => ({
+      trigger: false,
+      bumper: false,
+    });
+    const lastButtons = [
+      _makeButtons(),
+      _makeButtons(),
+    ];
+    let grabbedIndex = -1;
 
     const _requestSpriteMesh = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -88,12 +101,43 @@
     function animate(time, frame) {
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
-        const inputSource = inputSources[0];
-        const pose = frame.getInputPose(inputSource);
 
-        swordMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-        swordMesh.matrix.decompose(swordMesh.position, swordMesh.quaternion, swordMesh.scale);
-        swordMesh.updateMatrixWorld(true);
+        const _updateGamepads = () => {
+          for (let i = 0; i < gamepads.length; i++) {
+            const gamepad = gamepads[i];
+            const bumper = gamepad.buttons[2].pressed;
+            const lastBumper = lastButtons[i].bumper;
+
+            if (bumper && !lastBumper) {
+              const inputSource = inputSources[i];
+              const pose = frame.getInputPose(inputSource);
+              localMatrix
+                .fromArray(pose.targetRay.transformMatrix)
+                .decompose(localVector, localQuaternion, localVector2);
+              if (localVector.distanceTo(swordMesh.position) < 0.3) {
+                grabbedIndex = i;
+              }
+            } else if (lastBumper && !bumper) {
+              if (grabbedIndex !== -1) {
+                grabbedIndex = -1;
+              }
+            }
+
+            lastButtons[i].bumper = bumper;
+          }
+        };
+        const _updateGrab = () => {
+          if (grabbedIndex !== -1) {
+            const inputSource = inputSources[grabbedIndex];
+            const pose = frame.getInputPose(inputSource);
+            swordMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+            swordMesh.matrix.decompose(swordMesh.position, swordMesh.quaternion, swordMesh.scale);
+            swordMesh.updateMatrixWorld(true);
+          }
+        };
+
+        _updateGamepads();
+        _updateGrab();
       }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
