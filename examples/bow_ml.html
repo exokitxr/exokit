@@ -1,0 +1,515 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="skin.js"></script>
+  <script src="BufferGeometryUtils.js"></script>
+  <script>
+    let container, scene, camera, display, avatarMesh;
+    let mesher = null;
+    const waypoints = {};
+    let numWaypoints = 0;
+    let waypointsValid = false;
+    const lineMeshes = [];
+    let animation = null;
+
+    const ARROW_SPEED = 0.05;
+    const ARROW_GRAVITY = -10 / 1000 * 0.001;
+    const ARROW_TERMINAL_VELOCITY = -10;
+    const ARROW_TTL = 5 * 1000;
+
+    const DEFAULT_MATRIX = [
+      0, 0, 0,
+      0, 0, 0, 1,
+      1, 1, 1,
+    ];
+    const SIDES = ['left', 'right'];
+
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler();
+    const localMatrix = new THREE.Matrix4();
+    const localMatrixFloat32Array = new Float32Array(16);
+    const localVectorFloat32Array = new Float32Array(3);
+    const localVectorFloat32Array2 = new Float32Array(3);
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 0, 1);
+      // camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      class ZBow {
+        mount() {
+          const {three: {THREE, scene}, input, elements, render, pose, hands, player, utils: {geometry: geometryUtils}} = zeo;
+
+          const zeroVector = new THREE.Vector3();
+          const backVector = new THREE.Vector3(0, 0, -1);
+
+          const bowGeometry = (() => {
+            const coreGeometry = new THREE.TorusBufferGeometry(1, 0.02, 3, 3, Math.PI / 2)
+              .applyMatrix(new THREE.Matrix4().makeRotationZ(-Math.PI / 4))
+              .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 2))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 1 - 0.04, 0));
+            const topGeometry = new THREE.BoxBufferGeometry(0.035, 0.1, 0.02)
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.7 + (0.1 / 2), 0.26 - (0.02 / 2)));
+            const bottomGeometry = new THREE.BoxBufferGeometry(0.035, 0.1, 0.02)
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.7 - (0.1 / 2), 0.26 - (0.02 / 2)));
+
+            return THREE.BufferGeometryUtils.mergeBufferGeometries([coreGeometry, topGeometry, bottomGeometry])
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+          })();
+          const weaponMaterial = new THREE.MeshPhongMaterial({
+            color: 0x808080,
+            shading: THREE.FlatShading,
+          });
+          const stringMaterial = new THREE.LineBasicMaterial({
+            color: 0x000000,
+            // transparent: true,
+          });
+          const arrowMaterial = new THREE.MeshPhongMaterial({
+            color: 0xCCCCCC,
+            shading: THREE.FlatShading,
+          });
+
+          const mesh = (() => {
+            const mesh = new THREE.Object3D();
+
+            const coreMesh = (() => {
+              const geometry = bowGeometry;
+              const material = weaponMaterial;
+
+              const mesh = new THREE.Mesh(geometry, material);
+              return mesh;
+            })();
+            mesh.add(coreMesh);
+
+            const stringMesh = (() => {
+              const geometry = new THREE.Geometry();
+              geometry.vertices.push(
+                new THREE.Vector3(0, 0, 0.7),
+                zeroVector,
+                zeroVector,
+                new THREE.Vector3(0, 0, -0.7)
+              );
+              const material = stringMaterial;
+
+              const mesh = new THREE.LineSegments(geometry, material);
+              mesh.position.y = 0.26;
+              mesh.frustumCulled = false;
+
+              mesh.pullPosition = zeroVector;
+              mesh.updatePull = (position = null) => {
+                const pullPosition = position !== null ? position.clone().applyMatrix4(new THREE.Matrix4().getInverse(mesh.matrixWorld)) : zeroVector;
+                for (let i = 1; i <= 2; i++) {
+                  geometry.vertices[i] = pullPosition;
+                }
+                geometry.verticesNeedUpdate = true;
+
+                mesh.pullPosition = pullPosition;
+              };
+
+              return mesh;
+            })();
+            mesh.add(stringMesh);
+            mesh.stringMesh = stringMesh;
+
+            return mesh;
+          })();
+
+          const arrows = [];
+
+          const arrowGeometry = (() => {
+            const coreGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.75);
+            const tipGeometry = new THREE.CylinderBufferGeometry(0, 0.015, 0.04, 3, 1)
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.75 / 2) - (0.04 / 2)));
+            const fletchingGeometry1 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
+            const fletchingGeometry2 = new THREE.CylinderBufferGeometry(0, 0.015, 0.2, 2, 1)
+              .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+              .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 2))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.75 / 2) - (0.2 / 2) - 0.01));
+
+            return THREE.BufferGeometryUtils.mergeBufferGeometries([coreGeometry, tipGeometry, fletchingGeometry1, fletchingGeometry2])
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.75 / 2));
+          })();
+          const _makeArrowMesh = () => {
+            const geometry = arrowGeometry;
+            const material = arrowMaterial;
+
+            const arrowMesh = new THREE.Mesh(geometry, material);
+            arrowMesh.startTime = 0;
+            arrowMesh.lastTime = 0;
+            arrowMesh.velocity = null;
+
+            arrowMesh.updatePull = (position = null) => {
+              const {stringMesh} = mesh;
+
+              const pullPosition = position !== null ? position : stringMesh.getWorldPosition();
+              arrowMesh.position.copy(pullPosition);
+
+              const pullAngle = mesh.getWorldPosition()
+                .sub(pullPosition)
+                .normalize();
+              arrowMesh.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 0, -1),
+                pullAngle
+              );
+
+              arrowMesh.updateMatrixWorld();
+            };
+
+            return arrowMesh;
+          };
+
+          const _makeArrowState = () => ({
+            grabbed: false,
+            pulling: false,
+            drawnArrowMesh: null,
+            nockedArrowMesh: null,
+          });
+          const bowStates = {
+            left: _makeArrowState(),
+            right: _makeArrowState(),
+          };
+
+          const _getOtherSide = side => side === 'left' ? 'right' : 'left';
+
+          /* const bowGrabbable = hands.makeGrabbable('bow'); // XXX
+          const _grab = e => {
+            const {userId} = e;
+
+            if (userId) {
+              const {side} = e;
+              const bowState = bowStates[side];
+
+              bowState.grabbed = true;
+            }
+          };
+          bowGrabbable.on('grab', _grab);
+          const _release = e => {
+            const {userId} = e;
+
+            if (userId === player.getId()) {
+              const {side} = e;
+              const bowState = bowStates[side];
+
+              bowState.grabbed = false;
+
+              SIDES.forEach(side => {
+                const bowState = bowStates[side];
+                const {pulling, drawnArrowMesh, nockedArrowMesh} = bowState;
+
+                if (pulling) {
+                  bowState.pulling = false;
+                }
+                if (drawnArrowMesh) {
+                  drawnArrowMesh.parent.remove(drawnArrowMesh);
+                  bowState.drawnArrowMesh = null;
+                }
+                if (nockedArrowMesh) {
+                  scene.remove(nockedArrowMesh);
+                  bowState.nockedArrowMesh = null;
+                }
+              });
+            }
+          };
+          bowGrabbable.on('release', _release);
+          const _grabbableUpdate = e => {
+            const {position, rotation, scale} = e;
+
+            entityObject.position.fromArray(position);
+            entityObject.quaternion.fromArray(rotation);
+            entityObject.scale.fromArray(scale);
+            entityObject.updateMatrixWorld();
+          };
+          bowGrabbable.on('update', _grabbableUpdate); */
+
+          /* const _gripdown = e => { // XXX
+            const {side} = e;
+            const otherSide = _getOtherSide(side);
+            const otherBowState = bowStates[otherSide];
+            const {grabbed: otherGrabbed} = otherBowState;
+
+            if (otherGrabbed) {
+              const gamepads = navigator.getGamepads();
+              const gamepad = gamepads.find(gamepad => gamepad.hand === side);
+
+              if (gamepad) {
+                const {worldPosition: controllerPosition} = gamepad;
+                const {stringMesh} = mesh;
+                const stringMeshPosition = stringMesh.getWorldPosition();
+                const bowState = bowStates[side];
+
+                if (controllerPosition.distanceTo(stringMeshPosition) < 0.1) {
+                  bowState.pulling = true;
+                } else {
+                  const controllerMeshes = player.getControllerMeshes();
+                  const controllerMesh = controllerMeshes[side];
+
+                  const arrow = _makeArrowMesh();
+                  controllerMesh.add(arrow);
+                  bowState.drawnArrowMesh = arrow;
+
+                  // input.vibrate(side, 1, 20);
+                }
+
+                e.stopImmediatePropagation();
+              }
+            }
+          };
+          input.on('gripdown', _gripdown, {
+            priority: 1,
+          });
+          const _gripup = e => {
+            const {side} = e;
+            const bowState = bowStates[side];
+            const {pulling, drawnArrowMesh} = bowState;
+
+            if (pulling) {
+              bowState.pulling = false;
+
+              const otherSide = _getOtherSide(side);
+              const otherBowState = bowStates[otherSide];
+              const {nockedArrowMesh} = otherBowState;
+              if (nockedArrowMesh) {
+                const arrow = nockedArrowMesh;
+                arrows.push(arrow);
+
+                const now = Date.now();
+                arrow.startTime = now;
+                arrow.lastTime = now;
+                const {stringMesh} = mesh;
+                const {pullPosition} = stringMesh;
+                arrow.velocity = new THREE.Vector3(0, 0, -ARROW_SPEED * pullPosition.length()).applyQuaternion(arrow.quaternion);
+
+                otherBowState.nockedArrowMesh = null;
+              }
+            }
+            if (drawnArrowMesh) {
+              drawnArrowMesh.parent.remove(drawnArrowMesh);
+              bowState.drawnArrowMesh = null;
+            }
+          };
+          input.on('gripup', _gripup, {
+            priority: 1,
+          }); */
+
+          elements.registerEntity(this, bowEntity);
+
+          this._cleanup = () => {
+            elements.unregisterEntity(this, bowEntity);
+          };
+        }
+
+        unmount() {
+          this._cleanup();
+        }
+      }
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    function animate(time, frame) {
+      if (renderer.vr.enabled) {
+        const gamepads = navigator.getGamepads();
+
+        const _updateNock = () => {
+          SIDES.forEach(side => {
+            const bowState = bowStates[side];
+            const {drawnArrowMesh} = bowState;
+            const otherSide = _getOtherSide(side);
+            const otherBowState = bowStates[otherSide];
+            const {nockedArrowMesh} = otherBowState;
+
+            if (drawnArrowMesh) {
+              if (!nockedArrowMesh) {
+                const {stringMesh} = mesh;
+                const stringPosition = stringMesh.getWorldPosition();
+                const drawnArrowPosition = drawnArrowMesh.getWorldPosition();
+
+                if (drawnArrowPosition.distanceTo(stringPosition) < 0.1) {
+                  bowState.drawnArrowMesh = null;
+
+                  const nockedArrowMesh = drawnArrowMesh;
+                  scene.add(nockedArrowMesh);
+                  otherBowState.nockedArrowMesh = nockedArrowMesh;
+                }
+              } else {
+                drawnArrowMesh.parent.remove(drawnArrowMesh);
+
+                bowState.drawnArrowMesh = null;
+              }
+            }
+          });
+        };
+        const _updateString = () => {
+          const _updatePull = (position = null) => {
+            const {stringMesh} = mesh;
+            stringMesh.updatePull(position);
+
+            const nockedArrowMesh = (() => {
+              for (let s = 0; s < SIDES.length; s++) {
+                const side = SIDES[s];
+                const bowState = bowStates[side];
+                const {nockedArrowMesh} = bowState;
+
+                if (nockedArrowMesh) {
+                  return nockedArrowMesh;
+                }
+              }
+
+              return null;
+            })();
+            if (nockedArrowMesh) {
+              nockedArrowMesh.updatePull(position);
+            }
+          };
+
+          const somePulling = SIDES.some(side => {
+            const bowState = bowStates[side];
+            const {pulling} = bowState;
+
+            if (pulling) {
+              const gamepad = gamepads.find(gamepad => gamepad.hand === side);
+
+              if (gamepad) {
+                const {worldPosition: controllerPosition} = gamepad;
+                _updatePull(controllerPosition);
+              } else {
+                _updatePull();
+              }
+
+              return true;
+            } else {
+              return false;
+            }
+          });
+          if (!somePulling) {
+            _updatePull();
+          }
+        };
+        const _updateArrows = () => {
+          const now = Date.now();
+
+          const oldArrows = arrows.slice();
+          for (let i = 0; i < oldArrows.length; i++) {
+            const arrow = oldArrows[i];
+            const {startTime} = arrow;
+            const timeSinceStart = now - startTime;
+
+            if (timeSinceStart < ARROW_TTL) {
+              const {lastTime} = arrow;
+              const timeDiff = now - lastTime;
+
+              const {velocity} = arrow;
+              arrow.position.add(velocity.clone().multiplyScalar(timeDiff))
+              arrow.quaternion.setFromUnitVectors(
+                backVector,
+                velocity.clone().normalize()
+              );
+              arrow.updateMatrixWorld();
+
+              velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
+
+              arrow.lastTime = now;
+            } else {
+              scene.remove(arrow);
+              arrows.splice(arrows.indexOf(arrow), 1);
+            }
+          }
+        };
+
+        _updateNock();
+        _updateString();
+        _updateArrows();
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      /* session.onselect = e => {
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+        const objectMesh = _makeControllerMesh(
+          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+        );
+        scene.add(objectMesh);
+      }; */
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+
+    renderer.setAnimationLoop(animate);
+  </script>
+  </body>
+</html>
