@@ -14,6 +14,52 @@
     let container, scene, camera, display;
     // let mesher = null;
 
+    const zeroVector = new THREE.Vector3();
+    const oneVector = new THREE.Vector3(1, 1, 1);
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+    const upVector = new THREE.Vector3(0, 1, 0);
+    const zeroQuaternion = new THREE.Quaternion();
+    const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
+    /* const localTransformPositionVectors = {
+      keyboard: new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3),
+      hmd: new THREE.Vector3(0.015/2 * 3, 0, 0),
+    };
+    const localTransformRotationQuaterions = {
+      keyboard: new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(-1, 0, 0),
+        new THREE.Vector3(0, 0, -1)
+      ).premultiply(
+        new THREE.Quaternion().setFromAxisAngle(
+          new THREE.Vector3(1, 0, 0),
+          Math.PI / 4
+        )
+      ),
+      hmd: new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        Math.PI / 4
+      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(1, 0, 0)
+      )),
+    };
+    const localStringPositionVectors = {
+      keyboard: new THREE.Vector3(0, 0.015 * 12, 0.015 * 2),
+      hmd: new THREE.Vector3(0, 0.015 * 2, 0),
+    };
+    const localStringRotationQuaterions = {
+      keyboard: zeroQuaternion,
+      hmd: new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 0)
+      ),
+    }; */
+    const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localMatrix = new THREE.Matrix4();
+    const localRay = new THREE.Ray();
+
     const NPC_PLUGIN = 'npc';
     const OTHER_SIDES = {
       left: 'right',
@@ -123,55 +169,31 @@
       container.appendChild(renderer.domElement);
 
       {
-        const arrowImg = await _requestImage('icons/Arrow.png');
-        const arrowGeometrySpec = sprite3d.makeSpriteMesh(arrowImg, pixelSize); // XXX account for pixelSize
-        arrowGeometrySpec.applyMatrix(arrowMatrix);
+        const [
+          bowImg,
+          arrowImg,
+        ] = await Promise.all([
+          _requestImage('icons/Bow_Empty.png'),
+          _requestImage('icons/Arrow.png'),
+        ]);
 
-        const zeroVector = new THREE.Vector3();
-        const oneVector = new THREE.Vector3(1, 1, 1);
-        const forwardVector = new THREE.Vector3(0, 0, -1);
-        const upVector = new THREE.Vector3(0, 1, 0);
-        const zeroQuaternion = new THREE.Quaternion();
-        const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
-        const localTransformPositionVectors = {
-          keyboard: new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3),
-          hmd: new THREE.Vector3(0.015/2 * 3, 0, 0),
-        };
-        const localTransformRotationQuaterions = {
-          keyboard: new THREE.Quaternion().setFromUnitVectors(
-            new THREE.Vector3(-1, 0, 0),
-            new THREE.Vector3(0, 0, -1)
-          ).premultiply(
+        const bowMesh = sprite3d.makeSpriteMesh(arrowImg)
+        bowMesh.geometry
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
             new THREE.Quaternion().setFromAxisAngle(
-              new THREE.Vector3(1, 0, 0),
+              new THREE.Vector3(0, 0, 1),
               Math.PI / 4
-            )
-          ),
-          hmd: new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(0, 0, 1),
-            Math.PI / 4
-          ).premultiply(new THREE.Quaternion().setFromUnitVectors(
-            new THREE.Vector3(0, 0, -1),
-            new THREE.Vector3(1, 0, 0)
-          )),
-        };
-        const localStringPositionVectors = {
-          keyboard: new THREE.Vector3(0, 0.015 * 12, 0.015 * 2),
-          hmd: new THREE.Vector3(0, 0.015 * 2, 0),
-        };
-        const localStringRotationQuaterions = {
-          keyboard: zeroQuaternion,
-          hmd: new THREE.Quaternion().setFromUnitVectors(
-            new THREE.Vector3(0, 0, 1),
-            new THREE.Vector3(0, 1, 0)
-          ),
-        };
-        const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
-        const localVector = new THREE.Vector3();
-        const localVector2 = new THREE.Vector3();
-        const localQuaternion = new THREE.Quaternion();
-        const localMatrix = new THREE.Matrix4();
-        const localRay = new THREE.Ray();
+            ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, -1),
+              new THREE.Vector3(1, 0, 0)
+            ))
+          ))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0.015/2 * 3, 0, 0));
+        scene.add(bowMesh);
+
+        const arrowMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
+        arrowMesh.geometry
+          .applyMatrix(arrowMatrix);
 
         const stringGeometry = (() => {
           const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
