@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script src="skin.js"></script>
   <script>
-    let container, scene, camera, display, avatarMesh, rayMesh;
+    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh;
     let mesher = null;
     const waypoints = {};
     let numWaypoints = 0;
@@ -130,6 +130,17 @@
       })();
       scene.add(rayMesh);
 
+      destinationMesh = (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x2196f3,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(destinationMesh);
+      
       const terrainMeshes = [];
       const terrainMaterial = new THREE.MeshPhongMaterial({
         color: 0x666666,
@@ -356,6 +367,9 @@
                 .add(localVector.set(0, avatarHeight, 0));
               rayMesh.quaternion.copy(avatarMesh.quaternion);
 
+              destinationMesh.position.copy(endPosition);
+              destinationMesh.quaternion.copy(endQuaternion);
+              
               if (factor < 1) {
                 if (display.session && !animation.hitTesting) {
                   const localAnimation = animation;
