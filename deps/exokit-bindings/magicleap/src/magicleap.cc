@@ -3059,6 +3059,7 @@ NAN_METHOD(MLContext::RequestHitTest) {
       (float)direction->Get(JS_STR("z"))->NumberValue(),
     };
     raycastQuery.up_vector = MLVec3f{0, 1, 0};
+    raycastQuery.horizontal_fov_degrees = 30;
     raycastQuery.width = 1;
     raycastQuery.height = 1;
     raycastQuery.collide_with_unobserved = false;
