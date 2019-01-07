@@ -1360,7 +1360,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       RequestHandTracking: () => nativeMl.RequestHandTracking(window),
       RequestEyeTracking: () => nativeMl.RequestEyeTracking(window),
       RequestImageTracking: () => nativeMl.RequestImageTracking(window),
-      RequestDepthPopulation: () => nativeMl.RequestDepthPopulation(window),
+      RequestDepthPopulation: nativeMl.RequestDepthPopulation,
       RequestCamera(cb) {
         if (typeof cb === 'function') {
           cb = (cb => function(datas) {
