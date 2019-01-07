@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script src="skin.js"></script>
   <script>
-    let container, scene, camera, display, avatarMesh;
+    let container, scene, camera, display, avatarMesh, rayMesh;
     let mesher = null;
     const waypoints = {};
     let numWaypoints = 0;
@@ -110,6 +110,25 @@
         return mesh;
       })();
       scene.add(avatarMesh);
+      
+      rayMesh = (() => {
+        const geometry = new THREE.CylinderGeometry(0.01, 0.01, 1, 3, 1)
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0))
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, 0, -1)
+            )
+          ));
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xf44336,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = avatarHeight;
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(rayMesh);
 
       const terrainMeshes = [];
       const terrainMaterial = new THREE.MeshPhongMaterial({
@@ -332,6 +351,10 @@
                 .slerp(endQuaternion, factor); */
 
               avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
+
+              rayMesh.position.copy(avatarMesh.position)
+                .add(localVector.set(0, avatarHeight, 0));
+              rayMesh.quaternion.copy(avatarMesh.quaternion);
 
               if (factor < 1) {
                 if (display.session && !animation.hitTesting) {
