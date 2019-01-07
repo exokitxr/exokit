@@ -12,7 +12,7 @@
   <!-- <script src="BufferGeometryUtils.js"></script> -->
   <script>
 (async () => {
-    let container, scene, camera, display, bowMesh;
+    let container, scene, camera, display, bowMesh, stringMesh;
     // let mesher = null;
 
     const zeroVector = new THREE.Vector3();
@@ -248,7 +248,7 @@
           vertexColors: THREE.VertexColors,
         });
 
-        const stringMesh = (() => {
+        stringMesh = (() => {
           const geometry = stringGeometry;
           const material = stringMaterial;
 
