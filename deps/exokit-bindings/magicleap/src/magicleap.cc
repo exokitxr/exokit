@@ -302,7 +302,7 @@ static void onUnloadResources(void* application_context) {
   uv_async_send(&eventsAsync);
 }
 
-MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
+MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
   Local<Object> localDocumentObj = Local<Object>::Cast(windowObj->Get(JS_STR("document")));
   Local<Value> xrOffsetValue = localDocumentObj->Get(JS_STR("xrOffset"));
 
@@ -322,9 +322,13 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
     MLVec3f scale;
     memcpy(scale.values, (char *)scaleFloat32Array->Buffer()->GetContents().Data() + scaleFloat32Array->ByteOffset(), sizeof(scale.values));
 
-    return invertMatrix(composeMatrix(position, orientation, scale));
+    MLMat4f result = composeMatrix(position, orientation, scale);
+    if (inverse) {
+      result = invertMatrix(result);
+    }
+    return result;
   } else {
-    return makeTranslationMatrix(MLVec3f{0, -largestFloorY, 0});
+    return makeTranslationMatrix(MLVec3f{0, largestFloorY * (inverse ? -1 : 1), 0});
   }
 }
 
