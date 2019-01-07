@@ -200,6 +200,7 @@
             ))
           ))
           .applyMatrix(new THREE.Matrix4().makeTranslation(pixelSize, 0, 0));
+        bowMesh.frustumCulled = false;
         scene.add(bowMesh);
 
         const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
