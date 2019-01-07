@@ -456,7 +456,7 @@
             stringMesh.quaternion.copy(bowMesh.quaternion);
           }
         };
-        const _updateStringPosition = () => {
+        /* const _updateStringPosition = () => {
           if (grabbable.isGrabbed()) {
             const side = grabbable.getGrabberSide();
             const gamepad = gamepads.find(gamepad => gamepad.hand === side);
@@ -471,7 +471,7 @@
             stringMesh.quaternion.copy(controllerRotation); */
             stringMesh.updateMatrixWorld();
           }
-        };
+        }; */
         const _updateDrawnArrow = () => {
           if (drawnArrowMesh) {
             const _updateTransform = () => {
@@ -577,7 +577,7 @@
 
         _updateGamepads();
         _updateGrab();
-        _updateStringPosition();
+        // _updateStringPosition();
         _updateDrawnArrow();
         _updatePull();
         _updateArrows();
