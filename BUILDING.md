@@ -45,7 +45,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 1. place certificate/private key in `cert/{app.cert,app.privkey}`
 1. open **Ubuntu Bash on Windows**
 1. `export MLSDK=/mnt/c/your_mlsdk_path_goes_here # fill this in`
-1. run `scripts/build-ml.sh --signed`
+1. run `scripts/build-ml.sh`
 
 ### Procedure (unsigned)
 1. download Magic Leap Package Manager from https://creator.magicleap.com
