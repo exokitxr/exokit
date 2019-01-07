@@ -8,6 +8,8 @@ const he = require('he');
 const parse5 = require('parse5');
 const parseIntStrict = require('parse-int');
 const selector = require('window-selector');
+const fetch = require('window-fetch');
+const {Blob} = fetch;
 
 const bindings = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
@@ -2200,11 +2202,25 @@ class HTMLCanvasElement extends HTMLElement {
     return this._context;
   }
 
-  toDataURL() {
+  toDataURL(type, encoderOptions) {
+    const arrayBuffer = this.toArrayBuffer(type, encoderOptions);
+    return `data:${arrayBuffer.type};base64,${new Buffer(arrayBuffer).toString('base64')}`;
+  }
+
+  toBlob(cb, type, encoderOptions) {
+    process.nextTick(() => {
+      const arrayBuffer = this.toArrayBuffer(type, encoderOptions);
+      const blob = new Blob();
+      blob.buffer = new Buffer(arrayBuffer);
+      cb(blob);
+    });
+  }
+
+  toArrayBuffer(cb, type, encoderOptions) {
     if (!this._context) {
       this.getContext('2d');
     }
-    return this._context.toDataURL();
+    return this._context.toArrayBuffer(type, encoderOptions);
   }
 
   captureStream(frameRate) {
