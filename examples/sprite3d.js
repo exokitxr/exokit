@@ -150,7 +150,7 @@ const makeSpriteMesh = img => {
   const material = pixelMaterial;
 
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(pixelSize, 0, 0);
+  // mesh.position.set(pixelSize, 0, 0);
   /* mesh.quaternion.setFromAxisAngle(
     new THREE.Vector3(0, 0, 1),
     Math.PI / 4
