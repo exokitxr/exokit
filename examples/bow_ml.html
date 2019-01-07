@@ -61,6 +61,15 @@
     const localMatrix = new THREE.Matrix4();
     const localRay = new THREE.Ray();
 
+    const _makeButtons = () => ({
+      trigger: false,
+      bumper: false,
+    });
+    const lastButtons = [
+      _makeButtons(),
+      _makeButtons(),
+    ];
+
     const NPC_PLUGIN = 'npc';
     const OTHER_SIDES = {
       left: 'right',
@@ -94,6 +103,7 @@
         return false;
       },
     };
+    let grabbedIndex = -1;
     let pulling = false;
     let nockedArrowMesh = null;
     let drawnArrowMesh = null;
@@ -408,7 +418,41 @@
     function animate(time, frame) {
       if (renderer.vr.enabled) {
         const gamepads = navigator.getGamepads();
+        const inputSources = display.session.getInputSources();
 
+        const _updateGamepads = () => {
+          for (let i = 0; i < gamepads.length; i++) {
+            const gamepad = gamepads[i];
+            const bumper = gamepad.buttons[2].pressed;
+            const lastBumper = lastButtons[i].bumper;
+
+            if (bumper && !lastBumper) {
+              const inputSource = inputSources[i];
+              const pose = frame.getInputPose(inputSource);
+              localMatrix
+                .fromArray(pose.targetRay.transformMatrix)
+                .decompose(localVector, localQuaternion, localVector2);
+               if (localVector.distanceTo(bowMesh.position) < 0.1) {
+                 grabbedIndex = i;
+               }
+            } else if (lastBumper && !bumper) {
+               if (grabbedIndex !== -1) {
+                 grabbedIndex = -1;
+               }
+            }
+
+            lastButtons[i].bumper = bumper;
+          }
+        };
+        const _updateGrab = () => {
+          if (grabbedIndex !== -1) {
+            const inputSource = inputSources[i];
+            const pose = frame.getInputPose(inputSource);
+            localMatrix
+              .fromArray(pose.targetRay.transformMatrix)
+              .decompose(bowMesh.position, bowMesh.quaternion, localVector);
+          }
+        };
         const _updateStringPosition = () => {
           if (grabbable.isGrabbed()) {
             const side = grabbable.getGrabberSide();
@@ -528,6 +572,8 @@
           }
         };
 
+        _updateGamepads();
+        _updateGrab();
         _updateStringPosition();
         _updateDrawnArrow();
         _updatePull();
