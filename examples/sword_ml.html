@@ -100,6 +100,7 @@
 
     function animate(time, frame) {
       if (renderer.vr.enabled) {
+        const gamepads = navigator.getGamepads();
         const inputSources = display.session.getInputSources();
 
         const _updateGamepads = () => {
