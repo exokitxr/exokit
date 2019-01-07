@@ -433,13 +433,13 @@
               localMatrix
                 .fromArray(pose.targetRay.transformMatrix)
                 .decompose(localVector, localQuaternion, localVector2);
-               if (localVector.distanceTo(bowMesh.position) < 0.3) {
-                 grabbedIndex = i;
-               }
+              if (localVector.distanceTo(bowMesh.position) < 0.3) {
+                grabbedIndex = i;
+              }
             } else if (lastBumper && !bumper) {
-               if (grabbedIndex !== -1) {
-                 grabbedIndex = -1;
-               }
+              if (grabbedIndex !== -1) {
+                grabbedIndex = -1;
+              }
             }
 
             lastButtons[i].bumper = bumper;
@@ -452,6 +452,8 @@
             localMatrix
               .fromArray(pose.targetRay.transformMatrix)
               .decompose(bowMesh.position, bowMesh.quaternion, localVector);
+            stringMesh.position.copy(bowMesh.position);
+            stringMesh.quaternion.copy(bowMesh.quaternion);
           }
         };
         const _updateStringPosition = () => {
