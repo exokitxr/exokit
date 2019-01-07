@@ -3055,8 +3055,6 @@ NAN_METHOD(MLContext::RequestHitTest) {
     Local<Float32Array> directionFloat32Array = Local<Float32Array>::Cast(info[1]);
     Local<Function> cb = Local<Function>::Cast(info[2]);
     Local<Object> windowObj = Local<Object>::Cast(info[3]);
-    
-    // XXX transform from child to parent
 
     memcpy(raycastQuery.position.values, (char *)originFloat32Array->Buffer()->GetContents().Data() + originFloat32Array->ByteOffset(), sizeof(raycastQuery.position.values));
     memcpy(raycastQuery.direction.values, (char *)directionFloat32Array->Buffer()->GetContents().Data() + directionFloat32Array->ByteOffset(), sizeof(raycastQuery.direction.values));
@@ -3065,6 +3063,17 @@ NAN_METHOD(MLContext::RequestHitTest) {
     raycastQuery.width = 1;
     raycastQuery.height = 1;
     raycastQuery.collide_with_unobserved = false;
+
+    MLMat4f transformMatrix = getWindowTransformMatrix(windowObj, false);
+    if (!isIdentityMatrix(transformMatrix)) {
+      MLVec3f &position = raycastQuery.position;
+      MLVec3f &direction = raycastQuery.direction;
+      MLQuaternionf rotation = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, direction);
+      MLVec3f scale = {1, 1, 1};
+      MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+      decomposeMatrix(transform, position, rotation, scale);
+      direction = applyVectorQuaternion(MLVec3f{0, 0, -1}, rotation);
+    }
     
     MLHandle requestHandle;
     MLResult result = MLRaycastRequest(raycastTracker, &raycastQuery, &requestHandle);
