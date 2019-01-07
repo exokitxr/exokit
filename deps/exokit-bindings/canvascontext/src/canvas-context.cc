@@ -90,7 +90,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto, "drawImage", ctxCallWrap<DrawImage>);
   Nan::SetMethod(proto, "save", ctxCallWrap<Save>);
   Nan::SetMethod(proto, "restore", ctxCallWrap<Restore>);
-  Nan::SetMethod(proto, "toDataURL", ctxCallWrap<ToDataURL>);
+  Nan::SetMethod(proto, "toArrayBuffer", ctxCallWrap<ToArrayBuffer>);
   Nan::SetMethod(proto, "createImageData", ctxCallWrap<CreateImageData>);
   Nan::SetMethod(proto, "getImageData", ctxCallWrap<GetImageData>);
   Nan::SetMethod(proto, "putImageData", ctxCallWrap<PutImageData>);
@@ -1228,9 +1228,7 @@ NAN_METHOD(CanvasRenderingContext2D::Restore) {
   context->Restore();
 }
 
-#define DATA_URL_PREFIX "data:"
-#define DATA_URL_SUFFIX ";base64,"
-NAN_METHOD(CanvasRenderingContext2D::ToDataURL) {
+NAN_METHOD(CanvasRenderingContext2D::ToArrayBuffer) {
   // Nan::HandleScope scope;
 
   std::string type;
@@ -1258,18 +1256,9 @@ NAN_METHOD(CanvasRenderingContext2D::ToDataURL) {
   sk_sp<SkImage> image = getImageFromContext(context);
   sk_sp<SkData> data = image->encodeToData(format, quality);
 
-  std::vector<char> s(sizeof(DATA_URL_PREFIX)-1 + type.size() + sizeof(DATA_URL_SUFFIX)-1 + data->size());
-  int i = 0;
-  memcpy(s.data() + i, (void *)DATA_URL_PREFIX, sizeof(DATA_URL_PREFIX)-1);
-  i += sizeof(DATA_URL_PREFIX)-1;
-  memcpy(s.data() + i, type.data(), type.size());
-  i += type.size();
-  memcpy(s.data() + i, (void *)DATA_URL_SUFFIX, sizeof(DATA_URL_SUFFIX)-1);
-  i += sizeof(DATA_URL_SUFFIX)-1;
-  memcpy(s.data() + i, data->data(), data->size());
-  i += data->size();
-
-  Local<String> result = Nan::New<String>(s.data(), s.size()).ToLocalChecked();
+  Local<ArrayBuffer> result = ArrayBuffer::New(Isolate::GetCurrent(), data->size());
+  memcpy(result->GetContents().Data(), data->data(), data->size());
+  result->Set(JS_STR("type"), JS_STR(type));
   info.GetReturnValue().Set(result);
 }
 

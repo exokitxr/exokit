@@ -146,7 +146,7 @@ public:
   static NAN_METHOD(PutImageData);
   static NAN_METHOD(Save);
   static NAN_METHOD(Restore);
-  static NAN_METHOD(ToDataURL);
+  static NAN_METHOD(ToArrayBuffer);
   static NAN_METHOD(Destroy);
   static NAN_METHOD(GetWindowHandle);
   static NAN_METHOD(SetWindowHandle);
