@@ -209,12 +209,12 @@
           .applyMatrix(arrowMatrix);
 
         const stringGeometry = (() => {
-          const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
+          const geometry = new THREE.BoxBufferGeometry(0.015, 3*0.2, 0.015, 1, 2, 1)
             /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 1, 0),
               new THREE.Vector3(0, 0, -1)
-            ))) */
-            .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3));
+            )))
+            .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3)); */
           const colors = new Float32Array(geometry.getAttribute('position').array.length);
           colors.fill(0x33/0xFF);
           geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
