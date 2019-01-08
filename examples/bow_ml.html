@@ -495,17 +495,19 @@
                         .applyQuaternion(stringMesh.quaternion)
                     )
                 );
-                const pinchPosition = localVector.fromArray(position);
+                const pinchPosition = localVector.fromArray(pointer.position);
                 const closestStringPoint = localLine.closestPointToPoint(pinchPosition, true, localVector2);
                 if (closestStringPoint.distanceTo(pinchPosition) < 0.05) {
                   pinchedIndex = handIndex;
                 }
               }
               if (pinchedIndex === handIndex) {
-                pinchMesh.position.fromArray(position);
-                pinchMesh.quaternion.fromArray(rotation);
-                pinchMesh.visible = true;
+                pinchedSeen = true;
               }
+              
+              pinchMesh.position.fromArray(pointer.position);
+              pinchMesh.quaternion.fromArray(pointer.rotation);
+              pinchMesh.visible = true;
             } else {
               if (pinchedIndex === handIndex) {
                 pinchedIndex = -1;
