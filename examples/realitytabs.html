@@ -1399,19 +1399,22 @@ function animate(time, frame) {
       const pose = frame.getInputPose(inputSource);
       const {iframe} = tab;
       const gamepads = navigator.getGamepads();
-      scrollAxis += gamepads[0].axes[1] / 20;
+      for (let i = 0; i < gamepads.length; i++){
+        const gamepad = gamepads[i];
+        scrollAxis += gamepad.axes[1] / 20;
 
-      localMatrix
-        .fromArray(pose.targetRay.transformMatrix)
-        .decompose(localVector, localQuaternion, localVector2);
+	localMatrix
+          .fromArray(pose.targetRay.transformMatrix)
+	  .decompose(localVector, localQuaternion, localVector2);
 
-      localVector
-        .add(
-          localVector2.set(0, 0, -1.5 - Math.max(scrollAxis,-1.5))
-            .applyQuaternion(localQuaternion)
-        );
-      iframe.position = localVector.toArray();
-      iframe.orientation = localQuaternion.toArray();
+        localVector
+   	  .add(
+    	    localVector2.set(0, 0, -1.5 - Math.max(scrollAxis,-1.5))
+  	    .applyQuaternion(localQuaternion)
+	  );
+	iframe.position = localVector.toArray();
+	iframe.orientation = localQuaternion.toArray();
+      }
     }
   }
 
