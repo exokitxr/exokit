@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script src="skin.js"></script>
   <script>
-    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh;
+    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh, hitMeshes;
     let mesher = null;
     const waypoints = {};
     let numWaypoints = 0;
@@ -146,8 +146,9 @@
       })();
       scene.add(rayMesh);
 
+      const cubeGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
       destinationMesh = (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+        const geometry = cubeGeometry;
         const material = new THREE.MeshPhongMaterial({
           color: 0x2196f3,
         });
@@ -156,6 +157,24 @@
         return mesh;
       })();
       scene.add(destinationMesh);
+
+      const _makeHitMesh = () => {
+        const geometry = cubeGeometry;
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x673ab7,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      hitMeshes = [
+        _makeHitMesh(),
+        _makeHitMesh(),
+      ];
+      hitMeshes.forEach(hitMesh => {
+        scene.add(hitMesh);
+      });
       
       const terrainMeshes = [];
       const terrainMaterial = new THREE.MeshPhongMaterial({
@@ -426,6 +445,7 @@
         },
       };
     };
+    const controllerHitTesting = [false, false];
     function animate(time, frame) {
       if (renderer.vr.enabled) {
         const inputSources = display.session.getInputSources();
@@ -437,6 +457,36 @@
           controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
           // controllerMesh.updateMatrixWorld(true);
+
+          if (!controllerHitTesting[i]) {
+            if (controllerMesh.position.length() > 0.3) {
+              display.session.requestHitTest(
+                controllerMesh.position,
+                  .toArray(localVectorFloat32Array),
+                localVector.set(0, 0, -1)
+                  .applyQuaternion(controllerMesh.quaternion)
+                  .toArray(localVectorFloat32Array2)
+              )
+                .then(result => {
+                  const hitMesh = hitMeshes[i];
+                  if (result.length) {
+                    const [{hitMatrix}] = result;
+                    localMatrix
+                      .fromArray(hitMatrix)
+                      .decompose(hitMesh.position, hitMesh.quaternion, localVector);
+                    hitMesh.visible = true;
+                  } else {
+                    hitMesh.visible = false;
+                  }
+
+                  controllerHitTesting[i] = false;
+                });
+
+              controllerHitTesting[i] = true;
+            } else {
+              hitMeshes[i].visible = false;
+            }
+          }
         }
 
         if (!animation) {
