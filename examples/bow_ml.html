@@ -215,7 +215,9 @@
               new THREE.Vector3(0, 0, -1)
             ))) */
             .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3));
-          geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+          const colors = new Float32Array(geometry.getAttribute('position').array.length);
+          colors.fill(0x33/0xFF);
+          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
           return geometry;
         })();
         const stringGeometryPositions = stringGeometry.getAttribute('position').array;
