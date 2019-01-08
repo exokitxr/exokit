@@ -20,8 +20,6 @@
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
-    const localVector3 = new THREE.Vector3();
-    const localVector4 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
@@ -66,13 +64,28 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      /* controllerMeshes = [
+      const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+        const material = new THREE.MeshBasicMaterial({
+          color: 0xf44336,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        mesh.quaternion.set(qx, qy, qz, qw);
+        // mesh.visible = true;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      controllerMeshes = [
         _makeControllerMesh(-0.1),
         _makeControllerMesh(0.1),
       ];
       controllerMeshes.forEach(controllerMesh => {
         scene.add(controllerMesh);
-      }); */
+      });
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -416,6 +429,16 @@
     };
     function animate(time, frame) {
       if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+          controllerMesh.updateMatrixWorld(true);
+        }
+
         if (!animation) {
           _animateTo(_getRandomWaypoint());
         }
@@ -439,24 +462,22 @@
       display.session = session;
 
       session.onselect = e => {
-        const {inputSource} = e;
-        const pose = frame.getInputPose(inputSource);
-        localMatrix
-          .fromArray(pose.targetRay.transformMatrix)
-          .decompose(localVector, localQuaternion, localVector2);
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
 
         const intersection = localRay
           .set(
-            localVector,
-            localVector2.set(0, 0, -1)
-              .applyQuaternion(localQuaternion)
+            controllerMesh.position,
+            localVector.set(0, 0, -1)
+              .applyQuaternion(controllerMesh.quaternion)
           )
           .intersectPlane(
             localPlane.setFromNormalAndCoplanarPoint(
-              localVector2.set(0, 1, 0),
-              localVector3.set(0, 0, 0)
+              localVector.set(0, 1, 0),
+              localVector2.set(0, 0, 0)
             ),
-            localVector4
+            localVector
           );
         if (intersection) {
           _animateTo(intersection);
