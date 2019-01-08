@@ -11,7 +11,7 @@
   <script src="sprite3d.js"></script>
   <script>
 (async () => {
-    let container, scene, camera, display, bowMesh, stringMesh, pinchMeshes;
+    let container, scene, camera, display, controllerMeshes, bowMesh, stringMesh, pinchMeshes;
     // let mesher = null;
 
     const zeroVector = new THREE.Vector3();
@@ -61,6 +61,24 @@
     const localMatrix = new THREE.Matrix4();
     const localRay = new THREE.Ray();
     const localLine = new THREE.Line3();
+
+    const controllerGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
 
     const _makeButtons = () => ({
       trigger: false,
@@ -181,6 +199,14 @@
       // renderer.autoClear = false;
 
       container.appendChild(renderer.domElement);
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
 
       {
         const [
@@ -500,6 +526,18 @@
         const gamepads = navigator.getGamepads();
         const inputSources = display.session.getInputSources();
 
+        const _updateControllerMeshes = () =>> {
+          const inputSources = display.session.getInputSources();
+
+          for (let i = 0; i < inputSources.length; i++) {
+            const inputSource = inputSources[i];
+            const pose = frame.getInputPose(inputSource);
+
+            const controllerMesh = controllerMeshes[i];
+            controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+            controllerMesh.updateMatrixWorld(true);
+          }
+        };
         const _updateGamepads = () => {
           for (let i = 0; i < gamepads.length; i++) {
             const gamepad = gamepads[i];
@@ -659,6 +697,7 @@
           }
         };
 
+        _updateControllerMeshes();
         _updateGamepads();
         _updateGrab();
         _updatePinch();
