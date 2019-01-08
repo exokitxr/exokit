@@ -59,6 +59,7 @@
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
     const localRay = new THREE.Ray();
+    const localLine = new THREE.Line();
 
     const _makeButtons = () => ({
       trigger: false,
@@ -82,6 +83,7 @@
     const ARROW_LENGTH = 0.5;
 
     const pixelSize = 0.015;
+    const bowHeight = 0.6;
     const arrowMatrix = (() => {
       const position = new THREE.Vector3(pixelSize, 0, -pixelSize*16);
       const rotation = new THREE.Quaternion().setFromAxisAngle(
@@ -209,7 +211,7 @@
           .applyMatrix(arrowMatrix);
 
         const stringGeometry = (() => {
-          const geometry = new THREE.BoxBufferGeometry(0.015, 3*0.2, 0.015, 1, 2, 1)
+          const geometry = new THREE.BoxBufferGeometry(pixelSize, bowHeight, pixelSize, 1, 2, 1)
             /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 1, 0),
               new THREE.Vector3(0, 0, -1)
@@ -471,8 +473,29 @@
           const pinchMesh = pinchMeshes[handIndex];
 
           if (pinched) {
-            if (!lastPinched && localVector.fromArray(position).distanceTo(stringMesh.position) < 0.3) {
-              pinchedIndex = handIndex;
+            if (!lastPinched) {
+              localQuaternion.fromArray(rotation);
+              localLine.set(
+                localVector
+                  .copy(stringMesh.position)
+                  .add(
+                    localVector3
+                      .set(0, bowHeight/2, 0)
+                      .applyQuaternion(localQuaternion),
+                  ),
+                localVector2
+                  .copy(stringMesh.position)
+                  .add(
+                    localVector3
+                      .set(0, -bowHeight/2, 0)
+                      .applyQuaternion(localQuaternion)
+                  )
+              );
+              const pinchPosition = localVector.fromArray(position);
+              const closestStringPoint = localLine.closestPointToPoint(pinchPosition, true, localVector2);
+              if (closestStringPoint.distanceTo(pinchPosition) < 0.1) {
+                pinchedIndex = handIndex;
+              }
             }
 
             pinchMesh.position.fromArray(position);
