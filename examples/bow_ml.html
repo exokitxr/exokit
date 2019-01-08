@@ -57,6 +57,7 @@
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
+    const localVector4 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
     const localRay = new THREE.Ray();
@@ -478,17 +479,17 @@
               const pinchPosition = localVector.fromArray(pointer.position);
               if (controllerMeshes.every(controllerMesh => pinchPosition.distanceTo(controllerMesh.position) > 0.3)) {
                 localLine.set(
-                  localVector
-                    .copy(stringMesh.position)
-                    .add(
-                      localVector3
-                        .set(0, bowHeight/2, 0)
-                        .applyQuaternion(stringMesh.quaternion),
-                    ),
                   localVector2
                     .copy(stringMesh.position)
                     .add(
-                      localVector3
+                      localVector4
+                        .set(0, bowHeight/2, 0)
+                        .applyQuaternion(stringMesh.quaternion),
+                    ),
+                  localVector3
+                    .copy(stringMesh.position)
+                    .add(
+                      localVector4
                         .set(0, -bowHeight/2, 0)
                         .applyQuaternion(stringMesh.quaternion)
                     )
