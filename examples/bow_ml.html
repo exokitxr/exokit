@@ -460,7 +460,8 @@
           const pinchMesh = pinchMeshes[handIndex];
 
           if (pinched) {
-            if (!lastPinched && position.distanceTo(stringMesh.position) < 0.3) {
+            if (!lastPinched && localVector.fromArray(position).distanceTo(stringMesh.position) < 0.3) {
+              console.log('got pinch');
               pinchedIndex = handIndex;
             }
 
