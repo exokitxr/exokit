@@ -501,7 +501,7 @@
           const pinchMesh = pinchMeshes[handIndex];
 
           if (pinched) {
-            if (!lastPinched) {
+            if (pinchedIndex === -1) {
               localQuaternion.fromArray(rotation);
               localLine.set(
                 localVector
@@ -525,10 +525,11 @@
                 pinchedIndex = handIndex;
               }
             }
-
-            pinchMesh.position.fromArray(position);
-            pinchMesh.quaternion.fromArray(rotation);
-            pinchMesh.visible = true;
+            if (pinchedIndex === handIndex) {
+              pinchMesh.position.fromArray(position);
+              pinchMesh.quaternion.fromArray(rotation);
+              pinchMesh.visible = true;
+            }
           } else {
             if (pinchedIndex === handIndex) {
               pinchedIndex = -1;
