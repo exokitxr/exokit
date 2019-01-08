@@ -143,7 +143,7 @@
           arrowMesh.position.copy(position);
           arrowMesh.quaternion.setFromRotationMatrix(localMatrix.lookAt(
             position,
-            grabbable.position,
+            stringMesh.position,
             localVector.copy(upVector)
               .applyQuaternion(
                 localQuaternion.copy(stringMesh.quaternion)
@@ -597,7 +597,7 @@
         };
         const _updateNock = () => {
           if (nockedArrowMesh) {
-            if (grabbedIndex === -1) {
+            if (grabbedIndex !== -1) {
               const inputSource = inputSources[grabbedIndex];
               const pose = frame.getInputPose(inputSource);
               localMatrix
