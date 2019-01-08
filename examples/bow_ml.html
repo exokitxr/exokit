@@ -502,21 +502,20 @@
 
           if (pinched) {
             if (pinchedIndex === -1) {
-              localQuaternion.fromArray(rotation);
               localLine.set(
                 localVector
                   .copy(stringMesh.position)
                   .add(
                     localVector3
                       .set(0, bowHeight/2, 0)
-                      .applyQuaternion(localQuaternion),
+                      .applyQuaternion(stringMesh.quaternion),
                   ),
                 localVector2
                   .copy(stringMesh.position)
                   .add(
                     localVector3
                       .set(0, -bowHeight/2, 0)
-                      .applyQuaternion(localQuaternion)
+                      .applyQuaternion(stringMesh.quaternion)
                   )
               );
               const pinchPosition = localVector.fromArray(position);
