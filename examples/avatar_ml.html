@@ -436,7 +436,8 @@
 
           const controllerMesh = controllerMeshes[i];
           controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-          controllerMesh.updateMatrixWorld(true);
+          controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+          // controllerMesh.updateMatrixWorld(true);
         }
 
         if (!animation) {
@@ -464,7 +465,7 @@
       session.onselect = e => {
         const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
         const controllerMesh = controllerMeshes[controllerIndex];
-        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+        // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
 
         const intersection = localRay
           .set(
