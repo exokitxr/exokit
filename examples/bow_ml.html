@@ -131,8 +131,8 @@
       const scale = new THREE.Vector3(2, 2, 2);
       return new THREE.Matrix4().compose(position, rotation, scale);
     })();
-    const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
-    arrowTemplateMesh.geometry.applyMatrix(arrowMatrix);
+    const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg)
+    // arrowTemplateMesh.geometry.applyMatrix(arrowMatrix);
     const _makeArrowMesh = () => {
       const arrowMesh = arrowTemplateMesh.clone();
       arrowMesh.startTime = 0;
@@ -145,10 +145,7 @@
             position,
             stringMesh.position,
             localVector.copy(upVector)
-              .applyQuaternion(
-                localQuaternion.copy(stringMesh.quaternion)
-                  // .multiply(forwardQuaternion)
-              )
+              .applyQuaternion(stringMesh.quaternion)
           ));
         } else {
           arrowMesh.position.copy(stringMesh.position);
@@ -398,7 +395,7 @@
               const now = Date.now();
               arrow.startTime = now;
               arrow.lastTime = now;
-              arrow.velocity.set(0, 0, -ARROW_SPEED * stringMesh.pullPosition.length())
+              arrow.velocity.set(0, 0, -ARROW_SPEED * nockedArrowMesh.distanceTo(stringMesh.position))
                 .applyQuaternion(arrow.quaternion);
 
               nockedArrowMesh = null;
@@ -606,10 +603,10 @@
               localVector
                 .add(
                   localVector2
-                    .set(0, 0, 0.1)
+                    .set(0, 0, 0.2)
                     .applyQuaternion(localQuaternion)
                 );
-              nockedArrowMesh.updatePull(localVector);
+              nockedArrowMesh.updatePull(localVector.clone());
             }
           }
         };
