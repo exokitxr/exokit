@@ -536,7 +536,8 @@
 
             const controllerMesh = controllerMeshes[i];
             controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-            controllerMesh.updateMatrixWorld(true);
+            controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+            // controllerMesh.updateMatrixWorld(true);
           }
         };
         const _updateGamepads = () => {
