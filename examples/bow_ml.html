@@ -472,6 +472,9 @@
             pinchMesh.quaternion.fromArray(rotation);
             pinchMesh.visible = true;
           } else {
+            if (pinchedIndex === handIndex) {
+              pinchedIndex = -1;
+            }
             pinchMesh.visible = false;
           }
 
