@@ -476,15 +476,40 @@
             const handIndex = hand === 'left' ? 0 : 1;
             const lastPinched = lastPincheds[handIndex];
             const pinchMesh = pinchMeshes[handIndex];
-            
-            if (handIndex === pinchedIndex) {
-              pinchedSeen = true;
-            }
 
             if (lastPinched) {
-              pinchMesh.position.fromArray(pointer.position);
-              pinchMesh.quaternion.fromArray(pointer.rotation);
-              pinchMesh.visible = true;
+              if (pinchedIndex === -1) {
+                localLine.set(
+                  localVector
+                    .copy(stringMesh.position)
+                    .add(
+                      localVector3
+                        .set(0, bowHeight/2, 0)
+                        .applyQuaternion(stringMesh.quaternion),
+                    ),
+                  localVector2
+                    .copy(stringMesh.position)
+                    .add(
+                      localVector3
+                        .set(0, -bowHeight/2, 0)
+                        .applyQuaternion(stringMesh.quaternion)
+                    )
+                );
+                const pinchPosition = localVector.fromArray(position);
+                const closestStringPoint = localLine.closestPointToPoint(pinchPosition, true, localVector2);
+                if (closestStringPoint.distanceTo(pinchPosition) < 0.05) {
+                  pinchedIndex = handIndex;
+                }
+              }
+              if (pinchedIndex === handIndex) {
+                pinchMesh.position.fromArray(position);
+                pinchMesh.quaternion.fromArray(rotation);
+                pinchMesh.visible = true;
+              }
+            } else {
+              if (pinchedIndex === handIndex) {
+                pinchedIndex = -1;
+              }
             }
           }
           if (pinchedIndex !== -1 && !pinchedSeen) {
@@ -497,44 +522,6 @@
 
           const pinched = gesture === 'pinch';
           const handIndex = hand === 'left' ? 0 : 1;
-          const lastPinched = lastPincheds[handIndex];
-          const pinchMesh = pinchMeshes[handIndex];
-
-          if (pinched) {
-            if (pinchedIndex === -1) {
-              localLine.set(
-                localVector
-                  .copy(stringMesh.position)
-                  .add(
-                    localVector3
-                      .set(0, bowHeight/2, 0)
-                      .applyQuaternion(stringMesh.quaternion),
-                  ),
-                localVector2
-                  .copy(stringMesh.position)
-                  .add(
-                    localVector3
-                      .set(0, -bowHeight/2, 0)
-                      .applyQuaternion(stringMesh.quaternion)
-                  )
-              );
-              const pinchPosition = localVector.fromArray(position);
-              const closestStringPoint = localLine.closestPointToPoint(pinchPosition, true, localVector2);
-              if (closestStringPoint.distanceTo(pinchPosition) < 0.05) {
-                pinchedIndex = handIndex;
-              }
-            }
-            if (pinchedIndex === handIndex) {
-              pinchMesh.position.fromArray(position);
-              pinchMesh.quaternion.fromArray(rotation);
-              pinchMesh.visible = true;
-            }
-          } else {
-            if (pinchedIndex === handIndex) {
-              pinchedIndex = -1;
-            }
-            pinchMesh.visible = false;
-          }
 
           lastPincheds[handIndex] = pinched;
         };
