@@ -132,9 +132,10 @@
       return new THREE.Matrix4().compose(position, rotation, scale);
     })();
     const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg)
-    // arrowTemplateMesh.geometry.applyMatrix(arrowMatrix);
+    arrowTemplateMesh.geometry.applyMatrix(arrowMatrix);
     const _makeArrowMesh = () => {
       const arrowMesh = arrowTemplateMesh.clone();
+      arrowMesh.frustumCulled = false;
       arrowMesh.startTime = 0;
       arrowMesh.lastTime = 0;
       arrowMesh.velocity = new THREE.Vector3();
@@ -152,7 +153,7 @@
           arrowMesh.quaternion.copy(stringMesh.quaternion)
             // .multiply(forwardQuaternion);
         }
-        arrowMesh.updateMatrixWorld();
+        // arrowMesh.updateMatrixWorld();
       };
       arrowMesh.checkCollision = _debounce(next => {
         stck.requestCheck(arrowMesh.position, arrowMesh.quaternion, collided => {
@@ -762,7 +763,7 @@
       const now = Date.now();
       arrow.startTime = now;
       arrow.lastTime = now;
-      arrow.velocity.set(0, 0, -ARROW_SPEED * stringMesh.pullPosition.length())
+      arrow.velocity.set(0, 0, -ARROW_SPEED * nockedArrowMesh.position.distanceTo(stringMesh.position))
         .applyQuaternion(arrow.quaternion);
 
       nockedArrowMesh = null;
