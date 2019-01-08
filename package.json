@@ -86,7 +86,7 @@
     "window-selector": "0.0.6",
     "window-text-encoding": "0.0.2",
     "window-worker": "0.0.98",
-    "window-xhr": "0.0.20",
+    "window-xhr": "0.0.23",
     "ws": "^6.1.2"
   },
   "devDependencies": {
