@@ -159,11 +159,7 @@ class XRSession extends EventTarget {
     return new Promise((accept, reject) => {
       if (this.device.onrequesthittest)  {
         this.device.onrequesthittest(origin, direction, result => {
-          if (result !== null) {
-            accept(result);
-          } else {
-            reject(new Error('hit test failed'));
-          }
+          accept(result);
         });
       } else {
         reject(new Error('api not supported'));
