@@ -411,7 +411,7 @@ bool MLRaycaster::Update() {
         Local<Function> cb = Nan::New(this->cb);
         
         Local<Value> argv[] = {
-          Nan::Null(),
+          Nan::New<Array>(0),
         };
         asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
       }
