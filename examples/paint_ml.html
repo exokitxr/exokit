@@ -11,8 +11,8 @@
 <script>
 (() => {
 
-let container, scene, scene2, camera, display, controllerMeshes, teleportMesh;
-let mesher = null, connections = [];
+let container, scene, scene, camera, display, controllerMeshes;
+let mesher = null;
 
 const MAX_NUM_POINTS = 1024;
 const POINT_FRAME_RATE = 20;
@@ -93,7 +93,7 @@ const _getPaintMesh = (meshId = Math.random().toString(36).substring(7)) => {
   if (!paintMesh) {
     paintMesh = _makePaintMesh(meshId);
     paintMeshes.push(paintMesh);
-    scene2.add(paintMesh);
+    scene.add(paintMesh);
   }
   return paintMesh;
 };
@@ -272,26 +272,6 @@ const _makePaintMesh = meshId => {
         lastPointTime = currentPointTime;
 
         geometry.setDrawRange(0, lastPoint * 2);
-
-        if (connections.length > 0) {
-          const updateSpecs = [
-            JSON.stringify({
-              method: 'paint',
-              meshId: mesh.meshId,
-            }),
-            mesh.getBuffer(lastPoint),
-          ];
-
-          for (let i = 0; i < connections.length; i++) {
-            const c = connections[i];
-
-            if (c.readyState === window.browser.ws.OPEN) {
-              for (let j = 0; j < updateSpecs.length; j++) {
-                c.send(updateSpecs[j]);
-              }
-            }
-          }
-        }
       }
     }
   };
@@ -340,7 +320,7 @@ const _makePaintMesh = meshId => {
 const _clearPaintMeshes = () => {
   for (let i = 0; i < paintMeshes.length; i++) {
     const paintMesh = paintMeshes[i];
-    scene2.remove(paintMesh);
+    scene.remove(paintMesh);
     paintMesh.geometry.dispose();
   }
   paintMeshes.length = 0;
@@ -389,7 +369,6 @@ function init() {
   renderer.setAnimationLoop(animate);
 }
 
-let lastUpdateTime = Date.now();
 const lastGrabbeds = [false, false];
 const lastMenus = [false, false];
 function animate(time, frame) {
@@ -411,7 +390,6 @@ function animate(time, frame) {
 
       localMatrix.fromArray(pose.targetRay.transformMatrix)
         .decompose(localVector, localQuaternion, localVector2);
-      localVector.sub(scene2.position);
       paintMesh.update(localVector, localQuaternion);
     }
 
@@ -427,18 +405,6 @@ function animate(time, frame) {
 
         paintMesh = null;
         paintControllerIndex = -1;
-
-        const updateSpec = {
-          method: 'clear',
-        };
-        const updateSpecString = JSON.stringify(updateSpec);
-        for (let j = 0; j < connections.length; j++) {
-          const c = connections[j];
-
-          if (c.readyState === window.browser.ws.OPEN) {
-            c.send(updateSpecString);
-          }
-        }
       }
       lastGrabbeds[controllerIndex] = grabbed;
 
@@ -451,54 +417,6 @@ function animate(time, frame) {
         }
       }
       lastMenus[controllerIndex] = menu;
-    }
-
-    const now = Date.now();
-    if ((now - lastUpdateTime) > (1000 / 30)) {
-      if (connections.length > 0) {
-        const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
-        vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-        const position = localVector
-          .sub(scene2.position)
-          .toArray();
-        const rotation = localQuaternion.toArray();
-        const controllers = inputSources.map(inputSource => {
-          const pose = frame.getInputPose(inputSource);
-          localMatrix.fromArray(pose.targetRay.transformMatrix)
-            .decompose(localVector, localQuaternion, localVector2);
-
-          return {
-            position: localVector
-              .sub(scene2.position)
-              .toArray(),
-            rotation: localQuaternion.toArray(),
-          };
-        });
-
-        const updateSpec = {
-          method: 'transform',
-          players: [
-            {
-              id: 'host',
-              type: 'update',
-              position,
-              rotation,
-              controllers,
-            },
-          ],
-        };
-        const updateSpecString = JSON.stringify(updateSpec);
-
-        for (let i = 0; i < connections.length; i++) {
-          const c = connections[i];
-
-          if (c.readyState === window.browser.ws.OPEN) {
-            c.send(updateSpecString);
-          }
-        }
-      }
-
-      lastUpdateTime = now;
     }
   }
 
