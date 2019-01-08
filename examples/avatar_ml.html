@@ -140,7 +140,7 @@
           color: 0xf44336,
         });
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = avatarHeight;
+        // mesh.position.y = avatarHeight/2;
         mesh.frustumCulled = false;
         return mesh;
       })();
@@ -397,7 +397,10 @@
           avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
 
           rayMesh.position.copy(avatarMesh.position)
-            .add(localVector.set(0, avatarHeight, 0));
+            .add(
+              localVector
+                .set(0, avatarHeight/2, 0)
+            );
           rayMesh.quaternion.copy(avatarMesh.quaternion);
 
           destinationMesh.position.copy(endPosition);
@@ -407,16 +410,8 @@
             if (display.session && !animation.hitTesting) {
               const localAnimation = animation;
               display.session.requestHitTest(
-                localVector
-                  .copy(avatarMesh.position)
-                  .add(
-                    localVector2
-                      .set(0, avatarHeight, 0)
-                  )
-                  .toArray(localVectorFloat32Array),
-                localVector.set(0, 0, -1)
-                  .applyQuaternion(avatarMesh.quaternion)
-                  .toArray(localVectorFloat32Array2)
+                rayMesh.position.toArray(localVectorFloat32Array),
+                rayMesh.quaternion.toArray(localVectorFloat32Array2)
               )
                 .then(results => {
                   if (animation === localAnimation) {
@@ -424,7 +419,7 @@
                       _animateTo(
                         avatarMesh.position.clone()
                         .add(
-                          localVector2
+                          localVector
                             .set(0, 0, 0.3)
                             .applyQuaternion(avatarMesh.quaternion)
                         )
