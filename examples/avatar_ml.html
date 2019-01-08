@@ -461,7 +461,7 @@
           if (!controllerHitTesting[i]) {
             if (controllerMesh.position.length() > 0.3) {
               display.session.requestHitTest(
-                controllerMesh.position,
+                controllerMesh.position
                   .toArray(localVectorFloat32Array),
                 localVector.set(0, 0, -1)
                   .applyQuaternion(controllerMesh.quaternion)
