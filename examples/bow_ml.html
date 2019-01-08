@@ -498,6 +498,11 @@
                 const closestStringPoint = localLine.closestPointToPoint(pinchPosition, true, localVector2);
                 if (closestStringPoint.distanceTo(pinchPosition) < 0.05) {
                   pinchedIndex = handIndex;
+
+                  if (!nockedArrowMesh) {
+                    nockedArrowMesh = _makeArrowMesh();
+                    scene.add(nockedArrowMesh);
+                  }
                 }
               }
               if (pinchedIndex === handIndex) {
@@ -599,7 +604,10 @@
         };
         const _updateNock = () => {
           if (nockedArrowMesh) {
-            if (grabbedIndex !== -1) {
+            if (pinchedIndex !== -1) {
+              const pinchMesh = pinchMeshes[pinchedIndex];
+              nockedArrowMesh.updatePull(pinchMesh.position.clone());
+            } else if (grabbedIndex !== -1) {
               const inputSource = inputSources[grabbedIndex];
               const pose = frame.getInputPose(inputSource);
               localMatrix
