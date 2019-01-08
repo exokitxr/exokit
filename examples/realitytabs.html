@@ -1398,6 +1398,7 @@ function animate(time, frame) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
       const {iframe} = tab;
+      const gamepads = navigator.getGamepads();
 
       localMatrix
         .fromArray(pose.targetRay.transformMatrix)
@@ -1405,10 +1406,9 @@ function animate(time, frame) {
 
       localVector
         .add(
-          localVector2.set(0, 0, -1.5)
+          localVector2.set(0, 0, -1.5 - gamepads[0].axes[1] / 1)
             .applyQuaternion(localQuaternion)
         );
-
       iframe.position = localVector.toArray();
       iframe.orientation = localQuaternion.toArray();
     }
