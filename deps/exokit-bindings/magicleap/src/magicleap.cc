@@ -302,7 +302,7 @@ static void onUnloadResources(void* application_context) {
   uv_async_send(&eventsAsync);
 }
 
-MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
+MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
   Local<Object> localDocumentObj = Local<Object>::Cast(windowObj->Get(JS_STR("document")));
   Local<Value> xrOffsetValue = localDocumentObj->Get(JS_STR("xrOffset"));
 
@@ -322,9 +322,13 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj) {
     MLVec3f scale;
     memcpy(scale.values, (char *)scaleFloat32Array->Buffer()->GetContents().Data() + scaleFloat32Array->ByteOffset(), sizeof(scale.values));
 
-    return invertMatrix(composeMatrix(position, orientation, scale));
+    MLMat4f result = composeMatrix(position, orientation, scale);
+    if (inverse) {
+      result = invertMatrix(result);
+    }
+    return result;
   } else {
-    return makeTranslationMatrix(MLVec3f{0, -largestFloorY, 0});
+    return makeTranslationMatrix(MLVec3f{0, largestFloorY * (inverse ? -1 : 1), 0});
   }
 }
 
@@ -396,7 +400,25 @@ bool MLRaycaster::Update() {
     return false;
   } else {
     ML_LOG(Error, "%s: Raycast request failed! %x", application_name, result);
-    delete this;
+    
+    Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+    polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
+      if (!this->cb.IsEmpty()) {
+        Local<Object> asyncObject = Nan::New<Object>();
+        AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
+
+        Local<Function> cb = Nan::New(this->cb);
+        
+        Local<Value> argv[] = {
+          Nan::New<Array>(0),
+        };
+        asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+      }
+      
+      delete this;
+    }));
+
     return true;
   }
 }
@@ -3051,8 +3073,6 @@ NAN_METHOD(MLContext::RequestHitTest) {
     Local<Float32Array> directionFloat32Array = Local<Float32Array>::Cast(info[1]);
     Local<Function> cb = Local<Function>::Cast(info[2]);
     Local<Object> windowObj = Local<Object>::Cast(info[3]);
-    
-    // XXX transform from child to parent
 
     memcpy(raycastQuery.position.values, (char *)originFloat32Array->Buffer()->GetContents().Data() + originFloat32Array->ByteOffset(), sizeof(raycastQuery.position.values));
     memcpy(raycastQuery.direction.values, (char *)directionFloat32Array->Buffer()->GetContents().Data() + directionFloat32Array->ByteOffset(), sizeof(raycastQuery.direction.values));
@@ -3061,6 +3081,17 @@ NAN_METHOD(MLContext::RequestHitTest) {
     raycastQuery.width = 1;
     raycastQuery.height = 1;
     raycastQuery.collide_with_unobserved = false;
+
+    MLMat4f transformMatrix = getWindowTransformMatrix(windowObj, false);
+    if (!isIdentityMatrix(transformMatrix)) {
+      MLVec3f &position = raycastQuery.position;
+      MLVec3f &direction = raycastQuery.direction;
+      MLQuaternionf rotation = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, direction);
+      MLVec3f scale = {1, 1, 1};
+      MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+      decomposeMatrix(transform, position, rotation, scale);
+      direction = applyVectorQuaternion(MLVec3f{0, 0, -1}, rotation);
+    }
     
     MLHandle requestHandle;
     MLResult result = MLRaycastRequest(raycastTracker, &raycastQuery, &requestHandle);

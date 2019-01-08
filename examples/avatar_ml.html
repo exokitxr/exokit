@@ -1,0 +1,557 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="skin.js"></script>
+  <script>
+    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh, hitMeshes;
+    let mesher = null;
+    const waypoints = {};
+    let numWaypoints = 0;
+    let waypointsValid = false;
+    const lineMeshes = [];
+    let animation = null;
+
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler();
+    const localMatrix = new THREE.Matrix4();
+    const localRay = new THREE.Ray();
+    const localPlane = new THREE.Plane();
+    const localMatrixFloat32Array = new Float32Array(16);
+    const localVectorFloat32Array = new Float32Array(3);
+    const localVectorFloat32Array2 = new Float32Array(3);
+
+    const avatarHeight = 0.5;
+
+    const numCubes = 100;
+    const cubeSize = 0.2;
+    const cubeRange = 1;
+    const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+    const pointGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01, 0.01, 0.01));
+    const pointMaterial = new THREE.MeshPhongMaterial({
+      color: 0x42a5f5,
+    });
+    const lineGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01/2, 0.01/2, 1));
+    const lineMaterial = new THREE.MeshPhongMaterial({
+      color: 0xFFFFFF,
+    });
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 0, 1);
+      // camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+        const material = new THREE.MeshBasicMaterial({
+          color: 0xf44336,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        mesh.quaternion.set(qx, qy, qz, qw);
+        // mesh.visible = true;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      avatarMesh = (() => {
+        const DEFAULT_SKIN_URL = 'skin.png';
+
+        const mesh = skin({
+          limbs: true,
+        });
+        mesh.scale.multiplyScalar(avatarHeight);
+        mesh.frustumCulled = false;
+
+        new Promise((accept, reject) => {
+          const skinImg = new Image();
+          skinImg.crossOrigin = 'Anonymous';
+          skinImg.src = DEFAULT_SKIN_URL;
+          skinImg.onload = () => {
+            accept(skinImg);
+          };
+          skinImg.onerror = err => {
+            reject(err);
+          };
+        })
+          .then(skinImg => {
+            mesh.setImage(skinImg);
+          });
+
+        return mesh;
+      })();
+      scene.add(avatarMesh);
+      
+      rayMesh = (() => {
+        const geometry = new THREE.CylinderBufferGeometry(0.01, 0.01, 1, 3, 1)
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0))
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, 0, -1)
+            )
+          ));
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xf44336,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        // mesh.position.y = avatarHeight/2;
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(rayMesh);
+
+      const cubeGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+      destinationMesh = (() => {
+        const geometry = cubeGeometry;
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x2196f3,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(destinationMesh);
+
+      const _makeHitMesh = () => {
+        const geometry = cubeGeometry;
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x673ab7,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      hitMeshes = [
+        _makeHitMesh(),
+        _makeHitMesh(),
+      ];
+      hitMeshes.forEach(hitMesh => {
+        scene.add(hitMesh);
+      });
+      
+      const terrainMeshes = [];
+      const terrainMaterial = new THREE.MeshPhongMaterial({
+        color: 0x666666,
+      });
+      const _getTerrainMesh = meshId => {
+        let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
+        if (!terrainMesh) {
+          terrainMesh = _makeTerrainMesh(meshId);
+          terrainMeshes.push(terrainMesh);
+          scene.add(terrainMesh);
+        }
+        return terrainMesh;
+      };
+      const fakeArrayBuffer = new ArrayBuffer(3 * 4);
+      const fakeFloat32Array = new Float32Array(fakeArrayBuffer, 0, 3);
+      const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
+      const _makeTerrainMesh = meshId => {
+        const geometry = new THREE.BufferGeometry();
+        const gl = renderer.getContext();
+        const attributes = renderer.getAttributes();
+
+        geometry.addAttribute('position', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
+        geometry.addAttribute('normal', new THREE.BufferAttribute(fakeFloat32Array, 3));
+        attributes.update(geometry.attributes.normal, gl.ARRAY_BUFFER);
+        geometry.setIndex(new THREE.BufferAttribute(fakeUint16Array, 1));
+        attributes.update(geometry.index, gl.ELEMENT_ARRAY_BUFFER);
+
+        const material = terrainMaterial;
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.matrixAutoUpdate = false;
+        mesh.frustumCulled = false;
+        mesh.meshId = meshId;
+        return mesh;
+      };
+      const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
+        terrainMesh.matrix.fromArray(transformMatrix);
+        terrainMesh.matrixWorldNeedsUpdate = true;
+
+        const {geometry} = terrainMesh;
+        const attributes = renderer.getAttributes();
+
+        attributes.get(geometry.attributes.position).buffer = positionBuffer;
+        geometry.attributes.position.count = positionCount / 3;
+
+        attributes.get(geometry.attributes.normal).buffer = normalBuffer;
+        geometry.attributes.normal.count = normalCount / 3;
+
+        attributes.get(geometry.index).buffer = indexBuffer;
+        geometry.index.count = count / 1;
+      };
+      const _removeTerrainMesh = terrainMesh => {
+        scene.remove(terrainMesh);
+        terrainMesh.geometry.dispose();
+      };
+      const _clearTerrainMeshes = () => {
+        for (let i = 0; i < terrainMeshes.length; i++) {
+          _removeTerrainMesh(terrainMeshes[i]);
+        }
+        terrainMeshes.length = 0;
+      };
+      const _onMesh = updates => {
+        for (let i = 0; i < updates.length; i++) {
+          const update = updates[i];
+          const {id, type} = update;
+
+          if (type === 'new' || type === 'update') {
+            _loadTerrainMesh(_getTerrainMesh(id), update);
+          } else if (type === 'unchanged') {
+            // nothing
+          } else {
+            const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+            if (index !== -1) {
+              const terrainMesh = terrainMeshes[index];
+              _removeTerrainMesh(terrainMesh);
+              terrainMeshes.splice(index, 1);
+            }
+          }
+        }
+      };
+
+      if (window.browser && window.browser.magicleap) {
+        mesher = window.browser.magicleap.RequestMeshing();
+        mesher.onmesh = _onMesh;
+      } else {
+        const gl = renderer.getContext();
+
+        const geometryPositions = cubeGeometry.attributes.position.array;
+        const geometryNormals = cubeGeometry.attributes.normal.array;
+        const geometryIndices = cubeGeometry.index.array;
+
+        const positionArray = new Float32Array(new ArrayBuffer(numCubes * geometryPositions.length * Float32Array.BYTES_PER_ELEMENT));
+        const normalArray = new Float32Array(new ArrayBuffer(numCubes * geometryNormals.length * Float32Array.BYTES_PER_ELEMENT));
+        const indexArray = new Uint16Array(new ArrayBuffer(numCubes * geometryIndices.length * Float32Array.BYTES_PER_ELEMENT));
+        for (let i = 0; i < numCubes; i++) {
+          const positionDstOffset = i*geometryPositions.length;
+          const offsetVector = localVector2.set((Math.random()-0.5)*2*cubeRange, (Math.random()-0.5), (Math.random()-0.5)*2*cubeRange);
+          const offsetEuler = localEuler.set((Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, 'YXZ');
+          for (let j = 0; j < geometryPositions.length; j += 3) {
+            localVector
+              .fromArray(geometryPositions, j)
+              .multiplyScalar(cubeSize)
+              .applyEuler(offsetEuler)
+              .add(offsetVector)
+              .toArray(positionArray, positionDstOffset + j);
+          }
+
+          const normalDstOffset = i*geometryNormals.length;
+          for (let j = 0; j < geometryNormals.length; j++) {
+            normalArray[normalDstOffset + j] = geometryNormals[j];
+          }
+
+          const indexDstOffset = i*geometryIndices.length;
+          const indexSrcOffset = i*geometryPositions.length/3;
+          for (let j = 0; j < geometryIndices.length; j++) {
+            indexArray[indexDstOffset + j] = geometryIndices[j] + indexSrcOffset;
+          }
+        }
+
+        const transformMatrix = localMatrix
+          .fromArray(window.document.xrOffset.matrix)
+          .getInverse(localMatrix)
+          .toArray(localMatrixFloat32Array);
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positionArray, gl.STATIC_DRAW);
+        const positionCount = positionArray.length;
+
+        const normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, normalArray, gl.STATIC_DRAW);
+        const normalCount = normalArray.length;
+
+        const indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+        const count = indexArray.length;
+
+        renderer.state.reset();
+
+        const updates = [
+          {
+            id: 0,
+            type: 'update',
+            transformMatrix,
+            positionArray,
+            positionBuffer,
+            positionCount,
+            normalArray,
+            normalBuffer,
+            normalCount,
+            indexArray,
+            indexBuffer,
+            count,
+          },
+        ];
+        setInterval(() => {
+          _onMesh(updates);
+        }, 100);
+      }
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    let path = null;
+    let pathIndex = 0;
+    const thetaRate = 200;
+    const animationTime = 1000;
+    const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
+    /* const _getFurthestWaypoint = (startNode, position) => {
+      const {island} = startNode;
+
+      let result = island[0];
+      let resultDistanceSq = result.distanceToSquared(position);
+      for (let i = 1; i < island.length; i++) {
+        const waypoint = island[i];
+        const distanceSq = waypoint.distanceToSquared(position);
+        if (distanceSq < resultDistanceSq) {
+          result = waypoint;
+          resultDistanceSq = distanceSq;
+        }
+      }
+      return result;
+    }; */
+    const _animateTo = endPosition => {
+      const now = Date.now();
+      const startPosition = avatarMesh.position.clone();
+      animation = {
+        startTime: now,
+        endTime: now + animationTime*startPosition.distanceTo(endPosition),
+        startPosition,
+        startQuaternion: avatarMesh.quaternion.clone(),
+        endQuaternion: new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 0, -1),
+          localVector
+            .copy(endPosition)
+            .sub(startPosition)
+            .normalize()
+        ),
+        endPosition,
+        hitTesting: false,
+        update() {
+          const now = Date.now();
+          const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
+          const nextPathIndex = pathIndex + 1;
+          const {startPosition, endPosition} = this;
+          avatarMesh.position
+            .copy(startPosition)
+            .lerp(endPosition, factor);
+
+          const {startQuaternion, endQuaternion} = this;
+          avatarMesh.quaternion.copy(endQuaternion);
+          /* avatarMesh.quaternion
+            .copy(startQuaternion)
+            .slerp(endQuaternion, factor); */
+
+          avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
+
+          rayMesh.position.copy(avatarMesh.position)
+            .add(
+              localVector
+                .set(0, avatarHeight/2, 0)
+            );
+          rayMesh.quaternion.copy(avatarMesh.quaternion);
+
+          destinationMesh.position.copy(endPosition);
+          destinationMesh.quaternion.copy(endQuaternion);
+          
+          if (factor < 1) {
+            if (display.session && !animation.hitTesting) {
+              const localAnimation = animation;
+              display.session.requestHitTest(
+                rayMesh.position.toArray(localVectorFloat32Array),
+                rayMesh.quaternion.toArray(localVectorFloat32Array2)
+              )
+                .then(results => {
+                  if (animation === localAnimation) {
+                    if (results.length) {
+                      _animateTo(
+                        avatarMesh.position.clone()
+                        .add(
+                          localVector
+                            .set(0, 0, 0.3)
+                            .applyQuaternion(avatarMesh.quaternion)
+                        )
+                      );
+                    }
+
+                    animation.hitTesting = false;
+                  }
+                })
+                .catch(err => {
+                  console.warn(err.stack);
+                });
+              animation.hitTesting = true;
+            }
+          } else {
+            animation = null;
+          }
+        },
+      };
+    };
+    const controllerHitTesting = [false, false];
+    function animate(time, frame) {
+      if (renderer.vr.enabled) {
+        const inputSources = display.session.getInputSources();
+        for (let i = 0; i < inputSources.length; i++) {
+          const inputSource = inputSources[i];
+          const pose = frame.getInputPose(inputSource);
+
+          const controllerMesh = controllerMeshes[i];
+          controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+          controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+          // controllerMesh.updateMatrixWorld(true);
+
+          if (!controllerHitTesting[i]) {
+            if (controllerMesh.position.length() > 0.3) {
+              display.session.requestHitTest(
+                controllerMesh.position
+                  .toArray(localVectorFloat32Array),
+                localVector.set(0, 0, -1)
+                  .applyQuaternion(controllerMesh.quaternion)
+                  .toArray(localVectorFloat32Array2)
+              )
+                .then(result => {
+                  const hitMesh = hitMeshes[i];
+                  if (result.length) {
+                    const [{hitMatrix}] = result;
+                    localMatrix
+                      .fromArray(hitMatrix)
+                      .decompose(hitMesh.position, hitMesh.quaternion, localVector);
+                    hitMesh.visible = true;
+                  } else {
+                    hitMesh.visible = false;
+                  }
+
+                  controllerHitTesting[i] = false;
+                });
+
+              controllerHitTesting[i] = true;
+            } else {
+              hitMeshes[i].visible = false;
+            }
+          }
+        }
+
+        if (!animation) {
+          _animateTo(_getRandomWaypoint());
+        }
+        if (animation) {
+          animation.update();
+        }
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      session.onselect = e => {
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerMesh = controllerMeshes[controllerIndex];
+        // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+        const intersection = localRay
+          .set(
+            controllerMesh.position,
+            localVector.set(0, 0, -1)
+              .applyQuaternion(controllerMesh.quaternion)
+          )
+          .intersectPlane(
+            localPlane.setFromNormalAndCoplanarPoint(
+              localVector.set(0, 1, 0),
+              localVector2.set(0, 0, 0)
+            ),
+            localVector
+          );
+        if (intersection) {
+          _animateTo(intersection.clone());
+        }
+      };
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+
+    renderer.setAnimationLoop(animate);
+  </script>
+  </body>
+</html>
