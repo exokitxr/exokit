@@ -67,6 +67,7 @@ MLHandTrackingKeyPose lastKeyposeLeft = MLHandTrackingKeyPose_NoHand;
 MLHandTrackingKeyPose lastKeyposeRight = MLHandTrackingKeyPose_NoHand;
 MLHandTrackingStaticData handStaticData;
 std::vector<MLHandTracker *> handTrackers;
+bool handPresents[2];
 float wristBones[2][4][1 + 3];
 float fingerBones[2][5][4][1 + 3];
 
@@ -994,7 +995,7 @@ void MLHandTracker::Update() {
   MLHandTrackingKeyPose keyposeRight;
   bool keyposeRightNew;
 
-  leftHandBoneValid = getHandBone(wristBones[0], fingerBones[0]);
+  leftHandBoneValid = handPresents[0] && getHandBone(wristBones[0], fingerBones[0]);
   if (leftHandBoneValid) {
     leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0], true, transformMatrix);
     leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0], leftHandNormal, transformMatrix);
@@ -1033,7 +1034,7 @@ void MLHandTracker::Update() {
     lastKeyposeLeft = handData.left_hand_state.keypose;
   }
 
-  rightHandBoneValid = getHandBone(wristBones[1], fingerBones[1]);
+  rightHandBoneValid = handPresents[1] && getHandBone(wristBones[1], fingerBones[1]);
   if (rightHandBoneValid) {
     rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false, transformMatrix);
     rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1], rightHandNormal, transformMatrix);
@@ -3323,6 +3324,7 @@ NAN_METHOD(MLContext::Update) {
           }
         }
 
+        handPresents[0] = handData.left_hand_state.hand_confidence >= 0.5;
         // setFingerValue(handData.left_hand_state, handBones[0][0]);
         setFingerValue(handStaticData.left.wrist, snapshot, wristBones[0]);
         setFingerValue(handStaticData.left.thumb, snapshot, fingerBones[0][0]);
@@ -3331,6 +3333,7 @@ NAN_METHOD(MLContext::Update) {
         setFingerValue(handStaticData.left.ring, snapshot, fingerBones[0][3]);
         setFingerValue(handStaticData.left.pinky, snapshot, fingerBones[0][4]);
 
+        handPresents[1] = handData.right_hand_state.hand_confidence >= 0.5;
         // setFingerValue(handData.left_hand_state, handBones[1][0]);
         setFingerValue(handStaticData.right.wrist, snapshot, wristBones[1]);
         setFingerValue(handStaticData.right.thumb, snapshot, fingerBones[1][0]);
