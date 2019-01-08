@@ -80,6 +80,42 @@
       mesh.frustumCulled = false;
       return mesh;
     };
+    const _makeArrowMesh = () => {
+      const arrowMesh = arrowTemplateMesh.clone();
+      arrowMesh.startTime = 0;
+      arrowMesh.lastTime = 0;
+      arrowMesh.velocity = new THREE.Vector3();
+      arrowMesh.updatePull = position => {
+        if (position !== null) {
+          arrowMesh.position.copy(position);
+          arrowMesh.quaternion.setFromRotationMatrix(localMatrix.lookAt(
+            position,
+            grabbable.position,
+            localVector.copy(upVector)
+              .applyQuaternion(
+                localQuaternion.copy(stringMesh.quaternion)
+                  // .multiply(forwardQuaternion)
+              )
+          ));
+        } else {
+          arrowMesh.position.copy(stringMesh.position);
+          arrowMesh.quaternion.copy(stringMesh.quaternion)
+            // .multiply(forwardQuaternion);
+        }
+        arrowMesh.updateMatrixWorld();
+      };
+      arrowMesh.checkCollision = _debounce(next => {
+        stck.requestCheck(arrowMesh.position, arrowMesh.quaternion, collided => {
+          if (collided) {
+            arrowMesh.velocity.copy(zeroVector);
+          }
+
+          next();
+        });
+      });
+
+      return arrowMesh;
+    };
 
     const _makeButtons = () => ({
       trigger: false,
@@ -313,43 +349,6 @@
           return stringMesh;
         })();
         scene.add(stringMesh);
-
-        const _makeArrowMesh = () => {
-          const arrowMesh = arrowTemplateMesh.clone();
-          arrowMesh.startTime = 0;
-          arrowMesh.lastTime = 0;
-          arrowMesh.velocity = new THREE.Vector3();
-          arrowMesh.updatePull = position => {
-            if (position !== null) {
-              arrowMesh.position.copy(position);
-              arrowMesh.quaternion.setFromRotationMatrix(localMatrix.lookAt(
-                position,
-                grabbable.position,
-                localVector.copy(upVector)
-                  .applyQuaternion(
-                    localQuaternion.copy(stringMesh.quaternion)
-                      // .multiply(forwardQuaternion)
-                  )
-              ));
-            } else {
-              arrowMesh.position.copy(stringMesh.position);
-              arrowMesh.quaternion.copy(stringMesh.quaternion)
-                // .multiply(forwardQuaternion);
-            }
-            arrowMesh.updateMatrixWorld();
-          };
-          arrowMesh.checkCollision = _debounce(next => {
-            stck.requestCheck(arrowMesh.position, arrowMesh.quaternion, collided => {
-              if (collided) {
-                arrowMesh.velocity.copy(zeroVector);
-              }
-
-              next();
-            });
-          });
-
-          return arrowMesh;
-        };
 
         /* const _grab = e => {
           grabbable.setLocalTransform(localTransformPositionVectors[pose.getVrMode()], localTransformRotationQuaterions[pose.getVrMode()], localTransformScaleVector);
