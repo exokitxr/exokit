@@ -21,9 +21,12 @@
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
+    const localVector4 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
+    const localRay = new THREE.Ray();
+    const localPlane = new THREE.Plane();
     const localMatrixFloat32Array = new Float32Array(16);
     const localVectorFloat32Array = new Float32Array(3);
     const localVectorFloat32Array2 = new Float32Array(3);
@@ -311,108 +314,108 @@
     let pathIndex = 0;
     const thetaRate = 200;
     const animationTime = 1000;
+    const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
+    /* const _getFurthestWaypoint = (startNode, position) => {
+      const {island} = startNode;
+
+      let result = island[0];
+      let resultDistanceSq = result.distanceToSquared(position);
+      for (let i = 1; i < island.length; i++) {
+        const waypoint = island[i];
+        const distanceSq = waypoint.distanceToSquared(position);
+        if (distanceSq < resultDistanceSq) {
+          result = waypoint;
+          resultDistanceSq = distanceSq;
+        }
+      }
+      return result;
+    }; */
+    const _animateTo = endPosition => {
+      const now = Date.now();
+      const startPosition = avatarMesh.position.clone();
+      animation = {
+        startTime: now,
+        endTime: now + animationTime*startPosition.distanceTo(endPosition),
+        startPosition,
+        startQuaternion: avatarMesh.quaternion.clone(),
+        endQuaternion: new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 0, -1),
+          localVector
+            .copy(endPosition)
+            .sub(startPosition)
+            .normalize()
+        ),
+        endPosition,
+        hitTesting: false,
+        update() {
+          const now = Date.now();
+          const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
+          const nextPathIndex = pathIndex + 1;
+          const {startPosition, endPosition} = this;
+          avatarMesh.position
+            .copy(startPosition)
+            .lerp(endPosition, factor);
+
+          const {startQuaternion, endQuaternion} = this;
+          avatarMesh.quaternion.copy(endQuaternion);
+          /* avatarMesh.quaternion
+            .copy(startQuaternion)
+            .slerp(endQuaternion, factor); */
+
+          avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
+
+          rayMesh.position.copy(avatarMesh.position)
+            .add(localVector.set(0, avatarHeight, 0));
+          rayMesh.quaternion.copy(avatarMesh.quaternion);
+
+          destinationMesh.position.copy(endPosition);
+          destinationMesh.quaternion.copy(endQuaternion);
+          
+          if (factor < 1) {
+            if (display.session && !animation.hitTesting) {
+              const localAnimation = animation;
+              display.session.requestHitTest(
+                localVector
+                  .copy(avatarMesh.position)
+                  .add(
+                    localVector2
+                      .set(0, avatarHeight, 0)
+                  )
+                  .toArray(localVectorFloat32Array),
+                localVector.set(0, 0, -1)
+                  .applyQuaternion(avatarMesh.quaternion)
+                  .toArray(localVectorFloat32Array2)
+              )
+                .then(results => {
+                  if (animation === localAnimation) {
+                    if (results.length) {
+                      _animateTo(
+                        localVector
+                          .copy(avatarMesh.position)
+                          .add(
+                            localVector2
+                              .set(0, 0, 0.3)
+                              .applyQuaternion(avatarMesh.quaternion)
+                          )
+                      );
+                    }
+
+                    animation.hitTesting = false;
+                  }
+                })
+                .catch(err => {
+                  console.warn(err.stack);
+                });
+              animation.hitTesting = true;
+            }
+          } else {
+            animation = null;
+          }
+        },
+      };
+    };
     function animate(time, frame) {
       if (renderer.vr.enabled) {
-        const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
-        /* const _getFurthestWaypoint = (startNode, position) => {
-          const {island} = startNode;
-
-          let result = island[0];
-          let resultDistanceSq = result.distanceToSquared(position);
-          for (let i = 1; i < island.length; i++) {
-            const waypoint = island[i];
-            const distanceSq = waypoint.distanceToSquared(position);
-            if (distanceSq < resultDistanceSq) {
-              result = waypoint;
-              resultDistanceSq = distanceSq;
-            }
-          }
-          return result;
-        }; */
-        const _animateTo = endPosition => {
-          const now = Date.now();
-          const startPosition = avatarMesh.position.clone();
-          animation = {
-            startTime: now,
-            endTime: now + animationTime*startPosition.distanceTo(endPosition),
-            startPosition,
-            startQuaternion: avatarMesh.quaternion.clone(),
-            endQuaternion: new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 0, -1),
-              localVector
-                .copy(endPosition)
-                .sub(startPosition)
-                .normalize()
-            ),
-            endPosition,
-            hitTesting: false,
-            update() {
-              const now = Date.now();
-              const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
-              const nextPathIndex = pathIndex + 1;
-              const {startPosition, endPosition} = this;
-              avatarMesh.position
-                .copy(startPosition)
-                .lerp(endPosition, factor);
-
-              const {startQuaternion, endQuaternion} = this;
-              avatarMesh.quaternion.copy(endQuaternion);
-              /* avatarMesh.quaternion
-                .copy(startQuaternion)
-                .slerp(endQuaternion, factor); */
-
-              avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
-
-              rayMesh.position.copy(avatarMesh.position)
-                .add(localVector.set(0, avatarHeight, 0));
-              rayMesh.quaternion.copy(avatarMesh.quaternion);
-
-              destinationMesh.position.copy(endPosition);
-              destinationMesh.quaternion.copy(endQuaternion);
-              
-              if (factor < 1) {
-                if (display.session && !animation.hitTesting) {
-                  const localAnimation = animation;
-                  display.session.requestHitTest(
-                    localVector
-                      .copy(avatarMesh.position)
-                      .add(
-                        localVector2
-                          .set(0, avatarHeight, 0)
-                      )
-                      .toArray(localVectorFloat32Array),
-                    localVector.set(0, 0, -1)
-                      .applyQuaternion(avatarMesh.quaternion)
-                      .toArray(localVectorFloat32Array2)
-                  )
-                    .then(results => {
-                      if (animation === localAnimation) {
-                        if (results.length) {
-                          _animateTo(
-                            localVector
-                              .copy(avatarMesh.position)
-                              .add(
-                                localVector2
-                                  .set(0, 0, 0.3)
-                                  .applyQuaternion(avatarMesh.quaternion)
-                              )
-                          );
-                        }
-
-                        animation.hitTesting = false;
-                      }
-                    })
-                    .catch(err => {
-                      console.warn(err.stack);
-                    });
-                  animation.hitTesting = true;
-                }
-              } else {
-                animation = null;
-              }
-            },
-          };
-        };
         if (!animation) {
           _animateTo(_getRandomWaypoint());
         }
@@ -435,17 +438,30 @@
       });
       display.session = session;
 
-      /* session.onselect = e => {
-        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const controllerMesh = controllerMeshes[controllerIndex];
-        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+      session.onselect = e => {
+        const {inputSource} = e;
+        const pose = frame.getInputPose(inputSource);
+        localMatrix
+          .fromArray(pose.targetRay.transformMatrix)
+          .decompose(localVector, localQuaternion, localVector2);
 
-        const objectMesh = _makeControllerMesh(
-          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
-          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
-        );
-        scene.add(objectMesh);
-      }; */
+        const intersection = localRay
+          .set(
+            localVector,
+            localVector2.set(0, 0, -1)
+              .applyQuaternion(localQuaternion)
+          )
+          .intersectPlane(
+            localPlane.setFromNormalAndCoplanarPoint(
+              localVector2.set(0, 1, 0),
+              localVector3.set(0, 0, 0)
+            ),
+            localVector4
+          );
+        if (intersection) {
+          _animateTo(intersection);
+        }
+      };
 
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
