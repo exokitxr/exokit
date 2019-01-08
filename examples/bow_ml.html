@@ -219,6 +219,27 @@
       vertexColors: THREE.VertexColors,
     });
 
+    const _startNock = () => {
+      if (!nockedArrowMesh) {
+        nockedArrowMesh = _makeArrowMesh();
+        scene.add(nockedArrowMesh);
+      }
+    };
+    const _endNock = () => {
+      if (nockedArrowMesh) {
+        const arrow = nockedArrowMesh;
+        arrows.push(arrow);
+
+        const now = Date.now();
+        arrow.startTime = now;
+        arrow.lastTime = now;
+        arrow.velocity.set(0, 0, -ARROW_SPEED * nockedArrowMesh.position.distanceTo(stringMesh.position))
+          .applyQuaternion(arrow.quaternion);
+
+        nockedArrowMesh = null;
+      }
+    };
+
     const _makeButtons = () => ({
       trigger: false,
       bumper: false,
@@ -499,10 +520,7 @@
                 if (closestStringPoint.distanceTo(pinchPosition) < 0.05) {
                   pinchedIndex = handIndex;
 
-                  if (!nockedArrowMesh) {
-                    nockedArrowMesh = _makeArrowMesh();
-                    scene.add(nockedArrowMesh);
-                  }
+                  _startNock();
                 }
               }
               if (pinchedIndex === handIndex) {
@@ -515,11 +533,15 @@
             } else {
               if (pinchedIndex === handIndex) {
                 pinchedIndex = -1;
+
+                _endNock();
               }
             }
           }
           if (pinchedIndex !== -1 && !pinchedSeen) {
             pinchedIndex = -1;
+
+            _endNock();
           }
         };
         const _onGesture = e => {
@@ -766,23 +788,11 @@
 
     session.onselectstart = e => {
       if (grabbedIndex !== -1) {
-        nockedArrowMesh = _makeArrowMesh();
-        scene.add(nockedArrowMesh);
+        _startNock();
       }
     };
     session.onselectend = e => {
-      if (nockedArrowMesh) {
-        const arrow = nockedArrowMesh;
-        arrows.push(arrow);
-
-        const now = Date.now();
-        arrow.startTime = now;
-        arrow.lastTime = now;
-        arrow.velocity.set(0, 0, -ARROW_SPEED * nockedArrowMesh.position.distanceTo(stringMesh.position))
-          .applyQuaternion(arrow.quaternion);
-
-        nockedArrowMesh = null;
-      }
+      _endNock();
     };
 
     // console.log('request first frame');
