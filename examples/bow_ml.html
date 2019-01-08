@@ -80,6 +80,37 @@
       mesh.frustumCulled = false;
       return mesh;
     };
+
+    // const NPC_PLUGIN = 'npc';
+    /* const OTHER_SIDES = {
+      left: 'right',
+      right: 'left',
+    }; */
+    const ARROW_SPEED = 0.05;
+    const ARROW_GRAVITY = -10 / 1000 * 0.001;
+    const ARROW_TERMINAL_VELOCITY = -10;
+    const ARROW_TTL = 5 * 1000;
+    const ARROW_LENGTH = 0.5;
+
+    const pixelSize = 0.015;
+    const bowHeight = 0.6;
+    const arrowMatrix = (() => {
+      const position = new THREE.Vector3(pixelSize, 0, -pixelSize*16);
+      const rotation = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        -Math.PI / 4
+      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, -1)
+      )).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(0, 1, 0)
+      ));
+      const scale = new THREE.Vector3(2, 2, 2);
+      return new THREE.Matrix4().compose(position, rotation, scale);
+    })();
+    const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
+    arrowTemplateMesh.geometry.applyMatrix(arrowMatrix);
     const _makeArrowMesh = () => {
       const arrowMesh = arrowTemplateMesh.clone();
       arrowMesh.startTime = 0;
@@ -117,6 +148,53 @@
       return arrowMesh;
     };
 
+    const stringGeometry = (() => {
+      const geometry = new THREE.BoxBufferGeometry(pixelSize, bowHeight, pixelSize, 1, 2, 1)
+        /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(0, 0, -1)
+        )))
+        .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3)); */
+      const colors = new Float32Array(geometry.getAttribute('position').array.length);
+      colors.fill(0x33/0xFF);
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      return geometry;
+    })();
+    const stringGeometryPositions = stringGeometry.getAttribute('position').array;
+    const numPositions = stringGeometryPositions.length / 3;
+    const centerPositionIndexes = [];
+    const centerPositions = [];
+    for (let i = 0; i < numPositions; i++) {
+      const baseIndex = i * 3;
+      if (Math.abs(stringGeometryPositions[baseIndex + 1]) < 0.001) {
+        centerPositionIndexes.push(baseIndex);
+        centerPositions.push(
+          stringGeometryPositions[baseIndex + 0],
+          stringGeometryPositions[baseIndex + 1],
+          stringGeometryPositions[baseIndex + 2]
+        );
+      }
+    }
+    if (centerPositionIndexes.length === 0 || centerPositions.length === 0) {
+      throw new Error('failed to initializa string mesh');
+    }
+    /* const arrowGeometry = (() => {
+      const {positions, normals, colors, dys} = arrowGeometrySpec;
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+      geometry.boundingSphere = new THREE.Sphere(
+        new THREE.Vector3(),
+        1
+      );
+      return geometry;
+    })(); */
+    const stringMaterial = new THREE.MeshBasicMaterial({
+      vertexColors: THREE.VertexColors,
+    });
+
     const _makeButtons = () => ({
       trigger: false,
       bumper: false,
@@ -126,35 +204,6 @@
       _makeButtons(),
     ];
     const lastPincheds = [false, false];
-
-    const NPC_PLUGIN = 'npc';
-    const OTHER_SIDES = {
-      left: 'right',
-      right: 'left',
-    };
-    const ARROW_SPEED = 0.05;
-    const ARROW_GRAVITY = -10 / 1000 * 0.001;
-    const ARROW_TERMINAL_VELOCITY = -10;
-    const ARROW_TTL = 5 * 1000;
-    const ARROW_LENGTH = 0.5;
-
-    const pixelSize = 0.015;
-    const bowHeight = 0.6;
-    const arrowMatrix = (() => {
-      const position = new THREE.Vector3(pixelSize, 0, -pixelSize*16);
-      const rotation = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(0, 0, 1),
-        -Math.PI / 4
-      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        new THREE.Vector3(0, 0, -1)
-      )).premultiply(new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(1, 0, 0),
-        new THREE.Vector3(0, 1, 0)
-      ));
-      const scale = new THREE.Vector3(2, 2, 2);
-      return new THREE.Matrix4().compose(position, rotation, scale);
-    })();
 
     const grabbable = {
       isGrabbed() {
@@ -269,57 +318,6 @@
           .applyMatrix(new THREE.Matrix4().makeTranslation(pixelSize, 0, 0));
         bowMesh.frustumCulled = false;
         scene.add(bowMesh);
-
-        const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
-        arrowTemplateMesh.geometry
-          .applyMatrix(arrowMatrix);
-
-        const stringGeometry = (() => {
-          const geometry = new THREE.BoxBufferGeometry(pixelSize, bowHeight, pixelSize, 1, 2, 1)
-            /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 1, 0),
-              new THREE.Vector3(0, 0, -1)
-            )))
-            .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3)); */
-          const colors = new Float32Array(geometry.getAttribute('position').array.length);
-          colors.fill(0x33/0xFF);
-          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-          return geometry;
-        })();
-        const stringGeometryPositions = stringGeometry.getAttribute('position').array;
-        const numPositions = stringGeometryPositions.length / 3;
-        const centerPositionIndexes = [];
-        const centerPositions = [];
-        for (let i = 0; i < numPositions; i++) {
-          const baseIndex = i * 3;
-          if (Math.abs(stringGeometryPositions[baseIndex + 1]) < 0.001) {
-            centerPositionIndexes.push(baseIndex);
-            centerPositions.push(
-              stringGeometryPositions[baseIndex + 0],
-              stringGeometryPositions[baseIndex + 1],
-              stringGeometryPositions[baseIndex + 2]
-            );
-          }
-        }
-        if (centerPositionIndexes.length === 0 || centerPositions.length === 0) {
-          throw new Error('failed to initializa string mesh');
-        }
-        /* const arrowGeometry = (() => {
-          const {positions, normals, colors, dys} = arrowGeometrySpec;
-          const geometry = new THREE.BufferGeometry();
-          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-          geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
-          geometry.boundingSphere = new THREE.Sphere(
-            new THREE.Vector3(),
-            1
-          );
-          return geometry;
-        })(); */
-        const stringMaterial = new THREE.MeshBasicMaterial({
-          vertexColors: THREE.VertexColors,
-        });
 
         stringMesh = (() => {
           const geometry = stringGeometry;
@@ -676,7 +674,7 @@
 
               if (timeSinceStart < ARROW_TTL) {
                 if (!arrow.velocity.equals(zeroVector)) {
-                  const _hitNpc = () => {
+                  /* const _hitNpc = () => {
                     const npcElement = elements.getEntitiesElement().querySelector(NPC_PLUGIN);
                     if (npcElement) {
                       localVector.copy(arrow.velocity).normalize();
@@ -695,7 +693,7 @@
                     } else {
                       return false;
                     }
-                  };
+                  }; */
                   const _advanceArrow = () => {
                     const {velocity} = arrow;
                     const timeDiff = now - arrow.lastTime;
@@ -715,7 +713,8 @@
                     return false;
                   };
 
-                  if (!(_hitNpc() || _advanceArrow())) {
+                  // if (!(_hitNpc() || _advanceArrow())) {
+                  if (_advanceArrow()) {
                     arrow.checkCollision();
                   }
                 }
