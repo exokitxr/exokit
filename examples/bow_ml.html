@@ -14,12 +14,6 @@
     let container, scene, camera, display, controllerMeshes, bowMesh, stringMesh, pinchMeshes;
     // let mesher = null;
 
-    const zeroVector = new THREE.Vector3();
-    const oneVector = new THREE.Vector3(1, 1, 1);
-    const forwardVector = new THREE.Vector3(0, 0, -1);
-    const upVector = new THREE.Vector3(0, 1, 0);
-    const zeroQuaternion = new THREE.Quaternion();
-    const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
     /* const localTransformPositionVectors = {
       keyboard: new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3),
       hmd: new THREE.Vector3(0.015/2 * 3, 0, 0),
@@ -61,7 +55,35 @@
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
     const localRay = new THREE.Ray();
-    const localLine = new THREE.Line3();
+
+    const zeroVector = new THREE.Vector3();
+    const oneVector = new THREE.Vector3(1, 1, 1);
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+    const upVector = new THREE.Vector3(0, 1, 0);
+    const zeroQuaternion = new THREE.Quaternion();
+    const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
+
+    const _requestImage = url => new Promise((accept, reject) => {
+      const img = new Image();
+
+      img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(img);
+      };
+
+      img.crossOrigin = 'Anonymous';
+      img.src = url;
+    });  const localLine = new THREE.Line3();
+
+    const [
+      bowImg,
+      arrowImg,
+    ] = await Promise.all([
+      _requestImage('icons/Bow_Empty.png'),
+      _requestImage('icons/Arrow.png'),
+    ]);
 
     const controllerGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
       .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
@@ -217,20 +239,6 @@
     let drawnArrowMesh = null;
     const arrows = [];
 
-    const _requestImage = url => new Promise((accept, reject) => {
-      const img = new Image();
-
-      img.onload = () => {
-        accept(img);
-      };
-      img.onerror = err => {
-        reject(img);
-      };
-
-      img.crossOrigin = 'Anonymous';
-      img.src = url;
-    });
-
     const _debounce = fn => {
       let running = false;
       let queued = false;
@@ -296,14 +304,6 @@
       });
 
       {
-        const [
-          bowImg,
-          arrowImg,
-        ] = await Promise.all([
-          _requestImage('icons/Bow_Empty.png'),
-          _requestImage('icons/Arrow.png'),
-        ]);
-
         bowMesh = sprite3d.makeSpriteMesh(bowImg);
         bowMesh.geometry
           .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
