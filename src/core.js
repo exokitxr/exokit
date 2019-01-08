@@ -1144,7 +1144,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     append(field, value, options) {
       super.append(field, utils._normalizePrototype(value, global), options);
     }
-  })(window.FormData);
+  })(FormData);
   window.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
