@@ -11,7 +11,7 @@
   <script src="sprite3d.js"></script>
   <script>
 (async () => {
-    let container, scene, camera, display, bowMesh, stringMesh;
+    let container, scene, camera, display, bowMesh, stringMesh, pinchMeshes;
     // let mesher = null;
 
     const zeroVector = new THREE.Vector3();
@@ -68,6 +68,7 @@
       _makeButtons(),
       _makeButtons(),
     ];
+    const lastPincheds = [false, false];
 
     const NPC_PLUGIN = 'npc';
     const OTHER_SIDES = {
@@ -103,6 +104,7 @@
       },
     };
     let grabbedIndex = -1;
+    let pinchedIndex = -1;
     let pulling = false;
     let nockedArrowMesh = null;
     let drawnArrowMesh = null;
@@ -410,7 +412,7 @@
           priority: 1,
         }); */
 
-        const destinationMesh = (() => {
+        const _makePinchMesh = () => {
           const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
           const material = new THREE.MeshPhongMaterial({
             color: 0x2196f3,
@@ -419,26 +421,60 @@
           mesh.visible = false;
           mesh.frustumCulled = false;
           return mesh;
-        })();
-        scene.add(destinationMesh);
+        };
+        pinchMeshes = [
+          _makePinchMesh(),
+          _makePinchMesh(),
+        ];
+        pinchMeshes.forEach(pinchMesh => {
+          scene.add(pinchMeshes);
+        });
 
+        const _onHands = updates => {
+          for (let i = 0; i < pinchMeshes.length; i++) {
+            pinchMeshes[i].visible = false;
+          }
+
+          for (let i = 0; i < updates.length; i++) {
+            const update = updates[i];
+            const {hand, pointer} = update;
+            const handIndex = hand === 'left' ? 0 : 1;
+            const lastPinched = lastPincheds[handIndex];
+            const pinchMesh = pinchMeshes[handIndex];
+
+            if (lastPinched) {
+              pinchMesh.position.fromArray(pointer.position);
+              pinchMesh.quaternion.fromArray(pointer.rotation);
+              pinchMesh.visible = true;
+            }
+          }
+        };
         const _onGesture = e => {
           const {hand, gesture, lastGesture, position, rotation} = e;
           // console.log('got gesture', {hand, gesture, lastGesture});
 
           const pinched = gesture === 'pinch';
+          const handIndex = hand === 'left' ? 0 : 1;
+          const lastPinched = lastPincheds[handIndex];
+          const pinchMesh = pinchMeshes[handIndex];
 
           if (pinched) {
-            destinationMesh.position.fromArray(position);
-            destinationMesh.quaternion.fromArray(rotation);
-            destinationMesh.visible = true;
+            if (!lastPinched && position.distanceTo(stringMesh.position) < 0.3) {
+              pinchedIndex = handIndex;
+            }
+
+            pinchMesh.position.fromArray(position);
+            pinchMesh.quaternion.fromArray(rotation);
+            pinchMesh.visible = true;
           } else {
-            destinationMesh.visible = false;
+            pinchMesh.visible = false;
           }
+
+          lastPincheds[handIndex] = pinched;
         };
 
         const handTracker = window.browser.magicleap.RequestHandTracking();
-        // handTracker.onhands = _onHands;
+        handTracker.onhands = _onHands;
         handTracker.ongesture = _onGesture;
       }
 
@@ -486,6 +522,14 @@
             stringMesh.quaternion.copy(bowMesh.quaternion);
           }
         };
+        const _updatePinch = () => {
+          if (pinchedIndex !== -1) {
+            const pinchMesh = pinchMeshes[pinchedIndex];
+            stringMesh.updatePull(pinchMesh.position);
+          } else {
+            stringMesh.updatePull(null);
+          }
+        };
         /* const _updateStringPosition = () => {
           if (grabbable.isGrabbed()) {
             const side = grabbable.getGrabberSide();
@@ -524,7 +568,7 @@
             }
           }
         };
-        const _updatePull = () => {
+        /* const _updatePull = () => {
           const position = pulling ? gamepads[OTHER_SIDES[grabbable.getGrabberSide()]].worldPosition : null;
 
           if (pulling || lastPulling) {
@@ -535,7 +579,7 @@
           }
 
           lastPulling = pulling;
-        };
+        }; */
         const _updateArrows = () => {
           if (arrows.length > 0) {
             const now = Date.now();
@@ -604,9 +648,10 @@
 
         _updateGamepads();
         _updateGrab();
+        _updatePinch();
         // _updateStringPosition();
         _updateDrawnArrow();
-        _updatePull();
+        // _updatePull();
         _updateArrows();
       }
 
