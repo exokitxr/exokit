@@ -7,7 +7,7 @@
     <script src="svg-boundings.js"></script>
     <script src="sprite3d.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false];
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false], scrollAxis = 0;
 
 const links = [
   {
@@ -1399,6 +1399,7 @@ function animate(time, frame) {
       const pose = frame.getInputPose(inputSource);
       const {iframe} = tab;
       const gamepads = navigator.getGamepads();
+      scrollAxis += gamepads[0].axes[1] / 20;
 
       localMatrix
         .fromArray(pose.targetRay.transformMatrix)
@@ -1406,7 +1407,7 @@ function animate(time, frame) {
 
       localVector
         .add(
-          localVector2.set(0, 0, -1.5 - gamepads[0].axes[1] / 1)
+          localVector2.set(0, 0, -1.5 - scrollAxis)
             .applyQuaternion(localQuaternion)
         );
       iframe.position = localVector.toArray();
