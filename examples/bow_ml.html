@@ -117,7 +117,7 @@
     const pixelSize = 0.015;
     const bowHeight = 0.6;
     const arrowMatrix = (() => {
-      const position = new THREE.Vector3(pixelSize, 0, -pixelSize*16);
+      const position = new THREE.Vector3(0, 0, -pixelSize*16);
       const rotation = new THREE.Quaternion().setFromAxisAngle(
         new THREE.Vector3(0, 0, 1),
         -Math.PI / 4
@@ -128,7 +128,7 @@
         new THREE.Vector3(1, 0, 0),
         new THREE.Vector3(0, 1, 0)
       ));
-      const scale = new THREE.Vector3(2, 2, 2);
+      const scale = new THREE.Vector3(1, 1, 1);
       return new THREE.Matrix4().compose(position, rotation, scale);
     })();
     const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg)
@@ -753,20 +753,24 @@
     display.session = session;
 
     session.onselectstart = e => {
-      nockedArrowMesh = _makeArrowMesh();
-      scene.add(nockedArrowMesh);
+      if (grabbedIndex !== -1) {
+        nockedArrowMesh = _makeArrowMesh();
+        scene.add(nockedArrowMesh);
+      }
     };
     session.onselectend = e => {
-      const arrow = nockedArrowMesh;
-      arrows.push(arrow);
+      if (nockedArrowMesh) {
+        const arrow = nockedArrowMesh;
+        arrows.push(arrow);
 
-      const now = Date.now();
-      arrow.startTime = now;
-      arrow.lastTime = now;
-      arrow.velocity.set(0, 0, -ARROW_SPEED * nockedArrowMesh.position.distanceTo(stringMesh.position))
-        .applyQuaternion(arrow.quaternion);
+        const now = Date.now();
+        arrow.startTime = now;
+        arrow.lastTime = now;
+        arrow.velocity.set(0, 0, -ARROW_SPEED * nockedArrowMesh.position.distanceTo(stringMesh.position))
+          .applyQuaternion(arrow.quaternion);
 
-      nockedArrowMesh = null;
+        nockedArrowMesh = null;
+      }
     };
 
     // console.log('request first frame');
