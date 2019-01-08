@@ -1,0 +1,666 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="sprite3d.js"></script>
+  <script>
+(async () => {
+    let container, scene, camera, display, bowMesh, stringMesh;
+    // let mesher = null;
+
+    const zeroVector = new THREE.Vector3();
+    const oneVector = new THREE.Vector3(1, 1, 1);
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+    const upVector = new THREE.Vector3(0, 1, 0);
+    const zeroQuaternion = new THREE.Quaternion();
+    const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
+    /* const localTransformPositionVectors = {
+      keyboard: new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3),
+      hmd: new THREE.Vector3(0.015/2 * 3, 0, 0),
+    };
+    const localTransformRotationQuaterions = {
+      keyboard: new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(-1, 0, 0),
+        new THREE.Vector3(0, 0, -1)
+      ).premultiply(
+        new THREE.Quaternion().setFromAxisAngle(
+          new THREE.Vector3(1, 0, 0),
+          Math.PI / 4
+        )
+      ),
+      hmd: new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        Math.PI / 4
+      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(1, 0, 0)
+      )),
+    };
+    const localStringPositionVectors = {
+      keyboard: new THREE.Vector3(0, 0.015 * 12, 0.015 * 2),
+      hmd: new THREE.Vector3(0, 0.015 * 2, 0),
+    };
+    const localStringRotationQuaterions = {
+      keyboard: zeroQuaternion,
+      hmd: new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 0)
+      ),
+    }; */
+    const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localMatrix = new THREE.Matrix4();
+    const localRay = new THREE.Ray();
+
+    const _makeButtons = () => ({
+      trigger: false,
+      bumper: false,
+    });
+    const lastButtons = [
+      _makeButtons(),
+      _makeButtons(),
+    ];
+
+    const NPC_PLUGIN = 'npc';
+    const OTHER_SIDES = {
+      left: 'right',
+      right: 'left',
+    };
+    const ARROW_SPEED = 0.05;
+    const ARROW_GRAVITY = -10 / 1000 * 0.001;
+    const ARROW_TERMINAL_VELOCITY = -10;
+    const ARROW_TTL = 5 * 1000;
+    const ARROW_LENGTH = 0.5;
+
+    const pixelSize = 0.015;
+    const arrowMatrix = (() => {
+      const position = new THREE.Vector3(pixelSize, 0, -pixelSize*16);
+      const rotation = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        -Math.PI / 4
+      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, -1)
+      )).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(0, 1, 0)
+      ));
+      const scale = new THREE.Vector3(2, 2, 2);
+      return new THREE.Matrix4().compose(position, rotation, scale);
+    })();
+
+    const grabbable = {
+      isGrabbed() {
+        return false;
+      },
+    };
+    let grabbedIndex = -1;
+    let pulling = false;
+    let nockedArrowMesh = null;
+    let drawnArrowMesh = null;
+    const arrows = [];
+
+    const _requestImage = url => new Promise((accept, reject) => {
+      const img = new Image();
+
+      img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(img);
+      };
+
+      img.crossOrigin = 'Anonymous';
+      img.src = url;
+    });
+
+    const _debounce = fn => {
+      let running = false;
+      let queued = false;
+
+      const _go = () => {
+        if (!running) {
+          running = true;
+
+          fn(() => {
+            running = false;
+
+            if (queued) {
+              queued = false;
+
+              _go();
+            }
+          });
+        } else {
+          queued = true;
+        }
+      };
+      return _go;
+    };
+
+    async function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 0, 1);
+      // camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      {
+        const [
+          bowImg,
+          arrowImg,
+        ] = await Promise.all([
+          _requestImage('icons/Bow_Empty.png'),
+          _requestImage('icons/Arrow.png'),
+        ]);
+
+        bowMesh = sprite3d.makeSpriteMesh(bowImg);
+        bowMesh.geometry
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromAxisAngle(
+              new THREE.Vector3(0, 0, 1),
+              Math.PI / 4
+            ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, -1),
+              new THREE.Vector3(1, 0, 0)
+            ))
+          ))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(pixelSize, 0, 0));
+        bowMesh.frustumCulled = false;
+        scene.add(bowMesh);
+
+        const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
+        arrowTemplateMesh.geometry
+          .applyMatrix(arrowMatrix);
+
+        const stringGeometry = (() => {
+          const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
+            /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, 0, -1)
+            ))) */
+            .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3));
+          geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
+          return geometry;
+        })();
+        const stringGeometryPositions = stringGeometry.getAttribute('position').array;
+        const numPositions = stringGeometryPositions.length / 3;
+        const centerPositionIndexes = [];
+        const centerPositions = [];
+        for (let i = 0; i < numPositions; i++) {
+          const baseIndex = i * 3;
+          if (Math.abs(stringGeometryPositions[baseIndex + 2]) < 0.001) {
+            centerPositionIndexes.push(baseIndex);
+            centerPositions.push(
+              stringGeometryPositions[baseIndex + 0],
+              stringGeometryPositions[baseIndex + 1],
+              stringGeometryPositions[baseIndex + 2]
+            );
+          }
+        }
+        /* const arrowGeometry = (() => {
+          const {positions, normals, colors, dys} = arrowGeometrySpec;
+          const geometry = new THREE.BufferGeometry();
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+          geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+          geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+          geometry.boundingSphere = new THREE.Sphere(
+            new THREE.Vector3(),
+            1
+          );
+          return geometry;
+        })(); */
+        const stringMaterial = new THREE.MeshBasicMaterial({
+          vertexColors: THREE.VertexColors,
+        });
+
+        stringMesh = (() => {
+          const geometry = stringGeometry;
+          const material = stringMaterial;
+
+          const stringMesh = new THREE.Mesh(geometry, material);
+          stringMesh.frustumCulled = false;
+          stringMesh.pullPosition = new THREE.Vector3();
+          stringMesh.updatePull = position => {
+            const pullPosition = position !== null ?
+              localVector.copy(position)
+                .applyMatrix4(localMatrix.getInverse(stringMesh.matrixWorld))
+            :
+              zeroVector;
+            const positionAttribute = geometry.getAttribute('position');
+            const positions = positionAttribute.array;
+            for (let i = 0; i < centerPositionIndexes.length; i++) {
+              const index = centerPositionIndexes[i];
+              positions[index + 0] = centerPositions[i * 3 + 0] + pullPosition.x;
+              positions[index + 1] = centerPositions[i * 3 + 1] + pullPosition.y;
+              positions[index + 2] = centerPositions[i * 3 + 2] + pullPosition.z;
+            }
+            positionAttribute.needsUpdate = true;
+
+            stringMesh.pullPosition.copy(pullPosition);
+          };
+          return stringMesh;
+        })();
+        scene.add(stringMesh);
+        console.log('scene add string mesh');
+
+        const _makeArrowMesh = () => {
+          const arrowMesh = arrowTemplateMesh.clone();
+          arrowMesh.startTime = 0;
+          arrowMesh.lastTime = 0;
+          arrowMesh.velocity = new THREE.Vector3();
+          arrowMesh.updatePull = position => {
+            if (position !== null) {
+              arrowMesh.position.copy(position);
+              arrowMesh.quaternion.setFromRotationMatrix(localMatrix.lookAt(
+                position,
+                grabbable.position,
+                localVector.copy(upVector)
+                  .applyQuaternion(
+                    localQuaternion.copy(stringMesh.quaternion)
+                      // .multiply(forwardQuaternion)
+                  )
+              ));
+            } else {
+              arrowMesh.position.copy(stringMesh.position);
+              arrowMesh.quaternion.copy(stringMesh.quaternion)
+                // .multiply(forwardQuaternion);
+            }
+            arrowMesh.updateMatrixWorld();
+          };
+          arrowMesh.checkCollision = _debounce(next => {
+            stck.requestCheck(arrowMesh.position, arrowMesh.quaternion, collided => {
+              if (collided) {
+                arrowMesh.velocity.copy(zeroVector);
+              }
+
+              next();
+            });
+          });
+
+          return arrowMesh;
+        };
+
+        /* const _grab = e => {
+          grabbable.setLocalTransform(localTransformPositionVectors[pose.getVrMode()], localTransformRotationQuaterions[pose.getVrMode()], localTransformScaleVector);
+          stringMesh.visible = true;
+        };
+        grabbable.on('grab', _grab);
+        const _release = e => {
+          grabbable.setLocalTransform(zeroVector, zeroQuaternion, oneVector);
+          stringMesh.visible = false;
+        };
+        grabbable.on('release', _release);
+
+        const _gripdown = e => {
+          const {side} = e;
+          const otherSide = OTHER_SIDES[side];
+
+          if (grabbable.isGrabbed() && grabbable.getGrabberSide() === otherSide) {
+            const {gamepads} = pose.getStatus();
+            const gamepad = gamepads[side];
+            const {worldPosition: controllerPosition} = gamepad;
+            stringMesh.getWorldPosition(localVector);
+
+            if (controllerPosition.distanceTo(localVector) < 0.1) {
+              pulling = true;
+            } else {
+              drawnArrowMesh = _makeArrowMesh();
+              scene.add(drawnArrowMesh);
+
+              // input.vibrate(side, 1, 20);
+            }
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('gripdown', _gripdown, {
+          priority: 1,
+        });
+        const _gripup = e => {
+          const {side} = e;
+          const otherSide = OTHER_SIDES[side];
+
+          if (pulling && grabbable.getGrabberSide() === otherSide) {
+            pulling = false;
+
+            if (nockedArrowMesh) {
+              const arrow = nockedArrowMesh;
+              arrows.push(arrow);
+
+              const now = Date.now();
+              arrow.startTime = now;
+              arrow.lastTime = now;
+              arrow.velocity.set(0, 0, -ARROW_SPEED * stringMesh.pullPosition.length())
+                .applyQuaternion(arrow.quaternion);
+
+              nockedArrowMesh = null;
+            }
+          }
+          if (drawnArrowMesh) {
+            scene.remove(drawnArrowMesh);
+            drawnArrowMesh = null;
+          }
+        };
+        input.on('gripup', _gripup, {
+          priority: 1,
+        });
+        const _triggerdown = e => {
+          const {side} = e;
+
+          if (pose.getVrMode() === 'keyboard' && !nockedArrowMesh) {
+            nockedArrowMesh = _makeArrowMesh();
+            scene.add(nockedArrowMesh);
+          }
+        };
+        input.on('triggerdown', _triggerdown, {
+          priority: 1,
+        });
+        const _triggerup = e => {
+          const {side} = e;
+
+          if (pose.getVrMode() === 'keyboard' && nockedArrowMesh) {
+            const arrow = nockedArrowMesh;
+            arrows.push(arrow);
+
+            const now = Date.now();
+            arrow.startTime = now;
+            arrow.lastTime = now;
+            arrow.velocity.set(0, 0, -ARROW_SPEED * 0.3)
+              .applyQuaternion(arrow.quaternion);
+
+            nockedArrowMesh = null;
+          }
+        };
+        input.on('triggerup', _triggerup, {
+          priority: 1,
+        }); */
+
+        const destinationMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
+          const material = new THREE.MeshPhongMaterial({
+            color: 0x2196f3,
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.visible = false;
+          mesh.frustumCulled = false;
+          return mesh;
+        })();
+        scene.add(destinationMesh);
+
+        const _onGesture = e => {
+          const {hand, gesture, lastGesture, position, rotation} = e;
+          // console.log('got gesture', {hand, gesture, lastGesture});
+
+          const pinched = gesture === 'pinch';
+
+          if (pinched) {
+            destinationMesh.position.fromArray(position);
+            destinationMesh.quaternion.fromArray(rotation);
+            destinationMesh.visible = true;
+          } else {
+            destinationMesh.visible = false;
+          }
+        };
+
+        const handTracker = window.browser.magicleap.RequestHandTracking();
+        // handTracker.onhands = _onHands;
+        handTracker.ongesture = _onGesture;
+      }
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    let lastPulling = false;
+    function animate(time, frame) {
+      if (renderer.vr.enabled) {
+        const gamepads = navigator.getGamepads();
+        const inputSources = display.session.getInputSources();
+
+        const _updateGamepads = () => {
+          for (let i = 0; i < gamepads.length; i++) {
+            const gamepad = gamepads[i];
+            const bumper = gamepad.buttons[2].pressed;
+            const lastBumper = lastButtons[i].bumper;
+
+            if (bumper && !lastBumper) {
+              const inputSource = inputSources[i];
+              const pose = frame.getInputPose(inputSource);
+              localMatrix
+                .fromArray(pose.targetRay.transformMatrix)
+                .decompose(localVector, localQuaternion, localVector2);
+              if (localVector.distanceTo(bowMesh.position) < 0.3) {
+                grabbedIndex = i;
+              }
+            } else if (lastBumper && !bumper) {
+              if (grabbedIndex !== -1) {
+                grabbedIndex = -1;
+              }
+            }
+
+            lastButtons[i].bumper = bumper;
+          }
+        };
+        const _updateGrab = () => {
+          if (grabbedIndex !== -1) {
+            const inputSource = inputSources[grabbedIndex];
+            const pose = frame.getInputPose(inputSource);
+            localMatrix
+              .fromArray(pose.targetRay.transformMatrix)
+              .decompose(bowMesh.position, bowMesh.quaternion, localVector);
+            stringMesh.position.copy(bowMesh.position);
+            stringMesh.quaternion.copy(bowMesh.quaternion);
+          }
+        };
+        /* const _updateStringPosition = () => {
+          if (grabbable.isGrabbed()) {
+            const side = grabbable.getGrabberSide();
+            const gamepad = gamepads.find(gamepad => gamepad.hand === side);
+            // const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+            stringMesh.position.copy(grabbable.position)
+              .add(localVector.copy(localStringPositionVectors[pose.getVrMode()]).applyQuaternion(grabbable.rotation));
+              // .add(localVector.set(0, 1, 0).applyQuaternion(grabbable.rotation));
+            stringMesh.quaternion.copy(grabbable.rotation)
+              .multiply(localStringRotationQuaterions[pose.getVrMode()]);
+            stringMesh.updateMatrixWorld();
+          }
+        }; */
+        const _updateDrawnArrow = () => {
+          if (drawnArrowMesh) {
+            const _updateTransform = () => {
+              const side = grabbable.getGrabberSide();
+              const otherSide = OTHER_SIDES[side];
+              const gamepad = gamepads.find(gamepad => gamepad.hand === otherSide);
+              const {worldPosition: controllerPosition, worldRotation: controllerRottion, worldScale: controllerScale} = gamepad;
+              drawnArrowMesh.position.copy(controllerPosition);
+              drawnArrowMesh.quaternion.copy(controllerRottion);
+              drawnArrowMesh.scale.copy(controllerScale);
+              drawnArrowMesh.updateMatrixWorld();
+            };
+
+            if (!nockedArrowMesh) {
+              if (stringMesh.getWorldPosition(localVector).distanceTo(drawnArrowMesh.getWorldPosition(localVector2)) < 0.1) {
+                nockedArrowMesh = drawnArrowMesh;
+                drawnArrowMesh = null;
+              } else {
+                _updateTransform();
+              }
+            } else {
+              _updateTransform();
+            }
+          }
+        };
+        const _updatePull = () => {
+          const position = pulling ? gamepads[OTHER_SIDES[grabbable.getGrabberSide()]].worldPosition : null;
+
+          if (pulling || lastPulling) {
+            stringMesh.updatePull(position);
+          }
+          if (nockedArrowMesh) {
+            nockedArrowMesh.updatePull(position);
+          }
+
+          lastPulling = pulling;
+        };
+        const _updateArrows = () => {
+          if (arrows.length > 0) {
+            const now = Date.now();
+
+            const removedArrows = [];
+            for (let i = 0; i < arrows.length; i++) {
+              const arrow = arrows[i];
+              const timeSinceStart = now - arrow.startTime;
+
+              if (timeSinceStart < ARROW_TTL) {
+                if (!arrow.velocity.equals(zeroVector)) {
+                  const _hitNpc = () => {
+                    const npcElement = elements.getEntitiesElement().querySelector(NPC_PLUGIN);
+                    if (npcElement) {
+                      localVector.copy(arrow.velocity).normalize();
+                      localRay.set(arrow.position, arrow.velocity);
+                      const hitNpc = npcElement.getHitNpc(localRay, ARROW_LENGTH);
+
+                      if (hitNpc) {
+                        hitNpc.attack();
+
+                        removedArrows.push(arrow);
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  };
+                  const _advanceArrow = () => {
+                    const {velocity} = arrow;
+                    const timeDiff = now - arrow.lastTime;
+                    arrow.position.add(localVector.copy(velocity).multiplyScalar(timeDiff));
+                    arrow.quaternion.setFromRotationMatrix(localMatrix.lookAt(
+                      arrow.position,
+                      localVector.copy(arrow.position)
+                        .add(velocity),
+                      upVector
+                    ));
+                    arrow.updateMatrixWorld();
+
+                    velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
+
+                    arrow.lastTime = now;
+
+                    return false;
+                  };
+
+                  if (!(_hitNpc() || _advanceArrow())) {
+                    arrow.checkCollision();
+                  }
+                }
+              } else {
+                removedArrows.push(arrow);
+              }
+            }
+            for (let i = 0; i < removedArrows.length; i++) {
+              const arrow = removedArrows[i];
+              scene.remove(arrow);
+              arrows.splice(arrows.indexOf(arrow), 1);
+            }
+          }
+        };
+
+        _updateGamepads();
+        _updateGrab();
+        // _updateStringPosition();
+        _updateDrawnArrow();
+        _updatePull();
+        _updateArrows();
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    await init();
+
+    console.log('request device');
+    display = await navigator.xr.requestDevice();
+    console.log('request session');
+    const session = await display.requestSession({
+      exclusive: true,
+    });
+    display.session = session;
+
+    /* session.onselect = e => {
+      const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+      const controllerMesh = controllerMeshes[controllerIndex];
+      controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+
+      const objectMesh = _makeControllerMesh(
+        controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+        controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+      );
+      scene.add(objectMesh);
+    }; */
+
+    // console.log('request first frame');
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const viewport = session.baseLayer.getViewport(frame.views[0]);
+      const width = viewport.width;
+      const height = viewport.height;
+
+      renderer.setSize(width * 2, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setDevice(display);
+      renderer.vr.setAnimationLoop(animate);
+
+      console.log('running!');
+    });
+
+    renderer.setAnimationLoop(animate);
+})()
+  .catch(err => {
+    console.warn(err.stack);
+  });
+  </script>
+  </body>
+</html>
