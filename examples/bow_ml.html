@@ -476,7 +476,7 @@
             
             if (pinchedIndex === -1) {
               const pinchPosition = localVector.fromArray(pointer.position);
-              if (controllerMeshes.every(controllerMesh => closestStringPoint.distanceTo(controllerMesh.position) > 0.3)) {
+              if (controllerMeshes.every(controllerMesh => pinchPosition.distanceTo(controllerMesh.position) > 0.3)) {
                 localLine.set(
                   localVector
                     .copy(stringMesh.position)
