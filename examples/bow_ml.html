@@ -226,7 +226,7 @@
         const centerPositions = [];
         for (let i = 0; i < numPositions; i++) {
           const baseIndex = i * 3;
-          if (Math.abs(stringGeometryPositions[baseIndex + 2]) < 0.001) {
+          if (Math.abs(stringGeometryPositions[baseIndex + 1]) < 0.001) {
             centerPositionIndexes.push(baseIndex);
             centerPositions.push(
               stringGeometryPositions[baseIndex + 0],
@@ -234,6 +234,9 @@
               stringGeometryPositions[baseIndex + 2]
             );
           }
+        }
+        if (centerPositionIndexes.length === 0 || centerPositions.length === 0) {
+          throw new Error('failed to initializa string mesh');
         }
         /* const arrowGeometry = (() => {
           const {positions, normals, colors, dys} = arrowGeometrySpec;
