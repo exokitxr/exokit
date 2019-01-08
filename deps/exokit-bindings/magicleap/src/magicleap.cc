@@ -400,7 +400,25 @@ bool MLRaycaster::Update() {
     return false;
   } else {
     ML_LOG(Error, "%s: Raycast request failed! %x", application_name, result);
-    delete this;
+    
+    Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+    polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
+      if (!this->cb.IsEmpty()) {
+        Local<Object> asyncObject = Nan::New<Object>();
+        AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
+
+        Local<Function> cb = Nan::New(this->cb);
+        
+        Local<Value> argv[] = {
+          Nan::Null(),
+        };
+        asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+      }
+      
+      delete this;
+    }));
+
     return true;
   }
 }
