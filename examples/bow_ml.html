@@ -144,8 +144,12 @@
           arrowMesh.position.copy(position);
           arrowMesh.quaternion.setFromRotationMatrix(localMatrix.lookAt(
             position,
-            stringMesh.position,
-            localVector.copy(upVector)
+            localVector.copy(stringMesh.position)
+              .add(
+                localVector2.set(0, 0, -0.2)
+                  .applyQuaternion(stringMesh.quaternion)
+              ),
+            localVector3.copy(upVector)
               .applyQuaternion(stringMesh.quaternion)
           ));
         } else {
