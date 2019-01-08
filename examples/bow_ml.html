@@ -70,7 +70,6 @@
       _makeButtons(),
       _makeButtons(),
     ];
-    const lastPincheds = [false, false];
 
     const NPC_PLUGIN = 'npc';
     const OTHER_SIDES = {
@@ -447,74 +446,49 @@
             const update = updates[i];
             const {hand, pointer} = update;
             const handIndex = hand === 'left' ? 0 : 1;
-            const lastPinched = lastPincheds[handIndex];
             const pinchMesh = pinchMeshes[handIndex];
             
-            if (handIndex === pinchedIndex) {
-              pinchedSeen = true;
+            if (pinchedIndex === -1) {
+              const pinchPosition = localVector.fromArray(pointer.position);
+              if (controllerMeshes.every(controllerMesh => closestStringPoint.distanceTo(controllerMesh.position) > 0.3)) {
+                localLine.set(
+                  localVector
+                    .copy(stringMesh.position)
+                    .add(
+                      localVector3
+                        .set(0, bowHeight/2, 0)
+                        .applyQuaternion(stringMesh.quaternion),
+                    ),
+                  localVector2
+                    .copy(stringMesh.position)
+                    .add(
+                      localVector3
+                        .set(0, -bowHeight/2, 0)
+                        .applyQuaternion(stringMesh.quaternion)
+                    )
+                );
+                const closestStringPoint = localLine.closestPointToPoint(pinchPosition, true, localVector2);
+                if (closestStringPoint.distanceTo(pinchPosition) < 0.05) {
+                  pinchedIndex = handIndex;
+                }
+              }
             }
 
-            if (lastPinched) {
+            if (handIndex === pinchedIndex) {
               pinchMesh.position.fromArray(pointer.position);
               pinchMesh.quaternion.fromArray(pointer.rotation);
               pinchMesh.visible = true;
+
+              pinchedSeen = true;
             }
           }
           if (pinchedIndex !== -1 && !pinchedSeen) {
             pinchedIndex = -1;
           }
         };
-        const _onGesture = e => {
-          const {hand, gesture, lastGesture, position, rotation} = e;
-          // console.log('got gesture', {hand, gesture, lastGesture});
-
-          const pinched = gesture === 'pinch';
-          const handIndex = hand === 'left' ? 0 : 1;
-          const lastPinched = lastPincheds[handIndex];
-          const pinchMesh = pinchMeshes[handIndex];
-
-          if (pinched) {
-            if (!lastPinched) {
-              localQuaternion.fromArray(rotation);
-              localLine.set(
-                localVector
-                  .copy(stringMesh.position)
-                  .add(
-                    localVector3
-                      .set(0, bowHeight/2, 0)
-                      .applyQuaternion(localQuaternion),
-                  ),
-                localVector2
-                  .copy(stringMesh.position)
-                  .add(
-                    localVector3
-                      .set(0, -bowHeight/2, 0)
-                      .applyQuaternion(localQuaternion)
-                  )
-              );
-              const pinchPosition = localVector.fromArray(position);
-              const closestStringPoint = localLine.closestPointToPoint(pinchPosition, true, localVector2);
-              if (closestStringPoint.distanceTo(pinchPosition) < 0.1) {
-                pinchedIndex = handIndex;
-              }
-            }
-
-            pinchMesh.position.fromArray(position);
-            pinchMesh.quaternion.fromArray(rotation);
-            pinchMesh.visible = true;
-          } else {
-            if (pinchedIndex === handIndex) {
-              pinchedIndex = -1;
-            }
-            pinchMesh.visible = false;
-          }
-
-          lastPincheds[handIndex] = pinched;
-        };
 
         const handTracker = window.browser.magicleap.RequestHandTracking();
         handTracker.onhands = _onHands;
-        handTracker.ongesture = _onGesture;
       }
 
       renderer.setAnimationLoop(animate);
