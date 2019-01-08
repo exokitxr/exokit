@@ -403,13 +403,12 @@
                   if (animation === localAnimation) {
                     if (results.length) {
                       _animateTo(
-                        localVector
-                          .copy(avatarMesh.position)
-                          .add(
-                            localVector2
-                              .set(0, 0, 0.3)
-                              .applyQuaternion(avatarMesh.quaternion)
-                          )
+                        avatarMesh.position.clone()
+                        .add(
+                          localVector2
+                            .set(0, 0, 0.3)
+                            .applyQuaternion(avatarMesh.quaternion)
+                        )
                       );
                     }
 
@@ -481,7 +480,7 @@
             localVector
           );
         if (intersection) {
-          _animateTo(intersection);
+          _animateTo(intersection.clone());
         }
       };
 
