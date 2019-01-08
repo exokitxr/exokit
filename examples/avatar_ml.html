@@ -403,11 +403,7 @@
                       }
                     })
                     .catch(err => {
-                      if (animation === localAnimation) {
-                        console.warn(err);
-
-                        animation.hitTesting = false;
-                      }
+                      console.warn(err.stack);
                     });
                   animation.hitTesting = true;
                 }
