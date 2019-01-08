@@ -1356,7 +1356,7 @@ NAN_METHOD(SetClipboard) {
     Nan::Utf8String utf8_value(info[0]);
     glfwSetClipboardString(window, *utf8_value);   
   } else {
-      return Nan::ThrowTypeError("must provide arg length > 0");
+      return Nan::ThrowTypeError("Invalid arguments");
   }
 }
 
