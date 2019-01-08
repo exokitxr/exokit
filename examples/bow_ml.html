@@ -439,18 +439,26 @@
             pinchMeshes[i].visible = false;
           }
 
+          let pinchedSeen = false;
           for (let i = 0; i < updates.length; i++) {
             const update = updates[i];
             const {hand, pointer} = update;
             const handIndex = hand === 'left' ? 0 : 1;
             const lastPinched = lastPincheds[handIndex];
             const pinchMesh = pinchMeshes[handIndex];
+            
+            if (handIndex === pinchedIndex) {
+              pinchedSeen = true;
+            }
 
             if (lastPinched) {
               pinchMesh.position.fromArray(pointer.position);
               pinchMesh.quaternion.fromArray(pointer.rotation);
               pinchMesh.visible = true;
             }
+          }
+          if (pinchedIndex !== -1 && !pinchedSeen) {
+            pinchedIndex = -1;
           }
         };
         const _onGesture = e => {
