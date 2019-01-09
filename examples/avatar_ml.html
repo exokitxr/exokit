@@ -511,7 +511,7 @@
           const now = Date.now();
 
           const localHitMeshes = hitMeshes.slice();
-          for (let = 0; i < localHitMeshes.length; i++) {
+          for (let i = 0; i < localHitMeshes.length; i++) {
             const hitMesh = localHitMeshes[i];
             if (hitMesh.endTime >= now) {
               scene.remove(hitMesh);
