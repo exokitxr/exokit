@@ -494,7 +494,7 @@
                       .decompose(controllerHitMesh.position, controllerHitMesh.quaternion, localVector2);
                     controllerHitMesh.visible = true;
                   } else {
-                    rayMesh.visible = false;
+                    controllerHitMesh.visible = false;
                   }
 
                   controllerHitTesting[i] = false;
