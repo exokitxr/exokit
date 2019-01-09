@@ -115,7 +115,7 @@ const _makePaintMesh = meshId => {
   mesh.meshId = meshId;
   let lastPoint = 0;
   let lastPointTime = 0;
-  const lastPosition = new THREE.Vector3();
+  let lastPosition = null;
   mesh.getBuffer = (endPoint = lastPoint) => {
     const positionSize = endPoint * 2 * 3;
     const uvSize = endPoint * 2 * 2;
@@ -268,6 +268,9 @@ const _makePaintMesh = meshId => {
 
         geometry.setDrawRange(0, lastPoint * 2);
 
+        if (!lastPosition) {
+          lastPosition = new THREE.Vector3();
+        }
         lastPosition.copy(position);
       }
     }
@@ -397,15 +400,11 @@ function animate(time, frame) {
       const hitMesh = hitMeshes[paintControllerIndex];
 
       if (hitMesh.visible) {
-        paintMesh.update(
-          localVector
-            .copy(hitMesh.position)
-            .add(
-              localVector2.set(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2))
-                .applyQuaternion(hitMesh.quaternion)
-          ),
-          hitMesh.quaternion.clone()
-        );
+        if (paintMesh.getLastPosition() && paintMesh.getLastPosition().distanceTo(hitMesh.position) > 0.2) {
+          paintMesh = _getPaintMesh();
+        }
+
+        paintMesh.update(hitMesh.position.clone(), hitMesh.quaternion.clone());
       }
     }
 

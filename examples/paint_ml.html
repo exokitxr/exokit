@@ -111,7 +111,7 @@ const _makePaintMesh = meshId => {
   mesh.meshId = meshId;
   let lastPoint = 0;
   let lastPointTime = 0;
-  const lastPosition = new THREE.Vector3();
+  let lastPosition = null;
   mesh.getBuffer = (endPoint = lastPoint) => {
     const positionSize = endPoint * 2 * 3;
     const uvSize = endPoint * 2 * 2;
@@ -270,6 +270,9 @@ const _makePaintMesh = meshId => {
 
         geometry.setDrawRange(0, lastPoint * 2);
 
+        if (!lastPositon) {
+          lastPosition = new THREE.Vector3();
+        }
         lastPosition.copy(position);
       }
     }
