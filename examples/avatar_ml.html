@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script src="skin.js"></script>
   <script>
-    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh, rayMeshes;
+    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh, hitMeshes, rayMeshes;
     let mesher = null;
     const waypoints = {};
     let numWaypoints = 0;
@@ -158,19 +158,32 @@
       })();
       scene.add(destinationMesh);
 
+      const hitMeshMaterial = new THREE.MeshPhongMaterial({
+        color: 0xf44336,
+      });
       const _makeHitMesh = () => {
         const geometry = cubeGeometry;
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x673ab7,
-        });
+        const material = hitMeshMaterial;
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      };
+      hitMeshes = [];
+      const rayMeshMaterial = new THREE.MeshPhongMaterial({
+        color: 0x673ab7,
+      });
+      const _makeRayMesh = () => {
+        const geometry = cubeGeometry;
+        const material = rayMeshMaterial;
         const mesh = new THREE.Mesh(geometry, material);
         mesh.visible = false;
         mesh.frustumCulled = false;
         return mesh;
       };
       rayMeshes = [
-        _makeHitMesh(),
-        _makeHitMesh(),
+        _makeRayMesh(),
+        _makeRayMesh(),
       ];
       rayMeshes.forEach(rayMesh => {
         scene.add(rayMesh);
@@ -416,6 +429,15 @@
                 .then(results => {
                   if (animation === localAnimation) {
                     if (results.length) {
+                      const hitMesh = _makeHitMesh();
+                      hitMesh.endTime = Date.now() + 5000;
+                      const [{hitMatrix}] = results;
+                      localMatrix
+                        .fromArray(hitMatrix)
+                        .decompose(hitMesh.position, hitMesh.quaternion, localVector2);
+                      scene.add(hitMesh);
+                      hitMeshes.push(hitMesh);
+
                       _animateTo(
                         avatarMesh.position.clone()
                         .add(
@@ -480,6 +502,19 @@
               controllerHitTesting[i] = true;
             } else {
               rayMeshes[i].visible = false;
+            }
+          }
+        }
+
+        if (hitMeshes.length > 0) {
+          const now = Date.now();
+
+          const localHitMeshes = hitMeshes.slice();
+          for (let = 0; i < localHitMeshes.length; i++) {
+            const hitMesh = localHitMeshes[i];
+            if (hitMesh.endTime >= now) {
+              scene.remove(hitMesh);
+              hitMeshes.splice(hitMeshes.indexOf(hitMesh), 1);
             }
           }
         }
