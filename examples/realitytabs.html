@@ -1401,7 +1401,7 @@ function animate(time, frame) {
       const gamepads = navigator.getGamepads();
       for (let i = 0; i < gamepads.length; i++){
         const gamepad = gamepads[i];
-        scrollAxis += gamepad.axes[1] / 20;
+        scrollAxis = Math.max(scrollAxis + gamepad.axes[1] / 20, 0);
 
 	localMatrix
           .fromArray(pose.targetRay.transformMatrix)
@@ -1409,7 +1409,7 @@ function animate(time, frame) {
 
         localVector
    	  .add(
-    	    localVector2.set(0, 0, -1.5 - Math.max(scrollAxis,-1.5))
+    	    localVector2.set(0, 0, -1.5 - scrollAxis)
   	    .applyQuaternion(localQuaternion)
 	  );
 	iframe.position = localVector.toArray();
