@@ -1351,12 +1351,12 @@ NAN_METHOD(GetClipboard) {
 
 
 NAN_METHOD(SetClipboard) {
-  NATIVEwindow *window = GetCurrentWindowContext();
-  if (info.Length() == 1 && info[0]->IsString()) {
+  if (info[0]->IsString()) {
+    NATIVEwindow *window = GetCurrentWindowContext();
     Nan::Utf8String utf8_value(info[0]);
     glfwSetClipboardString(window, *utf8_value);   
   } else {
-      return Nan::ThrowTypeError("Invalid arguments");
+    Nan::ThrowTypeError("Invalid arguments");
   }
 }
 
