@@ -7,7 +7,7 @@
     <script src="svg-boundings.js"></script>
     <script src="sprite3d.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false], scrollAxis = 0;
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false], scrollAxis = 0, moveMode = false;
 
 const links = [
   {
@@ -1451,6 +1451,7 @@ function animate(time, frame) {
           const pressed = gamepad.buttons[1].pressed;
           const lastPressed = lastPresseds[i];
           if (pressed && !lastPressed) {
+            moveMode = false;
             moves[i] = null;
           }
         }
@@ -1771,6 +1772,7 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
+                          moveMode = true;
                           moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
                         }
 
@@ -1890,7 +1892,7 @@ function animate(time, frame) {
       const lastAxis = lastAxes[i];
       const lastAxisValid = lastAxesValid[i];
 
-      if (padTouched && lastAxisValid) {
+      if (padTouched && lastAxisValid && moveMode == false) {
         const dx = axes[0] - lastAxis[0];
         const dy = axes[1] - lastAxis[1];
 
