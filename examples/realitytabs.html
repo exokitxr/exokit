@@ -261,7 +261,6 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     if (contentDocument) {
       _drawOk();
 
-      // floorMesh.visible = false;
       // scene.background = null;
     } else {
       _drawFail();
@@ -281,7 +280,6 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   iframe.d = d;
   iframe.src = u;
   /* iframe.addEventListener('destroy', () => {
-    // floorMesh.visible = true;
     // scene.background = _makeBackground();
   }); */
 
@@ -430,53 +428,6 @@ for (let i = 0; i < 2; i++) {
 }
 
 // local scene
-
-const floorMesh = (() => {
-  const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
-    .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
-      new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 0, 1),
-        new THREE.Vector3(0, 1, 0)
-      )
-    ));
-  const uvs = geometry.attributes.uv.array;
-  const numUvs = uvs.length / 2;
-  for (let i = 0; i < numUvs; i++) {
-    uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
-    uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
-  }
-
-  const texture = new THREE.Texture(
-    null,
-    THREE.UVMapping,
-    THREE.RepeatWrapping,
-    THREE.RepeatWrapping,
-    THREE.NearestFilter,
-    THREE.NearestFilter,
-    THREE.RGBAFormat,
-    THREE.UnsignedByteType,
-    1
-  );
-
-  const graphImg = new Image();
-  graphImg.crossOrigin = 'Anonymous';
-  graphImg.src = 'graphy.png';
-  graphImg.onload = () => {
-    texture.image = graphImg;
-    texture.needsUpdate = true;
-  };
-  graphImg.onerror = err => {
-    console.warn(err.stack);
-  };
-
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
-    side: THREE.DoubleSide,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  return mesh;
-})();
-scene.add(floorMesh);
 
 const cubeMesh = (() => {
   const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
