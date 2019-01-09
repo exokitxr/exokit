@@ -760,6 +760,7 @@
                               arrow.quaternion.setFromUnitVectors(
                                 localVector2.set(0, 0, -1),
                                 localVector3
+                                  .copy(localVector)
                                   .sub(startPosition)
                                   .normalize()
                               );
