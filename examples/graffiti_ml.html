@@ -437,18 +437,9 @@ function animate(time, frame) {
       const inputSource = inputSources[paintControllerIndex];
       const hitMesh = hitMeshes[paintControllerIndex];
 
-      let position, quaternion;
       if (hitMesh.visible) {
-        position = hitMesh.position;
-        quaternion = hitMesh.quaternion;
-      } else {
-        const pose = frame.getInputPose(inputSource);
-        localMatrix.fromArray(pose.targetRay.transformMatrix)
-          .decompose(localVector, localQuaternion, localVector2);
-        position = localVector;
-        quaternion = localQuaternion;
+        paintMesh.update(hitMesh.position, hitMesh.quaternion);
       }
-      paintMesh.update(position, quaternion);
     }
 
     const gamepads = navigator.getGamepads();
