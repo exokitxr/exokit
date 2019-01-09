@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script src="skin.js"></script>
   <script>
-    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh, hitMeshes;
+    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh, rayMeshes;
     let mesher = null;
     const waypoints = {};
     let numWaypoints = 0;
@@ -168,12 +168,12 @@
         mesh.frustumCulled = false;
         return mesh;
       };
-      hitMeshes = [
+      rayMeshes = [
         _makeHitMesh(),
         _makeHitMesh(),
       ];
-      hitMeshes.forEach(hitMesh => {
-        scene.add(hitMesh);
+      rayMeshes.forEach(rayMesh => {
+        scene.add(rayMesh);
       });
       
       const terrainMeshes = [];
@@ -463,15 +463,15 @@
                   .toArray(localVectorFloat32Array2)
               )
                 .then(result => {
-                  const hitMesh = hitMeshes[i];
+                  const rayMesh = rayMeshes[i];
                   if (result.length) {
                     const [{hitMatrix}] = result;
                     localMatrix
                       .fromArray(hitMatrix)
-                      .decompose(hitMesh.position, hitMesh.quaternion, localVector);
-                    hitMesh.visible = true;
+                      .decompose(rayMesh.position, rayMesh.quaternion, localVector);
+                    rayMesh.visible = true;
                   } else {
-                    hitMesh.visible = false;
+                    rayMesh.visible = false;
                   }
 
                   controllerHitTesting[i] = false;
@@ -479,7 +479,7 @@
 
               controllerHitTesting[i] = true;
             } else {
-              hitMeshes[i].visible = false;
+              rayMeshes[i].visible = false;
             }
           }
         }
