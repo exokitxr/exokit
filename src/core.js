@@ -983,6 +983,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return fakeVrDisplay;
     },
     getGamepads,
+    clipboard:{
+      read:() => Promise.resolve(), // Not implemented yet
+      readText: () => new Promise(resolve => {
+        resolve(nativeWindow.getClipboard().slice(0, 256));// why do we slice this?
+      }),
+      write:() => Promise.resolve(), // Not implemented yet
+      writeText: clipboardContents => new Promise(resolve => {
+        nativeWindow.setClipboard(clipboardContents);
+        resolve();
+      })
+    }
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
