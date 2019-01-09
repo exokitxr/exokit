@@ -738,10 +738,14 @@
                   };
                   const _checkCollision = () => {
                     if (!arrow.velocity.equals(zeroVector) && !arrow.hitTesting) {
-                      const startPosition = arrow.position.clone();
+                      const startPosition = arrow.position.clone()
+                        .add(
+                          localVector.set(0, 0, -0.5)
+                            .applyQuaternion(arrow.quaternion)
+                        );
 
                       display.session.requestHitTest(
-                        arrow.position
+                        startPosition
                           .toArray(localVectorFloat32Array),
                         localVector.set(0, 0, -1)
                           .applyQuaternion(arrow.quaternion)
@@ -754,7 +758,7 @@
                               .fromArray(hitMatrix)
                               .decompose(localVector, localQuaternion, localVector2);
 
-                            console.log('check distance', localVector.distanceTo(startPosition), arrow.velocity.length()*150);
+                            // console.log('check distance', localVector.distanceTo(startPosition), arrow.velocity.length()*150);
                             if (localVector.distanceTo(startPosition) < arrow.velocity.length()*150) {
                               console.log('got hit', localVector.toArray().join(','));
                               arrow.position.copy(localVector);
