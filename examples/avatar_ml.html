@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script src="skin.js"></script>
   <script>
-    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh, hitMeshes, rayMeshes;
+    let container, scene, camera, display, controllerMeshes, avatarMesh, rayMesh, destinationMesh, hitMeshes, controllerHitMeshes;
     let mesher = null;
     const waypoints = {};
     let numWaypoints = 0;
@@ -23,8 +23,6 @@
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
-    const localRay = new THREE.Ray();
-    const localPlane = new THREE.Plane();
     const localMatrixFloat32Array = new Float32Array(16);
     const localVectorFloat32Array = new Float32Array(3);
     const localVectorFloat32Array2 = new Float32Array(3);
@@ -170,23 +168,23 @@
         return mesh;
       };
       hitMeshes = [];
-      const rayMeshMaterial = new THREE.MeshPhongMaterial({
+      const controllerHitMeshMaterial = new THREE.MeshPhongMaterial({
         color: 0x673ab7,
       });
-      const _makeRayMesh = () => {
+      const _makeControllerHitMesh = () => {
         const geometry = cubeGeometry;
-        const material = rayMeshMaterial;
+        const material = controllerHitMeshMaterial;
         const mesh = new THREE.Mesh(geometry, material);
         mesh.visible = false;
         mesh.frustumCulled = false;
         return mesh;
       };
-      rayMeshes = [
-        _makeRayMesh(),
-        _makeRayMesh(),
+      controllerHitMeshes = [
+        _makeControllerHitMesh(),
+        _makeControllerHitMesh(),
       ];
-      rayMeshes.forEach(rayMesh => {
-        scene.add(rayMesh);
+      controllerHitMeshes.forEach(controllerHitMesh => {
+        scene.add(controllerHitMesh);
       });
       
       const terrainMeshes = [];
@@ -484,6 +482,8 @@
           // controllerMesh.updateMatrixWorld(true);
 
           if (!controllerHitTesting[i]) {
+            const controllerHitMesh = controllerHitMeshes[i];
+
             if (controllerMesh.position.length() > 0.3) {
               display.session.requestHitTest(
                 controllerMesh.position
@@ -493,13 +493,12 @@
                   .toArray(localVectorFloat32Array2)
               )
                 .then(result => {
-                  const rayMesh = rayMeshes[i];
                   if (result.length) {
                     const [{hitMatrix}] = result;
                     localMatrix
                       .fromArray(hitMatrix)
-                      .decompose(rayMesh.position, rayMesh.quaternion, localVector);
-                    rayMesh.visible = true;
+                      .decompose(controllerHitMesh.position, controllerHitMesh.quaternion, localVector2);
+                    controllerHitMesh.visible = true;
                   } else {
                     rayMesh.visible = false;
                   }
@@ -509,7 +508,7 @@
 
               controllerHitTesting[i] = true;
             } else {
-              rayMeshes[i].visible = false;
+              controllerHitMesh.visible = false;
             }
           }
         }
@@ -551,24 +550,10 @@
 
       session.onselect = e => {
         const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const controllerMesh = controllerMeshes[controllerIndex];
-        // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+        const controllerHitMesh = controllerHitMeshes[controllerIndex];
 
-        const intersection = localRay
-          .set(
-            controllerMesh.position,
-            localVector.set(0, 0, -1)
-              .applyQuaternion(controllerMesh.quaternion)
-          )
-          .intersectPlane(
-            localPlane.setFromNormalAndCoplanarPoint(
-              localVector.set(0, 1, 0),
-              localVector2.set(0, 0, 0)
-            ),
-            localVector
-          );
-        if (intersection) {
-          _animateTo(intersection.clone());
+        if (controllerHitMesh.visible) {
+          _animateTo(controllerHitMesh.position.clone());
         }
       };
 
