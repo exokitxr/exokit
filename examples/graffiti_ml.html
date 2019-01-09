@@ -20,6 +20,7 @@ const POINT_FRAME_RATE = 20;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localVectorFloat32Array = new Float32Array(3);
@@ -114,6 +115,7 @@ const _makePaintMesh = meshId => {
   mesh.meshId = meshId;
   let lastPoint = 0;
   let lastPointTime = 0;
+  const lastPosition = new THREE.Vector3();
   mesh.getBuffer = (endPoint = lastPoint) => {
     const positionSize = endPoint * 2 * 3;
     const uvSize = endPoint * 2 * 2;
@@ -148,19 +150,13 @@ const _makePaintMesh = meshId => {
         const colors = colorsAttribute.array;
         const uvs = uvsAttribute.array;
 
-        const paintbrushTipPosition = localVector.copy(position)
-          .add(
-            localVector2.set(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2))
-              .applyQuaternion(rotation)
-        );
-
         const brushSize = 0.025;
-        const direction = new THREE.Vector3(1, 0, 0)
+        const direction = localVector.set(1, 0, 0)
           .applyQuaternion(rotation);
-        const posA = paintbrushTipPosition.clone()
-          .add(direction.clone().multiplyScalar(brushSize / 2));
-        const posB = paintbrushTipPosition.clone()
-          .add(direction.clone().multiplyScalar(-brushSize / 2));
+        const posA = localVector2.copy(position)
+          .add(localVector3.copy(localVector).multiplyScalar(brushSize / 2));
+        const posB = localVector2.copy(position)
+          .add(localVector3.copy(localVector).multiplyScalar(-brushSize / 2));
 
         // positions
         const basePositionIndex = lastPoint * 2 * 3;
@@ -271,48 +267,12 @@ const _makePaintMesh = meshId => {
         lastPointTime = currentPointTime;
 
         geometry.setDrawRange(0, lastPoint * 2);
+
+        lastPosition.copy(position);
       }
     }
   };
-  mesh.load = buffer => {
-    const positionsAttribute = geometry.getAttribute('position');
-    const {array: positions} = positionsAttribute;
-    const normalsAttribute = geometry.getAttribute('normal');
-    const {array: normals} = normalsAttribute;
-    const colorsAttribute = geometry.getAttribute('color');
-    const {array: colors} = colorsAttribute;
-    const uvsAttribute = geometry.getAttribute('uv');
-    const {array: uvs} = uvsAttribute;
-
-    if ((buffer.byteOffset % 4) !== 0) {
-      const newBuffer = Buffer.from(new ArrayBuffer(buffer.length));
-      buffer.copy(newBuffer);
-      buffer = newBuffer;
-    }
-    const array = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Float32Array.BYTES_PER_ELEMENT);
-    const numPoints = array.length / ((2 * 3) + (2 * 3) + (2 * 3) + (2 * 2));
-    const dataPositionSize = numPoints * 2 * 3;
-    const dataUvSize = numPoints * 2 * 2;
-
-    const newPositions = array.slice(0, dataPositionSize);
-    const newNormals = array.slice(dataPositionSize, dataPositionSize * 2);
-    const newColors = array.slice(dataPositionSize * 2, dataPositionSize * 3);
-    const newUvs = array.slice(dataPositionSize * 3, (dataPositionSize * 3) + dataUvSize);
-
-    positions.set(newPositions);
-    normals.set(newNormals);
-    colors.set(newColors);
-    uvs.set(newUvs);
-
-    positionsAttribute.needsUpdate = true;
-    normalsAttribute.needsUpdate = true;
-    colorsAttribute.needsUpdate = true;
-    uvsAttribute.needsUpdate = true;
-
-    // lastPoint = numPoints;
-
-    geometry.setDrawRange(0, numPoints * 2);
-  };
+  mesh.getLastPosition = () => lastPosition;
 
   return mesh;
 };
@@ -437,7 +397,15 @@ function animate(time, frame) {
       const hitMesh = hitMeshes[paintControllerIndex];
 
       if (hitMesh.visible) {
-        paintMesh.update(hitMesh.position, hitMesh.quaternion);
+        paintMesh.update(
+          localVector
+            .copy(hitMesh.position)
+            .add(
+              localVector2.set(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2))
+                .applyQuaternion(hitMesh.quaternion)
+          ),
+          hitMesh.quaternion.clone()
+        );
       }
     }
 
