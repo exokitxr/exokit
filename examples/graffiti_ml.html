@@ -1,0 +1,499 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="skin.js"></script>
+<script>
+(() => {
+
+let container, scene, camera, display, controllerMeshes, hitMeshes;
+let mesher = null;
+
+const MAX_NUM_POINTS = 1024;
+const POINT_FRAME_RATE = 20;
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
+const localVectorFloat32Array = new Float32Array(3);
+const localVectorFloat32Array2 = new Float32Array(3);
+
+const _requestImage = src => new Promise((accept, reject) => {
+  const img = new Image();
+  img.src = src;
+  img.onload = () => {
+    accept(img);
+  };
+  img.onerror = err => {
+    reject(err);
+  };
+});
+
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
+
+const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.01, 0.1);
+const controllerMaterial = new THREE.MeshPhongMaterial({
+  color: 0x4caf50,
+});
+const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+  const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+  mesh.position.set(x, y, z);
+  mesh.quaternion.set(qx, qy, qz, qw);
+  // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+  mesh.updateMatrix();
+  mesh.updateMatrixWorld();
+  mesh.matrixAutoUpdate = false;
+  mesh.frustumCulled = false;
+  return mesh;
+};
+
+let paintMesh = null;
+let paintControllerIndex = -1;
+const paintMaterial = (() => {
+  const texture = new THREE.Texture(
+    null,
+    THREE.UVMapping,
+    THREE.ClampToEdgeWrapping,
+    THREE.ClampToEdgeWrapping,
+    THREE.NearestFilter,
+    THREE.NearestFilter,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType,
+    16
+  );
+  _requestImage('brush.png')
+    .then(brushImg => {
+      texture.image = brushImg;
+      texture.needsUpdate = true;
+    });
+
+  const material = new THREE.MeshPhongMaterial({
+    map: texture,
+    shininess: 0,
+    vertexColors: THREE.VertexColors,
+    // color: 0xFF0000,
+    side: THREE.DoubleSide,
+    transparent: true,
+    alphaTest: 0.5,
+  });
+  return material;
+})();
+const paintColor = new THREE.Color(0xe91e63);
+const paintMeshes = [];
+const _getPaintMesh = (meshId = Math.random().toString(36).substring(7)) => {
+  let paintMesh = paintMeshes.find(paintMesh => paintMesh.meshId === meshId);
+  if (!paintMesh) {
+    paintMesh = _makePaintMesh(meshId);
+    paintMeshes.push(paintMesh);
+    scene.add(paintMesh);
+  }
+  return paintMesh;
+};
+const _makePaintMesh = meshId => {
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(MAX_NUM_POINTS * 2 * 3);
+  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const normals = new Float32Array(MAX_NUM_POINTS * 2 * 3);
+  geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  const colors = new Float32Array(MAX_NUM_POINTS * 2 * 3);
+  geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const uvs = new Float32Array(MAX_NUM_POINTS * 2 * 2);
+  geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.setDrawRange(0, 0);
+
+  const mesh = new THREE.Mesh(geometry, paintMaterial);
+  mesh.drawMode = THREE.TriangleStripDrawMode;
+  mesh.frustumCulled = false;
+  mesh.meshId = meshId;
+  let lastPoint = 0;
+  let lastPointTime = 0;
+  let lastPosition = null;
+  mesh.getBuffer = (endPoint = lastPoint) => {
+    const positionSize = endPoint * 2 * 3;
+    const uvSize = endPoint * 2 * 2;
+    const array = new Float32Array(
+      positionSize + // position
+      positionSize + // normal
+      positionSize + // color
+      uvSize // uv
+    );
+    array.set(positions.slice(0, positionSize), 0); // position
+    array.set(normals.slice(0, positionSize), positionSize); // normal
+    array.set(colors.slice(0, positionSize), positionSize * 2); // color
+    array.set(uvs.slice(0, uvSize), positionSize * 3); // uv
+
+    return array.buffer;
+  };
+  const _getFrame = t => Math.floor(t / POINT_FRAME_RATE);
+  mesh.update = (position, rotation) => {
+    if (lastPoint < MAX_NUM_POINTS) {
+      const lastFrame = _getFrame(lastPointTime);
+      const currentPointTime = Date.now();
+      const currentFrame = _getFrame(currentPointTime);
+
+      if (currentFrame > lastFrame) {
+        const positionsAttribute = geometry.getAttribute('position');
+        const normalsAttribute = geometry.getAttribute('normal');
+        const colorsAttribute = geometry.getAttribute('color');
+        const uvsAttribute = geometry.getAttribute('uv');
+
+        const positions = positionsAttribute.array;
+        const normals = normalsAttribute.array;
+        const colors = colorsAttribute.array;
+        const uvs = uvsAttribute.array;
+
+        const brushSize = 0.025;
+        const direction = localVector.set(1, 0, 0)
+          .applyQuaternion(rotation);
+        const posA = localVector2.copy(position)
+          .add(localVector3.copy(direction).multiplyScalar(brushSize / 2));
+        const posB = localVector3.copy(position)
+          .add(localVector4.copy(direction).multiplyScalar(-brushSize / 2));
+
+        // positions
+        const basePositionIndex = lastPoint * 2 * 3;
+        positions[basePositionIndex + 0] = posA.x;
+        positions[basePositionIndex + 1] = posA.y;
+        positions[basePositionIndex + 2] = posA.z;
+        positions[basePositionIndex + 3] = posB.x;
+        positions[basePositionIndex + 4] = posB.y;
+        positions[basePositionIndex + 5] = posB.z;
+
+        // normals
+        (() => {
+          const pA = new THREE.Vector3();
+          const pB = new THREE.Vector3();
+          const pC = new THREE.Vector3();
+          const cb = new THREE.Vector3();
+          const ab = new THREE.Vector3();
+
+          const idx = lastPoint * 2 * 3;
+          for (let i = 0, il = idx; i < il; i++) {
+            normals[i] = 0;
+          }
+
+          let pair = true;
+          for (let i = 0, il = idx; i < il; i += 3) {
+            if (pair) {
+              pA.fromArray(positions, i);
+              pB.fromArray(positions, i + 3);
+              pC.fromArray(positions, i + 6);
+            } else {
+              pA.fromArray(positions, i + 3);
+              pB.fromArray(positions, i);
+              pC.fromArray(positions, i + 6);
+            }
+            pair = !pair;
+
+            cb.subVectors(pC, pB);
+            ab.subVectors(pA, pB);
+            cb.cross(ab);
+            cb.normalize();
+
+            normals[i] += cb.x;
+            normals[i + 1] += cb.y;
+            normals[i + 2] += cb.z;
+
+            normals[i + 3] += cb.x;
+            normals[i + 4] += cb.y;
+            normals[i + 5] += cb.z;
+
+            normals[i + 6] += cb.x;
+            normals[i + 7] += cb.y;
+            normals[i + 8] += cb.z;
+          }
+
+          /*
+          first and last vertice (0 and 8) belongs just to one triangle
+          second and penultimate (1 and 7) belongs to two triangles
+          the rest of the vertices belongs to three triangles
+            1_____3_____5_____7
+            /\    /\    /\    /\
+           /  \  /  \  /  \  /  \
+          /____\/____\/____\/____\
+          0    2     4     6     8
+          */
+
+          // Vertices that are shared across three triangles
+          for (let i = 2 * 3, il = idx - 2 * 3; i < il; i++) {
+            normals[i] = normals[i] / 3;
+          }
+
+          // Second and penultimate triangle, that shares just two triangles
+          normals[3] = normals[3] / 2;
+          normals[3 + 1] = normals[3 + 1] / 2;
+          normals[3 + 2] = normals[3 * 1 + 2] / 2;
+
+          normals[idx - 2 * 3] = normals[idx - 2 * 3] / 2;
+          normals[idx - 2 * 3 + 1] = normals[idx - 2 * 3 + 1] / 2;
+          normals[idx - 2 * 3 + 2] = normals[idx - 2 * 3 + 2] / 2;
+
+          mesh.geometry.normalizeNormals();
+        })();
+
+        // colors
+        for (let i = 0; i < 2; i++) {
+          const baseColorIndex = basePositionIndex + (i * 3);
+
+          colors[baseColorIndex + 0] = paintColor.r;
+          colors[baseColorIndex + 1] = paintColor.g;
+          colors[baseColorIndex + 2] = paintColor.b;
+        }
+
+        // uvs
+        for (let i = 0; i <= lastPoint; i++) {
+          const baseUvIndex = i * 2 * 2;
+
+          uvs[baseUvIndex + 0] = i / (lastPoint - 1);
+          uvs[baseUvIndex + 1] = 0;
+          uvs[baseUvIndex + 2] = i / (lastPoint - 1);
+          uvs[baseUvIndex + 3] = 1;
+        }
+
+        positionsAttribute.needsUpdate = true;
+        normalsAttribute.needsUpdate = true;
+        colorsAttribute.needsUpdate = true;
+        uvsAttribute.needsUpdate = true;
+
+        lastPoint++;
+        lastPointTime = currentPointTime;
+
+        geometry.setDrawRange(0, lastPoint * 2);
+
+        if (!lastPosition) {
+          lastPosition = new THREE.Vector3();
+        }
+        lastPosition.copy(position);
+      }
+    }
+  };
+  mesh.getLastPosition = () => lastPosition;
+
+  return mesh;
+};
+const _clearPaintMeshes = () => {
+  for (let i = 0; i < paintMeshes.length; i++) {
+    const paintMesh = paintMeshes[i];
+    scene.remove(paintMesh);
+    paintMesh.geometry.dispose();
+  }
+  paintMeshes.length = 0;
+};
+
+function init() {
+  container = document.createElement('div');
+  document.body.appendChild(container);
+
+  scene = new THREE.Scene();
+  scene.matrixAutoUpdate = false;
+  // scene.background = new THREE.Color(0x3B3961);<F2>
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  // camera.position.set(0, 1, 0);
+  camera.lookAt(new THREE.Vector3());
+  scene.add(camera);
+
+  const ambientLight = new THREE.AmbientLight(0x808080);
+  scene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+  directionalLight.position.set(1, 1, 1);
+  scene.add(directionalLight);
+
+  controllerMeshes = [
+    _makeControllerMesh(-0.1),
+    _makeControllerMesh(0.1),
+  ];
+  controllerMeshes.forEach(controllerMesh => {
+    scene.add(controllerMesh);
+  });
+
+  const cubeGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.001);
+  const hitMeshMaterial = new THREE.MeshPhongMaterial({
+    color: 0x673ab7,
+  });
+  const _makeHitMesh = () => {
+    const geometry = cubeGeometry;
+    const material = hitMeshMaterial;
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.visible = false;
+    mesh.frustumCulled = false;
+    return mesh;
+  };
+  hitMeshes = [
+    _makeHitMesh(),
+    _makeHitMesh(),
+  ];
+  hitMeshes.forEach(hitMesh => {
+    scene.add(hitMesh);
+  });
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+  });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // window.browser.magicleap.RequestDepthPopulation(true);
+  // renderer.autoClear = false;
+
+  container.appendChild(renderer.domElement);
+
+  renderer.setAnimationLoop(animate);
+}
+
+const lastGrabbeds = [false, false];
+const lastMenus = [false, false];
+const controllerHitTesting = [false, false];
+function animate(time, frame) {
+  if (renderer.vr.enabled) {
+    const inputSources = display.session.getInputSources();
+
+    for (let i = 0; i < inputSources.length; i++) {
+      const inputSource = inputSources[i];
+      const pose = frame.getInputPose(inputSource);
+      const controllerIndex = _getControllerIndex(inputSource);
+
+      const controllerMesh = controllerMeshes[controllerIndex];
+      controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+      controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+      // controllerMesh.updateMatrixWorld(true);
+
+      if (!controllerHitTesting[controllerIndex]) {
+        const hitMesh = hitMeshes[controllerIndex];
+
+        display.session.requestHitTest(
+          controllerMesh.position
+            .toArray(localVectorFloat32Array),
+          localVector.set(0, 0, -1)
+            .applyQuaternion(controllerMesh.quaternion)
+            .toArray(localVectorFloat32Array2)
+        )
+          .then(result => {
+            if (result.length) {
+              const [{hitMatrix}] = result;
+              localMatrix
+                .fromArray(hitMatrix)
+                .decompose(hitMesh.position, hitMesh.quaternion, localVector2);
+              hitMesh.visible = true;
+            } else {
+              hitMesh.visible = false;
+            }
+
+            controllerHitTesting[controllerIndex] = false;
+          });
+
+        controllerHitTesting[controllerIndex] = true;
+      }
+    }
+
+    if (paintMesh) {
+      const hitMesh = hitMeshes[paintControllerIndex];
+
+      if (hitMesh.visible) {
+        if (paintMesh.getLastPosition() && paintMesh.getLastPosition().distanceTo(hitMesh.position) > 0.2) {
+          paintMesh = _getPaintMesh();
+        }
+
+        paintMesh.update(
+          localVector
+            .copy(hitMesh.position)
+            .add(
+              localVector2.set(0, 0, -0.001)
+                .applyQuaternion(hitMesh.quaternion)
+          ).clone(),
+          hitMesh.quaternion.clone()
+        );
+      }
+    }
+
+    const gamepads = navigator.getGamepads();
+    for (let i = 0; i < gamepads.length; i++) {
+      const gamepad = gamepads[i];
+      const controllerIndex = gamepad.hand === 'left' ? 0 : 1;
+
+      const grabbed = gamepad.buttons[2].pressed;
+      const lastGrabbed = lastGrabbeds[controllerIndex];
+      if (grabbed && !lastGrabbed) {
+        _clearPaintMeshes();
+
+        paintMesh = null;
+        paintControllerIndex = -1;
+      }
+      lastGrabbeds[controllerIndex] = grabbed;
+
+      const menu = gamepad.buttons[3].pressed;
+      const lastMenu = lastMenus[controllerIndex];
+      if (menu && !lastMenu) {
+        terrainMeshesVisible = !terrainMeshesVisible;
+        for (let j = 0; j < terrainMeshes.length; j++) {
+          terrainMeshes[j].visible = terrainMeshesVisible;
+        }
+      }
+      lastMenus[controllerIndex] = menu;
+    }
+  }
+
+  renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+}
+
+init();
+
+(async () => {
+  console.log('request device');
+  display = await navigator.xr.requestDevice();
+  console.log('request session');
+  const session = await display.requestSession({
+    exclusive: true,
+  });
+  display.session = session;
+
+  session.onselectstart = e => {
+    if (!paintMesh) {
+      paintMesh = _getPaintMesh();
+      paintControllerIndex = _getControllerIndex(e.inputSource);
+    }
+  };
+  session.onselectend = e => {
+    if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
+      paintMesh = null;
+      paintControllerIndex = -1;
+    }
+  };
+
+  // console.log('request first frame');
+  session.requestAnimationFrame((timestamp, frame) => {
+    renderer.vr.setSession(session, {
+      frameOfReferenceType: 'stage',
+    });
+
+    const viewport = session.baseLayer.getViewport(frame.views[0]);
+    const width = viewport.width;
+    const height = viewport.height;
+
+    renderer.setSize(width * 2, height);
+
+    renderer.setAnimationLoop(null);
+
+    renderer.vr.enabled = true;
+    renderer.vr.setDevice(display);
+    renderer.vr.setAnimationLoop(animate);
+
+    console.log('running!');
+  });
+})();
+
+})();
+</script>
+  </body>
+</html>
