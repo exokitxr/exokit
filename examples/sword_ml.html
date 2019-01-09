@@ -191,7 +191,6 @@
                     .fromArray(hitMatrix)
                     .decompose(localVector, localQuaternion, localVector2);
 
-                  console.log('check distance', localVector.distanceTo(startPosition));
                   if (localVector.distanceTo(startPosition) < 1) {
                     console.log('got hit', localVector.toArray().join(','), localQuaternion.toArray().join(','));
                     _makeParticles(localVector, localQuaternion);
