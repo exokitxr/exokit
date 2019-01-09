@@ -413,9 +413,11 @@
                 .set(0, avatarHeight/2, 0)
             );
           rayMesh.quaternion.copy(avatarMesh.quaternion);
+          rayMesh.updateMatrixWorld();
 
           destinationMesh.position.copy(endPosition);
           destinationMesh.quaternion.copy(endQuaternion);
+          destinationMesh.updateMatrixWorld();
           
           if (factor < 1) {
             if (display.session && !animation.hitTesting) {
