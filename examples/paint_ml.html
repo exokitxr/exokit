@@ -20,6 +20,7 @@ const POINT_FRAME_RATE = 20;
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localEuler = new THREE.Euler();
 const localMatrix = new THREE.Matrix4();
@@ -146,19 +147,13 @@ const _makePaintMesh = meshId => {
         const colors = colorsAttribute.array;
         const uvs = uvsAttribute.array;
 
-        const paintbrushTipPosition = localVector.copy(position)
-          .add(
-            localVector2.set(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2))
-              .applyQuaternion(rotation)
-        );
-
         const brushSize = 0.025;
         const direction = localVector.set(1, 0, 0)
           .applyQuaternion(rotation);
         const posA = localVector2.copy(position)
-          .add(localVector3.copy(localVector).multiplyScalar(brushSize / 2));
-        const posB = localVector2.copy(position)
-          .add(localVector3.copy(localVector).multiplyScalar(-brushSize / 2));
+          .add(localVector3.copy(direction).multiplyScalar(brushSize / 2));
+        const posB = localVector3.copy(position)
+          .add(localVector4.copy(direction).multiplyScalar(-brushSize / 2));
 
         // positions
         const basePositionIndex = lastPoint * 2 * 3;
@@ -359,7 +354,7 @@ function animate(time, frame) {
           localVector2.set(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2))
             .applyQuaternion(localQuaternion)
       );
-      paintMesh.update(localVector.clone(), localQuaternion);
+      paintMesh.update(localVector.clone(), localQuaternion.clone());
     }
 
     const gamepads = navigator.getGamepads();

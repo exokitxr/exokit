@@ -21,6 +21,7 @@ const POINT_FRAME_RATE = 20;
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
+const localVector4 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localVectorFloat32Array = new Float32Array(3);
@@ -154,9 +155,9 @@ const _makePaintMesh = meshId => {
         const direction = localVector.set(1, 0, 0)
           .applyQuaternion(rotation);
         const posA = localVector2.copy(position)
-          .add(localVector3.copy(localVector).multiplyScalar(brushSize / 2));
-        const posB = localVector2.copy(position)
-          .add(localVector3.copy(localVector).multiplyScalar(-brushSize / 2));
+          .add(localVector3.copy(direction).multiplyScalar(brushSize / 2));
+        const posB = localVector3.copy(position)
+          .add(localVector4.copy(direction).multiplyScalar(-brushSize / 2));
 
         // positions
         const basePositionIndex = lastPoint * 2 * 3;
