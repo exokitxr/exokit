@@ -62,6 +62,7 @@
         const particle = _makeParticle();
         particle.position.copy(position);
         particle.quaternion.copy(rotation);
+        particle.updateMatrix();
         particle.updateMatrixWorld();
         particle.velocity = new THREE.Vector3(
           (Math.random() - 0.5) * 0.01,
@@ -215,9 +216,8 @@
                     .set(0, -9.8, 0)
                     .multiplyScalar(timeDiff / 1000 * 0.002)
                 );
-                particle.matrix.decompose(particle.position, particle.quaternion, particle.scale);
                 particle.position.add(particle.velocity);
-                particle.matrix.compose(particle.position, particle.quaternion, particle.scale);
+                particle.updateMatrix();
                 particle.updateMatrixWorld();
               } else {
                 scene.remove(particle);
