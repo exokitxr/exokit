@@ -433,7 +433,8 @@
                       if (localVector.distanceTo(startPosition) < 1) {
                         const hitMesh = _makeHitMesh();
                         hitMesh.endTime = Date.now() + 5000;
-                        hitMesh.position.copy(localVector, localQuaternion, localVector2);
+                        hitMesh.position.copy(localVector);
+                        hitMesh.quaternion.copy(localQuaternion);
                         scene.add(hitMesh);
                         hitMeshes.push(hitMesh);
 
