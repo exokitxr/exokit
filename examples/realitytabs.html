@@ -7,7 +7,7 @@
     <script src="svg-boundings.js"></script>
     <script src="sprite3d.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false], scrollAxis = 0, scaleAxis = 0, moveMode = false;
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false], scrollAxis = 0, scaleAxis = 0;
 
 const links = [
   {
@@ -1416,7 +1416,7 @@ function animate(time, frame) {
 	  );
 	iframe.position = localVector.toArray();
 	iframe.orientation = localQuaternion.toArray();
-        iframe.scale = scale.toArray();
+       iframe.scale = scale.toArray();
       }
     }
   }
@@ -1454,7 +1454,6 @@ function animate(time, frame) {
           const pressed = gamepad.buttons[1].pressed;
           const lastPressed = lastPresseds[i];
           if (pressed && !lastPressed) {
-            moveMode = false;
             moves[i] = null;
           }
         }
@@ -1775,7 +1774,6 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
-                          moveMode = true;
                           moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
                         }
 
@@ -1895,7 +1893,7 @@ function animate(time, frame) {
       const lastAxis = lastAxes[i];
       const lastAxisValid = lastAxesValid[i];
 
-      if (padTouched && lastAxisValid && moveMode == false) {
+      if (padTouched && lastAxisValid && moves[i] == null) {
         const dx = axes[0] - lastAxis[0];
         const dy = axes[1] - lastAxis[1];
 
