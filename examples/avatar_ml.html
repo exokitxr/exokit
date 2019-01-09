@@ -33,14 +33,30 @@
     const cubeSize = 0.2;
     const cubeRange = 1;
     const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
-    const pointGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01, 0.01, 0.01));
-    const pointMaterial = new THREE.MeshPhongMaterial({
-      color: 0x42a5f5,
+    const smallCubeGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+    const hitMeshMaterial = new THREE.MeshPhongMaterial({
+      color: 0xf44336,
     });
-    const lineGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01/2, 0.01/2, 1));
-    const lineMaterial = new THREE.MeshPhongMaterial({
-      color: 0xFFFFFF,
+    const _makeHitMesh = () => {
+      const geometry = smallCubeGeometry;
+      const material = hitMeshMaterial;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.visible = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    hitMeshes = [];
+    const controllerHitMeshMaterial = new THREE.MeshPhongMaterial({
+      color: 0x673ab7,
     });
+    const _makeControllerHitMesh = () => {
+      const geometry = smallCubeGeometry;
+      const material = controllerHitMeshMaterial;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.visible = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
 
     function init() {
       container = document.createElement('div');
@@ -144,7 +160,6 @@
       })();
       scene.add(rayMesh);
 
-      const cubeGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
       destinationMesh = (() => {
         const geometry = cubeGeometry;
         const material = new THREE.MeshPhongMaterial({
@@ -156,29 +171,6 @@
       })();
       scene.add(destinationMesh);
 
-      const hitMeshMaterial = new THREE.MeshPhongMaterial({
-        color: 0xf44336,
-      });
-      const _makeHitMesh = () => {
-        const geometry = cubeGeometry;
-        const material = hitMeshMaterial;
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = false;
-        mesh.frustumCulled = false;
-        return mesh;
-      };
-      hitMeshes = [];
-      const controllerHitMeshMaterial = new THREE.MeshPhongMaterial({
-        color: 0x673ab7,
-      });
-      const _makeControllerHitMesh = () => {
-        const geometry = cubeGeometry;
-        const material = controllerHitMeshMaterial;
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = false;
-        mesh.frustumCulled = false;
-        return mesh;
-      };
       controllerHitMeshes = [
         _makeControllerHitMesh(),
         _makeControllerHitMesh(),
