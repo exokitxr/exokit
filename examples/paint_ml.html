@@ -357,7 +357,7 @@ function animate(time, frame) {
       localVector
         .add(
           localVector2.set(0, 0, -(0.05 / 2) - (0.03 / 2) - (0.1 / 2))
-            .applyQuaternion(hitMesh.quaternion)
+            .applyQuaternion(localQuaternion)
       );
       paintMesh.update(localVector.clone(), localQuaternion);
     }
