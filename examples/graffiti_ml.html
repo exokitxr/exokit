@@ -355,11 +355,13 @@ function init() {
     scene.add(controllerMesh);
   });
 
+  const cubeGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+  const hitMeshMaterial = new THREE.MeshPhongMaterial({
+    color: 0x673ab7,
+  });
   const _makeHitMesh = () => {
     const geometry = cubeGeometry;
-    const material = new THREE.MeshPhongMaterial({
-      color: 0x673ab7,
-    });
+    const material = hitMeshMaterial;
     const mesh = new THREE.Mesh(geometry, material);
     mesh.visible = false;
     mesh.frustumCulled = false;
