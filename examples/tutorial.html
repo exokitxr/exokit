@@ -1,0 +1,180 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="GLTFLoader.js"></script>
+  <script>
+    let container, scene, camera, display, model;
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      const floorMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, 1),
+              new THREE.Vector3(0, 1, 0)
+            )
+          ));
+        const uvs = geometry.attributes.uv.array;
+        const numUvs = uvs.length / 2;
+        for (let i = 0; i < numUvs; i++) {
+          uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
+          uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
+        }
+
+        const texture = new THREE.Texture(
+          null,
+          THREE.UVMapping,
+          THREE.RepeatWrapping,
+          THREE.RepeatWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+
+        const graphImg = new Image();
+        graphImg.crossOrigin = 'Anonymous';
+        graphImg.src = 'graphy.png';
+        graphImg.onload = () => {
+          texture.image = graphImg;
+          texture.needsUpdate = true;
+        };
+        graphImg.onerror = err => {
+          console.warn(err.stack);
+        };
+
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      scene.add(floorMesh);
+
+      {
+        const loader = new THREE.GLTFLoader(); // .setPath( 'models/' );
+        loader.load( 'exobot.glb', function ( o ) {
+
+          o = o.scene;
+
+          // o.position.z = -1;
+          o.rotation.order = 'YXZ';
+          o.scale.set(0.2, 0.2, 0.2);
+          /* o.traverse(e => {
+            e.castShadow = true;
+          }); */
+
+          /* o.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 0, -1),
+            new THREE.Vector3(0, 0, 1)
+          ); */
+          o.updateMatrixWorld();
+          // o.frustumCulled = false;
+          for (let i = 0; i < o.children.length; i++) {
+            o.children[i].frustumCulled = false;
+          }
+
+          model = o;
+
+          scene.add(o);
+          // scene.add(o.children[0]);
+          // scene.add(o.children[0]);
+
+        }, undefined, function ( e ) {
+
+          console.error( e );
+
+        } );
+      }
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    function animate(time, frame) {
+      if (model) {
+        const animationTime = 4000;
+        const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
+        model.position.y = Math.sin(f) * 0.05;
+        model.rotation.y = Math.sin(f*2) * Math.PI*2*0.05;
+        model.rotation.z = Math.cos(f*2) * Math.PI*2*0.05;
+        model.updateMatrixWorld();
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+  </script>
+  </body>
+</html>
