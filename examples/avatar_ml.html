@@ -515,7 +515,7 @@
           const localHitMeshes = hitMeshes.slice();
           for (let i = 0; i < localHitMeshes.length; i++) {
             const hitMesh = localHitMeshes[i];
-            if (hitMesh.endTime >= now) {
+            if (now >= hitMesh.endTime) {
               scene.remove(hitMesh);
               hitMeshes.splice(hitMeshes.indexOf(hitMesh), 1);
             }
