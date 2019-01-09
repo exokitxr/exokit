@@ -553,7 +553,9 @@
         const controllerHitMesh = controllerHitMeshes[controllerIndex];
 
         if (controllerHitMesh.visible) {
-          _animateTo(controllerHitMesh.position.clone());
+          const destination = controllerHitMesh.position.clone();
+          destination.y = 0;
+          _animateTo(destination);
         }
       };
 
