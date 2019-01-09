@@ -180,7 +180,8 @@
             display.session.requestHitTest(
               swordMesh.position
                 .toArray(localVectorFloat32Array),
-              localVector.set(0, 0, -1)
+              localVector.set(0, 1, -1)
+                .normalize()
                 .applyQuaternion(swordMesh.quaternion)
                 .toArray(localVectorFloat32Array2)
             )
