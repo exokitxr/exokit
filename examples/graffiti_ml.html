@@ -403,6 +403,8 @@ function animate(time, frame) {
       // controllerMesh.updateMatrixWorld(true);
 
       if (!controllerHitTesting[i]) {
+        const hitMesh = hitMeshes[i];
+
         display.session.requestHitTest(
           controllerMesh.position
             .toArray(localVectorFloat32Array),
@@ -411,7 +413,6 @@ function animate(time, frame) {
             .toArray(localVectorFloat32Array2)
         )
           .then(result => {
-            const hitMesh = hitMeshes[i];
             if (result.length) {
               const [{hitMatrix}] = result;
               localMatrix
