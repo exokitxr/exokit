@@ -200,6 +200,7 @@
           }
         };
         const _updateParticles = () => {
+          const now = Date.now();
           const localParticles = particles.slice();
           for (let i = 0; i < localParticles.length; i++) {
             const particle = localParticles[i];
