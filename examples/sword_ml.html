@@ -130,7 +130,11 @@
       renderer.setAnimationLoop(animate);
     }
 
+    let lastUpdateTime = Date.now();
     function animate(time, frame) {
+      const now = Date.now();
+      const timeDiff = now - lastUpdateTime;
+
       if (renderer.vr.enabled) {
         const gamepads = navigator.getGamepads();
         const inputSources = display.session.getInputSources();
@@ -201,9 +205,6 @@
         };
         const _updateParticles = () => {
           if (particles.length > 0) {
-            const now = Date.now();
-            const timeDiff = now - bulletUpdateTime;
-
             const localParticles = particles.slice();
             for (let i = 0; i < localParticles.length; i++) {
               const particle = localParticles[i];
@@ -229,6 +230,8 @@
         _updateGrab();
         _updateHitTest();
         _updateParticles();
+
+        lastUpdateTime = now;
       }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
