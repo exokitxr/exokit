@@ -1352,7 +1352,7 @@ NAN_METHOD(GetClipboard) {
 
 NAN_METHOD(SetClipboard) {
   NATIVEwindow *window = GetCurrentWindowContext();
-  if (info.Length() == 1) {
+  if (info.Length() == 1 && info[0]->IsString()) {
     Nan::Utf8String utf8_value(info[0]);
     glfwSetClipboardString(window, *utf8_value);   
   } else {
