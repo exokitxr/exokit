@@ -431,6 +431,8 @@
                         .decompose(localVector, localQuaternion, localVector2);
 
                       if (localVector.distanceTo(startPosition) < 1) {
+                        console.log('hit at', localVector.toArray().join(','));
+
                         const hitMesh = _makeHitMesh();
                         hitMesh.endTime = Date.now() + 5000;
                         hitMesh.position.copy(localVector);
