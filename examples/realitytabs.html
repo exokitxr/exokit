@@ -427,22 +427,6 @@ for (let i = 0; i < 2; i++) {
   controllerMeshes[i] = controllerMesh;
 }
 
-// local scene
-
-const cubeMesh = (() => {
-  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-  const material = new THREE.MeshPhongMaterial({
-    color: 0x9ccc65,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.y = 1.5;
-  mesh.position.z = -1;
-  mesh.rotation.order = 'YXZ';
-  mesh.frustumCulled = false;
-  return mesh;
-})();
-scene.add(cubeMesh);
-
 // rig
 
 let focusedTab = null;
@@ -1924,9 +1908,6 @@ function animate(time, frame) {
   _updateButtons();
 
   const _render = () => {
-    // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
-    cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
-
     renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
   };
   _render();
