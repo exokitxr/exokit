@@ -422,6 +422,7 @@
           if (factor < 1) {
             if (display.session && !animation.hitTesting) {
               const localAnimation = animation;
+              const startPosition = rayMesh.position.clone();
               display.session.requestHitTest(
                 rayMesh.position
                   .toArray(localVectorFloat32Array),
@@ -432,26 +433,30 @@
                 .then(results => {
                   if (animation === localAnimation) {
                     if (results.length) {
-                      const hitMesh = _makeHitMesh();
-                      hitMesh.endTime = Date.now() + 5000;
                       const [{hitMatrix}] = results;
                       localMatrix
                         .fromArray(hitMatrix)
-                        .decompose(hitMesh.position, hitMesh.quaternion, localVector2);
-                      scene.add(hitMesh);
-                      hitMeshes.push(hitMesh);
+                        .decompose(localVector, localQuaternion, localVector2);
 
-                      _animateTo(
-                        avatarMesh.position.clone()
-                        .add(
-                          localVector
-                            .set(0, 0, 0.3)
-                            .applyQuaternion(avatarMesh.quaternion)
-                        )
-                      );
+                      if (localVector.distanceTo(startPosition) < 1) {
+                        const hitMesh = _makeHitMesh();
+                        hitMesh.endTime = Date.now() + 5000;
+                        hitMesh.position.copy(localVector, localQuaternion, localVector2);
+                        scene.add(hitMesh);
+                        hitMeshes.push(hitMesh);
+
+                        _animateTo(
+                          avatarMesh.position.clone()
+                          .add(
+                            localVector
+                              .set(0, 0, 0.3)
+                              .applyQuaternion(avatarMesh.quaternion)
+                          )
+                        );
+                      }
+
+                      animation.hitTesting = false;
                     }
-
-                    animation.hitTesting = false;
                   }
                 })
                 .catch(err => {
