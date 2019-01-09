@@ -200,23 +200,27 @@
           }
         };
         const _updateParticles = () => {
-          const now = Date.now();
-          const localParticles = particles.slice();
-          for (let i = 0; i < localParticles.length; i++) {
-            const particle = localParticles[i];
-            if (now < particle.endTime) {
-              particle.velocity.add(
-                localVector
-                  .set(0, -9.8, 0)
-                  .multiplyScalar(timeDiff / 1000 * 0.002)
-              );
-              particle.matrix.decompose(particle.position, particle.quaternion, particle.scale);
-              particle.position.add(particle.velocity);
-              particle.matrix.compose(particle.position, particle.quaternion, particle.scale);
-              particle.updateMatrixWorld(true);
-            } else {
-              scene.remove(particle);
-              particles.splice(particles.indexOf(particle), 1);
+          if (particles.length > 0) {
+            const now = Date.now();
+            const timeDiff = now - bulletUpdateTime;
+
+            const localParticles = particles.slice();
+            for (let i = 0; i < localParticles.length; i++) {
+              const particle = localParticles[i];
+              if (now < particle.endTime) {
+                particle.velocity.add(
+                  localVector
+                    .set(0, -9.8, 0)
+                    .multiplyScalar(timeDiff / 1000 * 0.002)
+                );
+                particle.matrix.decompose(particle.position, particle.quaternion, particle.scale);
+                particle.position.add(particle.velocity);
+                particle.matrix.compose(particle.position, particle.quaternion, particle.scale);
+                particle.updateMatrixWorld(true);
+              } else {
+                scene.remove(particle);
+                particles.splice(particles.indexOf(particle), 1);
+              }
             }
           }
         };
