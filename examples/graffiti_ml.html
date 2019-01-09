@@ -418,7 +418,7 @@ function animate(time, frame) {
               const [{hitMatrix}] = result;
               localMatrix
                 .fromArray(hitMatrix)
-                .decompose(hitMesh.position, hitMesh.quaternion, localVector);
+                .decompose(hitMesh.position, hitMesh.quaternion, localVector2);
               hitMesh.visible = true;
             } else {
               hitMesh.visible = false;
