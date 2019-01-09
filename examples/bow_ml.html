@@ -762,6 +762,12 @@
                             if (localVector.distanceTo(startPosition) < arrow.velocity.length()*50) {
                               console.log('got hit', localVector.toArray().join(','));
                               arrow.position.copy(localVector);
+                              arrow.quaternion.setFromUnitVectors(
+                                localVector2.set(0, 0, -1),
+                                localVector
+                                  .sub(startPosition)
+                                  .normalize()
+                              );
                               arrow.updateMatrixWorld();
 
                               arrow.velocity.copy(zeroVector);
