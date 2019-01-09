@@ -57,7 +57,7 @@
       return mesh;
     };
     const _makeParticles = (position, rotation) => {
-      const numParticles = 10 + Math.floor(Math.random() * 20);
+      const numParticles = 1 + Math.floor(Math.random() * 3);
       for (let j = 0; j < numParticles; j++) {
         const particle = _makeParticle();
         particle.position.copy(position);
@@ -206,6 +206,7 @@
         const _updateParticles = () => {
           if (particles.length > 0) {
             const localParticles = particles.slice();
+
             for (let i = 0; i < localParticles.length; i++) {
               const particle = localParticles[i];
               if (now < particle.endTime) {
