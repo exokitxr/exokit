@@ -427,7 +427,7 @@
                 rayMesh.position
                   .toArray(localVectorFloat32Array),
                 localVector.set(0, 0, -1)
-                  .applyQuatenion(rayMesh.quaternion)
+                  .applyQuaternion(rayMesh.quaternion)
                   .toArray(localVectorFloat32Array2)
               )
                 .then(results => {
