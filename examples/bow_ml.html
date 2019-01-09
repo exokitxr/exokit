@@ -755,8 +755,11 @@
                               .fromArray(hitMatrix)
                               .decompose(localVector, localQuaternion, localVector2);
 
-                            if (localVector.distanceTo(startPosition) < 0.3) {
+                            if (localVector.distanceTo(startPosition) < arrow.velocity.length() * 2) {
                               console.log('got hit', localVector.toArray().join(','), localQuaternion.toArray().join(','));
+                              arrow.position.copy(localVector);
+                              arrow.updateMatrixWorld();
+
                               arrow.velocity.copy(zeroVector);
                             }
                           }
