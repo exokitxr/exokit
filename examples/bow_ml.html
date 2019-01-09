@@ -757,7 +757,7 @@
 
                             if (localVector.distanceTo(startPosition) < 0.3) {
                               console.log('got hit', localVector.toArray().join(','), localQuaternion.toArray().join(','));
-                              arrowMesh.velocity.copy(zeroVector);
+                              arrow.velocity.copy(zeroVector);
                             }
                           }
 
