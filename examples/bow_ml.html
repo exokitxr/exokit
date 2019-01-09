@@ -139,6 +139,7 @@
       arrowMesh.startTime = 0;
       arrowMesh.lastTime = 0;
       arrowMesh.velocity = new THREE.Vector3();
+      arrowMesh.hitTesting = false;
       arrowMesh.updatePull = position => {
         if (position !== null) {
           arrowMesh.position.copy(position);
@@ -159,15 +160,6 @@
         }
         // arrowMesh.updateMatrixWorld();
       };
-      arrowMesh.checkCollision = _debounce(next => {
-        stck.requestCheck(arrowMesh.position, arrowMesh.quaternion, collided => {
-          if (collided) {
-            arrowMesh.velocity.copy(zeroVector);
-          }
-
-          next();
-        });
-      });
 
       return arrowMesh;
     };
@@ -741,14 +733,41 @@
                     velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
 
                     arrow.lastTime = now;
+                  };
+                  const _checkCollision = () => {
+                    if (!arrow.hitTesting) {
+                      const startPosition = arrow.position.clone();
 
-                    return false;
+                      display.session.requestHitTest(
+                        arrow.position
+                          .toArray(localVectorFloat32Array),
+                        localVector.set(0, 1, -1)
+                          .normalize()
+                          .applyQuaternion(arrow.quaternion)
+                          .toArray(localVectorFloat32Array2)
+                      )
+                        .then(result => {
+                          if (result.length) {
+                            const [{hitMatrix}] = result;
+                            localMatrix
+                              .fromArray(hitMatrix)
+                              .decompose(localVector, localQuaternion, localVector2);
+
+                            if (localVector.distanceTo(startPosition) < 0.3) {
+                              console.log('got hit', localVector.toArray().join(','), localQuaternion.toArray().join(','));
+                              arrowMesh.velocity.copy(zeroVector);
+                            }
+                          }
+
+                          arrow.hitTesting = false;
+                        });
+
+                      arrow.hitTesting = true;
+                    }
                   };
 
-                  // if (!(_hitNpc() || _advanceArrow())) {
-                  if (_advanceArrow()) {
-                    arrow.checkCollision();
-                  }
+                  _advanceArrow();
+                  _checkCollision();
                 }
               } else {
                 removedArrows.push(arrow);
