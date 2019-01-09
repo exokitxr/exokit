@@ -405,7 +405,15 @@ function animate(time, frame) {
           paintMesh = _getPaintMesh();
         }
 
-        paintMesh.update(hitMesh.position.clone(), hitMesh.quaternion.clone());
+        paintMesh.update(
+          localVector
+            .copy(hitMesh.position)
+            .add(
+              localVector2.set(0, 0, -0.001)
+                .applyQuaternion(hitMesh.quaternion)
+          ).clone(),
+          hitMesh.quaternion.clone()
+        );
       }
     }
 
