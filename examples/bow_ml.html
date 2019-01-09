@@ -759,7 +759,7 @@
                               console.log('got hit', localVector.toArray().join(','));
                               arrow.quaternion.setFromUnitVectors(
                                 localVector2.set(0, 0, -1),
-                                localVector
+                                localVector3
                                   .sub(startPosition)
                                   .normalize()
                               );
