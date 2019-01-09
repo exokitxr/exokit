@@ -758,8 +758,8 @@
                               .fromArray(hitMatrix)
                               .decompose(localVector, localQuaternion, localVector2);
 
-                            // console.log('check distance', localVector.distanceTo(startPosition), arrow.velocity.length()*150);
-                            if (localVector.distanceTo(startPosition) < arrow.velocity.length()*150) {
+                            // console.log('check distance', localVector.distanceTo(startPosition), arrow.velocity.length()*50);
+                            if (localVector.distanceTo(startPosition) < arrow.velocity.length()*50) {
                               console.log('got hit', localVector.toArray().join(','));
                               arrow.position.copy(localVector);
                               arrow.updateMatrixWorld();
