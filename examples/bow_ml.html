@@ -738,14 +738,10 @@
                   };
                   const _checkCollision = () => {
                     if (!arrow.velocity.equals(zeroVector) && !arrow.hitTesting) {
-                      const startPosition = arrow.position.clone()
-                        .add(
-                          localVector.set(0, 0, -0.5)
-                            .applyQuaternion(arrow.quaternion)
-                        );
+                      const startPosition = arrow.position.clone();
 
                       display.session.requestHitTest(
-                        startPosition
+                        arrow.position
                           .toArray(localVectorFloat32Array),
                         localVector.set(0, 0, -1)
                           .applyQuaternion(arrow.quaternion)
@@ -761,13 +757,18 @@
                             // console.log('check distance', localVector.distanceTo(startPosition), arrow.velocity.length()*50);
                             if (localVector.distanceTo(startPosition) < arrow.velocity.length()*50) {
                               console.log('got hit', localVector.toArray().join(','));
-                              arrow.position.copy(localVector);
                               arrow.quaternion.setFromUnitVectors(
                                 localVector2.set(0, 0, -1),
                                 localVector
                                   .sub(startPosition)
                                   .normalize()
                               );
+                              arrow.position
+                                .copy(localVector)
+                                .add(
+                                  localVector2.set(0, 0, 0.5)
+                                    .applyQuaternion(arrow.quaternion)
+                                );
                               arrow.updateMatrixWorld();
 
                               arrow.velocity.copy(zeroVector);
