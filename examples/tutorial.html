@@ -189,11 +189,12 @@
         endTime: now + animationTime*startPosition.distanceTo(endPosition),
         startPosition,
         startQuaternion: model.quaternion.clone(),
-        endQuaternion: new THREE.Quaternion().setFromUnitVectors(
-          new THREE.Vector3(0, 0, -1),
-          localVector
-            .copy(endPosition)
-            .normalize()
+        endQuaternion: localQuaternion.setFromRotationMatrix(
+          localMatrix.lookAt(
+            endPosition,
+            localVector.set(0, 1.5, 0),
+            localVector2.set(0, 1, 0),
+          )
         ),
         endPosition,
         update() {
