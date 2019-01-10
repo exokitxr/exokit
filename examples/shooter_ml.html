@@ -176,7 +176,6 @@
             rayMesh.matrix.fromArray(pose.targetRay.transformMatrix);
             rayMesh.matrix.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
             rayMesh.updateMatrixWorld(true);
-            // console.log('ray mesh position', rayMesh.position.toArray().join(','), rayMesh.quaternion.toArray().join(','));
           }
         }
       };
@@ -300,19 +299,14 @@
         // rayMesh.matrixWorld.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
 
         const bullet = _makeBullet();
-        // bullet.position.copy(rayMesh.position);
-        // bullet.quaternion.copy(rayMesh.quaternion);
-        // bullet.scale.copy(rayMesh.scale);
         bullet.position.copy(rayMesh.position);
         bullet.quaternion.copy(rayMesh.quaternion);
-        // console.log('set bullet', bullet.position.toArray().join(','));
         bullet.updateMatrix();
         bullet.updateMatrixWorld(true);
         scene.add(bullet);
         bullets.push(bullet);
       };
 
-      // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
         renderer.vr.setSession(session, {
           frameOfReferenceType: 'stage',
