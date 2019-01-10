@@ -9,7 +9,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
+let display, fakeDisplay, tabs = [], xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
 
 const links = [
   {
@@ -513,7 +513,7 @@ const _closeUrl = iframe => {
   document.body.removeChild(iframe);
 };
 const _openServer = serverUrl => {
-  const xrmp = new XRMultiplayer(serverUrl);
+  xrmp = new XRMultiplayer(serverUrl);
   xrmp.onopen = () => {
     console.log('connected to server', serverUrl);
   };
@@ -522,7 +522,8 @@ const _openServer = serverUrl => {
   };
 };
 const _closeServer = () => {
-  console.log('close server'); // XXX
+  xrmp.close();
+  xrmp = null;
 };
 const _updateRigLists = () => {
   const {menuMesh} = rig;
