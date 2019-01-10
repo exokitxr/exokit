@@ -82,7 +82,9 @@ const links = [
   },
 ].map(({name, url}) => ({name, url, iconMesh: null}));
 let servers = [];
+let serversLoading = false;
 
+const REGISTRY_URL = 'xrmp.webmr.io';
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 const rayDistance = 3;
@@ -1082,53 +1084,61 @@ const _makeRig = () => {
 
           _renderScrollbar(links.length);
         } else if (optionsMesh.list === 'party') {
-          if (servers.length > 0) {
-            const localServers = servers.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
-            for (let i = 0; i < localServers.length; i++) {
-              const servers = localServers[i];
-              const {name} = servers;
-              const y = menuHeight*i;
+          if (!serversLoading) {
+            if (servers.length > 0) {
+              const localServers = servers.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
+              for (let i = 0; i < localServers.length; i++) {
+                const servers = localServers[i];
+                const {name} = servers;
+                const y = menuHeight*i;
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, y, menuWidth*0.98, menuHeight);
+
+                ctx.fillStyle = '#000000';
+                ctx.fillText(name, 100, y + menuHeight/2 + 20);
+
+                if (!server.iconMesh) {
+                  const iconMesh = (() => {
+                    const iconMesh = new THREE.Object3D();
+
+                    function pad(n, width) {
+                      return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+                    }
+
+                    _requestSpriteMesh(`icons/Food_${pad((4+mesh.scrollIndex+i) + '', 2)}.png`)
+                      .then(spriteMesh => {
+                        spriteMesh.position.set(-0.45, 0.15 - i*0.1, 0.05);
+                        spriteMesh.rotation.order = 'YXZ';
+                        spriteMesh.scale.set(0.16, 0.16, 0.16);
+                        spriteMesh.frustumCulled = false;
+                        iconMesh.add(spriteMesh);
+                      });
+
+                    return iconMesh;
+                  })();
+                  server.iconMesh = iconMesh;
+                  iconMeshes.push(iconMesh);
+                }
+                mesh.add(server.iconMesh);
+                server.iconMesh.children[0] && (server.iconMesh.children[0].position.y = 0.15 - i*0.1);
+              }
+            } else {
+              ctx.fillStyle = '#000000';
+              ctx.fillRect(0, 0, menuWidth*0.3 - 5, menuHeight);
 
               ctx.fillStyle = '#FFFFFF';
-              ctx.fillRect(0, y, menuWidth*0.98, menuHeight);
-
-              ctx.fillStyle = '#000000';
-              ctx.fillText(name, 100, y + menuHeight/2 + 20);
-
-              if (!server.iconMesh) {
-                const iconMesh = (() => {
-                  const iconMesh = new THREE.Object3D();
-
-                  function pad(n, width) {
-                    return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
-                  }
-
-                  _requestSpriteMesh(`icons/Food_${pad((4+mesh.scrollIndex+i) + '', 2)}.png`)
-                    .then(spriteMesh => {
-                      spriteMesh.position.set(-0.45, 0.15 - i*0.1, 0.05);
-                      spriteMesh.rotation.order = 'YXZ';
-                      spriteMesh.scale.set(0.16, 0.16, 0.16);
-                      spriteMesh.frustumCulled = false;
-                      iconMesh.add(spriteMesh);
-                    });
-
-                  return iconMesh;
-                })();
-                server.iconMesh = iconMesh;
-                iconMeshes.push(iconMesh);
-              }
-              mesh.add(server.iconMesh);
-              server.iconMesh.children[0] && (server.iconMesh.children[0].position.y = 0.15 - i*0.1);
+              ctx.fillText('No servers', 50, menuHeight/2 + 20);
             }
+
+            _renderScrollbar(servers.length);
           } else {
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, menuWidth*0.3 - 5, menuHeight);
 
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillText('No servers', 50, menuHeight/2 + 20);
+            ctx.fillText('Loading servers...', 50, menuHeight/2 + 20);
           }
-
-          _renderScrollbar(servers.length);
         }
 
         texture.needsUpdate = true;
@@ -1828,6 +1838,24 @@ function animate(time, frame) {
                     menuMesh.listMesh.updateList();
                   } else if (optionX === 4) {
                     menuMesh.optionsMesh.list = 'party';
+                    if (!serversLoading) {
+                      XRMultiplayer.requestServers(REGISTRY_URL)
+                        .then(newServers => {
+                          servers = newServers;
+                          serversLoading = false;
+
+                          menuMesh.listMesh.updateList();
+                        })
+                        .catch(err => {
+                          console.warn(err.stack);
+
+                          serversLoading = false;
+
+                          menuMesh.listMesh.updateList();
+                        });
+
+                      serversLoading = true;
+                    }
                     menuMesh.optionsMesh.updateOptions();
                     menuMesh.listMesh.scrollIndex = 0;
                     menuMesh.listMesh.updateList();
