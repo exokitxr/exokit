@@ -196,6 +196,8 @@
             bullet.updateMatrixWorld(true);
 
             if (!bullet.hitTesting) {
+              const startPosition = bullet.position.clone();
+
               display.session.requestHitTest(
                 bullet.position
                   .toArray(localVectorFloat32Array),
