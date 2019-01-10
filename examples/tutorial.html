@@ -65,6 +65,7 @@
           side: THREE.DoubleSide,
         });
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 1;
         return mesh;
       })();
       scene.add(planeMesh);
@@ -172,7 +173,7 @@
         const animationTime = 4000;
         const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
         model.position.y = Math.sin(f) * 0.05;
-        model.rotation.y = Math.sin(f*2) * Math.PI*2*0.05;
+        model.rotation.y = 1 + Math.sin(f*2) * Math.PI*2*0.05;
         model.rotation.z = Math.cos(f*2) * Math.PI*2*0.05;
         model.updateMatrixWorld();
       }
