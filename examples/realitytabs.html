@@ -512,8 +512,14 @@ const _closeUrl = iframe => {
 
   document.body.removeChild(iframe);
 };
-const _openServer = pathname => {
-  console.log('open server', pathname); // XXX
+const _openServer = serverUrl => {
+  const xrmp = new XRMultiplayer(serverUrl);
+  xrmp.onopen = () => {
+    console.log('connected to server', serverUrl);
+  };
+  xrmp.onerror = err => {
+    console.warn(err.stack);
+  };
 };
 const _closeServer = () => {
   console.log('close server'); // XXX
@@ -2078,9 +2084,9 @@ function animate(time, frame) {
                       const lastPressed = lastPresseds[i];
                       if (pressed && !lastPressed) {
                         const server = localServers[j];
-                        const {pathname} = server;
+                        const {name} = server;
 
-                        _openServer(pathname);
+                        _openServer(`${REGISTRY_URL}/servers/${name}`);
                       }
 
                       intersectionSpecs[i] = null;
