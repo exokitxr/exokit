@@ -67,6 +67,7 @@
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.y = 1;
+        mesh.frustumCulled = false;
         return mesh;
       })();
       scene.add(planeMesh);
