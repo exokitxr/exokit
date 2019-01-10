@@ -63,6 +63,7 @@
         const material = new THREE.MeshBasicMaterial({
           map: texture,
           side: THREE.DoubleSide,
+          transparent: true,
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.y = 1;
