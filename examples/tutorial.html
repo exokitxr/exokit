@@ -14,6 +14,7 @@
     let animation = null;
 
     const localVector = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     localEuler.order = 'YXZ';
 
@@ -211,10 +212,13 @@
           const subAnimationTime = 4000;
           const f = ((Date.now() % subAnimationTime) / subAnimationTime) * (Math.PI * 2);
           model.position.y += Math.sin(f) * 0.05;
-          localEuler.setFromQuaternion(model.quaternion, localEuler.order);
-          localEuler.y += Math.sin(f*2) * Math.PI*2*0.05;
-          localEuler.z += Math.cos(f*2) * Math.PI*2*0.05;
-          model.quaternion.setFromEuler(localEuler);
+          model.quaternion
+            .premultiply(
+              localQuaternion
+                .setFromEuler(
+                  localEuler.set(0, Math.sin(f*2) * Math.PI*2*0.05, Math.cos(f*2) * Math.PI*2*0.05, localEuler.order)
+                )
+            );
 
           model.updateMatrixWorld();
 
