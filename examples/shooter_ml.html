@@ -175,7 +175,7 @@
 
             const rayMesh = rayMeshes[i];
             rayMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-            rayMesh.matrix.decompose(localVector, localQuaternion, localVector2);
+            rayMesh.matrix.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
             rayMesh.updateMatrixWorld();
           }
         }
