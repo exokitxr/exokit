@@ -15,6 +15,7 @@
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     localEuler.order = 'YXZ';
@@ -193,9 +194,9 @@
         startQuaternion: model.quaternion.clone(),
         endQuaternion: localQuaternion.setFromRotationMatrix(
           localMatrix.lookAt(
-            endPosition,
-            localVector.set(0, 1.5, 0),
-            localVector2.set(0, 1, 0)
+            localVector.set(-endPosition.x, endPosition.y, -endPosition.z),
+            localVector2.set(0, 1.5, 0),
+            localVector3.set(0, 1, 0)
           )
         ),
         endPosition,
@@ -215,13 +216,10 @@
           const subAnimationTime = 4000;
           const f = ((Date.now() % subAnimationTime) / subAnimationTime) * (Math.PI * 2);
           model.position.y += Math.sin(f) * 0.05;
-          model.quaternion
-            .premultiply(
-              localQuaternion
-                .setFromEuler(
-                  localEuler.set(0, Math.sin(f*2) * Math.PI*2*0.05, Math.cos(f*2) * Math.PI*2*0.05, localEuler.order)
-                )
-            );
+          localEuler.setFromQuaternion(model.quaternion, localEuler.order);
+          localEuler.y += Math.sin(f*2) * Math.PI*2*0.05;
+          localEuler.z += Math.cos(f*2) * Math.PI*2*0.05;
+          model.quaternion.setFromEuler(localEuler);
 
           model.updateMatrixWorld();
 
