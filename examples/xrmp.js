@@ -777,13 +777,13 @@ class XRObject extends EventEmitter {
       state: update,
     }));
   }
-  setUpdateExpression(expression) {
+  /* setUpdateExpression(expression) {
     this.xrmp.ws.send(JSON.stringify({
       type: 'objectSetUpdateExpression',
       id: this.id,
       expression,
     }));
-  }
+  } */
   pullUpdate(objectMatrix) {
     const e = new XRMultiplayerEvent('update');
     e.object = this;
