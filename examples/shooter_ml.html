@@ -117,12 +117,6 @@
       renderer.setAnimationLoop(animate);
     }
 
-    const localVector = new THREE.Vector3();
-    const localQuaternion = new THREE.Quaternion();
-    const localEuler = new THREE.Euler();
-    const localVector2 = new THREE.Vector3();
-    const pixel = new Uint8Array(new ArrayBuffer(4));
-
     const bullets = [];
     const particles = [];
     let bulletUpdateTime = Date.now();
