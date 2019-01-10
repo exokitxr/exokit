@@ -13,6 +13,10 @@
     let container, scene, camera, display, model;
     let animation = null;
 
+    const localVector = new THREE.Vector3();
+    const localEuler = new THREE.Euler();
+    localEuler.order = 'YXZ';
+
     const FLOOR_SIZE = 20;
 
     function init() {
@@ -202,7 +206,15 @@
           const {startQuaternion, endQuaternion} = this;
           model.quaternion
             .copy(startQuaternion)
-            .slerp(endQuaternion, factor);
+            .slerp(endQuaternion, factor)
+
+          const subAnimationTime = 4000;
+          const f = ((Date.now() % subAnimationTime) / subAnimationTime) * (Math.PI * 2);
+          model.position.y += Math.sin(f) * 0.05;
+          localEuler.setFromQuaternion(model.quaternion, localEuler.order);
+          localEuler.y += Math.sin(f*2) * Math.PI*2*0.05;
+          localEuler.z += Math.cos(f*2) * Math.PI*2*0.05;
+          model.quaternion.setFromEuler(localEuler);
 
           model.updateMatrixWorld();
 
