@@ -758,6 +758,7 @@ class XRObject extends EventEmitter {
     this.xrmp.ws.send(JSON.stringify({
       type: 'objectAdd',
       id: this.id,
+      state: this.state,
     }));
   }
   sendRemove() {
