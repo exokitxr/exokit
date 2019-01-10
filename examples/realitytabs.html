@@ -514,8 +514,20 @@ const _closeUrl = iframe => {
 };
 const _openServer = serverUrl => {
   xrmp = new XRMultiplayer(serverUrl);
-  xrmp.onopen = () => {
-    console.log('connected to server', serverUrl);
+  xrmp.onsync = () => {
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i];
+      const {url} = tab;
+      const o = xrmp.addObject(0, {url});
+      o.objectMatrix.position.fill(1);
+      o.pushUpdate();
+    }
+  };
+  xrmp.onobjectadd = o => {
+    console.log('server object add', o);
+  };
+  xrmp.onobjectremove = o => {
+    console.log('server object remove', o);
   };
   xrmp.onerror = err => {
     console.warn(err.stack);
