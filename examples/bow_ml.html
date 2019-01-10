@@ -12,7 +12,7 @@
   <script>
 (async () => {
     let container, scene, camera, display, controllerMeshes, bowMesh, stringMesh, pinchMeshes;
-    // let mesher = null;
+    let handTracker;
 
     /* const localTransformPositionVectors = {
       keyboard: new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3),
@@ -548,7 +548,7 @@
           lastPincheds[handIndex] = pinched;
         };
 
-        const handTracker = window.browser.magicleap.RequestHandTracking();
+        handTracker = window.browser.magicleap.RequestHandTracking();
         handTracker.onhands = _onHands;
         handTracker.ongesture = _onGesture;
       }

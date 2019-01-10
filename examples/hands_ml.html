@@ -10,6 +10,7 @@
   <script src="three.js"></script>
   <script>
     let container, scene, camera, display;
+    let handTracker;
 
     /* const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -299,7 +300,7 @@
         lastPincheds[handIndex] = pinched;
       };
 
-      const handTracker = window.browser.magicleap.RequestHandTracking();
+      handTracker = window.browser.magicleap.RequestHandTracking();
       handTracker.onhands = _onHands;
       handTracker.ongesture = _onGesture;
       handMesh.visible = true;
