@@ -9,7 +9,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
+let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
 
 const links = [
   {
@@ -420,7 +420,7 @@ const _getFrontOfCamera = () => {
   };
 };
 
-const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
+const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3, id = tabId++) => {
   if (scale === undefined) {
     scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
     if (d !== 3) {
@@ -459,9 +459,7 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     } else {
       _drawFail();
 
-      _closeUrl(iframe);
-      tabs.splice(tabs.indexOf(tab), 1);
-      layers.splice(layers.indexOf(iframe), 1);
+      _closeTab(tab);
 
       if (focusedTab === tab) {
         focusedTab = rig.menuMesh.urlMesh;
@@ -479,7 +477,7 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
 
   _addTab(iframe, position, orientation, scale, d);
 };
-const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
+const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3, id = tabId++) => {
   if (scale === undefined) {
     scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
     if (d !== 3) {
@@ -495,6 +493,7 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
 
   const tab = {
     url: iframe.src,
+    id,
     iframe,
   };
   tabs.push(tab);
@@ -504,30 +503,86 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
 
   rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
+
+  if (xrmp) {
+    xrmp.addObject(tab.id, {
+      url: tab.url,
+      xrOffset: {
+        position: position.toArray(),
+        orientation: orientation.toArray(),
+        scale: scale.toArray(),
+      },
+      d,
+    });
+  }
 };
-const _closeUrl = iframe => {
+const _closeTab = tab => {
+  const {id, iframe} = tab;
   if (iframe.destroy) {
     iframe.destroy();
   }
-
   document.body.removeChild(iframe);
+
+  tabs.splice(tabs.indexOf(tab), 1);
+  layers.splice(layers.indexOf(iframe), 1);
+
+  if (xrmp) {
+    xrmp.removeObject(id);
+  }
 };
-const _openServer = serverUrl => {
+const _closeAllTabs = () => { // XXX trigger this when switching servers
+  for (let i = 0; i < tabs.length; i++) {
+    const {iframe} = tab;
+    if (iframe.destroy) {
+      iframe.destroy();
+    }
+    document.body.removeChild(iframe);
+  }
+
+  tabs.length = 0;
+  layers.length = 0;
+};
+const _openServer = (serverUrl, host) => {
   xrmp = new XRMultiplayer(serverUrl);
   xrmp.onsync = () => {
-    for (let i = 0; i < tabs.length; i++) {
-      const tab = tabs[i];
-      const {url} = tab;
-      const o = xrmp.addObject(0, {url});
-      o.objectMatrix.position.fill(1);
-      o.pushUpdate();
+    if (host) {
+      for (let i = 0; i < tabs.length; i++) {
+        const tab = tabs[i];
+        const {url, iframe: {xrOffset, d}} = tab;
+        const o = xrmp.addObject(tab.id, {
+          url,
+          xrOffset: {
+            position: Array.from(xrOffset.position),
+            orientation: Array.from(xrOffset.orientation),
+            scale: Array.from(xrOffset.scale),
+          },
+          d,
+        });
+        o.objectMatrix.position.fill(1);
+        o.pushUpdate();
+      }
     }
   };
-  xrmp.onobjectadd = o => {
-    console.log('server object add', o);
+  xrmp.onobjectadd = e => {
+    const {id, state} = e.object;
+    const {url} = state;
+    if (!tabs.some(tab => tab.url === url)) {
+      const {url, xrOffset: {position, orientation, scale}, d} = state;
+      _openUrl(url, new THREE.Vector3().fromArray(position), new THREE.Quaternion().fromArray(orientation), new THREE.Vector3().fromArray(scale), d, id);
+      console.log('server object add', url);
+    } else {
+      console.warn('ignoring duplicate server tab', url);
+    }
   };
-  xrmp.onobjectremove = o => {
-    console.log('server object remove', o);
+  xrmp.onobjectremove = e => {
+    const {url} = e.object.state;
+    const index = tabs.findIndex(tab => tab.url === url);
+    if (index !== -1) {
+      tabs.splice(index, 1);
+      console.log('server object remove', url);
+    } else {
+      console.warn('failed to remove local server tab', url);
+    }
   };
   xrmp.onerror = err => {
     console.warn(err.stack);
@@ -1930,9 +1985,8 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
-                          const [tab] = tabs.splice(menuMesh.listMesh.scrollIndex + j, 1);
-                          const {iframe} = tab;
-                          _closeUrl(iframe);
+                          const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                          _closeTab(tab);
 
                           if (focusedTab === tab) {
                             focusedTab = rig.menuMesh.urlMesh;
@@ -2099,7 +2153,7 @@ function animate(time, frame) {
                         const server = localServers[j];
                         const {name} = server;
 
-                        _openServer(`${REGISTRY_URL}/servers/${name}`);
+                        _openServer(`${REGISTRY_URL}/servers/${name}`, true);
                       }
 
                       intersectionSpecs[i] = null;
