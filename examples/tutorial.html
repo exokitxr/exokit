@@ -198,7 +198,7 @@
         endPosition,
         update() {
           const now = Date.now();
-          const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
+          const factor = Math.min(Math.pow((now - this.startTime) / (this.endTime - this.startTime), 0.5), 1);
           const {startPosition, endPosition} = this;
           model.position
             .copy(startPosition)
