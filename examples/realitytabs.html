@@ -512,6 +512,12 @@ const _closeUrl = iframe => {
 
   document.body.removeChild(iframe);
 };
+const _openServer = pathname => {
+  console.log('open server', pathname); // XXX
+};
+const _closeServer = () => {
+  console.log('close server'); // XXX
+};
 const _updateRigLists = () => {
   const {menuMesh} = rig;
   if (menuMesh.listMesh.scrollIndex < 0) {
@@ -2045,6 +2051,36 @@ function animate(time, frame) {
                         menuMesh.listMesh.scrollIndex = 0;
 
                         _updateRigLists();
+                      }
+
+                      intersectionSpecs[i] = null;
+                    });
+
+                    break;
+                  }
+                }
+              } else if (menuMesh.optionsMesh.list === 'party') {
+                const localServers = servers.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
+                for (let j = 0; j < localServers.length; j++) {
+                  if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                    intersectionPoints.push(intersectionPoint.clone());
+                    intersectionCbs.push(() => {
+                      controllerMesh.rayMesh.scale.z = distance;
+                      controllerMesh.updateMatrixWorld();
+
+                      controllerMesh.rayDot.position.z = -distance;
+                      controllerMesh.updateMatrixWorld();
+                      controllerMesh.rayDot.visible = true;
+
+                      const gamepads = navigator.getGamepads();
+                      const gamepad = gamepads[i];
+                      const pressed = gamepad.buttons[1].pressed;
+                      const lastPressed = lastPresseds[i];
+                      if (pressed && !lastPressed) {
+                        const server = localServers[j];
+                        const {pathname} = server;
+
+                        _openServer(pathname);
                       }
 
                       intersectionSpecs[i] = null;
