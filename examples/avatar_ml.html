@@ -344,8 +344,6 @@
       renderer.setAnimationLoop(animate);
     }
 
-    let path = null;
-    let pathIndex = 0;
     const thetaRate = 200;
     const animationTime = 1000;
     const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
@@ -384,7 +382,6 @@
         update() {
           const now = Date.now();
           const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
-          const nextPathIndex = pathIndex + 1;
           const {startPosition, endPosition} = this;
           avatarMesh.position
             .copy(startPosition)
