@@ -91,7 +91,6 @@
         const rayMesh = new THREE.Mesh(rayGeometry, rayMaterial);
         rayMesh.matrixAutoUpdate = false;
         rayMesh.frustumCulled = false;
-        rayMesh.visible = false;
         return rayMesh;
       };
       rayMeshes = [
