@@ -112,7 +112,7 @@
               object.position.fromArray(plane.position);
               object.quaternion.fromArray(plane.rotation);
 
-              const frontMesh = (() => {
+              /* const frontMesh = (() => {
                 const mesh = new THREE.Mesh(planeGeometry1, planeMaterial1);
                 mesh.scale.set(plane.size[0], 1, plane.size[1]);
                 mesh.frustumCulled = false;
@@ -129,7 +129,7 @@
                 // mesh.updateMatrixWorld();
                 return mesh;
               })();
-              object.add(backMesh);
+              object.add(backMesh); */
 
               const plantMesh = (() => {
                 const index = Math.floor(Math.random() * plantMeshes.length);
