@@ -32,6 +32,41 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
+      const planeMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(1, 1);
+
+        const texture = new THREE.Texture(
+          null,
+          THREE.UVMapping,
+          THREE.RepeatWrapping,
+          THREE.RepeatWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+
+        const planeImg = new Image();
+        planeImg.crossOrigin = 'Anonymous';
+        planeImg.src = 'tutorial.png';
+        planeImg.onload = () => {
+          texture.image = graphImg;
+          texture.needsUpdate = true;
+        };
+        planeImg.onerror = err => {
+          console.warn(err.stack);
+        };
+
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      scene.add(planeMesh);
+
       const floorMesh = (() => {
         const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
           .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
