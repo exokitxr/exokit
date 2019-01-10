@@ -211,7 +211,7 @@
                       .fromArray(hitMatrix)
                       .decompose(localVector, localQuaternion, localVector2);
 
-                    if (localVector.distanceTo(startPosition) < 1) {
+                    if (localVector.distanceTo(startPosition) < 0.2) {
                       console.log('hit at', localVector.toArray().join(','));
 
                       _makeParticles(bullet.position, bullet.quaternion);
