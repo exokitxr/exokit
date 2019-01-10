@@ -1846,8 +1846,8 @@ function animate(time, frame) {
                     menuMesh.optionsMesh.list = 'party';
                     if (!serversLoading) {
                       XRMultiplayer.requestServers(`${REGISTRY_URL}/servers`)
-                        .then(newServers => {
-                          servers = newServers;
+                        .then(result => {
+                          servers = result.servers;
                           serversLoading = false;
 
                           menuMesh.listMesh.updateList();
