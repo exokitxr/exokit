@@ -1094,8 +1094,8 @@ const _makeRig = () => {
             if (servers.length > 0) {
               const localServers = servers.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
               for (let i = 0; i < localServers.length; i++) {
-                const servers = localServers[i];
-                const {name} = servers;
+                const server = localServers[i];
+                const {name} = server;
                 const y = menuHeight*i;
 
                 ctx.fillStyle = '#FFFFFF';
