@@ -295,8 +295,8 @@
       display.session = session;
 
       session.onselect = e => {
-        // const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const rayMesh = rayMeshes[0];
+        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const rayMesh = rayMeshes[controllerIndex];
         // rayMesh.matrixWorld.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
 
         const bullet = _makeBullet();
