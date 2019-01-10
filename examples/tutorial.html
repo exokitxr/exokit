@@ -182,12 +182,12 @@
     };
     const _animateTo = endPosition => {
       const now = Date.now();
-      const startPosition = avatarMesh.position.clone();
+      const startPosition = model.position.clone();
       animation = {
         startTime: now,
         endTime: now + animationTime*startPosition.distanceTo(endPosition),
         startPosition,
-        startQuaternion: avatarMesh.quaternion.clone(),
+        startQuaternion: model.quaternion.clone(),
         endQuaternion: new THREE.Quaternion().setFromUnitVectors(
           new THREE.Vector3(0, 0, -1),
           localVector
