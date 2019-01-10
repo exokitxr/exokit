@@ -119,7 +119,7 @@
 
     const bullets = [];
     const particles = [];
-    let bulletUpdateTime = Date.now();
+    let lastUpdateTime = Date.now();
     const bulletGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
     const bulletMaterial = new THREE.MeshPhongMaterial({
       color: 0xFF0000,
@@ -164,7 +164,7 @@
     };
     function animate(time, frame) {
       const now = Date.now();
-      const timeDiff = now - bulletUpdateTime;
+      const timeDiff = now - lastUpdateTime;
 
       const _updateGamepads = () => {
         if (renderer.vr.enabled) {
@@ -279,7 +279,7 @@
       _updateHitMeshes();
       _updateParticles();
 
-      bulletUpdateTime = now;
+      lastUpdateTime = now;
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
