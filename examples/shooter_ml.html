@@ -214,7 +214,7 @@
                     if (localVector.distanceTo(startPosition) < 0.2) {
                       console.log('hit at', localVector.toArray().join(','));
 
-                      _makeParticles(bullet.position, bullet.quaternion);
+                      _makeParticles(localVector, localQuaternion);
 
                       scene.remove(bullet);
                       bullets.splice(bullets.indexOf(bullet), 1);
