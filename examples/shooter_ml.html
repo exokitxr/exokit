@@ -150,8 +150,8 @@
         const particle = _makeParticle();
         particle.position.copy(position);
         particle.quaternion.copy(rotation);
-        particle.updateMatrix();
-        particle.updateMatrixWorld();
+        // particle.updateMatrix();
+        particle.updateMatrixWorld(true);
         particle.velocity = new THREE.Vector3(
           (Math.random() - 0.5) * 0.01,
           (Math.random() - 0.5) * 0.02,
@@ -176,15 +176,13 @@
             const rayMesh = rayMeshes[i];
             rayMesh.matrix.fromArray(pose.targetRay.transformMatrix);
             rayMesh.matrix.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
-            rayMesh.updateMatrixWorld();
+            rayMesh.updateMatrixWorld(true);
+            // console.log('ray mesh position', rayMesh.position.toArray().join(','), rayMesh.quaternion.toArray().join(','));
           }
         }
       };
       const _updateBullets = () => {
         const localBullets = bullets.slice();
-        const oldVrEnabled = renderer.vr.enabled;
-        renderer.vr.enabled = false;
-        renderer.setRenderTarget(renderTarget);
         for (let i = 0; i < localBullets.length; i++) {
           const bullet = localBullets[i];
           if (now < bullet.endTime) {
@@ -195,9 +193,9 @@
                 .applyQuaternion(bullet.quaternion)
             );
             bullet.updateMatrix();
-            bullet.updateMatrixWorld();
+            bullet.updateMatrixWorld(true);
 
-            if (bullet.hitTesting) {
+            if (!bullet.hitTesting) {
               display.session.requestHitTest(
                 bullet.position
                   .toArray(localVectorFloat32Array),
@@ -275,6 +273,7 @@
       };
 
       _updateGamepads();
+      _updateBullets();
       _updateHitMeshes();
       _updateParticles();
 
@@ -305,7 +304,9 @@
         // bullet.scale.copy(rayMesh.scale);
         bullet.position.copy(rayMesh.position);
         bullet.quaternion.copy(rayMesh.quaternion);
-        bullet.updateMatrixWorld();
+        // console.log('set bullet', bullet.position.toArray().join(','));
+        bullet.updateMatrix();
+        bullet.updateMatrixWorld(true);
         scene.add(bullet);
         bullets.push(bullet);
       };
