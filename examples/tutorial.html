@@ -53,7 +53,7 @@
         planeImg.crossOrigin = 'Anonymous';
         planeImg.src = 'tutorial.png';
         planeImg.onload = () => {
-          texture.image = graphImg;
+          texture.image = planeImg;
           texture.needsUpdate = true;
         };
         planeImg.onerror = err => {
