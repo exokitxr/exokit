@@ -11,6 +11,7 @@
   <script src="GLTFLoader.js"></script>
   <script>
     let container, scene, camera, display, model;
+    let animation = null;
 
     const FLOOR_SIZE = 20;
 
@@ -170,14 +171,56 @@
       renderer.setAnimationLoop(animate);
     }
 
+    const animationTime = 1000;
+    const _getRandomWaypoint = () => {
+      const angle = Math.random() * Math.PI * 2;
+      return new THREE.Vector3(Math.cos(angle), 1.5, Math.sin(angle));
+    };
+    const _animateTo = endPosition => {
+      const now = Date.now();
+      const startPosition = avatarMesh.position.clone();
+      animation = {
+        startTime: now,
+        endTime: now + animationTime*startPosition.distanceTo(endPosition),
+        startPosition,
+        startQuaternion: avatarMesh.quaternion.clone(),
+        endQuaternion: new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 0, -1),
+          localVector
+            .copy(endPosition)
+            .normalize()
+        ),
+        endPosition,
+        update() {
+          const now = Date.now();
+          const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
+          const {startPosition, endPosition} = this;
+          model.position
+            .copy(startPosition)
+            .lerp(endPosition, factor);
+
+          const {startQuaternion, endQuaternion} = this;
+          model.quaternion
+            .copy(startQuaternion)
+            .slerp(endQuaternion, factor);
+
+          model.updateMatrixWorld();
+
+          if (factor >= 1) {
+            animation = null;
+          }
+        },
+      };
+    };
+
     function animate(time, frame) {
       if (model) {
-        const animationTime = 4000;
-        const f = ((Date.now() % animationTime) / animationTime) * (Math.PI * 2);
-        model.position.y = Math.sin(f) * 0.05;
-        model.rotation.y = 1 + Math.sin(f*2) * Math.PI*2*0.05;
-        model.rotation.z = Math.cos(f*2) * Math.PI*2*0.05;
-        model.updateMatrixWorld();
+        if (!animation) {
+          _animateTo(_getRandomWaypoint());
+        }
+        if (animation) {
+          animation.update();
+        }
       }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
