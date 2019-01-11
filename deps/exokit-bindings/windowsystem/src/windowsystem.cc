@@ -243,22 +243,22 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
     }
     planeSpec->uvLocation = glGetAttribLocation(planeSpec->planeProgram, "uv");
     if (planeSpec->uvLocation == -1) {
-      std::cout << "ML plane program failed to get attrib location for 'uv'" << std::endl;
+      std::cout << "plane program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
     planeSpec->modelViewMatrixLocation = glGetUniformLocation(planeSpec->planeProgram, "modelViewMatrix");
     if (planeSpec->modelViewMatrixLocation == -1) {
-      std::cout << "ML plane program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      std::cout << "plane program failed to get uniform location for 'modelViewMatrix'" << std::endl;
       return;
     }
     planeSpec->projectionMatrixLocation = glGetUniformLocation(planeSpec->planeProgram, "projectionMatrix");
     if (planeSpec->projectionMatrixLocation == -1) {
-      std::cout << "ML plane program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      std::cout << "plane program failed to get uniform location for 'projectionMatrix'" << std::endl;
       return;
     }
     planeSpec->texLocation = glGetUniformLocation(planeSpec->planeProgram, "tex");
     if (planeSpec->texLocation == -1) {
-      std::cout << "ML plane program failed to get uniform location for 'tex'" << std::endl;
+      std::cout << "plane program failed to get uniform location for 'tex'" << std::endl;
       return;
     }
 
