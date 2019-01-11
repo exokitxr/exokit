@@ -571,6 +571,7 @@ const _openServer = (serverUrl, host) => {
     if (!tabs.some(tab => tab.url === url)) {
       const {url, d} = state;
       _openUrl(url, undefined, undefined, undefined, d, false, id);
+      _bindObject(object);
       console.log('server object add', e.object);
     } else {
       console.warn('ignoring duplicate server tab', url);
