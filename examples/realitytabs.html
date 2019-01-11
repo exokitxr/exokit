@@ -83,6 +83,7 @@ const links = [
 ].map(({name, url}) => ({name, url, iconMesh: null}));
 let servers = [];
 let serversLoading = false;
+let serverConnectedUrl = null;
 
 const REGISTRY_URL = 'http://18.209.88.19:9001';
 const RAY_COLOR = 0x44c2ff;
@@ -563,6 +564,9 @@ const _openServer = (serverUrl, host) => {
   };
   xrmp.onsync = () => {
     console.log('server sync', serverUrl);
+
+    serverConnectedUrl = serverUrl;
+    rig.menuMesh.listMesh.updateList();
   };
   xrmp.onobjectadd = e => {
     const {object} = e;
@@ -583,7 +587,7 @@ const _openServer = (serverUrl, host) => {
       tabs.splice(index, 1);
       console.log('server object remove', id);
     } else {
-      console.warn('failed to remove local server tab', id);
+      console.warn('failed to remove local server tab', id;
     }
   };
   xrmp.onerror = err => {
@@ -597,6 +601,9 @@ const _closeServer = () => {
   xrmp.onobjectremove = null;
   xrmp.close();
   xrmp = null;
+
+  serverConnectedUrl = null;
+  rig.menuMesh.listMesh.updateList();
 };
 const _bindObject = o => {
   o.onupdate = e => {
@@ -1180,60 +1187,77 @@ const _makeRig = () => {
 
           _renderScrollbar(links.length);
         } else if (optionsMesh.list === 'party') {
-          if (!serversLoading) {
-            if (servers.length > 0) {
-              const localServers = servers.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
-              for (let i = 0; i < localServers.length; i++) {
-                const server = localServers[i];
-                const {name} = server;
-                const y = menuHeight*i;
+          if (!serverConnectedUrl) {
+            if (!serversLoading) {
+              if (servers.length > 0) {
+                const localServers = servers.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
+                for (let i = 0; i < localServers.length; i++) {
+                  const server = localServers[i];
+                  const {name} = server;
+                  const y = menuHeight*i;
+
+                  ctx.fillStyle = '#FFFFFF';
+                  ctx.fillRect(0, y, menuWidth*0.98, menuHeight);
+
+                  ctx.fillStyle = '#000000';
+                  ctx.fillText(name, 100, y + menuHeight/2 + 20);
+
+                  if (!server.iconMesh) {
+                    const iconMesh = (() => {
+                      const iconMesh = new THREE.Object3D();
+
+                      function pad(n, width) {
+                        return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+                      }
+
+                      _requestSpriteMesh(`icons/Food_${pad((4+mesh.scrollIndex+i) + '', 2)}.png`)
+                        .then(spriteMesh => {
+                          spriteMesh.position.set(-0.45, 0.15 - i*0.1, 0.05);
+                          spriteMesh.rotation.order = 'YXZ';
+                          spriteMesh.scale.set(0.16, 0.16, 0.16);
+                          spriteMesh.frustumCulled = false;
+                          iconMesh.add(spriteMesh);
+                        });
+
+                      return iconMesh;
+                    })();
+                    server.iconMesh = iconMesh;
+                    iconMeshes.push(iconMesh);
+                  }
+                  mesh.add(server.iconMesh);
+                  server.iconMesh.children[0] && (server.iconMesh.children[0].position.y = 0.15 - i*0.1);
+                }
+              } else {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, menuWidth*0.99 - 5, menuHeight);
 
                 ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, y, menuWidth*0.98, menuHeight);
-
-                ctx.fillStyle = '#000000';
-                ctx.fillText(name, 100, y + menuHeight/2 + 20);
-
-                if (!server.iconMesh) {
-                  const iconMesh = (() => {
-                    const iconMesh = new THREE.Object3D();
-
-                    function pad(n, width) {
-                      return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
-                    }
-
-                    _requestSpriteMesh(`icons/Food_${pad((4+mesh.scrollIndex+i) + '', 2)}.png`)
-                      .then(spriteMesh => {
-                        spriteMesh.position.set(-0.45, 0.15 - i*0.1, 0.05);
-                        spriteMesh.rotation.order = 'YXZ';
-                        spriteMesh.scale.set(0.16, 0.16, 0.16);
-                        spriteMesh.frustumCulled = false;
-                        iconMesh.add(spriteMesh);
-                      });
-
-                    return iconMesh;
-                  })();
-                  server.iconMesh = iconMesh;
-                  iconMeshes.push(iconMesh);
-                }
-                mesh.add(server.iconMesh);
-                server.iconMesh.children[0] && (server.iconMesh.children[0].position.y = 0.15 - i*0.1);
+                ctx.fillText('No servers', 50, menuHeight/2 + 20);
               }
+
+              _renderScrollbar(servers.length);
             } else {
               ctx.fillStyle = '#000000';
-              ctx.fillRect(0, 0, menuWidth*0.4 - 5, menuHeight);
+              ctx.fillRect(0, 0, menuWidth*0.99 - 5, menuHeight);
 
               ctx.fillStyle = '#FFFFFF';
-              ctx.fillText('No servers', 50, menuHeight/2 + 20);
+              ctx.fillText('Loading servers...', 50, menuHeight/2 + 20);
+
+              _renderScrollbar(0);
             }
-
-            _renderScrollbar(servers.length);
           } else {
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, menuWidth*0.4 - 5, menuHeight);
+            ctx.fillStyle = '#2196f3';
+            ctx.fillRect(0, 0, menuWidth*0.8 - 5, menuHeight);
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(menuWidth*0.8, 0, menuWidth*0.18, menuHeight);
 
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillText('Loading servers...', 50, menuHeight/2 + 20);
+            ctx.fillStyle = '#FFF';
+            ctx.fillText(serverConnectedUrl, 100, menuHeight/2 + 20);
+
+            ctx.fillStyle = '#000';
+            ctx.fillText('x', menuWidth*0.88, menuHeight*0.7);
+
+            _renderScrollbar(0);
           }
         }
 
@@ -2157,33 +2181,59 @@ function animate(time, frame) {
                   }
                 }
               } else if (menuMesh.optionsMesh.list === 'party') {
-                const localServers = servers.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
-                for (let j = 0; j < localServers.length; j++) {
-                  if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
-                    intersectionPoints.push(intersectionPoint.clone());
-                    intersectionCbs.push(() => {
-                      controllerMesh.rayMesh.scale.z = distance;
-                      controllerMesh.updateMatrixWorld();
+                if (!serverConnectedUrl) {
+                  const localServers = servers.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
+                  for (let j = 0; j < localServers.length; j++) {
+                    if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
 
-                      controllerMesh.rayDot.position.z = -distance;
-                      controllerMesh.updateMatrixWorld();
-                      controllerMesh.rayDot.visible = true;
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
 
-                      const gamepads = navigator.getGamepads();
-                      const gamepad = gamepads[i];
-                      const pressed = gamepad.buttons[1].pressed;
-                      const lastPressed = lastPresseds[i];
-                      if (pressed && !lastPressed) {
-                        const server = localServers[j];
-                        const {name} = server;
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          const server = localServers[j];
+                          const {name} = server;
 
-                        _openServer(`${REGISTRY_URL}/servers/${name}`, true);
-                      }
+                          _openServer(`${REGISTRY_URL}/servers/${name}`, true);
+                        }
 
-                      intersectionSpecs[i] = null;
-                    });
+                        intersectionSpecs[i] = null;
+                      });
 
-                    break;
+                      break;
+                    }
+                  }
+                } else {
+                  if (y >= 0 && y < urlBarOffset) {
+                    if (x >= menuWidth*0.8) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
+
+                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.rayDot.visible = true;
+
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          _closeServer();
+                        }
+
+                        intersectionSpecs[i] = null;
+                      });
+                    }
                   }
                 }
               }
