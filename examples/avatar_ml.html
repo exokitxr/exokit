@@ -27,6 +27,30 @@
     const localVectorFloat32Array = new Float32Array(3);
     const localVectorFloat32Array2 = new Float32Array(3);
 
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+        .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xf44336,
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.visible = true;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    controllerMeshes = [
+      _makeControllerMesh(-0.1),
+      _makeControllerMesh(0.1),
+    ];
+    controllerMeshes.forEach(controllerMesh => {
+      scene.add(controllerMesh);
+    });
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
+
     const avatarHeight = 0.5;
 
     const numCubes = 100;
@@ -76,29 +100,6 @@
       const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
-
-      const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
-        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
-          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
-        const material = new THREE.MeshBasicMaterial({
-          color: 0xf44336,
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(x, y, z);
-        mesh.quaternion.set(qx, qy, qz, qw);
-        // mesh.visible = true;
-        mesh.frustumCulled = false;
-        return mesh;
-      };
-      controllerMeshes = [
-        _makeControllerMesh(-0.1),
-        _makeControllerMesh(0.1),
-      ];
-      controllerMeshes.forEach(controllerMesh => {
-        scene.add(controllerMesh);
-      });
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -464,18 +465,24 @@
     const controllerHitTesting = [false, false];
     function animate(time, frame) {
       if (renderer.vr.enabled) {
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          controllerMeshes[i].visible = false;
+        }
+
         const inputSources = display.session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
 
-          const controllerMesh = controllerMeshes[i];
+          const controllerIndex = _getControllerIndex(inputSource);
+          const controllerMesh = controllerMeshes[controllerIndex];
           controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
           // controllerMesh.updateMatrixWorld(true);
+          controllerMesh.visible = true;
 
-          if (!controllerHitTesting[i]) {
-            const controllerHitMesh = controllerHitMeshes[i];
+          if (!controllerHitTesting[controllerIndex]) {
+            const controllerHitMesh = controllerHitMeshes[controllerIndex];
 
             if (controllerMesh.position.length() > 0.3) {
               display.session.requestHitTest(
@@ -496,10 +503,10 @@
                     controllerHitMesh.visible = false;
                   }
 
-                  controllerHitTesting[i] = false;
+                  controllerHitTesting[controllerIndex] = false;
                 });
 
-              controllerHitTesting[i] = true;
+              controllerHitTesting[controllerIndex] = true;
             } else {
               controllerHitMesh.visible = false;
             }
