@@ -1641,13 +1641,13 @@ function animate(time, frame) {
 
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
-    const tab = moves[i];
+    const moveTab = moves[i];
     const boxMesh = boxMeshes[i];
 
-    if (tab) {
+    if (moveTab) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
-      const {iframe} = tab;
+      const {iframe} = moveTab;
 
       const gamepads = navigator.getGamepads();
       const gamepad = gamepads[i];
