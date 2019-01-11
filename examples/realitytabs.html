@@ -600,7 +600,6 @@ const _bindObject = o => {
     const {object, matrix} = e;
     const {id} = object;
     const tab = tabs.find(tab => tab.id === id);
-console.log('object update', id, matrix); // XXX
     const {iframe} = tab;
     iframe.position = Array.from(matrix.position);
     iframe.orientation = Array.from(matrix.quaternion);
