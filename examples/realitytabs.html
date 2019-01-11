@@ -549,14 +549,14 @@ const _openServer = (serverUrl, host) => {
     if (host) {
       for (let i = 0; i < tabs.length; i++) {
         const tab = tabs[i];
-        const {url, iframe: {d}} = tab;
+        const {url, iframe: {xrOffset, d}} = tab;
         const o = xrmp.addObject(tab.id, {
           url,
           d,
         });
-        // XXX set object matrix
-        // o.objectMatrix.position.fill(1);
-        // o.pushUpdate();
+        o.objectMatrix.position.set(xrOffset.position);
+        o.objectMatrix.quaternion.set(xrOffset.orientation);
+        o.pushUpdate();
         _bindObject(o);
       }
     }
