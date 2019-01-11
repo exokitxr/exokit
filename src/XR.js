@@ -133,7 +133,7 @@ class XRSession extends EventTarget {
     return Promise.resolve(this._frameOfReference);
   }
   getInputSources() {
-    return this._inputSources;
+    return this._inputSources.filter(inputSource => inputSource._connected);
   }
   requestAnimationFrame(fn) {
     if (this.device.onrequestanimationframe) {
