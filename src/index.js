@@ -333,7 +333,7 @@ const handsArray = [
   new Float32Array(handEntrySize),
   new Float32Array(handEntrySize),
 ];
-const controllersArray = new Float32Array((3 + 4 + 6) * 2);
+const controllersArray = new Float32Array((1 + 3 + 4 + 6) * 2);
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -1465,6 +1465,8 @@ const _bindWindow = (window, newWindowCb) => {
         frameData.rightProjectionMatrix.set(projectionArray.slice(16, 32));
 
         let controllersArrayIndex = 0;
+        leftGamepad.connected = controllersArray[controllersArrayIndex] > 0;
+        controllersArrayIndex++;
         leftGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
         controllersArrayIndex += 3;
         leftGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
@@ -1500,6 +1502,8 @@ const _bindWindow = (window, newWindowCb) => {
 
         gamepads[0] = leftGamepad;
 
+        rightGamepad.connected = controllersArray[controllersArrayIndex] > 0;
+        controllersArrayIndex++;
         rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
         controllersArrayIndex += 3;
         rightGamepad.pose.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
