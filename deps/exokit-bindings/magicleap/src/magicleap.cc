@@ -2877,6 +2877,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 10, JS_NUM(touchPosAndForce.x));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 11, JS_NUM(touchPosAndForce.y));
             controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 12, JS_NUM(touchForceZ));
+            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 13, JS_BOOL(isConnected));
           }
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
