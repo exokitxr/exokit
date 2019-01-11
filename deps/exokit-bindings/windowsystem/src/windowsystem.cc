@@ -63,7 +63,7 @@ out vec4 fragColor;\n\
 uniform sampler2D tex;\n\
 \n\
 void main() {\n\
-  fragColor = texture2D(tex, vUv);\n\
+  fragColor = texture(tex, vUv);\n\
 }\n\
 ";
 
