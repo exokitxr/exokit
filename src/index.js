@@ -1350,7 +1350,8 @@ const _bindWindow = (window, newWindowCb) => {
       // build gamepads data
       vrPresentState.system.GetControllerState(0, localGamepadArray);
       if (!isNaN(localGamepadArray[0])) {
-        // matrix
+        leftGamepad.connected = true;
+
         localMatrix.fromArray(localFloat32Array2);
         localMatrix.decompose(localVector, localQuaternion, localVector2);
         localVector.toArray(leftGamepad.pose.position);
@@ -1380,7 +1381,8 @@ const _bindWindow = (window, newWindowCb) => {
 
       vrPresentState.system.GetControllerState(1, localGamepadArray);
       if (!isNaN(localGamepadArray[0])) {
-        // matrix
+        rightGamepad.connected = true;
+        
         localMatrix.fromArray(localFloat32Array3);
         localMatrix.decompose(localVector, localQuaternion, localVector2);
         localVector.toArray(rightGamepad.pose.position);
