@@ -643,6 +643,7 @@ const _makeObjectMatrix = () => {
   objectMatrix.id = new Uint32Array(objectMatrix, _getObjectMatrixIndex(Uint32Array.BYTES_PER_ELEMENT), 1);
   objectMatrix.position = new Float32Array(objectMatrix, _getObjectMatrixIndex(3*Float32Array.BYTES_PER_ELEMENT), 3);
   objectMatrix.quaternion = new Float32Array(objectMatrix, _getObjectMatrixIndex(4*Float32Array.BYTES_PER_ELEMENT), 4);
+  objectMatrix.quaternion[3] = 1;
   return objectMatrix;
 };
 const objectMatrix = _makeObjectMatrix();
@@ -1101,6 +1102,16 @@ class XRMultiplayer extends EventEmitter {
   addObject(id, state) {
     const object = new XRObject(id, state, this);
     object.sendAdd();
+    /* if (position || quaternion) {
+      if (position) {
+        object.objectMatrix.position.set(position);
+      }
+      if (quaternion) {
+        object.objectMatrix.quaternion.set(quaternion);
+      }
+      console.log('push update', object.objectMatrix.position, object.objectMatrix.quaternion, new Error().stack);
+      object.pushUpdate();
+    } */
     this.objects.push(object);
     return object;
   }

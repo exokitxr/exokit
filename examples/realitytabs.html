@@ -420,7 +420,7 @@ const _getFrontOfCamera = () => {
   };
 };
 
-const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3, id = tabId++) => {
+const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3, local = true, id = tabId++) => {
   if (scale === undefined) {
     scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
     if (d !== 3) {
@@ -475,9 +475,9 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     // scene.background = _makeBackground();
   }); */
 
-  _addTab(iframe, position, orientation, scale, d);
+  const tab = _addTab(iframe, position, orientation, scale, d, local, id);
 };
-const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3, id = tabId++) => {
+const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3, local = true, id = tabId++) => {
   if (scale === undefined) {
     scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
     if (d !== 3) {
@@ -504,17 +504,18 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
   rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
 
-  if (xrmp) {
-    xrmp.addObject(tab.id, {
+  if (xrmp && local) {
+    const o = xrmp.addObject(tab.id, {
       url: tab.url,
-      xrOffset: {
-        position: position.toArray(),
-        orientation: orientation.toArray(),
-        scale: scale.toArray(),
-      },
       d,
     });
+    position.toArray(o.objectMatrix.position);
+    orientation.toArray(o.objectMatrix.orientation);
+    o.pushUpdate();
+    _bindObject(o);
   }
+
+  return tab;
 };
 const _closeTab = tab => {
   const {id, iframe} = tab;
@@ -544,32 +545,33 @@ const _closeAllTabs = () => { // XXX trigger this when switching servers
 };
 const _openServer = (serverUrl, host) => {
   xrmp = new XRMultiplayer(serverUrl);
-  xrmp.onsync = () => {
+  xrmp.onopen = () => {
     if (host) {
       for (let i = 0; i < tabs.length; i++) {
         const tab = tabs[i];
-        const {url, iframe: {xrOffset, d}} = tab;
+        const {url, iframe: {d}} = tab;
         const o = xrmp.addObject(tab.id, {
           url,
-          xrOffset: {
-            position: Array.from(xrOffset.position),
-            orientation: Array.from(xrOffset.orientation),
-            scale: Array.from(xrOffset.scale),
-          },
           d,
         });
-        o.objectMatrix.position.fill(1);
-        o.pushUpdate();
+        // XXX set object matrix
+        // o.objectMatrix.position.fill(1);
+        // o.pushUpdate();
+        _bindObject(o);
       }
     }
   };
+  xrmp.onsync = () => {
+    console.log('server sync', serverUrl);
+  };
   xrmp.onobjectadd = e => {
-    const {id, state} = e.object;
+    const {object} = e;
+    const {id, state} = object;
     const {url} = state;
     if (!tabs.some(tab => tab.url === url)) {
-      const {url, xrOffset: {position, orientation, scale}, d} = state;
-      _openUrl(url, new THREE.Vector3().fromArray(position), new THREE.Quaternion().fromArray(orientation), new THREE.Vector3().fromArray(scale), d, id);
-      console.log('server object add', url);
+      const {url, d} = state;
+      _openUrl(url, undefined, undefined, undefined, d, false, id);
+      console.log('server object add', e.object);
     } else {
       console.warn('ignoring duplicate server tab', url);
     }
@@ -591,6 +593,17 @@ const _openServer = (serverUrl, host) => {
 const _closeServer = () => {
   xrmp.close();
   xrmp = null;
+};
+const _bindObject = o => {
+  o.onupdate = e => {
+    const {object, matrix} = e;
+    const {id} = object;
+    const tab = tabs.find(tab => tab.id === id);
+console.log('object update', id, matrix); // XXX
+    const {iframe: {xrOffset}} = tab;
+    xrOffset.position = matrix.position;
+    xrOffset.orientation = matrix.quaternion;
+  };
 };
 const _updateRigLists = () => {
   const {menuMesh} = rig;
