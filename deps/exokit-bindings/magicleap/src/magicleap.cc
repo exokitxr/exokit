@@ -2859,6 +2859,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             const float trigger = controllerState.trigger_normalized;
             const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
             const float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
+            const bool isConnected = controllerState.is_connected[0];
             const bool isTouchActive = controllerState.is_touch_active[0];
             const MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
             const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
