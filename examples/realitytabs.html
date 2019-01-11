@@ -600,9 +600,9 @@ const _bindObject = o => {
     const {id} = object;
     const tab = tabs.find(tab => tab.id === id);
 console.log('object update', id, matrix); // XXX
-    const {iframe: {xrOffset}} = tab;
-    xrOffset.position = matrix.position;
-    xrOffset.orientation = matrix.quaternion;
+    const {iframe} = tab;
+    iframe.position = Array.from(matrix.position);
+    iframe.orientation = Array.from(matrix.quaternion);
   };
 };
 const _updateRigLists = () => {
