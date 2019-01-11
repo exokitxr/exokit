@@ -2853,6 +2853,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         if (result == MLResult_Ok) {
           for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
             const MLInputControllerState &controllerState = controllerStates[i];
+            const bool isConnected = controllerState.is_connected[0]; 
             const MLVec3f &position = OffsetFloor(controllerState.position);
             const MLQuaternionf &orientation = controllerState.orientation;
             const float trigger = controllerState.trigger_normalized;
