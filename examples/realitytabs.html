@@ -1675,7 +1675,7 @@ function animate(time, frame) {
       boxMesh.visible = true;
 
       if (xrmp) {
-        const object = xrmp.objects.find(object => object.id === id);
+        const object = xrmp.objects.find(object => object.id === moveTab.id);
         const {objectMatrix} = object;
         localVector.toArray(objectMatrix.position);
         localQuaternion.toArray(objectMatrix.quaternion);
