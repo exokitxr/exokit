@@ -203,7 +203,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(planeVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML plane vertex shader compilation failed:\n" << infoLog << std::endl;
+      std::cout << "plane vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -217,7 +217,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(planeFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML plane fragment shader compilation failed:\n" << infoLog << std::endl;
+      std::cout << "plane fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -232,13 +232,13 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(planeSpec->planeProgram, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML plane program linking failed\n" << infoLog << std::endl;
+      std::cout << "plane program linking failed\n" << infoLog << std::endl;
       return;
     }
 
     planeSpec->positionLocation = glGetAttribLocation(planeSpec->planeProgram, "position");
     if (planeSpec->positionLocation == -1) {
-      std::cout << "ML plane program failed to get attrib location for 'position'" << std::endl;
+      std::cout << "plane program failed to get attrib location for 'position'" << std::endl;
       return;
     }
     planeSpec->uvLocation = glGetAttribLocation(planeSpec->planeProgram, "uv");
