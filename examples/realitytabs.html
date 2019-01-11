@@ -591,6 +591,10 @@ const _openServer = (serverUrl, host) => {
   };
 };
 const _closeServer = () => {
+  xrmp.onopen = null;
+  xrmp.onsync = null;
+  xrmp.onobjectadd = null;
+  xrmp.onobjectremove = null;
   xrmp.close();
   xrmp = null;
 };
