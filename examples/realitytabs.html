@@ -510,7 +510,7 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
       d,
     });
     position.toArray(o.objectMatrix.position);
-    orientation.toArray(o.objectMatrix.orientation);
+    orientation.toArray(o.objectMatrix.quaternion);
     o.pushUpdate();
     _bindObject(o);
   }
