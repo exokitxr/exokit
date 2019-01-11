@@ -1673,6 +1673,14 @@ function animate(time, frame) {
       boxMesh.scale.copy(localVector2);
       // boxMesh.updateMatrixWorld();
       boxMesh.visible = true;
+
+      if (xrmp) {
+        const object = xrmp.objects.find(object => object.id === id);
+        const {objectMatrix} = object;
+        localVector.toArray(objectMatrix.position);
+        localQuaternion.toArray(objectMatrix.quaternion);
+        object.pushUpdate();
+      }
     } else {
       boxMesh.visible = false;
     }
