@@ -1497,6 +1497,7 @@ const _bindWindow = (window, newWindowCb) => {
         leftGamepad.buttons[0].touched = leftPadTouched;
         leftGamepad.buttons[0].pressed = leftPadPushed;
         controllersArrayIndex += 3;
+        leftGamepad.connected = controllersArray[controllersArrayIndex];
 
         gamepads[0] = leftGamepad;
 
@@ -1532,6 +1533,7 @@ const _bindWindow = (window, newWindowCb) => {
         rightGamepad.buttons[0].touched = rightPadTouched;
         rightGamepad.buttons[0].pressed = rightPadPushed;
         controllersArrayIndex += 3;
+        rightGamepad.connected = controllersArray[controllersArrayIndex];
 
         gamepads[1] = rightGamepad;
 
