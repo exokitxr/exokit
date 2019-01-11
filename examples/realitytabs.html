@@ -567,24 +567,23 @@ const _openServer = (serverUrl, host) => {
   xrmp.onobjectadd = e => {
     const {object} = e;
     const {id, state} = object;
-    const {url} = state;
-    if (!tabs.some(tab => tab.url === url)) {
+    if (!tabs.some(tab => tab.id === id)) {
       const {url, d} = state;
       _openUrl(url, undefined, undefined, undefined, d, false, id);
       _bindObject(object);
-      console.log('server object add', e.object);
+      console.log('server object add', id);
     } else {
-      console.warn('ignoring duplicate server tab', url);
+      console.warn('ignoring duplicate server tab', id);
     }
   };
   xrmp.onobjectremove = e => {
-    const {url} = e.object.state;
-    const index = tabs.findIndex(tab => tab.url === url);
+    const {id} = e.object;
+    const index = tabs.findIndex(tab => tab.id === id);
     if (index !== -1) {
       tabs.splice(index, 1);
-      console.log('server object remove', url);
+      console.log('server object remove', id);
     } else {
-      console.warn('failed to remove local server tab', url);
+      console.warn('failed to remove local server tab', id);
     }
   };
   xrmp.onerror = err => {
