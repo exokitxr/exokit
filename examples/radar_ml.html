@@ -62,13 +62,6 @@
 
       return object;
     };
-    controllerMeshes = [
-      _makeControllerMesh(-0.1),
-      _makeControllerMesh(0.1),
-    ];
-    controllerMeshes.forEach(controllerMesh => {
-      scene.add(controllerMesh);
-    });
     const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const _requestSpriteMesh = url => new Promise((accept, reject) => {
@@ -102,6 +95,14 @@
         directionalLight.position.set(1, 1, 1);
         scene.add(directionalLight);
       }
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
 
       const woodMesh = new THREE.Object3D();
       _requestSpriteMesh('wood.png')
