@@ -453,18 +453,6 @@
         });
         display.session = session;
 
-        /* session.onselect = e => {
-          const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-          const rayMesh = rayMeshes[controllerIndex];
-          rayMesh.matrixWorld.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
-
-          const objectMesh = _makeControllerMesh(
-            rayMesh.position.x, rayMesh.position.y, rayMesh.position.z,
-            rayMesh.quaternion.x, rayMesh.quaternion.y, rayMesh.quaternion.z, rayMesh.quaternion.w,
-          );
-          scene.add(objectMesh);
-        }; */
-
         // console.log('request first frame');
         session.requestAnimationFrame((timestamp, frame) => {
           renderer.vr.setSession(session, {
