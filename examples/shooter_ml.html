@@ -176,7 +176,8 @@
             const inputSource = inputSources[i];
             const pose = frame.getInputPose(inputSource);
 
-            const controllerMesh = controllerMeshes[i];
+            const controllerIndex = _getControllerIndex(inputSource);
+            const controllerMesh = controllerMeshes[controllerIndex];
             controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
             controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
             controllerMesh.updateMatrixWorld(true);
