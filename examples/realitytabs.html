@@ -545,7 +545,8 @@ const _closeAllTabs = () => { // XXX trigger this when switching servers
   layers.length = 0;
 };
 const _openServer = (serverUrl, host) => {
-  xrmp = new XRMultiplayer(serverUrl);
+  xrmp = new XRMultiplayerTHREE(new XRMultiplayer(serverUrl));
+  xrmp.localPlayerMesh = xrmp.createLocalPlayerMesh(undefined, {});
   xrmp.onopen = () => {
     if (host) {
       for (let i = 0; i < tabs.length; i++) {
@@ -568,8 +569,11 @@ const _openServer = (serverUrl, host) => {
     serverConnectedUrl = serverUrl;
     rig.menuMesh.listMesh.updateList();
   };
-  xrmp.onobjectadd = e => {
-    const {object} = e;
+  xrmp.onclose = () => {
+    console.log('server close', serverUrl);
+  };
+  xrmp.onobjectadd = objectMesh => {
+    const {object} = objectMesh;
     const {id, state} = object;
     if (!tabs.some(tab => tab.id === id)) {
       const {url, d} = state;
@@ -580,8 +584,8 @@ const _openServer = (serverUrl, host) => {
       console.warn('ignoring duplicate server tab', id);
     }
   };
-  xrmp.onobjectremove = e => {
-    const {id} = e.object;
+  xrmp.onobjectremove = objectMesh => {
+    const {id} = objectMesh.object;
     const index = tabs.findIndex(tab => tab.id === id);
     if (index !== -1) {
       tabs.splice(index, 1);
