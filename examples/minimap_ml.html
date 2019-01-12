@@ -9,7 +9,7 @@
   <body>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, renderer, display, rayMeshes, planeMesh, containerMesh;
+    let container, scene, camera, renderer, display, controllerMeshes, rayMeshes, planeMesh, containerMesh;
     let intersectScene, intersectCamera, renderTarget, terrainMeshes;
     let mesher = null;
 
@@ -29,13 +29,6 @@
       mesh.frustumCulled = false;
       return mesh;
     };
-    const controllerMeshes = Array(2);
-    for (let i = 0; i < controllerMeshes.length; i++) {
-      const controllerMesh = _makeControllerMesh();
-
-      scene.add(controllerMesh);
-      controllerMeshes[i] = controllerMesh;
-    }
     const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const localMatrix = new THREE.Matrix4();
@@ -60,6 +53,14 @@
       const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
+
+      controllerMeshes = Array(2);
+      for (let i = 0; i < controllerMeshes.length; i++) {
+        const controllerMesh = _makeControllerMesh();
+
+        scene.add(controllerMesh);
+        controllerMeshes[i] = controllerMesh;
+      }
 
       /* (() => {
         const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
