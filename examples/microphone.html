@@ -140,14 +140,20 @@
         const inputSources = display.session.getInputSources();
         const gamepads = navigator.getGamepads();
 
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          controllerMeshes[i].visible = false;
+        }
+
         for (let i = 0; i < inputSources.length; i++) {
           {
             const inputSource = inputSources[i];
             const pose = frame.getInputPose(inputSource);
 
-            const controllerMesh = controllerMeshes[i];
+            const controllerIndex = _getControllerIndex(inputSource);
+            const controllerMesh = controllerMeshes[controllerIndex];
             controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
             controllerMesh.updateMatrixWorld(true);
+            controllerMesh.visible = true;
           }
 
           {
