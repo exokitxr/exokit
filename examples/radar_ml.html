@@ -62,6 +62,13 @@
 
       return object;
     };
+    controllerMeshes = [
+      _makeControllerMesh(-0.1),
+      _makeControllerMesh(0.1),
+    ];
+    controllerMeshes.forEach(controllerMesh => {
+      scene.add(controllerMesh);
+    });
 
     const _requestSpriteMesh = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -179,14 +186,6 @@
         return mesh;
       })();
       radarScene.add(floorMesh);
-
-      controllerMeshes = [
-        _makeControllerMesh(-0.1),
-        _makeControllerMesh(0.1),
-      ];
-      controllerMeshes.forEach(controllerMesh => {
-        scene.add(controllerMesh);
-      });
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
