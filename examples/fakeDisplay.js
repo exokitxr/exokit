@@ -40,6 +40,9 @@ window._makeFakeDisplay = () => {
         ).toArray(gamepad.pose.position);
       fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
 
+      if (!gamepad.handedness) {
+        gamepad.handedness = gamepad.hand;
+      }
       if (!gamepad.pose._localPointerMatrix) {
         gamepad.pose._localPointerMatrix = new Float32Array(32);
       }
