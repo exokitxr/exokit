@@ -28,13 +28,6 @@
       mesh.frustumCulled = false;
       return mesh;
     };
-    controllerMeshes = [
-      _makeControllerMesh(-0.1),
-      _makeControllerMesh(0.1),
-    ];
-    controllerMeshes.forEach(controllerMesh => {
-      scene.add(controllerMesh);
-    });
     const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     function init() {
@@ -56,6 +49,14 @@
       const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
 
       {
         const loader = new THREE.GLTFLoader(); // .setPath( 'models/' );
