@@ -458,6 +458,7 @@ const controllerMeshes = [
 controllerMeshes.forEach(controllerMesh => {
   scene.add(controllerMesh);
 });
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 const teleportMesh = (() => {
   const geometry = new THREE.CylinderBufferGeometry(0.01, 0.1, 0.3, 3, 1)
@@ -1046,15 +1047,14 @@ const _bootXr = async newDisplay => {
   });
   display.session = session;
 
-  const _getControllerIndex = e => e.inputSource.handedness === 'left' ? 0 : 1;
   session.onselectstart = e => {
     if (!paintMesh) {
       paintMesh = _getPaintMesh();
-      paintControllerIndex = _getControllerIndex(e);
+      paintControllerIndex = _getControllerIndex(e.inputSource);
     }
   };
   session.onselectend = e => {
-    if (paintControllerIndex === _getControllerIndex(e)) {
+    if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
       paintMesh = null;
       paintControllerIndex = -1;
     }
