@@ -58,6 +58,7 @@ controllerMeshes = [
 controllerMeshes.forEach(controllerMesh => {
   scene.add(controllerMesh);
 });
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 let paintMesh = null;
 let paintControllerIndex = -1;
@@ -397,15 +398,14 @@ init();
   });
   display.session = session;
 
-  const _getControllerIndex = e => e.inputSource.handedness === 'left' ? 0 : 1;
   session.onselectstart = e => {
     if (!paintMesh) {
       paintMesh = _getPaintMesh();
-      paintControllerIndex = _getControllerIndex(e);
+      paintControllerIndex = _getControllerIndex(e.inputSource);
     }
   };
   session.onselectend = e => {
-    if (paintControllerIndex === _getControllerIndex(e)) {
+    if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
       paintMesh = null;
       paintControllerIndex = -1;
     }
