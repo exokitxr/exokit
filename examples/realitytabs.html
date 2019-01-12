@@ -365,20 +365,6 @@ for (let i = 0; i < 2; i++) {
     new THREE.Vector3(0, -1, -1)
   );
 
-  /* const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
-    const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-    mesh.position.set(x, y, z);
-    mesh.quaternion.set(qx, qy, qz, qw);
-    // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-    mesh.updateMatrix();
-    mesh.updateMatrixWorld();
-    mesh.matrixAutoUpdate = false;
-    mesh.frustumCulled = false;
-    return mesh;
-  };
-  const blockMesh = _makeBlockMesh();
-  controllerMesh.add(blockMesh); */
-
   const rayMesh = (() => {
     const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
       .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
@@ -416,15 +402,6 @@ for (let i = 0; i < 2; i++) {
       .set(0, 0, -1)
       .applyQuaternion(controllerMesh.quaternion);
   };
-
-  /* const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-  // controllerMesh.position.set(x, y, z);
-  // controllerMesh.quaternion.set(qx, qy, qz, qw);
-  // controllerMesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-  // controllerMesh.updateMatrix();
-  // controllerMesh.updateMatrixWorld();
-  controllerMesh.matrixAutoUpdate = false;
-  controllerMesh.frustumCulled = false; */
 
   scene.add(controllerMesh);
   controllerMeshes[i] = controllerMesh;
