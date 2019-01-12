@@ -56,7 +56,8 @@ matrix:
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - "./node/bin/npm install"
-    - "./node/bin/npm run test:ci"
+    - export TEST_ENV=ci
+    - "./node/bin/npm run test:command"
     - install_name_tool -change '@rpath/OpenVR.framework/Versions/A/OpenVR' '@loader_path/../../node_modules/native-openvr-deps/bin/osx64/OpenVR.framework/Versions/A/OpenVR'
       build/Release/exokit.node
     - mkdir -p /tmp/Exokit.app/Contents/MacOS
