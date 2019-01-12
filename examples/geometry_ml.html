@@ -54,6 +54,14 @@ const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1
   mesh.frustumCulled = false;
   return mesh;
 };
+controllerMeshes = [
+  _makeControllerMesh(-0.1),
+  _makeControllerMesh(0.1),
+];
+controllerMeshes.forEach(controllerMesh => {
+  scene.add(controllerMesh);
+});
+
 const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 3, 1)
   .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0))
   .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
@@ -435,14 +443,6 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
-
-  controllerMeshes = [
-    _makeControllerMesh(-0.1),
-    _makeControllerMesh(0.1),
-  ];
-  controllerMeshes.forEach(controllerMesh => {
-    scene.add(controllerMesh);
-  });
 
   teleportMesh = (() => {
     const geometry = new THREE.CylinderBufferGeometry(0.1, 0, 0.3, 3, 1)
