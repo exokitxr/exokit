@@ -62,6 +62,7 @@
 
       return object;
     };
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const _requestSpriteMesh = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -94,6 +95,14 @@
         directionalLight.position.set(1, 1, 1);
         scene.add(directionalLight);
       }
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
 
       const woodMesh = new THREE.Object3D();
       _requestSpriteMesh('wood.png')
@@ -180,14 +189,6 @@
       })();
       radarScene.add(floorMesh);
 
-      controllerMeshes = [
-        _makeControllerMesh(-0.1),
-        _makeControllerMesh(0.1),
-      ];
-      controllerMeshes.forEach(controllerMesh => {
-        scene.add(controllerMesh);
-      });
-
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
@@ -202,16 +203,21 @@
 
     function animate(time, frame) {
       if (renderer.vr.enabled) {
-        const inputSources = display.session.getInputSources();
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          controllerMeshes[i].visible = false;
+        }
 
+        const inputSources = display.session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
 
-          const controllerMesh = controllerMeshes[i];
+          const controllerIndex = _getControllerIndex(inputSource);
+          const controllerMesh = controllerMeshes[controllerIndex];
           controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
           controllerMesh.updateMatrixWorld(true);
+          controllerMesh.visible = true;
 
           const oldVrEnabled = renderer.vr.enabled;
           renderer.vr.enabled = false;

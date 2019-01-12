@@ -35,6 +35,7 @@ const _makeControllerMesh = () => {
   mesh.frustumCulled = false;
   return mesh;
 };
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 function init() {
   renderer = new THREE.WebGLRenderer({
@@ -64,6 +65,14 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
+
+  controllerMeshes = [
+    _makeControllerMesh(),
+    _makeControllerMesh(),
+  ];
+  controllerMeshes.forEach(controllerMesh => {
+    scene.add(controllerMesh);
+  });
 
   iframe = document.createElement('iframe');
   iframe.d = 2;
@@ -199,17 +208,6 @@ function init() {
     scene.add(boxMeshes[i]);
   }
 
-  controllerMeshes = [
-    _makeControllerMesh(),
-    _makeControllerMesh(),
-  ];
-  for (let i = 0; i < controllerMeshes.length; i++) {
-    if (i === 1) { // XXX only use right controller
-      continue;
-    }
-    scene.add(controllerMeshes[i]);
-  }
-
   focused = true;
 
   window.addEventListener('mousemove', e => {
@@ -293,18 +291,21 @@ function animate(timestamp, frame) {
     }
   }
 
+  for (let i = 0; i < controllerMeshes.length; i++) {
+    controllerMeshes[i].visible = false;
+  }
+
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
-    if (i === 1) { // XXX only use right controller
-      continue;
-    }
-
     const inputSource = inputSources[i];
     const pose = frame.getInputPose(inputSource);
-    const controllerMesh = controllerMeshes[i];
+
+    const controllerIndex = _getControllerIndex(inputSource);
+    const controllerMesh = controllerMeshes[controllerIndex];
     controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
     controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
     controllerMesh.updateMatrixWorld(true);
+    controllerMesh.visible = true;
 
     const leftLine = localLine;
     const topLine = localLine2;
@@ -347,13 +348,13 @@ function animate(timestamp, frame) {
         const x = (xFactor * planeWidth)/SCROLL_SCALE;
         const y = (yFactor * planeHeight)/SCROLL_SCALE;
 
-        controllerCoords[i][0] = x;
-        controllerCoords[i][1] = y;
+        controllerCoords[controllerIndex][0] = x;
+        controllerCoords[controllerIndex][1] = y;
 
         iframe.sendMouseMove(x, y);
 
-        boxMeshes[i].position.copy(intersectionPoint);
-        boxMeshes[i].updateMatrixWorld();
+        boxMeshes[controllerIndex].position.copy(intersectionPoint);
+        boxMeshes[controllerIndex].updateMatrixWorld();
       }
     }
   }

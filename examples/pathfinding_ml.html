@@ -63,14 +63,6 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      /* controllerMeshes = [
-        _makeControllerMesh(-0.1),
-        _makeControllerMesh(0.1),
-      ];
-      controllerMeshes.forEach(controllerMesh => {
-        scene.add(controllerMesh);
-      }); */
-
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
@@ -393,18 +385,7 @@
         );
         model.updateMatrixWorld();
       }
-      /* if (renderer.vr.enabled) {
-        const inputSources = display.session.getInputSources();
-
-        for (let i = 0; i < inputSources.length; i++) {
-          const inputSource = inputSources[i];
-          const pose = frame.getInputPose(inputSource);
-
-          const controllerMesh = controllerMeshes[i];
-          controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-          controllerMesh.updateMatrixWorld(true);
-        }
-      } */
+      
       if (waypointsValid) {
         const _getRandomWaypoint = () => {
           const keys = Object.keys(waypoints);
@@ -565,18 +546,6 @@
         exclusive: true,
       });
       display.session = session;
-
-      /* session.onselect = e => {
-        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const controllerMesh = controllerMeshes[controllerIndex];
-        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
-
-        const objectMesh = _makeControllerMesh(
-          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
-          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
-        );
-        scene.add(objectMesh);
-      }; */
 
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {

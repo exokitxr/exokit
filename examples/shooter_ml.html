@@ -9,7 +9,7 @@
   <body>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, renderer, display, rayMeshes, hitMeshes;
+    let container, scene, camera, renderer, display, controllerMeshes, hitMeshes;
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -17,6 +17,26 @@
     const localMatrix = new THREE.Matrix4();
     const localVectorFloat32Array = new Float32Array(3);
     const localVectorFloat32Array2 = new Float32Array(3);
+
+    const _makeControllerMesh = () => {
+      const controllerGeometry = new THREE.CylinderBufferGeometry(0.005, 0.005, 1, 3, 1)
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0))
+        .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+          new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            new THREE.Vector3(0, 0, -1),
+          )
+        ));
+      const controllerMaterial = new THREE.MeshPhongMaterial({
+        color: 0xFF0000,
+        flatShading: true,
+      });
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const cubeGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.001);
     const hitMeshMaterial = new THREE.MeshPhongMaterial({
@@ -51,53 +71,12 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      /* (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0xE91E63,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 0.5;
-        // mesh.position.z = -1;
-        mesh.frustumCuled = false;
-        scene.add(mesh);
-      })();
-      (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x4CAF50,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 1 + 0.1;
-        // mesh.position.z = -1;
-        mesh.frustumCulled = false;
-        scene.add(mesh);
-      })(); */
-
-      const _makeRayMesh = () => {
-        const rayGeometry = new THREE.CylinderBufferGeometry(0.005, 0.005, 1, 3, 1)
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0))
-          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
-            new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 1, 0),
-              new THREE.Vector3(0, 0, -1),
-            )
-          ));
-        const rayMaterial = new THREE.MeshPhongMaterial({
-          color: 0xFF0000,
-          flatShading: true,
-        });
-        const rayMesh = new THREE.Mesh(rayGeometry, rayMaterial);
-        rayMesh.matrixAutoUpdate = false;
-        rayMesh.frustumCulled = false;
-        return rayMesh;
-      };
-      rayMeshes = [
-        _makeRayMesh(),
-        _makeRayMesh(),
+      controllerMeshes = [
+        _makeControllerMesh(),
+        _makeControllerMesh(),
       ];
-      rayMeshes.forEach(rayMesh => {
-        scene.add(rayMesh);
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
       });
 
       renderer = new THREE.WebGLRenderer({
@@ -166,16 +145,21 @@
 
       const _updateGamepads = () => {
         if (renderer.vr.enabled) {
-          const inputSources = display.session.getInputSources();
+          for (let i = 0; i < controllerMeshes.length; i++) {
+            controllerMeshes[i].visible = false;
+          }
 
+          const inputSources = display.session.getInputSources();
           for (let i = 0; i < inputSources.length; i++) {
             const inputSource = inputSources[i];
             const pose = frame.getInputPose(inputSource);
 
-            const rayMesh = rayMeshes[i];
-            rayMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-            rayMesh.matrix.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
-            rayMesh.updateMatrixWorld(true);
+            const controllerIndex = _getControllerIndex(inputSource);
+            const controllerMesh = controllerMeshes[controllerIndex];
+            controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+            controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+            controllerMesh.updateMatrixWorld(true);
+            controllerMesh.visible = true;
           }
         }
       };
@@ -294,13 +278,13 @@
       display.session = session;
 
       session.onselect = e => {
-        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const rayMesh = rayMeshes[controllerIndex];
-        // rayMesh.matrixWorld.decompose(rayMesh.position, rayMesh.quaternion, rayMesh.scale);
+        const controllerIndex = _getControllerIndex(inputSource);
+        const controllerMesh = controllerMeshes[controllerIndex];
+        // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
 
         const bullet = _makeBullet();
-        bullet.position.copy(rayMesh.position);
-        bullet.quaternion.copy(rayMesh.quaternion);
+        bullet.position.copy(controllerMesh.position);
+        bullet.quaternion.copy(controllerMesh.quaternion);
         bullet.updateMatrix();
         bullet.updateMatrixWorld(true);
         scene.add(bullet);

@@ -352,32 +352,14 @@ const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01);
 const controllerMaterial = new THREE.MeshPhongMaterial({
   color: 0x4caf50,
 });
-const controllerMeshes = [
-  // _makeControllerMesh(-0.1),
-  // _makeControllerMesh(0.1),
-];
-
-for (let i = 0; i < 2; i++) {
+const controllerMeshes = Array(2);
+for (let i = 0; i < controllerMeshes.length; i++) {
   const controllerMesh = new THREE.Object3D();
   controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
   controllerMesh.quaternion.setFromUnitVectors(
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(0, -1, -1)
   );
-
-  /* const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
-    const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-    mesh.position.set(x, y, z);
-    mesh.quaternion.set(qx, qy, qz, qw);
-    // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-    mesh.updateMatrix();
-    mesh.updateMatrixWorld();
-    mesh.matrixAutoUpdate = false;
-    mesh.frustumCulled = false;
-    return mesh;
-  };
-  const blockMesh = _makeBlockMesh();
-  controllerMesh.add(blockMesh); */
 
   const rayMesh = (() => {
     const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
@@ -417,18 +399,10 @@ for (let i = 0; i < 2; i++) {
       .applyQuaternion(controllerMesh.quaternion);
   };
 
-  /* const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-  // controllerMesh.position.set(x, y, z);
-  // controllerMesh.quaternion.set(qx, qy, qz, qw);
-  // controllerMesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-  // controllerMesh.updateMatrix();
-  // controllerMesh.updateMatrixWorld();
-  controllerMesh.matrixAutoUpdate = false;
-  controllerMesh.frustumCulled = false; */
-
   scene.add(controllerMesh);
   controllerMeshes[i] = controllerMesh;
 }
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 // rig
 
@@ -1159,8 +1133,6 @@ window.addEventListener('mousemove', e => {
 
       // fakeDisplay.update();
     // }
-
-    // _updateGamepads();
   }
 });
 window.addEventListener('wheel', e => {
@@ -1311,33 +1283,6 @@ function animate(time, frame) {
   const timeDiff = now - lastTime;
   const startTimeDiff = now - startTime;
 
-  /* const _updateGamepads = () => {
-    if (fakeDisplay) {
-      const inputSources = display.session.getInputSources();
-      for (let i = 0; i < inputSources.length; i++) {
-        const gamepad = fakeDisplay.gamepads[i];
-        if (gamepad) {
-          localVector.copy(fakeDisplay.position)
-            .add(
-              localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
-                .applyQuaternion(fakeDisplay.quaternion)
-            ).toArray(gamepad.pose.position);
-          fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
-        }
-
-        const inputSource = inputSources[i];
-        const pose = frame.getInputPose(inputSource);
-        localMatrix.compose(
-          localVector.fromArray(gamepad.pose.position),
-          localQuaternion.fromArray(gamepad.pose.orientation),
-          localVector2.set(1, 1, 1)
-        )
-          .toArray(pose.targetRay.transformMatrix);
-      }
-    }
-  };
-  _updateGamepads(); */
-
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
     const tab = moves[i];
@@ -1363,15 +1308,20 @@ function animate(time, frame) {
 
   const _updateControllerMeshes = () => {
     if (renderer.vr.enabled) {
-      const inputSources = display.session.getInputSources();
+      for (let i = 0; i < controllerMeshes.length; i++) {
+        controllerMeshes[i].visible = false;
+      }
 
       for (let i = 0; i < inputSources.length; i++) {
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
-        const controllerMesh = controllerMeshes[i];
+
+        const controllerIndex = _getControllerIndex(inputSource);
+        const controllerMesh = controllerMeshes[controllerIndex];
         controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
         controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
         controllerMesh.updateMatrixWorld(true);
+        controllerMesh.visible = true;
       }
     }
   };

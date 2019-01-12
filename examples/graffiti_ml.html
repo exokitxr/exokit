@@ -38,8 +38,6 @@ const _requestImage = src => new Promise((accept, reject) => {
   };
 });
 
-const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
-
 const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.01, 0.1);
 const controllerMaterial = new THREE.MeshPhongMaterial({
   color: 0x4caf50,
@@ -55,6 +53,7 @@ const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1
   mesh.frustumCulled = false;
   return mesh;
 };
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 let paintMesh = null;
 let paintControllerIndex = -1;
@@ -357,17 +356,21 @@ const lastMenus = [false, false];
 const controllerHitTesting = [false, false];
 function animate(time, frame) {
   if (renderer.vr.enabled) {
-    const inputSources = display.session.getInputSources();
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      controllerMeshes[i].visible = false;
+    }
 
+    const inputSources = display.session.getInputSources();
     for (let i = 0; i < inputSources.length; i++) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
+      
       const controllerIndex = _getControllerIndex(inputSource);
-
       const controllerMesh = controllerMeshes[controllerIndex];
       controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
       controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
       // controllerMesh.updateMatrixWorld(true);
+      controllerMesh.visible = true;
 
       if (!controllerHitTesting[controllerIndex]) {
         const hitMesh = hitMeshes[controllerIndex];
