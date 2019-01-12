@@ -1028,6 +1028,7 @@ const _makeRig = () => {
             map: texture,
             side: THREE.DoubleSide,
             transparent: true,
+            alphaTest: 0.5,
           });
           const mesh = new THREE.Mesh(geometry, material);
           mesh.frustumCulled = false;
