@@ -1312,7 +1312,6 @@ function animate(time, frame) {
         controllerMeshes[i].visible = false;
       }
 
-      const inputSources = display.session.getInputSources();
       for (let i = 0; i < inputSources.length; i++) {
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
