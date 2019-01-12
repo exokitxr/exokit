@@ -402,6 +402,7 @@ for (let i = 0; i < controllerMeshes.length; i++) {
   scene.add(controllerMesh);
   controllerMeshes[i] = controllerMesh;
 }
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 // rig
 
@@ -1336,15 +1337,21 @@ function animate(time, frame) {
 
   const _updateControllerMeshes = () => {
     if (renderer.vr.enabled) {
-      const inputSources = display.session.getInputSources();
+      for (let i = 0; i < controllerMeshes.length; i++) {
+        controllerMeshes[i].visible = false;
+      }
 
+      const inputSources = display.session.getInputSources();
       for (let i = 0; i < inputSources.length; i++) {
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
-        const controllerMesh = controllerMeshes[i];
+
+        const controllerIndex = _getControllerIndex(inputSource);
+        const controllerMesh = controllerMeshes[controllerIndex];
         controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
         controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
         controllerMesh.updateMatrixWorld(true);
+        controllerMesh.visible = true;
       }
     }
   };
