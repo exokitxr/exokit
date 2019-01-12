@@ -343,13 +343,17 @@
     let mode3d = false;
     function animate(time, frame) {
       if (renderer.vr.enabled) {
-        const inputSources = display.session.getInputSources();
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          controllerMeshes[i].visible = false;
+        }
 
+        const inputSources = display.session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
 
-          const controllerMesh = controllerMeshes[i];
+          const controllerIndex = _getControllerIndex(inputSource);
+          const controllerMesh = controllerMeshes[controllerIndex];
           controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           // controllerMesh.updateMatrixWorld();
           controllerMesh.matrixWorldNeedsUpdate = true;
@@ -357,6 +361,7 @@
           // controllerMesh.matrixWorld.fromArray(pose.targetRay.transformMatrix);
           // controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
           // controllerMesh.updateMatrixWorld(true);
+          controllerMesh.visible = true;
 
           // console.log('controller position', controllerMesh.position.toArray().join(','));
 
