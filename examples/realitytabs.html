@@ -124,6 +124,7 @@ function parseQuery(queryString) {
 }
 const query = parseQuery(window.location.search);
 const DEFAULT_URL = 'http://lol.com';
+const DEFAULT_SKIN_URL = 'skin2.png';
 
 // load
 
@@ -381,6 +382,188 @@ const _makeBoxMesh = () => {
   return mesh;
 };
 
+const _mod = (v, d) => {
+  const n = v % d;
+  return n < 0 ? (d + n) : n;
+};
+const _angleDiff = (a, b) => _mod((b - a) + Math.PI, Math.PI * 2) - Math.PI;
+const _makeSkinMesh = () => {
+  const object = {};
+  let onupdate = null;
+  object.setSkinUrl = skinUrl => {
+    if (skinUrl) {
+      return fetch(skinUrl)
+        .then(res => {
+          if (res.ok) {
+            return Promise.resolve(res);
+          } else {
+            return Promise.reject(new Error('invalid status code: ' + res.status));
+          }
+        })
+        .then(res => {
+          const {headers} = res;
+          const type = headers.get('content-type');
+
+          if (/^image\//.test(type)) {
+            console.log('set image skin', skinUrl);
+
+            const mesh = skin({
+              limbs: true,
+            });
+
+            const uniforms = THREE.UniformsUtils.clone(skin.SKIN_SHADER.uniforms);
+
+            /* const handMeshes = Array(2);
+            for (let i = 0; i < handMeshes.length; i++) {
+              const handMesh = _makeHandMesh();
+              scene.add(handMesh);
+              handMeshes[i] = handMesh;
+            }
+            mesh.handMeshes = handMeshes; */
+
+            mesh.onBeforeRender = (onBeforeRender => function() {
+              mesh.material.uniforms.headRotation.value.copy(uniforms.headRotation.value);
+              mesh.material.uniforms.leftArmRotation.value.copy(uniforms.leftArmRotation.value);
+              mesh.material.uniforms.rightArmRotation.value.copy(uniforms.rightArmRotation.value);
+              mesh.material.uniforms.theta.value = uniforms.theta.value;
+              mesh.material.uniforms.headVisible.value = uniforms.headVisible.value;
+              mesh.material.uniforms.hit.value = uniforms.hit.value;
+
+              onBeforeRender.apply(this, arguments);
+            })(mesh.onBeforeRender);
+
+            return new Promise((accept, reject) => {
+              const skinImg = new Image();
+              skinImg.crossOrigin = 'Anonymous';
+              skinImg.src = skinUrl;
+              skinImg.onload = () => {
+                accept(skinImg);
+              };
+              skinImg.onerror = err => {
+                reject(err);
+              };
+            })
+              .then(skinImg => {
+                mesh.setImage(skinImg);
+
+                onupdate = (hmd, gamepads) => {
+                  const hmdEuler = localEuler.setFromQuaternion(hmd.quaternion, localEuler.order);
+                  const playerEuler = localEuler2.setFromQuaternion(mesh.quaternion, localEuler2.order);
+                  const angleDiff = _angleDiff(hmdEuler.y, playerEuler.y);
+                  const angleDiffAbs = Math.abs(angleDiff);
+                  if (angleDiffAbs > Math.PI / 2) {
+                    playerEuler.y += (angleDiffAbs - (Math.PI / 2)) * (angleDiff < 0 ? 1 : -1);
+                    mesh.quaternion.setFromEuler(playerEuler);
+                  }
+
+                  const oldWorldPosition = mesh.getWorldPosition(localVector);
+                  mesh.position.copy(hmd.position)
+                    .sub(mesh.eye.getWorldPosition(localVector2))
+                    .add(oldWorldPosition);
+
+                  const playerQuaternionInverse = localQuaternion.copy(mesh.quaternion).inverse();
+                  mesh.head.quaternion.copy(playerQuaternionInverse).multiply(hmd.quaternion);
+                  mesh.updateMatrixWorld();
+
+                  const headQuaternionInverse = localQuaternion2.copy(mesh.head.quaternion).inverse();
+                  uniforms.headRotation.value.set(headQuaternionInverse.x, headQuaternionInverse.y, headQuaternionInverse.z, headQuaternionInverse.w);
+
+                  for (let i = 0; i < 2; i++) {
+                    const side = SIDES[i];
+                    const armRotation = uniforms[side === 'left' ? 'leftArmRotation' : 'rightArmRotation'];
+
+                    const gamepad = gamepads[i];
+                    if (gamepad.visible) {
+                      const armQuaternionInverse = localQuaternion2.setFromRotationMatrix(
+                        localMatrix.lookAt(
+                          mesh.arms[side].getWorldPosition(localVector),
+                          gamepad.position,
+                          localVector2.copy(upVector).applyQuaternion(gamepad.quaternion)
+                        )
+                      )
+                        .multiply(armQuaternionOffset)
+                        .premultiply(playerQuaternionInverse)
+                        .inverse();
+                      armRotation.value.set(armQuaternionInverse.x, armQuaternionInverse.y, armQuaternionInverse.z, armQuaternionInverse.w);
+                    } else {
+                      armRotation.value.set(0, 0, 0, 1);
+                    }
+                  }
+                };
+
+                if (object.skinMesh) {
+                  object.skinMesh.parent.remove(object.skinMesh);
+                  object.skinMesh = null;
+                }
+
+                scene.add(mesh);
+                object.skinMesh = mesh;
+              });
+          } else if (type === 'application/x-tar') {
+            console.log('set model skin', skinUrl);
+
+            return res.arrayBuffer()
+              .then(arrayBuffer => untar(arrayBuffer))
+              .then(files => {
+                const fbxFile = files.find(file => /\.fbx/.test(file.name));
+
+                if (fbxFile) {
+                  const directoryUrl = fetchManager.addDirectory(files);
+                  const fbxFileUrl = directoryUrl + '/' + fbxFile.name;
+
+                  return THREE.Model.FBX(fbxFileUrl)
+                    .then(mesh => {
+                      mesh.setHeight(DEFAULT_USER_HEIGHT);
+
+                      onupdate = (hmd, gamepads) => {
+                        mesh.update(hmd, gamepads);
+                      };
+
+                      if (object.skinMesh) {
+                        object.skinMesh.parent.remove(object.skinMesh);
+                        object.skinMesh = null;
+                      }
+
+                      scene.add(mesh);
+                      object.skinMesh = mesh;
+                    })
+                    .catch(err => {
+                      console.warn(err.stack);
+                    });
+                } else {
+                  return Promise.reject(new Error('could not find model file in bundle'));
+                }
+              });
+          } else {
+            return Promise.reject(new Error('cannot open unknown file type: ' + JSON.stringify({url: skinUrl, type})));
+          }
+        });
+    } else {
+      onupdate = null;
+
+      if (object.skinMesh) {
+        object.skinMesh.parent.remove(object.skinMesh);
+        object.skinMesh = null;
+      }
+    }
+  };
+  object.update = (hmd, gamepads) => {
+    onupdate && onupdate(hmd, gamepads);
+  };
+  object.destroy = () => {
+    onupdate = null;
+
+    if (object.skinMesh) {
+      object.skinMesh.parent.remove(object.skinMesh);
+      object.skinMesh = null;
+    }
+  };
+  object.skinMesh = null;
+  return object;
+};
+/* const localSkinMesh = _makeSkinMesh();
+localSkinMesh.setSkinUrl(DEFAULT_SKIN_URL) */
+
 // helpers
 
 const _makeRenderer = () => {
@@ -594,8 +777,20 @@ const _openServer = (serverUrl, host) => {
       console.warn('failed to remove local server tab', id);;
     }
   };
-  xrmp.onerror = err => {
-    console.warn(err.stack);
+  xrmp.onplayerenter = playerMesh => {
+    const skinMesh = _makeSkinMesh();
+    skinMesh.setSkinUrl(DEFAULT_SKIN_URL);
+    playerMesh.skinMesh = skinMesh;
+
+    scene.add(playerMesh);
+  };
+  xrmp.onplayerleave = playerMesh => {
+    scene.remove(playerMesh);
+
+    playerMesh.skinMesh.destroy();
+  };
+  xrmp.onerror = e => {
+    console.warn(e.error);
   };
 };
 const _closeServer = () => {
@@ -2449,6 +2644,27 @@ function animate(time, frame) {
     }
   };
   _updateRig();
+
+  const _updateMp = () => {
+    /* const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
+    vrCamera.matrixWorld.decompose(vrCamera.position, vrCamera.quaternion, vrCamera.scale);
+    localSkinMesh.update(vrCamera, controllerMeshes); */
+
+    if (xrmp) {
+      xrmp.localPlayerMesh.hmd.position.copy(camera.position);
+      xrmp.localPlayerMesh.hmd.quaternion.copy(camera.quaternion);
+
+      for (let i = 0; i < 2; i++) {
+        const controllerMesh = controllerMeshes[i];
+        xrmp.localPlayerMesh.gamepads[i].visible = true;
+        xrmp.localPlayerMesh.gamepads[i].position.copy(controllerMesh.position);
+        xrmp.localPlayerMesh.gamepads[i].quaternion.copy(controllerMesh.quaternion);
+      }
+
+      xrmp.pushUpdate();
+    }
+  };
+  _updateMp();
 
   /* const _updateFakeDisplay = () => {
     if (fakeDisplay) {
