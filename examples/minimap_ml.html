@@ -13,21 +13,25 @@
     let intersectScene, intersectCamera, renderTarget, terrainMeshes;
     let mesher = null;
 
-    const controllerMeshes = Array(2);
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
       color: 0xFF0000,
     });
-    for (let i = 0; i < controllerMeshes.length; i++) {
-      const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
-      controllerMesh.quaternion.setFromUnitVectors(
+    const _makeControllerMesh = () => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
+      mesh.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 0, -1),
         new THREE.Vector3(0, -1, -1)
       );
-      controllerMesh.updateMatrixWorld();
-      controllerMesh.matrixAutoUpdate = false;
-      controllerMesh.frustumCulled = false;
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    const controllerMeshes = Array(2);
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      const controllerMesh = _makeControllerMesh();
 
       scene.add(controllerMesh);
       controllerMeshes[i] = controllerMesh;
