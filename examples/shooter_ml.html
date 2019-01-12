@@ -167,8 +167,11 @@
 
       const _updateGamepads = () => {
         if (renderer.vr.enabled) {
-          const inputSources = display.session.getInputSources();
+          for (let i = 0; i < controllerMeshes.length; i++) {
+            controllerMeshes[i].visible = false;
+          }
 
+          const inputSources = display.session.getInputSources();
           for (let i = 0; i < inputSources.length; i++) {
             const inputSource = inputSources[i];
             const pose = frame.getInputPose(inputSource);
@@ -177,6 +180,7 @@
             controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
             controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
             controllerMesh.updateMatrixWorld(true);
+            controllerMesh.visible = true;
           }
         }
       };
