@@ -17,6 +17,7 @@ RUN \
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
   npm install --unsafe-perm . && \
+  npm install -g mocha && \
   export TEST_ENV=ci && \
   npm run test
 RUN \
