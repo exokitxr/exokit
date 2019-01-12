@@ -352,12 +352,8 @@ const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01);
 const controllerMaterial = new THREE.MeshPhongMaterial({
   color: 0x4caf50,
 });
-const controllerMeshes = [
-  // _makeControllerMesh(-0.1),
-  // _makeControllerMesh(0.1),
-];
-
-for (let i = 0; i < 2; i++) {
+const controllerMeshes = Array(2);
+for (let i = 0; i < controllerMeshes.length; i++) {
   const controllerMesh = new THREE.Object3D();
   controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
   controllerMesh.quaternion.setFromUnitVectors(
