@@ -33,14 +33,12 @@ window._makeFakeDisplay = () => {
     const inputSources = fakeDisplay.gamepads;
     for (let i = 0; i < inputSources.length; i++) {
       const gamepad = fakeDisplay.gamepads[i];
-      if (gamepad) {
-        localVector.copy(fakeDisplay.position)
-          .add(
-            localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
-              .applyQuaternion(fakeDisplay.quaternion)
-          ).toArray(gamepad.pose.position);
-        fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
-      }
+      localVector.copy(fakeDisplay.position)
+        .add(
+          localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
+            .applyQuaternion(fakeDisplay.quaternion)
+        ).toArray(gamepad.pose.position);
+      fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
 
       if (!gamepad.pose._localPointerMatrix) {
         gamepad.pose._localPointerMatrix = new Float32Array(32);
