@@ -12,10 +12,27 @@
     let container, scene, camera, renderer, display, rayMeshes, planeMesh, containerMesh;
     let intersectScene, intersectCamera, renderTarget, terrainMeshes;
     let mesher = null;
-    const controllerMeshes = [
-      // _makeControllerMesh(-0.1),
-      // _makeControllerMesh(0.1),
-    ];
+
+    const controllerMeshes = Array(2);
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0xFF0000,
+    });
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
+      controllerMesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, -1, -1)
+      );
+      controllerMesh.updateMatrixWorld();
+      controllerMesh.matrixAutoUpdate = false;
+      controllerMesh.frustumCulled = false;
+
+      scene.add(controllerMesh);
+      controllerMeshes[i] = controllerMesh;
+    }
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const localMatrix = new THREE.Matrix4();
     const localFloat32Array = new Float32Array(16);
@@ -62,25 +79,6 @@
         mesh.frustumCulled = false;
         scene.add(mesh);
       })(); */
-
-      const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
-      const controllerMaterial = new THREE.MeshPhongMaterial({
-        color: 0xFF0000,
-      });
-      for (let i = 0; i < 2; i++) {
-        const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-        controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
-        controllerMesh.quaternion.setFromUnitVectors(
-          new THREE.Vector3(0, 0, -1),
-          new THREE.Vector3(0, -1, -1)
-        );
-        controllerMesh.updateMatrixWorld();
-        controllerMesh.matrixAutoUpdate = false;
-        controllerMesh.frustumCulled = false;
-
-        scene.add(controllerMesh);
-        controllerMeshes[i] = controllerMesh;
-      }
 
       const testMesh = new THREE.Mesh(
         new THREE.BoxBufferGeometry(1, 1, 1),
