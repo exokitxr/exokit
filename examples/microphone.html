@@ -27,13 +27,6 @@
       mesh.frustumCulled = false;
       return mesh;
     };
-    controllerMeshes = [
-      _makeControllerMesh(-0.1),
-      _makeControllerMesh(0.1),
-    ];
-    controllerMeshes.forEach(controllerMesh => {
-      scene.add(controllerMesh);
-    });
 
     const _makeAudioCtx = () => {
       const audioCtx = new AudioContext();
@@ -119,6 +112,14 @@
       const directionalLight = new THREE.DirectionalLight(0x808080, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
