@@ -28,6 +28,14 @@
       mesh.frustumCulled = false;
       return mesh;
     };
+    controllerMeshes = [
+      _makeControllerMesh(-0.1),
+      _makeControllerMesh(0.1),
+    ];
+    controllerMeshes.forEach(controllerMesh => {
+      scene.add(controllerMesh);
+    });
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     function init() {
       container = document.createElement('div');
@@ -84,14 +92,6 @@
 
         } );
       }
-
-      controllerMeshes = [
-        _makeControllerMesh(-0.1),
-        _makeControllerMesh(0.1),
-      ];
-      controllerMeshes.forEach(controllerMesh => {
-        scene.add(controllerMesh);
-      });
 
       eyeMesh = (() => {
         const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
