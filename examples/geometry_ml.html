@@ -83,8 +83,6 @@ const _makePlayerMesh = (meshId = Math.random().toString(36).substring(7)) => {
     const controllerMeshes = Array(2);
     for (let i = 0; i < controllerMeshes.length; i++) {
       const controllerMesh = _makeControllerMesh();
-      // controllerMesh.matrixAutoUpdate = false;
-      controllerMesh.frustumCulled = false;
 
       controllerMeshes[i] = controllerMesh;
       object.add(controllerMesh);
