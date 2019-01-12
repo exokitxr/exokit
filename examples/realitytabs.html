@@ -1133,8 +1133,6 @@ window.addEventListener('mousemove', e => {
 
       // fakeDisplay.update();
     // }
-
-    // _updateGamepads();
   }
 });
 window.addEventListener('wheel', e => {
@@ -1284,33 +1282,6 @@ function animate(time, frame) {
   const now = Date.now();
   const timeDiff = now - lastTime;
   const startTimeDiff = now - startTime;
-
-  /* const _updateGamepads = () => {
-    if (fakeDisplay) {
-      const inputSources = display.session.getInputSources();
-      for (let i = 0; i < inputSources.length; i++) {
-        const gamepad = fakeDisplay.gamepads[i];
-        if (gamepad) {
-          localVector.copy(fakeDisplay.position)
-            .add(
-              localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
-                .applyQuaternion(fakeDisplay.quaternion)
-            ).toArray(gamepad.pose.position);
-          fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
-        }
-
-        const inputSource = inputSources[i];
-        const pose = frame.getInputPose(inputSource);
-        localMatrix.compose(
-          localVector.fromArray(gamepad.pose.position),
-          localQuaternion.fromArray(gamepad.pose.orientation),
-          localVector2.set(1, 1, 1)
-        )
-          .toArray(pose.targetRay.transformMatrix);
-      }
-    }
-  };
-  _updateGamepads(); */
 
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
