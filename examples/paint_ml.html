@@ -51,6 +51,13 @@ const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1
   mesh.frustumCulled = false;
   return mesh;
 };
+controllerMeshes = [
+  _makeControllerMesh(-0.1),
+  _makeControllerMesh(0.1),
+];
+controllerMeshes.forEach(controllerMesh => {
+  scene.add(controllerMesh);
+});
 
 let paintMesh = null;
 let paintControllerIndex = -1;
@@ -304,14 +311,6 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
-
-  controllerMeshes = [
-    _makeControllerMesh(-0.1),
-    _makeControllerMesh(0.1),
-  ];
-  controllerMeshes.forEach(controllerMesh => {
-    scene.add(controllerMesh);
-  });
 
   renderer = new THREE.WebGLRenderer({
     antialias: true,
