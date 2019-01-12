@@ -18,7 +18,7 @@ RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
   npm install --unsafe-perm . && \
   export TEST_ENV=ci && \
-  npm run test:command
+  npm run test
 RUN \
   mkdir -p /tmp/exokit-bin/bin /tmp/exokit-bin/lib/exokit && \
   cp -R . /tmp/exokit-bin/lib/exokit && \

@@ -17,8 +17,8 @@
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "serve": "serve examples",
     "start": "node .",
-    "test:command": "mocha --full-trace --exit tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
-    "test:watch": "npm run test:command -- --watch"
+    "test": "mocha --full-trace --exit tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
+    "test:watch": "npm run test -- --watch"
   },
   "repository": {
     "type": "git",

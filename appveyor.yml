@@ -28,7 +28,7 @@ after_test:
       $env:Path = "$pwd\node;$env:Path";
       .\node\npm install
       $env:TEST_ENV = 'ci'
-      .\node\npm run test:command
+      .\node\npm run test
       bash scripts/testRun.sh
       set version "$env:APPVEYOR_REPO_TAG_NAME"
       if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_REPO_COMMIT".Substring(0, 8) }
