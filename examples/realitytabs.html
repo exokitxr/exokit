@@ -1028,6 +1028,7 @@ const _makeRig = () => {
             map: texture,
             side: THREE.DoubleSide,
             transparent: true,
+            alphaTest: 0.5,
           });
           const mesh = new THREE.Mesh(geometry, material);
           mesh.frustumCulled = false;
@@ -1118,8 +1119,8 @@ const _animateRig = () => {
 };
 
 const cacheCanvas = document.createElement('canvas');
-cacheCanvas.width = 256;
-cacheCanvas.height = 256;
+cacheCanvas.width = 1024;
+cacheCanvas.height = 1024;
 const cacheCanvasCtx = cacheCanvas.getContext('2d');
 
 const moves = [null, null];
