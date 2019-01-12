@@ -61,6 +61,7 @@ controllerMeshes = [
 controllerMeshes.forEach(controllerMesh => {
   scene.add(controllerMesh);
 });
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 const headGeometry = new THREE.CylinderBufferGeometry(0.01, 0.05, 0.2, 3, 1)
   .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.05/2, 0))
@@ -689,15 +690,20 @@ const lastGrabbeds = [false, false];
 const lastMenus = [false, false];
 function animate(time, frame) {
   if (renderer.vr.enabled) {
-    const inputSources = display.session.getInputSources();
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      controllerMeshes[i].visible = false;
+    }
 
+    const inputSources = display.session.getInputSources();
     for (let i = 0; i < inputSources.length; i++) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
 
-      const controllerMesh = controllerMeshes[i];
+      const controllerIndex = _getControllerIndex();
+      const controllerMesh = controllerMeshes[controllerIndex];
       controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
       controllerMesh.updateMatrixWorld(true);
+      controllerMesh.visible = true;
     }
 
     if (paintMesh) {
