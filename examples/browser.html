@@ -204,9 +204,6 @@ function init() {
     _makeControllerMesh(),
   ];
   for (let i = 0; i < controllerMeshes.length; i++) {
-    if (i === 1) { // XXX only use right controller
-      continue;
-    }
     scene.add(controllerMeshes[i]);
   }
 
@@ -295,10 +292,6 @@ function animate(timestamp, frame) {
 
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
-    if (i === 1) { // XXX only use right controller
-      continue;
-    }
-
     const inputSource = inputSources[i];
     const pose = frame.getInputPose(inputSource);
     const controllerMesh = controllerMeshes[i];
