@@ -43,6 +43,7 @@
     controllerMeshes.forEach(controllerMesh => {
       scene.add(controllerMesh);
     });
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const cubeGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.001);
     const hitMeshMaterial = new THREE.MeshPhongMaterial({
@@ -294,7 +295,7 @@
       display.session = session;
 
       session.onselect = e => {
-        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+        const controllerIndex = _getControllerIndex(inputSource);
         const controllerMesh = controllerMeshes[controllerIndex];
         // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
 
