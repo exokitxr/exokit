@@ -35,13 +35,6 @@ const _makeControllerMesh = () => {
   mesh.frustumCulled = false;
   return mesh;
 };
-controllerMeshes = [
-  _makeControllerMesh(),
-  _makeControllerMesh(),
-];
-controllerMeshes.forEach(controllerMesh => {
-  scene.add(controllerMesh);
-});
 const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 function init() {
@@ -72,6 +65,14 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
+
+  controllerMeshes = [
+    _makeControllerMesh(),
+    _makeControllerMesh(),
+  ];
+  controllerMeshes.forEach(controllerMesh => {
+    scene.add(controllerMesh);
+  });
 
   iframe = document.createElement('iframe');
   iframe.d = 2;
