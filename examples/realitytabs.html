@@ -7,7 +7,7 @@
     <script src="svg-boundings.js"></script>
     <script src="sprite3d.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastAxesValid = [false, false];
+let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
 
 const links = [
   {
@@ -1489,21 +1489,28 @@ function animate(time, frame) {
       const pose = frame.getInputPose(inputSource);
       const {iframe} = tab;
 
+      const gamepads = navigator.getGamepads();
+      const gamepad = gamepads[i];
+      const scrollFactor = scrollFactors[i];
+      const scaleFactor = scaleFactors[i];
+
       localMatrix
         .fromArray(pose.targetRay.transformMatrix)
         .decompose(localVector, localQuaternion, localVector2);
-
       localVector
         .add(
-          localVector2.set(0, 0, -1.5)
+          localVector2.set(0, 0, -scrollFactor)
             .applyQuaternion(localQuaternion)
         );
+      localVector2.set(scaleFactor, scaleFactor, scaleFactor);
 
       iframe.position = localVector.toArray();
       iframe.orientation = localQuaternion.toArray();
+      iframe.scale = localVector2.toArray();
 
       boxMesh.position.copy(localVector);
       boxMesh.quaternion.copy(localQuaternion);
+      boxMesh.scale.copy(localVector2);
       // boxMesh.updateMatrixWorld();
       boxMesh.visible = true;
     } else {
@@ -1869,7 +1876,24 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
-                          moves[i] = tabs[menuMesh.listMesh.scrollIndex + j];
+                          const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                          moves[i] = tab;
+
+                          const inputSources = display.session.getInputSources();
+                          const inputSource = inputSources[i];
+                          const pose = frame.getInputPose(inputSource);
+                          localMatrix
+                            .fromArray(pose.targetRay.transformMatrix)
+                            .decompose(localVector, localQuaternion, localVector2);
+                          const distance = localVector
+                            .distanceTo(
+                              localVector2
+                                .fromArray(tab.iframe.xrOffset.position)
+                            );
+                          scrollFactors[i] = distance;
+
+                          const scale = tab.iframe.xrOffset.scale[0];
+                          scaleFactors[i] = scale;
                         }
 
                         intersectionSpecs[i] = null;
@@ -1983,24 +2007,36 @@ function animate(time, frame) {
 
       const gamepad = navigator.getGamepads()[i];
       lastPresseds[i] = gamepad.buttons[1].pressed;
+
       const padTouched = gamepad.buttons[0].touched;
       const {axes} = gamepad;
-      const lastAxis = lastAxes[i];
-      const lastAxisValid = lastAxesValid[i];
-
-      if (padTouched && lastAxisValid) {
+      const lastPadTouched = lastPadToucheds[i];
+      if (padTouched && lastPadTouched && !moves[i]) {
+        const lastAxis = lastAxes[i];
         const dx = axes[0] - lastAxis[0];
         const dy = axes[1] - lastAxis[1];
 
         rig.menuMesh.listMesh.updateWheel(dx*4, dy*4);
       }
-      if (padTouched) {
-        lastAxis[0] = axes[0];
-        lastAxis[1] = axes[1];
-        lastAxesValid[i] = true;
-      } else {
-        lastAxesValid[i] = false;
+      lastPadTouched[i] = padTouched;
+
+      const padPressed = gamepad.buttons[0].pressed;
+      if (padPressed && moves[i]) {
+        if (padPressed) {
+          if (gamepad.axes[1] > 0.5) {
+            scrollFactors[i] += 1/20;
+          } else if (gamepad.axes[1] < -0.5) {
+            scrollFactors[i] -= 1/20;
+          } else if (gamepad.axes[0] > 0.5) {
+            scaleFactors[i] = Math.min(scaleFactors[i] *= 1.01, 100);
+          } else if (gamepad.axes[0] < -0.5) {
+            scaleFactors[i] = Math.max(scaleFactors[i] /= 1.01, 0.01);
+          }
+        }
       }
+
+      lastAxes[0] = axes[0];
+      lastAxes[1] = axes[1];
     }
   };
   _updateIntersections();
