@@ -563,7 +563,7 @@ for (let i = 0; i < controllerMeshes.length; i++) {
   controllerMesh.add(rayMesh);
   controllerMesh.rayMesh = rayMesh;
 
-  const rayDot = (() => {
+  const dotMesh = (() => {
     const geometry = new THREE.SphereBufferGeometry(0.01, 5, 5);
     const material = new THREE.MeshBasicMaterial({
       color: 0xe91e63,
@@ -574,8 +574,8 @@ for (let i = 0; i < controllerMeshes.length; i++) {
     mesh.visible = true;
     return mesh;
   })();
-  controllerMesh.add(rayDot);
-  controllerMesh.rayDot = rayDot;
+  controllerMesh.add(dotMesh);
+  controllerMesh.dotMesh = dotMesh;
 
   controllerMesh.ray = new THREE.Ray();
   controllerMesh.update = () => {
@@ -1594,9 +1594,9 @@ function animate(time, frame) {
               controllerMesh.rayMesh.scale.z = distance;
               controllerMesh.updateMatrixWorld();
 
-              controllerMesh.rayDot.position.z = -distance;
+              controllerMesh.dotMesh.position.z = -distance;
               controllerMesh.updateMatrixWorld();
-              controllerMesh.rayDot.visible = true;
+              controllerMesh.dotMesh.visible = true;
 
               for (let j = 0; j < keyMap.length; j++) {
                 const [key, kx1, ky1, kx2, ky2] = keyMap[j];
@@ -1669,9 +1669,9 @@ function animate(time, frame) {
                   controllerMesh.rayMesh.scale.z = distance;
                   controllerMesh.updateMatrixWorld();
 
-                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.dotMesh.position.z = -distance;
                   controllerMesh.updateMatrixWorld();
-                  controllerMesh.rayDot.visible = true;
+                  controllerMesh.dotMesh.visible = true;
 
                   const gamepads = navigator.getGamepads();
                   const gamepad = gamepads[i];
@@ -1705,9 +1705,9 @@ function animate(time, frame) {
                   controllerMesh.rayMesh.scale.z = distance;
                   controllerMesh.updateMatrixWorld();
 
-                  controllerMesh.rayDot.position.z = -distance;
+                  controllerMesh.dotMesh.position.z = -distance;
                   controllerMesh.updateMatrixWorld();
-                  controllerMesh.rayDot.visible = true;
+                  controllerMesh.dotMesh.visible = true;
 
                   const gamepads = navigator.getGamepads();
                   const gamepad = gamepads[i];
@@ -1745,9 +1745,9 @@ function animate(time, frame) {
                 controllerMesh.rayMesh.scale.z = distance;
                 controllerMesh.updateMatrixWorld();
 
-                controllerMesh.rayDot.position.z = -distance;
+                controllerMesh.dotMesh.position.z = -distance;
                 controllerMesh.updateMatrixWorld();
-                controllerMesh.rayDot.visible = true;
+                controllerMesh.dotMesh.visible = true;
 
                 const gamepads = navigator.getGamepads();
                 const gamepad = gamepads[i];
@@ -1806,9 +1806,9 @@ function animate(time, frame) {
                         controllerMesh.rayMesh.scale.z = distance;
                         controllerMesh.updateMatrixWorld();
 
-                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.dotMesh.position.z = -distance;
                         controllerMesh.updateMatrixWorld();
-                        controllerMesh.rayDot.visible = true;
+                        controllerMesh.dotMesh.visible = true;
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
@@ -1835,9 +1835,9 @@ function animate(time, frame) {
                         controllerMesh.rayMesh.scale.z = distance;
                         controllerMesh.updateMatrixWorld();
 
-                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.dotMesh.position.z = -distance;
                         controllerMesh.updateMatrixWorld();
-                        controllerMesh.rayDot.visible = true;
+                        controllerMesh.dotMesh.visible = true;
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
@@ -1867,9 +1867,9 @@ function animate(time, frame) {
                         controllerMesh.rayMesh.scale.z = distance;
                         controllerMesh.updateMatrixWorld();
 
-                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.dotMesh.position.z = -distance;
                         controllerMesh.updateMatrixWorld();
-                        controllerMesh.rayDot.visible = true;
+                        controllerMesh.dotMesh.visible = true;
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
@@ -1904,9 +1904,9 @@ function animate(time, frame) {
                         controllerMesh.rayMesh.scale.z = distance;
                         controllerMesh.updateMatrixWorld();
 
-                        controllerMesh.rayDot.position.z = -distance;
+                        controllerMesh.dotMesh.position.z = -distance;
                         controllerMesh.updateMatrixWorld();
-                        controllerMesh.rayDot.visible = true;
+                        controllerMesh.dotMesh.visible = true;
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
@@ -1935,9 +1935,9 @@ function animate(time, frame) {
                       controllerMesh.rayMesh.scale.z = distance;
                       controllerMesh.updateMatrixWorld();
 
-                      controllerMesh.rayDot.position.z = -distance;
+                      controllerMesh.dotMesh.position.z = -distance;
                       controllerMesh.updateMatrixWorld();
-                      controllerMesh.rayDot.visible = true;
+                      controllerMesh.dotMesh.visible = true;
 
                       const gamepads = navigator.getGamepads();
                       const gamepad = gamepads[i];
@@ -1970,9 +1970,9 @@ function animate(time, frame) {
                 controllerMesh.rayMesh.scale.z = distance;
                 controllerMesh.updateMatrixWorld();
 
-                controllerMesh.rayDot.position.z = -distance;
+                controllerMesh.dotMesh.position.z = -distance;
                 controllerMesh.updateMatrixWorld();
-                controllerMesh.rayDot.visible = true;
+                controllerMesh.dotMesh.visible = true;
 
                 const gamepads = navigator.getGamepads();
                 const gamepad = gamepads[i];
