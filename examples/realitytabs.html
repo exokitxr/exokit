@@ -656,7 +656,8 @@ const _closeTab = tab => {
   layers.splice(layers.indexOf(iframe), 1);
 
   if (serverConnectedUrl) {
-    xrmp.removeObject(id);
+    const objectMesh = xrmp.getObjectMeshes().find(objectMesh => objectMesh.object.id === moveTab.id);
+    xrmp.removeObjectMesh(objectMesh);
   }
 };
 const _closeAllTabs = () => { // XXX trigger this when switching servers
