@@ -1104,16 +1104,6 @@ class XRMultiplayer extends EventEmitter {
   addObject(id, state) {
     const object = new XRObject(id, state, this);
     object.sendAdd();
-    /* if (position || quaternion) {
-      if (position) {
-        object.objectMatrix.position.set(position);
-      }
-      if (quaternion) {
-        object.objectMatrix.quaternion.set(quaternion);
-      }
-      console.log('push update', object.objectMatrix.position, object.objectMatrix.quaternion, new Error().stack);
-      object.pushUpdate();
-    } */
     this.objects.push(object);
     return object;
   }
