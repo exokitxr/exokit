@@ -331,7 +331,7 @@ const _makeBoxGeometry = (x = 1, y = 1, z = 1) => {
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
       )
       .applyMatrix(
-        localMatrix.makeTranslation(0.1/2, -0.1/2, 0)
+        localMatrix.makeTranslation(size/2, -size/2, 0)
       ).attributes.position.array,
     lineGeometry.attributes.position.array.length * 10
   );
