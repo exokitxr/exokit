@@ -1499,7 +1499,7 @@ function animate(time, frame) {
         .decompose(localVector, localQuaternion, localVector2);
       localVector
         .add(
-          localVector2.set(0, 0, scrollFactor)
+          localVector2.set(0, 0, -scrollFactor)
             .applyQuaternion(localQuaternion)
         );
       localVector2.set(scaleFactors, scaleFactors, scaleFactors);
