@@ -448,14 +448,13 @@ const _makeSkinMesh = () => {
             uniforms.headRotation.value.set(headQuaternionInverse.x, headQuaternionInverse.y, headQuaternionInverse.z, headQuaternionInverse.w);
 
             for (let i = 0; i < 2; i++) {
-              const side = SIDES[i];
-              const armRotation = uniforms[side === 'left' ? 'leftArmRotation' : 'rightArmRotation'];
+              const armRotation = uniforms[i === 0 ? 'leftArmRotation' : 'rightArmRotation'];
 
               const gamepad = gamepads[i];
               if (gamepad.visible) {
                 const armQuaternionInverse = localQuaternion2.setFromRotationMatrix(
                   localMatrix.lookAt(
-                    mesh.arms[side].getWorldPosition(localVector),
+                    mesh.arms[i === 0 ? 'left' : 'right'].getWorldPosition(localVector),
                     gamepad.position,
                     localVector2.copy(upVector).applyQuaternion(gamepad.quaternion)
                   )
