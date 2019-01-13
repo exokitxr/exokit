@@ -86,7 +86,9 @@ let servers = [];
 let serversLoading = false;
 let serverConnectedUrl = null;
 
+const DEFAULT_URL = 'http://lol.com';
 const REGISTRY_URL = 'http://18.209.88.19:9001';
+const DEFAULT_SKIN_URL = 'skin2.png';
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 const rayDistance = 3;
@@ -105,6 +107,7 @@ const keyboardWidth = 2048;
 const keyboardHeight = 716;
 const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
 const cursorWidth = 4;
+const armQuaternionOffset = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, -1));
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -125,8 +128,6 @@ function parseQuery(queryString) {
   return query;
 }
 const query = parseQuery(window.location.search);
-const DEFAULT_URL = 'http://lol.com';
-const DEFAULT_SKIN_URL = 'skin2.png';
 
 // load
 
