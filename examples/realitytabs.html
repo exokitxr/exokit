@@ -118,9 +118,9 @@ const localEuler = new THREE.Euler(0, 0, 0, 'YXZ');
 const localEuler2 = new THREE.Euler(0, 0, 0, 'YXZ');
 const localMatrix = new THREE.Matrix4();
 
-function parseQuery(queryString) {
+function parseQuery(s) {
   var query = {};
-  var pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+  var pairs = (s[0] === '?' ? s.substr(1) : s).split('&');
   for (var i = 0; i < pairs.length; i++) {
     var pair = pairs[i].split('=');
     query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
