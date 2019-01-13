@@ -729,8 +729,10 @@ const _closeAllTabs = () => { // XXX trigger this when switching servers
 };
 const _openServer = (serverUrl, host) => {
   xrmp = new XRMultiplayerTHREE(new XRMultiplayer(serverUrl));
-  xrmp.localPlayerMesh = xrmp.createLocalPlayerMesh(undefined, {});
+  xrmp.localPlayerMesh = null;
   xrmp.onopen = () => {
+    xrmp.localPlayerMesh = xrmp.createLocalPlayerMesh(undefined, {});
+
     if (host) {
       for (let i = 0; i < tabs.length; i++) {
         const tab = tabs[i];
