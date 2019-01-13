@@ -263,6 +263,7 @@ class XRMultiplayerTHREE {
       if (objectMesh.needsUpdate) {
         objectMesh.position.toArray(objectMesh.object.objectMatrix.position);
         objectMesh.quaternion.toArray(objectMesh.object.objectMatrix.quaternion);
+        objectMesh.scale.toArray(objectMesh.object.objectMatrix.scale);
 
         objectMesh.object.pushUpdate();
         objectMesh.needsUpdate = false;
@@ -303,6 +304,7 @@ class XRMultiplayerTHREE {
 
       objectMesh.position.fromArray(objectMatrix.position);
       objectMesh.quaternion.fromArray(objectMatrix.quaternion);
+      objectMesh.scale.fromArray(objectMatrix.scale);
       objectMesh.updateMatrixWorld();
 
       if (objectMesh.onupdate) {
