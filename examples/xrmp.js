@@ -623,7 +623,7 @@ const _makePlayerMatrix = () => {
   return playerMatrix;
 };
 const playerMatrix = _makePlayerMatrix();
-const numObjectMatrixElements = 3+4;
+const numObjectMatrixElements = 3+4+3;
 const _makeObjectMatrix = () => {
   const objectMatrix = new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT*2 + numObjectMatrixElements*Float32Array.BYTES_PER_ELEMENT);
   objectMatrix.setArrayBuffer = (() => {
@@ -644,6 +644,8 @@ const _makeObjectMatrix = () => {
   objectMatrix.position = new Float32Array(objectMatrix, _getObjectMatrixIndex(3*Float32Array.BYTES_PER_ELEMENT), 3);
   objectMatrix.quaternion = new Float32Array(objectMatrix, _getObjectMatrixIndex(4*Float32Array.BYTES_PER_ELEMENT), 4);
   objectMatrix.quaternion[3] = 1;
+  objectMatrix.scale = new Float32Array(objectMatrix, _getObjectMatrixIndex(3*Float32Array.BYTES_PER_ELEMENT), 3);
+  objectMatrix.scale.fill(1);
   return objectMatrix;
 };
 const objectMatrix = _makeObjectMatrix();
