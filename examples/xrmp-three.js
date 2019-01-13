@@ -104,7 +104,7 @@ class XRMultiplayerTHREE {
 
       this.remotePlayerMeshes.push(remotePlayerMesh);
 
-      this._bindPlayerMeshAudio(remotePlayerMesh);
+      // this._bindPlayerMeshAudio(remotePlayerMesh);
 
       if (this.onplayerenter) {
         this.onplayerenter(remotePlayerMesh);
