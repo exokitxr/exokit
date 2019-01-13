@@ -17,6 +17,8 @@ matrix:
     - docker run exokit cat exokit-linux-bin.tar.gz >exokit-linux-bin.tar.gz
     - docker run exokit cat exokit-linux-full.tar.gz >exokit-linux-full.tar.gz
     - docker run exokit cat exokit-linux.tar.gz >exokit-linux.tar.gz
+    script:
+    - echo "skipping 'npm run test' outside of docker"
     deploy:
     - provider: releases
       api_key:
