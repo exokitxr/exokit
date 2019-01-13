@@ -84,7 +84,7 @@
           }
 
           void main() {
-            gl_FragColor = vec4(0.984313725490196, 0.5490196078431373, 0, (0.2 + (1.0 - edgeFactor()) * 0.8) * (1.0 - gl_FragCoord.z/gl_FragCoord.w));
+            gl_FragColor = vec4(0.984313725490196, 0.5490196078431373, 0, (0.5 + (1.0 - edgeFactor()) * 0.5) * (1.0 - gl_FragCoord.z/gl_FragCoord.w));
           }
         `,
         polygonOffset: true,
