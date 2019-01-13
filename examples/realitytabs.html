@@ -2158,9 +2158,9 @@ if (navigator.xr && !query.fake) {
 
       session.layers = layers;
 
-      session.onselect = e => {
+      /* session.onselect = e => {
         console.log('select'); // XXX
-      };
+      }; */
 
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
