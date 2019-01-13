@@ -87,7 +87,7 @@ let serversLoading = false;
 let serverConnectedUrl = null;
 
 const DEFAULT_URL = 'http://lol.com';
-const REGISTRY_URL = 'http://xrmp.webmr.io:9001';
+const DEFAULT_REGISTRY_URL = 'http://xrmp.webmr.io:9001';
 const DEFAULT_SKIN_URL = 'skin2.png';
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
@@ -128,6 +128,7 @@ function parseQuery(s) {
   return query;
 }
 const query = parseQuery(window.location.search);
+const registryUrl = query.registryUrl || DEFAULT_REGISTRY_URL;
 
 // load
 
@@ -2119,7 +2120,7 @@ function animate(time, frame) {
                   } else if (optionX === 4) {
                     menuMesh.optionsMesh.list = 'party';
                     if (!serversLoading) {
-                      XRMultiplayer.requestServers(`${REGISTRY_URL}/servers`)
+                      XRMultiplayer.requestServers(`${registryUrl}/servers`)
                         .then(result => {
                           servers = result.servers;
                           serversLoading = false;
@@ -2354,7 +2355,7 @@ function animate(time, frame) {
                           const server = localServers[j];
                           const {name} = server;
 
-                          _openServer(`${REGISTRY_URL}/servers/${name}`, true);
+                          _openServer(`${registryUrl}/servers/${name}`, true);
                         }
 
                         intersectionSpecs[i] = null;
