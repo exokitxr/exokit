@@ -656,7 +656,7 @@ const _closeTab = tab => {
   layers.splice(layers.indexOf(iframe), 1);
 
   if (serverConnectedUrl) {
-    const objectMesh = xrmp.getObjectMeshes().find(objectMesh => objectMesh.object.id === moveTab.id);
+    const objectMesh = xrmp.getObjectMeshes().find(objectMesh => objectMesh.object.id === id);
     xrmp.removeObjectMesh(objectMesh);
   }
 };
