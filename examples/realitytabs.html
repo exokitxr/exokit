@@ -191,7 +191,7 @@ const _requestSpriteMesh = url => new Promise((accept, reject) => {
 
 const _makeBoxGeometry = (x = 1, y = 1, z = 1) => {
   const size = 1;
-  const width = 0.01;
+  const width = 0.005;
 
   const lineGeometry = new THREE.CylinderBufferGeometry(width, width, size, 3, 1);
   const geometry = new THREE.BufferGeometry();
