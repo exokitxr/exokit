@@ -157,12 +157,12 @@
         scene.remove(terrainMesh);
         terrainMesh.geometry.dispose();
       };
-      const _clearTerrainMeshes = () => {
+      /* const _clearTerrainMeshes = () => {
         for (let i = 0; i < terrainMeshes.length; i++) {
           _removeTerrainMesh(terrainMeshes[i]);
         }
         terrainMeshes.length = 0;
-      };
+      }; */
       const _onMesh = updates => {
         for (let i = 0; i < updates.length; i++) {
           const update = updates[i];
