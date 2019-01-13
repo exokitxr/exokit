@@ -689,14 +689,15 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
   rig.menuMesh.listMesh.updateList();
 
   if (serverConnectedUrl && local) {
-    const o = xrmp.addObject(tab.id, {
+    const objectMesh = xrmp.createObjectMesh(tab.id, {
       url: tab.url,
       d,
     });
-    position.toArray(o.objectMatrix.position);
-    orientation.toArray(o.objectMatrix.quaternion);
-    o.pushUpdate();
-    _bindObject(o);
+    const {object} = objectMesh;
+    position.toArray(object.objectMatrix.position);
+    orientation.toArray(object.objectMatrix.quaternion);
+    object.pushUpdate();
+    _bindObject(object);
   }
 
   return tab;
@@ -737,14 +738,15 @@ const _openServer = (serverUrl, host) => {
       for (let i = 0; i < tabs.length; i++) {
         const tab = tabs[i];
         const {url, iframe: {xrOffset, d}} = tab;
-        const o = xrmp.addObject(tab.id, {
+        const objectMesh = xrmp.createObjectMesh(tab.id, {
           url,
           d,
         });
-        o.objectMatrix.position.set(xrOffset.position);
-        o.objectMatrix.quaternion.set(xrOffset.orientation);
-        o.pushUpdate();
-        _bindObject(o);
+        const {object} = objectMesh;
+        object.objectMatrix.position.set(xrOffset.position);
+        object.objectMatrix.quaternion.set(xrOffset.orientation);
+        object.pushUpdate();
+        _bindObject(object);
       }
     }
   };
