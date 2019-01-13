@@ -454,9 +454,12 @@ const _makeSkinMesh = () => {
               if (gamepad.visible) {
                 const armQuaternionInverse = localQuaternion2.setFromRotationMatrix(
                   localMatrix.lookAt(
-                    mesh.arms[i === 0 ? 'left' : 'right'].getWorldPosition(localVector),
+                    mesh.arms[i === 0 ? 'left' : 'right']
+                      .getWorldPosition(localVector),
                     gamepad.position,
-                    localVector2.copy(upVector).applyQuaternion(gamepad.quaternion)
+                    localVector2
+                      .set(0, 1, 0)
+                      .applyQuaternion(gamepad.quaternion)
                   )
                 )
                   .multiply(armQuaternionOffset)
