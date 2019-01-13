@@ -204,8 +204,8 @@ class XRMultiplayerTHREE {
 
     return localPlayerMesh;
   }
-  createObjectMesh(id, objectMesh = new THREE.Object3D()) {
-    const object = this.xrmp.addObject(id);
+  createObjectMesh(id, state) {
+    const object = this.xrmp.addObject(id, state);
     objectMesh.object = object;
     objectMesh.onupdate = null;
 
