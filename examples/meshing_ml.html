@@ -56,8 +56,37 @@
       container.appendChild(renderer.domElement);
 
       const terrainMeshes = [];
-      const terrainMaterial = new THREE.MeshPhongMaterial({
-        color: 0x666666,
+      const terrainMaterial = new THREE.ShaderMaterial({
+        uniforms: {},
+        vertexShader: `\
+          attribute vec3 barycentric;
+          varying vec3 vBC;
+          void main() {
+            vBC = barycentric;
+            /* float m = mod(gl_VertexID, 3.0);
+            if (m < 0.5) {
+              vUv = vec2(0.0, 0.0);
+            } else if (m < 1.5) {
+              vUv = vec2(1.0, 1.0);
+            } else {
+              vUv = vec2(1.0, 0.0);
+            } */
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `\
+          varying vec3 vBC;
+
+          float edgeFactor() {
+            vec3 d = fwidth(vBC);
+            vec3 a3 = smoothstep(vec3(0.0), d*1.5, vBC);
+            return min(min(a3.x, a3.y), a3.z);
+          }
+
+          void main() {
+            gl_FragColor = vec4(1.0, 1.0, 1.0, (1.0-edgeFactor())*0.95);
+          }
+        `,
         polygonOffset: true,
         polygonOffsetFactor: -1,
         polygonOffsetUnits: -1,
@@ -76,16 +105,6 @@
       const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
       const _makeTerrainMesh = meshId => {
         const geometry = new THREE.BufferGeometry();
-        const gl = renderer.getContext();
-        const attributes = renderer.getAttributes();
-
-        geometry.addAttribute('position', new THREE.BufferAttribute(fakeFloat32Array, 3));
-        attributes.update(geometry.attributes.position, gl.ARRAY_BUFFER);
-        geometry.addAttribute('normal', new THREE.BufferAttribute(fakeFloat32Array, 3));
-        attributes.update(geometry.attributes.normal, gl.ARRAY_BUFFER);
-        geometry.setIndex(new THREE.BufferAttribute(fakeUint16Array, 1));
-        attributes.update(geometry.index, gl.ELEMENT_ARRAY_BUFFER);
-
         const material = terrainMaterial;
 
         const mesh = new THREE.Mesh(geometry, material);
@@ -94,21 +113,59 @@
         mesh.meshId = meshId;
         return mesh;
       };
-      const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionBuffer, positionCount, normalBuffer, normalCount, indexBuffer, count}) => {
+      const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionArray, positionCount, normalArray, normalCount, indexArray, count}) => {
         terrainMesh.matrix.fromArray(transformMatrix);
         terrainMesh.matrixWorldNeedsUpdate = true;
 
         const {geometry} = terrainMesh;
         const attributes = renderer.getAttributes();
 
-        attributes.get(geometry.attributes.position).buffer = positionBuffer;
-        geometry.attributes.position.count = positionCount / 3;
+        const positions = new Float32Array(count*3);
+        const normals = new Float32Array(count*3);
+        const barycentrics = new Float32Array(count*3);
+        for (let i = 0; i < count; i += 3) {
+          const ai = indexArray[i];
+          const bi = indexArray[i+1];
+          const ci = indexArray[i+2];
 
-        attributes.get(geometry.attributes.normal).buffer = normalBuffer;
-        geometry.attributes.normal.count = normalCount / 3;
+          const baseA = ai*3;
+          const baseB = bi*3;
+          const baseC = ci*3;
 
-        attributes.get(geometry.index).buffer = indexBuffer;
-        geometry.index.count = count / 1;
+          const baseIndex = i*3;
+          positions[baseIndex] = positionArray[baseA];
+          positions[baseIndex+1] = positionArray[baseA+1];
+          positions[baseIndex+2] = positionArray[baseA+2];
+          positions[baseIndex+3] = positionArray[baseB];
+          positions[baseIndex+4] = positionArray[baseB+1];
+          positions[baseIndex+5] = positionArray[baseB+2];
+          positions[baseIndex+6] = positionArray[baseC];
+          positions[baseIndex+7] = positionArray[baseC+1];
+          positions[baseIndex+8] = positionArray[baseC+2];
+
+          normals[baseIndex] = normalArray[baseA];
+          normals[baseIndex+1] = normalArray[baseA+1];
+          normals[baseIndex+2] = normalArray[baseA+2];
+          normals[baseIndex+3] = normalArray[baseB];
+          normals[baseIndex+4] = normalArray[baseB+1];
+          normals[baseIndex+5] = normalArray[baseB+2];
+          normals[baseIndex+6] = normalArray[baseC];
+          normals[baseIndex+7] = normalArray[baseC+1];
+          normals[baseIndex+8] = normalArray[baseC+2];
+
+          barycentrics[baseIndex] = 1;
+          barycentrics[baseIndex+1] = 0;
+          barycentrics[baseIndex+2] = 0;
+          barycentrics[baseIndex+3] = 0;
+          barycentrics[baseIndex+4] = 1;
+          barycentrics[baseIndex+5] = 0;
+          barycentrics[baseIndex+6] = 0;
+          barycentrics[baseIndex+7] = 0;
+          barycentrics[baseIndex+8] = 1;
+        }
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        geometry.addAttribute('barycentric', new THREE.BufferAttribute(barycentrics, 3));
       };
       const _removeTerrainMesh = terrainMesh => {
         scene.remove(terrainMesh);
