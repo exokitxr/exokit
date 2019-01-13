@@ -533,8 +533,8 @@ const _makeRenderer = () => {
   };
 };
 const _getFrontOfCamera = () => {
-  const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
-  vrCamera.cameras[0].matrixWorld.decompose(localVector, localQuaternion, localVector2);
+  const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+  vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
   localVector.add(
     localVector2.set(0, 0, -1.5)
       .applyQuaternion(localQuaternion)
