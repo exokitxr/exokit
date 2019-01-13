@@ -70,8 +70,9 @@
             } else {
               vBC = vec3(0.0, 0.0, 1.0);
             }
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            vPosition = gl_Position.xyz;
+            vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
+            vPosition = modelViewPosition.xyz;
+            gl_Position = projectionMatrix * modelViewPosition;
           }
         `,
         fragmentShader: `\
@@ -79,7 +80,7 @@
           varying vec3 vBC;
 
           vec3 color = vec3(0.984313725490196, 0.5490196078431373, 0.0);
-          vec3 lightDirection = normalize(vec3(1.0));
+          vec3 lightDirection = vec3(0.0, 0.0, 1.0);
 
           float edgeFactor() {
             vec3 d = fwidth(vBC);
@@ -92,13 +93,13 @@
             vec3 xTangent = dFdx( vPosition );
             vec3 yTangent = dFdy( vPosition );
             vec3 faceNormal = normalize( cross( xTangent, yTangent ) );
-            float lightFactor = 0.5 + dot(faceNormal, lightDirection) * 0.5;
+            float lightFactor = pow(dot(faceNormal, lightDirection), 2.0);
             gl_FragColor = vec4(color * barycentricFactor * lightFactor, 1.0);
           }
         `,
         polygonOffset: true,
         polygonOffsetFactor: -1,
-        polygonOffsetUnits: -1,
+        polygonOffsetUnits: -4,
       });
       const _getTerrainMesh = meshId => {
         let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
