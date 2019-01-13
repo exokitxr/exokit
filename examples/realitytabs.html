@@ -688,7 +688,7 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
   rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
 
-  if (xrmp && local) {
+  if (serverConnectedUrl && local) {
     const o = xrmp.addObject(tab.id, {
       url: tab.url,
       d,
@@ -711,7 +711,7 @@ const _closeTab = tab => {
   tabs.splice(tabs.indexOf(tab), 1);
   layers.splice(layers.indexOf(iframe), 1);
 
-  if (xrmp) {
+  if (serverConnectedUrl) {
     xrmp.removeObject(id);
   }
 };
@@ -754,6 +754,10 @@ const _openServer = (serverUrl, host) => {
   };
   xrmp.onclose = () => {
     console.log('server close', serverUrl);
+
+    xrmp = null;
+    serverConnectedUrl = null;
+    rig.menuMesh.listMesh.updateList();
   };
   xrmp.onobjectadd = objectMesh => {
     const {object} = objectMesh;
@@ -799,10 +803,6 @@ const _closeServer = () => {
   xrmp.onobjectadd = null;
   xrmp.onobjectremove = null;
   xrmp.close();
-  xrmp = null;
-
-  serverConnectedUrl = null;
-  rig.menuMesh.listMesh.updateList();
 };
 const _bindObject = o => {
   o.onupdate = e => {
@@ -1900,7 +1900,7 @@ function animate(time, frame) {
       // boxMesh.updateMatrixWorld();
       boxMesh.visible = true;
 
-      if (xrmp) {
+      if (serverConnectedUrl) {
         const object = xrmp.objects.find(object => object.id === moveTab.id);
         const {objectMatrix} = object;
         localVector.toArray(objectMatrix.position);
@@ -2650,7 +2650,7 @@ function animate(time, frame) {
     vrCamera.matrixWorld.decompose(vrCamera.position, vrCamera.quaternion, vrCamera.scale);
     localSkinMesh.update(vrCamera, controllerMeshes); */
 
-    if (xrmp) {
+    if (serverConnectedUrl) {
       xrmp.localPlayerMesh.hmd.position.copy(camera.position);
       xrmp.localPlayerMesh.hmd.quaternion.copy(camera.quaternion);
 
