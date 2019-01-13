@@ -35,7 +35,7 @@ window._makeFakeDisplay = () => {
       const gamepad = fakeDisplay.gamepads[i];
       localVector.copy(fakeDisplay.position)
         .add(
-          localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
+          localVector2.set(-0.3 + i*0.6, -0.3, 0)
             .applyQuaternion(fakeDisplay.quaternion)
         ).toArray(gamepad.pose.position);
       fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
