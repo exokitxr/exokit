@@ -189,7 +189,7 @@ const _requestSpriteMesh = url => new Promise((accept, reject) => {
   };
 });
 
-const _makeBoxGeometry = () => {
+const _makeBoxGeometry = (x, y, z) => {
   const size = 1;
 
   const lineGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, size, 3, 1);
@@ -198,32 +198,55 @@ const _makeBoxGeometry = () => {
   geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
   // axis
   positions.set(
-    lineGeometry.clone().applyMatrix(
-      localMatrix.makeTranslation(-size/2, 0, -size/2)
-    ).attributes.position.array,
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, y, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(-size/2, 0, -size/2)
+      )
+      .attributes.position.array,
     lineGeometry.attributes.position.array.length * 0
   );
   positions.set(
-    lineGeometry.clone().applyMatrix(
-      localMatrix.makeTranslation(size/2, 0, -size/2)
-    ).attributes.position.array,
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, y, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(size/2, 0, -size/2)
+      )
+      .attributes.position.array,
     lineGeometry.attributes.position.array.length * 1
   );
   positions.set(
-    lineGeometry.clone().applyMatrix(
-      localMatrix.makeTranslation(-size/2, 0, size/2)
-    ).attributes.position.array,
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, y, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(-size/2, 0, size/2)
+      )
+      .attributes.position.array,
     lineGeometry.attributes.position.array.length * 2
   );
   positions.set(
-    lineGeometry.clone().applyMatrix(
-      localMatrix.makeTranslation(size/2, 0, size/2)
-    ).attributes.position.array,
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, y, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(size/2, 0, size/2)
+      )
+      .attributes.position.array,
     lineGeometry.attributes.position.array.length * 3
   );
   // axis
   positions.set(
     lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(x, 1, 1)
+      )
       .applyMatrix(
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
       )
@@ -235,6 +258,9 @@ const _makeBoxGeometry = () => {
   positions.set(
     lineGeometry.clone()
       .applyMatrix(
+        localMatrix.makeScale(x, 1, 1)
+      )
+      .applyMatrix(
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
       )
       .applyMatrix(
@@ -245,6 +271,9 @@ const _makeBoxGeometry = () => {
   positions.set(
     lineGeometry.clone()
       .applyMatrix(
+        localMatrix.makeScale(x, 1, 1)
+      )
+      .applyMatrix(
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
       )
       .applyMatrix(
@@ -254,6 +283,9 @@ const _makeBoxGeometry = () => {
   );
   positions.set(
     lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(x, 1, 1)
+      )
       .applyMatrix(
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
       )
@@ -266,6 +298,9 @@ const _makeBoxGeometry = () => {
   positions.set(
     lineGeometry.clone()
       .applyMatrix(
+        localMatrix.makeScale(1, 1, z)
+      )
+      .applyMatrix(
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
       )
       .applyMatrix(
@@ -275,6 +310,9 @@ const _makeBoxGeometry = () => {
   );
   positions.set(
     lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, 1, z)
+      )
       .applyMatrix(
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
       )
@@ -286,6 +324,9 @@ const _makeBoxGeometry = () => {
   positions.set(
     lineGeometry.clone()
       .applyMatrix(
+        localMatrix.makeScale(1, 1, z)
+      )
+      .applyMatrix(
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
       )
       .applyMatrix(
@@ -295,6 +336,9 @@ const _makeBoxGeometry = () => {
   );
   positions.set(
     lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, 1, z)
+      )
       .applyMatrix(
         localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
       )
