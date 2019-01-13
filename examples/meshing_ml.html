@@ -14,8 +14,6 @@
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
-    const localVector3 = new THREE.Vector3();
-    const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
     const localFloat32Array = new Float32Array(16);
@@ -35,6 +33,7 @@
       mesh.frustumCulled = false;
       return mesh;
     };
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const numCubes = 100;
     const cubeSize = 0.2;
@@ -61,29 +60,6 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      /* (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0xE91E63,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 0.5;
-        // mesh.position.z = -1;
-        mesh.frustumCuled = false;
-        scene.add(mesh);
-      })();
-      (() => {
-        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x4CAF50,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = 1 + 0.1;
-        // mesh.position.z = -1;
-        mesh.frustumCulled = false;
-        scene.add(mesh);
-      })(); */
-
       controllerMeshes = [
         _makeControllerMesh(-0.1),
         _makeControllerMesh(0.1),
@@ -107,6 +83,9 @@
       const terrainMeshes = [];
       const terrainMaterial = new THREE.MeshPhongMaterial({
         color: 0x666666,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
       });
       const _getTerrainMesh = meshId => {
         let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
@@ -298,15 +277,20 @@
         model.updateMatrixWorld();
       }
       if (renderer.vr.enabled) {
-        const inputSources = display.session.getInputSources();
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          controllerMeshes[i].visible = false;
+        }
 
+        const inputSources = display.session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
 
-          const controllerMesh = controllerMeshes[i];
+          const controllerIndex = _getControllerIndex(inputSource);
+          const controllerMesh = controllerMeshes[controllerIndex];
           controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           controllerMesh.updateMatrixWorld(true);
+          controllerMesh.visible = true;
         }
       }
 

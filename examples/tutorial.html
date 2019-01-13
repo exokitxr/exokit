@@ -1,0 +1,363 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <script src="three.js"></script>
+  <script src="GLTFLoader.js"></script>
+  <script>
+    let container, scene, camera, display, model;
+    let animation = null;
+
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
+    const localQuaternion = new THREE.Quaternion();
+    const localEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+    const localMatrix = new THREE.Matrix4();
+
+    const _makeAxisGeometry = () => {
+      const size = 1;
+      const width = 0.01;
+
+      const lineGeometry = new THREE.CylinderBufferGeometry(width, width, size, 3, 1);
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(lineGeometry.attributes.position.array.length * 3);
+      const colors = new Float32Array(lineGeometry.attributes.position.array.length * 3);
+      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      // axis
+      positions.set(
+        lineGeometry.clone()
+          .applyMatrix(
+            localMatrix.makeTranslation(0, size/2, 0)
+          )
+          .attributes.position.array,
+        lineGeometry.attributes.position.array.length * 0
+      );
+      {
+        const color = new THREE.Color(0x00FF00);
+        for (let i = lineGeometry.attributes.position.array.length * 0; i < lineGeometry.attributes.position.array.length * 1; i += 3) {
+          color.toArray(colors, i);
+        }
+      }
+      positions.set(
+        lineGeometry.clone()
+          .applyMatrix(
+            localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), -Math.PI/2))
+          )
+          .applyMatrix(
+            localMatrix.makeTranslation(size/2, 0, 0)
+          ).attributes.position.array,
+        lineGeometry.attributes.position.array.length * 1
+      );
+      {
+        const color = new THREE.Color(0xFF0000);
+        for (let i = lineGeometry.attributes.position.array.length * 1; i < lineGeometry.attributes.position.array.length * 2; i += 3) {
+          color.toArray(colors, i);
+        }
+      }
+      positions.set(
+        lineGeometry.clone()
+          .applyMatrix(
+            localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+          )
+          .applyMatrix(
+            localMatrix.makeTranslation(0, 0, size/2)
+          ).attributes.position.array,
+        lineGeometry.attributes.position.array.length * 2
+      );
+      {
+        const color = new THREE.Color(0x0000FF);
+        for (let i = lineGeometry.attributes.position.array.length * 2; i < lineGeometry.attributes.position.array.length * 3; i += 3) {
+          color.toArray(colors, i);
+        }
+      }
+      const numLinePositions = lineGeometry.attributes.position.array.length / 3;
+      const indices = new Uint16Array(lineGeometry.index.array.length * 3);
+      for (let i = 0; i < 3; i++) {
+        indices.set(
+          lineGeometry.index.array,
+          lineGeometry.index.array.length * i
+        );
+
+        for (let j = 0; j < lineGeometry.index.array.length; j++) {
+          lineGeometry.index.array[j] += numLinePositions;
+        }
+      }
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+      return geometry;
+    };
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      const axisMesh = (() => {
+        const geometry = _makeAxisGeometry();
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xFFFFFF,
+          vertexColors: THREE.VertexColors,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(axisMesh);
+
+      const planeMesh = (() => {
+        const geometry = new THREE.PlaneBufferGeometry(0.5, 0.5);
+
+        const texture = new THREE.Texture(
+          null,
+          THREE.UVMapping,
+          THREE.RepeatWrapping,
+          THREE.RepeatWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+
+        const planeImg = new Image();
+        planeImg.crossOrigin = 'Anonymous';
+        planeImg.src = 'tutorial.png';
+        planeImg.onload = () => {
+          texture.image = planeImg;
+          texture.needsUpdate = true;
+        };
+        planeImg.onerror = err => {
+          console.warn(err.stack);
+        };
+
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = 1.5;
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(planeMesh);
+
+      const floorMesh = (() => {
+        const size = 1;
+        const geometry = new THREE.PlaneBufferGeometry(size, size)
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+            new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 0, 1),
+              new THREE.Vector3(0, 1, 0)
+            )
+          ));
+        const uvs = geometry.attributes.uv.array;
+        const numUvs = uvs.length / 2;
+        for (let i = 0; i < numUvs; i++) {
+          uvs[i * 2] *= size / 10 * 2;
+          uvs[i * 2 + 1] *= size / 10;
+        }
+
+        const texture = new THREE.Texture(
+          null,
+          THREE.UVMapping,
+          THREE.RepeatWrapping,
+          THREE.RepeatWrapping,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          1
+        );
+
+        const graphImg = new Image();
+        graphImg.crossOrigin = 'Anonymous';
+        graphImg.src = 'graphy.png';
+        graphImg.onload = () => {
+          texture.image = graphImg;
+          texture.needsUpdate = true;
+        };
+        graphImg.onerror = err => {
+          console.warn(err.stack);
+        };
+
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+      })();
+      scene.add(floorMesh);
+
+      {
+        const loader = new THREE.GLTFLoader(); // .setPath( 'models/' );
+        loader.load( 'exobot.glb', function ( o ) {
+
+          o = o.scene;
+
+          o.position.y = 1;
+          o.rotation.order = 'YXZ';
+          o.scale.set(0.2, 0.2, 0.2);
+          /* o.traverse(e => {
+            e.castShadow = true;
+          }); */
+
+          /* o.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 0, -1),
+            new THREE.Vector3(0, 0, 1)
+          ); */
+          o.updateMatrixWorld();
+          // o.frustumCulled = false;
+          for (let i = 0; i < o.children.length; i++) {
+            o.children[i].frustumCulled = false;
+          }
+
+          model = o;
+
+          scene.add(o);
+          // scene.add(o.children[0]);
+          // scene.add(o.children[0]);
+
+        }, undefined, function ( e ) {
+
+          console.error( e );
+
+        } );
+      }
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    const animationTime = 1000;
+    const _getRandomWaypoint = () => {
+      const angle = Math.random() * Math.PI * 2;
+      return new THREE.Vector3(Math.cos(angle), 1.5, Math.sin(angle));
+    };
+    const _animateTo = endPosition => {
+      const now = Date.now();
+      const startPosition = model.position.clone();
+      animation = {
+        startTime: now,
+        endTime: now + animationTime*startPosition.distanceTo(endPosition),
+        startPosition,
+        startQuaternion: model.quaternion.clone(),
+        endQuaternion: localQuaternion.setFromRotationMatrix(
+          localMatrix.lookAt(
+            localVector.set(-endPosition.x, endPosition.y, -endPosition.z),
+            localVector2.set(0, 1.5, 0),
+            localVector3.set(0, 1, 0)
+          )
+        ),
+        endPosition,
+        update() {
+          const now = Date.now();
+          const factor = Math.min(Math.pow((now - this.startTime) / (this.endTime - this.startTime), 0.5), 1);
+          const {startPosition, endPosition} = this;
+          model.position
+            .copy(startPosition)
+            .lerp(endPosition, factor);
+
+          const {startQuaternion, endQuaternion} = this;
+          model.quaternion
+            .copy(startQuaternion)
+            .slerp(endQuaternion, factor)
+
+          const subAnimationTime = 4000;
+          const f = ((Date.now() % subAnimationTime) / subAnimationTime) * (Math.PI * 2);
+          model.position.y += Math.sin(f) * 0.05;
+          localEuler.setFromQuaternion(model.quaternion, localEuler.order);
+          localEuler.y += Math.sin(f*2) * Math.PI*2*0.05;
+          localEuler.z += Math.cos(f*2) * Math.PI*2*0.05;
+          model.quaternion.setFromEuler(localEuler);
+
+          model.updateMatrixWorld();
+
+          if (factor >= 1) {
+            animation = null;
+          }
+        },
+      };
+    };
+
+    function animate(time, frame) {
+      if (model) {
+        if (!animation) {
+          _animateTo(_getRandomWaypoint());
+        }
+        if (animation) {
+          animation.update();
+        }
+      }
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+  </script>
+  </body>
+</html>

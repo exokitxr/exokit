@@ -110,7 +110,7 @@ class Gamepad {
     this.hand = hand;
     this.index = index;
 
-    this.connected = true;
+    this.connected = false;
     this.mapping = 'standard';
     this.buttons = Array(16);
     for (let i = 0; i < this.buttons.length; i++) {

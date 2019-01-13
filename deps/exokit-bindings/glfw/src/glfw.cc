@@ -1340,7 +1340,7 @@ NAN_METHOD(SetCursorPosition) {
 }
 
 NAN_METHOD(GetClipboard) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  NATIVEwindow *window = GetCurrentWindowContext();
   const char *clipboardContents = glfwGetClipboardString(window);
   if (clipboardContents != nullptr) {
     info.GetReturnValue().Set(JS_STR(clipboardContents));
@@ -1349,10 +1349,15 @@ NAN_METHOD(GetClipboard) {
   }
 }
 
+
 NAN_METHOD(SetClipboard) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  String::Utf8Value str(info[0]->ToString());
-  glfwSetClipboardString(window, *str);
+  if (info[0]->IsString()) {
+    NATIVEwindow *window = GetCurrentWindowContext();
+    Nan::Utf8String utf8_value(info[0]);
+    glfwSetClipboardString(window, *utf8_value);   
+  } else {
+    Nan::ThrowTypeError("Invalid arguments");
+  }
 }
 
 }

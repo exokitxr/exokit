@@ -10,7 +10,7 @@
   <script src="three.js"></script>
   <script src="skin.js"></script>
   <script>
-    let container, scene, camera, display, avatarMesh, rayMesh, destinationMesh, hitMeshes;
+    let container, scene, camera, display, controllerMeshes, avatarMesh, rayMesh, destinationMesh, hitMeshes, controllerHitMeshes;
     let mesher = null;
     const waypoints = {};
     let numWaypoints = 0;
@@ -23,11 +23,26 @@
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
-    const localRay = new THREE.Ray();
-    const localPlane = new THREE.Plane();
     const localMatrixFloat32Array = new Float32Array(16);
     const localVectorFloat32Array = new Float32Array(3);
     const localVectorFloat32Array2 = new Float32Array(3);
+
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+        .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xf44336,
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.visible = true;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const avatarHeight = 0.5;
 
@@ -35,14 +50,29 @@
     const cubeSize = 0.2;
     const cubeRange = 1;
     const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
-    const pointGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01, 0.01, 0.01));
-    const pointMaterial = new THREE.MeshPhongMaterial({
-      color: 0x42a5f5,
+    const smallCubeGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+    const hitMeshMaterial = new THREE.MeshPhongMaterial({
+      color: 0xf44336,
     });
-    const lineGeometry = cubeGeometry.clone().applyMatrix(new THREE.Matrix4().makeScale(0.01/2, 0.01/2, 1));
-    const lineMaterial = new THREE.MeshPhongMaterial({
-      color: 0xFFFFFF,
+    const _makeHitMesh = () => {
+      const geometry = smallCubeGeometry;
+      const material = hitMeshMaterial;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    hitMeshes = [];
+    const controllerHitMeshMaterial = new THREE.MeshPhongMaterial({
+      color: 0x673ab7,
     });
+    const _makeControllerHitMesh = () => {
+      const geometry = smallCubeGeometry;
+      const material = controllerHitMeshMaterial;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.visible = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
 
     function init() {
       container = document.createElement('div');
@@ -64,21 +94,6 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
-        const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
-          .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
-        const material = new THREE.MeshBasicMaterial({
-          color: 0xf44336,
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(x, y, z);
-        mesh.quaternion.set(qx, qy, qz, qw);
-        // mesh.visible = true;
-        mesh.frustumCulled = false;
-        return mesh;
-      };
       controllerMeshes = [
         _makeControllerMesh(-0.1),
         _makeControllerMesh(0.1),
@@ -146,9 +161,8 @@
       })();
       scene.add(rayMesh);
 
-      const cubeGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
       destinationMesh = (() => {
-        const geometry = cubeGeometry;
+        const geometry = smallCubeGeometry;
         const material = new THREE.MeshPhongMaterial({
           color: 0x2196f3,
         });
@@ -158,22 +172,12 @@
       })();
       scene.add(destinationMesh);
 
-      const _makeHitMesh = () => {
-        const geometry = cubeGeometry;
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x673ab7,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = false;
-        mesh.frustumCulled = false;
-        return mesh;
-      };
-      hitMeshes = [
-        _makeHitMesh(),
-        _makeHitMesh(),
+      controllerHitMeshes = [
+        _makeControllerHitMesh(),
+        _makeControllerHitMesh(),
       ];
-      hitMeshes.forEach(hitMesh => {
-        scene.add(hitMesh);
+      controllerHitMeshes.forEach(controllerHitMesh => {
+        scene.add(controllerHitMesh);
       });
       
       const terrainMeshes = [];
@@ -342,8 +346,6 @@
       renderer.setAnimationLoop(animate);
     }
 
-    let path = null;
-    let pathIndex = 0;
     const thetaRate = 200;
     const animationTime = 1000;
     const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
@@ -382,7 +384,6 @@
         update() {
           const now = Date.now();
           const factor = Math.min((now - this.startTime) / (this.endTime - this.startTime), 1);
-          const nextPathIndex = pathIndex + 1;
           const {startPosition, endPosition} = this;
           avatarMesh.position
             .copy(startPosition)
@@ -402,31 +403,53 @@
                 .set(0, avatarHeight/2, 0)
             );
           rayMesh.quaternion.copy(avatarMesh.quaternion);
+          rayMesh.updateMatrixWorld();
 
           destinationMesh.position.copy(endPosition);
           destinationMesh.quaternion.copy(endQuaternion);
+          destinationMesh.updateMatrixWorld();
           
           if (factor < 1) {
             if (display.session && !animation.hitTesting) {
               const localAnimation = animation;
+              const startPosition = rayMesh.position.clone();
               display.session.requestHitTest(
-                rayMesh.position.toArray(localVectorFloat32Array),
-                rayMesh.quaternion.toArray(localVectorFloat32Array2)
+                rayMesh.position
+                  .toArray(localVectorFloat32Array),
+                localVector.set(0, 0, -1)
+                  .applyQuaternion(rayMesh.quaternion)
+                  .toArray(localVectorFloat32Array2)
               )
                 .then(results => {
                   if (animation === localAnimation) {
                     if (results.length) {
-                      _animateTo(
-                        avatarMesh.position.clone()
-                        .add(
-                          localVector
-                            .set(0, 0, 0.3)
-                            .applyQuaternion(avatarMesh.quaternion)
-                        )
-                      );
-                    }
+                      const [{hitMatrix}] = results;
+                      localMatrix
+                        .fromArray(hitMatrix)
+                        .decompose(localVector, localQuaternion, localVector2);
 
-                    animation.hitTesting = false;
+                      if (localVector.distanceTo(startPosition) < 1) {
+                        console.log('hit at', localVector.toArray().join(','));
+
+                        const hitMesh = _makeHitMesh();
+                        hitMesh.endTime = Date.now() + 5000;
+                        hitMesh.position.copy(localVector);
+                        hitMesh.quaternion.copy(localQuaternion);
+                        scene.add(hitMesh);
+                        hitMeshes.push(hitMesh);
+
+                        _animateTo(
+                          avatarMesh.position.clone()
+                          .add(
+                            localVector
+                              .set(0, 0, 0.3)
+                              .applyQuaternion(avatarMesh.quaternion)
+                          )
+                        );
+                      }
+
+                      animation.hitTesting = false;
+                    }
                   }
                 })
                 .catch(err => {
@@ -443,17 +466,25 @@
     const controllerHitTesting = [false, false];
     function animate(time, frame) {
       if (renderer.vr.enabled) {
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          controllerMeshes[i].visible = false;
+        }
+
         const inputSources = display.session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
 
-          const controllerMesh = controllerMeshes[i];
+          const controllerIndex = _getControllerIndex(inputSource);
+          const controllerMesh = controllerMeshes[controllerIndex];
           controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
           // controllerMesh.updateMatrixWorld(true);
+          controllerMesh.visible = true;
 
-          if (!controllerHitTesting[i]) {
+          if (!controllerHitTesting[controllerIndex]) {
+            const controllerHitMesh = controllerHitMeshes[controllerIndex];
+
             if (controllerMesh.position.length() > 0.3) {
               display.session.requestHitTest(
                 controllerMesh.position
@@ -463,23 +494,35 @@
                   .toArray(localVectorFloat32Array2)
               )
                 .then(result => {
-                  const hitMesh = hitMeshes[i];
                   if (result.length) {
                     const [{hitMatrix}] = result;
                     localMatrix
                       .fromArray(hitMatrix)
-                      .decompose(hitMesh.position, hitMesh.quaternion, localVector);
-                    hitMesh.visible = true;
+                      .decompose(controllerHitMesh.position, controllerHitMesh.quaternion, localVector2);
+                    controllerHitMesh.visible = true;
                   } else {
-                    hitMesh.visible = false;
+                    controllerHitMesh.visible = false;
                   }
 
-                  controllerHitTesting[i] = false;
+                  controllerHitTesting[controllerIndex] = false;
                 });
 
-              controllerHitTesting[i] = true;
+              controllerHitTesting[controllerIndex] = true;
             } else {
-              hitMeshes[i].visible = false;
+              controllerHitMesh.visible = false;
+            }
+          }
+        }
+
+        if (hitMeshes.length > 0) {
+          const now = Date.now();
+
+          const localHitMeshes = hitMeshes.slice();
+          for (let i = 0; i < localHitMeshes.length; i++) {
+            const hitMesh = localHitMeshes[i];
+            if (now >= hitMesh.endTime) {
+              scene.remove(hitMesh);
+              hitMeshes.splice(hitMeshes.indexOf(hitMesh), 1);
             }
           }
         }
@@ -508,24 +551,12 @@
 
       session.onselect = e => {
         const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const controllerMesh = controllerMeshes[controllerIndex];
-        // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+        const controllerHitMesh = controllerHitMeshes[controllerIndex];
 
-        const intersection = localRay
-          .set(
-            controllerMesh.position,
-            localVector.set(0, 0, -1)
-              .applyQuaternion(controllerMesh.quaternion)
-          )
-          .intersectPlane(
-            localPlane.setFromNormalAndCoplanarPoint(
-              localVector.set(0, 1, 0),
-              localVector2.set(0, 0, 0)
-            ),
-            localVector
-          );
-        if (intersection) {
-          _animateTo(intersection.clone());
+        if (controllerHitMesh.visible) {
+          const destination = controllerHitMesh.position.clone();
+          destination.y = 0;
+          _animateTo(destination);
         }
       };
 

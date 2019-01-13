@@ -28,6 +28,7 @@
       mesh.frustumCulled = false;
       return mesh;
     };
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     function init() {
       container = document.createElement('div');
@@ -48,6 +49,14 @@
       const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
+
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
 
       {
         const loader = new THREE.GLTFLoader(); // .setPath( 'models/' );
@@ -84,14 +93,6 @@
 
         } );
       }
-
-      controllerMeshes = [
-        _makeControllerMesh(-0.1),
-        _makeControllerMesh(0.1),
-      ];
-      controllerMeshes.forEach(controllerMesh => {
-        scene.add(controllerMesh);
-      });
 
       eyeMesh = (() => {
         const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
@@ -420,15 +421,20 @@
         eyeMesh.visible = false;
       }
       if (renderer.vr.enabled) {
-        const inputSources = display.session.getInputSources();
+        for (let i = 0; i < controllerMeshes.length; i++) {
+          controllerMeshes[i].visible = false;
+        }
 
+        const inputSources = display.session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
 
-          const controllerMesh = controllerMeshes[i];
+          const controllerIndex = _getControllerIndex(inputSource);
+          const controllerMesh = controllerMeshes[controllerIndex];
           controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
           controllerMesh.updateMatrixWorld(true);
+          controllerMesh.visible = true;
         }
       }
 

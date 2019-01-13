@@ -133,7 +133,7 @@ class XRSession extends EventTarget {
     return Promise.resolve(this._frameOfReference);
   }
   getInputSources() {
-    return this._inputSources;
+    return this._inputSources.filter(inputSource => inputSource._connected);
   }
   requestAnimationFrame(fn) {
     if (this.device.onrequestanimationframe) {
@@ -223,6 +223,7 @@ class XRSession extends EventTarget {
         const gamepad = gamepads[i];
         if (gamepad) {
           const inputSource = this._inputSources[i];
+          inputSource._connected = gamepad.connected;
           const position = localVector.fromArray(gamepad.pose.position);
           const quaternion = localQuaternion.fromArray(gamepad.pose.orientation);
           const direction = localVector2.set(0, 0, -1).applyQuaternion(quaternion);
@@ -478,6 +479,7 @@ class XRInputSource {
     this.handedness = handedness;
     this.pointerOrigin = pointerOrigin;
 
+    this._connected = false;
     this._pose = new XRInputPose();
   }
 }

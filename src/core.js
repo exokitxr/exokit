@@ -791,6 +791,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
 };
+const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
 const _getFakeVrDisplay = window => {
   const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
   return fakeVrDisplay.isActive ? fakeVrDisplay : null;
@@ -802,6 +803,7 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   for (const k in mrDisplays) {
     const mrDisplayClone = mrDisplays[k].clone();
     mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    mrDisplayClone.onrequesthittest = _makeOnRequestHitTest(window);
     mrDisplayClone.window = window;
     result[k] = mrDisplayClone;
   }
@@ -983,6 +985,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return fakeVrDisplay;
     },
     getGamepads,
+    clipboard:{
+      read:() => Promise.resolve(), // Not implemented yet
+      readText: () => new Promise(resolve => {
+        resolve(nativeWindow.getClipboard().slice(0, 256));// why do we slice this?
+      }),
+      write:() => Promise.resolve(), // Not implemented yet
+      writeText: clipboardContents => new Promise(resolve => {
+        nativeWindow.setClipboard(clipboardContents);
+        resolve();
+      })
+    }
     /* getVRMode: () => vrMode,
     setVRMode: newVrMode => {
       for (let i = 0; i < vrDisplays.length; i++) {
@@ -1140,7 +1153,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       super(parts && parts.map(part => utils._normalizePrototype(part, global)), opts);
     }
   })(Blob);
-  window.FormData = FormData;
+  window.FormData = (Old => class FormData extends Old {
+    append(field, value, options) {
+      super.append(field, utils._normalizePrototype(value, global), options);
+    }
+  })(FormData);
   window.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
@@ -1717,7 +1734,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
-    mlDisplay.onrequesthittest = (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
+    mlDisplay.onrequesthittest = _makeOnRequestHitTest(window);
     mlDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
@@ -1737,7 +1754,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return session;
         });
     })(xmDisplay.requestSession);
-    xmDisplay.onrequesthittest = (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
+    xmDisplay.onrequesthittest = _makeOnRequestHitTest(window);
     xmDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };

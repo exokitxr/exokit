@@ -253,14 +253,20 @@ function animate(time, frame) {
     prevTime = time;
   }
 
+  for (let i = 0; i < controllerMeshes.length; i++) {
+    controllerMeshes[i].visible = false;
+  }
+
   const inputSources = (display && frame) ? display.session.getInputSources() : [];
   for (let i = 0; i < inputSources.length; i++) {
     const inputSource = inputSources[i];
     const pose = frame.getInputPose(inputSource);
 
-    const controllerMesh = controllerMeshes[i];
+    const controllerIndex = _getControllerIndex(inputSource);
+    const controllerMesh = controllerMeshes[controllerIndex];
     controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
     controllerMesh.updateMatrixWorld(true);
+    controllerMesh.visible = true;
   }
 
   if (paintMesh) {
@@ -458,6 +464,7 @@ const controllerMeshes = [
 controllerMeshes.forEach(controllerMesh => {
   scene.add(controllerMesh);
 });
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 const teleportMesh = (() => {
   const geometry = new THREE.CylinderBufferGeometry(0.01, 0.1, 0.3, 3, 1)
@@ -565,8 +572,6 @@ const _makePlayerMesh = (meshId = Math.random().toString(36).substring(7)) => {
     const controllerMeshes = Array(2);
     for (let i = 0; i < controllerMeshes.length; i++) {
       const controllerMesh = _makeControllerMesh();
-      // controllerMesh.matrixAutoUpdate = false;
-      controllerMesh.frustumCulled = false;
 
       controllerMeshes[i] = controllerMesh;
       object.add(controllerMesh);
@@ -1048,15 +1053,14 @@ const _bootXr = async newDisplay => {
   });
   display.session = session;
 
-  const _getControllerIndex = e => e.inputSource.handedness === 'left' ? 0 : 1;
   session.onselectstart = e => {
     if (!paintMesh) {
       paintMesh = _getPaintMesh();
-      paintControllerIndex = _getControllerIndex(e);
+      paintControllerIndex = _getControllerIndex(e.inputSource);
     }
   };
   session.onselectend = e => {
-    if (paintControllerIndex === _getControllerIndex(e)) {
+    if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
       paintMesh = null;
       paintControllerIndex = -1;
     }

@@ -15,6 +15,10 @@ const links = [
     url: 'hello_ml.html',
   },
   {
+    name: 'Tutorial',
+    url: 'tutorial.html',
+  },
+  {
     name: 'Exobot',
     url: 'exobot.html',
   },
@@ -25,6 +29,14 @@ const links = [
   {
     name: 'Planes',
     url: 'planes_ml.html',
+  },
+  {
+    name: 'Paint',
+    url: 'paint_ml.html',
+  },
+  {
+    name: 'Graffiti',
+    url: 'graffiti_ml.html',
   },
   {
     name: 'Hands',
@@ -105,7 +117,6 @@ function parseQuery(queryString) {
   return query;
 }
 const query = parseQuery(window.location.search);
-const FLOOR_SIZE = 20;
 const DEFAULT_URL = 'http://lol.com';
 
 // load
@@ -177,6 +188,192 @@ const _requestSpriteMesh = url => new Promise((accept, reject) => {
     reject(err);
   };
 });
+
+const _makeBoxGeometry = (x = 1, y = 1, z = 1) => {
+  const size = 1;
+  const width = 0.01;
+
+  const lineGeometry = new THREE.CylinderBufferGeometry(width, width, size, 3, 1);
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(lineGeometry.attributes.position.array.length * 12);
+  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  // axis
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, y, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(-size/2, 0, -size/2)
+      )
+      .attributes.position.array,
+    lineGeometry.attributes.position.array.length * 0
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, y, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(size/2, 0, -size/2)
+      )
+      .attributes.position.array,
+    lineGeometry.attributes.position.array.length * 1
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, y, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(-size/2, 0, size/2)
+      )
+      .attributes.position.array,
+    lineGeometry.attributes.position.array.length * 2
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, y, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(size/2, 0, size/2)
+      )
+      .attributes.position.array,
+    lineGeometry.attributes.position.array.length * 3
+  );
+  // axis
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(x, 1, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0, -size/2, -size/2)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 4
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(x, 1, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0, -size/2, size/2)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 5
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(x, 1, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0, size/2, -size/2)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 6
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(x, 1, 1)
+      )
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0, size/2, size/2)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 7
+  );
+  // axis
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, 1, z)
+      )
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(-size/2, -size/2, 0)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 8
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, 1, z)
+      )
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(-size/2, size/2, 0)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 9
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, 1, z)
+      )
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0.1/2, -0.1/2, 0)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 10
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeScale(1, 1, z)
+      )
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(size/2, size/2, 0)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 11
+  );
+  const numLinePositions = lineGeometry.attributes.position.array.length / 3;
+  const indices = new Uint16Array(lineGeometry.index.array.length * 12);
+  for (let i = 0; i < 12; i++) {
+    indices.set(
+      lineGeometry.index.array,
+      lineGeometry.index.array.length * i
+    );
+
+    for (let j = 0; j < lineGeometry.index.array.length; j++) {
+      lineGeometry.index.array[j] += numLinePositions;
+    }
+  }
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  return geometry;
+};
+const boxMaterial = new THREE.MeshPhongMaterial({
+  color: 0x333333,
+});
+const _makeBoxMesh = () => {
+  const geometry = _makeBoxGeometry();
+  const material = boxMaterial;
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.visible = false;
+  mesh.frustumCulled = false;
+  return mesh;
+};
 
 // helpers
 
@@ -253,7 +450,6 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     if (contentDocument) {
       _drawOk();
 
-      // floorMesh.visible = false;
       // scene.background = null;
     } else {
       _drawFail();
@@ -273,7 +469,6 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   iframe.d = d;
   iframe.src = u;
   /* iframe.addEventListener('destroy', () => {
-    // floorMesh.visible = true;
     // scene.background = _makeBackground();
   }); */
 
@@ -343,32 +538,14 @@ const controllerGeometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01);
 const controllerMaterial = new THREE.MeshPhongMaterial({
   color: 0x4caf50,
 });
-const controllerMeshes = [
-  // _makeControllerMesh(-0.1),
-  // _makeControllerMesh(0.1),
-];
-
-for (let i = 0; i < 2; i++) {
+const controllerMeshes = Array(2);
+for (let i = 0; i < controllerMeshes.length; i++) {
   const controllerMesh = new THREE.Object3D();
   controllerMesh.position.set(i === 0 ? -0.1 : 0.1, 0, -0.1);
   controllerMesh.quaternion.setFromUnitVectors(
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(0, -1, -1)
   );
-
-  /* const _makeBlockMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
-    const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-    mesh.position.set(x, y, z);
-    mesh.quaternion.set(qx, qy, qz, qw);
-    // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-    mesh.updateMatrix();
-    mesh.updateMatrixWorld();
-    mesh.matrixAutoUpdate = false;
-    mesh.frustumCulled = false;
-    return mesh;
-  };
-  const blockMesh = _makeBlockMesh();
-  controllerMesh.add(blockMesh); */
 
   const rayMesh = (() => {
     const geometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
@@ -408,81 +585,10 @@ for (let i = 0; i < 2; i++) {
       .applyQuaternion(controllerMesh.quaternion);
   };
 
-  /* const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-  // controllerMesh.position.set(x, y, z);
-  // controllerMesh.quaternion.set(qx, qy, qz, qw);
-  // controllerMesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-  // controllerMesh.updateMatrix();
-  // controllerMesh.updateMatrixWorld();
-  controllerMesh.matrixAutoUpdate = false;
-  controllerMesh.frustumCulled = false; */
-
   scene.add(controllerMesh);
   controllerMeshes[i] = controllerMesh;
 }
-
-// local scene
-
-const floorMesh = (() => {
-  const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
-    .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
-      new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 0, 1),
-        new THREE.Vector3(0, 1, 0)
-      )
-    ));
-  const uvs = geometry.attributes.uv.array;
-  const numUvs = uvs.length / 2;
-  for (let i = 0; i < numUvs; i++) {
-    uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
-    uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
-  }
-
-  const texture = new THREE.Texture(
-    null,
-    THREE.UVMapping,
-    THREE.RepeatWrapping,
-    THREE.RepeatWrapping,
-    THREE.NearestFilter,
-    THREE.NearestFilter,
-    THREE.RGBAFormat,
-    THREE.UnsignedByteType,
-    1
-  );
-
-  const graphImg = new Image();
-  graphImg.crossOrigin = 'Anonymous';
-  graphImg.src = 'graphy.png';
-  graphImg.onload = () => {
-    texture.image = graphImg;
-    texture.needsUpdate = true;
-  };
-  graphImg.onerror = err => {
-    console.warn(err.stack);
-  };
-
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
-    side: THREE.DoubleSide,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  return mesh;
-})();
-scene.add(floorMesh);
-
-const cubeMesh = (() => {
-  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
-  const material = new THREE.MeshPhongMaterial({
-    color: 0x9ccc65,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.y = 1.5;
-  mesh.position.z = -1;
-  mesh.rotation.order = 'YXZ';
-  mesh.frustumCulled = false;
-  return mesh;
-})();
-scene.add(cubeMesh);
+const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
 // rig
 
@@ -1082,6 +1188,7 @@ const _makeRig = () => {
             map: texture,
             side: THREE.DoubleSide,
             transparent: true,
+            alphaTest: 0.5,
           });
           const mesh = new THREE.Mesh(geometry, material);
           mesh.frustumCulled = false;
@@ -1172,9 +1279,19 @@ const _animateRig = () => {
 };
 
 const cacheCanvas = document.createElement('canvas');
-cacheCanvas.width = 256;
-cacheCanvas.height = 256;
+cacheCanvas.width = 1024;
+cacheCanvas.height = 1024;
 const cacheCanvasCtx = cacheCanvas.getContext('2d');
+
+// box meshes
+
+const boxMeshes = [
+  _makeBoxMesh(),
+  _makeBoxMesh(),
+];
+boxMeshes.forEach(boxMesh => {
+  scene.add(boxMesh);
+});
 
 const moves = [null, null];
 
@@ -1212,8 +1329,6 @@ window.addEventListener('mousemove', e => {
 
       // fakeDisplay.update();
     // }
-
-    // _updateGamepads();
   }
 });
 window.addEventListener('wheel', e => {
@@ -1364,74 +1479,64 @@ function animate(time, frame) {
   const timeDiff = now - lastTime;
   const startTimeDiff = now - startTime;
 
-  /* const _updateGamepads = () => {
-    if (fakeDisplay) {
-      const inputSources = display.session.getInputSources();
-      for (let i = 0; i < inputSources.length; i++) {
-        const gamepad = fakeDisplay.gamepads[i];
-        if (gamepad) {
-          localVector.copy(fakeDisplay.position)
-            .add(
-              localVector2.set(-0.1 + (i*0.1*2), -0.1, -0.2)
-                .applyQuaternion(fakeDisplay.quaternion)
-            ).toArray(gamepad.pose.position);
-          fakeDisplay.quaternion.toArray(gamepad.pose.orientation);
-        }
-
-        const inputSource = inputSources[i];
-        const pose = frame.getInputPose(inputSource);
-        localMatrix.compose(
-          localVector.fromArray(gamepad.pose.position),
-          localQuaternion.fromArray(gamepad.pose.orientation),
-          localVector2.set(1, 1, 1)
-        )
-          .toArray(pose.targetRay.transformMatrix);
-      }
-    }
-  };
-  _updateGamepads(); */
-
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
     const tab = moves[i];
+    const boxMesh = boxMeshes[i];
+
     if (tab) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
       const {iframe} = tab;
+
       const gamepads = navigator.getGamepads();
-      for (let i = 0; i < gamepads.length; i++){
-        const gamepad = gamepads[i];
-        scrollAxis = Math.max(scrollAxis + gamepad.axes[1] / 20, 0);
-        scaleAxis = Math.max(scaleAxis + gamepad.axes[0] / 20, .15);
-        scale = new THREE.Vector3(scaleAxis, scaleAxis, scaleAxis);
+      const gamepad = gamepads[i];
 
-	localMatrix
-          .fromArray(pose.targetRay.transformMatrix)
-	  .decompose(localVector, localQuaternion, localVector2);
+      // XXX accumulation needs to be per gamepad
+      // XXX accumulation needs to be based on last delta
+      scrollAxis = Math.max(scrollAxis + gamepad.axes[1] / 20, 0);
+      scaleAxis = Math.max(scaleAxis + gamepad.axes[0] / 20, .15);
 
-        localVector
-   	  .add(
-    	    localVector2.set(0, 0, -1.5 - scrollAxis)
-  	    .applyQuaternion(localQuaternion)
-	  );
-	iframe.position = localVector.toArray();
-	iframe.orientation = localQuaternion.toArray();
-        iframe.scale = scale.toArray();
-      }
+      localMatrix
+        .fromArray(pose.targetRay.transformMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+      localVector
+        .add(
+          localVector2.set(0, 0, -1.5 - scrollAxis)
+           .applyQuaternion(localQuaternion)
+        );
+      localVector2.set(scaleAxis, scaleAxis, scaleAxis);
+
+      iframe.position = localVector.toArray();
+      iframe.orientation = localQuaternion.toArray();
+      iframe.scale = localVector2.toArray();
+
+      boxMesh.position.copy(localVector);
+      boxMesh.quaternion.copy(localQuaternion);
+      boxMesh.scale.copy(localVector2);
+      // boxMesh.updateMatrixWorld();
+      boxMesh.visible = true;
+    } else {
+      boxMesh.visible = false;
     }
   }
 
   const _updateControllerMeshes = () => {
     if (renderer.vr.enabled) {
-      const inputSources = display.session.getInputSources();
+      for (let i = 0; i < controllerMeshes.length; i++) {
+        controllerMeshes[i].visible = false;
+      }
 
       for (let i = 0; i < inputSources.length; i++) {
         const inputSource = inputSources[i];
         const pose = frame.getInputPose(inputSource);
-        const controllerMesh = controllerMeshes[i];
+
+        const controllerIndex = _getControllerIndex(inputSource);
+        const controllerMesh = controllerMeshes[controllerIndex];
         controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
         controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
         controllerMesh.updateMatrixWorld(true);
+        controllerMesh.visible = true;
       }
     }
   };
@@ -1972,9 +2077,6 @@ function animate(time, frame) {
   _updateButtons();
 
   const _render = () => {
-    // cubeMesh.rotation.y = (cubeMesh.rotation.y + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
-    cubeMesh.rotation.x = (cubeMesh.rotation.x + timeDiff/1000 * Math.PI/2) % (Math.PI*2);
-
     renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
   };
   _render();
@@ -2078,7 +2180,7 @@ const _bootFakeDisplay = async () => {
 
   display = fakeDisplay;
 
-  _openUrl('exobot.html');
+  _openUrl('tutorial.html');
   focusedTab = rig.menuMesh.urlMesh;
   rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
@@ -2097,9 +2199,9 @@ if (navigator.xr && !query.fake) {
 
       session.layers = layers;
 
-      session.onselect = e => {
+      /* session.onselect = e => {
         console.log('select'); // XXX
-      };
+      }; */
 
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
@@ -2131,7 +2233,7 @@ if (navigator.xr && !query.fake) {
           renderer.autoClearDepth = false;
         }
 
-        _openUrl('exobot.html');
+        _openUrl('tutorial.html');
         _updateRigLists();
 
         console.log('loaded root in XR');

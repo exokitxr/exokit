@@ -67,6 +67,7 @@ MLHandTrackingKeyPose lastKeyposeLeft = MLHandTrackingKeyPose_NoHand;
 MLHandTrackingKeyPose lastKeyposeRight = MLHandTrackingKeyPose_NoHand;
 MLHandTrackingStaticData handStaticData;
 std::vector<MLHandTracker *> handTrackers;
+bool handPresents[2];
 float wristBones[2][4][1 + 3];
 float fingerBones[2][5][4][1 + 3];
 
@@ -994,7 +995,7 @@ void MLHandTracker::Update() {
   MLHandTrackingKeyPose keyposeRight;
   bool keyposeRightNew;
 
-  leftHandBoneValid = getHandBone(wristBones[0], fingerBones[0]);
+  leftHandBoneValid = handPresents[0] && getHandBone(wristBones[0], fingerBones[0]);
   if (leftHandBoneValid) {
     leftHandTransformValid = getHandTransform(leftHandCenter, leftHandNormal, wristBones[0], fingerBones[0], true, transformMatrix);
     leftPointerTransformValid = getHandPointerTransform(leftPointerTransform, wristBones[0], fingerBones[0], leftHandNormal, transformMatrix);
@@ -1033,7 +1034,7 @@ void MLHandTracker::Update() {
     lastKeyposeLeft = handData.left_hand_state.keypose;
   }
 
-  rightHandBoneValid = getHandBone(wristBones[1], fingerBones[1]);
+  rightHandBoneValid = handPresents[1] && getHandBone(wristBones[1], fingerBones[1]);
   if (rightHandBoneValid) {
     rightHandTransformValid = getHandTransform(rightHandCenter, rightHandNormal, wristBones[1], fingerBones[1], false, transformMatrix);
     rightPointerTransformValid = getHandPointerTransform(rightPointerTransform, wristBones[1], fingerBones[1], rightHandNormal, transformMatrix);
@@ -2853,6 +2854,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         if (result == MLResult_Ok) {
           for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
             const MLInputControllerState &controllerState = controllerStates[i];
+            bool is_connected = controllerState.is_connected;
             const MLVec3f &position = OffsetFloor(controllerState.position);
             const MLQuaternionf &orientation = controllerState.orientation;
             const float trigger = controllerState.trigger_normalized;
@@ -2862,19 +2864,21 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             const MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
             const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
 
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 0, JS_NUM(position.x));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 1, JS_NUM(position.y));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 2, JS_NUM(position.z));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 3, JS_NUM(orientation.x));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 4, JS_NUM(orientation.y));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 5, JS_NUM(orientation.z));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 6, JS_NUM(orientation.w));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 7, JS_NUM(trigger));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 8, JS_NUM(bumper));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 9, JS_NUM(home));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 10, JS_NUM(touchPosAndForce.x));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 11, JS_NUM(touchPosAndForce.y));
-            controllersArray->Set((i*CONTROLLER_ENTRY_SIZE) + 12, JS_NUM(touchForceZ));
+            int index;
+            controllersArray->Set(index = i * CONTROLLER_ENTRY_SIZE, JS_NUM(is_connected ? 1 : 0));
+            controllersArray->Set(++index, JS_NUM(position.x));
+            controllersArray->Set(++index, JS_NUM(position.y));
+            controllersArray->Set(++index, JS_NUM(position.z));
+            controllersArray->Set(++index, JS_NUM(orientation.x));
+            controllersArray->Set(++index, JS_NUM(orientation.y));
+            controllersArray->Set(++index, JS_NUM(orientation.z));
+            controllersArray->Set(++index, JS_NUM(orientation.w));
+            controllersArray->Set(++index, JS_NUM(trigger));
+            controllersArray->Set(++index, JS_NUM(bumper));
+            controllersArray->Set(++index, JS_NUM(home));
+            controllersArray->Set(++index, JS_NUM(touchPosAndForce.x));
+            controllersArray->Set(++index, JS_NUM(touchPosAndForce.y));
+            controllersArray->Set(++index, JS_NUM(touchForceZ));
           }
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
@@ -3323,6 +3327,7 @@ NAN_METHOD(MLContext::Update) {
           }
         }
 
+        handPresents[0] = handData.left_hand_state.hand_confidence >= 0.5;
         // setFingerValue(handData.left_hand_state, handBones[0][0]);
         setFingerValue(handStaticData.left.wrist, snapshot, wristBones[0]);
         setFingerValue(handStaticData.left.thumb, snapshot, fingerBones[0][0]);
@@ -3331,6 +3336,7 @@ NAN_METHOD(MLContext::Update) {
         setFingerValue(handStaticData.left.ring, snapshot, fingerBones[0][3]);
         setFingerValue(handStaticData.left.pinky, snapshot, fingerBones[0][4]);
 
+        handPresents[1] = handData.right_hand_state.hand_confidence >= 0.5;
         // setFingerValue(handData.left_hand_state, handBones[1][0]);
         setFingerValue(handStaticData.right.wrist, snapshot, wristBones[1]);
         setFingerValue(handStaticData.right.thumb, snapshot, fingerBones[1][0]);

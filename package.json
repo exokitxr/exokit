@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.505",
+  "version": "0.0.506",
   "description": "Native VR and AR engine for JavaScript",
   "engines": {
     "node": ">=10.0.0"
@@ -17,9 +17,8 @@
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "serve": "serve examples",
     "start": "node .",
-    "test:ci": "TEST_ENV=ci npm run test:command -- --full-trace --exit",
-    "test:command": "mocha --full-trace tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
-    "test:watch": "npm run test:command -- --watch"
+    "test": "./node_modules/mocha/bin/mocha --full-trace --exit --bail tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
+    "test:watch": "npm run test -- --watch"
   },
   "repository": {
     "type": "git",
@@ -86,7 +85,7 @@
     "window-selector": "0.0.6",
     "window-text-encoding": "0.0.2",
     "window-worker": "0.0.98",
-    "window-xhr": "0.0.20",
+    "window-xhr": "0.0.23",
     "ws": "^6.1.2"
   },
   "devDependencies": {

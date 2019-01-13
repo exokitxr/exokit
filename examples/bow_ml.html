@@ -11,15 +11,9 @@
   <script src="sprite3d.js"></script>
   <script>
 (async () => {
-    let container, scene, camera, display, bowMesh, stringMesh;
-    // let mesher = null;
+    let container, scene, camera, display, controllerMeshes, bowMesh, stringMesh, pinchMeshes;
+    let handTracker;
 
-    const zeroVector = new THREE.Vector3();
-    const oneVector = new THREE.Vector3(1, 1, 1);
-    const forwardVector = new THREE.Vector3(0, 0, -1);
-    const upVector = new THREE.Vector3(0, 1, 0);
-    const zeroQuaternion = new THREE.Quaternion();
-    const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
     /* const localTransformPositionVectors = {
       keyboard: new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3),
       hmd: new THREE.Vector3(0.015/2 * 3, 0, 0),
@@ -56,57 +50,39 @@
     const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
+    const localVector3 = new THREE.Vector3();
+    const localVector4 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
-    const localRay = new THREE.Ray();
+    // const localRay = new THREE.Ray();
+    const localVectorFloat32Array = new Float32Array(3);
+    const localVectorFloat32Array2 = new Float32Array(3);
 
-    const _makeButtons = () => ({
-      trigger: false,
-      bumper: false,
+    const zeroVector = new THREE.Vector3();
+    const oneVector = new THREE.Vector3(1, 1, 1);
+    const forwardVector = new THREE.Vector3(0, 0, -1);
+    const upVector = new THREE.Vector3(0, 1, 0);
+    const zeroQuaternion = new THREE.Quaternion();
+    const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
+
+    const controllerGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+      .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5));
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
     });
-    const lastButtons = [
-      _makeButtons(),
-      _makeButtons(),
-    ];
-
-    const NPC_PLUGIN = 'npc';
-    const OTHER_SIDES = {
-      left: 'right',
-      right: 'left',
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
     };
-    const ARROW_SPEED = 0.05;
-    const ARROW_GRAVITY = -10 / 1000 * 0.001;
-    const ARROW_TERMINAL_VELOCITY = -10;
-    const ARROW_TTL = 5 * 1000;
-    const ARROW_LENGTH = 0.5;
-
-    const pixelSize = 0.015;
-    const arrowMatrix = (() => {
-      const position = new THREE.Vector3(pixelSize, 0, -pixelSize*16);
-      const rotation = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(0, 0, 1),
-        -Math.PI / 4
-      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        new THREE.Vector3(0, 0, -1)
-      )).premultiply(new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(1, 0, 0),
-        new THREE.Vector3(0, 1, 0)
-      ));
-      const scale = new THREE.Vector3(2, 2, 2);
-      return new THREE.Matrix4().compose(position, rotation, scale);
-    })();
-
-    const grabbable = {
-      isGrabbed() {
-        return false;
-      },
-    };
-    let grabbedIndex = -1;
-    let pulling = false;
-    let nockedArrowMesh = null;
-    let drawnArrowMesh = null;
-    const arrows = [];
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
 
     const _requestImage = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -120,7 +96,166 @@
 
       img.crossOrigin = 'Anonymous';
       img.src = url;
+    });  const localLine = new THREE.Line3();
+
+    const [
+      bowImg,
+      arrowImg,
+    ] = await Promise.all([
+      _requestImage('icons/Bow_Empty.png'),
+      _requestImage('icons/Arrow.png'),
+    ]);
+
+    // const NPC_PLUGIN = 'npc';
+    /* const OTHER_SIDES = {
+      left: 'right',
+      right: 'left',
+    }; */
+    const ARROW_SPEED = 0.05;
+    const ARROW_GRAVITY = -10 / 1000 * 0.001;
+    const ARROW_TERMINAL_VELOCITY = -10;
+    const ARROW_TTL = 5 * 1000;
+    const ARROW_LENGTH = 0.5;
+
+    const pixelSize = 0.015;
+    const bowHeight = 0.6;
+    const arrowMatrix = (() => {
+      const position = new THREE.Vector3(0, 0, -pixelSize*16);
+      const rotation = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        -Math.PI / 4
+      ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, -1)
+      )).premultiply(new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(0, 1, 0)
+      ));
+      const scale = new THREE.Vector3(1, 1, 1);
+      return new THREE.Matrix4().compose(position, rotation, scale);
+    })();
+    const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg)
+    arrowTemplateMesh.geometry.applyMatrix(arrowMatrix);
+    const _makeArrowMesh = () => {
+      const arrowMesh = arrowTemplateMesh.clone();
+      arrowMesh.frustumCulled = false;
+      arrowMesh.startTime = 0;
+      arrowMesh.lastTime = 0;
+      arrowMesh.velocity = new THREE.Vector3();
+      arrowMesh.hitTesting = false;
+      arrowMesh.updatePull = position => {
+        if (position !== null) {
+          arrowMesh.position.copy(position);
+          arrowMesh.quaternion.setFromRotationMatrix(localMatrix.lookAt(
+            position,
+            localVector.copy(stringMesh.position)
+              .add(
+                localVector2.set(0, 0, -0.2)
+                  .applyQuaternion(stringMesh.quaternion)
+              ),
+            localVector3.copy(upVector)
+              .applyQuaternion(stringMesh.quaternion)
+          ));
+        } else {
+          arrowMesh.position.copy(stringMesh.position);
+          arrowMesh.quaternion.copy(stringMesh.quaternion)
+            // .multiply(forwardQuaternion);
+        }
+        // arrowMesh.updateMatrixWorld();
+      };
+
+      return arrowMesh;
+    };
+
+    const stringGeometry = (() => {
+      const geometry = new THREE.BoxBufferGeometry(pixelSize, bowHeight, pixelSize, 1, 2, 1)
+        /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(0, 0, -1)
+        )))
+        .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3)); */
+      const colors = new Float32Array(geometry.getAttribute('position').array.length);
+      colors.fill(0x33/0xFF);
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      return geometry;
+    })();
+    const stringGeometryPositions = stringGeometry.getAttribute('position').array;
+    const numPositions = stringGeometryPositions.length / 3;
+    const centerPositionIndexes = [];
+    const centerPositions = [];
+    for (let i = 0; i < numPositions; i++) {
+      const baseIndex = i * 3;
+      if (Math.abs(stringGeometryPositions[baseIndex + 1]) < 0.001) {
+        centerPositionIndexes.push(baseIndex);
+        centerPositions.push(
+          stringGeometryPositions[baseIndex + 0],
+          stringGeometryPositions[baseIndex + 1],
+          stringGeometryPositions[baseIndex + 2]
+        );
+      }
+    }
+    if (centerPositionIndexes.length === 0 || centerPositions.length === 0) {
+      throw new Error('failed to initializa string mesh');
+    }
+    /* const arrowGeometry = (() => {
+      const {positions, normals, colors, dys} = arrowGeometrySpec;
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+      geometry.boundingSphere = new THREE.Sphere(
+        new THREE.Vector3(),
+        1
+      );
+      return geometry;
+    })(); */
+    const stringMaterial = new THREE.MeshBasicMaterial({
+      vertexColors: THREE.VertexColors,
     });
+
+    const _startNock = () => {
+      if (!nockedArrowMesh) {
+        nockedArrowMesh = _makeArrowMesh();
+        scene.add(nockedArrowMesh);
+      }
+    };
+    const _endNock = () => {
+      if (nockedArrowMesh) {
+        const arrow = nockedArrowMesh;
+        arrows.push(arrow);
+
+        const now = Date.now();
+        arrow.startTime = now;
+        arrow.lastTime = now;
+        arrow.velocity.set(0, 0, -ARROW_SPEED * nockedArrowMesh.position.distanceTo(stringMesh.position))
+          .applyQuaternion(arrow.quaternion);
+
+        nockedArrowMesh = null;
+      }
+    };
+
+    const _makeButtons = () => ({
+      trigger: false,
+      bumper: false,
+    });
+    const lastButtons = [
+      _makeButtons(),
+      _makeButtons(),
+    ];
+    const lastPincheds = [false, false];
+
+    const grabbable = {
+      isGrabbed() {
+        return false;
+      },
+    };
+    let grabbedIndex = -1;
+    let pinchedIndex = -1;
+    let pulling = false;
+    let nockedArrowMesh = null;
+    let drawnArrowMesh = null;
+    const arrows = [];
 
     const _debounce = fn => {
       let running = false;
@@ -166,6 +301,14 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
+      controllerMeshes = [
+        _makeControllerMesh(-0.1),
+        _makeControllerMesh(0.1),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
+
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
@@ -179,14 +322,6 @@
       container.appendChild(renderer.domElement);
 
       {
-        const [
-          bowImg,
-          arrowImg,
-        ] = await Promise.all([
-          _requestImage('icons/Bow_Empty.png'),
-          _requestImage('icons/Arrow.png'),
-        ]);
-
         bowMesh = sprite3d.makeSpriteMesh(bowImg);
         bowMesh.geometry
           .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
@@ -201,52 +336,6 @@
           .applyMatrix(new THREE.Matrix4().makeTranslation(pixelSize, 0, 0));
         bowMesh.frustumCulled = false;
         scene.add(bowMesh);
-
-        const arrowTemplateMesh = sprite3d.makeSpriteMesh(arrowImg, pixelSize) // XXX account for pixelSize
-        arrowTemplateMesh.geometry
-          .applyMatrix(arrowMatrix);
-
-        const stringGeometry = (() => {
-          const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
-            /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 1, 0),
-              new THREE.Vector3(0, 0, -1)
-            ))) */
-            .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.2, 3));
-          geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
-          return geometry;
-        })();
-        const stringGeometryPositions = stringGeometry.getAttribute('position').array;
-        const numPositions = stringGeometryPositions.length / 3;
-        const centerPositionIndexes = [];
-        const centerPositions = [];
-        for (let i = 0; i < numPositions; i++) {
-          const baseIndex = i * 3;
-          if (Math.abs(stringGeometryPositions[baseIndex + 2]) < 0.001) {
-            centerPositionIndexes.push(baseIndex);
-            centerPositions.push(
-              stringGeometryPositions[baseIndex + 0],
-              stringGeometryPositions[baseIndex + 1],
-              stringGeometryPositions[baseIndex + 2]
-            );
-          }
-        }
-        /* const arrowGeometry = (() => {
-          const {positions, normals, colors, dys} = arrowGeometrySpec;
-          const geometry = new THREE.BufferGeometry();
-          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-          geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
-          geometry.boundingSphere = new THREE.Sphere(
-            new THREE.Vector3(),
-            1
-          );
-          return geometry;
-        })(); */
-        const stringMaterial = new THREE.MeshBasicMaterial({
-          vertexColors: THREE.VertexColors,
-        });
 
         stringMesh = (() => {
           const geometry = stringGeometry;
@@ -276,44 +365,6 @@
           return stringMesh;
         })();
         scene.add(stringMesh);
-        console.log('scene add string mesh');
-
-        const _makeArrowMesh = () => {
-          const arrowMesh = arrowTemplateMesh.clone();
-          arrowMesh.startTime = 0;
-          arrowMesh.lastTime = 0;
-          arrowMesh.velocity = new THREE.Vector3();
-          arrowMesh.updatePull = position => {
-            if (position !== null) {
-              arrowMesh.position.copy(position);
-              arrowMesh.quaternion.setFromRotationMatrix(localMatrix.lookAt(
-                position,
-                grabbable.position,
-                localVector.copy(upVector)
-                  .applyQuaternion(
-                    localQuaternion.copy(stringMesh.quaternion)
-                      // .multiply(forwardQuaternion)
-                  )
-              ));
-            } else {
-              arrowMesh.position.copy(stringMesh.position);
-              arrowMesh.quaternion.copy(stringMesh.quaternion)
-                // .multiply(forwardQuaternion);
-            }
-            arrowMesh.updateMatrixWorld();
-          };
-          arrowMesh.checkCollision = _debounce(next => {
-            stck.requestCheck(arrowMesh.position, arrowMesh.quaternion, collided => {
-              if (collided) {
-                arrowMesh.velocity.copy(zeroVector);
-              }
-
-              next();
-            });
-          });
-
-          return arrowMesh;
-        };
 
         /* const _grab = e => {
           grabbable.setLocalTransform(localTransformPositionVectors[pose.getVrMode()], localTransformRotationQuaterions[pose.getVrMode()], localTransformScaleVector);
@@ -365,7 +416,7 @@
               const now = Date.now();
               arrow.startTime = now;
               arrow.lastTime = now;
-              arrow.velocity.set(0, 0, -ARROW_SPEED * stringMesh.pullPosition.length())
+              arrow.velocity.set(0, 0, -ARROW_SPEED * nockedArrowMesh.distanceTo(stringMesh.position))
                 .applyQuaternion(arrow.quaternion);
 
               nockedArrowMesh = null;
@@ -410,7 +461,7 @@
           priority: 1,
         }); */
 
-        const destinationMesh = (() => {
+        const _makePinchMesh = () => {
           const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
           const material = new THREE.MeshPhongMaterial({
             color: 0x2196f3,
@@ -419,26 +470,87 @@
           mesh.visible = false;
           mesh.frustumCulled = false;
           return mesh;
-        })();
-        scene.add(destinationMesh);
+        };
+        pinchMeshes = [
+          _makePinchMesh(),
+          _makePinchMesh(),
+        ];
+        pinchMeshes.forEach(pinchMesh => {
+          scene.add(pinchMesh);
+        });
 
+        const _onHands = updates => {
+          for (let i = 0; i < pinchMeshes.length; i++) {
+            pinchMeshes[i].visible = false;
+          }
+
+          let pinchedSeen = false;
+          for (let i = 0; i < updates.length; i++) {
+            const update = updates[i];
+            const {hand, pointer} = update;
+            const handIndex = hand === 'left' ? 0 : 1;
+            const lastPinched = lastPincheds[handIndex];
+            const pinchMesh = pinchMeshes[handIndex];
+
+            if (lastPinched) {
+              if (pinchedIndex === -1) {
+                localLine.set(
+                  localVector
+                    .copy(stringMesh.position)
+                    .add(
+                      localVector3
+                        .set(0, bowHeight/2, 0)
+                        .applyQuaternion(stringMesh.quaternion),
+                    ),
+                  localVector2
+                    .copy(stringMesh.position)
+                    .add(
+                      localVector3
+                        .set(0, -bowHeight/2, 0)
+                        .applyQuaternion(stringMesh.quaternion)
+                    )
+                );
+                const pinchPosition = localVector.fromArray(pointer.position);
+                const closestStringPoint = localLine.closestPointToPoint(pinchPosition, true, localVector2);
+                if (closestStringPoint.distanceTo(pinchPosition) < 0.05) {
+                  pinchedIndex = handIndex;
+
+                  _startNock();
+                }
+              }
+              if (pinchedIndex === handIndex) {
+                pinchedSeen = true;
+              }
+              
+              pinchMesh.position.fromArray(pointer.position);
+              pinchMesh.quaternion.fromArray(pointer.rotation);
+              pinchMesh.visible = true;
+            } else {
+              if (pinchedIndex === handIndex) {
+                pinchedIndex = -1;
+
+                _endNock();
+              }
+            }
+          }
+          if (pinchedIndex !== -1 && !pinchedSeen) {
+            pinchedIndex = -1;
+
+            _endNock();
+          }
+        };
         const _onGesture = e => {
           const {hand, gesture, lastGesture, position, rotation} = e;
           // console.log('got gesture', {hand, gesture, lastGesture});
 
           const pinched = gesture === 'pinch';
+          const handIndex = hand === 'left' ? 0 : 1;
 
-          if (pinched) {
-            destinationMesh.position.fromArray(position);
-            destinationMesh.quaternion.fromArray(rotation);
-            destinationMesh.visible = true;
-          } else {
-            destinationMesh.visible = false;
-          }
+          lastPincheds[handIndex] = pinched;
         };
 
-        const handTracker = window.browser.magicleap.RequestHandTracking();
-        // handTracker.onhands = _onHands;
+        handTracker = window.browser.magicleap.RequestHandTracking();
+        handTracker.onhands = _onHands;
         handTracker.ongesture = _onGesture;
       }
 
@@ -451,6 +563,24 @@
         const gamepads = navigator.getGamepads();
         const inputSources = display.session.getInputSources();
 
+        const _updateControllerMeshes = () => {
+          for (let i = 0; i < controllerMeshes.length; i++) {
+            controllerMeshes[i].visible = false;
+          }
+
+          const inputSources = display.session.getInputSources();
+          for (let i = 0; i < inputSources.length; i++) {
+            const inputSource = inputSources[i];
+            const pose = frame.getInputPose(inputSource);
+
+            const controllerIndex = _getControllerIndex(inputSource);
+            const controllerMesh = controllerMeshes[controllerIndex];
+            controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+            controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+            // controllerMesh.updateMatrixWorld(true);
+            controllerMesh.visible = true;
+          }
+        };
         const _updateGamepads = () => {
           for (let i = 0; i < gamepads.length; i++) {
             const gamepad = gamepads[i];
@@ -481,9 +611,38 @@
             const pose = frame.getInputPose(inputSource);
             localMatrix
               .fromArray(pose.targetRay.transformMatrix)
-              .decompose(bowMesh.position, bowMesh.quaternion, localVector);
+              .decompose(bowMesh.position, bowMesh.quaternion, localVector2);
             stringMesh.position.copy(bowMesh.position);
             stringMesh.quaternion.copy(bowMesh.quaternion);
+          }
+        };
+        const _updatePinch = () => {
+          if (pinchedIndex !== -1) {
+            const pinchMesh = pinchMeshes[pinchedIndex];
+            stringMesh.updatePull(pinchMesh.position);
+          } else {
+            stringMesh.updatePull(null);
+          }
+        };
+        const _updateNock = () => {
+          if (nockedArrowMesh) {
+            if (pinchedIndex !== -1) {
+              const pinchMesh = pinchMeshes[pinchedIndex];
+              nockedArrowMesh.updatePull(pinchMesh.position.clone());
+            } else if (grabbedIndex !== -1) {
+              const inputSource = inputSources[grabbedIndex];
+              const pose = frame.getInputPose(inputSource);
+              localMatrix
+                .fromArray(pose.targetRay.transformMatrix)
+                .decompose(localVector, localQuaternion, localVector2);
+              localVector
+                .add(
+                  localVector2
+                    .set(0, 0, 0.2)
+                    .applyQuaternion(localQuaternion)
+                );
+              nockedArrowMesh.updatePull(localVector.clone());
+            }
           }
         };
         /* const _updateStringPosition = () => {
@@ -499,7 +658,7 @@
             stringMesh.updateMatrixWorld();
           }
         }; */
-        const _updateDrawnArrow = () => {
+        /* const _updateDrawnArrow = () => {
           if (drawnArrowMesh) {
             const _updateTransform = () => {
               const side = grabbable.getGrabberSide();
@@ -523,8 +682,8 @@
               _updateTransform();
             }
           }
-        };
-        const _updatePull = () => {
+        }; */
+        /* const _updatePull = () => {
           const position = pulling ? gamepads[OTHER_SIDES[grabbable.getGrabberSide()]].worldPosition : null;
 
           if (pulling || lastPulling) {
@@ -535,7 +694,7 @@
           }
 
           lastPulling = pulling;
-        };
+        }; */
         const _updateArrows = () => {
           if (arrows.length > 0) {
             const now = Date.now();
@@ -547,7 +706,7 @@
 
               if (timeSinceStart < ARROW_TTL) {
                 if (!arrow.velocity.equals(zeroVector)) {
-                  const _hitNpc = () => {
+                  /* const _hitNpc = () => {
                     const npcElement = elements.getEntitiesElement().querySelector(NPC_PLUGIN);
                     if (npcElement) {
                       localVector.copy(arrow.velocity).normalize();
@@ -566,7 +725,7 @@
                     } else {
                       return false;
                     }
-                  };
+                  }; */
                   const _advanceArrow = () => {
                     const {velocity} = arrow;
                     const timeDiff = now - arrow.lastTime;
@@ -582,13 +741,56 @@
                     velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
 
                     arrow.lastTime = now;
+                  };
+                  const _checkCollision = () => {
+                    if (!arrow.velocity.equals(zeroVector) && !arrow.hitTesting) {
+                      const startPosition = arrow.position.clone();
 
-                    return false;
+                      display.session.requestHitTest(
+                        arrow.position
+                          .toArray(localVectorFloat32Array),
+                        localVector.set(0, 0, -1)
+                          .applyQuaternion(arrow.quaternion)
+                          .toArray(localVectorFloat32Array2)
+                      )
+                        .then(result => {
+                          if (result.length) {
+                            const [{hitMatrix}] = result;
+                            localMatrix
+                              .fromArray(hitMatrix)
+                              .decompose(localVector, localQuaternion, localVector2);
+
+                            // console.log('check distance', localVector.distanceTo(startPosition), arrow.velocity.length()*50);
+                            if (localVector.distanceTo(startPosition) < arrow.velocity.length()*50) {
+                              console.log('got hit', localVector.toArray().join(','));
+                              arrow.quaternion.setFromUnitVectors(
+                                localVector2.set(0, 0, -1),
+                                localVector3
+                                  .copy(localVector)
+                                  .sub(startPosition)
+                                  .normalize()
+                              );
+                              arrow.position
+                                .copy(localVector)
+                                .add(
+                                  localVector2.set(0, 0, 0.5)
+                                    .applyQuaternion(arrow.quaternion)
+                                );
+                              arrow.updateMatrixWorld();
+
+                              arrow.velocity.copy(zeroVector);
+                            }
+                          }
+
+                          arrow.hitTesting = false;
+                        });
+
+                      arrow.hitTesting = true;
+                    }
                   };
 
-                  if (!(_hitNpc() || _advanceArrow())) {
-                    arrow.checkCollision();
-                  }
+                  _advanceArrow();
+                  _checkCollision();
                 }
               } else {
                 removedArrows.push(arrow);
@@ -602,11 +804,14 @@
           }
         };
 
+        _updateControllerMeshes();
         _updateGamepads();
         _updateGrab();
+        _updatePinch();
+        _updateNock();
         // _updateStringPosition();
-        _updateDrawnArrow();
-        _updatePull();
+        // _updateDrawnArrow();
+        // _updatePull();
         _updateArrows();
       }
 
@@ -623,17 +828,14 @@
     });
     display.session = session;
 
-    /* session.onselect = e => {
-      const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-      const controllerMesh = controllerMeshes[controllerIndex];
-      controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
-
-      const objectMesh = _makeControllerMesh(
-        controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
-        controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
-      );
-      scene.add(objectMesh);
-    }; */
+    session.onselectstart = e => {
+      if (grabbedIndex !== -1) {
+        _startNock();
+      }
+    };
+    session.onselectend = e => {
+      _endNock();
+    };
 
     // console.log('request first frame');
     session.requestAnimationFrame((timestamp, frame) => {

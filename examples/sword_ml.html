@@ -11,12 +11,14 @@
   <script src="sprite3d.js"></script>
   <script>
     let container, scene, camera, renderer, display;
-    let swordMesh;
+    let swordMesh, particles;
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
+    const localVectorFloat32Array = new Float32Array(3);
+    const localVectorFloat32Array2 = new Float32Array(3);
 
     const _makeButtons = () => ({
       trigger: false,
@@ -27,6 +29,7 @@
       _makeButtons(),
     ];
     let grabbedIndex = -1;
+    let hitTesting = false;
 
     const _requestSpriteMesh = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -40,6 +43,36 @@
         reject(err);
       };
     });
+
+    const particleGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+    const particleMaterial = new THREE.MeshPhongMaterial({
+      color: 0xff5722,
+      flatShading: true,
+    });
+    const _makeParticle = () => {
+      const mesh = new THREE.Mesh(particleGeometry, particleMaterial);
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      mesh.endTime = Date.now() + 1000 + Math.floor(Math.random() * 2000);
+      return mesh;
+    };
+    const _makeParticles = (position, rotation) => {
+      const numParticles = 1 + Math.floor(Math.random() * 3);
+      for (let j = 0; j < numParticles; j++) {
+        const particle = _makeParticle();
+        particle.position.copy(position);
+        particle.quaternion.copy(rotation);
+        particle.updateMatrix();
+        particle.updateMatrixWorld();
+        particle.velocity = new THREE.Vector3(
+          (Math.random() - 0.5) * 0.01,
+          (Math.random() - 0.5) * 0.02,
+          (Math.random() - 0.5) * 0.01
+        );
+        scene.add(particle);
+        particles.push(particle);
+      }
+    };
 
     function init() {
       container = document.createElement('div');
@@ -63,7 +96,6 @@
       scene.add(directionalLight);
 
       swordMesh = new THREE.Object3D();
-
       _requestSpriteMesh('sword.png')
         .then(newSwordMesh => {
           newSwordMesh.position.set(0.05, 0.11, -0.15);
@@ -74,7 +106,7 @@
             new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 1, 0),
               new THREE.Vector3(0, 1, -1).normalize(),
-             )
+            )
           );
           newSwordMesh.frustumCulled = false;
 
@@ -85,6 +117,7 @@
           console.warn(err.stack);
         });
 
+      particles = [];
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -98,7 +131,11 @@
       renderer.setAnimationLoop(animate);
     }
 
+    let lastUpdateTime = Date.now();
     function animate(time, frame) {
+      const now = Date.now();
+      const timeDiff = now - lastUpdateTime;
+
       if (renderer.vr.enabled) {
         const gamepads = navigator.getGamepads();
         const inputSources = display.session.getInputSources();
@@ -136,9 +173,66 @@
             swordMesh.updateMatrixWorld(true);
           }
         };
+        const _updateHitTest = () => {
+          if (!hitTesting) {
+            const startPosition = swordMesh.position.clone();
+
+            display.session.requestHitTest(
+              swordMesh.position
+                .toArray(localVectorFloat32Array),
+              localVector.set(0, 1, -1)
+                .normalize()
+                .applyQuaternion(swordMesh.quaternion)
+                .toArray(localVectorFloat32Array2)
+            )
+              .then(result => {
+                if (result.length) {
+                  const [{hitMatrix}] = result;
+                  localMatrix
+                    .fromArray(hitMatrix)
+                    .decompose(localVector, localQuaternion, localVector2);
+
+                  if (localVector.distanceTo(startPosition) < 0.5) {
+                    console.log('got hit', localVector.toArray().join(','), localQuaternion.toArray().join(','));
+                    _makeParticles(localVector, localQuaternion);
+                  }
+                }
+
+                hitTesting = false;
+              });
+
+            hitTesting = true;
+          }
+        };
+        const _updateParticles = () => {
+          if (particles.length > 0) {
+            const localParticles = particles.slice();
+
+            for (let i = 0; i < localParticles.length; i++) {
+              const particle = localParticles[i];
+              if (now < particle.endTime) {
+                particle.velocity.add(
+                  localVector
+                    .set(0, -9.8, 0)
+                    .multiplyScalar(timeDiff / 1000 * 0.002)
+                );
+                particle.position.add(particle.velocity);
+                particle.updateMatrix();
+                particle.updateMatrixWorld();
+              } else {
+                scene.remove(particle);
+                particles.splice(particles.indexOf(particle), 1);
+              }
+            }
+          }
+        };
 
         _updateGamepads();
         _updateGrab();
+        _updateHitTest();
+        _updateParticles();
+
+        lastUpdateTime = now;
       }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
