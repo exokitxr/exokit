@@ -1852,8 +1852,7 @@ function animate(time, frame) {
       boxMesh.visible = true;
 
       if (serverConnectedUrl) {
-        const objectMesh = xrmp.getObjectMeshes()
-          .find(objectMesh => objectMesh.object.id === moveTab.id);
+        const objectMesh = xrmp.getObjectMeshes().find(objectMesh => objectMesh.object.id === moveTab.id);
         const {object} = objectMesh;
         const {objectMatrix} = object;
         localVector.toArray(objectMatrix.position);
