@@ -1992,13 +1992,289 @@ void RunEventsInMainThread(uv_async_t *handle) {
   events.clear();
 }
 
-inline uint32_t normalizeMLKeyCode(MLKeyCode mlKeyCode) {
-  switch (mlKeyCode) {
-    case MLKEYCODE_ENTER: return 13;
-    case MLKEYCODE_ESCAPE: return 27;
-    case MLKEYCODE_DEL: return 8;
-    case MLKEYCODE_FORWARD_DEL: return 46;
-    default: return (uint32_t)mlKeyCode;
+inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
+  switch (mlKeycode) {
+    // MLKEYCODE_UNKNOWN                       = 0,
+    MLKEYCODE_SOFT_LEFT: return 37;
+    MLKEYCODE_SOFT_RIGHT: return 39;
+    /* MLKEYCODE_HOME                          = 3,
+    MLKEYCODE_BACK                          = 4,
+    MLKEYCODE_CALL                          = 5,
+    MLKEYCODE_ENDCALL                       = 6, */
+    MLKEYCODE_0: return 48;
+    MLKEYCODE_1: return 49;
+    MLKEYCODE_2: return 50;
+    MLKEYCODE_3: return 51;
+    MLKEYCODE_4: return 52;
+    MLKEYCODE_5: return 53;
+    MLKEYCODE_6: return 54;
+    MLKEYCODE_7: return 55;
+    MLKEYCODE_8: return 56;
+    MLKEYCODE_9: return 57;
+    MLKEYCODE_STAR: return 56;
+    MLKEYCODE_POUND: return 51;
+    MLKEYCODE_DPAD_UP: return 38;
+    MLKEYCODE_DPAD_DOWN: return 40;
+    MLKEYCODE_DPAD_LEFT: return 37;
+    MLKEYCODE_DPAD_RIGHT: return 39;
+    // MLKEYCODE_DPAD_CENTER                   = 23,
+    /* MLKEYCODE_VOLUME_UP                     = 24,
+    MLKEYCODE_VOLUME_DOWN                   = 25,
+    MLKEYCODE_POWER                         = 26,
+    MLKEYCODE_CAMERA                        = 27,
+    MLKEYCODE_CLEAR                         = 28, */
+    MLKEYCODE_A: return 65;
+    MLKEYCODE_B: return 66;
+    MLKEYCODE_C: return 67;
+    MLKEYCODE_D: return 68;
+    MLKEYCODE_E: return 69;
+    MLKEYCODE_F: return 70;
+    MLKEYCODE_G: return 71;
+    MLKEYCODE_H: return 72;
+    MLKEYCODE_I: return 73;
+    MLKEYCODE_J: return 74;
+    MLKEYCODE_K: return 75;
+    MLKEYCODE_L: return 76;
+    MLKEYCODE_M: return 77;
+    MLKEYCODE_N: return 78;
+    MLKEYCODE_O: return 79;
+    MLKEYCODE_P: return 80;
+    MLKEYCODE_Q: return 81;
+    MLKEYCODE_R: return 82;
+    MLKEYCODE_S: return 83;
+    MLKEYCODE_T: return 84;
+    MLKEYCODE_U: return 85;
+    MLKEYCODE_V: return 86;
+    MLKEYCODE_W: return 87;
+    MLKEYCODE_X: return 88;
+    MLKEYCODE_Y: return 89;
+    MLKEYCODE_Z: return 90;
+    MLKEYCODE_COMMA: return 188;
+    MLKEYCODE_PERIOD: return 190;
+    MLKEYCODE_ALT_LEFT: return 18;
+    MLKEYCODE_ALT_RIGHT: return 18;
+    MLKEYCODE_SHIFT_LEFT: return 16;
+    MLKEYCODE_SHIFT_RIGHT: return 16;
+    MLKEYCODE_TAB: return 9;
+    MLKEYCODE_SPACE: return 32;
+    // MLKEYCODE_SYM                           = 63,
+    // MLKEYCODE_EXPLORER                      = 64,
+    // MLKEYCODE_ENVELOPE                      = 65,
+    MLKEYCODE_ENTER: return 13;
+    MLKEYCODE_DEL: return 8;
+    MLKEYCODE_GRAVE: return 192;
+    MLKEYCODE_MINUS: return 189;
+    MLKEYCODE_EQUALS: return 187;
+    MLKEYCODE_LEFT_BRACKET: return 57;
+    MLKEYCODE_RIGHT_BRACKET: return 48;
+    MLKEYCODE_BACKSLASH: return 220;
+    MLKEYCODE_SEMICOLON: return 186;
+    MLKEYCODE_APOSTROPHE: return 222;
+    MLKEYCODE_SLASH: return 191;
+    MLKEYCODE_AT: return 50;
+    /* MLKEYCODE_NUM                           = 78,
+    MLKEYCODE_HEADSETHOOK                   = 79,
+    MLKEYCODE_FOCUS                         = 80,
+    MLKEYCODE_PLUS: return 187;
+    MLKEYCODE_MENU                          = 82,
+    MLKEYCODE_NOTIFICATION                  = 83,
+    MLKEYCODE_SEARCH                        = 84,
+    MLKEYCODE_MEDIA_PLAY_PAUSE              = 85,
+    MLKEYCODE_MEDIA_STOP                    = 86,
+    MLKEYCODE_MEDIA_NEXT                    = 87,
+    MLKEYCODE_MEDIA_PREVIOUS                = 88,
+    MLKEYCODE_MEDIA_REWIND                  = 89,
+    MLKEYCODE_MEDIA_FAST_FORWARD            = 90,
+    MLKEYCODE_MUTE                          = 91, */
+    MLKEYCODE_PAGE_UP: return 33;
+    MLKEYCODE_PAGE_DOWN: return 34;
+    /* MLKEYCODE_PICTSYMBOLS                   = 94,
+    MLKEYCODE_SWITCH_CHARSET                = 95,
+    MLKEYCODE_BUTTON_A                      = 96,
+    MLKEYCODE_BUTTON_B                      = 97,
+    MLKEYCODE_BUTTON_C                      = 98,
+    MLKEYCODE_BUTTON_X                      = 99,
+    MLKEYCODE_BUTTON_Y                      = 100,
+    MLKEYCODE_BUTTON_Z                      = 101,
+    MLKEYCODE_BUTTON_L1                     = 102,
+    MLKEYCODE_BUTTON_R1                     = 103,
+    MLKEYCODE_BUTTON_L2                     = 104,
+    MLKEYCODE_BUTTON_R2                     = 105,
+    MLKEYCODE_BUTTON_THUMBL                 = 106,
+    MLKEYCODE_BUTTON_THUMBR                 = 107,
+    MLKEYCODE_BUTTON_START                  = 108,
+    MLKEYCODE_BUTTON_SELECT                 = 109,
+    MLKEYCODE_BUTTON_MODE                   = 110, */
+    MLKEYCODE_ESCAPE: return 27;
+    MLKEYCODE_FORWARD_DEL: return 46;
+    MLKEYCODE_CTRL_LEFT: return 17;
+    MLKEYCODE_CTRL_RIGHT: return 17;
+    MLKEYCODE_CAPS_LOCK: return 20;
+    MLKEYCODE_SCROLL_LOCK: return 145;
+    MLKEYCODE_META_LEFT: return 91;
+    MLKEYCODE_META_RIGHT: return 91;
+    // MLKEYCODE_FUNCTION                      = 119,
+    // MLKEYCODE_SYSRQ                         = 120,
+    MLKEYCODE_BREAK: return 19;
+    MLKEYCODE_MOVE_HOME: return 36;
+    MLKEYCODE_MOVE_END: return 35;
+    MLKEYCODE_INSERT: return 45;
+    /* MLKEYCODE_FORWARD                       = 125,
+    MLKEYCODE_MEDIA_PLAY                    = 126,
+    MLKEYCODE_MEDIA_PAUSE                   = 127,
+    MLKEYCODE_MEDIA_CLOSE                   = 128,
+    MLKEYCODE_MEDIA_EJECT                   = 129,
+    MLKEYCODE_MEDIA_RECORD                  = 130, */
+    MLKEYCODE_F1: return 112;
+    MLKEYCODE_F2: return 113;
+    MLKEYCODE_F3: return 114;
+    MLKEYCODE_F4: return 115;
+    MLKEYCODE_F5: return 116;
+    MLKEYCODE_F6: return 117;
+    MLKEYCODE_F7: return 118;
+    MLKEYCODE_F8: return 119;
+    MLKEYCODE_F9: return 120;
+    MLKEYCODE_F10: return 121;
+    MLKEYCODE_F11: return 122;
+    MLKEYCODE_F12: return 123;
+    /* MLKEYCODE_NUM_LOCK                      = 143,
+    MLKEYCODE_NUMPAD_0                      = 144,
+    MLKEYCODE_NUMPAD_1                      = 145,
+    MLKEYCODE_NUMPAD_2                      = 146,
+    MLKEYCODE_NUMPAD_3                      = 147,
+    MLKEYCODE_NUMPAD_4                      = 148,
+    MLKEYCODE_NUMPAD_5                      = 149,
+    MLKEYCODE_NUMPAD_6                      = 150,
+    MLKEYCODE_NUMPAD_7                      = 151,
+    MLKEYCODE_NUMPAD_8                      = 152,
+    MLKEYCODE_NUMPAD_9                      = 153,
+    MLKEYCODE_NUMPAD_DIVIDE                 = 154,
+    MLKEYCODE_NUMPAD_MULTIPLY               = 155,
+    MLKEYCODE_NUMPAD_SUBTRACT               = 156,
+    MLKEYCODE_NUMPAD_ADD                    = 157,
+    MLKEYCODE_NUMPAD_DOT                    = 158,
+    MLKEYCODE_NUMPAD_COMMA                  = 159,
+    MLKEYCODE_NUMPAD_ENTER                  = 160,
+    MLKEYCODE_NUMPAD_EQUALS                 = 161,
+    MLKEYCODE_NUMPAD_LEFT_PAREN             = 162,
+    MLKEYCODE_NUMPAD_RIGHT_PAREN            = 163,
+    MLKEYCODE_VOLUME_MUTE                   = 164,
+    MLKEYCODE_INFO                          = 165,
+    MLKEYCODE_CHANNEL_UP                    = 166,
+    MLKEYCODE_CHANNEL_DOWN                  = 167,
+    MLKEYCODE_ZOOM_IN                       = 168,
+    MLKEYCODE_ZOOM_OUT                      = 169,
+    MLKEYCODE_TV                            = 170,
+    MLKEYCODE_WINDOW                        = 171,
+    MLKEYCODE_GUIDE                         = 172,
+    MLKEYCODE_DVR                           = 173,
+    MLKEYCODE_BOOKMARK                      = 174,
+    MLKEYCODE_CAPTIONS                      = 175,
+    MLKEYCODE_SETTINGS                      = 176,
+    MLKEYCODE_TV_POWER                      = 177,
+    MLKEYCODE_TV_INPUT                      = 178,
+    MLKEYCODE_STB_POWER                     = 179,
+    MLKEYCODE_STB_INPUT                     = 180,
+    MLKEYCODE_AVR_POWER                     = 181,
+    MLKEYCODE_AVR_INPUT                     = 182,
+    MLKEYCODE_PROG_RED                      = 183,
+    MLKEYCODE_PROG_GREEN                    = 184,
+    MLKEYCODE_PROG_YELLOW                   = 185,
+    MLKEYCODE_PROG_BLUE                     = 186,
+    MLKEYCODE_APP_SWITCH                    = 187,
+    MLKEYCODE_BUTTON_1                      = 188,
+    MLKEYCODE_BUTTON_2                      = 189,
+    MLKEYCODE_BUTTON_3                      = 190,
+    MLKEYCODE_BUTTON_4                      = 191,
+    MLKEYCODE_BUTTON_5                      = 192,
+    MLKEYCODE_BUTTON_6                      = 193,
+    MLKEYCODE_BUTTON_7                      = 194,
+    MLKEYCODE_BUTTON_8                      = 195,
+    MLKEYCODE_BUTTON_9                      = 196,
+    MLKEYCODE_BUTTON_10                     = 197,
+    MLKEYCODE_BUTTON_11                     = 198,
+    MLKEYCODE_BUTTON_12                     = 199,
+    MLKEYCODE_BUTTON_13                     = 200,
+    MLKEYCODE_BUTTON_14                     = 201,
+    MLKEYCODE_BUTTON_15                     = 202,
+    MLKEYCODE_BUTTON_16                     = 203,
+    MLKEYCODE_LANGUAGE_SWITCH               = 204,
+    MLKEYCODE_MANNER_MODE                   = 205,
+    MLKEYCODE_3D_MODE                       = 206,
+    MLKEYCODE_CONTACTS                      = 207,
+    MLKEYCODE_CALENDAR                      = 208,
+    MLKEYCODE_MUSIC                         = 209,
+    MLKEYCODE_CALCULATOR                    = 210,
+    MLKEYCODE_ZENKAKU_HANKAKU               = 211,
+    MLKEYCODE_EISU                          = 212,
+    MLKEYCODE_MUHENKAN                      = 213,
+    MLKEYCODE_HENKAN                        = 214,
+    MLKEYCODE_KATAKANA_HIRAGANA             = 215,
+    MLKEYCODE_YEN                           = 216,
+    MLKEYCODE_RO                            = 217,
+    MLKEYCODE_KANA                          = 218,
+    MLKEYCODE_ASSIST                        = 219,
+    MLKEYCODE_BRIGHTNESS_DOWN               = 220,
+    MLKEYCODE_BRIGHTNESS_UP                 = 221,
+    MLKEYCODE_MEDIA_AUDIO_TRACK             = 222,
+    MLKEYCODE_SLEEP                         = 223,
+    MLKEYCODE_WAKEUP                        = 224,
+    MLKEYCODE_PAIRING                       = 225,
+    MLKEYCODE_MEDIA_TOP_MENU                = 226,
+    MLKEYCODE_11                            = 227,
+    MLKEYCODE_12                            = 228,
+    MLKEYCODE_LAST_CHANNEL                  = 229,
+    MLKEYCODE_TV_DATA_SERVICE               = 230,
+    MLKEYCODE_VOICE_ASSIST                  = 231,
+    MLKEYCODE_TV_RADIO_SERVICE              = 232,
+    MLKEYCODE_TV_TELETEXT                   = 233,
+    MLKEYCODE_TV_NUMBER_ENTRY               = 234,
+    MLKEYCODE_TV_TERRESTRIAL_ANALOG         = 235,
+    MLKEYCODE_TV_TERRESTRIAL_DIGITAL        = 236,
+    MLKEYCODE_TV_SATELLITE                  = 237,
+    MLKEYCODE_TV_SATELLITE_BS               = 238,
+    MLKEYCODE_TV_SATELLITE_CS               = 239,
+    MLKEYCODE_TV_SATELLITE_SERVICE          = 240,
+    MLKEYCODE_TV_NETWORK                    = 241,
+    MLKEYCODE_TV_ANTENNA_CABLE              = 242,
+    MLKEYCODE_TV_INPUT_HDMI_1               = 243,
+    MLKEYCODE_TV_INPUT_HDMI_2               = 244,
+    MLKEYCODE_TV_INPUT_HDMI_3               = 245,
+    MLKEYCODE_TV_INPUT_HDMI_4               = 246,
+    MLKEYCODE_TV_INPUT_COMPOSITE_1          = 247,
+    MLKEYCODE_TV_INPUT_COMPOSITE_2          = 248,
+    MLKEYCODE_TV_INPUT_COMPONENT_1          = 249,
+    MLKEYCODE_TV_INPUT_COMPONENT_2          = 250,
+    MLKEYCODE_TV_INPUT_VGA_1                = 251,
+    MLKEYCODE_TV_AUDIO_DESCRIPTION          = 252,
+    MLKEYCODE_TV_AUDIO_DESCRIPTION_MIX_UP   = 253,
+    MLKEYCODE_TV_AUDIO_DESCRIPTION_MIX_DOWN = 254,
+    MLKEYCODE_TV_ZOOM_MODE                  = 255,
+    MLKEYCODE_TV_CONTENTS_MENU              = 256,
+    MLKEYCODE_TV_MEDIA_CONTEXT_MENU         = 257,
+    MLKEYCODE_TV_TIMER_PROGRAMMING          = 258,
+    MLKEYCODE_HELP                          = 259,
+    MLKEYCODE_NAVIGATE_PREVIOUS             = 260,
+    MLKEYCODE_NAVIGATE_NEXT                 = 261,
+    MLKEYCODE_NAVIGATE_IN                   = 262,
+    MLKEYCODE_NAVIGATE_OUT                  = 263,
+    MLKEYCODE_STEM_PRIMARY                  = 264,
+    MLKEYCODE_STEM_1                        = 265,
+    MLKEYCODE_STEM_2                        = 266,
+    MLKEYCODE_STEM_3                        = 267, */
+    MLKEYCODE_DPAD_UP_LEFT: return 38;
+    MLKEYCODE_DPAD_DOWN_LEFT: return 40;
+    MLKEYCODE_DPAD_UP_RIGHT: return 38;
+    MLKEYCODE_DPAD_DOWN_RIGHT: return 40;
+    /* MLKEYCODE_MEDIA_SKIP_FORWARD            = 272,
+    MLKEYCODE_MEDIA_SKIP_BACKWARD           = 273,
+    MLKEYCODE_MEDIA_STEP_FORWARD            = 274,
+    MLKEYCODE_MEDIA_STEP_BACKWARD           = 275,
+    MLKEYCODE_SOFT_SLEEP                    = 276,
+    MLKEYCODE_CUT                           = 277,
+    MLKEYCODE_COPY                          = 278,
+    MLKEYCODE_PASTE                         = 279,
+    MLKEYCODE_COUNT, */
   }
 }
 
@@ -2032,7 +2308,7 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
     }
     obj->Set(JS_STR("type"), typeArg);
     uint32_t charCode = (uint32_t)keyboardEvent.char_utf32;
-    uint32_t keyCode = normalizeMLKeyCode(keyboardEvent.key_code);
+    uint32_t keyCode = mlKeycodeToKeycode(keyboardEvent.key_code);
     obj->Set(JS_STR("charCode"), JS_INT(charCode));
     obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
     obj->Set(JS_STR("which"), JS_INT(keyCode));
