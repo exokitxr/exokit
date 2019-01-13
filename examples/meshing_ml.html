@@ -83,6 +83,9 @@
       const terrainMeshes = [];
       const terrainMaterial = new THREE.MeshPhongMaterial({
         color: 0x666666,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
       });
       const _getTerrainMesh = meshId => {
         let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
