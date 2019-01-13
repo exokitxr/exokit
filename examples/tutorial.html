@@ -165,7 +165,7 @@
       })();
       scene.add(planeMesh);
 
-      const floorMesh = (() => {
+      /* const floorMesh = (() => {
         const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
           .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
             new THREE.Quaternion().setFromUnitVectors(
@@ -210,7 +210,7 @@
         const mesh = new THREE.Mesh(geometry, material);
         return mesh;
       })();
-      scene.add(floorMesh);
+      scene.add(floorMesh); */
 
       {
         const loader = new THREE.GLTFLoader(); // .setPath( 'models/' );
