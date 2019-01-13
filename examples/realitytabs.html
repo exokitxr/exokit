@@ -1502,7 +1502,7 @@ function animate(time, frame) {
           localVector2.set(0, 0, -scrollFactor)
             .applyQuaternion(localQuaternion)
         );
-      localVector2.set(scaleFactors, scaleFactors, scaleFactors);
+      localVector2.set(scaleFactor, scaleFactor, scaleFactor);
 
       iframe.position = localVector.toArray();
       iframe.orientation = localQuaternion.toArray();
