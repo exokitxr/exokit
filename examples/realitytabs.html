@@ -731,6 +731,7 @@ const _openServer = (serverUrl, host) => {
   xrmp.onplayerenter = playerMesh => {
     const skinMesh = _makeSkinMesh();
     skinMesh.setSkinUrl(DEFAULT_SKIN_URL);
+    playerMesh.skinMesh = skinMesh;
 
     playerMesh.onupdate = () => {
       skinMesh.update(playerMesh.hmd, playerMesh.gamepads);
