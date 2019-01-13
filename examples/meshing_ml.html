@@ -140,7 +140,7 @@
           positions[baseIndex+7] = positionArray[baseC+1];
           positions[baseIndex+8] = positionArray[baseC+2];
 
-          normals[baseIndex] = normalArray[baseA];
+          /* normals[baseIndex] = normalArray[baseA];
           normals[baseIndex+1] = normalArray[baseA+1];
           normals[baseIndex+2] = normalArray[baseA+2];
           normals[baseIndex+3] = normalArray[baseB];
@@ -148,10 +148,10 @@
           normals[baseIndex+5] = normalArray[baseB+2];
           normals[baseIndex+6] = normalArray[baseC];
           normals[baseIndex+7] = normalArray[baseC+1];
-          normals[baseIndex+8] = normalArray[baseC+2];
+          normals[baseIndex+8] = normalArray[baseC+2]; */
         }
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
       };
       const _removeTerrainMesh = terrainMesh => {
         scene.remove(terrainMesh);
