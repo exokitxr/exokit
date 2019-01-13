@@ -59,6 +59,7 @@
       const terrainMaterial = new THREE.ShaderMaterial({
         uniforms: {},
         vertexShader: `\
+          varying vec3 vPosition;
           varying vec3 vBC;
           void main() {
             float m = mod(gl_VertexID, 3.0);
@@ -70,10 +71,15 @@
               vBC = vec3(0.0, 0.0, 1.0);
             }
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vPosition = gl_Position.xyz;
           }
         `,
         fragmentShader: `\
+          varying vec3 vPosition;
           varying vec3 vBC;
+
+          vec3 color = vec3(0.984313725490196, 0.5490196078431373, 0.0);
+          vec3 lightDirection = normalize(vec3(1.0));
 
           float edgeFactor() {
             vec3 d = fwidth(vBC);
@@ -82,7 +88,12 @@
           }
 
           void main() {
-            gl_FragColor = vec4(vec3(0.984313725490196, 0.5490196078431373, 0.0) * (0.2 + (1.0 - edgeFactor()) * 0.8), 1.0);
+            float barycentricFactor = (0.2 + (1.0 - edgeFactor()) * 0.8);
+            vec3 xTangent = dFdx( vPosition );
+            vec3 yTangent = dFdy( vPosition );
+            vec3 faceNormal = normalize( cross( xTangent, yTangent ) );
+            float lightFactor = 0.5 + dot(faceNormal, lightDirection) * 0.5;
+            gl_FragColor = vec4(color * barycentricFactor * lightFactor, 1.0);
           }
         `,
         polygonOffset: true,
