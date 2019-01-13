@@ -189,6 +189,134 @@ const _requestSpriteMesh = url => new Promise((accept, reject) => {
   };
 });
 
+const _makeBoxGeometry = () => {
+  const lineGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 0.1, 3, 1);
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(lineGeometry.attributes.position.array.length * 12);
+  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  // axis
+  positions.set(
+    lineGeometry.clone().applyMatrix(
+      localMatrix.makeTranslation(-0.1/2, 0, -0.1/2)
+    ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 0
+  );
+  positions.set(
+    lineGeometry.clone().applyMatrix(
+      localMatrix.makeTranslation(0.1/2, 0, -0.1/2)
+    ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 1
+  );
+  positions.set(
+    lineGeometry.clone().applyMatrix(
+      localMatrix.makeTranslation(-0.1/2, 0, 0.1/2)
+    ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 2
+  );
+  positions.set(
+    lineGeometry.clone().applyMatrix(
+      localMatrix.makeTranslation(0.1/2, 0, 0.1/2)
+    ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 3
+  );
+  // axis
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0, -0.1/2, -0.1/2)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 4
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0, -0.1/2, 0.1/2)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 5
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0, 0.1/2, -0.1/2)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 6
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0, 0.1/2, 0.1/2)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 7
+  );
+  // axis
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(-0.1/2, -0.1/2, 0)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 8
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(-0.1/2, 0.1/2, 0)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 9
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0.1/2, -0.1/2, 0)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 10
+  );
+  positions.set(
+    lineGeometry.clone()
+      .applyMatrix(
+        localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+      )
+      .applyMatrix(
+        localMatrix.makeTranslation(0.1/2, 0.1/2, 0)
+      ).attributes.position.array,
+    lineGeometry.attributes.position.array.length * 11
+  );
+  const numLinePositions = lineGeometry.attributes.position.array.length / 3;
+  const indices = new Uint16Array(lineGeometry.index.array.length * 12);
+  for (let i = 0; i < 12; i++) {
+    indices.set(
+      lineGeometry.index.array,
+      lineGeometry.index.array.length * i
+    );
+
+    for (let j = 0; j < lineGeometry.index.array.length; j++) {
+      lineGeometry.index.array[j] += numLinePositions;
+    }
+  }
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  return geometry;
+};
+
 // helpers
 
 const _makeRenderer = () => {
