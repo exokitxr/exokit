@@ -17,11 +17,81 @@
     const localVector2 = new THREE.Vector3();
     const localVector3 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
-    const localEuler = new THREE.Euler();
-    localEuler.order = 'YXZ';
+    const localEuler = new THREE.Euler(0, 0, 0, 'YXZ');
     const localMatrix = new THREE.Matrix4();
 
-    const FLOOR_SIZE = 20;
+    const _makeAxisGeometry = () => {
+      const size = 1;
+      const width = 0.01;
+
+      const lineGeometry = new THREE.CylinderBufferGeometry(width, width, size, 3, 1);
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(lineGeometry.attributes.position.array.length * 3);
+      const colors = new Float32Array(lineGeometry.attributes.position.array.length * 3);
+      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      // axis
+      positions.set(
+        lineGeometry.clone()
+          .applyMatrix(
+            localMatrix.makeTranslation(0, size/2, 0)
+          )
+          .attributes.position.array,
+        lineGeometry.attributes.position.array.length * 0
+      );
+      {
+        const color = new THREE.Color(0x00FF00);
+        for (let i = lineGeometry.attributes.position.array.length * 0; i < lineGeometry.attributes.position.array.length * 1; i += 3) {
+          color.toArray(colors, i);
+        }
+      }
+      positions.set(
+        lineGeometry.clone()
+          .applyMatrix(
+            localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(0, 0, 1), -Math.PI/2))
+          )
+          .applyMatrix(
+            localMatrix.makeTranslation(size/2, 0, 0)
+          ).attributes.position.array,
+        lineGeometry.attributes.position.array.length * 1
+      );
+      {
+        const color = new THREE.Color(0xFF0000);
+        for (let i = lineGeometry.attributes.position.array.length * 1; i < lineGeometry.attributes.position.array.length * 2; i += 3) {
+          color.toArray(colors, i);
+        }
+      }
+      positions.set(
+        lineGeometry.clone()
+          .applyMatrix(
+            localMatrix.makeRotationFromQuaternion(localQuaternion.setFromAxisAngle(localVector.set(1, 0, 0), Math.PI/2))
+          )
+          .applyMatrix(
+            localMatrix.makeTranslation(0, 0, size/2)
+          ).attributes.position.array,
+        lineGeometry.attributes.position.array.length * 2
+      );
+      {
+        const color = new THREE.Color(0x0000FF);
+        for (let i = lineGeometry.attributes.position.array.length * 2; i < lineGeometry.attributes.position.array.length * 3; i += 3) {
+          color.toArray(colors, i);
+        }
+      }
+      const numLinePositions = lineGeometry.attributes.position.array.length / 3;
+      const indices = new Uint16Array(lineGeometry.index.array.length * 3);
+      for (let i = 0; i < 3; i++) {
+        indices.set(
+          lineGeometry.index.array,
+          lineGeometry.index.array.length * i
+        );
+
+        for (let j = 0; j < lineGeometry.index.array.length; j++) {
+          lineGeometry.index.array[j] += numLinePositions;
+        }
+      }
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+      return geometry;
+    };
 
     function init() {
       container = document.createElement('div');
@@ -42,6 +112,18 @@
       const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
+
+      const axisMesh = (() => {
+        const geometry = _makeAxisGeometry();
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xFFFFFF,
+          vertexColors: THREE.VertexColors,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(axisMesh);
 
       const planeMesh = (() => {
         const geometry = new THREE.PlaneBufferGeometry(0.5, 0.5);
@@ -82,7 +164,8 @@
       scene.add(planeMesh);
 
       const floorMesh = (() => {
-        const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
+        const size = 1;
+        const geometry = new THREE.PlaneBufferGeometry(size, size)
           .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
             new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 0, 1),
@@ -92,8 +175,8 @@
         const uvs = geometry.attributes.uv.array;
         const numUvs = uvs.length / 2;
         for (let i = 0; i < numUvs; i++) {
-          uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
-          uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
+          uvs[i * 2] *= size / 10 * 2;
+          uvs[i * 2 + 1] *= size / 10;
         }
 
         const texture = new THREE.Texture(
