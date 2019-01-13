@@ -2028,9 +2028,9 @@ function animate(time, frame) {
           } else if (gamepad.axes[1] < -0.5) {
             scrollFactors[i] -= 1/20;
           } else if (gamepad.axes[0] > 0.5) {
-            scaleFactors[i] = Math.min(scaleFactors[i] *= 1.01, 100);
+            scaleFactors[i] = Math.min(scaleFactors[i] *= 1.02, 100);
           } else if (gamepad.axes[0] < -0.5) {
-            scaleFactors[i] = Math.max(scaleFactors[i] /= 1.01, 0.01);
+            scaleFactors[i] = Math.max(scaleFactors[i] /= 1.02, 0.01);
           }
         }
       }
