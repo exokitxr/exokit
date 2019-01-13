@@ -189,7 +189,7 @@ const _requestSpriteMesh = url => new Promise((accept, reject) => {
   };
 });
 
-const _makeBoxGeometry = (x, y, z) => {
+const _makeBoxGeometry = (x = 1, y = 1, z = 1) => {
   const size = 1;
 
   const lineGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, size, 3, 1);
@@ -362,6 +362,21 @@ const _makeBoxGeometry = (x, y, z) => {
   geometry.setIndex(new THREE.BufferAttribute(indices, 1));
   return geometry;
 };
+const boxMaterial = new THREE.MeshPhongMaterial({
+  color: 0x333333,
+});
+const _makeBoxMesh = () => {
+  const geometry = _makeBoxGeometry();
+  const material = boxMaterial;
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.visible = false;
+  mesh.frustumCulled = false;
+  return mesh;
+};
+const boxMeshes = [
+  _makeBoxMesh(),
+  _makeBoxMesh(),
+];
 
 // helpers
 
@@ -1460,6 +1475,8 @@ function animate(time, frame) {
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
     const tab = moves[i];
+    const boxMesh = boxMeshes[i];
+
     if (tab) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
@@ -1477,6 +1494,12 @@ function animate(time, frame) {
 
       iframe.position = localVector.toArray();
       iframe.orientation = localQuaternion.toArray();
+
+      boxMesh.position.copy(localVector);
+      boxMesh.quaternion.copy(localQuaternion);
+      boxMesh.visible = true;
+    } else {
+      boxMesh.visible = false;
     }
   }
 
