@@ -20,8 +20,6 @@
     const localEuler = new THREE.Euler(0, 0, 0, 'YXZ');
     const localMatrix = new THREE.Matrix4();
 
-    // const FLOOR_SIZE = 20;
-
     const _makeAxisGeometry = () => {
       const size = 1;
       const width = 0.01;
@@ -165,8 +163,9 @@
       })();
       scene.add(planeMesh);
 
-      /* const floorMesh = (() => {
-        const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE)
+      const floorMesh = (() => {
+        const size = 1;
+        const geometry = new THREE.PlaneBufferGeometry(size, size)
           .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
             new THREE.Quaternion().setFromUnitVectors(
               new THREE.Vector3(0, 0, 1),
@@ -176,8 +175,8 @@
         const uvs = geometry.attributes.uv.array;
         const numUvs = uvs.length / 2;
         for (let i = 0; i < numUvs; i++) {
-          uvs[i * 2] *= FLOOR_SIZE / 10 * 2;
-          uvs[i * 2 + 1] *= FLOOR_SIZE / 10;
+          uvs[i * 2] *= size / 10 * 2;
+          uvs[i * 2 + 1] *= size / 10;
         }
 
         const texture = new THREE.Texture(
@@ -210,7 +209,7 @@
         const mesh = new THREE.Mesh(geometry, material);
         return mesh;
       })();
-      scene.add(floorMesh); */
+      scene.add(floorMesh);
 
       {
         const loader = new THREE.GLTFLoader(); // .setPath( 'models/' );
