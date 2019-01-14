@@ -394,14 +394,13 @@ const _angleDiff = (a, b) => _mod((b - a) + Math.PI, Math.PI * 2) - Math.PI;
 const _makeSkinMesh = () => {
   const object = {};
   let onupdate = null;
+  const uniforms = THREE.UniformsUtils.clone(skin.SKIN_SHADER.uniforms);
   object.setSkinUrl = skinUrl => {
     if (skinUrl) {
       const mesh = skin({
         limbs: true,
       });
       mesh.frustumCulled = false;
-
-      const uniforms = THREE.UniformsUtils.clone(skin.SKIN_SHADER.uniforms);
 
       mesh.onBeforeRender = (onBeforeRender => function() {
         mesh.material.uniforms.headRotation.value.copy(uniforms.headRotation.value);
@@ -495,6 +494,9 @@ const _makeSkinMesh = () => {
   object.update = (hmd, gamepads) => {
     onupdate && onupdate(hmd, gamepads);
   };
+  object.animate = thetaValue => {
+    uniforms.theta.value = thetaValue;
+  };
   object.destroy = () => {
     onupdate = null;
 
@@ -508,6 +510,39 @@ const _makeSkinMesh = () => {
 };
 /* const localSkinMesh = _makeSkinMesh();
 localSkinMesh.setSkinUrl(DEFAULT_SKIN_URL) */
+
+const _makePositionSnapshotter = () => {
+  const numSnapshots = 8;
+  const positionShapshots = Array(numSnapshots);
+  for (let i = 0; i < positionShapshots.length; i++) {
+    positionShapshots[i] = {
+      position: new THREE.Vector3(),
+      timestamp: 0,
+    };
+  }
+  let positionShapshotIndex = 0;
+  let positionShapshotsInitialized = false;
+
+  return {
+    capturePositionSnapshot(position, timestamp) {
+      const snapshot = positionShapshots[positionShapshotIndex];
+      snapshot.position.copy(position);
+      snapshot.timestamp = timestamp;
+
+      positionShapshotIndex = (positionShapshotIndex + 1) % positionShapshots.length;
+    },
+    getFirstPosition() {
+      return positionShapshots[positionShapshotIndex];
+    },
+    getLastPosition() {
+      let index = positionShapshotIndex - 1;
+      if (index < 0) {
+        index += positionShapshots.length;
+      }
+      return positionShapshots[index];
+    },
+  };
+};
 
 // helpers
 
@@ -736,8 +771,24 @@ const _openServer = (serverUrl, host) => {
     skinMesh.setSkinUrl(DEFAULT_SKIN_URL);
     playerMesh.skinMesh = skinMesh;
 
+    const positionSnapshotter = _makePositionSnapshotter();
     playerMesh.onupdate = () => {
       skinMesh.update(playerMesh.hmd, playerMesh.gamepads);
+
+      localVector.copy(playerMesh.hmd.position);
+      localVector.y = 0;
+      positionSnapshotter.capturePositionSnapshot(localVector, Date.now());
+    };
+    playerMesh.animate = () => {
+      const walkRate = 1000;
+      const f = (Date.now() % walkRate) / walkRate;
+      const firstPosition = positionSnapshotter.getFirstPosition();
+      const lastPosition = positionSnapshotter.getLastPosition();
+      const walkSpeed = localVector.copy(firstPosition.position)
+        .distanceTo(lastPosition.position) / (lastPosition.timestamp - firstPosition.timestamp);
+      const walkIntensity = Math.min(walkSpeed * 1000, 1);
+      const thetaValue = Math.sin(f * Math.PI*2) * walkIntensity * 0.7;
+      skinMesh.animate(thetaValue);
     };
 
     scene.add(playerMesh);
@@ -2617,6 +2668,11 @@ function animate(time, frame) {
       }
 
       xrmp.pushUpdate();
+
+      const playerMeshes = xrmp.getRemotePlayerMeshes();
+      for (let i = 0; i < playerMeshes.length; i++) {
+        playerMeshes[i].animate();
+      }
     }
   };
   _updateMp();
