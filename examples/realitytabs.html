@@ -419,7 +419,7 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
   if (scale === undefined) {
     scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
     if (d !== 3) {
-      scale.multiplyScalar(0.7);
+      scale.multiplyScalar(0.4);
     }
   }
 
@@ -478,7 +478,7 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
   if (scale === undefined) {
     scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
     if (d !== 3) {
-      scale.multiplyScalar(0.7);
+      scale.multiplyScalar(0.4);
     }
   }
 
