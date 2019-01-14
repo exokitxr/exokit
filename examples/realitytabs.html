@@ -2011,7 +2011,7 @@ function animate(time, frame) {
       const padTouched = gamepad.buttons[0].touched;
       const {axes} = gamepad;
       const lastPadTouched = lastPadToucheds[i];
-      if (padTouched && lastPadTouched && !moves[i]) {
+      if (padTouched && lastPadTouched && rig.open && !moves[i]) {
         const lastAxis = lastAxes[i];
         const dx = axes[0] - lastAxis[0];
         const dy = axes[1] - lastAxis[1];
