@@ -2092,6 +2092,10 @@ function animate(time, frame) {
 
           if (bumper && !lastBumper) {
             const {position, quaternion} = _getFrontOfCamera();
+            localEuler.setFromQuaternion(quaternion, localEuler.order);
+            localEuler.x = 0;
+            localEuler.z = 0;
+            quaternion.setFromEuler(localEuler);
             _openRig(position, quaternion);
           }
 
