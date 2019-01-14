@@ -23,6 +23,7 @@
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
+    const localMatrix2 = new THREE.Matrix4();
     const localMatrixFloat32Array = new Float32Array(16);
     const localVectorFloat32Array = new Float32Array(3);
     const localVectorFloat32Array2 = new Float32Array(3);
@@ -43,6 +44,39 @@
       return mesh;
     };
     const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
+
+    const _xrOffset = (position = localVector.set(0, 0, 0), quaternion = localQuaternion.set(0, 0, 0, 1), scale = localVector2.set(1, 1, 1)) => {
+      if (window.document.xrOffset) {
+        localMatrix
+          .compose(position, quaternion, scale)
+          .premultiply(
+            localMatrix2
+              .fromArray(window.document.xrOffset.matrix)
+          )
+          .decompose(position, quaternion, scale);
+      }
+    };
+    const _unXrOffset = (position = localVector.set(0, 0, 0), quaternion = localQuaternion.set(0, 0, 0, 1), scale = localVector2.set(1, 1, 1)) => {
+      if (window.document.xrOffset) {
+        localMatrix
+          .compose(position, quaternion, scale)
+          .premultiply(
+            localMatrix2
+              .fromArray(window.document.xrOffset.matrixInverse)
+          )
+          .decompose(position, quaternion, scale);
+      }
+    };
+    const _unXrOffsetDirection = direction => {
+      if (window.document.xrOffset) {
+        direction
+          .applyQuaternion(
+            localQuaternion
+              .fromArray(window.document.xrOffset.orientation)
+              .inverse()
+          );
+      }
+    };
 
     const avatarHeight = 0.5;
 
@@ -115,12 +149,13 @@
       container.appendChild(renderer.domElement);
 
       avatarMesh = (() => {
-        const DEFAULT_SKIN_URL = 'skin.png';
+        const DEFAULT_SKIN_URL = 'skin2.png';
 
         const mesh = skin({
           limbs: true,
         });
         mesh.scale.multiplyScalar(avatarHeight);
+        _unXrOffset(mesh.position, mesh.quaternion, mesh.scale);
         mesh.frustumCulled = false;
 
         new Promise((accept, reject) => {
@@ -180,7 +215,7 @@
         scene.add(controllerHitMesh);
       });
       
-      const terrainMeshes = [];
+      /* const terrainMeshes = [];
       const terrainMaterial = new THREE.MeshPhongMaterial({
         color: 0x666666,
       });
@@ -341,14 +376,18 @@
         setInterval(() => {
           _onMesh(updates);
         }, 100);
-      }
+      } */
 
       renderer.setAnimationLoop(animate);
     }
 
-    const thetaRate = 200;
+    const thetaRate = 1000;
     const animationTime = 1000;
-    const _getRandomWaypoint = () => new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
+    const _getRandomWaypoint = () => {
+      const waypoint = new THREE.Vector3((Math.random()-0.5)*2, 0, (Math.random()-0.5)*2).multiplyScalar(3);
+      _unXrOffset(waypoint);
+      return waypoint;
+    };
     /* const _getFurthestWaypoint = (startNode, position) => {
       const {island} = startNode;
 
@@ -367,17 +406,19 @@
     const _animateTo = endPosition => {
       const now = Date.now();
       const startPosition = avatarMesh.position.clone();
+      const upVector = new THREE.Vector3(0, 1, 0);
+      _unXrOffsetDirection(upVector);
       animation = {
         startTime: now,
         endTime: now + animationTime*startPosition.distanceTo(endPosition),
         startPosition,
         startQuaternion: avatarMesh.quaternion.clone(),
-        endQuaternion: new THREE.Quaternion().setFromUnitVectors(
-          new THREE.Vector3(0, 0, -1),
-          localVector
-            .copy(endPosition)
-            .sub(startPosition)
-            .normalize()
+        endQuaternion: new THREE.Quaternion().setFromRotationMatrix(
+          localMatrix.lookAt(
+            startPosition,
+            endPosition,
+            upVector
+          )
         ),
         endPosition,
         hitTesting: false,
@@ -397,11 +438,11 @@
 
           avatarMesh.material.uniforms.theta.value = Math.sin((now%thetaRate)/thetaRate * Math.PI*2);
 
-          rayMesh.position.copy(avatarMesh.position)
-            .add(
-              localVector
-                .set(0, avatarHeight/2, 0)
-            );
+          localVector.set(0, avatarHeight/2, 0);
+          _unXrOffsetDirection(localVector);
+          rayMesh.position
+            .copy(avatarMesh.position)
+            .add(localVector);
           rayMesh.quaternion.copy(avatarMesh.quaternion);
           rayMesh.updateMatrixWorld();
 
@@ -440,11 +481,11 @@
 
                         _animateTo(
                           avatarMesh.position.clone()
-                          .add(
-                            localVector
-                              .set(0, 0, 0.3)
-                              .applyQuaternion(avatarMesh.quaternion)
-                          )
+                            .add(
+                              localVector
+                                .set(0, 0, 0.3)
+                                .applyQuaternion(avatarMesh.quaternion)
+                            )
                         );
                       }
 
@@ -555,7 +596,8 @@
 
         if (controllerHitMesh.visible) {
           const destination = controllerHitMesh.position.clone();
-          destination.y = 0;
+          _xrOffset(localVector.copy(destination));
+          destination.y -= localVector.y;
           _animateTo(destination);
         }
       };
