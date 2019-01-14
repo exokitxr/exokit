@@ -698,7 +698,7 @@ const _makeRig = () => {
             mesh.updateText();
           } else {
             if (mesh.urlState.text.length === 0) {
-              _closeRig(rig);
+              _closeRig();
             }
           }
         } else if (code === 46) { // delete
@@ -1712,7 +1712,7 @@ function animate(time, frame) {
                   const gamepads = navigator.getGamepads();
                   const gamepad = gamepads[i];
                   if (gamepad.buttons[1].pressed) {
-                    _closeRig(rig);
+                    _closeRig();
                   }
 
                   intersectionSpecs[i] = null;
