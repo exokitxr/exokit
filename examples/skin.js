@@ -299,7 +299,8 @@ const rightArmBox = (() => {
       result[baseIndex + 0] = positions[basePositionIndex + 0];
       result[baseIndex + 1] = positions[basePositionIndex + 1];
       result[baseIndex + 2] = positions[basePositionIndex + 2];
-      result[baseIndex + 3] = 1; // angle factor
+      // result[baseIndex + 3] = 1; // angle factor
+      result[baseIndex + 3] = 0;
     }
 
     return result;
@@ -395,7 +396,8 @@ const leftArmBox = (() => {
       result[baseIndex + 0] = positions[basePositionIndex + 0];
       result[baseIndex + 1] = positions[basePositionIndex + 1];
       result[baseIndex + 2] = positions[basePositionIndex + 2];
-      result[baseIndex + 3] = -1; // angle factor
+      // result[baseIndex + 3] = -1; // angle factor
+      result[baseIndex + 3] = 0;
     }
 
     return result;
@@ -782,7 +784,8 @@ const rightArm2Box = (() => {
       result[baseIndex + 0] = positions[basePositionIndex + 0];
       result[baseIndex + 1] = positions[basePositionIndex + 1];
       result[baseIndex + 2] = positions[basePositionIndex + 2];
-      result[baseIndex + 3] = 1; // angle factor
+      // result[baseIndex + 3] = 1; // angle factor
+      result[baseIndex + 3] = 0;
     }
 
     return result;
@@ -876,7 +879,8 @@ const leftArm2Box = (() => {
       result[baseIndex + 0] = positions[basePositionIndex + 0];
       result[baseIndex + 1] = positions[basePositionIndex + 1];
       result[baseIndex + 2] = positions[basePositionIndex + 2];
-      result[baseIndex + 3] = -1; // angle factor
+      // result[baseIndex + 3] = -1; // angle factor
+      result[baseIndex + 3] = 0;
     }
 
     return result;
