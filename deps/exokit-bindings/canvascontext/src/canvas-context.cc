@@ -299,6 +299,12 @@ void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, floa
 }
 
 void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
+  GLint drawFboId = 0, readFboId = 0;
+  glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+  glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
+  
+  std::cout << "framebuffer bindings " << drawFboId << " " << readFboId << std::endl; // XXX not needed due to context reset
+  
   GLuint fbos[2];
   glGenFramebuffers(2, fbos);
   
