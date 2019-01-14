@@ -278,7 +278,7 @@
       display.session = session;
 
       session.onselect = e => {
-        const controllerIndex = _getControllerIndex(inputSource);
+        const controllerIndex = _getControllerIndex(e.inputSource);
         const controllerMesh = controllerMeshes[controllerIndex];
         // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
 
