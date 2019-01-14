@@ -312,8 +312,8 @@ void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
   glGenTextures(1, &tex);
   GLuint newTex = tex;
   
-  unsigned int oldWidth = getWidth();
-  unsigned int oldHeight = getHeight();
+  unsigned int oldWidth = GetWidth();
+  unsigned int oldHeight = GetHeight();
   unsigned int newWidth = w;
   unsigned int newHeight = w;
   
