@@ -2011,8 +2011,8 @@ function animate(time, frame) {
       const padTouched = gamepad.buttons[0].touched;
       const {axes} = gamepad;
       const lastPadTouched = lastPadToucheds[i];
+      const lastAxis = lastAxes[i];
       if (padTouched && lastPadTouched && rig.open && !moves[i]) {
-        const lastAxis = lastAxes[i];
         const dx = axes[0] - lastAxis[0];
         const dy = axes[1] - lastAxis[1];
 
@@ -2035,8 +2035,8 @@ function animate(time, frame) {
         }
       }
 
-      lastAxes[0] = axes[0];
-      lastAxes[1] = axes[1];
+      lastAxis[0] = axes[0];
+      lastAxis[1] = axes[1];
     }
   };
   _updateIntersections();
