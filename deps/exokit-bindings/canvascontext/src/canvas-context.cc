@@ -317,10 +317,10 @@ void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
   unsigned int newWidth = w;
   unsigned int newHeight = w;
   
-  glBindFramebuffer(GL_READ_FRAMEKBUFFER, fbos[0]);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbos[0]);
   glFramebufferTexture2D(GL_READ_FRAMEBUFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, oldTex, 0);
   
-  glBindFramebuffer(GL_DRAW_FRAMEKBUFFER, fbos[1]);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
   glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, newTex, 0);
   
   glBindTexture(GL_TEXTURE_2D, tex);
