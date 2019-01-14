@@ -399,6 +399,7 @@ const _makeSkinMesh = () => {
       const mesh = skin({
         limbs: true,
       });
+      mesh.frustumCulled = false;
 
       const uniforms = THREE.UniformsUtils.clone(skin.SKIN_SHADER.uniforms);
 
