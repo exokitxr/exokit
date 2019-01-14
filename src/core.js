@@ -1200,6 +1200,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   })(WebSocket);
   window.event = new Event(); // XXX this needs to track the current event
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
+  window.sessionStorage = new LocalStorage(path.join(options.dataPath, '.sessionStorage'));
   window.indexedDB = indexedDB;
   window.performance = performance;
   window.screen = new Screen(window);
