@@ -158,6 +158,7 @@
         });
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.y = 1.5;
+        mesh.position.z = -1.5;
         mesh.frustumCulled = false;
         return mesh;
       })();
