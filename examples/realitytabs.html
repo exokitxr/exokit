@@ -6,8 +6,11 @@
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script src="sprite3d.js"></script>
+    <script src="skin.js"></script>
+    <script src="xrmp.js"></script>
+    <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
+let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
 
 const links = [
   {
@@ -79,6 +82,13 @@ const links = [
     url: 'microphone.html',
   },
 ].map(({name, url}) => ({name, url, iconMesh: null}));
+let servers = [];
+let serversLoading = false;
+let serverConnectedUrl = null;
+
+const DEFAULT_URL = 'http://lol.com';
+const DEFAULT_REGISTRY_URL = 'http://xrmp.webmr.io:9001';
+const DEFAULT_SKIN_URL = 'skin2.png';
 const RAY_COLOR = 0x44c2ff;
 const RAY_HIGHLIGHT_COLOR = new THREE.Color(RAY_COLOR).multiplyScalar(0.5).getHex();
 const rayDistance = 3;
@@ -97,19 +107,20 @@ const keyboardWidth = 2048;
 const keyboardHeight = 716;
 const keyboardMatrix = [keyboardWidth / 963.266, keyboardHeight / 337.215];
 const cursorWidth = 4;
+const armQuaternionOffset = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, -1));
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
-const localEuler = new THREE.Euler();
-localEuler.order = 'YXZ';
+const localQuaternion2 = new THREE.Quaternion();
+const localEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+const localEuler2 = new THREE.Euler(0, 0, 0, 'YXZ');
 const localMatrix = new THREE.Matrix4();
-const localMatrix2 = new THREE.Matrix4();
 
-function parseQuery(queryString) {
+function parseQuery(s) {
   var query = {};
-  var pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+  var pairs = (s[0] === '?' ? s.substr(1) : s).split('&');
   for (var i = 0; i < pairs.length; i++) {
     var pair = pairs[i].split('=');
     query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
@@ -117,7 +128,7 @@ function parseQuery(queryString) {
   return query;
 }
 const query = parseQuery(window.location.search);
-const DEFAULT_URL = 'http://lol.com';
+const registryUrl = query.registryUrl || DEFAULT_REGISTRY_URL;
 
 // load
 
@@ -375,6 +386,164 @@ const _makeBoxMesh = () => {
   return mesh;
 };
 
+const _mod = (v, d) => {
+  const n = v % d;
+  return n < 0 ? (d + n) : n;
+};
+const _angleDiff = (a, b) => _mod((b - a) + Math.PI, Math.PI * 2) - Math.PI;
+const _makeSkinMesh = () => {
+  const object = {};
+  let onupdate = null;
+  const uniforms = THREE.UniformsUtils.clone(skin.SKIN_SHADER.uniforms);
+  object.setSkinUrl = skinUrl => {
+    if (skinUrl) {
+      const mesh = skin({
+        limbs: true,
+      });
+      mesh.frustumCulled = false;
+
+      mesh.onBeforeRender = (onBeforeRender => function() {
+        mesh.material.uniforms.headRotation.value.copy(uniforms.headRotation.value);
+        mesh.material.uniforms.leftArmRotation.value.copy(uniforms.leftArmRotation.value);
+        mesh.material.uniforms.rightArmRotation.value.copy(uniforms.rightArmRotation.value);
+        mesh.material.uniforms.theta.value = uniforms.theta.value;
+        mesh.material.uniforms.headVisible.value = uniforms.headVisible.value;
+        mesh.material.uniforms.hit.value = uniforms.hit.value;
+
+        onBeforeRender.apply(this, arguments);
+      })(mesh.onBeforeRender);
+
+      return new Promise((accept, reject) => {
+        const skinImg = new Image();
+        skinImg.crossOrigin = 'Anonymous';
+        skinImg.src = skinUrl;
+        skinImg.onload = () => {
+          accept(skinImg);
+        };
+        skinImg.onerror = err => {
+          reject(err);
+        };
+      })
+        .then(skinImg => {
+          mesh.setImage(skinImg);
+
+          onupdate = (hmd, gamepads) => {
+            const hmdEuler = localEuler.setFromQuaternion(hmd.quaternion, localEuler.order);
+            const playerEuler = localEuler2.setFromQuaternion(mesh.quaternion, localEuler2.order);
+            const angleDiff = _angleDiff(hmdEuler.y, playerEuler.y);
+            const angleDiffAbs = Math.abs(angleDiff);
+            if (angleDiffAbs > Math.PI / 2) {
+              playerEuler.y += (angleDiffAbs - (Math.PI / 2)) * (angleDiff < 0 ? 1 : -1);
+              mesh.quaternion.setFromEuler(playerEuler);
+            }
+
+            const oldWorldPosition = mesh.getWorldPosition(localVector);
+            mesh.position.copy(hmd.position)
+              .sub(mesh.eye.getWorldPosition(localVector2))
+              .add(oldWorldPosition);
+
+            const playerQuaternionInverse = localQuaternion.copy(mesh.quaternion).inverse();
+            mesh.head.quaternion.copy(playerQuaternionInverse).multiply(hmd.quaternion);
+            mesh.updateMatrixWorld();
+
+            const headQuaternionInverse = localQuaternion2.copy(mesh.head.quaternion).inverse();
+            uniforms.headRotation.value.set(headQuaternionInverse.x, headQuaternionInverse.y, headQuaternionInverse.z, headQuaternionInverse.w);
+
+            for (let i = 0; i < 2; i++) {
+              const armRotation = uniforms[i === 0 ? 'leftArmRotation' : 'rightArmRotation'];
+
+              const gamepad = gamepads[i];
+              if (gamepad.visible) {
+                const armQuaternionInverse = localQuaternion2.setFromRotationMatrix(
+                  localMatrix.lookAt(
+                    mesh.arms[i === 0 ? 'left' : 'right']
+                      .getWorldPosition(localVector),
+                    gamepad.position,
+                    localVector2
+                      .set(0, 1, 0)
+                      .applyQuaternion(gamepad.quaternion)
+                  )
+                )
+                  .multiply(armQuaternionOffset)
+                  .premultiply(playerQuaternionInverse)
+                  .inverse();
+                armRotation.value.set(armQuaternionInverse.x, armQuaternionInverse.y, armQuaternionInverse.z, armQuaternionInverse.w);
+              } else {
+                armRotation.value.set(0, 0, 0, 1);
+              }
+            }
+          };
+
+          if (object.skinMesh) {
+            object.skinMesh.parent.remove(object.skinMesh);
+            object.skinMesh = null;
+          }
+
+          scene.add(mesh);
+          object.skinMesh = mesh;
+        });
+    } else {
+      onupdate = null;
+
+      if (object.skinMesh) {
+        object.skinMesh.parent.remove(object.skinMesh);
+        object.skinMesh = null;
+      }
+    }
+  };
+  object.update = (hmd, gamepads) => {
+    onupdate && onupdate(hmd, gamepads);
+  };
+  object.animate = thetaValue => {
+    uniforms.theta.value = thetaValue;
+  };
+  object.destroy = () => {
+    onupdate = null;
+
+    if (object.skinMesh) {
+      object.skinMesh.parent.remove(object.skinMesh);
+      object.skinMesh = null;
+    }
+  };
+  object.skinMesh = null;
+  return object;
+};
+/* const localSkinMesh = _makeSkinMesh();
+localSkinMesh.setSkinUrl(DEFAULT_SKIN_URL) */
+
+const _makePositionSnapshotter = () => {
+  const numSnapshots = 8;
+  const positionShapshots = Array(numSnapshots);
+  for (let i = 0; i < positionShapshots.length; i++) {
+    positionShapshots[i] = {
+      position: new THREE.Vector3(),
+      timestamp: 0,
+    };
+  }
+  let positionShapshotIndex = 0;
+  let positionShapshotsInitialized = false;
+
+  return {
+    capturePositionSnapshot(position, timestamp) {
+      const snapshot = positionShapshots[positionShapshotIndex];
+      snapshot.position.copy(position);
+      snapshot.timestamp = timestamp;
+
+      positionShapshotIndex = (positionShapshotIndex + 1) % positionShapshots.length;
+    },
+    getFirstPosition() {
+      return positionShapshots[positionShapshotIndex];
+    },
+    getLastPosition() {
+      let index = positionShapshotIndex - 1;
+      if (index < 0) {
+        index += positionShapshots.length;
+      }
+      return positionShapshots[index];
+    },
+  };
+};
+
 // helpers
 
 const _makeRenderer = () => {
@@ -401,8 +570,8 @@ const _makeRenderer = () => {
   };
 };
 const _getFrontOfCamera = () => {
-  const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera;
-  vrCamera.cameras[0].matrixWorld.decompose(localVector, localQuaternion, localVector2);
+  const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+  vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
   localVector.add(
     localVector2.set(0, 0, -1.5)
       .applyQuaternion(localQuaternion)
@@ -415,7 +584,7 @@ const _getFrontOfCamera = () => {
   };
 };
 
-const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
+const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3, local = true, id = tabId++) => {
   if (scale === undefined) {
     scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
     if (d !== 3) {
@@ -454,9 +623,7 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     } else {
       _drawFail();
 
-      _closeUrl(iframe);
-      tabs.splice(tabs.indexOf(tab), 1);
-      layers.splice(layers.indexOf(iframe), 1);
+      _closeTab(tab);
 
       if (focusedTab === tab) {
         focusedTab = rig.menuMesh.urlMesh;
@@ -472,9 +639,9 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     // scene.background = _makeBackground();
   }); */
 
-  _addTab(iframe, position, orientation, scale, d);
+  const tab = _addTab(iframe, position, orientation, scale, d, local, id);
 };
-const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3) => {
+const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE.Quaternion(), scale, d = 3, local = true, id = tabId++) => {
   if (scale === undefined) {
     scale = new THREE.Vector3(1, d === 3 ? 1 : window.innerHeight/window.innerWidth, 1);
     if (d !== 3) {
@@ -490,6 +657,7 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
 
   const tab = {
     url: iframe.src,
+    id,
     iframe,
   };
   tabs.push(tab);
@@ -499,13 +667,157 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
 
   rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
+
+  if (serverConnectedUrl && local) {
+    const objectMesh = xrmp.createObjectMesh(tab.id, {
+      url: tab.url,
+      d,
+    });
+    const {object} = objectMesh;
+    position.toArray(object.objectMatrix.position);
+    orientation.toArray(object.objectMatrix.quaternion);
+    object.pushUpdate();
+    _bindObject(object);
+  }
+
+  return tab;
 };
-const _closeUrl = iframe => {
+const _closeTab = tab => {
+  const {id, iframe} = tab;
   if (iframe.destroy) {
     iframe.destroy();
   }
-
   document.body.removeChild(iframe);
+
+  tabs.splice(tabs.indexOf(tab), 1);
+  layers.splice(layers.indexOf(iframe), 1);
+
+  if (serverConnectedUrl) {
+    const objectMesh = xrmp.getObjectMeshes().find(objectMesh => objectMesh.object.id === id);
+    xrmp.removeObjectMesh(objectMesh);
+  }
+};
+const _closeAllTabs = () => { // XXX trigger this when switching servers
+  for (let i = 0; i < tabs.length; i++) {
+    const {iframe} = tab;
+    if (iframe.destroy) {
+      iframe.destroy();
+    }
+    document.body.removeChild(iframe);
+  }
+
+  tabs.length = 0;
+  layers.length = 0;
+};
+const _openServer = (serverUrl, host) => {
+  xrmp = new XRMultiplayerTHREE(new XRMultiplayer(serverUrl));
+  xrmp.localPlayerMesh = null;
+  xrmp.onopen = () => {
+    xrmp.localPlayerMesh = xrmp.createLocalPlayerMesh(undefined, {});
+
+    if (host) {
+      for (let i = 0; i < tabs.length; i++) {
+        const tab = tabs[i];
+        const {url, iframe: {xrOffset, d}} = tab;
+        const objectMesh = xrmp.createObjectMesh(tab.id, {
+          url,
+          d,
+        });
+        const {object} = objectMesh;
+        object.objectMatrix.position.set(xrOffset.position);
+        object.objectMatrix.quaternion.set(xrOffset.orientation);
+        object.pushUpdate();
+        _bindObject(object);
+      }
+    }
+  };
+  xrmp.onsync = () => {
+    console.log('server sync', serverUrl);
+
+    serverConnectedUrl = serverUrl;
+    rig.menuMesh.listMesh.updateList();
+  };
+  xrmp.onclose = () => {
+    console.log('server close', serverUrl);
+
+    xrmp = null;
+    serverConnectedUrl = null;
+    rig.menuMesh.listMesh.updateList();
+  };
+  xrmp.onobjectadd = objectMesh => {
+    const {object} = objectMesh;
+    const {id, state} = object;
+    if (!tabs.some(tab => tab.id === id)) {
+      const {url, d} = state;
+      _openUrl(url, undefined, undefined, undefined, d, false, id);
+      _bindObject(object);
+      console.log('server object add', id);
+    } else {
+      console.warn('ignoring duplicate server tab', id);
+    }
+  };
+  xrmp.onobjectremove = objectMesh => {
+    const {id} = objectMesh.object;
+    const index = tabs.findIndex(tab => tab.id === id);
+    if (index !== -1) {
+      tabs.splice(index, 1);
+      console.log('server object remove', id);
+    } else {
+      console.warn('failed to remove local server tab', id);;
+    }
+  };
+  xrmp.onplayerenter = playerMesh => {
+    const skinMesh = _makeSkinMesh();
+    skinMesh.setSkinUrl(DEFAULT_SKIN_URL);
+    playerMesh.skinMesh = skinMesh;
+
+    const positionSnapshotter = _makePositionSnapshotter();
+    playerMesh.onupdate = () => {
+      skinMesh.update(playerMesh.hmd, playerMesh.gamepads);
+
+      localVector.copy(playerMesh.hmd.position);
+      localVector.y = 0;
+      positionSnapshotter.capturePositionSnapshot(localVector, Date.now());
+    };
+    playerMesh.animate = () => {
+      const walkRate = 1000;
+      const f = (Date.now() % walkRate) / walkRate;
+      const firstPosition = positionSnapshotter.getFirstPosition();
+      const lastPosition = positionSnapshotter.getLastPosition();
+      const walkSpeed = localVector.copy(firstPosition.position)
+        .distanceTo(lastPosition.position) / (lastPosition.timestamp - firstPosition.timestamp);
+      const walkIntensity = Math.min(walkSpeed * 1000, 1);
+      const thetaValue = Math.sin(f * Math.PI*2) * walkIntensity * 0.7;
+      skinMesh.animate(thetaValue);
+    };
+
+    scene.add(playerMesh);
+  };
+  xrmp.onplayerleave = playerMesh => {
+    scene.remove(playerMesh);
+
+    playerMesh.skinMesh.destroy();
+  };
+  xrmp.onerror = e => {
+    console.warn(e.error);
+  };
+};
+const _closeServer = () => {
+  xrmp.onopen = null;
+  xrmp.onsync = null;
+  xrmp.onobjectadd = null;
+  xrmp.onobjectremove = null;
+  xrmp.close();
+};
+const _bindObject = o => {
+  o.onupdate = e => {
+    const {object, matrix} = e;
+    const {id} = object;
+    const tab = tabs.find(tab => tab.id === id);
+    const {iframe} = tab;
+    iframe.position = Array.from(matrix.position);
+    iframe.orientation = Array.from(matrix.quaternion);
+  };
 };
 const _updateRigLists = () => {
   const {menuMesh} = rig;
@@ -893,6 +1205,12 @@ const _makeRig = () => {
         ctx.fillStyle = mesh.list === 'links' ? '#FFF' : '#000';
         ctx.fillText('Links', menuWidth*0.6 + menuWidth*0.2/2 - 70, menuHeight/2 + 20);
 
+        // Party
+        ctx.fillStyle = mesh.list === 'party' ? '#42a5f5' : '#EEE';
+        ctx.fillRect(menuWidth*0.8, 0, menuWidth*0.2 - 5, menuHeight);
+        ctx.fillStyle = mesh.list === 'party' ? '#FFF' : '#000';
+        ctx.fillText('Party', menuWidth*0.8 + menuWidth*0.2/2 - 70, menuHeight/2 + 20);
+
         texture.needsUpdate = true;
       };
       _updateOptions();
@@ -1072,6 +1390,79 @@ const _makeRig = () => {
           }
 
           _renderScrollbar(links.length);
+        } else if (optionsMesh.list === 'party') {
+          if (!serverConnectedUrl) {
+            if (!serversLoading) {
+              if (servers.length > 0) {
+                const localServers = servers.slice(mesh.scrollIndex, mesh.scrollIndex + 4);
+                for (let i = 0; i < localServers.length; i++) {
+                  const server = localServers[i];
+                  const {name} = server;
+                  const y = menuHeight*i;
+
+                  ctx.fillStyle = '#FFFFFF';
+                  ctx.fillRect(0, y, menuWidth*0.98, menuHeight);
+
+                  ctx.fillStyle = '#000000';
+                  ctx.fillText(name, 100, y + menuHeight/2 + 20);
+
+                  if (!server.iconMesh) {
+                    const iconMesh = (() => {
+                      const iconMesh = new THREE.Object3D();
+
+                      function pad(n, width) {
+                        return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+                      }
+
+                      _requestSpriteMesh(`icons/Food_${pad((4+mesh.scrollIndex+i) + '', 2)}.png`)
+                        .then(spriteMesh => {
+                          spriteMesh.position.set(-0.45, 0.15 - i*0.1, 0.05);
+                          spriteMesh.rotation.order = 'YXZ';
+                          spriteMesh.scale.set(0.16, 0.16, 0.16);
+                          spriteMesh.frustumCulled = false;
+                          iconMesh.add(spriteMesh);
+                        });
+
+                      return iconMesh;
+                    })();
+                    server.iconMesh = iconMesh;
+                    iconMeshes.push(iconMesh);
+                  }
+                  mesh.add(server.iconMesh);
+                  server.iconMesh.children[0] && (server.iconMesh.children[0].position.y = 0.15 - i*0.1);
+                }
+              } else {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, menuWidth*0.99 - 5, menuHeight);
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillText('No servers', 50, menuHeight/2 + 20);
+              }
+
+              _renderScrollbar(servers.length);
+            } else {
+              ctx.fillStyle = '#000000';
+              ctx.fillRect(0, 0, menuWidth*0.99 - 5, menuHeight);
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillText('Loading servers...', 50, menuHeight/2 + 20);
+
+              _renderScrollbar(0);
+            }
+          } else {
+            ctx.fillStyle = '#2196f3';
+            ctx.fillRect(0, 0, menuWidth*0.8 - 5, menuHeight);
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(menuWidth*0.8, 0, menuWidth*0.18, menuHeight);
+
+            ctx.fillStyle = '#FFF';
+            ctx.fillText(serverConnectedUrl, 100, menuHeight/2 + 20);
+
+            ctx.fillStyle = '#000';
+            ctx.fillText('x', menuWidth*0.88, menuHeight*0.7);
+
+            _renderScrollbar(0);
+          }
         }
 
         texture.needsUpdate = true;
@@ -1481,13 +1872,13 @@ function animate(time, frame) {
 
   const inputSources = display.session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
-    const tab = moves[i];
+    const moveTab = moves[i];
     const boxMesh = boxMeshes[i];
 
-    if (tab) {
+    if (moveTab) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
-      const {iframe} = tab;
+      const {iframe} = moveTab;
 
       const gamepads = navigator.getGamepads();
       const gamepad = gamepads[i];
@@ -1513,6 +1904,15 @@ function animate(time, frame) {
       boxMesh.scale.copy(localVector2);
       // boxMesh.updateMatrixWorld();
       boxMesh.visible = true;
+
+      if (serverConnectedUrl) {
+        const objectMesh = xrmp.getObjectMeshes().find(objectMesh => objectMesh.object.id === moveTab.id);
+        const {object} = objectMesh;
+        const {objectMatrix} = object;
+        localVector.toArray(objectMatrix.position);
+        localQuaternion.toArray(objectMatrix.quaternion);
+        object.pushUpdate();
+      }
     } else {
       boxMesh.visible = false;
     }
@@ -1769,6 +2169,29 @@ function animate(time, frame) {
                     menuMesh.optionsMesh.updateOptions();
                     menuMesh.listMesh.scrollIndex = 0;
                     menuMesh.listMesh.updateList();
+                  } else if (optionX === 4) {
+                    menuMesh.optionsMesh.list = 'party';
+                    if (!serversLoading) {
+                      XRMultiplayer.requestServers(`${registryUrl}/servers`)
+                        .then(result => {
+                          servers = result.servers;
+                          serversLoading = false;
+
+                          menuMesh.listMesh.updateList();
+                        })
+                        .catch(err => {
+                          console.warn(err.stack);
+
+                          serversLoading = false;
+
+                          menuMesh.listMesh.updateList();
+                        });
+
+                      serversLoading = true;
+                    }
+                    menuMesh.optionsMesh.updateOptions();
+                    menuMesh.listMesh.scrollIndex = 0;
+                    menuMesh.listMesh.updateList();
                   }
                 }
 
@@ -1815,9 +2238,8 @@ function animate(time, frame) {
                         const pressed = gamepad.buttons[1].pressed;
                         const lastPressed = lastPresseds[i];
                         if (pressed && !lastPressed) {
-                          const [tab] = tabs.splice(menuMesh.listMesh.scrollIndex + j, 1);
-                          const {iframe} = tab;
-                          _closeUrl(iframe);
+                          const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                          _closeTab(tab);
 
                           if (focusedTab === tab) {
                             focusedTab = rig.menuMesh.urlMesh;
@@ -1961,6 +2383,62 @@ function animate(time, frame) {
                     });
 
                     break;
+                  }
+                }
+              } else if (menuMesh.optionsMesh.list === 'party') {
+                if (!serverConnectedUrl) {
+                  const localServers = servers.slice(menuMesh.listMesh.scrollIndex, menuMesh.listMesh.scrollIndex + 4);
+                  for (let j = 0; j < localServers.length; j++) {
+                    if (y >= urlBarOffset*j && y < urlBarOffset*(j+1)) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
+
+                        /* controllerMesh.dotMesh.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.dotMesh.visible = true; */
+
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          const server = localServers[j];
+                          const {name} = server;
+
+                          _openServer(`${registryUrl}/servers/${name}`, true);
+                        }
+
+                        intersectionSpecs[i] = null;
+                      });
+
+                      break;
+                    }
+                  }
+                } else {
+                  if (y >= 0 && y < urlBarOffset) {
+                    if (x >= menuWidth*0.8) {
+                      intersectionPoints.push(intersectionPoint.clone());
+                      intersectionCbs.push(() => {
+                        controllerMesh.rayMesh.scale.z = distance;
+                        controllerMesh.updateMatrixWorld();
+
+                        /* controllerMesh.dotMesh.position.z = -distance;
+                        controllerMesh.updateMatrixWorld();
+                        controllerMesh.dotMesh.visible = true; */
+
+                        const gamepads = navigator.getGamepads();
+                        const gamepad = gamepads[i];
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          _closeServer();
+                        }
+
+                        intersectionSpecs[i] = null;
+                      });
+                    }
                   }
                 }
               }
@@ -2115,7 +2593,7 @@ function animate(time, frame) {
     if (fakeDisplay) {
       // if (window.document.pointerLockElement) {
         // let moving = false;
-        const speed = 0.002;
+        const speed = 0.004;
         const velocity = localVector.set(0, 0, 0);
         if (keys.up) {
           velocity.z -= speed * timeDiff;
@@ -2172,6 +2650,32 @@ function animate(time, frame) {
     }
   };
   _updateRig();
+
+  const _updateMp = () => {
+    /* const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+    vrCamera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+    localSkinMesh.update(vrCamera, controllerMeshes); */
+
+    if (serverConnectedUrl) {
+      const vrCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+      vrCamera.matrixWorld.decompose(xrmp.localPlayerMesh.hmd.position, xrmp.localPlayerMesh.hmd.quaternion, localVector2);
+
+      for (let i = 0; i < 2; i++) {
+        const controllerMesh = controllerMeshes[i];
+        xrmp.localPlayerMesh.gamepads[i].visible = true;
+        xrmp.localPlayerMesh.gamepads[i].position.copy(controllerMesh.position);
+        xrmp.localPlayerMesh.gamepads[i].quaternion.copy(controllerMesh.quaternion);
+      }
+
+      xrmp.pushUpdate();
+
+      const playerMeshes = xrmp.getRemotePlayerMeshes();
+      for (let i = 0; i < playerMeshes.length; i++) {
+        playerMeshes[i].animate();
+      }
+    }
+  };
+  _updateMp();
 
   /* const _updateFakeDisplay = () => {
     if (fakeDisplay) {
