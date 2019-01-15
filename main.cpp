@@ -223,6 +223,7 @@ int main(int argc, char **argv) {
     }
 
     const char *nodeString = "node";
+    const char *experimentalWorkerString = "--experimental-worker";
     const char *dotString = ".";
     char argsString[4096];
     int i = 0;
@@ -230,6 +231,10 @@ int main(int argc, char **argv) {
     char *nodeArg = argsString + i;
     strncpy(nodeArg, nodeString, sizeof(argsString) - i);
     i += strlen(nodeString) + 1;
+
+    char *experimentalWorkerArg = argsString + i;
+    strncpy(experimentalWorkerArg, experimentalWorkerString, sizeof(argsString) - i);
+    i += strlen(experimentalWorkerString) + 1;
 
     char *dotArg = argsString + i;
     strncpy(dotArg, dotString, sizeof(argsString) - i);
@@ -239,7 +244,7 @@ int main(int argc, char **argv) {
     strncpy(jsArg, jsString, sizeof(argsString) - i);
     i += strlen(jsString) + 1;
 
-    char *argv[] = {nodeArg, dotArg, jsArg};
+    char *argv[] = {nodeArg, experimentalWorkerArg, dotArg, jsArg};
     size_t argc = sizeof(argv) / sizeof(argv[0]);
 
     return node::Start(argc, argv);
