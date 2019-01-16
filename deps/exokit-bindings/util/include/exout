@@ -19,13 +19,13 @@ class ExoutStreambuf : public std::streambuf {
 
 extern ExoutStreambuf exstream;
 extern std::ostream exout;
-#define exerr exout;
+#define exerr exout
 
 #else
 
 #include <iostream>
 
-#define exout std::cout;
-#define exerr std::cerr;
+#define exout std::cout
+#define exerr std::cerr
 
 #endif
