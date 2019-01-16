@@ -103,7 +103,7 @@ NAN_METHOD(Browser::New) {
             fn();
           }
         } else {
-          std::cerr << "Browser::Browser: failed to initialize embedded browser" << std::endl;
+          exerr << "Browser::Browser: failed to initialize embedded browser" << std::endl;
         }
       });
       embeddedInitialized = true;
