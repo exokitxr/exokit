@@ -4,7 +4,7 @@
 #include <node.h>
 #include <nan.h>
 
-#include <iostream>
+#include <exout>
 
 using namespace std;
 using namespace v8;
@@ -85,9 +85,9 @@ NAN_METHOD(Browser::New) {
 
     if (!embeddedInitialized) {
       browserThread = std::thread([dataPath{std::move(dataPath)}]() -> void {
-        // std::cout << "initialize web core manager 1" << std::endl;
+        // exout << "initialize web core manager 1" << std::endl;
         const bool success = initializeEmbedded(dataPath);
-        // std::cout << "initialize web core manager 2 " << success << std::endl;
+        // exout << "initialize web core manager 2 " << success << std::endl;
         if (success) {          
           for (;;) {
             uv_sem_wait(&browserThreadSem);
@@ -103,7 +103,7 @@ NAN_METHOD(Browser::New) {
             fn();
           }
         } else {
-          std::cerr << "Browser::Browser: failed to initialize embedded browser" << std::endl;
+          exerr << "Browser::Browser: failed to initialize embedded browser" << std::endl;
         }
       });
       embeddedInitialized = true;
@@ -224,9 +224,9 @@ void Browser::loadImmediate(const std::string &url) {
 NAN_METHOD(Browser::UpdateAll) {
   if (embeddedInitialized) {
     QueueOnBrowserThread([]() -> void {
-      // std::cout << "browser update 1" << std::endl;
+      // exout << "browser update 1" << std::endl;
       embeddedDoMessageLoopWork();
-      // std::cout << "browser update 2" << std::endl;
+      // exout << "browser update 2" << std::endl;
     });
   }
 }

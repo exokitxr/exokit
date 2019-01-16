@@ -6,7 +6,7 @@
 
 #include <Servo2D.h>
 
-#include <iostream>
+#include <exout>
 
 namespace browser {
   
@@ -53,11 +53,11 @@ int Servo2D::init(
   std::function<void(const std::string &, const std::string &, int)> onconsole,
   std::function<void(const std::string &)> onmessage
 ) {
-  std::cout << "Servo2D Initializing 1" << tex << " " << width << " " << height << std::endl;
+  exout << "Servo2D Initializing 1" << tex << " " << width << " " << height << std::endl;
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
-      std::cout << "Servo2D error 1 " << error << std::endl;
+      exout << "Servo2D error 1 " << error << std::endl;
     }
   }
 
@@ -93,11 +93,11 @@ int Servo2D::init(
   };
   int numConfigs;
   eglChooseConfig(this->display, eglConfigAttribs, &eglConfig, 1, &numConfigs);
-  std::cout << "Servo2D 2 " << numConfigs << std::endl;
+  exout << "Servo2D 2 " << numConfigs << std::endl;
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
-      std::cout << "Servo2D error 3 " << error << std::endl;
+      exout << "Servo2D error 3 " << error << std::endl;
     }
   }
   EGLint surfaceAttribs[] = {
@@ -106,11 +106,11 @@ int Servo2D::init(
     EGL_NONE
   };
   this->surface = eglCreatePbufferSurface(this->display, eglConfig, surfaceAttribs);
-  std::cout << "Servo2D init 4 " << (void *)(this->surface) << std::endl;
+  exout << "Servo2D init 4 " << (void *)(this->surface) << std::endl;
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
-      std::cout << "Servo2D error 5 " << error << std::endl;
+      exout << "Servo2D error 5 " << error << std::endl;
     }
   }
   /* if (!this->surface) {
@@ -122,7 +122,7 @@ int Servo2D::init(
     {
       EGLint error = eglGetError();
       if (error != EGL_SUCCESS) {
-        std::cout << "Servo2D error 6 " << error << std::endl;
+        exout << "Servo2D error 6 " << error << std::endl;
       }
     }
   }
@@ -132,14 +132,14 @@ int Servo2D::init(
     {
       GLenum error = glGetError();
       if (error) {
-        std::cout << "Servo2D error 7 " << error << std::endl;
+        exout << "Servo2D error 7 " << error << std::endl;
       }
     }
     glBindTexture(GL_TEXTURE_2D, tex);
     {
       GLenum error = glGetError();
       if (error) {
-        std::cout << "Servo2D error 8 " << error << std::endl;
+        exout << "Servo2D error 8 " << error << std::endl;
       }
     }
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -148,7 +148,7 @@ int Servo2D::init(
     {
       GLenum error = glGetError();
       if (error) {
-        std::cout << "Servo2D error 9 " << error << std::endl;
+        exout << "Servo2D error 9 " << error << std::endl;
       }
     }
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -162,7 +162,7 @@ int Servo2D::init(
     {
       GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "incomplete out framebuffer " << status << std::endl;
+        exout << "incomplete out framebuffer " << status << std::endl;
       }
     }
     
@@ -171,7 +171,7 @@ int Servo2D::init(
 
   // Hook into servo
   servo_ = init_servo(context, this->surface, this->display, this, load, logger, history, Servo2D::present, url.c_str(), width, height, 1.0);
-  std::cout << "Servo2D Initializing 10 " << url << " " << width << " " << height << " " << (void *)servo_ << std::endl;
+  exout << "Servo2D Initializing 10 " << url << " " << width << " " << height << " " << (void *)servo_ << std::endl;
   if (!servo_) {
     ML_LOG(Error, "Servo2D Failed to init servo instance");
     abort();
@@ -212,31 +212,31 @@ ServoInstance *Servo2D::getInstance() const {
 }
 
 void Servo2D::flushTexture() const {
-  // std::cout << "flush texture start " << drawFboId << " " << readFboId << " " << (void *)(this->surface) << " " << this->fboOutCache << " " << this->tex << std::endl;
+  // exout << "flush texture start " << drawFboId << " " << readFboId << " " << (void *)(this->surface) << " " << this->fboOutCache << " " << this->tex << std::endl;
   glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
   {
     GLuint error = glGetError();
     if (error) {
-      std::cout << "flush texture error 0 " << error << std::endl;
+      exout << "flush texture error 0 " << error << std::endl;
     }
   }
   {
     GLenum status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-      std::cout << "flush incomplete read framebuffer " << status << std::endl;
+      exout << "flush incomplete read framebuffer " << status << std::endl;
     }
   }
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->fboOutCache);
   {
     GLuint error = glGetError();
     if (error) {
-      std::cout << "flush texture error 1 " << error << std::endl;
+      exout << "flush texture error 1 " << error << std::endl;
     }
   }
   {
     GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-      std::cout << "flush incomplete draw framebuffer " << status << std::endl;
+      exout << "flush incomplete draw framebuffer " << status << std::endl;
     }
   }
 
@@ -251,12 +251,12 @@ void Servo2D::flushTexture() const {
   {
     GLuint error = glGetError();
     if (error) {
-      std::cout << "flush texture error 2 " << error << " " << std::endl;
+      exout << "flush texture error 2 " << error << " " << std::endl;
     }
   }
   
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  // std::cout << "flush texture end" << std::endl;
+  // exout << "flush texture end" << std::endl;
 }
 
 void Servo2D::present(Servo2D *app) {
@@ -266,7 +266,7 @@ void Servo2D::present(Servo2D *app) {
 void Servo2D::init() {
   void *libmlservo = dlopen("/package/bin/libmlservo.so", RTLD_LAZY);
   if (!libmlservo) {
-    std::cout << "failed to dlopen libmlservo.so" << std::endl;
+    exout << "failed to dlopen libmlservo.so" << std::endl;
   }
   
   init_servo = (ServoInstance *(*)(EGLContext, EGLSurface, EGLDisplay,
@@ -281,7 +281,7 @@ void Servo2D::init() {
   navigate_servo = (void (*)(ServoInstance*, const char* text))dlsym(libmlservo, "navigate_servo");
   discard_servo = (void (*)(ServoInstance*))dlsym(libmlservo, "discard_servo");
   if (!init_servo || !heartbeat_servo || !trigger_servo || !move_servo || !keyboard_servo || !traverse_servo || !navigate_servo || !discard_servo) {
-    std::cout << "failed to dlsym libmlservo.so symbols " << (void *)init_servo << " " << (void *)heartbeat_servo << " " << (void *)trigger_servo << " " << (void *)move_servo << " " << (void *)traverse_servo << " " << (void *)navigate_servo << " " << (void *)discard_servo << std::endl;
+    exout << "failed to dlsym libmlservo.so symbols " << (void *)init_servo << " " << (void *)heartbeat_servo << " " << (void *)trigger_servo << " " << (void *)move_servo << " " << (void *)traverse_servo << " " << (void *)navigate_servo << " " << (void *)discard_servo << std::endl;
   }
 }
 

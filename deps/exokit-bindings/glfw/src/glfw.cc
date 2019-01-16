@@ -2,6 +2,8 @@
 #include <windowsystem.h>
 #include <webgl.h>
 
+#include <exout>
+
 namespace glfw {
 
 GLFWmonitor* _activeMonitor;
@@ -1145,7 +1147,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
 
       glfwInitialized = true;
     } else {
-      std::cerr << "Failed to initialize GLFW" << std::endl;
+      exerr << "Failed to initialize GLFW" << std::endl;
       abort();
     }
   }
@@ -1154,7 +1156,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   
   NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
   if (!window) {
-    std::cerr << "Can't create GLFW window" << std::endl;
+    exerr << "Can't create GLFW window" << std::endl;
     abort();
   }
   return window;

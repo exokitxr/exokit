@@ -443,8 +443,6 @@ MLMat4f invertMatrix(const MLMat4f &matrix) {
 
   if ( det == 0 ) {
 
-    // std::cout << "ML can't invert matrix, determinant is 0" << std::endl;
-
     return MLMat4f{
       1, 0, 0, 0,
       0, 1, 0, 0,

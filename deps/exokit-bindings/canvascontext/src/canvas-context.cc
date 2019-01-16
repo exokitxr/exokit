@@ -7,6 +7,8 @@
 #include <windowsystem.h>
 #include "gl/GrGLAssembleInterface.h"
 
+#include <exout>
+
 using namespace v8;
 using namespace node;
 
@@ -313,7 +315,7 @@ void CanvasRenderingContext2D::Resize(unsigned int w, unsigned int h) {
   
   surface = SkSurface::MakeFromBackendTexture(grContext.get(), backendTex, kBottomLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
   if (!surface) {
-    std::cerr << "Failed to resize CanvasRenderingContext2D surface" << std::endl;
+    exerr << "Failed to resize CanvasRenderingContext2D surface" << std::endl;
     abort();
   }
 }
@@ -1316,7 +1318,7 @@ NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
     
     ctx->surface = SkSurface::MakeFromBackendTexture(ctx->grContext.get(), backendTex, kBottomLeft_GrSurfaceOrigin, 0, SkColorType::kRGBA_8888_SkColorType, nullptr, nullptr);
     if (!ctx->surface) {
-      std::cerr << "Failed to create CanvasRenderingContext2D surface" << std::endl;
+      exerr << "Failed to create CanvasRenderingContext2D surface" << std::endl;
       abort();
     }
   } else {
