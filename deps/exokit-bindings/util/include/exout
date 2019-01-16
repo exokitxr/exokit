@@ -1,0 +1,45 @@
+#include <streambuf>
+#include <ml_logging.h>
+
+constexpr size_t STDIO_BUF_SIZE = 64 * 1024;
+
+class ExoutStreambuf : std::streambuf {
+  char buf[STDIO_BUF_SIZE + 1];
+  ssize_t i = 0;
+  ssize_t lineStart = 0;
+
+  std::streamsize xsputn(const char_type *s, std::streamsize size) override  {
+    memcpy(buf + i, s, size);
+
+    flush(size);
+  }
+
+  int_type overflow(int_type c) override {
+    memcpy(buf + i, s, size);
+    buf[i] = c;
+
+    flush(1);
+
+    return c;
+  }
+
+  void flush(std::streamsize size) {
+    for (ssize_t j = i; j < i + size; j++) {
+      if (buf[j] == '\n') {
+        buf[j] = 0;
+        ML_LOG(Info, "%s", buf + lineStart);
+
+        lineStart = j + 1;
+      }
+    }
+
+    i += size;
+
+    if (i >= STDIO_BUF_SIZE) {
+      ssize_t lineLength = i - lineStart;
+      memcpy(buf, buf + lineStart, lineLength);
+      i = lineLength;
+      lineStart = 0;
+    }
+  }
+}
