@@ -6,7 +6,7 @@
 
 constexpr ssize_t STDIO_BUF_SIZE = 64 * 1024;
 
-class ExoutStreambuf : std::streambuf {
+class ExoutStreambuf : public std::streambuf {
   char buf[STDIO_BUF_SIZE + 1];
   ssize_t i = 0;
   ssize_t lineStart = 0;
@@ -20,7 +20,6 @@ class ExoutStreambuf : std::streambuf {
   }
 
   int_type overflow(int_type c) override {
-    memcpy(buf + i, s, size);
     buf[i] = c;
 
     flush(1);
@@ -47,7 +46,7 @@ class ExoutStreambuf : std::streambuf {
       lineStart = 0;
     }
   }
-}
+};
 
 ExoutStreambuf exstream;
 std::ostream exout(&exstream);
