@@ -1,4 +1,7 @@
+#include <iostream>
 #include <streambuf>
+
+#ifdef LUMIN
 #include <ml_logging.h>
 
 constexpr size_t STDIO_BUF_SIZE = 64 * 1024;
@@ -43,3 +46,8 @@ class ExoutStreambuf : std::streambuf {
     }
   }
 }
+
+ExoutStreambuf exout;
+#else
+#define exout std::cout;
+#endif
