@@ -2,7 +2,7 @@
 
 #include <browser-ml.h>
 
-#include <iostream>
+#include <exout>
 
 using namespace std;
 using namespace v8;
@@ -31,7 +31,7 @@ EmbeddedBrowser createEmbedded(
   std::function<void(const std::string &, const std::string &, int)> onconsole,
   std::function<void(const std::string &)> onmessage
 ) {
-  std::cout << "createEmbedded 0 " << (void *)window << std::endl;
+  exout << "createEmbedded 0 " << (void *)window << std::endl;
   
   if (width == 0) {
     width = 1280;
@@ -45,26 +45,26 @@ EmbeddedBrowser createEmbedded(
 
   EmbeddedBrowser browser_ = getBrowser();
   
-  std::cout << "createEmbedded 1 " << (void *)window << std::endl;
+  exout << "createEmbedded 1 " << (void *)window << std::endl;
   
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
-      std::cout << "createEmbedded error 1 " << error << std::endl;
+      exout << "createEmbedded error 1 " << error << std::endl;
     }
   }
   /* windowsystem::SetCurrentWindowContext(window);
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
-      std::cout << "createEmbedded error 2 " << error << std::endl;
+      exout << "createEmbedded error 2 " << error << std::endl;
     }
   } */
 
   {
     EGLint error = eglGetError();
     if (error != EGL_SUCCESS) {
-      std::cout << "createEmbedded error 5 " << error << std::endl;
+      exout << "createEmbedded error 5 " << error << std::endl;
     }
   }
 
@@ -73,7 +73,7 @@ EmbeddedBrowser createEmbedded(
     {
       EGLint error = eglGetError();
       if (error != EGL_SUCCESS) {
-        std::cout << "createEmbedded error 6 " << error << std::endl;
+        exout << "createEmbedded error 6 " << error << std::endl;
       }
     }
     browser_->init(url, window, tex, width, height, onloadstart, onloadend, onloaderror, onconsole, onmessage);
@@ -82,7 +82,7 @@ EmbeddedBrowser createEmbedded(
     {
       EGLint error = eglGetError();
       if (error != EGL_SUCCESS) {
-        std::cout << "createEmbedded error 7 " << error << std::endl;
+        exout << "createEmbedded error 7 " << error << std::endl;
       }
     }
     
@@ -95,7 +95,7 @@ EmbeddedBrowser createEmbedded(
     browser_->navigate(url);
   }
   
-  std::cout << "createEmbedded 8 " << std::endl;
+  exout << "createEmbedded 8 " << std::endl;
   
   return browser_;
 }
@@ -104,7 +104,7 @@ void destroyEmbedded(EmbeddedBrowser browser_) {
   browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
 }
 void embeddedDoMessageLoopWork() {
-  // std::cout << "do message loop work 1 " << browsers.size() << std::endl;
+  // exout << "do message loop work 1 " << browsers.size() << std::endl;
 
   for (EmbeddedBrowser browser_ : browsers) {
     heartbeat_servo(browser_->getInstance());
@@ -114,7 +114,7 @@ void embeddedDoMessageLoopWork() {
     browser_->flushTexture(); */
   }
   
-  // std::cout << "do message loop work 2 " << browsers.size() << std::endl;
+  // exout << "do message loop work 2 " << browsers.size() << std::endl;
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return browser_->getWidth();

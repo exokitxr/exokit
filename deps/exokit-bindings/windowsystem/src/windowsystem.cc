@@ -1,5 +1,7 @@
 #include <windowsystem.h>
 
+#include <exout>
+
 namespace windowsystembase {
 
 const char *composeVsh = "\
@@ -88,7 +90,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(composeVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML compose vertex shader compilation failed:\n" << infoLog << std::endl;
+      exout << "ML compose vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -102,7 +104,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(composeFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML compose fragment shader compilation failed:\n" << infoLog << std::endl;
+      exout << "ML compose fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -117,33 +119,33 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(composeSpec->composeProgram, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML compose program linking failed\n" << infoLog << std::endl;
+      exout << "ML compose program linking failed\n" << infoLog << std::endl;
       return;
     }
 
     composeSpec->positionLocation = glGetAttribLocation(composeSpec->composeProgram, "position");
     if (composeSpec->positionLocation == -1) {
-      std::cout << "ML compose program failed to get attrib location for 'position'" << std::endl;
+      exout << "ML compose program failed to get attrib location for 'position'" << std::endl;
       return;
     }
     composeSpec->uvLocation = glGetAttribLocation(composeSpec->composeProgram, "uv");
     if (composeSpec->uvLocation == -1) {
-      std::cout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
+      exout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
     composeSpec->msTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msTex");
     if (composeSpec->msTexLocation == -1) {
-      std::cout << "ML compose program failed to get uniform location for 'msTex'" << std::endl;
+      exout << "ML compose program failed to get uniform location for 'msTex'" << std::endl;
       return;
     }
     composeSpec->msDepthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msDepthTex");
     if (composeSpec->msDepthTexLocation == -1) {
-      std::cout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
+      exout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
       return;
     }
     composeSpec->texSizeLocation = glGetUniformLocation(composeSpec->composeProgram, "texSize");
     if (composeSpec->texSizeLocation == -1) {
-      std::cout << "ML compose program failed to get uniform location for 'texSize'" << std::endl;
+      exout << "ML compose program failed to get uniform location for 'texSize'" << std::endl;
       return;
     }
 
@@ -203,7 +205,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(planeVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "plane vertex shader compilation failed:\n" << infoLog << std::endl;
+      exout << "plane vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -217,7 +219,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(planeFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "plane fragment shader compilation failed:\n" << infoLog << std::endl;
+      exout << "plane fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -232,33 +234,33 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       GLsizei length;
       glGetShaderInfoLog(planeSpec->planeProgram, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "plane program linking failed\n" << infoLog << std::endl;
+      exout << "plane program linking failed\n" << infoLog << std::endl;
       return;
     }
 
     planeSpec->positionLocation = glGetAttribLocation(planeSpec->planeProgram, "position");
     if (planeSpec->positionLocation == -1) {
-      std::cout << "plane program failed to get attrib location for 'position'" << std::endl;
+      exout << "plane program failed to get attrib location for 'position'" << std::endl;
       return;
     }
     planeSpec->uvLocation = glGetAttribLocation(planeSpec->planeProgram, "uv");
     if (planeSpec->uvLocation == -1) {
-      std::cout << "plane program failed to get attrib location for 'uv'" << std::endl;
+      exout << "plane program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
     planeSpec->modelViewMatrixLocation = glGetUniformLocation(planeSpec->planeProgram, "modelViewMatrix");
     if (planeSpec->modelViewMatrixLocation == -1) {
-      std::cout << "plane program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      exout << "plane program failed to get uniform location for 'modelViewMatrix'" << std::endl;
       return;
     }
     planeSpec->projectionMatrixLocation = glGetUniformLocation(planeSpec->planeProgram, "projectionMatrix");
     if (planeSpec->projectionMatrixLocation == -1) {
-      std::cout << "plane program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      exout << "plane program failed to get uniform location for 'projectionMatrix'" << std::endl;
       return;
     }
     planeSpec->texLocation = glGetUniformLocation(planeSpec->planeProgram, "tex");
     if (planeSpec->texLocation == -1) {
-      std::cout << "plane program failed to get uniform location for 'tex'" << std::endl;
+      exout << "plane program failed to get uniform location for 'tex'" << std::endl;
       return;
     }
 

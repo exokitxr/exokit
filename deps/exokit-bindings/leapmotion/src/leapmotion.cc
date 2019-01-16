@@ -1,5 +1,7 @@
 #include <leapmotion.h>
 
+// #include <exout>
+
 using namespace v8;
 using namespace std;
 
@@ -9,26 +11,26 @@ const std::string fingerNames[] = {"Thumb", "Index", "Middle", "Ring", "Pinky"};
 const std::string boneNames[] = {"Metacarpal", "Proximal", "Middle", "Distal"};
 
 void ListenerImpl::onInit(const Leap::Controller& controller) {
-  // std::cout << "Initialized" << std::endl;
+  // exout << "Initialized" << std::endl;
 }
 
 void ListenerImpl::onConnect(const Leap::Controller& controller) {
-  // std::cout << "Connected" << std::endl;
+  // exout << "Connected" << std::endl;
 }
 
 void ListenerImpl::onDisconnect(const Leap::Controller& controller) {
   // Note: not dispatched when running in a debugger.
-  // std::cout << "Disconnected" << std::endl;
+  // exout << "Disconnected" << std::endl;
 }
 
 void ListenerImpl::onExit(const Leap::Controller& controller) {
-  // std::cout << "Exited" << std::endl;
+  // exout << "Exited" << std::endl;
 }
 
 void ListenerImpl::onFrame(const Leap::Controller& controller) {
   // Get the most recent frame and report some basic information
   const Leap::Frame frame = controller.frame();
-  /* std::cout << "Frame id: " << frame.id()
+  /* exout << "Frame id: " << frame.id()
             << ", timestamp: " << frame.timestamp()
             << ", hands: " << frame.hands().count()
             << ", extended fingers: " << frame.fingers().extended().count() << std::endl; */
@@ -38,20 +40,20 @@ void ListenerImpl::onFrame(const Leap::Controller& controller) {
     // Get the first hand
     const Leap::Hand hand = *hl;
     std::string handType = hand.isLeft() ? "Left hand" : "Right hand";
-    /* std::cout << std::string(2, ' ') << handType << ", id: " << hand.id()
+    /* exout << std::string(2, ' ') << handType << ", id: " << hand.id()
               << ", palm position: " << hand.palmPosition() << std::endl; */
     // Get the hand's normal vector and direction
     const Leap::Vector normal = hand.palmNormal();
     const Leap::Vector direction = hand.direction();
 
     // Calculate the hand's pitch, roll, and yaw angles
-    /* std::cout << std::string(2, ' ') <<  "pitch: " << direction.pitch() * Leap::RAD_TO_DEG << " degrees, "
+    /* exout << std::string(2, ' ') <<  "pitch: " << direction.pitch() * Leap::RAD_TO_DEG << " degrees, "
               << "roll: " << normal.roll() * Leap::RAD_TO_DEG << " degrees, "
               << "yaw: " << direction.yaw() * Leap::RAD_TO_DEG << " degrees" << std::endl; */
 
     // Get the Arm bone
     Leap::Arm arm = hand.arm();
-    /* std::cout << std::string(2, ' ') <<  "Arm direction: " << arm.direction()
+    /* exout << std::string(2, ' ') <<  "Arm direction: " << arm.direction()
               << " wrist position: " << arm.wristPosition()
               << " elbow position: " << arm.elbowPosition() << std::endl; */
 
@@ -59,7 +61,7 @@ void ListenerImpl::onFrame(const Leap::Controller& controller) {
     const Leap::FingerList fingers = hand.fingers();
     for (Leap::FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); ++fl) {
       const Leap::Finger finger = *fl;
-      /* std::cout << std::string(4, ' ') <<  fingerNames[finger.type()]
+      /* exout << std::string(4, ' ') <<  fingerNames[finger.type()]
                 << " finger, id: " << finger.id()
                 << ", length: " << finger.length()
                 << "mm, width: " << finger.width() << std::endl; */
@@ -68,7 +70,7 @@ void ListenerImpl::onFrame(const Leap::Controller& controller) {
       for (int b = 0; b < 4; ++b) {
         Leap::Bone::Type boneType = static_cast<Leap::Bone::Type>(b);
         Leap::Bone bone = finger.bone(boneType);
-        /* std::cout << std::string(6, ' ') <<  boneNames[boneType]
+        /* exout << std::string(6, ' ') <<  boneNames[boneType]
                   << " bone, start: " << bone.prevJoint()
                   << ", end: " << bone.nextJoint()
                   << ", direction: " << bone.direction() << std::endl; */
@@ -77,70 +79,70 @@ void ListenerImpl::onFrame(const Leap::Controller& controller) {
   }
 
   /* if (!frame.hands().isEmpty()) {
-    std::cout << std::endl;
+    exout << std::endl;
   } */
 
 }
 
 void ListenerImpl::onFocusGained(const Leap::Controller& controller) {
-  // std::cout << "Focus Gained" << std::endl;
+  // exout << "Focus Gained" << std::endl;
 }
 
 void ListenerImpl::onFocusLost(const Leap::Controller& controller) {
-  // std::cout << "Focus Lost" << std::endl;
+  // exout << "Focus Lost" << std::endl;
 }
 
 void ListenerImpl::onDeviceChange(const Leap::Controller& controller) {
-  // std::cout << "Device Changed" << std::endl;
+  // exout << "Device Changed" << std::endl;
   const Leap::DeviceList devices = controller.devices();
 
   for (int i = 0; i < devices.count(); ++i) {
-    /* std::cout << "id: " << devices[i].toString() << std::endl;
-    std::cout << "  isStreaming: " << (devices[i].isStreaming() ? "true" : "false") << std::endl;
-    std::cout << "  isSmudged:" << (devices[i].isSmudged() ? "true" : "false") << std::endl;
-    std::cout << "  isLightingBad:" << (devices[i].isLightingBad() ? "true" : "false") << std::endl; */
+    /* exout << "id: " << devices[i].toString() << std::endl;
+    exout << "  isStreaming: " << (devices[i].isStreaming() ? "true" : "false") << std::endl;
+    exout << "  isSmudged:" << (devices[i].isSmudged() ? "true" : "false") << std::endl;
+    exout << "  isLightingBad:" << (devices[i].isLightingBad() ? "true" : "false") << std::endl; */
   }
 }
 
 void ListenerImpl::onServiceConnect(const Leap::Controller& controller) {
-  // std::cout << "Service Connected" << std::endl;
+  // exout << "Service Connected" << std::endl;
 }
 
 void ListenerImpl::onServiceDisconnect(const Leap::Controller& controller) {
-  // std::cout << "Service Disconnected" << std::endl;
+  // exout << "Service Disconnected" << std::endl;
 }
 
 void ListenerImpl::onServiceChange(const Leap::Controller& controller) {
-  // std::cout << "Service Changed" << std::endl;
+  // exout << "Service Changed" << std::endl;
 }
 
 void ListenerImpl::onDeviceFailure(const Leap::Controller& controller) {
-  /* std::cout << "Device Error" << std::endl;
+  /* exout << "Device Error" << std::endl;
   const Leap::FailedDeviceList devices = controller.failedDevices();
 
   for (Leap::FailedDeviceList::const_iterator dl = devices.begin(); dl != devices.end(); ++dl) {
     const Leap::FailedDevice device = *dl;
-    std::cout << "  PNP ID:" << device.pnpId();
-    std::cout << "    Failure type:" << device.failure();
+    exout << "  PNP ID:" << device.pnpId();
+    exout << "    Failure type:" << device.failure();
   } */
 }
 
 void ListenerImpl::onLogMessage(const Leap::Controller&, Leap::MessageSeverity s, int64_t t, const char* msg) {
   /* switch (s) {
   case Leap::MESSAGE_CRITICAL:
-    std::cout << "[Critical]";
+    exout << "[Critical]";
     break;
   case Leap::MESSAGE_WARNING:
-    std::cout << "[Warning]";
+    exout << "[Warning]";
     break;
   case Leap::MESSAGE_INFORMATION:
-    std::cout << "[Info]";
+    exout << "[Info]";
     break;
   case Leap::MESSAGE_UNKNOWN:
-    std::cout << "[Unknown]";
+    exout << "[Unknown]";
   }
-  std::cout << "[" << t << "] ";
-  std::cout << msg << std::endl; */
+  exout << "[" << t << "] ";
+  exout << msg << std::endl; */
 }
 
 LMContext::LMContext() {

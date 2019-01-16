@@ -1,4 +1,4 @@
-#if defined(LUMIN)
+\#if defined(LUMIN)
 
 #include <magicleap.h>
 #include <ml-math.h>
@@ -6,7 +6,7 @@
 #include <image-context.h>
 
 #include <uv.h>
-#include <iostream>
+#include <exout>
 
 using namespace v8;
 using namespace std;
@@ -1642,12 +1642,12 @@ void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
 
   Local<ArrayBuffer> arrayBuffer;
   if (size > 0) {
-    // std::cout << "got jpeg " << size << std::endl;
+    // exout << "got jpeg " << size << std::endl;
 
     arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), size);
     memcpy(arrayBuffer->GetContents().Data(), data, size);
   } else {
-    // std::cout << "failed to get jpeg " << size << std::endl;
+    // exout << "failed to get jpeg " << size << std::endl;
 
     arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), 4);
   }
@@ -2677,7 +2677,7 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->meshVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML mesh vertex shader compilation failed:\n" << infoLog << std::endl;
+      exout << "ML mesh vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -2691,7 +2691,7 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->meshFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML mesh fragment shader compilation failed:\n" << infoLog << std::endl;
+      exout << "ML mesh fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -2706,23 +2706,23 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->meshProgram, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML mesh program linking failed\n" << infoLog << std::endl;
+      exout << "ML mesh program linking failed\n" << infoLog << std::endl;
       return;
     }
 
     mlContext->positionLocation = glGetAttribLocation(mlContext->meshProgram, "position");
     if (mlContext->positionLocation == -1) {
-      std::cout << "ML mesh program failed to get attrib location for 'position'" << std::endl;
+      exout << "ML mesh program failed to get attrib location for 'position'" << std::endl;
       return;
     }
     mlContext->modelViewMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "modelViewMatrix");
     if (mlContext->modelViewMatrixLocation == -1) {
-      std::cout << "ML meshprogram failed to get uniform location for 'modelViewMatrix'" << std::endl;
+      exout << "ML meshprogram failed to get uniform location for 'modelViewMatrix'" << std::endl;
       return;
     }
     mlContext->projectionMatrixLocation = glGetUniformLocation(mlContext->meshProgram, "projectionMatrix");
     if (mlContext->projectionMatrixLocation == -1) {
-      std::cout << "ML mesh program failed to get uniform location for 'projectionMatrix'" << std::endl;
+      exout << "ML mesh program failed to get uniform location for 'projectionMatrix'" << std::endl;
       return;
     }
 
@@ -2748,7 +2748,7 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->cameraVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML camera vertex shader compilation failed:\n" << infoLog << std::endl;
+      exout << "ML camera vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -2762,7 +2762,7 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->cameraFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML camera fragment shader compilation failed:\n" << infoLog << std::endl;
+      exout << "ML camera fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -2777,28 +2777,28 @@ NAN_METHOD(MLContext::Present) {
       GLsizei length;
       glGetShaderInfoLog(mlContext->cameraProgram, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      std::cout << "ML camera program linking failed\n" << infoLog << std::endl;
+      exout << "ML camera program linking failed\n" << infoLog << std::endl;
       return;
     }
 
     mlContext->pointLocation = glGetAttribLocation(mlContext->cameraProgram, "point");
     if (mlContext->pointLocation == -1) {
-      std::cout << "ML camera program failed to get attrib location for 'point'" << std::endl;
+      exout << "ML camera program failed to get attrib location for 'point'" << std::endl;
       return;
     }
     mlContext->uvLocation = glGetAttribLocation(mlContext->cameraProgram, "uv");
     if (mlContext->uvLocation == -1) {
-      std::cout << "ML camera program failed to get attrib location for 'uv'" << std::endl;
+      exout << "ML camera program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
     mlContext->cameraInTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "cameraInTexture");
     if (mlContext->cameraInTextureLocation == -1) {
-      std::cout << "ML camera program failed to get uniform location for 'cameraInTexture'" << std::endl;
+      exout << "ML camera program failed to get uniform location for 'cameraInTexture'" << std::endl;
       return;
     }
     mlContext->contentTextureLocation = glGetUniformLocation(mlContext->cameraProgram, "contentTexture");
     if (mlContext->contentTextureLocation == -1) {
-      std::cout << "ML camera program failed to get uniform location for 'contentTexture'" << std::endl;
+      exout << "ML camera program failed to get uniform location for 'contentTexture'" << std::endl;
       return;
     }
 

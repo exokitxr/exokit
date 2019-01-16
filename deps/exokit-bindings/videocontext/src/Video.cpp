@@ -182,7 +182,6 @@ FrameStatus AppData::advanceToFrameAt(double timestamp) {
         av_free_packet(packet);
         return FRAME_STATUS_EOF;
       } else if (ret < 0) {
-        // std::cout << "Unknown error " << ret << "\n";
         av_free_packet(packet);
         return FRAME_STATUS_ERROR;
       } else {

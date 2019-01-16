@@ -332,8 +332,6 @@ void SimpleApp::OnBeforeCommandLineProcessing(const CefString &process_type, Cef
 
 void SimpleApp::OnContextInitialized() {
   // CEF_REQUIRE_UI_THREAD();
-  
-  // std::cout << "SimpleApp::OnContextInitialized" << std::endl;
 }
 
 // LoadHandler
