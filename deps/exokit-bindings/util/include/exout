@@ -13,7 +13,7 @@ class ExoutStreambuf : public std::streambuf {
   ssize_t lineStart = 0;
 
   std::streamsize xsputn(const char_type *s, std::streamsize size) override;
-  int_type overflow(int_type c) override;
+  char overflow(char c) override;
   void flush(std::streamsize size);
 };
 

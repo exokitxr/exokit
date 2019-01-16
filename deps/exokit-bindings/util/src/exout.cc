@@ -10,7 +10,7 @@ std::streamsize ExoutStreambuf::xsputn(const char_type *s, std::streamsize size)
   return size;
 }
 
-int_type ExoutStreambuf::overflow(int_type c) {
+char ExoutStreambuf::overflow(char c) {
   buf[i] = c;
 
   flush(1);
