@@ -2,6 +2,8 @@
 #include <windowsystem.h>
 #include <webgl.h>
 
+#include <exout>
+
 namespace glfw {
 
 GLFWmonitor* _activeMonitor;
