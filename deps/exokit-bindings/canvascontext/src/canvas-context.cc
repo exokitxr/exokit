@@ -7,6 +7,8 @@
 #include <windowsystem.h>
 #include "gl/GrGLAssembleInterface.h"
 
+#include <exout>
+
 using namespace v8;
 using namespace node;
 
