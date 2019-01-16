@@ -40,6 +40,5 @@ void ExoutStreambuf::flush(std::streamsize size) {
 
 ExoutStreambuf exstream;
 std::ostream exout(&exstream);
-std::ostream &exerr = exout;
 
 #endif

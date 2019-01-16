@@ -19,7 +19,7 @@ class ExoutStreambuf : public std::streambuf {
 
 extern ExoutStreambuf exstream;
 extern std::ostream exout(&exstream);
-extern std::ostream &exerr = exout;
+#define exerr exout;
 
 #else
 
