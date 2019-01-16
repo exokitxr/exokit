@@ -4,7 +4,7 @@
 #ifdef LUMIN
 #include <ml_logging.h>
 
-constexpr size_t STDIO_BUF_SIZE = 64 * 1024;
+constexpr ssize_t STDIO_BUF_SIZE = 64 * 1024;
 
 class ExoutStreambuf : std::streambuf {
   char buf[STDIO_BUF_SIZE + 1];
