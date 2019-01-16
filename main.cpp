@@ -1,21 +1,17 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <cstdlib>
-#include <cstring>
-#include <dlfcn.h>
-#include <errno.h>
-#include <sstream>
+// #include <unistd.h>
+// #include <stdio.h>
+// #include <fcntl.h>
+// #include <cstdlib>
+// #include <cstring>
+// #include <dlfcn.h>
+// #include <errno.h>
 #include <string>
 #include <map>
-#include <thread>
 #include <v8.h>
-#include <ml_logging.h>
+// #include <ml_logging.h>
 #include <ml_lifecycle.h>
 #include <ml_privileges.h>
-
-#define LOG_TAG "exokit"
-#define application_name LOG_TAG
+#include <exout>
 
 using namespace v8;
 
@@ -23,8 +19,6 @@ namespace node {
   extern std::map<std::string, void *> dlibs;
   int Start(int argc, char* argv[]);
 }
-int stdoutfds[2];
-int stderrfds[2];
 
 #include "build/libexokit/dlibs.h"
 
@@ -79,7 +73,6 @@ inline void registerDlibs(std::map<std::string, void *> &dlibs) {
   dlibs["/package/node_modules/child-process-thread/build/Release/child_process_thread.node"] = (void *)&node_register_module_child_process_thread;
 } */
 
-constexpr size_t STDIO_BUF_SIZE = 64 * 1024;
 const MLPrivilegeID privileges[] = {
   MLPrivilegeID_LowLatencyLightwear,
   MLPrivilegeID_WorldReconstruction,
@@ -106,7 +99,7 @@ int main(int argc, char **argv) {
 
   MLResult result = MLPrivilegesStartup();
   if (result != MLResult_Ok) {
-    ML_LOG(Info, "failed to start privilege system %x", result);
+    exout << "failed to start privilege system " << result << std::endl;
   }
   const size_t numPrivileges = sizeof(privileges) / sizeof(privileges[0]);
   for (size_t i = 0; i < numPrivileges; i++) {
@@ -114,12 +107,12 @@ int main(int argc, char **argv) {
     MLResult result = MLPrivilegesCheckPrivilege(privilege);
     if (result != MLPrivilegesResult_Granted) {
       const char *s = MLPrivilegesGetResultString(result);
-      ML_LOG(Info, "did not have privilege %u: %u %s", privilege, result, s);
+      exout << "did not have privilege " << privilege << " " << result << " " << s << std::endl;
 
       MLResult result = MLPrivilegesRequestPrivilege(privilege);
       if (result != MLPrivilegesResult_Granted) {
         const char *s = MLPrivilegesGetResultString(result);
-        ML_LOG(Info, "failed to get privilege %u: %u %s", privilege, result, s);
+        exout << "failed to get privilege " << privilege << " " << result << " " << s << std::endl;
       }
     }
   }
@@ -188,162 +181,67 @@ int main(int argc, char **argv) {
 
   ML_LOG(Info, "sleeping 2"); */
 
-  pipe(stdoutfds);
-  pipe(stderrfds);
+  exout << "---------------------exokit start" << std::endl;
 
-  int pid = fork();
-  if (pid != 0) { // parent
-    dup2(stdoutfds[1], 1);
-    close(stdoutfds[0]);
-    dup2(stderrfds[1], 2);
-    close(stderrfds[0]);
+  std::atexit([]() -> void {
+    exout << "---------------------exokit end" << std::endl;
+  });
 
-    std::atexit([]() -> void {
-      close(stdoutfds[1]);
-      close(stderrfds[1]);
-    });
+  const char *argsEnv = getenv("ARGS");
+  if (argsEnv) {
+    char args[4096];
+    strncpy(args, argsEnv, sizeof(args));
 
-    const char *argsEnv = getenv("ARGS");
-    if (argsEnv) {
-      char args[4096];
-      strncpy(args, argsEnv, sizeof(args));
+    char *argv[64];
+    size_t argc = 0;
 
-      char *argv[64];
-      size_t argc = 0;
-
-      int argStartIndex = 0;
-      for (int i = 0;; i++) {
-        const char c = args[i];
-        if (c == ' ') {
-          args[i] = '\0';
-          argv[argc] = args + argStartIndex;
-          argc++;
-          argStartIndex = i + 1;
-          continue;
-        } else if (c == '\0') {
-          argv[argc] = args + argStartIndex;
-          argc++;
-          break;
-        } else {
-          continue;
-        }
-      }
-
-      return node::Start(argc, argv);
-    } else {
-      const char *jsString;
-      if (access("/package/app/index.html", F_OK) != -1) {
-        jsString = "/package/app/index.html";
+    int argStartIndex = 0;
+    for (int i = 0;; i++) {
+      const char c = args[i];
+      if (c == ' ') {
+        args[i] = '\0';
+        argv[argc] = args + argStartIndex;
+        argc++;
+        argStartIndex = i + 1;
+        continue;
+      } else if (c == '\0') {
+        argv[argc] = args + argStartIndex;
+        argc++;
+        break;
       } else {
-        jsString = "examples/realitytabs.html";
+        continue;
       }
-      
-      const char *nodeString = "node";
-      const char *dotString = ".";
-      char argsString[4096];
-      int i = 0;
-
-      char *nodeArg = argsString + i;
-      strncpy(nodeArg, nodeString, sizeof(argsString) - i);
-      i += strlen(nodeString) + 1;
-
-      char *dotArg = argsString + i;
-      strncpy(dotArg, dotString, sizeof(argsString) - i);
-      i += strlen(dotString) + 1;
-
-      char *jsArg = argsString + i;
-      strncpy(jsArg, jsString, sizeof(argsString) - i);
-      i += strlen(jsString) + 1;
-
-      char *argv[] = {nodeArg, dotArg, jsArg};
-      size_t argc = sizeof(argv) / sizeof(argv[0]);
-
-      return node::Start(argc, argv);
     }
-  } else { // child
-    ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit start 1");
 
-    close(stdoutfds[1]);
-    close(stderrfds[1]);
+    return node::Start(argc, argv);
+  } else {
+    const char *jsString;
+    if (access("/package/app/index.html", F_OK) != -1) {
+      jsString = "/package/app/index.html";
+    } else {
+      jsString = "examples/realitytabs.html";
+    }
 
-    std::thread stdoutThread([]() -> void {
-      int fd = stdoutfds[0];
+    const char *nodeString = "node";
+    const char *dotString = ".";
+    char argsString[4096];
+    int i = 0;
 
-      char buf[STDIO_BUF_SIZE + 1];
-      ssize_t i = 0;
-      ssize_t lineStart = 0;
-      for (;;) {
-        ssize_t size = read(fd, buf + i, STDIO_BUF_SIZE - i);
-        // ML_LOG(Info, "=============read result %x %x %x", fd, size, errno);
-        if (size > 0) {
-          for (ssize_t j = i; j < i + size; j++) {
-            if (buf[j] == '\n') {
-              buf[j] = 0;
-              ML_LOG_TAG(Info, LOG_TAG, "%s", buf + lineStart);
+    char *nodeArg = argsString + i;
+    strncpy(nodeArg, nodeString, sizeof(argsString) - i);
+    i += strlen(nodeString) + 1;
 
-              lineStart = j + 1;
-            }
-          }
+    char *dotArg = argsString + i;
+    strncpy(dotArg, dotString, sizeof(argsString) - i);
+    i += strlen(dotString) + 1;
 
-          i += size;
+    char *jsArg = argsString + i;
+    strncpy(jsArg, jsString, sizeof(argsString) - i);
+    i += strlen(jsString) + 1;
 
-          if (i >= STDIO_BUF_SIZE) {
-            ssize_t lineLength = i - lineStart;
-            memcpy(buf, buf + lineStart, lineLength);
-            i = lineLength;
-            lineStart = 0;
-          }
-        } else {
-          if (i > 0) {
-            buf[i] = 0;
-            ML_LOG_TAG(Info, LOG_TAG, "%s", buf);
-          }
-          break;
-        }
-      }
-    });
-    std::thread stderrThread([]() -> void {
-      int fd = stderrfds[0];
+    char *argv[] = {nodeArg, dotArg, jsArg};
+    size_t argc = sizeof(argv) / sizeof(argv[0]);
 
-      char buf[STDIO_BUF_SIZE + 1];
-      ssize_t i = 0;
-      ssize_t lineStart = 0;
-      for (;;) {
-        ssize_t size = read(fd, buf + i, STDIO_BUF_SIZE - i);
-        // ML_LOG(Info, "=============read result %x %x %x", fd, size, errno);
-        if (size > 0) {
-          for (ssize_t j = i; j < i + size; j++) {
-            if (buf[j] == '\n') {
-              buf[j] = 0;
-              ML_LOG_TAG(Info, LOG_TAG, "%s", buf + lineStart);
-
-              lineStart = j + 1;
-            }
-          }
-
-          i += size;
-
-          if (i >= STDIO_BUF_SIZE) {
-            ssize_t lineLength = i - lineStart;
-            memcpy(buf, buf + lineStart, lineLength);
-            i = lineLength;
-            lineStart = 0;
-          }
-        } else {
-          if (i > 0) {
-            buf[i] = 0;
-            ML_LOG_TAG(Info, LOG_TAG, "%s", buf);
-          }
-          break;
-        }
-      }
-    });
-
-    stdoutThread.join();
-    stderrThread.join();
-
-    ML_LOG_TAG(Info, LOG_TAG, "---------------------exokit end");
-
-    return 0;
+    return node::Start(argc, argv);
   }
 }
