@@ -1,5 +1,5 @@
-#include <iostream>
 #include <streambuf>
+#include <ostream>
 
 #ifdef LUMIN
 #include <ml_logging.h>
@@ -15,6 +15,8 @@ class ExoutStreambuf : std::streambuf {
     memcpy(buf + i, s, size);
 
     flush(size);
+
+    return size;
   }
 
   int_type overflow(int_type c) override {
@@ -47,7 +49,9 @@ class ExoutStreambuf : std::streambuf {
   }
 }
 
-ExoutStreambuf exout;
+ExoutStreambuf exstream;
+std::ostream exout(&exstream);
 #else
+#include <iostream>
 #define exout std::cout;
 #endif
