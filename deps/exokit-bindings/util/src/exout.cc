@@ -2,7 +2,7 @@
 
 #ifdef LUMIN
 
-std::streamsize ExoutStreambuf::xsputn(const char_type *s, std::streamsize size) override  {
+std::streamsize ExoutStreambuf::xsputn(const char_type *s, std::streamsize size)  {
   memcpy(buf + i, s, size);
 
   flush(size);
@@ -10,7 +10,7 @@ std::streamsize ExoutStreambuf::xsputn(const char_type *s, std::streamsize size)
   return size;
 }
 
-int_type ExoutStreambuf::overflow(int_type c) override {
+int_type ExoutStreambuf::overflow(int_type c) {
   buf[i] = c;
 
   flush(1);
