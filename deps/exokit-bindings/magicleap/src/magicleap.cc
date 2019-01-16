@@ -1,4 +1,4 @@
-\#if defined(LUMIN)
+#if defined(LUMIN)
 
 #include <magicleap.h>
 #include <ml-math.h>
