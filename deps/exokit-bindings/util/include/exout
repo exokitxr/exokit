@@ -12,46 +12,14 @@ class ExoutStreambuf : public std::streambuf {
   ssize_t i = 0;
   ssize_t lineStart = 0;
 
-  std::streamsize xsputn(const char_type *s, std::streamsize size) override  {
-    memcpy(buf + i, s, size);
-
-    flush(size);
-
-    return size;
-  }
-
-  int_type overflow(int_type c) override {
-    buf[i] = c;
-
-    flush(1);
-
-    return c;
-  }
-
-  void flush(std::streamsize size) {
-    for (ssize_t j = i; j < i + size; j++) {
-      if (buf[j] == '\n') {
-        buf[j] = 0;
-        ML_LOG(Info, "%s", buf + lineStart);
-
-        lineStart = j + 1;
-      }
-    }
-
-    i += size;
-
-    if (i >= STDIO_BUF_SIZE) {
-      ssize_t lineLength = i - lineStart;
-      memcpy(buf, buf + lineStart, lineLength);
-      i = lineLength;
-      lineStart = 0;
-    }
-  }
+  std::streamsize xsputn(const char_type *s, std::streamsize size) override;
+  int_type overflow(int_type c) override;
+  void flush(std::streamsize size);
 };
 
-ExoutStreambuf exstream;
-std::ostream exout(&exstream);
-std::ostream &exerr = exout;
+extern ExoutStreambuf exstream;
+extern std::ostream exout(&exstream);
+extern std::ostream &exerr = exout;
 
 #else
 
