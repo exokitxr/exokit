@@ -35,7 +35,6 @@ const {
   Gamepad,
   GamepadButton,
   getGamepads,
-  getAllGamepads,
 } = require('./VR.js');
 
 const BindingsModule = require('./bindings');
@@ -319,86 +318,12 @@ class Screen {
   set availHeight(availHeight) {}
 }
 
-const handEntrySize = (1 + (5 * 5)) * (3 + 3);
-const maxNumPlanes = 32 * 3;
-const planeEntrySize = 3 + 4 + 2 + 1;
-VRFrameData.nonstandard = {
-  init() {
-    this.hands = [
-      new Float32Array(handEntrySize),
-      new Float32Array(handEntrySize),
-    ];
-    this.planes = new Float32Array(maxNumPlanes * planeEntrySize);
-    this.numPlanes = 0;
-  },
-  copy(frameData) {
-    for (let i = 0; i < this.hands.length; i++) {
-      this.hands[i].set(frameData.hands[i]);
-    }
-    this.planes.set(frameData.planes);
-    this.numPlanes = frameData.numPlanes;
-  },
-};
-class GamepadGesture {
-  constructor() {
-    this.position = new Float32Array(3);
-    this.gesture = null;
-  }
-
-  copy(gesture) {
-    this.position.set(gesture.position);
-    this.gesture = gesture.gesture;
-  }
-}
-Gamepad.nonstandard = {
-  init() {
-    this.gesture = new GamepadGesture();
-  },
-  copy(gamepad) {
-    this.gesture.copy(gamepad.gesture);
-  },
-};
-
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
-/* class ARDisplay extends MRDisplay {
-  constructor(window) {
-    super('AR', window);
-
-    this._viewMatrix = new Float32Array(16);
-    this._projectionMatrix = new Float32Array(16);
-
-    const _resize = () => {
-      this._width = window.innerWidth / 2;
-      this._height = window.innerHeight;
-    };
-    window.top.on('resize', _resize);
-    const _updatearframe = (viewMatrix, projectionMatrix) => {
-      this._viewMatrix.set(viewMatrix);
-      this._projectionMatrix.set(projectionMatrix);
-    };
-    window.top.on('updatearframe', _updatearframe);
-
-    this._cleanups.push(() => {
-      window.top.removeListener('resize', _resize);
-      window.top.removeListener('updatearframe', _updatearframe);
-    });
-  }
-
-  getFrameData(frameData) {
-    const hmdMatrix = localMatrix.fromArray(this._viewMatrix);
-    hmdMatrix.decompose(localVector, localQuaternion, localVector2);
-    frameData.pose.set(localVector, localQuaternion);
-
-    frameData.leftViewMatrix.set(this._viewMatrix);
-    frameData.rightViewMatrix.set(this._viewMatrix);
-
-    frameData.leftProjectionMatrix.set(this._projectionMatrix);
-    frameData.rightProjectionMatrix.set(this._projectionMatrix);
-  }
-} */
+const maxNumPlanes = 32 * 3;
+const planeEntrySize = 3 + 4 + 2 + 1;
 class MLDisplay extends MRDisplay {
   constructor() {
     super('ML');
@@ -445,14 +370,6 @@ class MLDisplay extends MRDisplay {
     if (frameData.planes) {
       frameData.planes.set(this._planesArray);
       frameData.numPlanes = this._numPlanes;
-    }
-  }
-
-  getGeometry(positions, normals, indices, metrics) {
-    if (this._context) {
-      return this._context.stageGeometry.getGeometry(positions, normals, indices, metrics);
-    } else {
-      return 0;
     }
   }
 
@@ -1771,19 +1688,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     const _updateGamepads = newGamepads => {
       if (newGamepads !== undefined) {
         const gamepads = getGamepads();
-        const allGamepads = getAllGamepads();
 
         if (newGamepads[0]) {
-          gamepads[0] = allGamepads[0];
           gamepads[0].copy(newGamepads[0]);
-        } else {
-          gamepads[0] = null;
         }
         if (newGamepads[1]) {
-          gamepads[1] = allGamepads[1];
           gamepads[1].copy(newGamepads[1]);
-        } else {
-          gamepads[1] = null;
         }
       }
     };
@@ -1921,7 +1831,6 @@ exokit.download = (src, dst) => exokit.load(src, {
       accept();
     });
   }));
-exokit.getAllGamepads = getAllGamepads;
 exokit.THREE = THREE;
 exokit.setArgs = newArgs => {
   GlobalContext.args = newArgs;

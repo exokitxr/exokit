@@ -36,8 +36,6 @@ class VRFrameData {
     this.rightProjectionMatrix = this.leftProjectionMatrix.slice();
     this.rightViewMatrix = this.leftViewMatrix.slice();
     this.pose = new VRPose();
-
-    VRFrameData.nonstandard.init.call(this);
   }
 
   copy(frameData) {
@@ -46,14 +44,8 @@ class VRFrameData {
     this.rightProjectionMatrix.set(frameData.rightProjectionMatrix);
     this.rightViewMatrix.set(frameData.rightViewMatrix);
     this.pose.copy(frameData.pose);
-
-    VRFrameData.nonstandard.copy.call(this, frameData);
   }
 }
-VRFrameData.nonstandard = {
-  init() {},
-  copy() {},
-};
 class GamepadButton {
   constructor() {
      this.value = 0;
@@ -121,8 +113,6 @@ class Gamepad {
     this.hapticActuators = [new GamepadHapticActuator(this)];
 
     this.ontriggerhapticpulse = null;
-
-    Gamepad.nonstandard.init.call(this);
   }
 
   copy(gamepad) {
@@ -132,14 +122,8 @@ class Gamepad {
     }
     this.pose.copy(gamepad.pose);
     this.axes.set(gamepad.axes);
-
-    Gamepad.nonstandard.copy.call(this, gamepad);
   }
 }
-Gamepad.nonstandard = {
-  init() {},
-  copy() {},
-};
 class VRStageParameters {
   constructor() {
     // new THREE.Matrix4().compose(new THREE.Vector3(0, 0, 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1)).toArray(new Float32Array(16))
@@ -306,7 +290,6 @@ class VRDisplay extends MRDisplay {
       rightFov,
       frameData,
       stageParameters,
-      handsArray,
     } = update;
 
     if (depthNear !== undefined) {
@@ -338,10 +321,6 @@ class VRDisplay extends MRDisplay {
     }
     if (stageParameters !== undefined) {
       this.stageParameters.copy(stageParameters);
-    }
-    if (handsArray !== undefined) {
-      this._frameData.hands[0].set(handsArray[0]);
-      this._frameData.hands[1].set(handsArray[1]);
     }
   }
 }
@@ -417,10 +396,6 @@ class FakeVRDisplay extends MRDisplay {
 
       this._frameData.pose.set(this.position, this.quaternion);
     }
-
-    const globalGamepads = getAllGamepads();
-    gamepads[0] = globalGamepads[0];
-    gamepads[1] = globalGamepads[1];
   }
 
   requestPresent() {
@@ -484,19 +459,11 @@ class FakeVRDisplay extends MRDisplay {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const gamepads = [null, null];
+const gamepads =  [
+  new Gamepad('left', 0),
+  new Gamepad('right', 1),
+];
 const getGamepads = () => gamepads;
-
-let allGamepads = null;
-const getAllGamepads = () => {
-  if (allGamepads === null) { // defer so constructor overrides can be declared
-    allGamepads = [
-      new Gamepad('left', 0),
-      new Gamepad('right', 1),
-    ];
-  }
-  return allGamepads;
-};
 
 module.exports = {
   MRDisplay,
@@ -509,5 +476,4 @@ module.exports = {
   GamepadButton,
   createVRDisplay,
   getGamepads,
-  getAllGamepads,
 };
