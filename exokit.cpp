@@ -36,7 +36,7 @@ void callFunction(const char *funcname, const int argc, Local<Value> argv[]) {
 
   if (result.IsEmpty()) {
     String::Utf8Value error(try_catch.Exception());
-    String::Utf8Value stacktrace(try_catch.StackTrace());
+    String::Utf8Value stacktrace(try_catch.StackTrace(localContext).ToLocalChecked());
     // LOGI("Error calling %s: %s:\n%s",funcname,*error,*stacktrace);
   } else {
     // LOGI("%s called",funcname);
