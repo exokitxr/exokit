@@ -1188,7 +1188,7 @@ const _bindWindow = (window, newWindowCb) => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = DEFAULT_FPS;
-  const [leftGamepad, rightGamepad] = core.getAllGamepads();
+  const [leftGamepad, rightGamepad] = core.getGamepads();
   const gamepads = [null, null];
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
