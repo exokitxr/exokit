@@ -1188,8 +1188,8 @@ const _bindWindow = (window, newWindowCb) => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = DEFAULT_FPS;
-  const [leftGamepad, rightGamepad] = core.getGamepads();
-  const gamepads = [null, null];
+  const gamepads = core.getGamepads();
+  const [leftGamepad, rightGamepad] = gamepads;
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
   let timeout = null;
@@ -1373,10 +1373,8 @@ const _bindWindow = (window, newWindowCb) => {
           leftGamepad.axes[i] = localGamepadArray[11+i];
         }
         leftGamepad.buttons[1].value = leftGamepad.axes[2]; // trigger
-
-        gamepads[0] = leftGamepad;
       } else {
-        gamepads[0] = null;
+        leftGamepad.connected = false;
       }
 
       vrPresentState.system.GetControllerState(1, localGamepadArray);
@@ -1404,10 +1402,8 @@ const _bindWindow = (window, newWindowCb) => {
           rightGamepad.axes[i] = localGamepadArray[11+i];
         }
         rightGamepad.buttons[1].value = rightGamepad.axes[2]; // trigger
-
-        gamepads[1] = rightGamepad;
       } else {
-        gamepads[1] = null;
+        rightGamepad.connected = false;
       }
 
       if (vrPresentState.lmContext) {
@@ -1502,8 +1498,6 @@ const _bindWindow = (window, newWindowCb) => {
         leftGamepad.buttons[0].pressed = leftPadPushed;
         controllersArrayIndex += 3;
 
-        gamepads[0] = leftGamepad;
-
         rightGamepad.connected = controllersArray[controllersArrayIndex] > 0;
         controllersArrayIndex++;
         rightGamepad.pose.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
@@ -1538,8 +1532,6 @@ const _bindWindow = (window, newWindowCb) => {
         rightGamepad.buttons[0].touched = rightPadTouched;
         rightGamepad.buttons[0].pressed = rightPadPushed;
         controllersArrayIndex += 3;
-
-        gamepads[1] = rightGamepad;
 
         // update ml frame
         window.top.updateVrFrame({
