@@ -290,7 +290,6 @@ class VRDisplay extends MRDisplay {
       rightFov,
       frameData,
       stageParameters,
-      handsArray,
     } = update;
 
     if (depthNear !== undefined) {
@@ -322,10 +321,6 @@ class VRDisplay extends MRDisplay {
     }
     if (stageParameters !== undefined) {
       this.stageParameters.copy(stageParameters);
-    }
-    if (handsArray !== undefined) {
-      this._frameData.hands[0].set(handsArray[0]);
-      this._frameData.hands[1].set(handsArray[1]);
     }
   }
 }
