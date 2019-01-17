@@ -373,14 +373,6 @@ class MLDisplay extends MRDisplay {
     }
   }
 
-  getGeometry(positions, normals, indices, metrics) {
-    if (this._context) {
-      return this._context.stageGeometry.getGeometry(positions, normals, indices, metrics);
-    } else {
-      return 0;
-    }
-  }
-
   update(update) {
     const {
       depthNear,
