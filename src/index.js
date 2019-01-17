@@ -23,6 +23,8 @@ const {THREE} = core;
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const nativeBindings = require(nativeBindingsModulePath);
 
+const {getGamepads} = require('./VR.js');
+
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
 
@@ -1188,7 +1190,7 @@ const _bindWindow = (window, newWindowCb) => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = DEFAULT_FPS;
-  const gamepads = core.getGamepads();
+  const gamepads = getGamepads();
   const [leftGamepad, rightGamepad] = gamepads;
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
