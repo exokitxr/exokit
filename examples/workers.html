@@ -1,14 +1,19 @@
 <html>
   <body>
   <script>
+    console.log('parent 1');
     const w = new Worker(window.location.pathname.split('/').slice(0,-1).join('/') + '/worker.js');
+    console.log('parent 2');
     w.postMessage({hello: true});
+    console.log('parent 3');
     w.onmessage = m => {
-      console.log('parent got message', m.data);
+      console.log('parent message', m.data);
     };
+    console.log('parent 4');
     w.onerror = err => {
-      console.warn(err.stack);
+      console.warn('parent error', err.stack);
     };
+    console.log('parent 5');
   </script>
   </body>
 </html>
