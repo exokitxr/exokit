@@ -74,9 +74,10 @@ const _handleError = err => {
 process.on('uncaughtException', _handleError);
 process.on('unhandledRejection', _handleError);
 
-const exp = getScript(filename);
+/* const exp = getScript(filename);
 vm.runInThisContext(exp, {
   filename: /^https?:/.test(filename) ? filename : 'data-url://',
-});
+}); */
+importScripts(filename);
 
 })();
