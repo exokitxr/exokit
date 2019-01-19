@@ -1863,7 +1863,6 @@ exokit.setVersion = newVersion => {
 
 // latch native bindings
 let nativeVm = GlobalContext.nativeVm = null;
-let nativeWorker = null;
 
 let Image = null;
 let ImageData = null;
