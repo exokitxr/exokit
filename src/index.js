@@ -46,7 +46,6 @@ const args = (() => {
         'headless',
       ],
       string: [
-        'tab',
         'webgl',
         'xr',
         'size',
@@ -57,7 +56,6 @@ const args = (() => {
         v: 'version',
         h: 'home',
         l: 'log',
-        t: 'tab',
         w: 'webgl',
         x: 'xr',
         p: 'performance',
@@ -77,9 +75,8 @@ const args = (() => {
     return {
       version: minimistArgs.version,
       url: minimistArgs._[0] || '',
-      home: minimistArgs.home || !!minimistArgs.tab,
+      home: minimistArgs.home,
       log: minimistArgs.log,
-      tab: minimistArgs.tab,
       webgl: minimistArgs.webgl || '2',
       xr: minimistArgs.xr || 'all',
       performance: !!minimistArgs.performance,
