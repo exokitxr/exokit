@@ -8,6 +8,7 @@ const vm = require('vm');
 const {workerData} = require('worker_threads');
 const {args} = workerData;
 
+const {createImageBitmap} = require('./DOM.js');
 const fetch = require('window-fetch');
 const {XMLHttpRequest} = require('xmlhttprequest');
 const WebSocket = require('ws/lib/websocket');
