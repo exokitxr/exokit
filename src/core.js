@@ -52,8 +52,30 @@ GlobalContext.version = '';
 
 // Class imports.
 const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
-const DOM = require('./DOM');
-const {DOMRect, Node, NodeList} = require('./DOM');
+const {
+  Element,
+  HTMLElement,
+  HTMLBodyElement,
+  HTMLAnchorElement,
+  HTMLStyleElement,
+  HTMLScriptElement,
+  HTMLLinkElement,
+  HTMLImageElement,
+  HTMLAudioElement,
+  HTMLVideoElement,
+  HTMLSourceElement,
+  HTMLIFrameElement,
+  SVGElement,
+  HTMLCanvasElement,
+  HTMLTemplateElement,
+  createImageBitmap,
+  DOMRect,
+  Node,
+  NodeList,
+  Text,
+  Comment,
+  HTMLCollection,
+} = require('./DOM');
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {History} = require('./History');
 const {Location} = require('./Location');
@@ -510,12 +532,12 @@ class Worker {
 
 const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   if (node.nodeName === '#text') {
-    const text = new DOM.Text(node.value);
+    const text = new Text(node.value);
     text.parentNode = parentNode;
     text.ownerDocument = ownerDocument;
     return text;
   } else if (node.nodeName === '#comment') {
-    const comment = new DOM.Comment(node.data);
+    const comment = new Comment(node.data);
     comment.parentNode = parentNode;
     comment.ownerDocument = ownerDocument;
     return comment;
@@ -537,7 +559,7 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
         location,
       )
     :
-      new DOM.HTMLElement(
+      new HTMLElement(
         tagName,
         attrs,
         value,
@@ -570,7 +592,7 @@ GlobalContext._fromAST = _fromAST;
 // To "run" the HTML means to walk it and execute behavior on the elements such as <script src="...">.
 // Each candidate element exposes a method on runSymbol which returns whether to await the element load or not.
 const _runHtml = (element, window) => {
-  if (element instanceof DOM.HTMLElement) {
+  if (element instanceof HTMLElement) {
     return new Promise((accept, reject) => {
       const {document} = window;
 
@@ -742,7 +764,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       // need to set owner document here because HTMLImageElement can be manually constructed via new Image()
       this.ownerDocument = window.document;
     }
-  })(DOM.HTMLImageElement);
+  })(HTMLImageElement);
 
   const HTMLAudioElementBound = (Old => class HTMLAudioElement extends Old {
     constructor(src) {
@@ -757,43 +779,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         this.ownerDocument = window.document;
       }
     }
-  })(DOM.HTMLAudioElement);
-
-  function createImageBitmap(src, x, y, w, h, options) {
-    let image;
-    if (src.constructor.name === 'HTMLImageElement') {
-      image = src.image;
-    } else if (src.constructor.name === 'Blob') {
-      image = new Image();
-      try {
-        image.load(src.buffer);
-      } catch (err) {
-        return Promise.reject(new Error('failed to load image'));
-      }
-    } else {
-      return Promise.reject(new Error('invalid arguments. Unknown constructor type: ' + src.constructor.name));
-    }
-
-    if (typeof x === 'object') {
-      options = x;
-      x = undefined;
-    }
-    
-    x = x || 0;
-    y = y || 0;
-    w = w || image.width;
-    h = h || image.height;
-    const flipY = !!options && options.imageOrientation === 'flipY';
-    const imageBitmap = new ImageBitmap(
-      image,
-      x,
-      y,
-      w,
-      h,
-      flipY,
-    );
-    return Promise.resolve(imageBitmap);
-  }
+  })(HTMLAudioElement);
 
   const vmo = nativeVm.make();
   const window = vmo.getGlobal();
@@ -1110,41 +1096,41 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.scrollY = 0;
   window[symbols.htmlTagsSymbol] = {
     DOCUMENT: Document,
-    BODY: DOM.HTMLBodyElement,
-    A: DOM.HTMLAnchorElement,
-    STYLE: DOM.HTMLStyleElement,
-    SCRIPT: DOM.HTMLScriptElement,
-    LINK: DOM.HTMLLinkElement,
+    BODY: HTMLBodyElement,
+    A: HTMLAnchorElement,
+    STYLE: HTMLStyleElement,
+    SCRIPT: HTMLScriptElement,
+    LINK: HTMLLinkElement,
     IMG: HTMLImageElementBound,
     AUDIO: HTMLAudioElementBound,
-    VIDEO: DOM.HTMLVideoElement,
-    SOURCE: DOM.HTMLSourceElement,
-    IFRAME: DOM.HTMLIFrameElement,
-    CANVAS: DOM.HTMLCanvasElement,
-    TEMPLATE: DOM.HTMLTemplateElement,
+    VIDEO: HTMLVideoElement,
+    SOURCE: HTMLSourceElement,
+    IFRAME: HTMLIFrameElement,
+    CANVAS: HTMLCanvasElement,
+    TEMPLATE: HTMLTemplateElement,
   };
   window[symbols.optionsSymbol] = options;
   window.DocumentFragment = DocumentFragment;
 
   // DOM.
-  window.Element = DOM.Element;
-  window.HTMLElement = DOM.HTMLElement;
-  window.HTMLAnchorElement = DOM.HTMLAnchorElement;
-  window.HTMLStyleElement = DOM.HTMLStyleElement;
-  window.HTMLLinkElement = DOM.HTMLLinkElement;
-  window.HTMLScriptElement = DOM.HTMLScriptElement;
+  window.Element = Element;
+  window.HTMLElement = HTMLElement;
+  window.HTMLAnchorElement = HTMLAnchorElement;
+  window.HTMLStyleElement = HTMLStyleElement;
+  window.HTMLLinkElement = HTMLLinkElement;
+  window.HTMLScriptElement = HTMLScriptElement;
   window.HTMLImageElement = HTMLImageElementBound,
   window.HTMLAudioElement = HTMLAudioElementBound;
-  window.HTMLVideoElement = DOM.HTMLVideoElement;
-  window.SVGElement = DOM.SVGElement;
-  window.HTMLIFrameElement = DOM.HTMLIFrameElement;
-  window.HTMLCanvasElement = DOM.HTMLCanvasElement;
-  window.HTMLTemplateElement = DOM.HTMLTemplateElement;
+  window.HTMLVideoElement = HTMLVideoElement;
+  window.SVGElement = SVGElement;
+  window.HTMLIFrameElement = HTMLIFrameElement;
+  window.HTMLCanvasElement = HTMLCanvasElement;
+  window.HTMLTemplateElement = HTMLTemplateElement;
   window.Node = Node;
-  window.Text = DOM.Text;
-  window.Comment = DOM.Comment;
+  window.Text = Text;
+  window.Comment = Comment;
   window.NodeList = NodeList;
-  window.HTMLCollection = DOM.HTMLCollection;
+  window.HTMLCollection = HTMLCollection;
 
   window.customElements = new CustomElementRegistry(window);
   window.CustomElementRegistry = CustomElementRegistry;
