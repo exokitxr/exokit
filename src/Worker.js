@@ -24,6 +24,7 @@ const baseUrl = (src => {
     return 'file://' + process.cwd();
   }
 })(src);
+setBaseUrl(baseUrl);
 const _normalizeUrl = src => {
   if (!/^(?:data|blob):/.test(src)) {
     const match = baseUrl.match(/^(file:\/\/)(.*)$/);
