@@ -62,8 +62,8 @@ global.on('error', err => {
 });
 
 const _handleError = err => {
-  if (onerror) {
-    onerror(err);
+  if (global.onerror) {
+    global.onerror(err);
   }
 };
 process.on('uncaughtException', _handleError);
