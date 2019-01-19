@@ -5,11 +5,13 @@ const fs = require('fs');
 const url = require('url');
 const {URL} = url;
 const vm = require('vm');
+const {workerData} = require('worker_threads');
+const {args} = workerData;
+
 const fetch = require('window-fetch');
 const {XMLHttpRequest} = require('xmlhttprequest');
 const WebSocket = require('ws/lib/websocket');
-const {workerData} = require('worker_threads');
-const {args} = workerData;
+const {FileReader} = require('./File.js');
 
 const {src} = args;
 const baseUrl = (src => {
