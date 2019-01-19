@@ -8,7 +8,6 @@ const vm = require('vm');
 const fetch = require('window-fetch');
 const {XMLHttpRequest} = require('xmlhttprequest');
 const WebSocket = require('ws/lib/websocket');
-const {Worker, parentPort, workerData} = require('worker_threads');
 
 const {src} = args;
 const baseUrl = (src => {
