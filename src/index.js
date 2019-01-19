@@ -1729,7 +1729,7 @@ const _prepare = () => Promise.all([
 const _start = () => {
   let {url: u} = args;
   if (!u && args.home) {
-    u = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html') + (args.tag ? ('?t=' + encodeURIComponent(args.tab)) : '');
+    u = 'file://' + path.join(__dirname, 'examples', 'realitytabs.html');
   }
   if (u) {
     if (u === '.') {
