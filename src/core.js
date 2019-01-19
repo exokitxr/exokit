@@ -21,6 +21,8 @@ const {Request, Response, Headers, Blob} = fetch;
 
 const WebSocket = require('ws/lib/websocket');
 
+const nativeWorker = require('worker-native');
+
 const {LocalStorage} = require('node-localstorage');
 const indexedDB = require('fake-indexeddb');
 const parseXml = require('@rgrove/parse-xml');
@@ -527,6 +529,46 @@ class DOMPoint {
   }
 }
 GlobalContext.DOMPoint = DOMPoint;
+
+class Worker {
+  constructor(src) {
+    if (src instanceof Blob) {
+      src = 'data:application/javascript,' + src.buffer.toString('utf8');
+    } else {
+      const blob = urls.get(src);
+
+      if (blob) {
+        src = 'data:application/octet-stream;base64,' + blob.buffer.toString('base64');
+      } else {
+        src = _normalizeUrl(src);
+      }
+    }
+
+    this.worker = nativeWorker.make({
+      initModule: path.join(__dirname, 'Worker.js'),
+      args: {
+        src,
+      },
+    });
+  }
+
+  postMessage(message, transferList) {
+    this.worker.postMessage(message, transferList);
+  }
+
+  get onmessage() {
+    return this.worker.onmessage;
+  }
+  set onmessage(onmessage) {
+    this.worker.onmessage = onmessage;
+  }
+  get onerror() {
+    return this.worker.onerror;
+  }
+  set onerror(onerror) {
+    this.worker.onerror = onerror;
+  }
+}
 
 const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
   if (node.nodeName === '#text') {
@@ -1426,37 +1468,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.PannerNode = PannerNode;
   window.StereoPannerNode = StereoPannerNode;
   window.createImageBitmap = createImageBitmap;
-  window.Worker =  class Worker extends nativeWorker {
-    constructor(src, workerOptions = {}) {
-      workerOptions.startScript = `
-        (() => {
-          ${windowStartScript}
-
-          const bindings = requireNative("nativeBindings");
-          const smiggles = require("smiggles");
-          const events = require("events");
-          const {EventEmitter} = events;
-
-          smiggles.bind({ImageBitmap: bindings.nativeImageBitmap});
-
-          global.Image = bindings.nativeImage;
-          global.ImageBitmap = bindings.nativeImageBitmap;
-          global.createImageBitmap = ${createImageBitmap.toString()};
-          global.EventEmitter = EventEmitter;
-          global.EventTarget = ${EventTarget.toString()};
-          global.FileReader = ${FileReader.toString()};
-        })();
-      `;
-
+  window.Worker = class extends Worker {
+    constructor(src) {
       if (src instanceof Blob) {
-        super('data:application/javascript,' + src.buffer.toString('utf8'), workerOptions);
+        super('data:application/javascript,' + src.buffer.toString('utf8'));
       } else {
         const blob = urls.get(src);
         const normalizedSrc = blob ?
           'data:application/octet-stream;base64,' + blob.buffer.toString('base64')
         :
           _normalizeUrl(src);
-        super(normalizedSrc, workerOptions);
+        super(normalizedSrc);
       }
     }
   };
@@ -1888,11 +1910,6 @@ exokit.setNativeBindingsModule = nativeBindingsModule => {
   for (const key in bindings) { BindingsModule[key] = bindings[key]; }
 
   nativeVm = GlobalContext.nativeVm = bindings.nativeVm;
-  nativeWorker = bindings.nativeWorker;
-  nativeWorker.setNativeRequire('nativeBindings', bindings.initFunctionAddress);
-  nativeWorker.bind({
-    ImageBitmap: bindings.nativeImageBitmap,
-  });
 
   Image = bindings.nativeImage;
   ImageData = bindings.nativeImageData;
