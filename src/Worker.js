@@ -47,13 +47,17 @@ global.fetch = (s, options) => fetch(_normalizeUrl(s), options);
 global.XMLHttpRequest = XMLHttpRequest;
 global.WebSocket = WebSocket;
 global.importScripts = importScripts;
-global.postMessage = postMessage;
+global.postMessage = (oldPostMessage => (message, transferList) => oldPostMessage({
+  data: message,
+}, transferList))(postMessage);
 global.createImageBitmap = createImageBitmap;
 global.FileReader = FileReader;
 
 global.on('message', m => {
   if (typeof global.onmessage === 'function') {
-    global.onmessage(m);
+    global.onmessage({
+      data: m,
+    });
   }
 });
 global.on('error', err => {
