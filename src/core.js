@@ -532,18 +532,6 @@ GlobalContext.DOMPoint = DOMPoint;
 
 class Worker {
   constructor(src) {
-    if (src instanceof Blob) {
-      src = 'data:application/javascript,' + src.buffer.toString('utf8');
-    } else {
-      const blob = urls.get(src);
-
-      if (blob) {
-        src = 'data:application/octet-stream;base64,' + blob.buffer.toString('base64');
-      } else {
-        src = _normalizeUrl(src);
-      }
-    }
-
     this.worker = nativeWorker.make({
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
