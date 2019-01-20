@@ -3407,6 +3407,9 @@ NAN_METHOD(MLContext::RequestGetPoses) {
           
           resCbs.push_back([frameOk, mlPoseRes]() -> void {
             {
+              Local<Object> asyncObject = Nan::New<Object>();
+              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
+              
               Local<Function> cb = Nan::New(mlPoseRes->cb);
               Local<Value> argv[] = {
                 JS_BOOL(frameOk),
