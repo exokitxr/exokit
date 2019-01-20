@@ -9,6 +9,43 @@ using namespace v8;
 
 using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTrackedDeviceCount>;
 
+namespace vr {
+  uv_sem_t reqSem;
+  uv_sem_t resSem;
+  uv_async_t resAsync;
+  std::mutex reqMutex;
+  std::mutex resMutex;
+  std::deque<std::function<void()>> reqCbs;
+  std::deque<PoseRes *> resCbs;
+  std::thread reqThead;
+};
+
+VRPoseRes::VRPoseRes(Local<Function> cb) : cb(cb);
+
+VRPoseRes::~VRPoseRes() {}
+
+void RunResInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  PoseRes *vrPoseRes;
+  {
+    std::lock_guard<std::mutex> lock(reqMutex);
+
+    vrPoseRes = resCbs.front();
+    resCbs.pop_front();
+  }
+
+  {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "RunResInMainThread");
+
+    Local<Function> cb = Nan::New(vrPoseRes->cb);
+    asyncResource.MakeCallback(cb, 0, nullptr);
+  }
+
+  delete vrPoseRes;
+}
+
 //=============================================================================
 NAN_MODULE_INIT(IVRCompositor::Init)
 {
@@ -22,11 +59,36 @@ NAN_MODULE_INIT(IVRCompositor::Init)
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   // Assign all the wrapped methods of this object.
-  Nan::SetPrototypeMethod(tpl, "WaitGetPoses", WaitGetPoses);
+  // Nan::SetPrototypeMethod(tpl, "WaitGetPoses", WaitGetPoses);
+  Nan::SetPrototypeMethod(tpl, "RequestGetPoses", RequestGetPoses);
   Nan::SetPrototypeMethod(tpl, "Submit", Submit);
 
   // Set a static constructor function to reference the `New` function template.
   constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+
+  uv_sem_init(&reqSem, 0);
+  uv_sem_init(&resSem, 0);
+  uv_async_init(uv_default_loop(), &resAsync, RunResInMainThread);
+  reqThead = std::thread([]() -> void {
+    for (;;) {
+      uv_sem_wait(&reqSem);
+
+      std::function<void()> reqCb;
+      {
+        std::lock_guard<std::mutex> lock(reqMutex);
+
+        if (reqCbs.size() > 0) {
+          reqCb = reqCbs.front();
+          reqCbs.pop_front();
+        }
+      }
+      if (reqFn) {
+        reqFn();
+      } else {
+        break;
+      }
+    }
+  });
 }
 
 //=============================================================================
@@ -138,6 +200,97 @@ NAN_METHOD(IVRCompositor::WaitGetPoses)
       }
     }
   }
+}
+
+NAN_METHOD(IVRCompositor::RequestGetPoses) {
+  IVRCompositor* obj = ObjectWrap::Unwrap<IVRCompositor>(info.Holder());
+
+  if (info.Length() != 5)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
+
+  TrackedDevicePoseArray trackedDevicePoseArray;
+	obj->self_->WaitGetPoses(trackedDevicePoseArray.data(), static_cast<uint32_t>(trackedDevicePoseArray.size()), nullptr, 0);
+
+  IVRSystem* system = IVRSystem::Unwrap<IVRSystem>(Local<Object>::Cast(info[0]));
+  Local<Float32Array> hmdFloat32Array = Local<Float32Array>::Cast(info[1]);
+  Local<Float32Array> leftControllerFloat32Array = Local<Float32Array>::Cast(info[2]);
+  Local<Float32Array> rightControllerFloat32Array = Local<Float32Array>::Cast(info[3]);
+  Local<Function> cbFn = Local<Function>::Cast(info[4]);
+
+  float *hmdArray = (float *)((char *)hmdFloat32Array->GetContents().Data() + hmdFloat32Array->ByteOffset());
+  float *leftController = (float *)((char *)leftControllerFloat32Array->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
+  float *rightController = (float *)((char *)rightControllerFloat32Array->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
+
+  {
+    std::lock_guard<std::mutex> lock(reqMutex);
+
+    reqCbs.push_back([hmdArray, leftController, rightController]() -> void {
+      memset(hmdArray, std::numeric_limits<float>::quiet_NaN(), 16);
+      memset(leftController, std::numeric_limits<float>::quiet_NaN(), 16);
+      memset(rightController, std::numeric_limits<float>::quiet_NaN(), 16);
+
+      for (unsigned int i = 0; i < trackedDevicePoseArray.size(); i++) {
+        const vr::TrackedDevicePose_t &trackedDevicePose = trackedDevicePoseArray[i];
+        if (trackedDevicePose.bPoseIsValid) {
+          const vr::ETrackedDeviceClass deviceClass = system->self_->GetTrackedDeviceClass(i);
+          if (deviceClass == vr::TrackedDeviceClass_HMD) {
+            const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
+
+            for (unsigned int v = 0; v < 4; v++) {
+              for (unsigned int u = 0; u < 3; u++) {
+                hmdFloat32Array->Set(v * 4 + u, Number::New(Isolate::GetCurrent(), matrix.m[u][v]));
+              }
+            }
+            hmdFloat32Array[0 * 4 + 3] = 0;
+            hmdFloat32Array[1 * 4 + 3] = 0;
+            hmdFloat32Array[2 * 4 + 3] = 0;
+            hmdFloat32Array[3 * 4 + 3] = 1;
+          } else if (deviceClass == vr::TrackedDeviceClass_Controller) {
+            const vr::ETrackedControllerRole controllerRole = system->self_->GetControllerRoleForTrackedDeviceIndex(i);
+            if (controllerRole == vr::TrackedControllerRole_LeftHand) {
+              const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
+
+              for (unsigned int v = 0; v < 4; v++) {
+                for (unsigned int u = 0; u < 3; u++) {
+                  leftControllerFloat32Array[v * 4 + u] = matrix.m[u][v];
+                }
+              }
+              leftControllerFloat32Array[0 * 4 + 3] = 0;
+              leftControllerFloat32Array[1 * 4 + 3] = 0;
+              leftControllerFloat32Array[2 * 4 + 3] = 0;
+              leftControllerFloat32Array[3 * 4 + 3] = 1;
+            } else if (controllerRole == vr::TrackedControllerRole_RightHand) {
+              const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
+
+              for (unsigned int v = 0; v < 4; v++) {
+                for (unsigned int u = 0; u < 3; u++) {
+                  rightControllerFloat32Array[v * 4 + u] = matrix.m[u][v];
+                }
+              }
+              rightControllerFloat32Array[0 * 4 + 3] = 0;
+              rightControllerFloat32Array[1 * 4 + 3] = 0;
+              rightControllerFloat32Array[2 * 4 + 3] = 0;
+              rightControllerFloat32Array[3 * 4 + 3] = 1;
+            }
+          }
+        }
+      }
+
+      uv_async_send(&resAsync);
+    });
+  }
+
+  VRPoseRes *vrPoseRes = new VRPoseRes(cbFn);
+  {
+    std::lock_guard<std::mutex> lock(resMutex);
+
+    resCbs.push_back(vrPoseRes);
+  }
+
+  uv_sem_post(&reqSem);
 }
 
 NAN_METHOD(IVRCompositor::Submit)
