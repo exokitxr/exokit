@@ -227,7 +227,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
   {
     std::lock_guard<std::mutex> lock(reqMutex);
 
-    reqCbs.push_back([hmdArray, leftController, rightController]() -> void {
+    reqCbs.push_back([system, hmdArray, leftController, rightController]() -> void {
       memset(hmdArray, std::numeric_limits<float>::quiet_NaN(), 16);
       memset(leftController, std::numeric_limits<float>::quiet_NaN(), 16);
       memset(rightController, std::numeric_limits<float>::quiet_NaN(), 16);
