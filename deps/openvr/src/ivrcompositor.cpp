@@ -15,7 +15,7 @@ namespace vr {
   std::mutex reqMutex;
   std::mutex resMutex;
   std::deque<std::function<void()>> reqCbs;
-  std::deque<VRPoseRes *> resCbs;
+  std::deque<std::function<void()>> resCbs;
   std::thread reqThead;
 };
 
@@ -26,23 +26,16 @@ VRPoseRes::~VRPoseRes() {}
 void RunResInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
-  PoseRes *vrPoseRes;
+  std::function<void()> resCb;
   {
     std::lock_guard<std::mutex> lock(reqMutex);
 
-    vrPoseRes = resCbs.front();
+    resCb = resCbs.front();
     resCbs.pop_front();
   }
-
-  {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "RunResInMainThread");
-
-    Local<Function> cb = Nan::New(vrPoseRes->cb);
-    asyncResource.MakeCallback(cb, 0, nullptr);
+  if (resCb) {
+    resCb();
   }
-
-  delete vrPoseRes;
 }
 
 //=============================================================================
@@ -221,6 +214,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
   float *hmdArray = (float *)((char *)hmdFloat32Array->GetContents().Data() + hmdFloat32Array->ByteOffset());
   float *leftControllerArray = (float *)((char *)leftControllerFloat32Array->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
   float *rightControllerArray = (float *)((char *)rightControllerFloat32Array->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
+  VRPoseRes *vrPoseRes = new VRPoseRes(cbFn);
 
   {
     std::lock_guard<std::mutex> lock(reqMutex);
@@ -277,15 +271,24 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         }
       }
 
+      {
+        std::lock_guard<std::mutex> lock(resMutex);
+
+        resCbs.push_back([vrPoseRes]() -> void {
+          {
+            Local<Object> asyncObject = Nan::New<Object>();
+            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "IVRCompositor::RequestGetPoses");
+
+            Local<Function> cb = Nan::New(vrPoseRes->cb);
+            asyncResource.MakeCallback(cb, 0, nullptr);
+          }
+
+          delete vrPoseRes;
+        });
+      }
+
       uv_async_send(&resAsync);
     });
-  }
-
-  VRPoseRes *vrPoseRes = new VRPoseRes(cbFn);
-  {
-    std::lock_guard<std::mutex> lock(resMutex);
-
-    resCbs.push_back(vrPoseRes);
   }
 
   uv_sem_post(&reqSem);
