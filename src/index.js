@@ -1608,7 +1608,7 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // wait for next frame
-    _recurse();
+    setImmediate(_recurse);
     // lastFrameTime = Date.now();
   };
   // setTimeout(_recurse);
