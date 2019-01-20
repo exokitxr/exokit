@@ -2559,8 +2559,8 @@ NAN_METHOD(MLContext::InitLifecycle) {
             reqCbs.pop_front();
           }
         }
-        if (reqFn) {
-          reqFn();
+        if (reqCb) {
+          reqCb();
         } else {
           break;
         }
