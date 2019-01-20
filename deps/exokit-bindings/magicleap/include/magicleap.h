@@ -290,6 +290,7 @@ public:
   static NAN_METHOD(Exit);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(RequestGetPoses);
+  static NAN_METHOD(PrepareFrame);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);

@@ -1948,6 +1948,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "Exit", Exit);
   // Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
   Nan::SetMethod(proto, "RequestGetPoses", RequestGetPoses);
+  Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
   Local<Function> ctorFn = ctor->GetFunction();
@@ -3410,6 +3411,93 @@ NAN_METHOD(MLContext::RequestGetPoses) {
     }
   } else {
     Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::PrepareFrame) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    
+    windowsystem::SetCurrentWindowContext(gl->windowHandle);
+
+    GLuint framebuffer = info[1]->Uint32Value();
+    GLuint width = info[2]->Uint32Value();
+    GLuint height = info[3]->Uint32Value();
+    
+    if (depthEnabled) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+
+      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+      glClearColor(0.0, 0.0, 0.0, 1.0);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+      glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+      glBindVertexArray(mlContext->meshVao);
+
+      glUseProgram(mlContext->meshProgram);
+
+      for (const auto &iter : meshBuffers) {
+        const MeshBuffer &meshBuffer = iter.second;
+
+        if (meshBuffer.numIndices > 0) {
+          glBindBuffer(GL_ARRAY_BUFFER, meshBuffer.positionBuffer);
+          glEnableVertexAttribArray(mlContext->positionLocation);
+          glVertexAttribPointer(mlContext->positionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffer.indexBuffer);
+
+          for (int side = 0; side < 2; side++) {
+            const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[side];
+            const MLTransform &transform = cameraInfo.transform;
+            const MLMat4f &modelView = invertMatrix(composeMatrix(transform.position, transform.rotation));
+            glUniformMatrix4fv(mlContext->modelViewMatrixLocation, 1, false, modelView.matrix_colmajor);
+
+            const MLMat4f &projection = cameraInfo.projection;
+            glUniformMatrix4fv(mlContext->projectionMatrixLocation, 1, false, projection.matrix_colmajor);
+
+            glViewport(side * width/2, 0, width/2, height);
+
+            glDrawElements(GL_TRIANGLES, meshBuffer.numIndices, GL_UNSIGNED_SHORT, 0);
+          }
+        }
+      }
+
+      if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+      } else {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+      }
+      if (gl->HasProgramBinding()) {
+        glUseProgram(gl->GetProgramBinding());
+      } else {
+        glUseProgram(0);
+      }
+      if (gl->viewportState.valid) {
+        glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+      } else {
+        glViewport(0, 0, 1280, 1024);
+      }
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+      if (gl->colorMaskState.valid) {
+        glColorMask(gl->colorMaskState.r, gl->colorMaskState.g, gl->colorMaskState.b, gl->colorMaskState.a);
+      } else {
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+      }
+    }
+
+    // info.GetReturnValue().Set(JS_BOOL(true));
+  } else {
+    Nan::ThrowError("MLContext::PrepareFrame: invalid arguments");
   }
 }
 
