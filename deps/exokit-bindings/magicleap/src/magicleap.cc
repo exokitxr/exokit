@@ -153,6 +153,28 @@ std::string id2String(const uint64_t &id) {
   return std::string(idbuf);
 }
 
+void RunResInMainThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  MLPoseRes *mlPoseRes;
+  {
+    std::lock_guard<std::mutex> lock(reqMutex);
+
+    vrPoseRes = resCbs.front();
+    resCbs.pop_front();
+  }
+
+  {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "RunResInMainThread");
+
+    Local<Function> cb = Nan::New(mlPoseRes->cb);
+    asyncResource.MakeCallback(cb, 0, nullptr);
+  }
+
+  delete mlPoseRes;
+}
+
 /* void makePlanesQueryer(MLHandle &planesHandle) {
   if (MLPlanesCreate(&planesHandle) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create planes handle.", application_name);
@@ -2525,6 +2547,30 @@ NAN_METHOD(MLContext::InitLifecycle) {
     eventsCb.Reset(Local<Function>::Cast(info[0]));
     keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
 
+    uv_sem_init(&reqSem, 0);
+    uv_sem_init(&resSem, 0);
+    uv_async_init(uv_default_loop(), &resAsync, RunResInMainThread);
+    reqThead = std::thread([]() -> void {
+      for (;;) {
+        uv_sem_wait(&reqSem);
+
+        std::function<void()> reqCb;
+        {
+          std::lock_guard<std::mutex> lock(reqMutex);
+
+          if (reqCbs.size() > 0) {
+            reqCb = reqCbs.front();
+            reqCbs.pop_front();
+          }
+        }
+        if (reqFn) {
+          reqFn();
+        } else {
+          break;
+        }
+      }
+    });
+
     uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
     uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
     uv_async_init(uv_default_loop(), &cameraAsync, RunCameraInMainThread);
@@ -3250,6 +3296,117 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Nan::ThrowError("MLContext::WaitGetPoses called for paused app");
     } else {
       Nan::ThrowError("MLContext::WaitGetPoses called for dead app");
+    }
+  } else {
+    Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::RequestGetPoses) {
+  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsFunction()) {
+    Local<Float32Array> transformFloat32Array = Local<Float32Array>::Cast(info[0]);
+    Local<Float32Array> projectionFloat32Array = Local<Float32Array>::Cast(info[1]);
+    Local<Float32Array> controllersFloat32Array = Local<Float32Array>::Cast(info[2]);
+    Local<Function> cbFn = Local<Function>::Cast(info[3]);
+
+    float *transformArray = (float *)((char *)transformFloat32Array->GetContents().Data() + transformFloat32Array->ByteOffset());
+    float *projectionArray = (float *)((char *)projectionFloat32Array->GetContents().Data() + projectionFloat32Array->ByteOffset());
+    float *controllersArray = (float *)((char *)controllersFloat32Array->GetContents().Data() + controllersFloat32Array->ByteOffset());
+
+    {
+      std::lock_guard<std::mutex> lock(reqMutex);
+      
+      reqCbs.push_back([]() -> void {
+        MLGraphicsFrameParams frame_params;
+        MLResult result = MLGraphicsInitFrameParams(&frame_params);
+        if (result != MLResult_Ok) {
+          ML_LOG(Error, "MLGraphicsInitFrameParams complained: %d", result);
+        }
+        frame_params.surface_scale = 1.0f;
+        frame_params.projection_type = MLGraphicsProjectionType_Default;
+        frame_params.near_clip = 0.1f;
+        frame_params.far_clip = 100.0f;
+        frame_params.focus_distance = 1.0f;
+
+        result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
+
+        if (result == MLResult_Ok) {
+          mlContext->TickFloor();
+
+          // transform
+          for (int i = 0; i < 2; i++) {
+            const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
+            const MLTransform &transform = cameraInfo.transform;
+            const MLVec3f &position = OffsetFloor(transform.position);
+            transformArray->Set(i*7 + 0, JS_NUM(position.x));
+            transformArray->Set(i*7 + 1, JS_NUM(position.y));
+            transformArray->Set(i*7 + 2, JS_NUM(position.z));
+            transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
+            transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
+            transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
+            transformArray->Set(i*7 + 6, JS_NUM(transform.rotation.w));
+
+            const MLMat4f &projection = cameraInfo.projection;
+            for (int j = 0; j < 16; j++) {
+              projectionArray->Set(i*16 + j, JS_NUM(projection.matrix_colmajor[j]));
+            }
+          }
+        } else {
+          ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
+        }
+        
+        // position
+        {
+          // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+
+          const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
+          mlContext->position = OffsetFloor(leftCameraTransform.position);
+          mlContext->rotation = leftCameraTransform.rotation;
+        }
+        
+        // controllers
+        MLInputControllerState controllerStates[MLInput_MaxControllers];
+        result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
+        if (result == MLResult_Ok) {
+          for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
+            const MLInputControllerState &controllerState = controllerStates[i];
+            bool is_connected = controllerState.is_connected;
+            const MLVec3f &position = OffsetFloor(controllerState.position);
+            const MLQuaternionf &orientation = controllerState.orientation;
+            const float trigger = controllerState.trigger_normalized;
+            const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
+            const float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
+            const bool isTouchActive = controllerState.is_touch_active[0];
+            const MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
+            const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
+
+            int index;
+            controllersArray->Set(index = i * CONTROLLER_ENTRY_SIZE, JS_NUM(is_connected ? 1 : 0));
+            controllersArray->Set(++index, JS_NUM(position.x));
+            controllersArray->Set(++index, JS_NUM(position.y));
+            controllersArray->Set(++index, JS_NUM(position.z));
+            controllersArray->Set(++index, JS_NUM(orientation.x));
+            controllersArray->Set(++index, JS_NUM(orientation.y));
+            controllersArray->Set(++index, JS_NUM(orientation.z));
+            controllersArray->Set(++index, JS_NUM(orientation.w));
+            controllersArray->Set(++index, JS_NUM(trigger));
+            controllersArray->Set(++index, JS_NUM(bumper));
+            controllersArray->Set(++index, JS_NUM(home));
+            controllersArray->Set(++index, JS_NUM(touchPosAndForce.x));
+            controllersArray->Set(++index, JS_NUM(touchPosAndForce.y));
+            controllersArray->Set(++index, JS_NUM(touchForceZ));
+          }
+        } else {
+          ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
+        }
+      });
+    }
+
+    MLPoseRes *mlPoseRes = new MLPoseRes(cbFn);
+    {
+      std::lock_guard<std::mutex> lock(resMutex);
+      
+      resCbs.push_back(mlPoseRes);
     }
   } else {
     Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");

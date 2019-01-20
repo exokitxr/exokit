@@ -106,6 +106,8 @@ public:
   uint32_t modifier_mask;
 };
 
+void RunResInMainThread(uv_async_t *handle);
+
 class MLPoll {
 public:
   Nan::Persistent<Object> windowObj;
@@ -287,6 +289,7 @@ public:
   static NAN_METHOD(Present);
   static NAN_METHOD(Exit);
   static NAN_METHOD(WaitGetPoses);
+  static NAN_METHOD(RequestGetPoses);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
