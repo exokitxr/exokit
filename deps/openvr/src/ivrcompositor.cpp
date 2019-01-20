@@ -11,7 +11,6 @@ using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTr
 
 namespace vr {
   uv_sem_t reqSem;
-  uv_sem_t resSem;
   uv_async_t resAsync;
   std::mutex reqMutex;
   std::mutex resMutex;
@@ -67,7 +66,6 @@ NAN_MODULE_INIT(IVRCompositor::Init)
   constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
 
   uv_sem_init(&reqSem, 0);
-  uv_sem_init(&resSem, 0);
   uv_async_init(uv_default_loop(), &resAsync, RunResInMainThread);
   reqThead = std::thread([]() -> void {
     for (;;) {
