@@ -40,7 +40,7 @@ uv_async_t resAsync;
 std::mutex reqMutex;
 std::mutex resMutex;
 std::deque<std::function<void()>> reqCbs;
-std::deque<MLPoseRes *> resCbs;
+std::deque<std::function<void()>> resCbs;
 std::thread reqThead;
 
 Nan::Persistent<Function> mlMesherConstructor;
@@ -155,23 +155,16 @@ std::string id2String(const uint64_t &id) {
 void RunResInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
-  MLPoseRes *mlPoseRes;
+  std::function<void()> resCb;
   {
     std::lock_guard<std::mutex> lock(reqMutex);
 
-    vrPoseRes = resCbs.front();
+    resCb = resCbs.front();
     resCbs.pop_front();
   }
-
-  {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "RunResInMainThread");
-
-    Local<Function> cb = Nan::New(mlPoseRes->cb);
-    asyncResource.MakeCallback(cb, 0, nullptr);
+  if (resCb) {
+    resCb();
   }
-
-  delete mlPoseRes;
 }
 
 /* void makePlanesQueryer(MLHandle &planesHandle) {
@@ -3311,11 +3304,12 @@ NAN_METHOD(MLContext::RequestGetPoses) {
     float *transformArray = (float *)((char *)transformFloat32Array->GetContents().Data() + transformFloat32Array->ByteOffset());
     float *projectionArray = (float *)((char *)projectionFloat32Array->GetContents().Data() + projectionFloat32Array->ByteOffset());
     float *controllersArray = (float *)((char *)controllersFloat32Array->GetContents().Data() + controllersFloat32Array->ByteOffset());
+    MLPoseRes *mlPoseRes = new MLPoseRes(cbFn);
 
     {
       std::lock_guard<std::mutex> lock(reqMutex);
       
-      reqCbs.push_back([]() -> void {
+      reqCbs.push_back([transformArray, projectionArray, controllersArray, mlPoseRes]() -> void {
         MLGraphicsFrameParams frame_params;
         MLResult result = MLGraphicsInitFrameParams(&frame_params);
         if (result != MLResult_Ok) {
@@ -3329,7 +3323,8 @@ NAN_METHOD(MLContext::RequestGetPoses) {
 
         result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
 
-        if (result == MLResult_Ok) {
+        bool frameOk = (result == MLResult_Ok);
+        if (frameOk) {
           mlContext->TickFloor();
 
           // transform
@@ -3398,15 +3393,28 @@ NAN_METHOD(MLContext::RequestGetPoses) {
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
         }
+
+        {
+          std::lock_guard<std::mutex> lock(resMutex);
+          
+          resCbs.push_back([frameOk, mlPoseRes]() -> void {
+            {
+              Local<Function> cb = Nan::New(mlPoseRes->cb);
+              Local<Value> argv[] = {
+                JS_BOOL(false),
+              };
+              asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
+            }
+            
+            delete mlPoseRes;
+          });
+        }
+        
+        uv_async_send(&resAsync);
       });
     }
-
-    MLPoseRes *mlPoseRes = new MLPoseRes(cbFn);
-    {
-      std::lock_guard<std::mutex> lock(resMutex);
-      
-      resCbs.push_back(mlPoseRes);
-    }
+    
+    uv_sem_post(&reqSem);
   } else {
     Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");
   }
