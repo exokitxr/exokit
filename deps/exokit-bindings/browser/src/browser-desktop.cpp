@@ -1,5 +1,3 @@
-#ifndef LUMIN
-
 #include <browser-desktop.h>
 
 using namespace std;
@@ -399,5 +397,3 @@ BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHa
 BrowserClient::~BrowserClient() {}
 
 }
-
-#endif

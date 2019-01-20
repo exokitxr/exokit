@@ -16,8 +16,6 @@
 #include <mutex>
 #include <functional>
 
-#ifndef LUMIN
-
 #include <include/capi/cef_app_capi.h>
 #include <include/cef_client.h>
 #include <include/cef_app.h>
@@ -29,23 +27,13 @@
 #include <libcef_dll/ctocpp/request_context_ctocpp.h>
 #include <libcef_dll/ctocpp/browser_ctocpp.h>
 
-#else
-
-#include <Servo2D.h>
-
-#endif
-
 using namespace std;
 using namespace v8;
 using namespace node;
 
 namespace browser {
 
-#ifndef LUMIN
 typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
-#else
-typedef std::shared_ptr<Servo2D> EmbeddedBrowser;
-#endif
 
 enum class EmbeddedKeyModifiers {
   SHIFT,
