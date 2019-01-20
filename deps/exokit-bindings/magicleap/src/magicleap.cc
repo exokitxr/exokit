@@ -152,6 +152,10 @@ std::string id2String(const uint64_t &id) {
   return std::string(idbuf);
 }
 
+MLPoseRes::MLPoseRes(Local<Function> cb) : cb(cb) {}
+
+MLPoseRes::~MLPoseRes() {}
+
 void RunResInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
