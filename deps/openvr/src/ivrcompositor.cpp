@@ -1,6 +1,9 @@
 #include <ivrcompositor.h>
 
 #include <array>
+#include <deque>
+#include <mutex>
+#include <thread>
 #include <node.h>
 #include <openvr.h>
 #include <ivrsystem.h>
