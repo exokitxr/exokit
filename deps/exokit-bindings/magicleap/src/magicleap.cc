@@ -3420,7 +3420,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
     
     uv_sem_post(&reqSem);
   } else {
-    Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");
+    Nan::ThrowError("MLContext::RequestGetPoses: invalid arguments");
   }
 }
 
