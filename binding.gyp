@@ -512,6 +512,7 @@
             '-lswresample',
             '-lopus',
             '-llog',
+            '-lcef',
           ],
           'ldflags': [
           ],
