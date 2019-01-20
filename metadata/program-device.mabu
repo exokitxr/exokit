@@ -90,7 +90,6 @@ DATAS = ../package.json : / \
   ../lib/ : /lib/ \
   ../build/Release/exokit.node : /build/Release/exokit.node \
   ../node_modules/ : /node_modules/ \
-  ../node_modules/native-browser-deps-magicleap/lib5/magicleap/libmlservo.so : /bin/ \
   ../examples/ : /examples/ \
   ../metadata/fonts.xml : /etc/fonts.xml \
   ../assets/fonts/ : /assets/fonts/ \
@@ -173,8 +172,7 @@ STLIBS = node \
 SHLIBS = ml_privileges \
   ml_camera \
   ml_audio \
-  log \
-  mlservo
+  log
 
 # paths for finding libraries above
 #
