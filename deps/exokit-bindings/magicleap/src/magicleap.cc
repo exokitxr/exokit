@@ -3405,7 +3405,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
             {
               Local<Function> cb = Nan::New(mlPoseRes->cb);
               Local<Value> argv[] = {
-                JS_BOOL(false),
+                JS_BOOL(frameOk),
               };
               asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
             }
