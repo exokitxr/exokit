@@ -20,26 +20,26 @@ namespace vr {
   std::deque<std::function<void()>> reqCbs;
   std::deque<std::function<void()>> resCbs;
   std::thread reqThead;
+
+  void RunResInMainThread(uv_async_t *handle) {
+    Nan::HandleScope scope;
+
+    std::function<void()> resCb;
+    {
+      std::lock_guard<std::mutex> lock(reqMutex);
+
+      resCb = resCbs.front();
+      resCbs.pop_front();
+    }
+    if (resCb) {
+      resCb();
+    }
+  }
 };
 
-VRPoseRes::VRPoseRes(Local<Function> cb) : cb(cb);
+VRPoseRes::VRPoseRes(Local<Function> cb) : cb(cb) {}
 
 VRPoseRes::~VRPoseRes() {}
-
-void RunResInMainThread(uv_async_t *handle) {
-  Nan::HandleScope scope;
-
-  std::function<void()> resCb;
-  {
-    std::lock_guard<std::mutex> lock(reqMutex);
-
-    resCb = resCbs.front();
-    resCbs.pop_front();
-  }
-  if (resCb) {
-    resCb();
-  }
-}
 
 //=============================================================================
 NAN_MODULE_INIT(IVRCompositor::Init)
@@ -61,23 +61,23 @@ NAN_MODULE_INIT(IVRCompositor::Init)
   // Set a static constructor function to reference the `New` function template.
   constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
 
-  uv_sem_init(&reqSem, 0);
-  uv_async_init(uv_default_loop(), &resAsync, RunResInMainThread);
-  reqThead = std::thread([]() -> void {
+  uv_sem_init(&vr::reqSem, 0);
+  uv_async_init(uv_default_loop(), &vr::resAsync, vr::RunResInMainThread);
+  vr::reqThead = std::thread([]() -> void {
     for (;;) {
-      uv_sem_wait(&reqSem);
+      uv_sem_wait(&vr::reqSem);
 
       std::function<void()> reqCb;
       {
-        std::lock_guard<std::mutex> lock(reqMutex);
+        std::lock_guard<std::mutex> lock(vr::reqMutex);
 
-        if (reqCbs.size() > 0) {
-          reqCb = reqCbs.front();
-          reqCbs.pop_front();
+        if (vr::reqCbs.size() > 0) {
+          reqCb = vr::reqCbs.front();
+          vr::reqCbs.pop_front();
         }
       }
-      if (reqFn) {
-        reqFn();
+      if (reqCb) {
+        reqCb();
       } else {
         break;
       }
@@ -140,9 +140,9 @@ NAN_METHOD(IVRCompositor::WaitGetPoses)
   Local<Float32Array> hmdFloat32Array = Local<Float32Array>::Cast(info[1]);
   Local<Float32Array> leftControllerFloat32Array = Local<Float32Array>::Cast(info[2]);
   Local<Float32Array> rightControllerFloat32Array = Local<Float32Array>::Cast(info[3]);
-  float *hmdArray = (float *)((char *)hmdFloat32Array->GetContents().Data() + hmdFloat32Array->ByteOffset());
-  float *leftControllerArray = (float *)((char *)leftControllerFloat32Array->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
-  float *rightControllerArray = (float *)((char *)rightControllerFloat32Array->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
+  float *hmdArray = (float *)((char *)hmdFloat32Array->Buffer()->GetContents().Data() + hmdFloat32Array->ByteOffset());
+  float *leftControllerArray = (float *)((char *)leftControllerFloat32Array->Buffer()->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
+  float *rightControllerArray = (float *)((char *)rightControllerFloat32Array->Buffer()->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
 
   memset(hmdArray, std::numeric_limits<float>::quiet_NaN(), 16);
   memset(leftControllerArray, std::numeric_limits<float>::quiet_NaN(), 16);
@@ -197,32 +197,31 @@ NAN_METHOD(IVRCompositor::WaitGetPoses)
 }
 
 NAN_METHOD(IVRCompositor::RequestGetPoses) {
-  IVRCompositor* obj = ObjectWrap::Unwrap<IVRCompositor>(info.Holder());
-
   if (info.Length() != 5)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
   }
 
-  TrackedDevicePoseArray trackedDevicePoseArray;
-	obj->self_->WaitGetPoses(trackedDevicePoseArray.data(), static_cast<uint32_t>(trackedDevicePoseArray.size()), nullptr, 0);
-
+  IVRCompositor* obj = ObjectWrap::Unwrap<IVRCompositor>(info.Holder());
   IVRSystem* system = IVRSystem::Unwrap<IVRSystem>(Local<Object>::Cast(info[0]));
   Local<Float32Array> hmdFloat32Array = Local<Float32Array>::Cast(info[1]);
   Local<Float32Array> leftControllerFloat32Array = Local<Float32Array>::Cast(info[2]);
   Local<Float32Array> rightControllerFloat32Array = Local<Float32Array>::Cast(info[3]);
   Local<Function> cbFn = Local<Function>::Cast(info[4]);
 
-  float *hmdArray = (float *)((char *)hmdFloat32Array->GetContents().Data() + hmdFloat32Array->ByteOffset());
-  float *leftControllerArray = (float *)((char *)leftControllerFloat32Array->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
-  float *rightControllerArray = (float *)((char *)rightControllerFloat32Array->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
+  float *hmdArray = (float *)((char *)hmdFloat32Array->Buffer()->GetContents().Data() + hmdFloat32Array->ByteOffset());
+  float *leftControllerArray = (float *)((char *)leftControllerFloat32Array->Buffer()->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
+  float *rightControllerArray = (float *)((char *)rightControllerFloat32Array->Buffer()->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
   VRPoseRes *vrPoseRes = new VRPoseRes(cbFn);
 
   {
-    std::lock_guard<std::mutex> lock(reqMutex);
+    std::lock_guard<std::mutex> lock(vr::reqMutex);
 
-    reqCbs.push_back([system, hmdArray, leftControllerArray, rightControllerArray]() -> void {
+    vr::reqCbs.push_back([obj, system, hmdArray, leftControllerArray, rightControllerArray, vrPoseRes]() -> void {
+      TrackedDevicePoseArray trackedDevicePoseArray;
+	    obj->self_->WaitGetPoses(trackedDevicePoseArray.data(), static_cast<uint32_t>(trackedDevicePoseArray.size()), nullptr, 0);
+
       memset(hmdArray, std::numeric_limits<float>::quiet_NaN(), 16);
       memset(leftControllerArray, std::numeric_limits<float>::quiet_NaN(), 16);
       memset(rightControllerArray, std::numeric_limits<float>::quiet_NaN(), 16);
@@ -236,7 +235,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
 
             for (unsigned int v = 0; v < 4; v++) {
               for (unsigned int u = 0; u < 3; u++) {
-                hmdArray->Set(v * 4 + u, Number::New(Isolate::GetCurrent(), matrix.m[u][v]));
+                hmdArray[v * 4 + u] = matrix.m[u][v];
               }
             }
             hmdArray[0 * 4 + 3] = 0;
@@ -275,9 +274,9 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       }
 
       {
-        std::lock_guard<std::mutex> lock(resMutex);
+        std::lock_guard<std::mutex> lock(vr::resMutex);
 
-        resCbs.push_back([vrPoseRes]() -> void {
+        vr::resCbs.push_back([vrPoseRes]() -> void {
           {
             Local<Object> asyncObject = Nan::New<Object>();
             AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "IVRCompositor::RequestGetPoses");
@@ -290,11 +289,11 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         });
       }
 
-      uv_async_send(&resAsync);
+      uv_async_send(&vr::resAsync);
     });
   }
 
-  uv_sem_post(&reqSem);
+  uv_sem_post(&vr::reqSem);
 }
 
 NAN_METHOD(IVRCompositor::Submit)
