@@ -3128,9 +3128,9 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       GLuint framebuffer = info[1]->Uint32Value();
       GLuint width = info[2]->Uint32Value();
       GLuint height = info[3]->Uint32Value();
-      Local<Float32Array> transformArray = Local<Float32Array>::Cast(info[4]);
-      Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[5]);
-      Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[6]);
+      Local<Float32Array> transformFloat32Array = Local<Float32Array>::Cast(info[4]);
+      Local<Float32Array> projectionFloat32Array = Local<Float32Array>::Cast(info[5]);
+      Local<Float32Array> controllersFloat32Array = Local<Float32Array>::Cast(info[6]);
 
       float *transformArray = (float *)((char *)transformFloat32Array->Buffer()->GetContents().Data() + transformFloat32Array->ByteOffset());
       float *projectionArray = (float *)((char *)projectionFloat32Array->Buffer()->GetContents().Data() + projectionFloat32Array->ByteOffset());
