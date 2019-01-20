@@ -1410,7 +1410,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     } else if (mlPresentState.mlGlContext && mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
       mlPresentState.mlHasPose = await new Promise((accept, reject) => {
-        mlPresentState.mlContext.WaitGetPoses(
+        mlPresentState.mlContext.RequestGetPoses(
           mlPresentState.mlGlContext,
           mlPresentState.mlMsFbo,
           renderWidth*2,
