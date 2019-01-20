@@ -172,7 +172,8 @@ STLIBS = node \
 SHLIBS = ml_privileges \
   ml_camera \
   ml_audio \
-  log
+  log \
+  cef
 
 # paths for finding libraries above
 #
