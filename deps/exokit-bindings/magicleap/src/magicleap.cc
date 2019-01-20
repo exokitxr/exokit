@@ -35,6 +35,15 @@ Nan::Persistent<Function> keyboardEventsCb;
 std::vector<KeyboardEvent> keyboardEvents;
 uv_async_t keyboardEventsAsync;
 
+uv_sem_t reqSem;
+uv_sem_t resSem;
+uv_async_t resAsync;
+std::mutex reqMutex;
+std::mutex resMutex;
+std::deque<std::function<void()>> reqCbs;
+std::deque<MLPoseRes *> resCbs;
+std::thread reqThead;
+
 Nan::Persistent<Function> mlMesherConstructor;
 Nan::Persistent<Function> mlPlaneTrackerConstructor;
 Nan::Persistent<Function> mlHandTrackerConstructor;
@@ -1915,7 +1924,8 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "Present", Present);
   Nan::SetMethod(proto, "Exit", Exit);
-  Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
+  // Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
+  Nan::SetMethod(proto, "RequestGetPoses", RequestGetPoses);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
   Local<Function> ctorFn = ctor->GetFunction();
