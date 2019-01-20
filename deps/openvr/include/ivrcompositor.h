@@ -17,15 +17,6 @@ namespace vr {
   class VRPoseRes;
 
   void RunResInMainThread(uv_async_t *handle);
-
-  extern uv_sem_t reqSem;
-  extern uv_sem_t resSem;
-  extern uv_async_t resAsync;
-  extern std::mutex reqMutex;
-  extern std::mutex resMutex;
-  extern std::deque<std::function<void()>> reqCbs;
-  extern std::deque<VRPoseRes *> resCbs;
-  extern std::thread reqThead;
 }
 
 class VRPoseRes {
