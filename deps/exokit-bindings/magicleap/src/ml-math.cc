@@ -7,27 +7,27 @@ namespace ml {
 // util
 
 MLVec3f subVectors(const MLVec3f &a, const MLVec3f &b) {
-  return MLVec3f{
+  return MLVec3f{{
     a.x - b.x,
     a.y - b.y,
     a.z - b.z
-  };
+  }};
 }
 
 MLVec3f multiplyVector(const MLVec3f &v, float l) {
-  return MLVec3f{
+  return MLVec3f{{
     v.x * l,
     v.y * l,
     v.z * l
-  };
+  }};
 }
 
 MLVec3f divideVector(const MLVec3f &v, float l) {
-  return MLVec3f{
+  return MLVec3f{{
     v.x / l,
     v.y / l,
     v.z / l
-  };
+  }};
 }
 
 float dotVectors(const MLVec3f &a, const MLVec3f &b) {
@@ -35,11 +35,11 @@ float dotVectors(const MLVec3f &a, const MLVec3f &b) {
 }
 
 MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b) {
-	return MLVec3f{
+	return MLVec3f{{
     a.y * b.z - a.z * b.y,
 		a.z * b.x - a.x * b.z,
 		a.x * b.y - a.y * b.x
-  };
+  }};
 }
 
 float vectorLengthSq(const MLVec3f &v) {
@@ -68,11 +68,11 @@ MLVec3f applyVectorQuaternion(const MLVec3f &v, const MLQuaternionf &q) {
 
   // calculate result * inverse quat
 
-  return MLVec3f{
+  return MLVec3f{{
     ix * qw + iw * - qx + iy * - qz - iz * - qy,
     iy * qw + iw * - qy + iz * - qx - ix * - qz,
     iz * qw + iw * - qz + ix * - qy - iy * - qx
-  };
+  }};
 }
 
 MLVec3f applyVectorMatrix(const MLVec3f &v, const MLMat4f &m) {
@@ -81,11 +81,11 @@ MLVec3f applyVectorMatrix(const MLVec3f &v, const MLMat4f &m) {
 
   const float w = 1.0f / ( e[ 3 ] * x + e[ 7 ] * y + e[ 11 ] * z + e[ 15 ] );
 
-  return MLVec3f{
+  return MLVec3f{{
     ( e[ 0 ] * x + e[ 4 ] * y + e[ 8 ] * z + e[ 12 ] ) * w,
     ( e[ 1 ] * x + e[ 5 ] * y + e[ 9 ] * z + e[ 13 ] ) * w,
     ( e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ] ) * w
-  };
+  }};
 }
 
 float quaternionLength(const MLQuaternionf &q) {
@@ -96,30 +96,30 @@ MLQuaternionf normalizeQuaternion(const MLQuaternionf &q) {
   float l = quaternionLength(q);
 
   if (l == 0) {
-    return MLQuaternionf{
+    return MLQuaternionf{{
       0,
       0,
       0,
       1
-    };
+    }};
   } else {
     l = 1 / l;
-    return MLQuaternionf{
+    return MLQuaternionf{{
       q.x * l,
       q.y * l,
       q.z * l,
       q.w * l
-    };
+    }};
   }
 }
 
 MLQuaternionf multiplyQuaternions(const MLQuaternionf &qa, const MLQuaternionf &qb) {
-  return MLQuaternionf{
+  return MLQuaternionf{{
     qa.x * qb.w + qa.w * qb.x + qa.y * qb.z - qa.z * qb.y,
     qa.y * qb.w + qa.w * qb.y + qa.z * qb.x - qa.x * qb.z,
     qa.z * qb.w + qa.w * qb.z + qa.x * qb.y - qa.y * qb.x,
     qa.w * qb.w - qa.x * qb.x - qa.y * qb.y - qa.z * qb.z
-  };
+  }};
 }
 
 MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const MLVec3f &vTo) {
@@ -131,20 +131,20 @@ MLQuaternionf getQuaternionFromUnitVectors(const MLVec3f &vFrom, const MLVec3f &
     r = 0;
 
     if (std::abs(vFrom.x) > std::abs(vFrom.z)) {
-      v1 = MLVec3f{-vFrom.y, vFrom.x, 0};
+      v1 = MLVec3f{{-vFrom.y, vFrom.x, 0}};
     } else {
-      v1 = MLVec3f{0, -vFrom.z, vFrom.y};
+      v1 = MLVec3f{{0, -vFrom.z, vFrom.y}};
     }
   } else {
     v1 = crossVectors(vFrom, vTo);
   }
 
-  MLQuaternionf result{
+  MLQuaternionf result{{
     v1.x,
     v1.y,
     v1.z,
     r
-  };
+  }};
   return normalizeQuaternion(result);
 }
 
@@ -202,39 +202,39 @@ MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m) {
   if (trace > 0.0f) {
     s = 0.5f / sqrt(trace + 1.0f);
 
-    return MLQuaternionf{
+    return MLQuaternionf{{
       (m32 - m23) * s,
       (m13 - m31) * s,
       (m21 - m12) * s,
       0.25f / s
-    };
+    }};
   } else if (m11 > m22 && m11 > m33) {
     s = 2.0f * sqrt(1.0f + m11 - m22 - m33 );
 
-    return MLQuaternionf{
+    return MLQuaternionf{{
       0.25f * s,
       (m12 + m21) / s,
       (m13 + m31) / s,
       (m32 - m23) / s
-    };
+    }};
   } else if (m22 > m33) {
     s = 2.0f * sqrt(1.0f + m22 - m11 - m33);
 
-    return MLQuaternionf{
+    return MLQuaternionf{{
       (m12 + m21) / s,
       0.25f * s,
       (m23 + m32) / s,
       (m13 - m31) / s
-    };
+    }};
   } else {
     s = 2.0f * sqrt(1.0f + m33 - m11 - m22);
 
-    return MLQuaternionf{
+    return MLQuaternionf{{
       (m13 + m31) / s,
       (m23 + m32) / s,
       0.25f * s,
       (m21 - m12) / s
-    };
+    }};
   }
 }
 
@@ -414,14 +414,12 @@ void decomposeMatrix(
 }
 
 MLMat4f makeTranslationMatrix(const MLVec3f &translation) {
-  return MLMat4f{
-    {
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      translation.x, translation.y, translation.z, 1
-    }
-  };
+  return MLMat4f{{
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    translation.x, translation.y, translation.z, 1
+  }};
 }
 
 MLMat4f invertMatrix(const MLMat4f &matrix) {
@@ -443,12 +441,12 @@ MLMat4f invertMatrix(const MLMat4f &matrix) {
 
   if ( det == 0 ) {
 
-    return MLMat4f{
+    return MLMat4f{{
       1, 0, 0, 0,
       0, 1, 0, 0,
       0, 0, 1, 0,
       0, 0, 0, 1,
-    };
+    }};
 
   }
 
@@ -517,7 +515,7 @@ MLMat4f multiplyMatrices(const MLMat4f &a, const MLMat4f &b) {
   return result;
 }
 
-const MLMat4f identityMatrix = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+const MLMat4f identityMatrix = {{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}};
 bool isIdentityMatrix(const MLMat4f &m) {
   return memcmp(m.matrix_colmajor, identityMatrix.matrix_colmajor, sizeof(m.matrix_colmajor)) == 0;
 }
@@ -552,17 +550,17 @@ bool getFingerRayTransform(MLTransform &result, std::vector<std::vector<float *>
     }), validBones.end());
     if (validBones.size() >= 2) {
       float *startBoneArray = validBones[0];
-      const MLVec3f startBone = {
+      const MLVec3f startBone = {{
         startBoneArray[1],
         startBoneArray[2],
         startBoneArray[3]
-      };
+      }};
       float *endBoneArray = validBones[validBones.size() - 1];
-      const MLVec3f endBone = {
+      const MLVec3f endBone = {{
         endBoneArray[1],
         endBoneArray[2],
         endBoneArray[3]
-      };
+      }};
       // const MLVec3f &direction = normalizeVector(subVectors(endBone, startBone));
       // const MLMat4f &lookMatrix = getLookAtMatrix(startBone, endBone, normal);
       // const MLQuaternionf &rotation = getQuaternionFromRotationMatrix(lookMatrix);
@@ -572,7 +570,7 @@ bool getFingerRayTransform(MLTransform &result, std::vector<std::vector<float *>
       result.rotation = rotation;
       
       if (!isIdentityMatrix(transform)) {
-        MLVec3f scale = {1, 1, 1};
+        MLVec3f scale = {{1, 1, 1}};
         MLMat4f tempMatrix = multiplyMatrices(transform, composeMatrix(result.position, result.rotation, scale));
         decomposeMatrix(tempMatrix, result.position, result.rotation, scale);
       }
@@ -608,27 +606,27 @@ bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 
       }
 
       if (pointerSemiTip) {
-        MLVec3f a = {
+        MLVec3f a = {{
           thumbTip[1],
           thumbTip[2],
           thumbTip[3]
-        };
-        MLVec3f b = {
+        }};
+        MLVec3f b = {{
           pointerSemiTip[1],
           pointerSemiTip[2],
           pointerSemiTip[3]
-        };
-        MLVec3f c = {
+        }};
+        MLVec3f c = {{
           thumbBase[1],
           thumbBase[2],
           thumbBase[3]
-        };
+        }};
 
-        center = {
+        center = {{
           (a.x + b.x + c.x) / 3,
           (a.y + b.y + c.y) / 3,
           (a.z + b.z + c.z) / 3
-        };
+        }};
         normal = getTriangleNormal(a, b, c);
         if (!left) {
           normal = multiplyVector(normal, -1);

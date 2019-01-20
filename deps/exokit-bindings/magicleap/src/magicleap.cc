@@ -329,7 +329,7 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
     }
     return result;
   } else {
-    return makeTranslationMatrix(MLVec3f{0, largestFloorY * (inverse ? -1 : 1), 0});
+    return makeTranslationMatrix(MLVec3f{{0, largestFloorY * (inverse ? -1 : 1), 0}});
   }
 }
 
@@ -345,9 +345,9 @@ bool MLRaycaster::Update() {
   if (result == MLResult_Ok) {
     if (raycastResult.state == MLRaycastResultState_HitObserved) {
       const MLVec3f &position = raycastResult.hitpoint;
-      const MLVec3f &normal = raycastResult.normal;
-      const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, normal);
-      const MLVec3f &scale = {1, 1, 1};
+      const MLVec3f &normal = raycastResult.normal;s
+      const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{{0, 0, -1}}, normal);
+      const MLVec3f &scale = {{1, 1, 1}};
       MLMat4f hitMatrix = composeMatrix(position, quaternion, scale);
 
       Local<Object> localWindowObj = Nan::New(this->windowObj);
@@ -803,7 +803,7 @@ void MLPlaneTracker::Update() {
     float height = plane.height;
     MLVec3f position = plane.position;
     MLQuaternionf rotation = plane.rotation;
-    MLVec3f scale = {1, 1, 1};
+    MLVec3f scale = {{1, 1, 1}};
 
     std::string id = id2String(planeId);
     ids.push_back(std::move(id));
@@ -1524,21 +1524,21 @@ void MLEyeTracker::Update(MLSnapshot *snapshot) {
     {
       MLVec3f &position = this->transform.position;
       MLQuaternionf &rotation = this->transform.rotation;
-      MLVec3f scale = {1, 1, 1};
+      MLVec3f scale = {{1, 1, 1}};
       MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
       decomposeMatrix(transform, position, rotation, scale);
     }
     {
       MLVec3f &position = this->leftTransform.position;
       MLQuaternionf &rotation = this->leftTransform.rotation;
-      MLVec3f scale = {1, 1, 1};
+      MLVec3f scale = {{1, 1, 1}};
       MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
       decomposeMatrix(transform, position, rotation, scale);
     }
     {
       MLVec3f &position = this->rightTransform.position;
       MLQuaternionf &rotation = this->rightTransform.rotation;
-      MLVec3f scale = {1, 1, 1};
+      MLVec3f scale = {{1, 1, 1}};
       MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
       decomposeMatrix(transform, position, rotation, scale);
     }
@@ -1806,7 +1806,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
         if (result == MLResult_Ok) {
           MLVec3f &position = transform.position;
           MLQuaternionf &rotation = transform.rotation;
-          MLVec3f scale = {1, 1, 1};
+          MLVec3f scale = {{1, 1, 1}};
 
           MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
           if (!isIdentityMatrix(transformMatrix)) {
@@ -3356,7 +3356,7 @@ NAN_METHOD(MLContext::RequestHitTest) {
 
     memcpy(raycastQuery.position.values, (char *)originFloat32Array->Buffer()->GetContents().Data() + originFloat32Array->ByteOffset(), sizeof(raycastQuery.position.values));
     memcpy(raycastQuery.direction.values, (char *)directionFloat32Array->Buffer()->GetContents().Data() + directionFloat32Array->ByteOffset(), sizeof(raycastQuery.direction.values));
-    raycastQuery.up_vector = MLVec3f{0, 1, 0};
+    raycastQuery.up_vector = MLVec3f{{0, 1, 0}};
     raycastQuery.horizontal_fov_degrees = 30;
     raycastQuery.width = 1;
     raycastQuery.height = 1;
@@ -3366,11 +3366,11 @@ NAN_METHOD(MLContext::RequestHitTest) {
     if (!isIdentityMatrix(transformMatrix)) {
       MLVec3f &position = raycastQuery.position;
       MLVec3f &direction = raycastQuery.direction;
-      MLQuaternionf rotation = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, direction);
-      MLVec3f scale = {1, 1, 1};
+      MLQuaternionf rotation = getQuaternionFromUnitVectors(MLVec3f{{0, 0, -1}}, direction);
+      MLVec3f scale = {{1, 1, 1}};
       MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
       decomposeMatrix(transform, position, rotation, scale);
-      direction = applyVectorQuaternion(MLVec3f{0, 0, -1}, rotation);
+      direction = applyVectorQuaternion(MLVec3f{{0, 0, -1}}, rotation);
     }
     
     MLHandle requestHandle;
@@ -3547,14 +3547,14 @@ void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, 
       // ML_LOG(Error, "%s: ML failed to get finger transform: %s", application_name, MLSnapshotGetResultString(result));
 
       uint32Data[0] = false;
-      const MLVec3f &position = MLVec3f{0, 0, 0};
+      const MLVec3f &position = MLVec3f{{0, 0, 0}};
       floatData[1] = position.x;
       floatData[2] = position.y;
       floatData[3] = position.z;
     }
   } else {
     uint32Data[0] = false;
-    const MLVec3f &position = MLVec3f{0, 0, 0};
+    const MLVec3f &position = MLVec3f{{0, 0, 0}};
     floatData[1] = position.x;
     floatData[2] = position.y;
     floatData[3] = position.z;
@@ -3565,7 +3565,7 @@ void setFingerValue(float data[1 + 3]) {
   float *floatData = (float *)data;
 
   uint32Data[0] = false;
-  const MLVec3f &position = MLVec3f{0, 0, 0};
+  const MLVec3f &position = MLVec3f{{0, 0, 0}};
   floatData[1] = position.x;
   floatData[2] = position.y;
   floatData[3] = position.z;
@@ -3668,7 +3668,7 @@ NAN_METHOD(MLContext::Update) {
 
       meshExtents.center = mlContext->position;
       // meshExtents.rotation =  mlContext->rotation;
-      meshExtents.rotation = {0, 0, 0, 1};
+      meshExtents.rotation = {{0, 0, 0, 1}};
     }
     meshExtents.extents.x = meshingRange;
     meshExtents.extents.y = meshingRange;
@@ -3688,7 +3688,7 @@ NAN_METHOD(MLContext::Update) {
 
       planesRequest.bounds_center = mlContext->position;
       // planesRequest.bounds_rotation = mlContext->rotation;
-      planesRequest.bounds_rotation = {0, 0, 0, 1};
+      planesRequest.bounds_rotation = {{0, 0, 0, 1}};
     }
     planesRequest.bounds_extents.x = planeRange;
     planesRequest.bounds_extents.y = planeRange;
@@ -3879,7 +3879,7 @@ void MLContext::TickFloor() {
 
       floorRequest.bounds_center = this->position;
       // floorRequest.bounds_rotation = mlContext->rotation;
-      floorRequest.bounds_rotation = {0, 0, 0, 1};
+      floorRequest.bounds_rotation = {{0, 0, 0, 1}};
     }
     floorRequest.bounds_extents.x = planeRange;
     floorRequest.bounds_extents.y = planeRange;
@@ -3903,7 +3903,7 @@ void MLContext::TickFloor() {
     if (result == MLResult_Ok) {
       for (uint32_t i = 0; i < numFloorResults; i++) {
         const MLPlane &plane = floorResults[i];
-        const MLVec3f &normal = applyVectorQuaternion(MLVec3f{0, 0, 1}, plane.rotation);
+        const MLVec3f &normal = applyVectorQuaternion(MLVec3f{{0, 0, 1}}, plane.rotation);
         if (normal.y > 0) {
           const float floorSizeSq = plane.width*plane.width + plane.height*plane.height;
 
@@ -3926,7 +3926,7 @@ void MLContext::TickFloor() {
 }
 
 MLVec3f MLContext::OffsetFloor(const MLVec3f &position) {
-  return MLVec3f{position.x, position.y - largestFloorY, position.z};
+  return MLVec3f{{position.x, position.y - largestFloorY, position.z}};
 }
 
 }

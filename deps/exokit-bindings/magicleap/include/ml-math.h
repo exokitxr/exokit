@@ -29,9 +29,9 @@ MLQuaternionf getLookAtQuaternion(const MLVec3f &lookAt, const MLVec3f &upDirect
 MLQuaternionf getQuaternionFromRotationMatrix(const MLMat4f &m);
 MLMat4f getLookAtMatrix(const MLVec3f &eye, const MLVec3f &target, const MLVec3f &up);
 MLMat4f composeMatrix(
-  const MLVec3f &position = MLVec3f{0,0,0},
-  const MLQuaternionf &quaternion = MLQuaternionf{0,0,0,1},
-  const MLVec3f &scale = MLVec3f{1,1,1}
+  const MLVec3f &position = {{0,0,0}},
+  const MLQuaternionf &quaternion = {{0,0,0,1}},
+  const MLVec3f &scale = {{1,1,1}}
 );
 float matrixDeterminant(const MLMat4f &m);
 void decomposeMatrix(
