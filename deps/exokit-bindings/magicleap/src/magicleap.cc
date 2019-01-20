@@ -3305,9 +3305,9 @@ NAN_METHOD(MLContext::RequestGetPoses) {
     Local<Float32Array> controllersFloat32Array = Local<Float32Array>::Cast(info[2]);
     Local<Function> cbFn = Local<Function>::Cast(info[3]);
 
-    float *transformArray = (float *)((char *)transformFloat32Array->GetContents().Data() + transformFloat32Array->ByteOffset());
-    float *projectionArray = (float *)((char *)projectionFloat32Array->GetContents().Data() + projectionFloat32Array->ByteOffset());
-    float *controllersArray = (float *)((char *)controllersFloat32Array->GetContents().Data() + controllersFloat32Array->ByteOffset());
+    float *transformArray = (float *)((char *)transformFloat32Array->Buffer()->GetContents().Data() + transformFloat32Array->ByteOffset());
+    float *projectionArray = (float *)((char *)projectionFloat32Array->Buffer()->GetContents().Data() + projectionFloat32Array->ByteOffset());
+    float *controllersArray = (float *)((char *)controllersFloat32Array->Buffer()->GetContents().Data() + controllersFloat32Array->ByteOffset());
     MLPoseRes *mlPoseRes = new MLPoseRes(cbFn);
 
     {
