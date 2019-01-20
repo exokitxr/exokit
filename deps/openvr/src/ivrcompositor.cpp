@@ -16,7 +16,7 @@ namespace vr {
   std::mutex reqMutex;
   std::mutex resMutex;
   std::deque<std::function<void()>> reqCbs;
-  std::deque<PoseRes *> resCbs;
+  std::deque<VRPoseRes *> resCbs;
   std::thread reqThead;
 };
 
