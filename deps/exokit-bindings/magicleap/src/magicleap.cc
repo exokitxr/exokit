@@ -3132,6 +3132,10 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       Local<Float32Array> projectionArray = Local<Float32Array>::Cast(info[5]);
       Local<Float32Array> controllersArray = Local<Float32Array>::Cast(info[6]);
 
+      float *transformArray = (float *)((char *)transformFloat32Array->Buffer()->GetContents().Data() + transformFloat32Array->ByteOffset());
+      float *projectionArray = (float *)((char *)projectionFloat32Array->Buffer()->GetContents().Data() + projectionFloat32Array->ByteOffset());
+      float *controllersArray = (float *)((char *)controllersFloat32Array->Buffer()->GetContents().Data() + controllersFloat32Array->ByteOffset());
+
       MLGraphicsFrameParams frame_params;
       MLResult result = MLGraphicsInitFrameParams(&frame_params);
       if (result != MLResult_Ok) {
@@ -3153,17 +3157,17 @@ NAN_METHOD(MLContext::WaitGetPoses) {
           const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
           const MLTransform &transform = cameraInfo.transform;
           const MLVec3f &position = OffsetFloor(transform.position);
-          transformArray->Set(i*7 + 0, JS_NUM(position.x));
-          transformArray->Set(i*7 + 1, JS_NUM(position.y));
-          transformArray->Set(i*7 + 2, JS_NUM(position.z));
-          transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
-          transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
-          transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
-          transformArray->Set(i*7 + 6, JS_NUM(transform.rotation.w));
+          transformArray[i*7 + 0] = position.x;
+          transformArray[i*7 + 1] = position.y;
+          transformArray[i*7 + 2] = position.z;
+          transformArray[i*7 + 3] = transform.rotation.x;
+          transformArray[i*7 + 4] = transform.rotation.y;
+          transformArray[i*7 + 5] = transform.rotation.z;
+          transformArray[i*7 + 6] = transform.rotation.w;
 
           const MLMat4f &projection = cameraInfo.projection;
           for (int j = 0; j < 16; j++) {
-            projectionArray->Set(i*16 + j, JS_NUM(projection.matrix_colmajor[j]));
+            projectionArray[i*16 + j] = projection.matrix_colmajor[j];
           }
         }
 
@@ -3193,20 +3197,20 @@ NAN_METHOD(MLContext::WaitGetPoses) {
             const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
 
             int index;
-            controllersArray->Set(index = i * CONTROLLER_ENTRY_SIZE, JS_NUM(is_connected ? 1 : 0));
-            controllersArray->Set(++index, JS_NUM(position.x));
-            controllersArray->Set(++index, JS_NUM(position.y));
-            controllersArray->Set(++index, JS_NUM(position.z));
-            controllersArray->Set(++index, JS_NUM(orientation.x));
-            controllersArray->Set(++index, JS_NUM(orientation.y));
-            controllersArray->Set(++index, JS_NUM(orientation.z));
-            controllersArray->Set(++index, JS_NUM(orientation.w));
-            controllersArray->Set(++index, JS_NUM(trigger));
-            controllersArray->Set(++index, JS_NUM(bumper));
-            controllersArray->Set(++index, JS_NUM(home));
-            controllersArray->Set(++index, JS_NUM(touchPosAndForce.x));
-            controllersArray->Set(++index, JS_NUM(touchPosAndForce.y));
-            controllersArray->Set(++index, JS_NUM(touchForceZ));
+            controllersArray[index = i * CONTROLLER_ENTRY_SIZE] = is_connected ? 1 : 0;
+            controllersArray[++index] = position.x;
+            controllersArray[++index] = position.y;
+            controllersArray[++index] = position.z;
+            controllersArray[++index] = orientation.x;
+            controllersArray[++index] = orientation.y;
+            controllersArray[++index] = orientation.z;
+            controllersArray[++index] = orientation.w;
+            controllersArray[++index] = trigger;
+            controllersArray[++index] = bumper;
+            controllersArray[++index] = home;
+            controllersArray[++index] = touchPosAndForce.x;
+            controllersArray[++index] = touchPosAndForce.y;
+            controllersArray[++index] = touchForceZ;
           }
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
@@ -3336,17 +3340,17 @@ NAN_METHOD(MLContext::RequestGetPoses) {
             const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
             const MLTransform &transform = cameraInfo.transform;
             const MLVec3f &position = OffsetFloor(transform.position);
-            transformArray->Set(i*7 + 0, JS_NUM(position.x));
-            transformArray->Set(i*7 + 1, JS_NUM(position.y));
-            transformArray->Set(i*7 + 2, JS_NUM(position.z));
-            transformArray->Set(i*7 + 3, JS_NUM(transform.rotation.x));
-            transformArray->Set(i*7 + 4, JS_NUM(transform.rotation.y));
-            transformArray->Set(i*7 + 5, JS_NUM(transform.rotation.z));
-            transformArray->Set(i*7 + 6, JS_NUM(transform.rotation.w));
+            transformArray[i*7 + 0] = position.x;
+            transformArray[i*7 + 1] = position.y;
+            transformArray[i*7 + 2] = position.z;
+            transformArray[i*7 + 3] = transform.rotation.x;
+            transformArray[i*7 + 4] = transform.rotation.y;
+            transformArray[i*7 + 5] = transform.rotation.z;
+            transformArray[i*7 + 6] = transform.rotation.w;
 
             const MLMat4f &projection = cameraInfo.projection;
             for (int j = 0; j < 16; j++) {
-              projectionArray->Set(i*16 + j, JS_NUM(projection.matrix_colmajor[j]));
+              projectionArray[i*16 + j] = projection.matrix_colmajor[j];
             }
           }
         } else {
@@ -3379,20 +3383,20 @@ NAN_METHOD(MLContext::RequestGetPoses) {
             const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
 
             int index;
-            controllersArray->Set(index = i * CONTROLLER_ENTRY_SIZE, JS_NUM(is_connected ? 1 : 0));
-            controllersArray->Set(++index, JS_NUM(position.x));
-            controllersArray->Set(++index, JS_NUM(position.y));
-            controllersArray->Set(++index, JS_NUM(position.z));
-            controllersArray->Set(++index, JS_NUM(orientation.x));
-            controllersArray->Set(++index, JS_NUM(orientation.y));
-            controllersArray->Set(++index, JS_NUM(orientation.z));
-            controllersArray->Set(++index, JS_NUM(orientation.w));
-            controllersArray->Set(++index, JS_NUM(trigger));
-            controllersArray->Set(++index, JS_NUM(bumper));
-            controllersArray->Set(++index, JS_NUM(home));
-            controllersArray->Set(++index, JS_NUM(touchPosAndForce.x));
-            controllersArray->Set(++index, JS_NUM(touchPosAndForce.y));
-            controllersArray->Set(++index, JS_NUM(touchForceZ));
+            controllersArray[index = i * CONTROLLER_ENTRY_SIZE] = is_connected ? 1 : 0;
+            controllersArray[++index] = position.x;
+            controllersArray[++index] = position.y;
+            controllersArray[++index] = position.z;
+            controllersArray[++index] = orientation.x;
+            controllersArray[++index] = orientation.y;
+            controllersArray[++index] = orientation.z;
+            controllersArray[++index] = orientation.w;
+            controllersArray[++index] = trigger;
+            controllersArray[++index] = bumper;
+            controllersArray[++index] = home;
+            controllersArray[++index] = touchPosAndForce.x;
+            controllersArray[++index] = touchPosAndForce.y;
+            controllersArray[++index] = touchForceZ;
           }
         } else {
           ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
