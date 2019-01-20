@@ -3317,7 +3317,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
     {
       std::lock_guard<std::mutex> lock(reqMutex);
       
-      reqCbs.push_back([transformArray, projectionArray, controllersArray, mlPoseRes]() -> void {
+      reqCbs.push_back([mlContext, transformArray, projectionArray, controllersArray, mlPoseRes]() -> void {
         MLGraphicsFrameParams frame_params;
         MLResult result = MLGraphicsInitFrameParams(&frame_params);
         if (result != MLResult_Ok) {
