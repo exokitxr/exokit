@@ -1411,10 +1411,6 @@ const _bindWindow = (window, newWindowCb) => {
     } else if (mlPresentState.mlGlContext && mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
       mlPresentState.mlHasPose = await new Promise((accept, reject) => {
         mlPresentState.mlContext.RequestGetPoses(
-          mlPresentState.mlGlContext,
-          mlPresentState.mlMsFbo,
-          renderWidth*2,
-          renderHeight,
           transformArray,
           projectionArray,
           controllersArray,
@@ -1424,6 +1420,13 @@ const _bindWindow = (window, newWindowCb) => {
       if (!live) {
         return;
       }
+      
+      mlPresentState.mlContext.PrepareFrame(
+        mlPresentState.mlGlContext,
+        mlPresentState.mlMsFbo,
+        renderWidth*2,
+        renderHeight,
+      );
 
       if (args.performance) {
         const now = Date.now();
