@@ -3121,12 +3121,10 @@ NAN_METHOD(MLContext::WaitGetPoses) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsFloat32Array() && info[5]->IsFloat32Array() && info[6]->IsFloat32Array()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    
-    windowsystem::SetCurrentWindowContext(gl->windowHandle);
-
     GLuint framebuffer = info[1]->Uint32Value();
     GLuint width = info[2]->Uint32Value();
     GLuint height = info[3]->Uint32Value();
+    
     Local<Float32Array> transformFloat32Array = Local<Float32Array>::Cast(info[4]);
     Local<Float32Array> projectionFloat32Array = Local<Float32Array>::Cast(info[5]);
     Local<Float32Array> controllersFloat32Array = Local<Float32Array>::Cast(info[6]);
@@ -3134,6 +3132,8 @@ NAN_METHOD(MLContext::WaitGetPoses) {
     float *transformArray = (float *)((char *)transformFloat32Array->Buffer()->GetContents().Data() + transformFloat32Array->ByteOffset());
     float *projectionArray = (float *)((char *)projectionFloat32Array->Buffer()->GetContents().Data() + projectionFloat32Array->ByteOffset());
     float *controllersArray = (float *)((char *)controllersFloat32Array->Buffer()->GetContents().Data() + controllersFloat32Array->ByteOffset());
+
+    windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
     MLGraphicsFrameParams frame_params;
     MLResult result = MLGraphicsInitFrameParams(&frame_params);
@@ -3430,12 +3430,11 @@ NAN_METHOD(MLContext::PrepareFrame) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    
-    windowsystem::SetCurrentWindowContext(gl->windowHandle);
-
     GLuint framebuffer = info[1]->Uint32Value();
     GLuint width = info[2]->Uint32Value();
     GLuint height = info[3]->Uint32Value();
+    
+    windowsystem::SetCurrentWindowContext(gl->windowHandle);
     
     if (depthEnabled) {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
