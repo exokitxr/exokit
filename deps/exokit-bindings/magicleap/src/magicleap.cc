@@ -3594,10 +3594,11 @@ NAN_METHOD(MLContext::SubmitFrame) {
         glDeleteSync(sync);
         
         glBindFramebuffer(GL_READ_FRAMEBUFFER, application_context.mlContext->src_framebuffer_id);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, application_context.mlContext->dst_framebuffer_id);
+        
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
 
         for (int i = 0; i < 2; i++) {
-          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, application_context.mlContext->dst_framebuffer_id);
           glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, application_context.mlContext->virtual_camera_array.color_id, 0, i);
           // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, application_context.mlContext->virtual_camera_array.depth_id, 0, i);
 
