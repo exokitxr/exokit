@@ -77,7 +77,6 @@ const args = (() => {
         'webgl',
         'xr',
         'size',
-        'image',
         'download',
       ],
       alias: {
@@ -95,7 +94,6 @@ const args = (() => {
         q: 'quit',
         b: 'blit',
         u: 'uncapped',
-        i: 'image',
         r: 'require',
         n: 'headless',
         d: 'download',
@@ -116,7 +114,6 @@ const args = (() => {
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
       uncapped: minimistArgs.uncapped,
-      image: minimistArgs.image,
       require: minimistArgs.require,
       headless: minimistArgs.headless,
       download: minimistArgs.download,
@@ -163,8 +160,6 @@ const contexts = [];
 GlobalContext.contexts = contexts;
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
-let _takeScreenshot = false;
-
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
@@ -178,7 +173,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.headless) {
       try {
-        const visible = !args.image && document.documentElement.contains(canvas);
+        const visible = document.documentElement.contains(canvas);
         const {hidden} = document;
         const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
         return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
@@ -1054,33 +1049,6 @@ const _bindWindow = (window, newWindowCb) => {
     console.warn('got error', err);
   });
 
-  const _saveImage = (context, name) => {
-    const _flipImage = (width, height, stride, arrayBuffer) => {
-      const uint8Array = new Uint8Array(arrayBuffer);
-
-      const arrayBuffer2 = new ArrayBuffer(arrayBuffer.byteLength);
-      const uint8Array2 = new Uint8Array(arrayBuffer2);
-      for (let y = 0; y < height; y++) {
-        const yBottom = height - y - 1;
-        uint8Array2.set(uint8Array.slice(yBottom * width * stride, (yBottom + 1) * width * stride), y * width * stride);
-      }
-      console.log(uint8Array2[0], uint8Array2[1], uint8Array2[2], uint8Array2[3]);
-      return arrayBuffer2;
-    };
-
-    const gl = context;
-    const {canvas} = gl;
-    const {width, height} = canvas;
-
-    const arrayBuffer = new ArrayBuffer(width * height * 4);
-    const uint8Array = new Uint8Array(arrayBuffer);
-    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8Array);
-    const result = Buffer.from(UPNG.encode([
-      _flipImage(width, height, 4, arrayBuffer),
-    ], width, height, 0));
-    console.dir({width, height, image: name, result: result.length});
-    fs.writeFileSync(name, result);
-  }
   const _decorateModelViewProjection = (o, layer, display, factor) => {
     if (!o.viewports) {
       o.viewports = [
@@ -1245,34 +1213,6 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   };
-  const setDirtyFrameTimeout = ({
-    dirtyFrames = 1,
-    timeout = 1000,
-  } = {}, fn) => {
-    if (numDirtyFrames > dirtyFrames && contexts.length > 0) {
-      process.nextTick(() => {
-        fn(null, contexts[0]);
-      });
-    } else {
-      const localTimeout = setTimeout(() => {
-        const err = new Error('timed out');
-        err.code = 'ETIMEOUT';
-        fn(err);
-
-        dirtyFrameContexts.splice(dirtyFrameContexts.indexOf(dirtyFrameContext), 1);
-      }, timeout);
-      const dirtyFrameContext = {
-        dirtyFrames,
-        fn: (err, context) => {
-          fn(err, context);
-
-          clearTimeout(localTimeout);
-        },
-      };
-      dirtyFrameContexts.push(dirtyFrameContext);
-    }
-  };
-  window.setDirtyFrameTimeout = setDirtyFrameTimeout;
 
   const _recurse = () => {
     if (args.performance) {
@@ -1630,10 +1570,6 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.total += diff;
       timestamps.last = now;
     }
-    if (args.image && _takeScreenshot) {
-      _saveImage(contexts[contexts.length - 1], args.image);
-      process.exit(0);
-    }
     _blit();
     if (args.performance) {
       const now = Date.now();
@@ -1769,21 +1705,7 @@ const _start = () => {
     return core.load(u, {
       dataPath,
       args,
-    })
-      .then(window => {
-        if (args.image) {
-          window.setDirtyFrameTimeout({
-            dirtyFrames: 100,
-            timeout: 5000,
-          }, (err, gl) => {
-            if (!err) {
-              _takeScreenshot = true;
-            } else {
-              throw err;
-            }
-          });
-        }
-      });
+    });
   } else {
     let window = null;
     const _bindReplWindow = newWindow => {
