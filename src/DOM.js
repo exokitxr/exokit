@@ -1388,7 +1388,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
         .then(() => css.parse(innerHTML).stylesheet)
         .then(stylesheet => {
           this.stylesheet = stylesheet;
-          GlobalContext.styleEpoch++;
+          this.ownerDocument.defaultView[symbols.styleEpochSymbol]++;
           this.dispatchEvent(new Event('load', {target: this}));
         })
         .catch(err => {
@@ -1454,7 +1454,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
           .then(s => css.parse(s).stylesheet)
           .then(stylesheet => {
             this.stylesheet = stylesheet;
-            GlobalContext.styleEpoch++;
+            this.ownerDocument.defaultView[symbols.styleEpochSymbol]++;
             
             this.readyState = 'complete';
             

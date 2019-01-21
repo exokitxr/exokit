@@ -89,8 +89,6 @@ const {_elementGetter, _elementSetter, _download} = utils;
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
-GlobalContext.styleEpoch = 0;
-
 const maxParallelResources = 8;
 class Resource {
   constructor(getCb = (onprogress, cb) => cb(), value = 0.5, total = 1) {
@@ -1069,6 +1067,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     TEMPLATE: HTMLTemplateElement,
   };
   window[symbols.optionsSymbol] = options;
+  window[symbols.styleEpochSymbol] = 0;
   window.DocumentFragment = DocumentFragment;
 
   // DOM.
@@ -1098,7 +1097,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.DOMPoint = DOMPoint;
   window.getComputedStyle = el => {
     let styleSpec = el[symbols.computedStyleSymbol];
-    if (!styleSpec || styleSpec.epoch !== GlobalContext.styleEpoch) {
+    if (!styleSpec || styleSpec.epoch !== window[symbols.styleEpochSymbol]) {
       const style = el.style.clone();
       const stylesheetEls = el.ownerDocument.documentElement.getElementsByTagName('style')
         .concat(el.ownerDocument.documentElement.getElementsByTagName('link'));
@@ -1121,7 +1120,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
       styleSpec = {
         style,
-        styleEpoch: GlobalContext.styleEpoch,
+        styleEpoch: window[symbols.styleEpochSymbol],
       };
       el[symbols.computedStyleSymbol] = styleSpec;
     }
