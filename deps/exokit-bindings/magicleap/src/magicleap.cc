@@ -41,7 +41,7 @@ std::mutex reqMutex;
 std::mutex resMutex;
 std::deque<std::function<void()>> reqCbs;
 std::deque<std::function<void()>> resCbs;
-std::thread reqThead;
+std::thread frameThread;
 
 Nan::Persistent<Function> mlMesherConstructor;
 Nan::Persistent<Function> mlPlaneTrackerConstructor;
@@ -2546,7 +2546,7 @@ NAN_METHOD(MLContext::InitLifecycle) {
 
     uv_sem_init(&reqSem, 0);
     uv_async_init(uv_default_loop(), &resAsync, RunResInMainThread);
-    reqThead = std::thread([]() -> void {
+    frameThread = std::thread([]() -> void {
       for (;;) {
         uv_sem_wait(&reqSem);
 
