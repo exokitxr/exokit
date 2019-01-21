@@ -8,10 +8,10 @@ const exokitNode = (() => {
   process.chdir(oldCwd);
   return exokitNode;
 })();
-const {nativeAudio, nativeVr} = exokitNode;
 const WindowWorker = require('window-worker');
 const vmOne = require('vm-one');
 const webGlToOpenGl = require('webgl-to-opengl');
+const GlobalContext = require('./GlobalContext');
 
 const bindings = {};
 for (const k in exokitNode) {
@@ -95,11 +95,46 @@ bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
   CanvasRenderingContext2D.onconstruct = null;
   return CanvasRenderingContext2D;
 })(bindings.nativeCanvasRenderingContext2D);
+GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
+GlobalContext.WebGLRenderingContext = bindings.nativeGl;
+GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
 
-const {PannerNode} = nativeAudio;
-PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
-if (nativeVr) {
-	nativeVr.EVRInitError = {
+bindings.nativeAudio.AudioContext = (OldAudioContext => class AudioContext extends OldAudioContext {
+  decodeAudioData(arrayBuffer, successCallback, errorCallback) {
+    return new Promise((resolve, reject) => {
+      try {
+        let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
+        if (successCallback) {
+          process.nextTick(() => {
+            try {
+              successCallback(audioBuffer);
+            } catch(err) {
+              console.warn(err);
+            }
+          });
+        }
+        resolve(audioBuffer);
+      } catch(err) {
+        console.warn(err);
+        if (errorCallback) {
+          process.nextTick(() => {
+            try {
+              errorCallback(err);
+            } catch(err) {
+              console.warn(err);
+            }
+          });
+        }
+        reject(err);
+      }
+    });
+  }
+})(bindings.nativeAudio.AudioContext);
+
+bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
+
+if (bindings.nativeVr) {
+	bindings.nativeVr.EVRInitError = {
 	  None: 0,
 	  Unknown: 1,
 
@@ -187,7 +222,7 @@ if (nativeVr) {
 	  Steam_SteamInstallationNotFound: 2000,
 	};
 
-	nativeVr.EVRApplicationType = {
+	bindings.nativeVr.EVRApplicationType = {
 	  Other: 0,
 	  Scene: 1,
 	  Overlay: 2,
@@ -198,18 +233,18 @@ if (nativeVr) {
 	  Bootstrapper: 7,
 	};
 
-	nativeVr.EVREye = {
+	bindings.nativeVr.EVREye = {
 	  Left: 0,
 	  Right: 1,
 	};
 
-	nativeVr.ETrackingUniverseOrigin = {
+	bindings.nativeVr.ETrackingUniverseOrigin = {
 	  Seated: 0,
 	  Standing: 1,
 	  RawAndUncalibrated: 2,
 	};
 
-	nativeVr.ETrackingResult = {
+	bindings.nativeVr.ETrackingResult = {
 	  Uninitialized: 1,
 	  Calibrating_InProgress: 100,
 	  Calibrating_OutOfRange: 101,
@@ -217,7 +252,7 @@ if (nativeVr) {
 	  Running_OutOfRange: 201,
 	};
 
-	nativeVr.ETrackedDeviceClass = {
+	bindings.nativeVr.ETrackedDeviceClass = {
 	  Invalid: 0,
 	  HMD: 1,
 	  Controller: 2,
@@ -226,4 +261,9 @@ if (nativeVr) {
 	  DisplayRedirect: 5,
 	};
 }
+
+GlobalContext.nativeVr = bindings.nativeVr;
+GlobalContext.nativeMl = bindings.nativeMl;
+GlobalContext.nativeBrowser = bindings.nativeBrowser;
+
 module.exports = bindings;

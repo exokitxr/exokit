@@ -51,7 +51,7 @@ const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const nativeBindings = require(nativeBindingsModulePath);
 
 const {getGamepads} = require('./VR.js');
-const {_setNativeBindingsModule} = require('./Window');
+// const {_setNativeBindingsModule} = require('./Window');
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
@@ -123,7 +123,7 @@ const args = (() => {
 
 core.setArgs(args);
 core.setVersion(version);
-_setNativeBindingsModule(nativeBindingsModulePath);
+// _setNativeBindingsModule(nativeBindingsModulePath);
 
 const dataPath = (() => {
   const candidatePathPrefixes = [
@@ -1168,7 +1168,6 @@ const _bindWindow = (window, newWindowCb) => {
     }
   }
 
-  // let lastFrameTime = Date.now();
   const timestamps = {
     frames: 0,
     last: Date.now(),
@@ -1610,7 +1609,6 @@ const _bindWindow = (window, newWindowCb) => {
 
     // wait for next frame
     setImmediate(_recurse);
-    // lastFrameTime = Date.now();
   };
   // setTimeout(_recurse);
   setImmediate(_recurse);
@@ -1842,6 +1840,30 @@ if (require.main === module) {
         innerHeight = h;
       }
     }
+  }
+  if (args.frame || args.minimalFrame) {
+    bindings.nativeGl = (OldWebGLRenderingContext => {
+      function WebGLRenderingContext() {
+        const result = Reflect.construct(OldWebGLRenderingContext, arguments);
+        for (const k in result) {
+          if (typeof result[k] === 'function') {
+            result[k] = (old => function() {
+              if (GlobalContext.args.frame) {
+                console.log(k, arguments);
+              } else if (GlobalContext.args.minimalFrame) {
+                console.log(k);
+              }
+              return old.apply(this, arguments);
+            })(result[k]);
+          }
+        }
+        return result;
+      }
+      for (const k in OldWebGLRenderingContext) {
+        WebGLRenderingContext[k] = OldWebGLRenderingContext[k];
+      }
+      return WebGLRenderingContext;
+    })(bindings.nativeGl);
   }
 
   _prepare()

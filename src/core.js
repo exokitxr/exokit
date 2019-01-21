@@ -42,7 +42,6 @@ const {
   getGamepads,
 } = require('./VR.js');
 
-const BindingsModule = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');

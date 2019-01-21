@@ -41,11 +41,45 @@ const {
   getGamepads,
 } = require('./VR.js');
 
-const BindingsModule = require('./bindings');
 const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {urls} = require('./urls');
+
+const bindings = require('./native-bindings');
+const {
+  nativeVm,
+  nativeImage: Image,
+  nativeImageData: ImageData,
+  nativeImageBitmap: ImageBitmap,
+  nativePath2D: Path2D,
+  nativeCanvasGradient: CanvasGradient,
+  nativeCanvasRenderingContext2D: CanvasRenderingContext2D,
+  nativeGl: WebGLRenderingContext,
+  nativeGl2: WebGL2RenderingContext,
+  nativeAudio: {
+    AudioContext,
+    AudioNode,
+    AudioBufferSourceNode,
+    OscillatorNode,
+    AudioDestinationNode,
+    AudioParam,
+    AudioListener,
+    GainNode,
+    AnalyserNode,
+    PannerNode,
+    StereoPannerNode,
+    MicrophoneMediaStream,
+  },
+  nativeVideo: {
+    Video,
+    VideoDevice,
+  },
+  nativeVr,
+  nativeMl,
+  nativeBrowser,
+  nativeWindow,
+} = bindings;
 
 GlobalContext.args = {};
 GlobalContext.version = '';
@@ -1441,147 +1475,3 @@ const _makeWindowWithDocument = (s, options, parent, top) => {
   return window;
 };
 module.exports._makeWindowWithDocument = _makeWindowWithDocument;
-
-// latch native bindings
-let nativeVm = GlobalContext.nativeVm = null;
-
-let Image = null;
-let ImageData = null;
-let ImageBitmap = null;
-let Path2D = null;
-let CanvasGradient = null;
-let CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = null;
-let WebGLRenderingContext = GlobalContext.WebGLRenderingContext = null;
-let WebGL2RenderingContext = GlobalContext.WebGL2RenderingContext = null;
-
-let AudioContext = null;
-let AudioNode = null;
-let AudioBufferSourceNode = null;
-let OscillatorNode = null;
-let AudioDestinationNode = null;
-let AudioParam = null;
-let AudioListener = null;
-let GainNode = null;
-let AnalyserNode = null;
-let PannerNode = null;
-let StereoPannerNode = null;
-
-let MicrophoneMediaStream = null;
-let Video = null;
-let VideoDevice = null;
-
-let nativeVr = GlobalContext.nativeVr = null;
-let nativeMl = GlobalContext.nativeMl = null;
-let nativeBrowser = GlobalContext.nativeBrowser = null;
-let nativeWindow = null;
-
-/**
- * Initialize classes and modules that require native bindings.
- * Required before creating any windows or documents.
- * Set rather than `require`d directly due to way `require` works with multithreading
- * (for `Worker`), use this route to make sure binaries only get initialized once.
- *
- * @param {string} nativeBindingsModule - Path to native bindings JS module.
- */
-const _setNativeBindingsModule = nativeBindingsModule => {
-  const bindings = require(nativeBindingsModule);
-
-  // Set in binding module to be referenced from other modules.
-  for (const key in bindings) { BindingsModule[key] = bindings[key]; }
-
-  nativeVm = GlobalContext.nativeVm = bindings.nativeVm;
-
-  Image = bindings.nativeImage;
-  ImageData = bindings.nativeImageData;
-  ImageBitmap = bindings.nativeImageBitmap;
-  Path2D = bindings.nativePath2D;
-  CanvasGradient = bindings.nativeCanvasGradient;
-  CanvasRenderingContext2D = GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
-  WebGLRenderingContext = GlobalContext.WebGLRenderingContext = bindings.nativeGl;
-  WebGL2RenderingContext = GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
-  if (GlobalContext.args.frame || GlobalContext.args.minimalFrame) {
-    WebGLRenderingContext = GlobalContext.WebGLRenderingContext = (OldWebGLRenderingContext => {
-      function WebGLRenderingContext() {
-        const result = Reflect.construct(bindings.nativeGl, arguments);
-        for (const k in result) {
-          if (typeof result[k] === 'function') {
-            result[k] = (old => function() {
-              if (GlobalContext.args.frame) {
-                console.log(k, arguments);
-              } else if (GlobalContext.args.minimalFrame) {
-                console.log(k);
-              }
-              return old.apply(this, arguments);
-            })(result[k]);
-          }
-        }
-        return result;
-      }
-      for (const k in OldWebGLRenderingContext) {
-        WebGLRenderingContext[k] = OldWebGLRenderingContext[k];
-      }
-      return WebGLRenderingContext;
-    })(WebGLRenderingContext);
-  }
-
-  const {nativeAudio} = bindings;
-  AudioContext = class AudioContext extends nativeAudio.AudioContext {
-    /**
-     * Wrap AudioContext.DecodeAudioDataSync binding with promises and callbacks.
-     */
-    decodeAudioData(arrayBuffer, successCallback, errorCallback) {
-      return new Promise((resolve, reject) => {
-        try {
-          let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
-          if (successCallback) {
-            process.nextTick(() => {
-              try {
-                successCallback(audioBuffer);
-              } catch(err) {
-                console.warn(err);
-              }
-            });
-          }
-          resolve(audioBuffer);
-        } catch(err) {
-          console.warn(err);
-          if (errorCallback) {
-            process.nextTick(() => {
-              try {
-                errorCallback(err);
-              } catch(err) {
-                console.warn(err);
-              }
-            });
-          }
-          reject(err);
-        }
-      });
-    }
-  };
-  AudioNode = nativeAudio.AudioNode;
-  AudioBufferSourceNode = nativeAudio.AudioBufferSourceNode;
-  OscillatorNode = nativeAudio.OscillatorNode;
-  AudioDestinationNode = nativeAudio.AudioDestinationNode;
-  AudioParam = nativeAudio.AudioParam;
-  AudioListener = nativeAudio.AudioListener;
-  GainNode = nativeAudio.GainNode;
-  AnalyserNode = nativeAudio.AnalyserNode;
-  PannerNode = nativeAudio.PannerNode;
-  StereoPannerNode = nativeAudio.StereoPannerNode;
-
-  MicrophoneMediaStream = nativeAudio.MicrophoneMediaStream;
-
-  const {nativeVideo} = bindings;
-  Video = nativeVideo.Video;
-  VideoDevice = nativeVideo.VideoDevice;
-  // Video.getDevices fails after opening a webcam, so in order to
-  // open multiple webcams we need to call this once on startup.
-  const devices = Video.getDevices();
-
-  nativeVr = GlobalContext.nativeVr = bindings.nativeVr;
-  nativeMl = GlobalContext.nativeMl = bindings.nativeMl;
-  nativeBrowser = GlobalContext.nativeBrowser = bindings.nativeBrowser;
-  nativeWindow = bindings.nativeWindow;
-};
-module.exports._setNativeBindingsModule = _setNativeBindingsModule;
