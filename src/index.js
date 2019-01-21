@@ -68,7 +68,6 @@ const args = (() => {
         'minimalFrame',
         'quit',
         'blit',
-        'uncapped',
         'require',
         'headless',
       ],
@@ -93,7 +92,6 @@ const args = (() => {
         m: 'minimalFrame',
         q: 'quit',
         b: 'blit',
-        u: 'uncapped',
         r: 'require',
         n: 'headless',
         d: 'download',
@@ -113,7 +111,6 @@ const args = (() => {
       minimalFrame: minimistArgs.minimalFrame,
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
-      uncapped: minimistArgs.uncapped,
       require: minimistArgs.require,
       headless: minimistArgs.headless,
       download: minimistArgs.download,
@@ -151,9 +148,9 @@ const dataPath = (() => {
   }
   return null;
 })();
-const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
-const VR_FPS = 90;
-const ML_FPS = 60;
+// const DEFAULT_FPS = 60; // TODO: Use different FPS for device.requestAnimationFrame vs window.requestAnimationFrame
+// const VR_FPS = 90;
+// const ML_FPS = 60;
 const MLSDK_PORT = 17955;
 
 const contexts = [];
@@ -292,7 +289,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   }
 
   contexts.push(gl);
-  fps = nativeWindow.getRefreshRate();
+  // fps = nativeWindow.getRefreshRate();
 };
 
 nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
@@ -408,7 +405,7 @@ if (nativeBindings.nativeVr) {
         const windowHandle = context.getWindowHandle();
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
-        fps = VR_FPS;
+        // fps = VR_FPS;
 
         const vrContext = vrPresentState.vrContext || nativeBindings.nativeVr.getContext();
         const system = vrPresentState.system || nativeBindings.nativeVr.VR_Init(nativeBindings.nativeVr.EVRApplicationType.Scene);
@@ -567,7 +564,7 @@ if (nativeBindings.nativeMl) {
         const windowHandle = context.getWindowHandle();
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
-        fps = ML_FPS;
+        // fps = ML_FPS;
 
         const initResult = mlPresentState.mlContext.Present(windowHandle, context);
         if (initResult) {
@@ -921,17 +918,16 @@ nativeBindings.nativeWindow.setEventHandler((type, data) => {
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
-let fps = DEFAULT_FPS;
-const _getFrameTimeMax = () => ~~(1000 / fps);
-const _getFrameTimeMin = () => 0;
+// let fps = DEFAULT_FPS;
 const isMac = os.platform() === 'darwin';
 
 const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
   window.innerHeight = innerHeight;
 
+  let live = true;
   window.on('unload', () => {
-    clearTimeout(timeout);
+    live = false;
   });
   window.on('navigate', newWindowCb);
   window.document.on('paste', e => {
@@ -1043,7 +1039,7 @@ const _bindWindow = (window, newWindowCb) => {
         context.destroy();
       }
     }
-    clearTimeout(timeout);
+    live = false;
   });
   window.addEventListener('error', err => {
     console.warn('got error', err);
@@ -1136,7 +1132,7 @@ const _bindWindow = (window, newWindowCb) => {
               nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
             }
 
-            mlPresentState.mlContext.SubmitFrame(context, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
+            mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
             mlPresentState.mlHasPose = false;
 
             // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
@@ -1171,7 +1167,7 @@ const _bindWindow = (window, newWindowCb) => {
     }
   }
 
-  let lastFrameTime = Date.now();
+  // let lastFrameTime = Date.now();
   const timestamps = {
     frames: 0,
     last: Date.now(),
@@ -1184,12 +1180,11 @@ const _bindWindow = (window, newWindowCb) => {
     submit: 0,
     total: 0,
   };
-  const TIMESTAMP_FRAMES = DEFAULT_FPS;
+  const TIMESTAMP_FRAMES = 100;
   const gamepads = getGamepads();
   const [leftGamepad, rightGamepad] = gamepads;
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
-  let timeout = null;
   let numDirtyFrames = 0;
   const dirtyFrameContexts = [];
   const _checkDirtyFrameTimeout = () => {
@@ -1214,7 +1209,11 @@ const _bindWindow = (window, newWindowCb) => {
     }
   };
 
-  const _recurse = () => {
+  const _recurse = async () => {
+    if (!live) {
+      return;
+    }
+
     if (args.performance) {
       if (timestamps.frames >= TIMESTAMP_FRAMES) {
         console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.idle}ms idle | ${timestamps.wait}ms wait | ${timestamps.prepare}ms prepare | ${timestamps.events}ms events | ${timestamps.media}ms media | ${timestamps.user}ms user | ${timestamps.submit}ms submit`);
@@ -1244,12 +1243,19 @@ const _bindWindow = (window, newWindowCb) => {
     }
     if (vrPresentState.isPresenting && vrPresentState.glContext && vrPresentState.glContext.canvas.ownerDocument.defaultView === window) {
       // wait for frame
-      vrPresentState.compositor.WaitGetPoses(
-        vrPresentState.system,
-        localFloat32Array, // hmd
-        localFloat32Array2, // left controller
-        localFloat32Array3 // right controller
-      );
+      await new Promise((accept, reject) => {
+        vrPresentState.compositor.RequestGetPoses(
+          vrPresentState.system,
+          localFloat32Array, // hmd
+          localFloat32Array2, // left controller
+          localFloat32Array3, // right controller
+          accept
+        );
+      });
+      if (!live) {
+        return;
+      }
+
       vrPresentState.hasPose = true;
       if (args.performance) {
         const now = Date.now();
@@ -1403,7 +1409,25 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.last = now;
       }
     } else if (mlPresentState.mlGlContext && mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
-      mlPresentState.mlHasPose = mlPresentState.mlContext.WaitGetPoses(mlPresentState.mlGlContext, mlPresentState.mlMsFbo, renderWidth*2, renderHeight, transformArray, projectionArray, controllersArray);
+      mlPresentState.mlHasPose = await new Promise((accept, reject) => {
+        mlPresentState.mlContext.RequestGetPoses(
+          transformArray,
+          projectionArray,
+          controllersArray,
+          accept
+        );
+      });
+      if (!live) {
+        return;
+      }
+      
+      mlPresentState.mlContext.PrepareFrame(
+        mlPresentState.mlGlContext,
+        mlPresentState.mlMsFbo,
+        renderWidth*2,
+        renderHeight,
+      );
+
       if (args.performance) {
         const now = Date.now();
         const diff = now - timestamps.last;
@@ -1584,20 +1608,11 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // wait for next frame
-    const now = Date.now();
-    const timeoutDelay = (() => {
-      if (args.uncapped) {
-        return 0;
-      } else {
-        const frameTimeMax = _getFrameTimeMax();
-        const frameTimeMin = _getFrameTimeMin();
-        return Math.min(Math.max(frameTimeMax - ~~(now - lastFrameTime), frameTimeMin), frameTimeMax);
-      }
-    })();
-    timeout = setTimeout(_recurse, timeoutDelay);
-    lastFrameTime = now;
+    setImmediate(_recurse);
+    // lastFrameTime = Date.now();
   };
-  timeout = setTimeout(_recurse);
+  // setTimeout(_recurse);
+  setImmediate(_recurse);
 };
 const _bindDirectWindow = newWindow => {
   _bindWindow(newWindow, _bindDirectWindow);

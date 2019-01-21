@@ -74,6 +74,16 @@ enum KeyboardEventType {
   KEY_UP,
 };
 
+class MLPoseRes {
+public:
+  MLPoseRes(Local<Function> cb);
+  ~MLPoseRes();
+
+  Nan::Persistent<Function> cb;
+};
+
+void RunResInMainThread(uv_async_t *handle);
+
 // classes
 
 class MLContext;
@@ -95,6 +105,8 @@ public:
   MLKeyCode key_code;
   uint32_t modifier_mask;
 };
+
+void RunResInMainThread(uv_async_t *handle);
 
 class MLPoll {
 public:
@@ -276,7 +288,9 @@ public:
   static NAN_METHOD(DeinitLifecycle);
   static NAN_METHOD(Present);
   static NAN_METHOD(Exit);
-  static NAN_METHOD(WaitGetPoses);
+  // static NAN_METHOD(WaitGetPoses);
+  static NAN_METHOD(RequestGetPoses);
+  static NAN_METHOD(PrepareFrame);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
@@ -299,10 +313,13 @@ public:
 // protected:
   // EGL
   NATIVEwindow *window;
+  NATIVEwindow *graphicsClientWindow;
 
   // tracking
   MLHandle graphics_client;
-  GLuint framebuffer_id;
+  MLGraphicsRenderTargetsInfo render_targets_info;
+  GLuint src_framebuffer_id;
+  GLuint dst_framebuffer_id;
   MLHandle frame_handle;
   MLHandle head_tracker;
   MLHeadTrackingStaticData head_static_data;

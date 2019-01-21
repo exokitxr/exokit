@@ -13,6 +13,20 @@ namespace vr
 class IVRCompositor;
 }
 
+namespace vr {
+  class VRPoseRes;
+
+  void RunResInMainThread(uv_async_t *handle);
+}
+
+class VRPoseRes {
+public:
+  VRPoseRes(Local<Function> cb);
+  ~VRPoseRes();
+
+  Nan::Persistent<Function> cb;
+};
+
 class IVRCompositor : public Nan::ObjectWrap
 {
 public:
@@ -28,6 +42,7 @@ private:
   // Node construction method for new instances.
   static NAN_METHOD(New);
 
+  static NAN_METHOD(RequestGetPoses);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Submit);
 
