@@ -3582,11 +3582,16 @@ NAN_METHOD(MLContext::SubmitFrame) {
     unsigned int width = info[1]->Uint32Value();
     unsigned int height = info[2]->Uint32Value();
 
+    GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
     {
       std::lock_guard<std::mutex> lock(reqMutex);
       
-      reqCbs.push_back([colorTex, width, height]() -> bool {
+      reqCbs.push_back([colorTex, width, height, sync]() -> bool {
         const MLRectf &viewport = application_context.mlContext->virtual_camera_array.viewport;
+        
+        glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+        glDeleteSync(sync);
         
         glBindFramebuffer(GL_READ_FRAMEBUFFER, application_context.mlContext->src_framebuffer_id);
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
