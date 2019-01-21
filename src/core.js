@@ -83,7 +83,7 @@ const {XMLHttpRequest} = require('./Network');
 const XR = require('./XR');
 const DevTools = require('./DevTools');
 const utils = require('./utils');
-const {_elementGetter, _elementSetter, _download} = require('./utils');
+const {_elementGetter, _elementSetter, _download} = utils;
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
