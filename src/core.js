@@ -83,7 +83,7 @@ const {XMLHttpRequest} = require('./Network');
 const XR = require('./XR');
 const DevTools = require('./DevTools');
 const utils = require('./utils');
-const {_elementGetter, _elementSetter} = require('./utils');
+const {_elementGetter, _elementSetter, _download} = require('./utils');
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
@@ -729,31 +729,6 @@ const _cloneMrDisplays = (mrDisplays, window) => {
   return result;
 };
 
-const _download = (m, u, data, bufferifyFn, dstDir) => new Promise((accept, reject) => {
-  if (m === 'GET' && /^(?:https?|file):/.test(u)) {
-    const o = url.parse(u);
-    const d = path.resolve(path.join(__dirname, '..'), dstDir, o.host || '.');
-    const f = path.join(d, o.pathname === '/' ? 'index.html' : o.pathname);
-
-    console.log(`${u} -> ${f}`);
-
-    mkdirp(path.dirname(f), err => {
-      if (!err) {
-        fs.writeFile(f, bufferifyFn(data), err => {
-          if (!err) {
-            accept(data);
-          } else {
-            reject(err);
-          }
-        });
-      } else {
-        reject(err);
-      }
-    });
-  } else {
-    accept(data);
-  }
-});
 const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
