@@ -36,10 +36,11 @@ std::vector<KeyboardEvent> keyboardEvents;
 uv_async_t keyboardEventsAsync;
 
 uv_sem_t reqSem;
+uv_sem_t resSem;
 uv_async_t resAsync;
 std::mutex reqMutex;
 std::mutex resMutex;
-std::deque<std::function<void()>> reqCbs;
+std::deque<std::function<bool()>> reqCbs;
 std::deque<std::function<void()>> resCbs;
 std::thread frameThread;
 
@@ -159,15 +160,21 @@ MLPoseRes::~MLPoseRes() {}
 void RunResInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
-  std::function<void()> resCb;
-  {
-    std::lock_guard<std::mutex> lock(reqMutex);
+  for (;;) {
+    std::function<void()> resCb;
+    {
+      std::lock_guard<std::mutex> lock(reqMutex);
 
-    resCb = resCbs.front();
-    resCbs.pop_front();
-  }
-  if (resCb) {
-    resCb();
+      if (resCbs.size() > 0) {
+        resCb = resCbs.front();
+        resCbs.pop_front();
+      }
+    }
+    if (resCb) {
+      resCb();
+    } else {
+      break;
+    }
   }
 }
 
@@ -2545,12 +2552,38 @@ NAN_METHOD(MLContext::InitLifecycle) {
     keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
 
     uv_sem_init(&reqSem, 0);
+    uv_sem_init(&resSem, 0);
     uv_async_init(uv_default_loop(), &resAsync, RunResInMainThread);
     frameThread = std::thread([]() -> void {
+      uv_sem_wait(&reqSem);
+
+      windowsystem::SetCurrentWindowContext(application_context.mlContext->graphicsClientWindow);
+      MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
+      MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(application_context.mlContext->graphicsClientWindow));
+      {
+        MLResult result = MLGraphicsCreateClientGL(&graphics_options, opengl_context, &application_context.mlContext->graphics_client);
+        if (result != MLResult_Ok) {
+          ML_LOG(Error, "%s: Failed to create graphics clent: %x", application_name, result);
+          return;
+        }
+      }
+      {
+        MLResult result = MLGraphicsGetRenderTargets(application_context.mlContext->graphics_client, &application_context.mlContext->render_targets_info);
+        if (result != MLResult_Ok) {
+          ML_LOG(Error, "%s: Failed to get graphics render targets: %x", application_name, result);
+          return;
+        }
+      }
+      
+      uv_sem_post(&resSem);
+      
+      glGenFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
+      glGenFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
+
       for (;;) {
         uv_sem_wait(&reqSem);
 
-        std::function<void()> reqCb;
+        std::function<bool()> reqCb;
         {
           std::lock_guard<std::mutex> lock(reqMutex);
 
@@ -2560,11 +2593,38 @@ NAN_METHOD(MLContext::InitLifecycle) {
           }
         }
         if (reqCb) {
-          reqCb();
+          bool frameOk = reqCb();
+
+          if (frameOk) {
+            uv_sem_wait(&reqSem);
+            
+            std::function<bool()> reqCb;
+            {
+              std::lock_guard<std::mutex> lock(reqMutex);
+
+              if (reqCbs.size() > 0) {
+                reqCb = reqCbs.front();
+                reqCbs.pop_front();
+              }
+            }
+            if (reqCb) {
+              reqCb();
+            } else {
+              break;
+            }
+
+            MLResult result = MLGraphicsEndFrame(application_context.mlContext->graphics_client, application_context.mlContext->frame_handle);
+            if (result != MLResult_Ok) {
+              ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+            }
+          }
         } else {
           break;
         }
       }
+      
+      glDeleteFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
+      glDeleteFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
     });
 
     uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
@@ -2650,17 +2710,15 @@ NAN_METHOD(MLContext::Present) {
   application_context.mlContext = mlContext;
   application_context.window = window;
   application_context.gl = gl;
-  
+   
   // initialize perception system
   
   MLPerceptionSettings perception_settings;
-
   if (MLPerceptionInitSettings(&perception_settings) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to initialize perception.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-
   if (MLPerceptionStartup(&perception_settings) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to startup perception.", application_name);
     info.GetReturnValue().Set(Nan::Null());
@@ -2668,15 +2726,11 @@ NAN_METHOD(MLContext::Present) {
   }
   
   // initialize graphics subsystem
-
-  MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
-  MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(window));
-  mlContext->graphics_client = ML_INVALID_HANDLE;
-  if (MLGraphicsCreateClientGL(&graphics_options, opengl_context, &mlContext->graphics_client) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
+  
+  mlContext->graphicsClientWindow = windowsystem::CreateNativeWindow(0, 0, false, window);
+  // mlContext->graphicsClientWindow = window;
+  uv_sem_post(&reqSem);
+  uv_sem_wait(&resSem);
   
   // Now that graphics is connected, the app is ready to go
   if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
@@ -2687,16 +2741,9 @@ NAN_METHOD(MLContext::Present) {
   
   // initialize local graphics stack
 
-  MLGraphicsRenderTargetsInfo renderTargetsInfo;
-  if (MLGraphicsGetRenderTargets(mlContext->graphics_client, &renderTargetsInfo) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to get graphics render targets.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-
-  unsigned int halfWidth = renderTargetsInfo.buffers[0].color.width;
+  unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
   unsigned int width = halfWidth * 2;
-  unsigned int height = renderTargetsInfo.buffers[0].color.height;
+  unsigned int height = mlContext->render_targets_info.buffers[0].color.height;
 
   GLuint fbo;
   GLuint colorTex;
@@ -3035,8 +3082,6 @@ NAN_METHOD(MLContext::Present) {
 
   ML_LOG(Info, "%s: Start loop.", application_name);
 
-  glGenFramebuffers(1, &mlContext->framebuffer_id);
-
   Local<Object> result = Nan::New<Object>();
   result->Set(JS_STR("width"), JS_INT(halfWidth));
   result->Set(JS_STR("height"), JS_INT(height));
@@ -3113,8 +3158,6 @@ NAN_METHOD(MLContext::Exit) {
 
   // HACK: force the app to be "stopped"
   application_context.dummy_value = DummyValue::STOPPED;
-
-  glDeleteFramebuffers(1, &mlContext->framebuffer_id);
 }
 
 /* NAN_METHOD(MLContext::WaitGetPoses) {
@@ -3296,7 +3339,7 @@ NAN_METHOD(MLContext::Exit) {
   }
 } */
 
-NAN_METHOD(MLContext::RequestGetPoses) {
+NAN_METHOD(MLContext::RequestGetPoses) {  
   if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsFunction()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     Local<Float32Array> transformFloat32Array = Local<Float32Array>::Cast(info[0]);
@@ -3312,7 +3355,9 @@ NAN_METHOD(MLContext::RequestGetPoses) {
     {
       std::lock_guard<std::mutex> lock(reqMutex);
       
-      reqCbs.push_back([mlContext, transformArray, projectionArray, controllersArray, mlPoseRes]() -> void {
+      reqCbs.push_back([mlContext, transformArray, projectionArray, controllersArray, mlPoseRes]() -> bool {
+        // windowsystem::SetCurrentWindowContext(gl->windowHandle);
+        
         MLGraphicsFrameParams frame_params;
         MLResult result = MLGraphicsInitFrameParams(&frame_params);
         if (result != MLResult_Ok) {
@@ -3328,6 +3373,20 @@ NAN_METHOD(MLContext::RequestGetPoses) {
 
         bool frameOk = (result == MLResult_Ok);
         if (frameOk) {
+          GLuint fbo;
+          glGenFramebuffers(1, &fbo);
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+          for (int i = 0; i < 2; i++) {
+            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+            if (i == 0) {
+              glClearColor(1.0, 0.0, 0.0, 1.0);
+            } else {
+              glClearColor(0.0, 0.0, 1.0, 1.0);
+            }
+            glClear(GL_COLOR_BUFFER_BIT);
+          }
+          glDeleteFramebuffers(1, &fbo);
+          
           mlContext->TickFloor();
 
           // transform
@@ -3348,53 +3407,53 @@ NAN_METHOD(MLContext::RequestGetPoses) {
               projectionArray[i*16 + j] = projection.matrix_colmajor[j];
             }
           }
-        } else {
-          ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
-        }
-        
-        // position
-        {
-          // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+          
+          // position
+          {
+            // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
-          const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
-          mlContext->position = OffsetFloor(leftCameraTransform.position);
-          mlContext->rotation = leftCameraTransform.rotation;
-        }
-        
-        // controllers
-        MLInputControllerState controllerStates[MLInput_MaxControllers];
-        result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
-        if (result == MLResult_Ok) {
-          for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
-            const MLInputControllerState &controllerState = controllerStates[i];
-            bool is_connected = controllerState.is_connected;
-            const MLVec3f &position = OffsetFloor(controllerState.position);
-            const MLQuaternionf &orientation = controllerState.orientation;
-            const float trigger = controllerState.trigger_normalized;
-            const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
-            const float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
-            const bool isTouchActive = controllerState.is_touch_active[0];
-            const MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
-            const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
+            const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
+            mlContext->position = OffsetFloor(leftCameraTransform.position);
+            mlContext->rotation = leftCameraTransform.rotation;
+          }
+          
+          // controllers
+          MLInputControllerState controllerStates[MLInput_MaxControllers];
+          result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
+          if (result == MLResult_Ok) {
+            for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
+              const MLInputControllerState &controllerState = controllerStates[i];
+              bool is_connected = controllerState.is_connected;
+              const MLVec3f &position = OffsetFloor(controllerState.position);
+              const MLQuaternionf &orientation = controllerState.orientation;
+              const float trigger = controllerState.trigger_normalized;
+              const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
+              const float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
+              const bool isTouchActive = controllerState.is_touch_active[0];
+              const MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
+              const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
 
-            int index;
-            controllersArray[index = i * CONTROLLER_ENTRY_SIZE] = is_connected ? 1 : 0;
-            controllersArray[++index] = position.x;
-            controllersArray[++index] = position.y;
-            controllersArray[++index] = position.z;
-            controllersArray[++index] = orientation.x;
-            controllersArray[++index] = orientation.y;
-            controllersArray[++index] = orientation.z;
-            controllersArray[++index] = orientation.w;
-            controllersArray[++index] = trigger;
-            controllersArray[++index] = bumper;
-            controllersArray[++index] = home;
-            controllersArray[++index] = touchPosAndForce.x;
-            controllersArray[++index] = touchPosAndForce.y;
-            controllersArray[++index] = touchForceZ;
+              int index;
+              controllersArray[index = i * CONTROLLER_ENTRY_SIZE] = is_connected ? 1 : 0;
+              controllersArray[++index] = position.x;
+              controllersArray[++index] = position.y;
+              controllersArray[++index] = position.z;
+              controllersArray[++index] = orientation.x;
+              controllersArray[++index] = orientation.y;
+              controllersArray[++index] = orientation.z;
+              controllersArray[++index] = orientation.w;
+              controllersArray[++index] = trigger;
+              controllersArray[++index] = bumper;
+              controllersArray[++index] = home;
+              controllersArray[++index] = touchPosAndForce.x;
+              controllersArray[++index] = touchPosAndForce.y;
+              controllersArray[++index] = touchForceZ;
+            }
+          } else {
+            ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
           }
         } else {
-          ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
+          ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
         }
 
         {
@@ -3403,7 +3462,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
           resCbs.push_back([frameOk, mlPoseRes]() -> void {
             {
               Local<Object> asyncObject = Nan::New<Object>();
-              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
+              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLContext::RequestGetPoses");
               
               Local<Function> cb = Nan::New(mlPoseRes->cb);
               Local<Value> argv[] = {
@@ -3417,6 +3476,8 @@ NAN_METHOD(MLContext::RequestGetPoses) {
         }
         
         uv_async_send(&resAsync);
+        
+        return frameOk;
       });
     }
     
@@ -3427,16 +3488,22 @@ NAN_METHOD(MLContext::RequestGetPoses) {
 }
 
 NAN_METHOD(MLContext::PrepareFrame) {
+  exout << "MLContext::PrepareFrame 1 " << (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) << std::endl;
+  
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
-    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint framebuffer = info[1]->Uint32Value();
-    GLuint width = info[2]->Uint32Value();
-    GLuint height = info[3]->Uint32Value();
-    
-    windowsystem::SetCurrentWindowContext(gl->windowHandle);
+    exout << "MLContext::PrepareFrame 2" << std::endl;
     
     if (depthEnabled) {
+      MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+      WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+      GLuint framebuffer = info[1]->Uint32Value();
+      GLuint width = info[2]->Uint32Value();
+      GLuint height = info[3]->Uint32Value();
+      
+      windowsystem::SetCurrentWindowContext(gl->windowHandle);
+      
+      exout << "MLContext::PrepareFrame 3" << std::endl;
+      
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
 
       glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -3505,6 +3572,8 @@ NAN_METHOD(MLContext::PrepareFrame) {
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
       }
     }
+    
+    exout << "MLContext::PrepareFrame 4" << std::endl;
 
     // info.GetReturnValue().Set(JS_BOOL(true));
   } else {
@@ -3515,42 +3584,49 @@ NAN_METHOD(MLContext::PrepareFrame) {
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint src_framebuffer_id = info[1]->Uint32Value();
-    unsigned int width = info[2]->Uint32Value();
-    unsigned int height = info[3]->Uint32Value();
+  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
+    // WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+    GLuint colorTex = info[0]->Uint32Value();
+    unsigned int width = info[1]->Uint32Value();
+    unsigned int height = info[2]->Uint32Value();
 
-    const MLRectf &viewport = mlContext->virtual_camera_array.viewport;
-
-    for (int i = 0; i < 2; i++) {
-      MLGraphicsVirtualCameraInfo &camera = mlContext->virtual_camera_array.virtual_cameras[i];
+    {
+      std::lock_guard<std::mutex> lock(reqMutex);
       
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, src_framebuffer_id);
+      reqCbs.push_back([colorTex, width, height]() -> bool {
+        const MLRectf &viewport = application_context.mlContext->virtual_camera_array.viewport;
+        
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, application_context.mlContext->src_framebuffer_id);
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
 
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->framebuffer_id);
-      glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
-      // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
+        for (int i = 0; i < 2; i++) {
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, application_context.mlContext->dst_framebuffer_id);
+          glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, application_context.mlContext->virtual_camera_array.color_id, 0, i);
+          // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, application_context.mlContext->virtual_camera_array.depth_id, 0, i);
 
-      glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
-        i == 0 ? width/2 : width, height,
-        viewport.x, viewport.y,
-        viewport.w, viewport.h,
-        GL_COLOR_BUFFER_BIT,
-        GL_LINEAR);
-
-      MLResult result = MLGraphicsSignalSyncObjectGL(mlContext->graphics_client, camera.sync_object);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
-      }
-    }
-
-    MLResult result = MLGraphicsEndFrame(mlContext->graphics_client, mlContext->frame_handle);
-    if (result != MLResult_Ok) {
-      ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+          glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
+            i == 0 ? width/2 : width, height,
+            viewport.x, viewport.y,
+            viewport.w, viewport.h,
+            GL_COLOR_BUFFER_BIT,
+            GL_LINEAR);
+          
+          MLGraphicsVirtualCameraInfo &camera = application_context.mlContext->virtual_camera_array.virtual_cameras[i];
+          MLResult result = MLGraphicsSignalSyncObjectGL(application_context.mlContext->graphics_client, camera.sync_object);
+          if (result != MLResult_Ok) {
+            ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
+          }
+        }
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        
+        return true;
+      });
     }
     
-    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    uv_sem_post(&reqSem);
+    
+    /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
     } else {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
@@ -3559,7 +3635,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
     } else {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
-    }
+    } */
   } else {
     Nan::ThrowError("MLContext::SubmitFrame: invalid arguments");
   }
@@ -4139,31 +4215,6 @@ NAN_METHOD(MLContext::Poll) {
 }
 
 void MLContext::TickFloor() {
-  if (!floorRequestPending) {
-    {
-      // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
-
-      floorRequest.bounds_center = this->position;
-      // floorRequest.bounds_rotation = mlContext->rotation;
-      floorRequest.bounds_rotation = {0, 0, 0, 1};
-    }
-    floorRequest.bounds_extents.x = planeRange;
-    floorRequest.bounds_extents.y = planeRange;
-    floorRequest.bounds_extents.z = planeRange;
-
-    floorRequest.flags = MLPlanesQueryFlag_Horizontal | MLPlanesQueryFlag_Semantic_Floor;
-    // floorRequest.min_hole_length = 0.5;
-    floorRequest.min_plane_area = 0.25;
-    floorRequest.max_results = MAX_NUM_PLANES;
-
-    MLResult result = MLPlanesQueryBegin(floorTracker, &floorRequest, &floorRequestHandle);
-    if (result == MLResult_Ok) {
-      floorRequestPending = true;
-    } else {
-      ML_LOG(Error, "%s: Floor request failed! %x", application_name, result);
-    }
-  }
-
   if (floorRequestPending) {
     MLResult result = MLPlanesQueryGetResults(floorTracker, floorRequestHandle, floorResults, &numFloorResults);
     if (result == MLResult_Ok) {
@@ -4187,6 +4238,31 @@ void MLContext::TickFloor() {
       ML_LOG(Error, "%s: Floor request failed! %x", application_name, result);
 
       floorRequestPending = false;
+    }
+  }
+  
+  if (!floorRequestPending) {
+    {
+      // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+
+      floorRequest.bounds_center = this->position;
+      // floorRequest.bounds_rotation = mlContext->rotation;
+      floorRequest.bounds_rotation = {0, 0, 0, 1};
+    }
+    floorRequest.bounds_extents.x = planeRange;
+    floorRequest.bounds_extents.y = planeRange;
+    floorRequest.bounds_extents.z = planeRange;
+
+    floorRequest.flags = MLPlanesQueryFlag_Horizontal | MLPlanesQueryFlag_Semantic_Floor;
+    // floorRequest.min_hole_length = 0.5;
+    floorRequest.min_plane_area = 0.25;
+    floorRequest.max_results = MAX_NUM_PLANES;
+
+    MLResult result = MLPlanesQueryBegin(floorTracker, &floorRequest, &floorRequestHandle);
+    if (result == MLResult_Ok) {
+      floorRequestPending = true;
+    } else {
+      ML_LOG(Error, "%s: Floor request failed! %x", application_name, result);
     }
   }
 }

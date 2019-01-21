@@ -313,10 +313,13 @@ public:
 // protected:
   // EGL
   NATIVEwindow *window;
+  NATIVEwindow *graphicsClientWindow;
 
   // tracking
   MLHandle graphics_client;
-  GLuint framebuffer_id;
+  MLGraphicsRenderTargetsInfo render_targets_info;
+  GLuint src_framebuffer_id;
+  GLuint dst_framebuffer_id;
   MLHandle frame_handle;
   MLHandle head_tracker;
   MLHeadTrackingStaticData head_static_data;
