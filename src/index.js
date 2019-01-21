@@ -51,6 +51,7 @@ const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const nativeBindings = require(nativeBindingsModulePath);
 
 const {getGamepads} = require('./VR.js');
+const {_setNativeBindingsModule} = require('./Window');
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
@@ -122,7 +123,7 @@ const args = (() => {
 
 core.setArgs(args);
 core.setVersion(version);
-core.setNativeBindingsModule(nativeBindingsModulePath);
+_setNativeBindingsModule(nativeBindingsModulePath);
 
 const dataPath = (() => {
   const candidatePathPrefixes = [

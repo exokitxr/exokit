@@ -59,6 +59,18 @@ class DOMRect {
     this.bottom = h >= 0 ? y + h : y;
   }
 }
+module.exports.DOMRect = DOMRect;
+
+class DOMPoint {
+  constructor(x = 0, y = 0, z = 0, w = 1) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.w = w;
+  }
+}
+module.exports.DOMPoint = DOMPoint;
+GlobalContext.DOMPoint = DOMPoint;
 
 class NodeList extends Array {
   constructor(nodes) {
@@ -1377,7 +1389,7 @@ class HTMLStyleElement extends HTMLLoadableElement {
         .then(() => css.parse(innerHTML).stylesheet)
         .then(stylesheet => {
           this.stylesheet = stylesheet;
-          GlobalContext.styleEpoch++;
+          this.ownerDocument.defaultView[symbols.styleEpochSymbol]++;
           this.dispatchEvent(new Event('load', {target: this}));
         })
         .catch(err => {
@@ -1443,7 +1455,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
           .then(s => css.parse(s).stylesheet)
           .then(stylesheet => {
             this.stylesheet = stylesheet;
-            GlobalContext.styleEpoch++;
+            this.ownerDocument.defaultView[symbols.styleEpochSymbol]++;
             
             this.readyState = 'complete';
             

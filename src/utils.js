@@ -1,7 +1,10 @@
-const parseIntStrict = require('parse-int');
+const path = require('path');
+const fs = require('fs');
 const url = require('url');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
+const mkdirp = require('mkdirp');
+const parseIntStrict = require('parse-int');
 
 function _getBaseUrl(u) {
   let baseUrl;
@@ -163,3 +166,30 @@ const _elementSetter = (self, attribute, cb) => {
   }
 };
 module.exports._elementSetter = _elementSetter;
+
+const _download = (m, u, data, bufferifyFn, dstDir) => new Promise((accept, reject) => {
+  if (m === 'GET' && /^(?:https?|file):/.test(u)) {
+    const o = url.parse(u);
+    const d = path.resolve(path.join(__dirname, '..'), dstDir, o.host || '.');
+    const f = path.join(d, o.pathname === '/' ? 'index.html' : o.pathname);
+
+    console.log(`${u} -> ${f}`);
+
+    mkdirp(path.dirname(f), err => {
+      if (!err) {
+        fs.writeFile(f, bufferifyFn(data), err => {
+          if (!err) {
+            accept(data);
+          } else {
+            reject(err);
+          }
+        });
+      } else {
+        reject(err);
+      }
+    });
+  } else {
+    accept(data);
+  }
+});
+module.exports._download = _download;
