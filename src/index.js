@@ -1530,7 +1530,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
 
-    // poll for window events
+    // poll operating system events
     nativeBindings.nativeWindow.pollEvents();
     if (args.performance) {
       const now = Date.now();
