@@ -1168,7 +1168,6 @@ const _bindWindow = (window, newWindowCb) => {
     }
   }
 
-  // let lastFrameTime = Date.now();
   const timestamps = {
     frames: 0,
     last: Date.now(),
@@ -1610,7 +1609,6 @@ const _bindWindow = (window, newWindowCb) => {
 
     // wait for next frame
     setImmediate(_recurse);
-    // lastFrameTime = Date.now();
   };
   // setTimeout(_recurse);
   setImmediate(_recurse);
