@@ -924,130 +924,7 @@ let innerHeight = 1024;
 // let fps = DEFAULT_FPS;
 const isMac = os.platform() === 'darwin';
 
-const _bindWindow = (window, newWindowCb) => {
-  window.innerWidth = innerWidth;
-  window.innerHeight = innerHeight;
-
-  let live = true;
-  window.on('unload', () => {
-    live = false;
-  });
-  window.on('navigate', newWindowCb);
-  window.document.on('paste', e => {
-    e.clipboardData = new window.DataTransfer();
-    const clipboardContents = nativeWindow.getClipboard().slice(0, 256);
-    const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
-    e.clipboardData.items.push(dataTransferItem);
-  });
-  window.on('vrdisplaypresentchange', e => {
-    if (e.display) {
-      const gamepads = [leftGamepad, rightGamepad];
-      for (let i = 0; i < gamepads.length; i++) {
-        gamepads[i].ontriggerhapticpulse = (value, duration) => {
-          if (vrPresentState.isPresenting) {
-            value = Math.min(Math.max(value, 0), 1);
-            const deviceIndex = vrPresentState.system.GetTrackedDeviceIndexForControllerRole(i + 1);
-
-            const startTime = Date.now();
-            const _recurse = () => {
-              if ((Date.now() - startTime) < duration) {
-                vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
-                setTimeout(_recurse, 50);
-              }
-            };
-            setTimeout(_recurse, 50);
-          }
-        };
-      }
-    } else {
-      const gamepads = [leftGamepad, rightGamepad];
-      for (let i = 0; i < gamepads.length; i++) {
-        gamepads[i].ontriggerhapticpulse = null
-      }
-    }
-  });
-  window.document.addEventListener('pointerlockchange', () => {
-    const {pointerLockElement} = window.document;
-
-    if (pointerLockElement) {
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-
-        if (context.canvas.ownerDocument.defaultView === window) {
-          const windowHandle = context.getWindowHandle();
-
-          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-            nativeBindings.nativeWindow.setCursorMode(windowHandle, false);
-            break;
-          }
-        }
-      }
-    } else {
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-
-        if (context.canvas.ownerDocument.defaultView === window) {
-          const windowHandle = context.getWindowHandle();
-
-          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-            nativeBindings.nativeWindow.setCursorMode(windowHandle, true);
-            break;
-          }
-        }
-      }
-    }
-  });
-  window.document.addEventListener('fullscreenchange', () => {
-    const {fullscreenElement} = window.document;
-
-    if (fullscreenElement) {
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-
-        if (context.canvas.ownerDocument.defaultView === window) {
-          const windowHandle = context.getWindowHandle();
-
-          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-            nativeBindings.nativeWindow.setFullscreen(windowHandle);
-            break;
-          }
-        }
-      }
-    } else {
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-
-        if (context.canvas.ownerDocument.defaultView === window) {
-          const windowHandle = context.getWindowHandle();
-
-          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-            nativeBindings.nativeWindow.exitFullscreen(windowHandle);
-            break;
-          }
-        }
-      }
-    }
-  });
-  if (args.quit) {
-    window.document.resources.addEventListener('drain', () => {
-      console.log('drain');
-      process.exit();
-    });
-  }
-  window.addEventListener('destroy', e => {
-    const {window} = e;
-    for (let i = 0; i < contexts.length; i++) {
-      const context = contexts[i];
-      if (context.canvas.ownerDocument.defaultView === window) {
-        context.destroy();
-      }
-    }
-    live = false;
-  });
-  window.addEventListener('error', err => {
-    console.warn('got error', err);
-  });
-
+const _startRenderLoop = () => {
   const _decorateModelViewProjection = (o, layer, display, factor) => {
     if (!o.viewports) {
       o.viewports = [
@@ -1115,7 +992,7 @@ const _bindWindow = (window, newWindowCb) => {
         if (isVisible) {
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
-              const {vrDisplay, xrDisplay} = window[symbols.mrDisplaysSymbol];
+              const {vrDisplay, xrDisplay} = window[symbols.mrDisplaysSymbol]; // XXX globalize mr displays
               _decorateModelViewProjections(vrPresentState.layers, vrDisplay, 2); // note: vrDisplay mirrors xrDisplay
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
             } else {
@@ -1128,7 +1005,7 @@ const _bindWindow = (window, newWindowCb) => {
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
-              const {mlDisplay, xmDisplay} = window[symbols.mrDisplaysSymbol];
+              const {mlDisplay, xmDisplay} = window[symbols.mrDisplaysSymbol]; // XXX globalize mr displays
               _decorateModelViewProjections(mlPresentState.layers, mlDisplay, 2); // note: mlDisplay mirrors xmDisplay
               nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
             } else {
@@ -1140,7 +1017,7 @@ const _bindWindow = (window, newWindowCb) => {
 
             // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (fakePresentState.layers.length > 0) {
-            const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
+            const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol]; // XXX globalize mr displays
             _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay, 1);
             nativeWindow.composeLayers(context, 0, fakePresentState.layers);
           }
@@ -1182,14 +1059,10 @@ const _bindWindow = (window, newWindowCb) => {
   const TIMESTAMP_FRAMES = 100;
   const gamepads = getGamepads();
   const [leftGamepad, rightGamepad] = gamepads;
-  const frameData = new window.VRFrameData();
-  const stageParameters = new window.VRStageParameters();
+  const frameData = new window.VRFrameData(); // XXX globalize frame data
+  const stageParameters = new window.VRStageParameters(); // XXX globalize stage parameters
 
-  const _recurse = async () => {
-    if (!live) {
-      return;
-    }
-
+  const _renderLoop = async () => {
     if (args.performance) {
       if (timestamps.frames >= TIMESTAMP_FRAMES) {
         console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.idle}ms idle | ${timestamps.wait}ms wait | ${timestamps.prepare}ms prepare | ${timestamps.events}ms events | ${timestamps.media}ms media | ${timestamps.user}ms user | ${timestamps.submit}ms submit`);
@@ -1213,11 +1086,11 @@ const _bindWindow = (window, newWindowCb) => {
       timestamps.last = now;
     }
 
-    const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
+    const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol]; // XXX globalize fake vr display
     if (fakeVrDisplay.isPresenting) {
       fakeVrDisplay.waitGetPoses();
     }
-    if (vrPresentState.isPresenting && vrPresentState.glContext && vrPresentState.glContext.canvas.ownerDocument.defaultView === window) {
+    if (vrPresentState.isPresenting) {
       // wait for frame
       await new Promise((accept, reject) => {
         vrPresentState.compositor.RequestGetPoses(
@@ -1228,7 +1101,7 @@ const _bindWindow = (window, newWindowCb) => {
           accept
         );
       });
-      if (!live) {
+      if (!immediate) {
         return;
       }
 
@@ -1362,7 +1235,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
 
       // update vr frame
-      window.top.updateVrFrame({
+      window.top.updateVrFrame({ // XXX globalize update
         depthNear,
         depthFar,
         renderWidth,
@@ -1384,7 +1257,7 @@ const _bindWindow = (window, newWindowCb) => {
         timestamps.total += diff;
         timestamps.last = now;
       }
-    } else if (mlPresentState.mlGlContext && mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
+    } else if (mlPresentState.mlGlContext) {
       mlPresentState.mlHasPose = await new Promise((accept, reject) => {
         mlPresentState.mlContext.RequestGetPoses(
           transformArray,
@@ -1393,7 +1266,7 @@ const _bindWindow = (window, newWindowCb) => {
           accept
         );
       });
-      if (!live) {
+      if (!immediate) {
         return;
       }
       
@@ -1503,7 +1376,7 @@ const _bindWindow = (window, newWindowCb) => {
         controllersArrayIndex += 3;
 
         // update ml frame
-        window.top.updateVrFrame({
+        window.top.updateVrFrame({ // XXX globalize update
           depthNear,
           depthFar,
           frameData,
@@ -1545,9 +1418,7 @@ const _bindWindow = (window, newWindowCb) => {
     nativeBindings.nativeBrowser.Browser.updateAll();
     // update magic leap state
     if (mlPresentState.mlGlContext) {
-      if (mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window) {
-        nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
-      }
+      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
       nativeBindings.nativeMl.Poll();
     }
     if (args.performance) {
@@ -1562,7 +1433,7 @@ const _bindWindow = (window, newWindowCb) => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
-    window.tickAnimationFrame();
+    window.tickAnimationFrame(); // XXX tick all window animation frames
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -1584,10 +1455,136 @@ const _bindWindow = (window, newWindowCb) => {
     }
 
     // wait for next frame
-    setImmediate(_recurse);
+    immediate = setImmediate(_renderLoop);
   };
-  // setTimeout(_recurse);
-  setImmediate(_recurse);
+  let immediate = setImmediate(_renderLoop);
+  return {
+    stop() {
+      clearImmediate(immediate);
+      immediate = null;
+    },
+  };
+};
+let currentRenderLoop = _startRenderLoop();
+
+const _bindWindow = (window, newWindowCb) => {
+  window.innerWidth = innerWidth;
+  window.innerHeight = innerHeight;
+
+  window.on('navigate', newWindowCb);
+  window.document.on('paste', e => {
+    e.clipboardData = new window.DataTransfer();
+    const clipboardContents = nativeWindow.getClipboard().slice(0, 256);
+    const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
+    e.clipboardData.items.push(dataTransferItem);
+  });
+  window.on('vrdisplaypresentchange', e => {
+    if (e.display) {
+      const gamepads = [leftGamepad, rightGamepad];
+      for (let i = 0; i < gamepads.length; i++) {
+        gamepads[i].ontriggerhapticpulse = (value, duration) => {
+          if (vrPresentState.isPresenting) {
+            value = Math.min(Math.max(value, 0), 1);
+            const deviceIndex = vrPresentState.system.GetTrackedDeviceIndexForControllerRole(i + 1);
+
+            const startTime = Date.now();
+            const _recurse = () => {
+              if ((Date.now() - startTime) < duration) {
+                vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
+                setTimeout(_recurse, 50);
+              }
+            };
+            setTimeout(_recurse, 50);
+          }
+        };
+      }
+    } else {
+      const gamepads = [leftGamepad, rightGamepad];
+      for (let i = 0; i < gamepads.length; i++) {
+        gamepads[i].ontriggerhapticpulse = null
+      }
+    }
+  });
+  window.document.addEventListener('pointerlockchange', () => {
+    const {pointerLockElement} = window.document;
+
+    if (pointerLockElement) {
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+
+        if (context.canvas.ownerDocument.defaultView === window) {
+          const windowHandle = context.getWindowHandle();
+
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            nativeBindings.nativeWindow.setCursorMode(windowHandle, false);
+            break;
+          }
+        }
+      }
+    } else {
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+
+        if (context.canvas.ownerDocument.defaultView === window) {
+          const windowHandle = context.getWindowHandle();
+
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            nativeBindings.nativeWindow.setCursorMode(windowHandle, true);
+            break;
+          }
+        }
+      }
+    }
+  });
+  window.document.addEventListener('fullscreenchange', () => {
+    const {fullscreenElement} = window.document;
+
+    if (fullscreenElement) {
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+
+        if (context.canvas.ownerDocument.defaultView === window) {
+          const windowHandle = context.getWindowHandle();
+
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            nativeBindings.nativeWindow.setFullscreen(windowHandle);
+            break;
+          }
+        }
+      }
+    } else {
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+
+        if (context.canvas.ownerDocument.defaultView === window) {
+          const windowHandle = context.getWindowHandle();
+
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            nativeBindings.nativeWindow.exitFullscreen(windowHandle);
+            break;
+          }
+        }
+      }
+    }
+  });
+  if (args.quit) {
+    window.document.resources.addEventListener('drain', () => {
+      console.log('drain');
+      process.exit();
+    });
+  }
+  window.addEventListener('destroy', e => {
+    const {window} = e;
+    for (let i = 0; i < contexts.length; i++) {
+      const context = contexts[i];
+      if (context.canvas.ownerDocument.defaultView === window) {
+        context.destroy();
+      }
+    }
+  });
+  window.addEventListener('error', err => {
+    console.warn('got error', err);
+  });
 };
 const _bindDirectWindow = newWindow => {
   _bindWindow(newWindow, _bindDirectWindow);
