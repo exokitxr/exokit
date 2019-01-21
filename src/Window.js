@@ -58,6 +58,7 @@ const {
   nativeGl: WebGLRenderingContext,
   nativeGl2: WebGL2RenderingContext,
   nativeAudio: {
+    AudioContext,
     AudioNode,
     AudioBufferSourceNode,
     OscillatorNode,
