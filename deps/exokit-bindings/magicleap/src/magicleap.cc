@@ -3488,11 +3488,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
 }
 
 NAN_METHOD(MLContext::PrepareFrame) {
-  exout << "MLContext::PrepareFrame 1 " << (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) << std::endl;
-  
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
-    exout << "MLContext::PrepareFrame 2" << std::endl;
-    
     if (depthEnabled) {
       MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
@@ -3501,8 +3497,6 @@ NAN_METHOD(MLContext::PrepareFrame) {
       GLuint height = info[3]->Uint32Value();
       
       windowsystem::SetCurrentWindowContext(gl->windowHandle);
-      
-      exout << "MLContext::PrepareFrame 3" << std::endl;
       
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
 
@@ -3573,8 +3567,6 @@ NAN_METHOD(MLContext::PrepareFrame) {
       }
     }
     
-    exout << "MLContext::PrepareFrame 4" << std::endl;
-
     // info.GetReturnValue().Set(JS_BOOL(true));
   } else {
     Nan::ThrowError("MLContext::PrepareFrame: invalid arguments");
