@@ -3117,7 +3117,7 @@ NAN_METHOD(MLContext::Exit) {
   glDeleteFramebuffers(1, &mlContext->framebuffer_id);
 }
 
-NAN_METHOD(MLContext::WaitGetPoses) {
+/* NAN_METHOD(MLContext::WaitGetPoses) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsFloat32Array() && info[5]->IsFloat32Array() && info[6]->IsFloat32Array()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
@@ -3294,7 +3294,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
   } else {
     Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");
   }
-}
+} */
 
 NAN_METHOD(MLContext::RequestGetPoses) {
   if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsFunction()) {
