@@ -70,6 +70,7 @@ class DOMPoint {
   }
 }
 module.exports.DOMPoint = DOMPoint;
+GlobalContext.DOMPoint = DOMPoint;
 
 class NodeList extends Array {
   constructor(nodes) {
