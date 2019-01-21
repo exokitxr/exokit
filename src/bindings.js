@@ -1,4 +1,4 @@
-// Set by exokit.setNativeBindingsModule.
+// Set by _setNativeBindingsModule
 
 // Due to the way `require` works with multithreading (used for `Worker`), we use this
 // route to make sure the binaries only get initialized once.
