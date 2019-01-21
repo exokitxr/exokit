@@ -1,7 +1,10 @@
-const parseIntStrict = require('parse-int');
+const path = require('path');
+const fs = require('fs');
 const url = require('url');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
+const mkdirp = require('mkdirp');
+const parseIntStrict = require('parse-int');
 
 function _getBaseUrl(u) {
   let baseUrl;
