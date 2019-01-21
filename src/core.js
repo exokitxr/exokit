@@ -87,13 +87,6 @@ const {_elementGetter, _elementSetter, _download} = require('./utils');
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
-const parseJson = s => {
-  try {
-    return JSON.parse(s);
-  } catch (err) {
-    return null;
-  }
-};
 
 GlobalContext.styleEpoch = 0;
 
