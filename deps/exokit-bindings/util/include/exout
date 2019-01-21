@@ -1,31 +1,4 @@
-#include <streambuf>
-#include <ostream>
-
-#ifdef LUMIN
-
-#include <ml_logging.h>
-
-constexpr ssize_t STDIO_BUF_SIZE = 64 * 1024;
-
-class ExoutStreambuf : public std::streambuf {
-  char buf[STDIO_BUF_SIZE + 1];
-  ssize_t i = 0;
-  ssize_t lineStart = 0;
-
-  std::streamsize xsputn(const char_type *s, std::streamsize size) override;
-  int overflow(int c) override;
-  void flush(std::streamsize size);
-};
-
-extern ExoutStreambuf exstream;
-extern std::ostream exout;
-#define exerr exout
-
-#else
-
 #include <iostream>
 
 #define exout std::cout
 #define exerr std::cerr
-
-#endif
