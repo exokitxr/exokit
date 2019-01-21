@@ -11,7 +11,7 @@ const selector = require('window-selector');
 const fetch = require('window-fetch');
 const {Blob} = fetch;
 
-const bindings = require('./bindings');
+const bindings = require('./native-bindings');
 const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
@@ -2645,7 +2645,7 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         if (urls.has(value)) {
           const blob = urls.get(value);
-          if (blob instanceof Bindings.bindings.nativeVideo.VideoDevice) {
+          if (blob instanceof bindings.nativeVideo.VideoDevice) {
             this.video = blob;
           }
         }
