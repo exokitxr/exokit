@@ -70,6 +70,7 @@ const {
   HTMLTemplateElement,
   createImageBitmap,
   DOMRect,
+  DOMPoint,
   Node,
   NodeList,
   Text,
@@ -484,16 +485,6 @@ class DataTransferItem {
     });
   }
 }
-
-class DOMPoint {
-  constructor(x = 0, y = 0, z = 0, w = 1) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.w = w;
-  }
-}
-GlobalContext.DOMPoint = DOMPoint;
 
 class Worker {
   constructor(src) {
@@ -1104,6 +1095,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.CustomElementRegistry = CustomElementRegistry;
   window.MutationObserver = require('./MutationObserver').MutationObserver;
   window.DOMRect = DOMRect;
+  window.DOMPoint = DOMPoint;
   window.getComputedStyle = el => {
     let styleSpec = el[symbols.computedStyleSymbol];
     if (!styleSpec || styleSpec.epoch !== GlobalContext.styleEpoch) {
@@ -1325,7 +1317,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
-  window.DOMPoint = DOMPoint;
   if (window.navigator.xr) {
     window.XR = XR.XR;
     window.XRDevice = XR.XRDevice;
