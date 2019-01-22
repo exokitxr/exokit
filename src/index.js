@@ -43,6 +43,7 @@ const replHistory = require('repl.history');
 const minimist = require('minimist');
 
 const {version} = require('../package.json');
+const {defaultEyeSeparation} = require('./constants.js');
 const symbols = require('./symbols');
 const {THREE} = core;
 

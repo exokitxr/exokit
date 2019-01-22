@@ -1,7 +1,5 @@
 const THREE = require('../lib/three-min.js');
-const {defaultCanvasSize} = require('./constants.js');
-
-const defaultEyeSeparation = 0.625;
+const {defaultCanvasSize, defaultEyeSeparation} = require('./constants.js');
 
 /* const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
