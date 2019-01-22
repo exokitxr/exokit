@@ -63,10 +63,39 @@ module.exports.DOMRect = DOMRect;
 
 class DOMPoint {
   constructor(x = 0, y = 0, z = 0, w = 1) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.w = w;
+    if (typeof x === 'object') {
+      this.values = x;
+    } else {
+      this.values = new Float32Array(4);
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      this.w = w;
+    }
+  }
+  get x() {
+    return this.values[0];
+  }
+  set x(x) {
+    this.values[0] = x;
+  }
+  get y() {
+    return this.values[1];
+  }
+  set y(y) {
+    this.values[1] = y;
+  }
+  get z() {
+    return this.values[2];
+  }
+  set z(z) {
+    this.values[2] = z;
+  }
+  get w() {
+    return this.values[3];
+  }
+  set w(w) {
+    this.values[3] = w;
   }
 }
 module.exports.DOMPoint = DOMPoint;
