@@ -1340,6 +1340,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       const {_context: context} = canvas;
       
       GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
+      fakeVrDisplay.waitGetPoses();
       
       return {
         width: context.drawingBufferWidth,
