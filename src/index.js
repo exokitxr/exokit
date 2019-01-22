@@ -1159,9 +1159,6 @@ const _bindWindow = (window, newWindowCb) => {
           }
         }
 
-        numDirtyFrames++;
-        _checkDirtyFrameTimeout();
-
         context.clearDirty();
       }
     }
@@ -1184,29 +1181,6 @@ const _bindWindow = (window, newWindowCb) => {
   const [leftGamepad, rightGamepad] = gamepads;
   const frameData = new window.VRFrameData();
   const stageParameters = new window.VRStageParameters();
-  let numDirtyFrames = 0;
-  const dirtyFrameContexts = [];
-  const _checkDirtyFrameTimeout = () => {
-    if (dirtyFrameContexts.length > 0) {
-      const removedDirtyFrameContexts = [];
-
-      for (let i = 0; i < dirtyFrameContexts.length; i++) {
-        const dirtyFrameContext = dirtyFrameContexts[i];
-        const {dirtyFrames} = dirtyFrameContext;
-        if (numDirtyFrames > dirtyFrames && contexts.length > 0) {
-          const {fn} = dirtyFrameContext;
-          fn(null, contexts[0]);
-
-          removedDirtyFrameContexts.push(dirtyFrameContext);
-        }
-      }
-
-      for (let i = 0; i < removedDirtyFrameContexts.length; i++) {
-        const removedDirtyFrameContext = removedDirtyFrameContexts[i];
-        dirtyFrameContexts.splice(dirtyFrameContexts.indexOf(removedDirtyFrameContext), 1);
-      }
-    }
-  };
 
   const _recurse = async () => {
     if (!live) {
