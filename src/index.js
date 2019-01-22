@@ -1169,8 +1169,9 @@ const _startRenderLoop = () => {
       timestamps.last = now;
     }
 
-    const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol]; // XXX globalize fake vr display
-    if (fakeVrDisplay.isPresenting) {
+    const window = _getTopWindow();
+    const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
+    if (fakeVrDisplay.isPresenting) { // XXX can move this to fakePresentState
       fakeVrDisplay.waitGetPoses();
     }
     if (vrPresentState.isPresenting) {
