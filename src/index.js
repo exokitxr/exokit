@@ -995,6 +995,55 @@ let innerHeight = 1024;
 // let fps = DEFAULT_FPS;
 const isMac = os.platform() === 'darwin';
 
+class XRState {
+  constructor() {
+    const sab = new SharedArrayBuffer(1024);
+    let index = 0;
+    const _makeTypedArray = (c, n) => {
+      const result = new c(sab, index, n);
+      index += result.byteLength;
+      return result;
+    };
+
+    this.renderWidth = _makeTypedArray(Float32Array, 1);
+    this.renderHeight = _makeTypedArray(Float32Array, 1);
+    this.depthNear = _makeTypedArray(Float32Array, 1);
+    this.depthFar = _makeTypedArray(Float32Array, 1);
+    this.position = _makeTypedArray(Float32Array, 3);
+    this.orientation = _makeTypedArray(Float32Array, 4);
+    this.leftViewMatrix = _makeTypedArray(Float32Array, 16);
+    this.rightViewMatrix = _makeTypedArray(Float32Array, 16);
+    this.leftProjectionMatrix = _makeTypedArray(Float32Array, 16);
+    this.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
+    this.leftOffset = _makeTypedArray(Float32Array, 3);
+    this.rightOffset = _makeTypedArray(Float32Array, 3);
+    this.gamepads = (() => {
+      const result = Array(2);
+      for (let i = 0; i < result.length; i++) {
+        result[i] = {
+          connected: _makeTypedArray(Uint32Array, 1),
+          position: _makeTypedArray(Float32Array, 3),
+          orientation: _makeTypedArray(Float32Array, 4),
+          buttons: (() => {
+            const result = Array(5);
+            for (let i = 0; i < result.length; i++) {
+              result[i] = {
+                pressed: _makeTypedArray(Uint32Array, 1),
+                touched: _makeTypedArray(Uint32Array, 1),
+                value: _makeTypedArray(Float32Array, 1),
+              };
+            }
+            return result;
+          })(),
+          axes: _makeTypedArray(Float32Array, 10),
+        };
+      }
+      return result;
+    })();
+  }
+}
+GlobalContext.xrState = new XRState();
+
 const _startRenderLoop = () => {
   const _decorateModelViewProjection = (o, layer, display, factor) => {
     if (!o.viewports) {
@@ -1132,7 +1181,10 @@ const _startRenderLoop = () => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 100;
-  // let lastFrameTime = Date.now();
+  // const gamepads = getGamepads();
+  // const [leftGamepad, rightGamepad] = gamepads; // XXX merge this into XRState
+  // const frameData = new window.VRFrameData(); // XXX globalize frame data
+  // const stageParameters = new window.VRStageParameters(); // XXX globalize stage parameters
 
   const _renderLoop = async () => {
     if (args.performance) {
