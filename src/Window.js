@@ -1403,7 +1403,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       xmDisplay,
     };
 
-    const _updateGamepads = newGamepads => {
+    /* const _updateGamepads = newGamepads => {
       if (newGamepads !== undefined) {
         const gamepads = getGamepads();
 
@@ -1436,7 +1436,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       if (updatedHmd) {
         _updateGamepads(update.gamepads);
       }
-    };
+    }; */
 
     if (nativeMl) {
       let lastPresent = nativeMl.IsPresent();

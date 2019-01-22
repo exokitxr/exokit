@@ -381,10 +381,58 @@ const vrPresentState = {
   layers: [],
 };
 GlobalContext.vrPresentState = vrPresentState;
-let renderWidth = 0;
-let renderHeight = 0;
-const depthNear = 0.1;
-const depthFar = 10000.0;
+
+class XRState {
+  constructor() {
+    const sab = new SharedArrayBuffer(1024);
+    let index = 0;
+    const _makeTypedArray = (c, n) => {
+      const result = new c(sab, index, n);
+      index += result.byteLength;
+      return result;
+    };
+
+    this.renderWidth = _makeTypedArray(Float32Array, 1);
+    this.renderHeight = _makeTypedArray(Float32Array, 1);
+    this.depthNear = _makeTypedArray(Float32Array, 1);
+    this.depthNear[0] = 0.1;
+    this.depthFar = _makeTypedArray(Float32Array, 1);
+    this.depthFar[0] = 10000.0;
+    this.position = _makeTypedArray(Float32Array, 3);
+    this.orientation = _makeTypedArray(Float32Array, 4);
+    this.leftViewMatrix = _makeTypedArray(Float32Array, 16);
+    this.rightViewMatrix = _makeTypedArray(Float32Array, 16);
+    this.leftProjectionMatrix = _makeTypedArray(Float32Array, 16);
+    this.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
+    this.leftOffset = _makeTypedArray(Float32Array, 3);
+    this.rightOffset = _makeTypedArray(Float32Array, 3);
+    this.gamepads = (() => {
+      const result = Array(2);
+      for (let i = 0; i < result.length; i++) {
+        result[i] = {
+          connected: _makeTypedArray(Uint32Array, 1),
+          position: _makeTypedArray(Float32Array, 3),
+          orientation: _makeTypedArray(Float32Array, 4),
+          buttons: (() => {
+            const result = Array(5);
+            for (let i = 0; i < result.length; i++) {
+              result[i] = {
+                pressed: _makeTypedArray(Uint32Array, 1),
+                touched: _makeTypedArray(Uint32Array, 1),
+                value: _makeTypedArray(Float32Array, 1),
+              };
+            }
+            return result;
+          })(),
+          axes: _makeTypedArray(Float32Array, 10),
+        };
+      }
+      return result;
+    })();
+  }
+}
+const xrState = GlobalContext.xrState = new XRState();
+
 if (nativeBindings.nativeVr) {
   nativeBindings.nativeVr.requestPresent = function(layers) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
@@ -411,8 +459,8 @@ if (nativeBindings.nativeVr) {
 
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
-        renderWidth = halfWidth;
-        renderHeight = height;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
 
         const cleanups = [];
 
@@ -458,11 +506,11 @@ if (nativeBindings.nativeVr) {
           canvas.removeListener('attribute', _attribute);
         });
 
-        window.top.updateVrFrame({
-          renderWidth,
-          renderHeight,
+        /* window.top.updateVrFrame({
+          renderWidth: xrState.renderWidth[0],
+          renderHeight: xrState.renderHeight[0],
           force: true,
-        });
+        }); */
 
         return canvas.framebuffer;
       } else if (canvas.ownerDocument.framebuffer) {
@@ -484,8 +532,8 @@ if (nativeBindings.nativeVr) {
 
         const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
         return {
-          width: renderWidth * 2,
-          height: renderHeight,
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
           msFbo,
           msTex,
           msDepthTex,
@@ -575,8 +623,8 @@ if (nativeBindings.nativeMl) {
             msDepthStencilTex: msDepthTex,
           } = initResult;
           const width = halfWidth * 2;
-          renderWidth = halfWidth;
-          renderHeight = height;
+          xrState.renderWidth[0] = halfWidth;
+          xrState.renderHeight[0] = height;
 
           mlPresentState.mlFbo = fbo;
           mlPresentState.mlTex = tex;
@@ -611,11 +659,11 @@ if (nativeBindings.nativeMl) {
             canvas.removeListener('attribute', _attribute);
           });
 
-          window.top.updateVrFrame({
-            renderWidth,
-            renderHeight,
+          /* window.top.updateVrFrame({
+            renderWidth: xrState.renderWidth[0],
+            renderHeight: xrState.renderHeight[0],
             force: true,
-          });
+          }); */
 
           context.setDefaultFramebuffer(msFbo);
 
@@ -641,8 +689,8 @@ if (nativeBindings.nativeMl) {
         };
       } else {
         return {
-          width: renderWidth * 2,
-          height: renderHeight,
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
           msFbo: mlPresentState.mlMsFbo,
           msTex: mlPresentState.mlMsTex,
           msDepthTex: mlPresentState.mlMsDepthTex,
@@ -916,55 +964,6 @@ let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
 // let fps = DEFAULT_FPS;
 const isMac = os.platform() === 'darwin';
-
-class XRState {
-  constructor() {
-    const sab = new SharedArrayBuffer(1024);
-    let index = 0;
-    const _makeTypedArray = (c, n) => {
-      const result = new c(sab, index, n);
-      index += result.byteLength;
-      return result;
-    };
-
-    this.renderWidth = _makeTypedArray(Float32Array, 1);
-    this.renderHeight = _makeTypedArray(Float32Array, 1);
-    this.depthNear = _makeTypedArray(Float32Array, 1);
-    this.depthFar = _makeTypedArray(Float32Array, 1);
-    this.position = _makeTypedArray(Float32Array, 3);
-    this.orientation = _makeTypedArray(Float32Array, 4);
-    this.leftViewMatrix = _makeTypedArray(Float32Array, 16);
-    this.rightViewMatrix = _makeTypedArray(Float32Array, 16);
-    this.leftProjectionMatrix = _makeTypedArray(Float32Array, 16);
-    this.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
-    this.leftOffset = _makeTypedArray(Float32Array, 3);
-    this.rightOffset = _makeTypedArray(Float32Array, 3);
-    this.gamepads = (() => {
-      const result = Array(2);
-      for (let i = 0; i < result.length; i++) {
-        result[i] = {
-          connected: _makeTypedArray(Uint32Array, 1),
-          position: _makeTypedArray(Float32Array, 3),
-          orientation: _makeTypedArray(Float32Array, 4),
-          buttons: (() => {
-            const result = Array(5);
-            for (let i = 0; i < result.length; i++) {
-              result[i] = {
-                pressed: _makeTypedArray(Uint32Array, 1),
-                touched: _makeTypedArray(Uint32Array, 1),
-                value: _makeTypedArray(Float32Array, 1),
-              };
-            }
-            return result;
-          })(),
-          axes: _makeTypedArray(Float32Array, 10),
-        };
-      }
-      return result;
-    })();
-  }
-}
-GlobalContext.xrState = new XRState();
 
 const _startRenderLoop = () => {
   const _decorateModelViewProjection = (o, layer, display, factor) => {
@@ -1282,11 +1281,10 @@ const _startRenderLoop = () => {
         vrPresentState.lmContext.WaitGetPoses(handsArray);
       } */
 
-      // update vr frame
-      window.top.updateVrFrame({ // XXX globalize update
+      /* window.top.updateVrFrame({
         frameData,
         // handsArray,
-      });
+      }); */
 
       if (args.performance) {
         const now = Date.now();
@@ -1324,9 +1322,6 @@ const _startRenderLoop = () => {
       }
 
       if (mlPresentState.mlHasPose) {
-        const depthNear = 0.1;
-        const depthFar = 100;
-
         localVector.fromArray(transformArray, 0);
         localQuaternion.fromArray(transformArray, 3);
         localVector2.set(1, 1, 1);
@@ -1419,12 +1414,11 @@ const _startRenderLoop = () => {
           controllersArrayIndex += 3;
         }
 
-        // update ml frame
-        window.top.updateVrFrame({ // XXX globalize update
+        /* window.top.updateVrFrame({
           // stageParameters,
           gamepads,
           context: mlPresentState.mlContext,
-        });
+        }); */
       }
 
       if (args.performance) {
