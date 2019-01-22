@@ -52,9 +52,6 @@ const nativeBindings = require(nativeBindingsModulePath);
 const eventLoopNative = require('event-loop-native');
 nativeBindings.nativeWindow.setEventLoop(eventLoopNative);
 
-const {getGamepads} = require('./VR.js');
-// const {_setNativeBindingsModule} = require('./Window');
-
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
 
@@ -125,7 +122,6 @@ const args = (() => {
 
 core.setArgs(args);
 core.setVersion(version);
-// _setNativeBindingsModule(nativeBindingsModulePath);
 
 const dataPath = (() => {
   const candidatePathPrefixes = [
@@ -943,6 +939,29 @@ class XRState {
     this.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
     this.leftOffset = _makeTypedArray(Float32Array, 3);
     this.rightOffset = _makeTypedArray(Float32Array, 3);
+    this.gamepads = (() => {
+      const result = Array(2);
+      for (let i = 0; i < result.length; i++) {
+        result[i] = {
+          connected: _makeTypedArray(Uint32Array, 1),
+          position: _makeTypedArray(Float32Array, 3),
+          orientation: _makeTypedArray(Float32Array, 4),
+          buttons: (() => {
+            const result = Array(5);
+            for (let i = 0; i < result.length; i++) {
+              result[i] = {
+                pressed: _makeTypedArray(Uint32Array, 1),
+                touched: _makeTypedArray(Uint32Array, 1),
+                value: _makeTypedArray(Float32Array, 1),
+              };
+            }
+            return result;
+          })(),
+          axes: _makeTypedArray(Float32Array, 10),
+        };
+      }
+      return result;
+    })();
   }
 }
 GlobalContext.xrState = new XRState();
@@ -1082,8 +1101,8 @@ const _startRenderLoop = () => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 100;
-  const gamepads = getGamepads();
-  const [leftGamepad, rightGamepad] = gamepads; // XXX merge this into XRState
+  // const gamepads = getGamepads();
+  // const [leftGamepad, rightGamepad] = gamepads; // XXX merge this into XRState
   // const frameData = new window.VRFrameData(); // XXX globalize frame data
   // const stageParameters = new window.VRStageParameters(); // XXX globalize stage parameters
 
@@ -1201,60 +1220,62 @@ const _startRenderLoop = () => {
       // build gamepads data
       vrPresentState.system.GetControllerState(0, localGamepadArray);
       if (!isNaN(localGamepadArray[0])) {
-        leftGamepad.connected = true;
+        const leftGamepad = xrState.gamepads[0];
+        leftGamepad.connected[0] = true;
 
         localMatrix.fromArray(localFloat32Array2);
         localMatrix.decompose(localVector, localQuaternion, localVector2);
-        localVector.toArray(leftGamepad.pose.position);
-        localQuaternion.toArray(leftGamepad.pose.orientation);
+        localVector.toArray(leftGamepad.position);
+        localQuaternion.toArray(leftGamepad.orientation);
 
-        leftGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
-        leftGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
-        leftGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
-        leftGamepad.buttons[3].pressed = localGamepadArray[2] !== 0; // menu
-        leftGamepad.buttons[4].pressed = localGamepadArray[1] !== 0; // system
+        leftGamepad.buttons[0].pressed[0] = localGamepadArray[4]; // pad
+        leftGamepad.buttons[1].pressed[0] = localGamepadArray[5]; // trigger
+        leftGamepad.buttons[2].pressed[0] = localGamepadArray[3]; // grip
+        leftGamepad.buttons[3].pressed[0] = localGamepadArray[2]; // menu
+        leftGamepad.buttons[4].pressed[0] = localGamepadArray[1]; // system
 
-        leftGamepad.buttons[0].touched = localGamepadArray[9] !== 0; // pad
-        leftGamepad.buttons[1].touched = localGamepadArray[10] !== 0; // trigger
-        leftGamepad.buttons[2].touched = localGamepadArray[8] !== 0; // grip
-        leftGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
-        leftGamepad.buttons[4].touched = localGamepadArray[6] !== 0; // system
+        leftGamepad.buttons[0].touched[0] = localGamepadArray[9]; // pad
+        leftGamepad.buttons[1].touched[0] = localGamepadArray[10]; // trigger
+        leftGamepad.buttons[2].touched[0] = localGamepadArray[8]; // grip
+        leftGamepad.buttons[3].touched[0] = localGamepadArray[7]; // menu
+        leftGamepad.buttons[4].touched[0] = localGamepadArray[6]; // system
 
         for (let i = 0; i < 10; i++) {
           leftGamepad.axes[i] = localGamepadArray[11+i];
         }
-        leftGamepad.buttons[1].value = leftGamepad.axes[2]; // trigger
+        leftGamepad.buttons[1].value[0] = leftGamepad.axes[2]; // trigger
       } else {
-        leftGamepad.connected = false;
+        leftGamepad.connected[0] = 0;
       }
 
       vrPresentState.system.GetControllerState(1, localGamepadArray);
       if (!isNaN(localGamepadArray[0])) {
-        rightGamepad.connected = true;
+        const rightGamepad = xrState.gamepads[1];
+        rightGamepad.connected[0] = 1;
         
         localMatrix.fromArray(localFloat32Array3);
         localMatrix.decompose(localVector, localQuaternion, localVector2);
-        localVector.toArray(rightGamepad.pose.position);
-        localQuaternion.toArray(rightGamepad.pose.orientation);
+        localVector.toArray(rightGamepad.position);
+        localQuaternion.toArray(rightGamepad.orientation);
 
-        rightGamepad.buttons[0].pressed = localGamepadArray[4] !== 0; // pad
-        rightGamepad.buttons[1].pressed = localGamepadArray[5] !== 0; // trigger
-        rightGamepad.buttons[2].pressed = localGamepadArray[3] !== 0; // grip
-        rightGamepad.buttons[3].pressed = localGamepadArray[2] !== 0; // menu
-        rightGamepad.buttons[4].pressed = localGamepadArray[1] !== 0; // system
+        rightGamepad.buttons[0].pressed[0] = localGamepadArray[4]; // pad
+        rightGamepad.buttons[1].pressed[0] = localGamepadArray[5]; // trigger
+        rightGamepad.buttons[2].pressed[0] = localGamepadArray[3]; // grip
+        rightGamepad.buttons[3].pressed[0] = localGamepadArray[2]; // menu
+        rightGamepad.buttons[4].pressed[0] = localGamepadArray[1]; // system
 
-        rightGamepad.buttons[0].touched = localGamepadArray[9] !== 0; // pad
-        rightGamepad.buttons[1].touched = localGamepadArray[10] !== 0; // trigger
-        rightGamepad.buttons[2].touched = localGamepadArray[8] !== 0; // grip
-        rightGamepad.buttons[3].touched = localGamepadArray[7] !== 0; // menu
-        rightGamepad.buttons[4].touched = localGamepadArray[6] !== 0; // system
+        rightGamepad.buttons[0].touched[0] = localGamepadArray[9]; // pad
+        rightGamepad.buttons[1].touched[0] = localGamepadArray[10]; // trigger
+        rightGamepad.buttons[2].touched[0] = localGamepadArray[8]; // grip
+        rightGamepad.buttons[3].touched[0] = localGamepadArray[7]; // menu
+        rightGamepad.buttons[4].touched[0] = localGamepadArray[6]; // system
 
         for (let i = 0; i < 10; i++) {
           rightGamepad.axes[i] = localGamepadArray[11+i];
         }
-        rightGamepad.buttons[1].value = rightGamepad.axes[2]; // trigger
+        rightGamepad.buttons[1].value[0] = rightGamepad.axes[2]; // trigger
       } else {
-        rightGamepad.connected = false;
+        rightGamepad.connected[0] = 0;
       }
 
       /* if (vrPresentState.lmContext) { // XXX remove this binding
@@ -1264,7 +1285,6 @@ const _startRenderLoop = () => {
       // update vr frame
       window.top.updateVrFrame({ // XXX globalize update
         frameData,
-        gamepads,
         // handsArray,
       });
 
