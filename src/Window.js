@@ -1437,9 +1437,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         _updateGamepads(update.gamepads);
       }
     };
-    /* window.updateArFrame = (viewMatrix, projectionMatrix) => {
-      arDisplay.update(viewMatrix, projectionMatrix);
-    }; */
 
     if (nativeMl) {
       let lastPresent = nativeMl.IsPresent();
