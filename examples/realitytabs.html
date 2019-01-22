@@ -2702,8 +2702,10 @@ function animate(time, frame) {
 
 const _bootFakeDisplay = async () => {
   fakeDisplay = _makeFakeDisplay();
-  camera.projectionMatrix.toArray();
-  fakeDisplay.setProjection(camera.projectionMatrix);
+  fakeDisplay.setProjection(
+    camera.projectionMatrix
+      .toArray(localMatrixFloat32Array)
+  );
   // camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
   // camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
   fakeDisplay.position.set(0, 1.6, 0);
