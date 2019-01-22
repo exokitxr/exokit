@@ -3,9 +3,9 @@ const {defaultCanvasSize} = require('./constants.js');
 
 const defaultEyeSeparation = 0.625;
 
-const localVector = new THREE.Vector3();
+/* const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
-const localMatrix = new THREE.Matrix4();
+const localMatrix = new THREE.Matrix4(); */
 
 class VRPose {
   constructor(position = new Float32Array(3), orientation = Float32Array.from([0, 0, 0, 1])) {
@@ -38,13 +38,13 @@ class VRFrameData {
     this.pose = new VRPose();
   }
 
-  copy(frameData) {
+  /* copy(frameData) {
     this.leftProjectionMatrix.set(frameData.leftProjectionMatrix);
     this.leftViewMatrix.set(frameData.leftViewMatrix);
     this.rightProjectionMatrix.set(frameData.rightProjectionMatrix);
     this.rightViewMatrix.set(frameData.rightViewMatrix);
     this.pose.copy(frameData.pose);
-  }
+  } */
 }
 class GamepadButton {
   constructor() {
@@ -130,9 +130,9 @@ class VRStageParameters {
     this.sittingToStandingTransform = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 
-  copy(vrStageParameters) {
+  /* copy(vrStageParameters) {
     this.sittingToStandingTransform.set(vrStageParameters.sittingToStandingTransform);
-  }
+  } */
 }
 
 class MRDisplay {
@@ -146,8 +146,6 @@ class MRDisplay {
       hasPosition: true,
       maxLayers: 1,
     };
-    this.depthNear = 0.1;
-    this.depthFar = 10000.0;
     this.stageParameters = new VRStageParameters();
 
     this.onrequestpresent = null;
@@ -155,12 +153,6 @@ class MRDisplay {
     this.onrequestanimationframe = null;
     this.onvrdisplaypresentchange = null;
 
-    this._width = defaultCanvasSize[0] / 2;
-    this._height = defaultCanvasSize[1];
-    this._leftOffset = Float32Array.from([-defaultEyeSeparation/2, 0, 0]);
-    this._leftFov = Float32Array.from([45, 45, 45, 45]);
-    this._rightOffset = Float32Array.from([defaultEyeSeparation/2, 0, 0]);
-    this._rightFov = Float32Array.from([45, 45, 45, 45]);
     this._rafs = [];
   }
 
@@ -183,10 +175,10 @@ class MRDisplay {
       downDegrees: fovArray[3],
     });
     return {
-      renderWidth: this._width,
-      renderHeight: this._height,
-      offset: leftEye ? this._leftOffset : this._rightOffset,
-      fieldOfView: _fovArrayToVRFieldOfView(leftEye ? this._leftFov : this._rightFov),
+      renderWidth: GlobalContext.xrState.renderWidth[0],
+      renderHeight:  GlobalContext.xrState.renderHeight[0],
+      offset: leftEye ? GlobalContext.xrState.leftOffset : GlobalContext.xrState.rightOffset,
+      fieldOfView: _fovArrayToVRFieldOfView(leftEye ? GlobalContext.xrState.leftFov : GlobalContext.xrState.rightFov),
     };
   }
 
@@ -244,7 +236,7 @@ class MRDisplay {
 
   submitFrame() {}
 
-  clone() {
+  /* clone() {
     const o = new this.constructor();
     for (const k in this) {
       o[k] = this[k];
@@ -254,7 +246,7 @@ class MRDisplay {
       o.session.device = o;
     }
     return o;
-  }
+  } */
 
   destroy() {
     for (let i = 0; i < this._rafs.length; i++) {
@@ -270,15 +262,15 @@ class VRDisplay extends MRDisplay {
   }
 
   getFrameData(frameData) {
-    frameData.leftProjectionMatrix.set(this._frameData.leftProjectionMatrix);
-    frameData.leftViewMatrix.set(this._frameData.leftViewMatrix);
-    frameData.rightViewMatrix.set(this._frameData.rightViewMatrix);
-    frameData.rightProjectionMatrix.set(this._frameData.rightProjectionMatrix);
-    frameData.pose.position.set(this._frameData.pose.position);
-    frameData.pose.orientation.set(this._frameData.pose.orientation);
+    frameData.leftProjectionMatrix.set(GlobalContext.xrState.leftProjectionMatrix);
+    frameData.leftViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
+    frameData.rightViewMatrix.set(GlobalContext.xrState.rightViewMatrix);
+    frameData.rightProjectionMatrix.set(GlobalContext.xrState.rightProjectionMatrix);
+    frameData.pose.position.set(GlobalContext.xrState.position);
+    frameData.pose.orientation.set(GlobalContext.xrState.orientation);
   }
 
-  update(update) {
+  /* update(update) {
     const {
       depthNear,
       depthFar,
@@ -322,7 +314,7 @@ class VRDisplay extends MRDisplay {
     if (stageParameters !== undefined) {
       this.stageParameters.copy(stageParameters);
     }
-  }
+  } */
 }
 class FakeVRDisplay extends MRDisplay {
   constructor() {
@@ -336,26 +328,27 @@ class FakeVRDisplay extends MRDisplay {
     ];
 
     this.isPresenting = false;
-    this.depthNear = 0.1;
-    this.depthFar = 10 * 1024;
-    this._width = defaultCanvasSize[0];
-    this._height = defaultCanvasSize[1];
-    this._leftOffset = Float32Array.from([-defaultEyeSeparation/2, 0, 0]);
-    this._leftFov = Float32Array.from([45, 45, 45, 45]);
-    this._rightOffset = Float32Array.from([defaultEyeSeparation/2, 0, 0]);
-    this._rightFov = Float32Array.from([45, 45, 45, 45]);
     this.stageParameters = new VRStageParameters();
 
-    this._frameData = new VRFrameData();
-    this._stereo = false;
+    // this._frameData = new VRFrameData();
+    // this._stereo = false;
   }
+
+  get depthNear() {
+    return GlobalContext.xrState.depthNear[0];
+  }
+  set depthNear(depthNear) {}
+  get depthFar() {
+    return GlobalContext.xrState.depthFar[0];
+  }
+  set depthFar(depthFar) {}
 
   setSize(width, height) {
-    this._width = this._stereo ? width*2 : width;
-    this._height = height;
+    GlobalContext.xrState.renderWidth[0] = width;
+    GlobalContext.xrState.renderHeight[0] = height;
   }
 
-  getStereo(newStereo) {
+  /* getStereo(newStereo) {
     return this._stereo;
   }
   setStereo(newStereo) {
@@ -365,9 +358,9 @@ class FakeVRDisplay extends MRDisplay {
       this._width /= 2;
     }
     this._stereo = newStereo;
-  }
+  } */
 
-  update() {
+  /* update() {
     if (!this._stereo) {
       localMatrix.compose(
         this.position,
@@ -399,7 +392,7 @@ class FakeVRDisplay extends MRDisplay {
 
       this._frameData.pose.set(this.position, this.quaternion);
     }
-  }
+  } */
 
   requestPresent() {
     this.isPresenting = true;
@@ -421,9 +414,9 @@ class FakeVRDisplay extends MRDisplay {
     return Promise.resolve();
   }
 
-  getFrameData(frameData) {
+  /* getFrameData(frameData) {
     frameData.copy(this._frameData);
-  }
+  } */
 
   getLayers() {
     if (!this._stereo) {
