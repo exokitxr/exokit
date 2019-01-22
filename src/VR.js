@@ -2,9 +2,9 @@ const THREE = require('../lib/three-min.js');
 const {defaultCanvasSize, defaultEyeSeparation} = require('./constants.js');
 const GlobalContext = require('./GlobalContext');
 
-/* const localVector = new THREE.Vector3();
+const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
-const localMatrix = new THREE.Matrix4(); */
+const localMatrix = new THREE.Matrix4();
 
 class VRPose {
   constructor(position = new Float32Array(3), orientation = Float32Array.from([0, 0, 0, 1])) {
@@ -368,39 +368,30 @@ class FakeVRDisplay extends MRDisplay {
     this._stereo = newStereo;
   } */
 
-  /* update() {
-    if (!this._stereo) {
-      localMatrix.compose(
-        this.position,
-        this.quaternion,
-        localVector.set(1, 1, 1)
-      )
-       .getInverse(localMatrix)
-       .toArray(this._frameData.leftViewMatrix);
-      localMatrix.toArray(this._frameData.rightViewMatrix);
-      this._frameData.pose.set(this.position, this.quaternion);
-    } else {
-      localMatrix.compose(
-        localVector.copy(this.position)
-          .add(localVector2.set(-0.1, 0, 0).applyQuaternion(this.quaternion)),
-        this.quaternion,
-        localVector2.set(1, 1, 1)
-      )
-       .getInverse(localMatrix)
-       .toArray(this._frameData.leftViewMatrix);
-       
-     localMatrix.compose(
-        localVector.copy(this.position)
-          .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
-        this.quaternion,
-        localVector2.set(1, 1, 1)
-      )
-       .getInverse(localMatrix)
-       .toArray(this._frameData.rightViewMatrix);
+  update() {
+    this.position.toArray(GlobalContext.xrState.position);
+    this.quaternion.toArray(GlobalContext.xrState.orientation);
+    
+    localMatrix.compose(
+      localVector.copy(this.position)
+        .add(localVector2.set(-0.1, 0, 0).applyQuaternion(this.quaternion)),
+      this.quaternion,
+      localVector2.set(1, 1, 1)
+    )
+     .getInverse(localMatrix)
+     .toArray(GlobalContext.xrState.leftViewMatrix);
+     
+   localMatrix.compose(
+      localVector.copy(this.position)
+        .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
+      this.quaternion,
+      localVector2.set(1, 1, 1)
+    )
+     .getInverse(localMatrix)
+     .toArray(GlobalContext.xrState.rightViewMatrix);
 
-      this._frameData.pose.set(this.position, this.quaternion);
-    }
-  } */
+    // this._frameData.pose.set(this.position, this.quaternion);
+  }
 
   requestPresent() {
     this.isPresenting = true;
