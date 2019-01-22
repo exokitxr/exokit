@@ -114,39 +114,19 @@ window._makeFakeDisplay = () => {
       },
     };
 
+    const xrState = this.getState();
     const _frame = {
       session,
-      views: !stereo ? [{
+      views: [{
         eye: 'left',
-        projectionMatrix: self._frameData.leftProjectionMatrix,
+        projectionMatrix: xrState.leftProjectionMatrix,
         _viewport: {
           x: 0,
           y: 0,
-          width: self._width,
-          height: self._height,
+          width: xrState.renderWidth[0],
+          height: xrState.renderHeight[0],
         },
-      }] : [
-        {
-          eye: 'left',
-          projectionMatrix: self._frameData.leftProjectionMatrix,
-          _viewport: {
-            x: 0,
-            y: 0,
-            width: self._width/2,
-            height: self._height,
-          },
-        },
-        {
-          eye: 'right',
-          projectionMatrix: self._frameData.rightProjectionMatrix,
-          _viewport: {
-            x: self._width,
-            y: 0,
-            width: self._width/2,
-            height: self._height,
-          },
-        },
-      ],
+      }],
       _pose: null, // defer
       getDevicePose() {
         return this._pose;
@@ -185,7 +165,7 @@ window._makeFakeDisplay = () => {
     const _pose = {
       frame: _frame,
       getViewMatrix(view) {
-        const viewMatrix = this.frame.session.device._frameData[view.eye === 'left' ? 'leftViewMatrix' : 'rightViewMatrix'];
+        const viewMatrix = view.eye === 'left' ? xrState.leftViewMatrix : xrState.rightViewMatrix;
 
         if (self.window) {
           const {xrOffset} = self.window.document;
@@ -228,7 +208,7 @@ window._makeFakeDisplay = () => {
     const session = await fakeDisplay.requestSession({
       exclusive: true,
       stereo,
-    })
+    });
     fakeDisplay.onlayers(layers);
 
     renderer.vr.enabled = true;
