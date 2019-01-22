@@ -342,6 +342,10 @@ class FakeVRDisplay extends MRDisplay {
   }
   set depthFar(depthFar) {}
 
+  getState() {
+    return GlobalContext.xrState;
+  }
+
   setSize(width, height) {
     GlobalContext.xrState.renderWidth[0] = width;
     GlobalContext.xrState.renderHeight[0] = height;
