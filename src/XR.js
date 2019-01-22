@@ -477,8 +477,11 @@ class XRInputSource {
     this.handedness = handedness;
     this.pointerOrigin = pointerOrigin;
 
+    this._pose = new XRInputPose();
     const gamepad = GlobalContext.xrState.gamepads[handedness === 'left' ? 0 : 1];
-    this._pose = new XRInputPose(gamepad.position, gamepad.direction, gamepad.transformMatrix);
+    this._pose.targetRay.origin.values = gamepad.position;
+    this._pose.targetRay.direction.values = gamepad.direction;
+    this._pose.targetRay.transformMatrix = gamepad.transformMatrix;
   }
   get connected() {
     return GlobalContext.xrState.gamepads[this.handedness === 'left' ? 0 : 1].connected[0] !== 0;
@@ -488,24 +491,18 @@ class XRInputSource {
 module.exports.XRInputSource = XRInputSource;
 
 class XRRay {
-  constructor(origin, direction, transformMatrix) {
-    if (origin && direction && transformMatrix) {
-      this.origin = new GlobalContext.DOMPoint(origin);
-      this.direction = new GlobalContext.DOMPoint(direction);
-      this.transformMatrix = transformMatrix;
-    } else {
-      this.origin = new GlobalContext.DOMPoint(0, 0, 0, 1);
-      this.direction = new GlobalContext.DOMPoint(0, 0, 0, 1);
-      this.transformMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    }
+  constructor() {
+    this.origin = new GlobalContext.DOMPoint();
+    this.direction = new GlobalContext.DOMPoint(0, 0, -1);
+    this.transformMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 }
 module.exports.XRRay = XRRay;
 
 class XRInputPose {
-  constructor(origin, direction, transformMatrix) {
+  constructor() {
     this.emulatedPosition = false;
-    this.targetRay = new XRRay(origin, direction, transformMatrix);
+    this.targetRay = new XRRay();
     this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     this._localPointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
