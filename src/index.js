@@ -159,7 +159,7 @@ const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
 const windows = [];
 GlobalContext.windows = windows;
-const _getTopWindow = () => windows.find(window => window.top === window);
+// const _getTopWindow = () => windows.find(window => window.top === window);
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
@@ -1072,7 +1072,9 @@ const _startRenderLoop = () => {
 
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
-          const window = _getTopWindow();
+          const window = context.canvas.ownerDocument.defaultView;
+          
+          // console.log('blit layers', fakePresentState.layers.length);
 
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
