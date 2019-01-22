@@ -159,7 +159,7 @@ const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
 const windows = [];
 GlobalContext.windows = windows;
-const _getTopWindow = windows.find(window => window.top === window);
+const _getTopWindow = () => windows.find(window => window.top === window);
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
