@@ -1468,9 +1468,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     });
   }
 
-  windows.push(window);
+  GlobalContext.windows.push(window);
   window.on('destroy', () => {
-    windows.splice(windows.indexOf(window), 1);
+    GlobalContext.windows.splice(windows.indexOf(window), 1);
   });
 
   return window;
