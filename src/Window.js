@@ -423,70 +423,7 @@ class Worker {
   }
 }
 
-let rafCbs = [];
-let timeouts = [];
-let intervals = [];
 let rafIndex = 0;
-const localCbs = [];
-const _cacheLocalCbs = cbs => {
-  for (let i = 0; i < cbs.length; i++) {
-    localCbs[i] = cbs[i];
-  }
-  for (let i = cbs.length; i < localCbs.length; i++) {
-    localCbs[i] = null;
-  }
-};
-const _clearLocalCbs = () => {
-  for (let i = 0; i < localCbs.length; i++) {
-    localCbs[i] = null;
-  }
-};
-function tickAnimationFrame() {
-  if (rafCbs.length > 0) {
-    _cacheLocalCbs(rafCbs);
-
-    tickAnimationFrame.window = this;
-
-    const performanceNow = performance.now();
-
-    // hidden rafs
-    for (let i = 0; i < localCbs.length; i++) {
-      const rafCb = localCbs[i];
-      if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
-        try {
-          rafCb(performanceNow);
-        } catch (e) {
-          console.warn(e);
-        }
-
-        const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-        if (index !== -1) {
-          rafCbs[index] = null;
-        }
-      }
-    }
-    // visible rafs
-    for (let i = 0; i < localCbs.length; i++) {
-      const rafCb = localCbs[i];
-      if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
-        try {
-          rafCb(performanceNow);
-        } catch (e) {
-          console.warn(e);
-        }
-        const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-        if (index !== -1) {
-          rafCbs[index] = null;
-        }
-      }
-    }
-
-    tickAnimationFrame.window = null;
-  }
-
-  _clearLocalCbs(); // release garbage
-}
-tickAnimationFrame.window = null;
 const _findFreeSlot = a => {
   let i;
   for (i = 0; i < a.length; i++) {
@@ -502,6 +439,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   fn[symbols.prioritySymbol] = priority;
   const id = ++rafIndex;
   fn[symbols.idSymbol] = id;
+  const rafCbs = window[symbols.rafCbsSymbol];
   rafCbs[_findFreeSlot(rafCbs)] = fn;
   rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
@@ -513,7 +451,7 @@ const _getFakeVrDisplay = window => {
 };
 const _getVrDisplay = window => window[symbols.mrDisplaysSymbol].vrDisplay;
 const _getMlDisplay = window => window[symbols.mrDisplaysSymbol].mlDisplay;
-const _cloneMrDisplays = (mrDisplays, window) => {
+/* const _cloneMrDisplays = (mrDisplays, window) => {
   const result = {};
   for (const k in mrDisplays) {
     const mrDisplayClone = mrDisplays[k].clone();
@@ -523,7 +461,7 @@ const _cloneMrDisplays = (mrDisplays, window) => {
     result[k] = mrDisplayClone;
   }
   return result;
-};
+}; */
 
 const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
@@ -1317,10 +1255,78 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       loading = true;
     }
   });
+  
+  const rafCbs = [];
+  window[symbols.rafCbsSymbol] = rafCbs;
+  const timeouts = [];
+  const intervals = [];
+  window.tickAnimationFrame = (() => {
+    const localCbs = [];
+    const _cacheLocalCbs = cbs => {
+      for (let i = 0; i < cbs.length; i++) {
+        localCbs[i] = cbs[i];
+      }
+      for (let i = cbs.length; i < localCbs.length; i++) {
+        localCbs[i] = null;
+      }
+    };
+    const _clearLocalCbs = () => {
+      for (let i = 0; i < localCbs.length; i++) {
+        localCbs[i] = null;
+      }
+    };
+    function tickAnimationFrame() {
+      if (rafCbs.length > 0) {
+        _cacheLocalCbs(rafCbs);
 
-  if (!parent) {
-    window.tickAnimationFrame = tickAnimationFrame;
+        // tickAnimationFrame.window = this;
 
+        const performanceNow = performance.now();
+
+        // hidden rafs
+        for (let i = 0; i < localCbs.length; i++) {
+          const rafCb = localCbs[i];
+          if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
+            try {
+              // console.log('tick raf', rafCb.stack);
+              rafCb(performanceNow);
+            } catch (e) {
+              console.warn(e);
+            }
+
+            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+            if (index !== -1) {
+              rafCbs[index] = null;
+            }
+          }
+        }
+        // visible rafs
+        for (let i = 0; i < localCbs.length; i++) {
+          const rafCb = localCbs[i];
+          if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
+            try {
+              // console.log('tick raf', rafCb.stack);
+              rafCb(performanceNow);
+            } catch (e) {
+              console.warn(e);
+            }
+            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+            if (index !== -1) {
+              rafCbs[index] = null;
+            }
+          }
+        }
+
+        // tickAnimationFrame.window = null;
+      }
+
+      _clearLocalCbs(); // release garbage
+    }
+    // tickAnimationFrame.window = null;
+    return tickAnimationFrame;
+  })();
+  
+  const _makeMrDisplays = () => {
     const _bindMRDisplay = display => {
       display.onrequestanimationframe = _makeRequestAnimationFrame(window);
       display.oncancelanimationframe = window.cancelAnimationFrame;
@@ -1332,7 +1338,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         });
       };
     };
-
+    
     const fakeVrDisplay = new FakeVRDisplay();
     fakeVrDisplay.isActive = false;
     fakeVrDisplay.onrequestpresent = layers => {
@@ -1411,14 +1417,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.mlPresentState.layers = layers;
     };
 
-    window[symbols.mrDisplaysSymbol] = {
+    return {
       fakeVrDisplay,
       vrDisplay,
       xrDisplay,
       mlDisplay,
       xmDisplay,
     };
+  };
+  window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
 
+  if (!parent) {
     /* const _updateGamepads = newGamepads => {
       if (newGamepads !== undefined) {
         const gamepads = getGamepads();
@@ -1471,8 +1480,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       });
     }
   } else {
-    window[symbols.mrDisplaysSymbol] = _cloneMrDisplays(top[symbols.mrDisplaysSymbol], window);
-
     top.on('vrdisplaypresentchange', e => {
       window._emit('vrdisplaypresentchange', e);
     });
