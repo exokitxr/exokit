@@ -1335,8 +1335,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
     const fakeVrDisplay = new FakeVRDisplay();
     fakeVrDisplay.isActive = false;
-    fakeVrDisplay.onrequestpresent = () => {
+    fakeVrDisplay.onrequestpresent = layers => {
+      const [{source: canvas}] = layers;
+      const {_context: context} = canvas;
+      
       GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
+      
+      return {
+        width: context.drawingBufferWidth,
+        height: context.drawingBufferHeight,
+        msFbo: null,
+      };
     };
     fakeVrDisplay.onexitpresent = () => {
       GlobalContext.fakePresentState.fakeVrDisplay = null;
