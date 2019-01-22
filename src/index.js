@@ -420,7 +420,13 @@ class XRState {
       0, 0, -0.200010000500025, 0,
     ]));
     this.leftOffset = _makeTypedArray(Float32Array, 3);
+    this.leftOffset.set(Float32Array.from([-defaultEyeSeparation/2, 0, 0]));
     this.rightOffset = _makeTypedArray(Float32Array, 3);
+    this.leftOffset.set(Float32Array.from([defaultEyeSeparation/2, 0, 0]));
+    this.leftFov = _makeTypedArray(Float32Array, 4);
+    this.leftFov.set(Float32Array.from([45, 45, 45, 45]));
+    this.rightFov = _makeTypedArray(Float32Array, 4);
+    this.rightFov.set(Float32Array.from([45, 45, 45, 45]));
     this.gamepads = (() => {
       const result = Array(2);
       for (let i = 0; i < result.length; i++) {
