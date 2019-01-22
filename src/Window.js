@@ -1461,6 +1461,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       window._emit('vrdisplaypresentchange', e);
     });
   }
+
+  windows.push(window);
+  window.on('destroy', () => {
+    windows.splice(windows.indexOf(window), 1);
+  });
+
   return window;
 };
 module.exports._makeWindow = _makeWindow;

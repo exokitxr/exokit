@@ -156,6 +156,9 @@ const contexts = [];
 GlobalContext.contexts = contexts;
 const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
+const windows = [];
+GlobalContext.windows = windows;
+
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
@@ -1518,7 +1521,9 @@ const _startRenderLoop = () => {
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
-    window.tickAnimationFrame(); // XXX tick all window animation frames
+    for (let i = 0; i < windows.length; i++) {
+      windows[i].tickAnimationFrame();
+    }
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
