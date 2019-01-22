@@ -41,7 +41,6 @@ const core = require('./core.js');
 const mkdirp = require('mkdirp');
 const replHistory = require('repl.history');
 const minimist = require('minimist');
-const UPNG = require('upng-js');
 
 const {version} = require('../package.json');
 const symbols = require('./symbols');
