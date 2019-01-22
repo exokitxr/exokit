@@ -400,10 +400,25 @@ class XRState {
     this.depthFar[0] = 10000.0;
     this.position = _makeTypedArray(Float32Array, 3);
     this.orientation = _makeTypedArray(Float32Array, 4);
+    this.orientation[3] = 1;
     this.leftViewMatrix = _makeTypedArray(Float32Array, 16);
+    this.leftViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
     this.rightViewMatrix = _makeTypedArray(Float32Array, 16);
+    this.rightViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
     this.leftProjectionMatrix = _makeTypedArray(Float32Array, 16);
+    this.leftProjectionMatrix.set(Float32Array.from([
+      2.1445069205095586, 0, 0, 0,
+      0, 2.1445069205095586, 0, 0,
+      0, 0, -1.00010000500025, -1,
+      0, 0, -0.200010000500025, 0,
+    ]));
     this.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
+    this.rightProjectionMatrix.set(Float32Array.from([
+      2.1445069205095586, 0, 0, 0,
+      0, 2.1445069205095586, 0, 0,
+      0, 0, -1.00010000500025, -1,
+      0, 0, -0.200010000500025, 0,
+    ]));
     this.leftOffset = _makeTypedArray(Float32Array, 3);
     this.rightOffset = _makeTypedArray(Float32Array, 3);
     this.gamepads = (() => {
