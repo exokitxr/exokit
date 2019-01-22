@@ -330,7 +330,10 @@ class FakeVRDisplay extends MRDisplay {
 
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
-    this.gamepads = gamepads;
+    this.gamepads = [
+      new Gamepad('left', 0),
+      new Gamepad('right', 1),
+    ];
 
     this.isPresenting = false;
     this.depthNear = 0.1;
@@ -459,11 +462,11 @@ class FakeVRDisplay extends MRDisplay {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const gamepads =  [
+/* const gamepads =  [
   new Gamepad('left', 0),
   new Gamepad('right', 1),
 ];
-const getGamepads = () => gamepads;
+const getGamepads = () => gamepads; */
 
 module.exports = {
   MRDisplay,
@@ -475,5 +478,5 @@ module.exports = {
   Gamepad,
   GamepadButton,
   createVRDisplay,
-  getGamepads,
+  // getGamepads,
 };
