@@ -1458,6 +1458,7 @@ const _startRenderLoop = () => {
     immediate = setImmediate(_renderLoop);
   };
   let immediate = setImmediate(_renderLoop);
+
   return {
     stop() {
       clearImmediate(immediate);
