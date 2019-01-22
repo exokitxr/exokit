@@ -1053,6 +1053,7 @@ const _startRenderLoop = () => {
       }
     }
   };
+  const _getTopWindow = windows.find(window => window.top === window);
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -1069,10 +1070,11 @@ const _startRenderLoop = () => {
 
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
+          const window = _getTopWindow();
+
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
-              const window = context.canvas.ownerDocument.defaultView;
-              const {vrDisplay, xrDisplay} = window[symbols.mrDisplaysSymbol];
+              const {vrDisplay} = window[symbols.mrDisplaysSymbol];
               _decorateModelViewProjections(vrPresentState.layers, vrDisplay, 2); // note: vrDisplay mirrors xrDisplay
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
             } else {
@@ -1085,8 +1087,7 @@ const _startRenderLoop = () => {
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
-              const window = context.canvas.ownerDocument.defaultView;
-              const {mlDisplay, xmDisplay} = window[symbols.mrDisplaysSymbol];
+              const {mlDisplay} = window[symbols.mrDisplaysSymbol];
               _decorateModelViewProjections(mlPresentState.layers, mlDisplay, 2); // note: mlDisplay mirrors xmDisplay
               nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
             } else {
@@ -1098,7 +1099,7 @@ const _startRenderLoop = () => {
 
             // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
           } else if (fakePresentState.layers.length > 0) {
-            const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol]; // XXX get this from fakePresentState
+            const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
             _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay, 1);
             nativeWindow.composeLayers(context, 0, fakePresentState.layers);
           }
