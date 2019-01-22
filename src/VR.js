@@ -350,6 +350,11 @@ class FakeVRDisplay extends MRDisplay {
     GlobalContext.xrState.renderWidth[0] = width;
     GlobalContext.xrState.renderHeight[0] = height;
   }
+  
+  setProjection(projectionMatrix) {
+    GlobalContext.xrState.leftProjectionMatrix.set(projectionMatrix);
+    GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
+  }
 
   /* getStereo(newStereo) {
     return this._stereo;
