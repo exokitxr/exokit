@@ -177,7 +177,7 @@ class XRSession extends EventTarget {
       renderWidth,
       renderHeight,
       frameData,
-      stageParameters,
+      // stageParameters,
       gamepads,
     } = update;
 
