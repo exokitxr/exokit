@@ -1,10 +1,14 @@
+const {Event} = require('./Event');
 const THREE = require('../lib/three-min.js');
 const {defaultCanvasSize, defaultEyeSeparation} = require('./constants.js');
 const GlobalContext = require('./GlobalContext');
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
+const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 class VRPose {
   constructor(position = new Float32Array(3), orientation = Float32Array.from([0, 0, 0, 1])) {
@@ -315,8 +319,9 @@ class VRDisplay extends MRDisplay {
     }
   } */
 }
+
 class FakeVRDisplay extends MRDisplay {
-  constructor() {
+  constructor(window) {
     super('FAKE');
 
     this.position = new THREE.Vector3();
@@ -325,6 +330,17 @@ class FakeVRDisplay extends MRDisplay {
 
     this.isPresenting = false;
     this.stageParameters = new VRStageParameters();
+
+    this.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
+    this.onvrdisplaypresentchange = () => {
+      setTimeout(() => {
+        const e = new Event('vrdisplaypresentchange');
+        e.display = this;
+        window.dispatchEvent(e);
+      });
+    };
+
+    this._onends = [];
 
     // this._frameData = new VRFrameData();
   }
@@ -396,6 +412,131 @@ class FakeVRDisplay extends MRDisplay {
 
     return Promise.resolve();
   }
+  
+  requestSession({exclusive = true} = {}) {
+    const self = this;
+
+    const session = {
+      addEventListener(e, fn) {
+        if (e === 'end') {
+          self._onends.push(fn);
+        }
+      },
+      device: self,
+      baseLayer: null,
+      // layers,
+      _frame: null, // defer
+      getInputSources() {
+        return this.device.gamepads;
+      },
+      requestFrameOfReference() {
+        return Promise.resolve({});
+      },
+      requestAnimationFrame(fn) {
+        return this.device.onrequestanimationframe(timestamp => {
+          fn(timestamp, this._frame);
+        });
+      },
+      end() {
+        for (let i = 0; i < self._onends.length; i++) {
+          self._onends[i]();
+        }
+        return self.exitPresent();
+      },
+      /* clone() {
+        const o = new this.constructor();
+        for (const k in this) {
+          o[k] = this[k];
+        }
+        o._frame = o._frame.clone();
+        o._frame.session = o;
+        return o;
+      }, */
+    };
+
+    const xrState = this.getState();
+    const _frame = {
+      session,
+      views: [{
+        eye: 'left',
+        projectionMatrix: xrState.leftProjectionMatrix,
+        _viewport: {
+          x: 0,
+          y: 0,
+          width: xrState.renderWidth[0],
+          height: xrState.renderHeight[0],
+        },
+      }],
+      _pose: null, // defer
+      getDevicePose() {
+        return this._pose;
+      },
+      getInputPose(inputSource, coordinateSystem) {
+        localMatrix.fromArray(inputSource.pose._localPointerMatrix);
+
+        if (self.window) {
+          const {xrOffset} = self.window.document;
+          localMatrix
+            .premultiply(
+              localMatrix2.compose(
+                localVector.fromArray(xrOffset.position),
+                localQuaternion.fromArray(xrOffset.orientation),
+                localVector2.fromArray(xrOffset.scale)
+              )
+              .getInverse(localMatrix2)
+            );
+        }
+
+        localMatrix.toArray(inputSource.pose.targetRay.transformMatrix);
+
+        return inputSource.pose; // XXX or _pose
+      },
+      /* clone() {
+        const o = new this.constructor();
+        for (const k in this) {
+          o[k] = this[k];
+        }
+        o._pose = o._pose.clone();
+        o._pose.frame = o;
+        return o;
+      }, */
+    };
+    session._frame = _frame;
+    const _pose = {
+      frame: _frame,
+      getViewMatrix(view) {
+        const viewMatrix = view.eye === 'left' ? xrState.leftViewMatrix : xrState.rightViewMatrix;
+
+        if (self.window) {
+          const {xrOffset} = self.window.document;
+
+          localMatrix
+            .fromArray(viewMatrix)
+            .multiply(
+              localMatrix2.compose(
+                localVector.fromArray(xrOffset.position),
+                localQuaternion.fromArray(xrOffset.orientation),
+                localVector2.fromArray(xrOffset.scale)
+              )
+            )
+            .toArray(localViewMatrix);
+        } else {
+          localViewMatrix.set(viewMatrix);
+        }
+        return localViewMatrix;
+      },
+      /* clone() {
+        const o = new this.constructor();
+        for (const k in this) {
+          o[k] = this[k];
+        }
+        return o;
+      }, */
+    };
+    _frame._pose = _pose;
+
+    return Promise.resolve(session);
+  }
 
   /* getFrameData(frameData) {
     frameData.copy(this._frameData);
@@ -423,15 +564,43 @@ class FakeVRDisplay extends MRDisplay {
   
   getEyeParameters(eye) {
     const result = super.getEyeParameters(eye);
-    if (this._stereo) {
-      result.renderWidth /= 2;
+    if (eye === 'right') {
+      result.renderWidth = 0;
     }
     return result;
   }
   
   waitGetPoses() {
-    if (this.onwaitgetposes) {
-      this.onwaitgetposes();
+    this.update();
+
+    for (let i = 0; i < this.gamepads.length; i++) {
+      const gamepad = this.gamepads[i];
+      localVector.copy(this.position)
+        .add(
+          localVector2.set(-0.3 + i*0.6, -0.3, 0)
+            .applyQuaternion(this.quaternion)
+        ).toArray(gamepad.pose.position);
+      this.quaternion.toArray(gamepad.pose.orientation);
+
+      if (!gamepad.handedness) {
+        gamepad.handedness = gamepad.hand;
+      }
+      if (!gamepad.pose._localPointerMatrix) {
+        gamepad.pose._localPointerMatrix = new Float32Array(32);
+      }
+      if (!gamepad.pose.targetRay) {
+        gamepad.pose.targetRay = {
+          transformMatrix: new Float32Array(32),
+        };
+      }
+
+      localMatrix2
+        .compose(
+          localVector.fromArray(gamepad.pose.position),
+          localQuaternion.fromArray(gamepad.pose.orientation),
+          localVector2.set(1, 1, 1)
+        )
+        .toArray(gamepad.pose._localPointerMatrix);
     }
   }
 }
