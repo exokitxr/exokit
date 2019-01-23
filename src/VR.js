@@ -485,8 +485,8 @@ class FakeVRDisplay extends MRDisplay {
       getInputPose(inputSource, coordinateSystem) {
         localMatrix.fromArray(inputSource.pose._localPointerMatrix);
 
-        if (self.window) {
-          const {xrOffset} = self.window.document;
+        const {xrOffset} = self.window.document;
+        if (xrOffset) {
           localMatrix
             .premultiply(
               localMatrix2.compose(
@@ -518,9 +518,8 @@ class FakeVRDisplay extends MRDisplay {
       getViewMatrix(view) {
         const viewMatrix = view.eye === 'left' ? xrState.leftViewMatrix : xrState.rightViewMatrix;
 
-        if (self.window) {
-          const {xrOffset} = self.window.document;
-
+        const {xrOffset} = self.window.document;
+        if (xrOffset) {
           localMatrix
             .fromArray(viewMatrix)
             .multiply(
