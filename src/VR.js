@@ -327,7 +327,15 @@ class FakeVRDisplay extends MRDisplay {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.gamepads = gamepads;
-
+    for (let i = 0; i < this.gamepads.length; i++) {
+      const gamepad = this.gamepads[i];
+      const {pose} = gamepad;
+      if (!pose.targetRay) {
+        pose.targetRay = {
+          transformMatrix: new Float32Array(16),
+        };
+      }
+    }
     this.isPresenting = false;
     this.stageParameters = new VRStageParameters();
 
