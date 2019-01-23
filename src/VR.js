@@ -91,13 +91,13 @@ class GamepadButton {
   } */
 }
 class GamepadPose {
-  constructor() {
+  constructor(position, orientation) {
     this.hasPosition = true;
     this.hasOrientation = true;
-    this.position = new Float32Array(3);
+    this.position = position;
     this.linearVelocity = new Float32Array(3);
     this.linearAcceleration = new Float32Array(3);
-    this.orientation = Float32Array.from([0, 0, 0, 1]);
+    this.orientation = orientation;
     this.angularVelocity = new Float32Array(3);
     this.angularAcceleration = new Float32Array(3);
   }
