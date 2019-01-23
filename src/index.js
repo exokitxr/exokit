@@ -409,21 +409,16 @@ class XRState {
     this.leftViewMatrix = _makeTypedArray(Float32Array, 16);
     this.leftViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
     this.rightViewMatrix = _makeTypedArray(Float32Array, 16);
-    this.rightViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
+    this.rightViewMatrix.set(this.leftViewMatrix);
     this.leftProjectionMatrix = _makeTypedArray(Float32Array, 16);
     this.leftProjectionMatrix.set(Float32Array.from([
-      2.1445069205095586, 0, 0, 0,
-      0, 2.1445069205095586, 0, 0,
-      0, 0, -1.00010000500025, -1,
-      0, 0, -0.200010000500025, 0,
+      0.8000000000000002, 0, 0, 0,
+      0, 1.0000000000000002, 0, 0,
+      0, 0, -1.002002002002002, -1,
+      0, 0, -0.20020020020020018, 0,
     ]));
     this.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
-    this.rightProjectionMatrix.set(Float32Array.from([
-      2.1445069205095586, 0, 0, 0,
-      0, 2.1445069205095586, 0, 0,
-      0, 0, -1.00010000500025, -1,
-      0, 0, -0.200010000500025, 0,
-    ]));
+    this.rightProjectionMatrix.set(this.leftProjectionMatrix);
     this.leftOffset = _makeTypedArray(Float32Array, 3);
     this.leftOffset.set(Float32Array.from([-defaultEyeSeparation/2, 0, 0]));
     this.rightOffset = _makeTypedArray(Float32Array, 3);
@@ -431,7 +426,7 @@ class XRState {
     this.leftFov = _makeTypedArray(Float32Array, 4);
     this.leftFov.set(Float32Array.from([45, 45, 45, 45]));
     this.rightFov = _makeTypedArray(Float32Array, 4);
-    this.rightFov.set(Float32Array.from([45, 45, 45, 45]));
+    this.rightFov.set(this.leftFov);
     this.gamepads = (() => {
       const result = Array(2);
       for (let i = 0; i < result.length; i++) {
