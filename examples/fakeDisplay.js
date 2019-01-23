@@ -72,7 +72,7 @@ window._makeFakeDisplay = () => {
   const onends = [];
   fakeDisplay.requestSession = function({
     exclusive = true,
-    stereo = false,
+    // stereo = false,
   } = {}) {
     const self = this;
 
@@ -201,13 +201,13 @@ window._makeFakeDisplay = () => {
   for (let i = 0; i < self.gamepads.length; i++) {
     self.gamepads[i].pose.pointerMatrix = new Float32Array(16);
   } */
-  fakeDisplay.enter = async ({renderer, animate, layers, stereo = false}) => {
+  fakeDisplay.enter = async ({renderer, animate, layers/*, stereo = false */}) => {
     const canvas = renderer.domElement;
 
     fakeDisplay.requestPresent();
     const session = await fakeDisplay.requestSession({
       exclusive: true,
-      stereo,
+      // stereo,
     });
     fakeDisplay.onlayers(layers);
 
@@ -228,7 +228,7 @@ window._makeFakeDisplay = () => {
       depthTex,
     };
 
-    fakeDisplay.stereo = stereo;
+    // fakeDisplay.stereo = stereo;
 
     return session;
   };
