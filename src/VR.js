@@ -327,7 +327,6 @@ class FakeVRDisplay extends MRDisplay {
     this.stageParameters = new VRStageParameters();
 
     // this._frameData = new VRFrameData();
-    // this._stereo = false;
   }
 
   get depthNear() {
@@ -352,18 +351,6 @@ class FakeVRDisplay extends MRDisplay {
     GlobalContext.xrState.leftProjectionMatrix.set(projectionMatrix);
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   }
-
-  /* getStereo(newStereo) {
-    return this._stereo;
-  }
-  setStereo(newStereo) {
-    if (!this._stereo && newStereo) {
-      this._width *= 2;
-    } else if (this._stereo && !newStereo) {
-      this._width /= 2;
-    }
-    this._stereo = newStereo;
-  } */
 
   update() {
     this.position.toArray(GlobalContext.xrState.position);
