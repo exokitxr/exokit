@@ -417,15 +417,15 @@ class FakeVRDisplay extends MRDisplay {
     return GlobalContext.xrState;
   }
 
-  setSize(width, height) {
+  /* setSize(width, height) {
     GlobalContext.xrState.renderWidth[0] = width;
     GlobalContext.xrState.renderHeight[0] = height;
-  }
+  } *?
   
-  setProjection(projectionMatrix) {
+  /* setProjection(projectionMatrix) {
     GlobalContext.xrState.leftProjectionMatrix.set(projectionMatrix);
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
-  }
+  } */
 
   requestPresent() {
     this.isPresenting = true;
