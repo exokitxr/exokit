@@ -348,6 +348,7 @@ class FakeVRDisplay extends MRDisplay {
       });
     };
 
+    this._layers = [];
     this._onends = [];
 
     // this._frameData = new VRFrameData();
@@ -544,6 +545,17 @@ class FakeVRDisplay extends MRDisplay {
     _frame._pose = _pose;
 
     return Promise.resolve(session);
+  }
+  
+  get layers() {
+    return this._layers;
+  }
+  set layers(layers) {
+    this._layers = layers;
+
+    if (this.onlayers) {
+      this.onlayers(layers);
+    }
   }
 
   /* getFrameData(frameData) {
