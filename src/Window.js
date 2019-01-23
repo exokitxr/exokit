@@ -445,10 +445,8 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   return id;
 };
 const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
-const _getFakeVrDisplay = window => {
-  const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
-  return fakeVrDisplay.isActive ? fakeVrDisplay : null;
-};
+
+GlobalContext.fakeVrDisplayEnabled = false;
 
 const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
@@ -545,9 +543,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
     getVRDisplaysSync() {
       const result = [];
-      const fakeVrDisplay = _getFakeVrDisplay(window);
-      if (fakeVrDisplay) {
-        result.push(fakeVrDisplay);
+      if (GlobalContext.fakeVrDisplayEnabled) {
+        result.push(window[symbols.mrDisplaysSymbol].fakeVrDisplay);
       }
       if (nativeMl && nativeMl.IsPresent()) {
         result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
@@ -1326,15 +1323,15 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       };
     };
     
-    const fakeVrDisplay = new FakeVRDisplay();
-    fakeVrDisplay.isActive = false;
+    const fakeVrDisplay = new FakeVRDisplay(window);
     fakeVrDisplay.onrequestpresent = layers => {
+      if (!GlobalContext.fakePresentState.fakeVrDisplay) {
+        GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
+        fakeVrDisplay.waitGetPoses();
+      }
+
       const [{source: canvas}] = layers;
       const {_context: context} = canvas;
-      
-      GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
-      fakeVrDisplay.waitGetPoses();
-      
       return {
         width: context.drawingBufferWidth,
         height: context.drawingBufferHeight,
