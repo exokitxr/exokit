@@ -59,10 +59,29 @@ class VRFrameData {
   } */
 }
 class GamepadButton {
-  constructor() {
-     this.value = 0;
-     this.pressed = false;
-     this.touched = false;
+  constructor(_value, _pressed, _touched) {
+    this._value = _value;
+    this._pressed = _pressed;
+    this._touched = _touched;
+  }
+
+  get value() {
+    return this._value[0] !== 0;
+  }
+  set value(value) {
+    this._value[0] = value ? 1 : 0;
+  }
+  get pressed() {
+    return this._pressed[0] !== 0;
+  }
+  set pressed(pressed) {
+    this._pressed[0] = pressed ? 1 : 0;
+  }
+  get touched() {
+    return this._touched[0] !== 0;
+  }
+  set touched(touched) {
+    this._touched[0] = touched ? 1 : 0;
   }
 
   /* copy(button) {
