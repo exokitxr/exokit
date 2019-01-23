@@ -556,9 +556,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       return result;
     },
     createVRDisplay() {
-      const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
-      fakeVrDisplay.isActive = true;
-      return fakeVrDisplay;
+      GlobalContext.fakeVrDisplayEnabled = true;
+      return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
     getGamepads,
     clipboard:{
