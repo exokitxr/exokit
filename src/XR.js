@@ -6,8 +6,6 @@ const THREE = require('../lib/three-min.js');
 const symbols = require('./symbols');
 const {_elementGetter, _elementSetter} = require('./utils');
 
-const _getXrDisplay = window => window[symbols.mrDisplaysSymbol].xrDisplay;
-const _getXmDisplay = window => window[symbols.mrDisplaysSymbol].xmDisplay;
 const _getFakeVrDisplay = window => {
   const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
   return fakeVrDisplay.isActive ? fakeVrDisplay : null;
@@ -31,9 +29,9 @@ class XR extends EventEmitter {
     if (fakeVrDisplay) {
       return Promise.resolve(fakeVrDisplay);
     } else if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
-      return Promise.resolve(_getXrDisplay(this._window));
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].xrDisplay);
     } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
-      return Promise.resolve(_getXmDisplay(this._window));
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].xmDisplay);
     } else {
       return Promise.resolve(null);
     }
