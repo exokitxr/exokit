@@ -491,7 +491,7 @@ class FakeVRDisplay extends MRDisplay {
       }, */
     };
 
-    const xrState = this.getState();
+    const {xrState} = GlobalContext;
     const _frame = {
       session,
       views: [{
