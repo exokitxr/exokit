@@ -1505,8 +1505,8 @@ const _startRenderLoop = () => {
     // poll xr device events
     for (let i = 0; i < windows.length; i++) {
       const window = windows[i];
-      window[symbols.xrDisplay].update();
-      window[symbols.xmDisplay].update();
+      window[symbols.mrDisplaysSymbol].xrDisplay.session && window[symbols.mrDisplaysSymbol].xrDisplay.session.update();
+      window[symbols.mrDisplaysSymbol].xmDisplay.session && window[symbols.mrDisplaysSymbol].xmDisplay.session.update();
     }
 
     // poll operating system events
