@@ -451,17 +451,6 @@ const _getFakeVrDisplay = window => {
 };
 const _getVrDisplay = window => window[symbols.mrDisplaysSymbol].vrDisplay;
 const _getMlDisplay = window => window[symbols.mrDisplaysSymbol].mlDisplay;
-/* const _cloneMrDisplays = (mrDisplays, window) => {
-  const result = {};
-  for (const k in mrDisplays) {
-    const mrDisplayClone = mrDisplays[k].clone();
-    mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    mrDisplayClone.onrequesthittest = _makeOnRequestHitTest(window);
-    mrDisplayClone.window = window;
-    result[k] = mrDisplayClone;
-  }
-  return result;
-}; */
 
 const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
