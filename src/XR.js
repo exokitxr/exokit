@@ -417,7 +417,7 @@ class XRViewport {
     this.eye = eye;
   }
   get x() {
-    return this.eye === 'left' ? 0 : GlobalContext.renderWidth[0];
+    return this.eye === 'left' ? 0 : GlobalContext.xrState.renderWidth[0];
   }
   set x(x) {}
   get y() {
@@ -425,11 +425,11 @@ class XRViewport {
   }
   set y(y) {}
   get width() {
-    return GlobalContext.renderWidth[0];
+    return GlobalContext.xrState.renderWidth[0];
   }
   set width(width) {}
   get height() {
-    return GlobalContext.renderHeight[0];
+    return GlobalContext.xrState.renderHeight[0];
   }
   set height(height) {}
   /* set(x, y, width, height) {
