@@ -1979,10 +1979,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   this.contentWindow = contentWindow;
                   this.contentDocument = contentDocument;
 
-                  contentWindow.on('destroy', e => {
-                    parentWindow.emit('destroy', e);
-                  });
-
                   this.readyState = 'complete';
 
                   this.dispatchEvent(new Event('load', {target: this}));
