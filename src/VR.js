@@ -623,22 +623,21 @@ class FakeVRDisplay extends MRDisplay {
     this.quaternion.toArray(GlobalContext.xrState.orientation);
     
     localMatrix.compose(
-      localVector.copy(this.position)
-        .add(localVector2.set(-0.1, 0, 0).applyQuaternion(this.quaternion)),
+      this.position,
       this.quaternion,
       localVector2.set(1, 1, 1)
     )
      .getInverse(localMatrix)
      .toArray(GlobalContext.xrState.leftViewMatrix);
      
-    localMatrix.compose(
+    /* localMatrix.compose(
       localVector.copy(this.position)
         .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
       this.quaternion,
       localVector2.set(1, 1, 1)
     )
      .getInverse(localMatrix)
-     .toArray(GlobalContext.xrState.rightViewMatrix);
+     .toArray(GlobalContext.xrState.rightViewMatrix); */
 
     // update gamepads
     for (let i = 0; i < this.gamepads.length; i++) {
