@@ -390,31 +390,6 @@ class FakeVRDisplay extends MRDisplay {
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   }
 
-  update() {
-    this.position.toArray(GlobalContext.xrState.position);
-    this.quaternion.toArray(GlobalContext.xrState.orientation);
-    
-    localMatrix.compose(
-      localVector.copy(this.position)
-        .add(localVector2.set(-0.1, 0, 0).applyQuaternion(this.quaternion)),
-      this.quaternion,
-      localVector2.set(1, 1, 1)
-    )
-     .getInverse(localMatrix)
-     .toArray(GlobalContext.xrState.leftViewMatrix);
-     
-   localMatrix.compose(
-      localVector.copy(this.position)
-        .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
-      this.quaternion,
-      localVector2.set(1, 1, 1)
-    )
-     .getInverse(localMatrix)
-     .toArray(GlobalContext.xrState.rightViewMatrix);
-
-    // this._frameData.pose.set(this.position, this.quaternion);
-  }
-
   requestPresent() {
     this.isPresenting = true;
 
@@ -603,7 +578,27 @@ class FakeVRDisplay extends MRDisplay {
   }
   
   waitGetPoses() {
-    this.update();
+    // update hmd
+    this.position.toArray(GlobalContext.xrState.position);
+    this.quaternion.toArray(GlobalContext.xrState.orientation);
+    
+    localMatrix.compose(
+      localVector.copy(this.position)
+        .add(localVector2.set(-0.1, 0, 0).applyQuaternion(this.quaternion)),
+      this.quaternion,
+      localVector2.set(1, 1, 1)
+    )
+     .getInverse(localMatrix)
+     .toArray(GlobalContext.xrState.leftViewMatrix);
+     
+    localMatrix.compose(
+      localVector.copy(this.position)
+        .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
+      this.quaternion,
+      localVector2.set(1, 1, 1)
+    )
+     .getInverse(localMatrix)
+     .toArray(GlobalContext.xrState.rightViewMatrix);
 
     for (let i = 0; i < this.gamepads.length; i++) {
       const gamepad = this.gamepads[i];
