@@ -11,9 +11,9 @@ const localMatrix2 = new THREE.Matrix4();
 const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 class VRPose {
-  constructor(position = new Float32Array(3), orientation = Float32Array.from([0, 0, 0, 1])) {
-    this.position = position;
-    this.orientation = orientation;
+  constructor() {
+    this.position = GlobalContext.xrState.position;
+    this.orientation = GlobalContext.xrState.orientation;
   }
 
   /* set(position, orientation) {
