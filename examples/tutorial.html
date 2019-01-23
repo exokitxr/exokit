@@ -358,7 +358,10 @@
 
         console.log('running!');
       });
-    })();
+    })()
+      .catch(err => {
+        console.warn(err.stack);
+      });
   </script>
   </body>
 </html>
