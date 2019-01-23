@@ -1501,6 +1501,13 @@ const _startRenderLoop = () => {
         .compose(localVector, localQuaternion, localVector2)
         .toArray(gamepad.transformMatrix);
     }
+    
+    // poll xr device events
+    for (let i = 0; i < windows.length; i++) {
+      const window = windows[i];
+      window[symbols.xrDisplay].update();
+      window[symbols.xmDisplay].update();
+    }
 
     // poll operating system events
     nativeBindings.nativeWindow.pollEvents();
