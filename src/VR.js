@@ -406,14 +406,14 @@ class FakeVRDisplay extends MRDisplay {
   get depthNear() {
     return GlobalContext.xrState.depthNear[0];
   }
-  set depthNear(depthNear) {}
+  set depthNear(depthNear) {
+    GlobalContext.xrState.depthNear[0] = depthNear;
+  }
   get depthFar() {
     return GlobalContext.xrState.depthFar[0];
   }
-  set depthFar(depthFar) {}
-
-  getState() {
-    return GlobalContext.xrState;
+  set depthFar(depthFar) {
+    GlobalContext.xrState.depthFar[0] = depthFar;
   }
 
   /* setSize(width, height) {
