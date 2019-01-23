@@ -235,7 +235,7 @@ class XRSession extends EventTarget {
           inputMatrix.toArray(inputSource._pose._localPointerMatrix);
           inputMatrix.toArray(inputSource._pose.gripMatrix);
 
-          const pressed = gamepad.buttons[1].pressed; // XXX bind events
+          const pressed = gamepad.buttons[1].pressed;
           const lastPressed = this._lastPresseds[i];
           if (pressed && !lastPressed) {
             this.emit('selectstart', new XRInputSourceEvent('selectstart', {
