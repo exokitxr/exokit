@@ -393,7 +393,10 @@ class XRPresentationFrame {
       }
     }
 
-    localMatrix.toArray(inputSource._pose.targetRay.transformMatrix);
+    localMatrix
+      .toArray(inputSource._pose.targetRay.transformMatrix)
+    localMatrix
+      .toArray(inputSource._pose.gripMatrix);
     
     return inputSource._pose;
   }
