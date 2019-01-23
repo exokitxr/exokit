@@ -429,6 +429,9 @@ class FakeVRDisplay extends MRDisplay {
 
   requestPresent() {
     this.isPresenting = true;
+    
+    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio;
+    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
 
     if (this.onvrdisplaypresentchange) {
       this.onvrdisplaypresentchange();
