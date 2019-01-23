@@ -449,8 +449,6 @@ const _getFakeVrDisplay = window => {
   const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
   return fakeVrDisplay.isActive ? fakeVrDisplay : null;
 };
-const _getVrDisplay = window => window[symbols.mrDisplaysSymbol].vrDisplay;
-const _getMlDisplay = window => window[symbols.mrDisplaysSymbol].mlDisplay;
 
 const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
@@ -552,10 +550,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         result.push(fakeVrDisplay);
       }
       if (nativeMl && nativeMl.IsPresent()) {
-        result.push(_getMlDisplay(window));
+        result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
       }
       if (nativeVr && nativeVr.VR_IsHmdPresent()) {
-        result.push(_getVrDisplay(window));
+        result.push(window[symbols.mrDisplaysSymbol].vrDisplay);
       }
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
       return result;
