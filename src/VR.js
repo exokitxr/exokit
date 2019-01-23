@@ -32,12 +32,21 @@ class VRPose {
 }
 class VRFrameData {
   constructor() {
+    this.leftProjectionMatrix = GlobalContext.xrState.leftProjectionMatrix;
+    /* this.leftProjectionMatrix.set(Float32Array.from([
+      1.0000000000000002, 0, 0, 0,
+      0, 1.0000000000000002, 0, 0,
+      0, 0, -1.00010000500025, -1,
+      0, 0, -0.200010000500025, 0,
+    ])); */
     // c = new THREE.PerspectiveCamera(); c.fov = 90; c.updateProjectionMatrix(); c.projectionMatrix.elements
-    this.leftProjectionMatrix = Float32Array.from([1.0000000000000002, 0, 0, 0, 0, 1.0000000000000002, 0, 0, 0, 0, -1.00010000500025, -1, 0, 0, -0.200010000500025, 0]);
+    this.leftViewMatrix = GlobalContext.xrState.leftViewMatrix;
+    // this.leftViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
     // new THREE.Matrix4().toArray()
-    this.leftViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this.rightProjectionMatrix = this.leftProjectionMatrix.slice();
-    this.rightViewMatrix = this.leftViewMatrix.slice();
+
+    this.rightProjectionMatrix = GlobalContext.xrState.rightProjectionMatrix;
+    this.rightViewMatrix = GlobalContext.xrState.rightViewMatrix;
+
     this.pose = new VRPose();
   }
 
