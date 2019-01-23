@@ -2,7 +2,6 @@ const {EventEmitter} = require('events');
 const {Event, EventTarget} = require('./Event');
 const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
-const {getGamepads} = require('./VR');
 const THREE = require('../lib/three-min.js');
 const symbols = require('./symbols');
 const {_elementGetter, _elementSetter} = require('./utils');
@@ -170,7 +169,7 @@ class XRSession extends EventTarget {
   }
   update() {
     if (this.session) {
-      const gamepads = getGamepads();
+      const gamepads = GlobalContext.getGamepads();
       
       for (let i = 0; i < gamepads.length; i++) {
         const gamepad = gamepads[i];

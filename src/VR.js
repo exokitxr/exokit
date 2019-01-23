@@ -641,6 +641,7 @@ const gamepads =  [
   new Gamepad('right', 1),
 ];
 const getGamepads = () => gamepads;
+GlobalContext.getGamepads = getGamepads;
 
 module.exports = {
   MRDisplay,
