@@ -16,19 +16,19 @@ class VRPose {
     this.orientation = orientation;
   }
 
-  set(position, orientation) {
+  /* set(position, orientation) {
     position.toArray(this.position);
     orientation.toArray(this.orientation);
-  }
+  } */
 
-  copy(vrPose) {
+  /* copy(vrPose) {
     if (this.position) {
       this.position.set(vrPose.position);
     }
     if (this.orientation) {
       this.orientation.set(vrPose.orientation);
     }
-  }
+  } */
 }
 class VRFrameData {
   constructor() {
@@ -56,11 +56,11 @@ class GamepadButton {
      this.touched = false;
   }
 
-  copy(button) {
+  /* copy(button) {
     this.value = button.value;
     this.pressed = button.pressed;
     this.touched = button.touched;
-  }
+  } */
 }
 class GamepadPose {
   constructor() {
@@ -74,7 +74,7 @@ class GamepadPose {
     this.angularAcceleration = new Float32Array(3);
   }
 
-  copy(pose) {
+  /* copy(pose) {
     this.hasPosition = pose.hasPosition;
     this.hasOrientation = pose.hasOrientation;
     this.position.set(pose.position);
@@ -83,7 +83,7 @@ class GamepadPose {
     this.orientation.set(pose.orientation);
     this.angularVelocity.set(pose.angularVelocity);
     this.angularAcceleration.set(pose.angularAcceleration);
-  }
+  } */
 }
 class GamepadHapticActuator {
   constructor(index) {
@@ -126,14 +126,14 @@ class Gamepad {
     this.hapticActuators = [new GamepadHapticActuator(index)];
   }
 
-  copy(gamepad) {
+  /* copy(gamepad) {
     this.connected = gamepad.connected;
     for (let i = 0; i < this.buttons.length; i++) {
       this.buttons[i].copy(gamepad.buttons[i]);
     }
     this.pose.copy(gamepad.pose);
     this.axes.set(gamepad.axes);
-  }
+  } */
 }
 class VRStageParameters {
   constructor() {
