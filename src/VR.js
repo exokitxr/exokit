@@ -143,14 +143,19 @@ class Gamepad {
     this.hand = hand;
     this.index = index;
 
+    const gamepad = GlobalContext.xrState.gamepads[index];
+
     this.connected = false;
     this.mapping = 'standard';
-    this.buttons = Array(16);
-    for (let i = 0; i < this.buttons.length; i++) {
-      this.buttons[i] = new GamepadButton();
-    }
-    this.pose = new GamepadPose();
-    this.axes = new Float32Array(10);
+    this.buttons = (() => {
+      const result = Array(5);
+      for (let i = 0; i < result.length; i++) {
+        result[i] = new GamepadButton(gamepad.buttons[i].value, gamepad.buttons[i].pressed, gamepad.buttons[i].touched);
+      }
+      return result;
+    })();
+    this.pose = new GamepadPose(gamepad.position, gamepad.orientation);
+    this.axes = gamepad.axes;
     this.hapticActuators = [new GamepadHapticActuator(index)];
   }
 
