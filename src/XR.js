@@ -472,7 +472,7 @@ class XRInputSource {
     const gamepad = GlobalContext.xrState.gamepads[handedness === 'left' ? 0 : 1];
     this._pose.targetRay.origin.values = gamepad.position;
     this._pose.targetRay.direction.values = gamepad.direction;
-    this._pose.targetRay._localPointerMatrix = gamepad.transformMatrix;
+    this._pose._localPointerMatrix = gamepad.transformMatrix;
   }
   get connected() {
     return GlobalContext.xrState.gamepads[this.handedness === 'left' ? 0 : 1].connected[0] !== 0;
