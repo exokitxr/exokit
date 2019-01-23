@@ -1584,33 +1584,6 @@ const _bindWindow = (window, newWindowCb) => {
     const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
     e.clipboardData.items.push(dataTransferItem);
   });
-  window.on('vrdisplaypresentchange', e => {
-    if (e.display) {
-      const gamepads = [leftGamepad, rightGamepad];
-      for (let i = 0; i < gamepads.length; i++) {
-        gamepads[i].ontriggerhapticpulse = (value, duration) => {
-          if (vrPresentState.isPresenting) {
-            value = Math.min(Math.max(value, 0), 1);
-            const deviceIndex = vrPresentState.system.GetTrackedDeviceIndexForControllerRole(i + 1);
-
-            const startTime = Date.now();
-            const _recurse = () => {
-              if ((Date.now() - startTime) < duration) {
-                vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
-                setTimeout(_recurse, 50);
-              }
-            };
-            setTimeout(_recurse, 50);
-          }
-        };
-      }
-    } else {
-      const gamepads = [leftGamepad, rightGamepad];
-      for (let i = 0; i < gamepads.length; i++) {
-        gamepads[i].ontriggerhapticpulse = null
-      }
-    }
-  });
   window.document.addEventListener('pointerlockchange', () => {
     const {pointerLockElement} = window.document;
 

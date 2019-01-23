@@ -86,16 +86,26 @@ class GamepadPose {
   }
 }
 class GamepadHapticActuator {
-  constructor(gamepad) {
-    this.gamepad = gamepad;
+  constructor(index) {
+    this.index = index;
   }
   get type() {
     return 'vibration';
   }
   set type(type) {}
   pulse(value, duration) {
-    if (this.gamepad.ontriggerhapticpulse) {
-      this.gamepad.ontriggerhapticpulse(value, duration);
+    if (GlobalContext.vrPresentState.isPresenting) {
+      value = Math.min(Math.max(value, 0), 1);
+      const deviceIndex = GlobalContext.vrPresentState.system.GetTrackedDeviceIndexForControllerRole(this.index + 1);
+
+      const startTime = Date.now();
+      const _recurse = () => {
+        if ((Date.now() - startTime) < duration) {
+          GlobalContext.vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
+          setTimeout(_recurse, 50);
+        }
+      };
+      setTimeout(_recurse, 50);
     }
   }
 }
@@ -113,9 +123,7 @@ class Gamepad {
     }
     this.pose = new GamepadPose();
     this.axes = new Float32Array(10);
-    this.hapticActuators = [new GamepadHapticActuator(this)];
-
-    this.ontriggerhapticpulse = null;
+    this.hapticActuators = [new GamepadHapticActuator(index)];
   }
 
   copy(gamepad) {
