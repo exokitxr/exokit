@@ -1470,7 +1470,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   GlobalContext.windows.push(window);
   window.on('destroy', () => {
-    GlobalContext.windows.splice(windows.indexOf(window), 1);
+    GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
   });
 
   return window;
