@@ -636,11 +636,19 @@ class FakeVRDisplay extends MRDisplay {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const gamepads =  [
-  new Gamepad('left', 0),
-  new Gamepad('right', 1),
-];
-const getGamepads = () => gamepads;
+const getGamepads = (() => {
+  let gamepads = null;
+  
+  return () => {
+    if (!gamepads) {
+      gamepads = [
+        new Gamepad('left', 0),
+        new Gamepad('right', 1),
+      ];
+    }
+    return gamepads;
+  };
+})();
 GlobalContext.getGamepads = getGamepads;
 
 module.exports = {
