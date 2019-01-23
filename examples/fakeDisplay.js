@@ -1,12 +1,5 @@
 (() => {
 
-const localVector = new THREE.Vector3();
-const localQuaternion = new THREE.Quaternion();
-const localVector2 = new THREE.Vector3();
-const localMatrix = new THREE.Matrix4();
-const localMatrix2 = new THREE.Matrix4();
-const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-
 window._makeFakeDisplay = () => {
   const fakeDisplay = window.navigator.createVRDisplay();
   fakeDisplay.enter = async ({renderer, animate, layers}) => {
