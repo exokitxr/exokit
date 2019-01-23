@@ -1,3 +1,4 @@
+const {EventEmitter} = require('events');
 const {Event} = require('./Event');
 const THREE = require('../lib/three-min.js');
 const {defaultCanvasSize, defaultEyeSeparation} = require('./constants.js');
@@ -179,8 +180,10 @@ class VRStageParameters {
   } */
 }
 
-class MRDisplay {
+class MRDisplay extends EventEmitter {
   constructor(displayName) {
+    super();
+    
     this.displayName = displayName;
 
     this.isPresenting = false;
@@ -396,6 +399,7 @@ class FakeVRDisplay extends MRDisplay {
 
     this._layers = [];
     this._onends = [];
+    this._lastPresseds = [false, false];
 
     // this._frameData = new VRFrameData();
   }
@@ -633,6 +637,7 @@ class FakeVRDisplay extends MRDisplay {
      .getInverse(localMatrix)
      .toArray(GlobalContext.xrState.rightViewMatrix);
 
+    // update gamepads
     for (let i = 0; i < this.gamepads.length; i++) {
       const gamepad = this.gamepads[i];
       localVector.copy(this.position)
@@ -661,6 +666,29 @@ class FakeVRDisplay extends MRDisplay {
           localVector2.set(1, 1, 1)
         )
         .toArray(gamepad.pose._localPointerMatrix);
+    }
+
+    // emit gamepad events
+    for (let i = 0; i < this.gamepads.length; i++) {
+      const gamepad = this.gamepads[i];
+      const pressed = gamepad.buttons[1].pressed;
+      const lastPressed = this._lastPresseds[i];
+      if (pressed && !lastPressed) {
+        this.emit('selectstart', new GlobalContext.XRInputSourceEvent('selectstart', {
+          frame: this._frame,
+          inputSource: gamepad,
+        }));
+        this.emit('select', new GlobalContext.XRInputSourceEvent('select', {
+          frame: this._frame,
+          inputSource: gamepad,
+        }));
+      } else if (lastPressed && !pressed) {
+        this.emit('selectend', new GlobalContext.XRInputSourceEvent('selectend', {
+          frame: this._frame,
+          inputSource: gamepad,
+        }));
+      }
+      this._lastPresseds[i] = pressed;
     }
   }
 }

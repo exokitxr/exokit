@@ -538,6 +538,7 @@ class XRInputSourceEvent extends Event {
   }
 }
 module.exports.XRInputSourceEvent = XRInputSourceEvent;
+GlobalContext.XRInputSourceEvent = XRInputSourceEvent;
 
 class XRRigidTransform {
   constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 1}, scale = {x: 1, y: 1, z: 1}) {
