@@ -1343,8 +1343,8 @@ const _startRenderLoop = () => {
       mlPresentState.mlContext.PrepareFrame(
         mlPresentState.mlGlContext,
         mlPresentState.mlMsFbo,
-        renderWidth*2,
-        renderHeight,
+        xrState.renderWidth[0]*2,
+        xrState.renderHeight[0],
       );
 
       if (args.performance) {
