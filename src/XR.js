@@ -405,7 +405,7 @@ class XRView {
     this.eye = eye;
     this.projectionMatrix = eye === 'left' ? GlobalContext.xrState.leftProjectionMatrix : GlobalContext.xrState.rightProjectionMatrix;
 
-    this._viewport = new XRViewport();
+    this._viewport = new XRViewport(eye);
     this._viewMatrix = eye === 'left' ? GlobalContext.xrState.leftViewMatrix : GlobalContext.xrState.rightViewMatrix;
     this._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
@@ -413,12 +413,25 @@ class XRView {
 module.exports.XRView = XRView;
 
 class XRViewport {
-  constructor(x = 0, y = 0, width = defaultCanvasSize[0], height = defaultCanvasSize[1]) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
+  constructor(eye) {
+    this.eye = eye;
   }
+  get x() {
+    return this.eye === 'left' ? 0 : GlobalContext.renderWidth[0];
+  }
+  set x(x) {}
+  get y() {
+    return 0;
+  }
+  set y(y) {}
+  get width() {
+    return GlobalContext.renderWidth[0];
+  }
+  set width(width) {}
+  get height() {
+    return GlobalContext.renderHeight[0];
+  }
+  set height(height) {}
   /* set(x, y, width, height) {
     this.x = x;
     this.y = y;
