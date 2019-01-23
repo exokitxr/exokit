@@ -63,11 +63,6 @@ class XRDevice {
     }
     return Promise.resolve(this.session);
   }
-  /* update(update) {
-    if (this.session) {
-      this.session.update(update);
-    }
-  } */
   get layers() {
     return this._layers;
   }
@@ -78,17 +73,6 @@ class XRDevice {
       this.onlayers(layers);
     }
   }
-  /* clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    if (o.session) {
-      o.session = o.session.clone();
-      o.session.device = o;
-    }
-    return o;
-  } */
 }
 module.exports.XRDevice = XRDevice;
 
@@ -285,16 +269,6 @@ class XRSession extends EventTarget {
         }
       }
     }
-  }
-  clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    o.baseLayer = null;
-    o._frame = o._frame.clone();
-    o._frame.session = o;
-    return o;
   } */
   get onblur() {
     return _elementGetter(this, 'blur');
@@ -423,15 +397,6 @@ class XRPresentationFrame {
     
     return inputSource._pose;
   }
-  /* clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    o._pose = o._pose.clone();
-    o._pose.frame = o;
-    return o;
-  } */
 }
 module.exports.XRPresentationFrame = XRPresentationFrame;
 
@@ -482,13 +447,6 @@ class XRDevicePose {
     }
     return view._localViewMatrix;
   }
-  /* clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    return o;
-  } */
 }
 module.exports.XRDevicePose = XRDevicePose;
 

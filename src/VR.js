@@ -283,18 +283,6 @@ class MRDisplay extends EventEmitter {
 
   submitFrame() {}
 
-  /* clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    if (o.session) {
-      o.session = o.session.clone();
-      o.session.device = o;
-    }
-    return o;
-  } */
-
   destroy() {
     for (let i = 0; i < this._rafs.length; i++) {
       this.cancelAnimationFrame(this._rafs[i]);
@@ -479,15 +467,6 @@ class FakeVRDisplay extends MRDisplay {
         }
         return self.exitPresent();
       },
-      /* clone() {
-        const o = new this.constructor();
-        for (const k in this) {
-          o[k] = this[k];
-        }
-        o._frame = o._frame.clone();
-        o._frame.session = o;
-        return o;
-      }, */
     };
 
     const {xrState} = GlobalContext;
@@ -527,15 +506,6 @@ class FakeVRDisplay extends MRDisplay {
 
         return inputSource.pose; // XXX or _pose
       },
-      /* clone() {
-        const o = new this.constructor();
-        for (const k in this) {
-          o[k] = this[k];
-        }
-        o._pose = o._pose.clone();
-        o._pose.frame = o;
-        return o;
-      }, */
     };
     session._frame = _frame;
     const _pose = {
@@ -560,13 +530,6 @@ class FakeVRDisplay extends MRDisplay {
         }
         return localViewMatrix;
       },
-      /* clone() {
-        const o = new this.constructor();
-        for (const k in this) {
-          o[k] = this[k];
-        }
-        return o;
-      }, */
     };
     _frame._pose = _pose;
 
