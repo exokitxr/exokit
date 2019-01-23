@@ -378,12 +378,11 @@ class FakeVRDisplay extends MRDisplay {
     ];
     for (let i = 0; i < this.gamepads.length; i++) {
       const gamepad = this.gamepads[i];
-      const {pose} = gamepad;
-      if (!pose.targetRay) {
-        pose.targetRay = {
-          transformMatrix: new Float32Array(16),
-        };
-      }
+      gamepad.handedness = gamepad.hand;
+      gamepad.pose.targetRay = {
+        transformMatrix: new Float32Array(16),
+      };
+      gamepad.pose._localPointerMatrix = new Float32Array(16);
     }
     this.isPresenting = false;
     this.stageParameters = new VRStageParameters();
@@ -648,18 +647,6 @@ class FakeVRDisplay extends MRDisplay {
             .applyQuaternion(this.quaternion)
         ).toArray(gamepad.pose.position);
       this.quaternion.toArray(gamepad.pose.orientation);
-
-      if (!gamepad.handedness) {
-        gamepad.handedness = gamepad.hand;
-      }
-      if (!gamepad.pose._localPointerMatrix) {
-        gamepad.pose._localPointerMatrix = new Float32Array(32);
-      }
-      if (!gamepad.pose.targetRay) {
-        gamepad.pose.targetRay = {
-          transformMatrix: new Float32Array(32),
-        };
-      }
 
       localMatrix2
         .compose(
