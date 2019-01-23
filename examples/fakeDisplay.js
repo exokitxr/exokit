@@ -5,7 +5,6 @@ window._makeFakeDisplay = () => {
   fakeDisplay.enter = async ({renderer, animate, layers}) => {
     const canvas = renderer.domElement;
 
-    fakeDisplay.setSize(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
     fakeDisplay.layers = layers;
     fakeDisplay.requestPresent();
     const session = await fakeDisplay.requestSession({
