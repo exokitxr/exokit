@@ -323,6 +323,8 @@ class VRDisplay extends MRDisplay {
 class FakeVRDisplay extends MRDisplay {
   constructor(window) {
     super('FAKE');
+    
+    this.window = window;
 
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
