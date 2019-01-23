@@ -2726,8 +2726,8 @@ const _bootFakeDisplay = async () => {
 
   console.log('loaded root in 2D');
 };
-if (navigator.xr && !query.fake) {
-  (async () => {
+(async () => {
+  if (navigator.xr && !query.fake) {
     display = await navigator.xr.requestDevice();
 
     if (display) {
@@ -2778,15 +2778,15 @@ if (navigator.xr && !query.fake) {
         console.log('loaded root in XR');
       });
     } else {
-      _bootFakeDisplay();
+      await _bootFakeDisplay();
     }
-  })()
-    .catch(err => {
-      console.warn(err.stack);
-    });
-} else {
-  _bootFakeDisplay();
-}
+  } else {
+    await _bootFakeDisplay();
+  }
+})()
+  .catch(err => {
+    console.warn(err.stack);
+  });
 
 // renderer.setAnimationLoop(animate);
 // _openRig(new THREE.Vector3(0, 1.5, -1), new THREE.Quaternion());
