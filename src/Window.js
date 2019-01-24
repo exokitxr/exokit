@@ -1445,23 +1445,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         _updateGamepads(update.gamepads);
       }
     }; */
-
-    if (nativeMl) {
-      let lastPresent = nativeMl.IsPresent();
-
-      nativeMl.OnPresentChange(isPresent => {
-        if (isPresent && !lastPresent) {
-          const e = new Event('vrdisplayconnect');
-          e.display = _getMlDisplay(window);
-          window.dispatchEvent(e);
-        } else if (!isPresent && lastPresent) {
-          const e = new Event('vrdisplaydisconnect');
-          e.display = _getMlDisplay(window);
-          window.dispatchEvent(e);
-        }
-        lastPresent = isPresent;
-      });
-    }
   } else {
     top.on('vrdisplaypresentchange', e => {
       window._emit('vrdisplaypresentchange', e);
