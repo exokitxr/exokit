@@ -5,8 +5,7 @@ const fs = require('fs');
 const url = require('url');
 const {URL} = url;
 const vm = require('vm');
-const {workerData} = require('worker_threads');
-const {args} = workerData;
+const {workerData: {args}} = require('worker_threads');
 
 const {createImageBitmap} = require('./DOM.js');
 const fetch = require('window-fetch');
