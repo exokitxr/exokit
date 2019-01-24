@@ -571,29 +571,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         resolve();
       })
     }
-    /* getVRMode: () => vrMode,
-    setVRMode: newVrMode => {
-      for (let i = 0; i < vrDisplays.length; i++) {
-        vrDisplays[i].destroy();
-      }
-
-      if (newVrMode === 'vr') {
-        vrDisplays = [new VRDisplay(window, 0)];
-      } else if (newVrMode === 'ar') {
-        display = new ARDisplay(window, 1);
-      } else if (newVrMode === 'ml') {
-        vrDisplays = [new MLDisplay(window, 2)];
-      }
-      vrMode = newVrMode;
-    },
-    getVRTexture: () => vrTexture,
-    setVRTexture: newVrTexture => {
-      vrTexture = newVrTexture;
-    },
-    getVRTextures: () => vrTextures,
-    setVRTextures: newVrTextures => {
-      vrTextures = newVrTextures;
-    }, */
   };
 
   // WebVR enabled.
