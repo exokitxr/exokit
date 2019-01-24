@@ -1652,7 +1652,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
           }
         })
         .then(s => {
-          utils._runJavascript(s, this.ownerDocument.defaultView, url);
+          utils._runJavascript(s, this.ownerDocument.defaultView, url); // XXX vm
 
           this.readyState = 'complete';
 
@@ -1680,7 +1680,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const window = this.ownerDocument.defaultView;
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
+      utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0); // XXX vm
 
       this.readyState = 'complete';
       

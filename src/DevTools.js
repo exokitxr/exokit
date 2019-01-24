@@ -69,7 +69,7 @@ class DevTools {
       r.setEval((s, context, filename, cb) => {
         let err = null, result;
         try {
-          result = this.context.vm.run(s);
+          result = this.context.vm.run(s); // XXX vm
         } catch (e) {
           err = e;
         }
