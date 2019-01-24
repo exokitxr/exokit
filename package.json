@@ -78,7 +78,6 @@
     "redirect-output": "^1.0.0",
     "repl.history": "^0.1.4",
     "rimraf": "^2.6.2",
-    "vm-one": "0.0.32",
     "webgl-to-opengl": "0.0.12",
     "window-classlist": "0.0.4",
     "window-fetch": "0.0.9",
