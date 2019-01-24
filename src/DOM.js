@@ -1962,12 +1962,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   const options = parentWindow[symbols.optionsSymbol];
 
                   url = utils._makeNormalizeUrl(options.baseUrl)(url);
+                  const parent = {};
+                  const top = parentWindow === parentWindow.top ? parent : {};
                   const contentWindow = GlobalContext._makeWindow({
                     url,
                     baseUrl: url,
                     args: options.args,
                     dataPath: options.dataPath,
-                  }, parentWindow, parentWindow.top);
+                    parent,
+                    top,
+                  });
                   const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
 
                   contentDocument.hidden = this.d === 3;

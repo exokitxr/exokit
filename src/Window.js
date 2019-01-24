@@ -11,6 +11,7 @@ const util = require('util');
 const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
 const {performance} = require('perf_hooks');
+const {workerData: {args: options}} = require('worker_threads');
 
 const mkdirp = require('mkdirp');
 
@@ -337,10 +338,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
 };
 const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
 
-const options = {}; // XXX pass these in
-const parent = null;
-const top = null;
-
 const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
 (window => {
@@ -375,8 +372,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   window.window = window;
   window.self = window;
-  window.parent = parent || window;
-  window.top = top || window;
+  window.parent = options.parent || window;
+  window.top = options.top || window;
 
   window.innerWidth = defaultCanvasSize[0];
   window.innerHeight = defaultCanvasSize[1];
