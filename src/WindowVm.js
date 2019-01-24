@@ -3,10 +3,14 @@ const GlobalContext = require('./GlobalContext');
 
 GlobalContext.fakeVrDisplayEnabled = false; // XXX move this
 
-  nativeWorker.make({
 const _makeWindow = (options = {}) => {
+  const window = nativeWorker.make({
     initModule: path.join(__dirname, 'Window.js'),
     args: options,
+  });
+  
+  window.on('exit', () => {
+    window.emit('destroy');
   });
 
   GlobalContext.windows.push(window);
