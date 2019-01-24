@@ -370,9 +370,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const window = vmo.getGlobal();
   window.vm = vmo;
 
-  // Store original prototypes for converting to and from native and JS.
-  utils._storeOriginalWindowPrototypes(window, symbols.prototypesSymbol);
-
   const windowStartScript = `(() => {
     ${!options.args.require ? 'global.require = undefined;' : ''}
 
