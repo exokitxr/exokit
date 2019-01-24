@@ -337,11 +337,13 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
 };
 const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
 
-GlobalContext.fakeVrDisplayEnabled = false;
+const options = {}; // XXX pass these in
+const parent = null;
+const top = null;
 
-const _makeWindow = (options = {}, parent = null, top = null) => {
-  const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
+const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
+(window => {
   const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
     constructor() {
       super(...arguments);
@@ -365,10 +367,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
     }
   })(HTMLAudioElement);
-
-  const vmo = nativeVm.make();
-  const window = vmo.getGlobal();
-  window.vm = vmo;
 
   const windowStartScript = `(() => {
     ${!options.args.require ? 'global.require = undefined;' : ''}
@@ -1278,15 +1276,4 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.on('destroy', () => {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
   });
-
-  return window;
-};
-module.exports._makeWindow = _makeWindow;
-GlobalContext._makeWindow = _makeWindow;
-
-const _makeWindowWithDocument = (s, options, parent, top) => {
-  const window = _makeWindow(options, parent, top);
-  window.document = _parseDocument(s, window);
-  return window;
-};
-module.exports._makeWindowWithDocument = _makeWindowWithDocument;
+})(global);
