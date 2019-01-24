@@ -3,12 +3,10 @@ const GlobalContext = require('./GlobalContext');
 
 GlobalContext.fakeVrDisplayEnabled = false; // XXX move this
 
-const _makeWindow = (options = {}, parent = null, top = null) => {
   nativeWorker.make({
+const _makeWindow = (options = {}) => {
     initModule: path.join(__dirname, 'Window.js'),
-    args: {
-      src,
-    },
+    args: options,
   });
 
   GlobalContext.windows.push(window);
@@ -21,8 +19,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 module.exports._makeWindow = _makeWindow;
 GlobalContext._makeWindow = _makeWindow;
 
-const _makeWindowWithDocument = (s, options, parent, top) => { // XXX fold this into Window
-  const window = _makeWindow(options, parent, top);
+const _makeWindowWithDocument = (s, options) => { // XXX fold this into Window
+  const window = _makeWindow(options);
   window.document = _parseDocument(s, window);
   return window;
 };
