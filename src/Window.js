@@ -1277,12 +1277,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
 
-  if (parent) {
-    top.on('vrdisplaypresentchange', e => {
-      window._emit('vrdisplaypresentchange', e);
-    });
-  }
-
   GlobalContext.windows.push(window);
   window.on('destroy', () => {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
