@@ -69,7 +69,6 @@ const args = (() => {
         'minimalFrame',
         'quit',
         'blit',
-        'require',
         'headless',
       ],
       string: [
@@ -93,7 +92,6 @@ const args = (() => {
         m: 'minimalFrame',
         q: 'quit',
         b: 'blit',
-        r: 'require',
         n: 'headless',
         d: 'download',
       },
@@ -112,7 +110,6 @@ const args = (() => {
       minimalFrame: minimistArgs.minimalFrame,
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
-      require: minimistArgs.require,
       headless: minimistArgs.headless,
       download: minimistArgs.download,
     };
