@@ -1119,9 +1119,4 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     };
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
-
-  GlobalContext.windows.push(window);
-  window.on('destroy', () => {
-    GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
-  });
 })(global);
