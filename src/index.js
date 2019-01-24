@@ -1538,13 +1538,6 @@ const _startRenderLoop = () => {
         .compose(localVector, localQuaternion, localVector2)
         .toArray(gamepad.transformMatrix);
     }
-    
-    // poll xr device events
-    for (let i = 0; i < windows.length; i++) {
-      const window = windows[i];
-      window[symbols.mrDisplaysSymbol].xrDisplay.session && window[symbols.mrDisplaysSymbol].xrDisplay.session.update();
-      window[symbols.mrDisplaysSymbol].xmDisplay.session && window[symbols.mrDisplaysSymbol].xmDisplay.session.update();
-    }
 
     // poll operating system events
     nativeBindings.nativeWindow.pollEvents();
@@ -1572,13 +1565,15 @@ const _startRenderLoop = () => {
       timestamps.last = now;
     }
 
-    // trigger requestAnimationFrame
     if (args.frame || args.minimalFrame) {
       console.log('-'.repeat(80) + 'start frame');
     }
+
+    // tick animation frames    
     for (let i = 0; i < windows.length; i++) {
       windows[i].tickAnimationFrame();
     }
+    
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -1586,6 +1581,8 @@ const _startRenderLoop = () => {
       timestamps.total += diff;
       timestamps.last = now;
     }
+    
+    // composite image
 
     _blit();
 
