@@ -450,8 +450,9 @@ class XRDevicePose {
     this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
   getViewMatrix(view) {
-    if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.window) {
-      const {xrOffset} = this.frame.session.device.window.document;
+    if (this.frame && this.frame.session && this.frame.session.baseLayer && this.frame.session.baseLayer.context.canvas.ownerDocument.xrOffset) {
+      const {xrOffset} = this.frame.session.baseLayer.context.canvas.ownerDocument;
+      
       localMatrix
         .fromArray(view._viewMatrix)
         .multiply(
