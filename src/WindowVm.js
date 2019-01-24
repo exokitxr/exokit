@@ -12,6 +12,10 @@ const _makeWindow = (options = {}) => {
   window.on('exit', () => {
     window.emit('destroy');
   });
+  
+  window.tickAnimationFrame = () => {
+    window.runDetached(`window.tickAnimationFrame();`);
+  };
 
   GlobalContext.windows.push(window);
   window.on('destroy', () => {
