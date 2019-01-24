@@ -1410,42 +1410,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
 
-  if (!parent) {
-    /* const _updateGamepads = newGamepads => {
-      if (newGamepads !== undefined) {
-        const gamepads = getGamepads();
-
-        if (newGamepads[0]) {
-          gamepads[0].copy(newGamepads[0]);
-        }
-        if (newGamepads[1]) {
-          gamepads[1].copy(newGamepads[1]);
-        }
-      }
-    };
-    window.updateVrFrame = update => {
-      let updatedHmd = false;
-      if (vrDisplay.isPresenting || update.force) {
-        vrDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (xrDisplay.session || update.force) {
-        xrDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (mlDisplay.isPresenting || update.force) {
-        mlDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (xmDisplay.session || update.force) {
-        xmDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (updatedHmd) {
-        _updateGamepads(update.gamepads);
-      }
-    }; */
-  } else {
+  if (parent) {
     top.on('vrdisplaypresentchange', e => {
       window._emit('vrdisplaypresentchange', e);
     });
