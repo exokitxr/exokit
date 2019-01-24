@@ -20,7 +20,6 @@ constexpr float planeRange = 10.0f;
 
 application_context_t application_context;
 MLResult lifecycle_status = MLResult_Pending;
-Nan::Persistent<Function> initCb;
 
 MLLifecycleCallbacks lifecycle_callbacks;
 MLInputKeyboardCallbacks keyboardCallbacks;
@@ -1960,7 +1959,6 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
-  Nan::SetMethod(ctorFn, "OnPresentChange", OnPresentChange);
   Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
@@ -3645,15 +3643,6 @@ NAN_METHOD(MLContext::IsPresent) {
 
 NAN_METHOD(MLContext::IsSimulated) {
   info.GetReturnValue().Set(JS_BOOL(isSimulated()));
-}
-
-NAN_METHOD(MLContext::OnPresentChange) {
-  if (info[0]->IsFunction()) {
-    Local<Function> initCbFn = Local<Function>::Cast(info[0]);
-    initCb.Reset(initCbFn);
-  } else {
-    Nan::ThrowError("MLContext::OnPresentChange: invalid arguments");
-  }
 }
 
 NAN_METHOD(MLContext::RequestMeshing) {
