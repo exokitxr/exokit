@@ -180,7 +180,7 @@ class VRStageParameters {
   } */
 }
 
-class MRDisplay extends EventEmitter {
+class VRDisplay extends EventEmitter {
   constructor(displayName) {
     super();
     
@@ -200,7 +200,17 @@ class MRDisplay extends EventEmitter {
     this.onrequestanimationframe = null;
     this.onvrdisplaypresentchange = null;
 
+    this._frameData = new VRFrameData();
     this._rafs = [];
+  }
+
+  getFrameData(frameData) {
+    frameData.leftProjectionMatrix.set(GlobalContext.xrState.leftProjectionMatrix);
+    frameData.leftViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
+    frameData.rightViewMatrix.set(GlobalContext.xrState.rightViewMatrix);
+    frameData.rightProjectionMatrix.set(GlobalContext.xrState.rightProjectionMatrix);
+    frameData.pose.position.set(GlobalContext.xrState.position);
+    frameData.pose.orientation.set(GlobalContext.xrState.orientation);
   }
 
   getLayers() {
@@ -289,70 +299,8 @@ class MRDisplay extends EventEmitter {
     }
   }
 }
-class VRDisplay extends MRDisplay {
-  constructor(displayName = 'VR') {
-    super(displayName);
 
-    this._frameData = new VRFrameData();
-  }
-
-  getFrameData(frameData) {
-    frameData.leftProjectionMatrix.set(GlobalContext.xrState.leftProjectionMatrix);
-    frameData.leftViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
-    frameData.rightViewMatrix.set(GlobalContext.xrState.rightViewMatrix);
-    frameData.rightProjectionMatrix.set(GlobalContext.xrState.rightProjectionMatrix);
-    frameData.pose.position.set(GlobalContext.xrState.position);
-    frameData.pose.orientation.set(GlobalContext.xrState.orientation);
-  }
-
-  /* update(update) {
-    const {
-      depthNear,
-      depthFar,
-      renderWidth,
-      renderHeight,
-      leftOffset,
-      leftFov,
-      rightOffset,
-      rightFov,
-      frameData,
-      stageParameters,
-    } = update;
-
-    if (depthNear !== undefined) {
-      this.depthNear = depthNear;
-    }
-    if (depthFar !== undefined) {
-      this.depthFar = depthFar;
-    }
-    if (renderWidth !== undefined) {
-      this._width = renderWidth;
-    }
-    if (renderHeight !== undefined) {
-      this._height = renderHeight;
-    }
-    if (leftOffset !== undefined) {
-      this._leftOffset.set(leftOffset);
-    }
-    if (leftFov !== undefined) {
-      this._leftFov.set(leftFov);
-    }
-    if (rightOffset !== undefined) {
-      this._rightOffset.set(rightOffset);
-    }
-    if (rightFov !== undefined) {
-      this._rightFov.set(rightFov);
-    }
-    if (frameData !== undefined) {
-      this._frameData.copy(frameData);
-    }
-    if (stageParameters !== undefined) {
-      this.stageParameters.copy(stageParameters);
-    }
-  } */
-}
-
-class FakeVRDisplay extends MRDisplay {
+class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
     
@@ -663,7 +611,6 @@ const getGamepads = (() => {
 GlobalContext.getGamepads = getGamepads;
 
 module.exports = {
-  MRDisplay,
   VRDisplay,
   FakeVRDisplay,
   VRFrameData,

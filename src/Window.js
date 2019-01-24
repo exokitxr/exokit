@@ -247,96 +247,6 @@ class Screen {
   set availHeight(availHeight) {}
 }
 
-class MLDisplay extends MRDisplay {
-  constructor() {
-    super('ML');
-
-    this._frameData = new VRFrameData();
-    this._context = null;
-  }
-
-  requestPresent(layers) {
-    if (this.onrequestpresent) {
-      this.onrequestpresent(layers);
-    }
-
-    this.isPresenting = true;
-
-    if (this.onvrdisplaypresentchange) {
-      this.onvrdisplaypresentchange();
-    }
-
-    return Promise.resolve();
-  }
-
-  exitPresent() {
-    return (this.onexitpresent ? this.onexitpresent() : Promise.resolve())
-      .then(() => {
-        this.isPresenting = false;
-
-        for (let i = 0; i < this._rafs.length; i++) {
-          this.cancelAnimationFrame(this._rafs[i]);
-        }
-        this._rafs.length = 0;
-
-        if (this.onvrdisplaypresentchange) {
-          this.onvrdisplaypresentchange();
-        }
-      });
-  }
-
-  getFrameData(frameData) {
-    frameData.copy(this._frameData);
-  }
-
-  update(update) {
-    const {
-      depthNear,
-      depthFar,
-      renderWidth,
-      renderHeight,
-      leftOffset,
-      leftFov,
-      rightOffset,
-      rightFov,
-      frameData,
-      stageParameters,
-      handsArray,
-    } = update;
-
-    if (depthNear !== undefined) {
-      this.depthNear = depthNear;
-    }
-    if (depthFar !== undefined) {
-      this.depthFar = depthFar;
-    }
-    if (renderWidth !== undefined) {
-      this._width = renderWidth;
-    }
-    if (renderHeight !== undefined) {
-      this._height = renderHeight;
-    }
-    if (leftOffset !== undefined) {
-      this._leftOffset.set(leftOffset);
-    }
-    if (leftFov !== undefined) {
-      this._leftFov.set(leftFov);
-    }
-    if (rightOffset !== undefined) {
-      this._rightOffset.set(rightOffset);
-    }
-    if (rightFov !== undefined) {
-      this._rightFov.set(rightFov);
-    }
-    if (frameData !== undefined) {
-      this._frameData.copy(frameData);
-    }
-    if (update.context !== undefined) {
-      this._context = update.context;
-    }
-  }
-}
-
 class MediaRecorder extends EventEmitter {
   constructor() {
     super();
@@ -1005,7 +915,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Gamepad = Gamepad;
   window.VRStageParameters = VRStageParameters;
   window.VRDisplay = VRDisplay;
-  window.MLDisplay = MLDisplay;
   window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
@@ -1302,7 +1211,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.fakePresentState.layers = layers;
     };
 
-    const vrDisplay = new VRDisplay();
+    const vrDisplay = new VRDisplay('VR');
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
@@ -1329,7 +1238,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
-    const mlDisplay = new MLDisplay();
+    const mlDisplay = new VRDisplay('AR');
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
