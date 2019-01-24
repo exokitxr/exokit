@@ -395,20 +395,6 @@ const top = null;
 const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
 (window => {
-  const windowStartScript = `(() => {
-    ${!options.args.require ? 'global.require = undefined;' : ''}
-
-    const _logStack = err => {
-      console.warn(err);
-    };
-    process.on('uncaughtException', _logStack);
-    process.on('unhandledRejection', _logStack);
-
-    global.process = undefined;
-    global.setImmediate = undefined;
-    window.global = undefined;
-  })();`;
-
   for (const k in EventEmitter.prototype) {
     window[k] = EventEmitter.prototype[k];
   }
@@ -1042,8 +1028,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     },
   });
 
-  vmo.run(windowStartScript, 'window-start-script.js');
-
   const _destroyTimeouts = window => {
     const _pred = fn => fn[symbols.windowSymbol] === window;
     for (let i = 0; i < rafCbs.length; i++) {
@@ -1329,3 +1313,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
 })(global);
+
+global.require = undefined;
+global.process = undefined;
+global.setImmediate = undefined;
+const _logStack = err => {
+  console.warn(err);
+};
+process.on('uncaughtException', _logStack);
+process.on('unhandledRejection', _logStack);
