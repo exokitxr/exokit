@@ -2397,7 +2397,7 @@ const _start = () => {
         window[match[1]] = result;
       } else {
         try {
-          result = window.vm.run(cmd, filename);
+          result = window.vm.run(cmd, filename); // XXX vm
         } catch(e) {
           err = e;
         }
