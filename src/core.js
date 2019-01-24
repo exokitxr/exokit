@@ -1,7 +1,7 @@
 const url = require('url');
 const {URL} = url;
 
-const {_makeWindowWithDocument} = require('./Window.js');
+const {_makeWindowWithDocument} = require('./WindowVm');
 
 const fetch = require('window-fetch');
 
