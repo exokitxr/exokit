@@ -89,7 +89,7 @@
     "window-selector": "0.0.6",
     "window-worker": "0.0.102",
     "window-xhr": "0.0.29",
-    "worker-native": "0.0.36",
+    "worker-native": "0.0.5",
     "ws": "^6.2.0"
   },
   "devDependencies": {
