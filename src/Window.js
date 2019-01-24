@@ -247,19 +247,11 @@ class Screen {
   set availHeight(availHeight) {}
 }
 
-const localVector = new THREE.Vector3();
-const localVector2 = new THREE.Vector3();
-const localQuaternion = new THREE.Quaternion();
-const localMatrix = new THREE.Matrix4();
-const maxNumPlanes = 32 * 3;
-const planeEntrySize = 3 + 4 + 2 + 1;
 class MLDisplay extends MRDisplay {
   constructor() {
     super('ML');
 
     this._frameData = new VRFrameData();
-    this._planesArray = new Float32Array(maxNumPlanes * planeEntrySize);
-    this._numPlanes = 0;
     this._context = null;
   }
 
@@ -295,11 +287,6 @@ class MLDisplay extends MRDisplay {
 
   getFrameData(frameData) {
     frameData.copy(this._frameData);
-
-    if (frameData.planes) {
-      frameData.planes.set(this._planesArray);
-      frameData.numPlanes = this._numPlanes;
-    }
   }
 
   update(update) {
@@ -343,12 +330,6 @@ class MLDisplay extends MRDisplay {
     }
     if (frameData !== undefined) {
       this._frameData.copy(frameData);
-    }
-    if (update.planesArray !== undefined) {
-      this._planesArray.set(update.planesArray);
-    }
-    if (update.numPlanes !== undefined) {
-      this._numPlanes = update.numPlanes;
     }
     if (update.context !== undefined) {
       this._context = update.context;
