@@ -66,15 +66,6 @@ const _makeHtmlCollectionProxy = (el, query) => new Proxy(el, {
 });
 module.exports._makeHtmlCollectionProxy = _makeHtmlCollectionProxy;
 
-const _runJavascript = (jsString, window, filename = 'script', lineOffset = 0, colOffset = 0) => {
-  try {
-    window.vm.run(jsString, filename, lineOffset, colOffset);
-  } catch (err) {
-    console.warn(err.stack);
-  }
-};
-module.exports._runJavascript = _runJavascript;
-
 const NORMALIZE_LIST = [
   'ArrayBuffer',
   'Buffer',
