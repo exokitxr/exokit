@@ -1,8 +1,6 @@
 const nativeWorker = require('worker-native');
 const GlobalContext = require('./GlobalContext');
 
-GlobalContext.fakeVrDisplayEnabled = false; // XXX move this
-
 const _makeWindow = (options = {}) => {
   const window = nativeWorker.make({
     initModule: path.join(__dirname, 'Window.js'),
