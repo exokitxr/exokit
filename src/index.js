@@ -1083,7 +1083,7 @@ const _startRenderLoop = () => {
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
             vrPresentState.hasPose = false;
 
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
               const {mlDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1096,7 +1096,7 @@ const _startRenderLoop = () => {
             mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
             mlPresentState.mlHasPose = false;
 
-            // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, window.innerWidth, window.innerHeight, true, false, false);
+            // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0],, true, false, false);
           } else if (fakePresentState.layers.length > 0) {
             const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
             _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay, 1);
