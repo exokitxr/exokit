@@ -513,59 +513,28 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   };
   const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
   window.fetch = (u, options) => {
-    const _boundFetch = (u, options) => {
-      const req = utils._normalizePrototype(
-        fetch(u, options),
-        window
-      );
-      return req
-        .then(res => {
-          res.arrayBuffer = (fn => function() {
-            return utils._normalizePrototype(
-              fn.apply(this, arguments),
-              window
-            );
-          })(res.arrayBuffer);
-          res.blob = (fn => function() {
-            return utils._normalizePrototype(
-              fn.apply(this, arguments),
-              window
-            );
-          })(res.blob);
-          res.json = (fn => function() {
-            return utils._normalizePrototype(
-              fn.apply(this, arguments),
-              window
-            );
-          })(res.json);
-          res.text = (fn => function() {
-            return utils._normalizePrototype(
-              fn.apply(this, arguments),
-              window
-            );
-          })(res.text);
+    const _boundFetch = (u, options) => fetch(u, options)
+      .then(res => {
+        const method = (options && options.method) || 'GET';
+        res.arrayBuffer = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(ab => _maybeDownload(method, u, ab, ab => Buffer.from(ab)));
+        })(res.arrayBuffer);
+        res.blob = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(blob => _maybeDownload(method, u, blob, blob => blob.buffer));
+        })(res.blob);
+        res.json = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(j => _maybeDownload(method, u, j, j => Buffer.from(JSON.stringify(j))));
+        })(res.json);
+        res.text = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(t => _maybeDownload(method, u, t, t => Buffer.from(t, 'utf8')));
+        })(res.text);
 
-          const method = (options && options.method) || 'GET';
-          res.arrayBuffer = (fn => function() {
-            return fn.apply(this, arguments)
-              .then(ab => _maybeDownload(method, u, utils._normalizePrototype(ab, window), ab => Buffer.from(ab)));
-          })(res.arrayBuffer);
-          res.blob = (fn => function() {
-            return fn.apply(this, arguments)
-              .then(blob => _maybeDownload(method, u, utils._normalizePrototype(blob, window), blob => blob.buffer));
-          })(res.blob);
-          res.json = (fn => function() {
-            return fn.apply(this, arguments)
-              .then(j => _maybeDownload(method, u, j, j => Buffer.from(JSON.stringify(j))));
-          })(res.json);
-          res.text = (fn => function() {
-            return fn.apply(this, arguments)
-              .then(t => _maybeDownload(method, u, t, t => Buffer.from(t, 'utf8')));
-          })(res.text);
-
-          return res;
-        });
-    };
+        return res;
+      });
 
     if (typeof u === 'string') {
       const blob = urls.get(u);
@@ -580,22 +549,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   window.Request = Request;
-  window.Response = (Old => class Response extends Old {
-    constructor(body, opts) {
-      super(utils._normalizePrototype(body, global), opts);
-    }
-  })(Response);
+  window.Response = Response;
   window.Headers = Headers;
-  window.Blob = (Old => class Blob extends Old {
-    constructor(parts, opts) {
-      super(parts && parts.map(part => utils._normalizePrototype(part, global)), opts);
-    }
-  })(Blob);
-  window.FormData = (Old => class FormData extends Old {
-    append(field, value, options) {
-      super.append(field, utils._normalizePrototype(value, global), options);
-    }
-  })(FormData);
+  window.Blob = Blob;
+  window.FormData = FormData;
   window.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
@@ -603,7 +560,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         return super.open(method, url, async, username, password);
       }
       get response() {
-        return _maybeDownload(this._properties.method, this._properties.uri, utils._normalizePrototype(super.response, window), o => {
+        return _maybeDownload(this._properties.method, this._properties.uri, super.response, o => {
           switch (this.responseType) {
             case 'arraybuffer': return Buffer.from(o);
             case 'blob': return o.buffer;
@@ -619,23 +576,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
     return XMLHttpRequest;
   })(XMLHttpRequest);
-  window.WebSocket = (Old => {
-    class WebSocket extends Old {
-      emit(type, event) {
-        if (type === 'message') {
-          event = utils._normalizePrototype(event, window);
-        }
-        return super.emit.apply(this, arguments);
-      }
-      send(data) {
-        return super.send(utils._normalizePrototype(data, global));
-      }
-    }
-    for (const k in Old) {
-      WebSocket[k] = Old[k];
-    }
-    return WebSocket;
-  })(WebSocket);
+  window.WebSocket = WebSocket;
   window.event = new Event(); // XXX this needs to track the current event
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.sessionStorage = new LocalStorage(path.join(options.dataPath, '.sessionStorage'));
@@ -726,111 +667,18 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   };
   window.browser = {
     devTools: DevTools,
-    http: (() => {
-      const httpProxy = {};
-      for (const k in http) {
-        httpProxy[k] = http[k];
-      }
-      httpProxy.createServer = (createServer => function(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(req, res) {
-            res.write = (write => function(d) {
-              if (typeof d === 'object') {
-                d = utils._normalizePrototype(d, global);
-              }
-              return write.apply(this, arguments);
-            })(res.write);
-            res.end = (end => function(d) {
-              if (typeof d === 'object') {
-                d = utils._normalizePrototype(d, global);
-              }
-              return end.apply(this, arguments);
-            })(res.end);
-
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return createServer.apply(this, arguments);
-      })(httpProxy.createServer);
-      return httpProxy;
-    })(),
+    http,
     // https,
-    ws: (() => {
-      const wsProxy = {};
-      for (const k in ws) {
-        wsProxy[k] = ws[k];
-      }
-      wsProxy.Server = (OldServer => function Server() {
-        const server = Reflect.construct(OldServer, arguments);
-        server.on = (on => function(e, cb) {
-          if (e === 'connection' && cb) {
-            cb = (cb => function(c) {
-              c.on = (on => function(e, cb) {
-                if (e === 'message' && cb) {
-                  cb = (cb => function(m) {
-                    m = utils._normalizePrototype(m, window);
-                    return cb.apply(this, arguments);
-                  })(cb);
-                }
-                return on.apply(this, arguments);
-              })(c.on);
-              c.send = (send => function(d) {
-                d = utils._normalizePrototype(d, global);
-                return send.apply(this, arguments);
-              })(c.send);
-              return cb.apply(this, arguments);
-            })(cb);
-          }
-          return on.apply(this, arguments);
-        })(server.on);
-        return server;
-      })(wsProxy.Server);
-      return wsProxy;
-    })(),
+    ws,
     createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
     magicleap: nativeMl ? {
-      RequestMeshing() {
-        const mesher = nativeMl.RequestMeshing(window);
-        return {
-          get onmesh() {
-            return mesher.onmesh;
-          },
-          set onmesh(cb) {
-            mesher.onmesh = cb ? updates => {
-              for (let i = 0; i < updates.length; i++) {
-                const update = updates[i];
-                if (update.positionArray) {
-                  update.positionArray = utils._normalizePrototype(update.positionArray, window);
-                }
-                if (update.normalArray) {
-                  update.normalArray = utils._normalizePrototype(update.normalArray, window);
-                }
-                if (update.indexArray) {
-                  update.indexArray = utils._normalizePrototype(update.indexArray, window);
-                }
-              }
-              cb(updates);
-            } : null;
-          },
-        };
-      },
+      RequestMeshing: () => nativeMl.RequestMeshing(window),
       RequestPlaneTracking: () => nativeMl.RequestPlaneTracking(window),
       RequestHandTracking: () => nativeMl.RequestHandTracking(window),
       RequestEyeTracking: () => nativeMl.RequestEyeTracking(window),
       RequestImageTracking: () => nativeMl.RequestImageTracking(window),
       RequestDepthPopulation: nativeMl.RequestDepthPopulation,
-      RequestCamera(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(datas) {
-            for (let i = 0; i < datas.length; i++) {
-              const data = datas[i];
-              data.data = utils._normalizePrototype(data.data, window);
-            }
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return nativeMl.RequestCamera.apply(nativeMl, arguments);
-      },
+      RequestCamera: nativeMl.RequestCamera,
     } : null,
     monitors: new MonitorManager(),
   };
