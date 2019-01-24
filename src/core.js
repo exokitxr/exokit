@@ -14,8 +14,8 @@ const {performance} = require('perf_hooks');
 
 const mkdirp = require('mkdirp');
 
-const {_makeWindowWithDocument} = require('./Window.js');
-const {FileReader} = require('./File.js');
+const {_makeWindowWithDocument} = require('./WindowVm');
+const {FileReader} = require('./File');
 
 const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
