@@ -11,13 +11,6 @@ thread_local NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
 std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 
-void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
-  if (eventHandler && !(*eventHandler).IsEmpty()) {
-    Local<Function> eventHandlerFn = Nan::New(*eventHandler);
-    eventHandlerFn->Call(Nan::Null(), argc, argv);
-  }
-}
-
 void Initialize() {
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
