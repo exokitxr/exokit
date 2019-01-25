@@ -638,7 +638,6 @@ if (nativeBindings.nativeMl) {
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
         }
-        const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
