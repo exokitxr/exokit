@@ -1959,6 +1959,8 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
+  Nan::SetMethod(ctorFn, "GetSize", GetSize);
+  Nan::SetMethod(ctorFn, "SetContentTexture", SetContentTexture);
   Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
@@ -2743,7 +2745,7 @@ NAN_METHOD(MLContext::Present) {
   unsigned int width = halfWidth * 2;
   unsigned int height = mlContext->render_targets_info.buffers[0].color.height;
 
-  GLuint fbo;
+  /* GLuint fbo;
   GLuint colorTex;
   GLuint depthStencilTex;
   GLuint msFbo;
@@ -2756,7 +2758,7 @@ NAN_METHOD(MLContext::Present) {
       info.GetReturnValue().Set(Nan::Null());
       return;
     }
-  }
+  } */
 
   {
     // mesh shader
@@ -2928,7 +2930,6 @@ NAN_METHOD(MLContext::Present) {
     glVertexAttribPointer(mlContext->uvLocation, 2, GL_FLOAT, false, 0, 0);
 
     glGenTextures(1, &mlContext->cameraInTexture);
-    mlContext->contentTexture = colorTex;
     // glBindTexture(GL_TEXTURE_2D, mlContext->cameraInTexture);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -3078,9 +3079,9 @@ NAN_METHOD(MLContext::Present) {
   // HACK: force the app to be "running"
   application_context.dummy_value = DummyValue::RUNNING;
 
-  ML_LOG(Info, "%s: Start loop.", application_name);
+  // ML_LOG(Info, "%s: Start loop.", application_name);
 
-  Local<Object> result = Nan::New<Object>();
+  /* Local<Object> result = Nan::New<Object>();
   result->Set(JS_STR("width"), JS_INT(halfWidth));
   result->Set(JS_STR("height"), JS_INT(height));
   result->Set(JS_STR("fbo"), JS_INT(fbo));
@@ -3089,7 +3090,7 @@ NAN_METHOD(MLContext::Present) {
   result->Set(JS_STR("msFbo"), JS_INT(msFbo));
   result->Set(JS_STR("msColorTex"), JS_INT(msColorTex));
   result->Set(JS_STR("msDepthStencilTex"), JS_INT(msDepthStencilTex));
-  info.GetReturnValue().Set(result);
+  info.GetReturnValue().Set(result); */
 }
 
 NAN_METHOD(MLContext::Exit) {
@@ -3643,6 +3644,31 @@ NAN_METHOD(MLContext::IsPresent) {
 
 NAN_METHOD(MLContext::IsSimulated) {
   info.GetReturnValue().Set(JS_BOOL(isSimulated()));
+}
+
+NAN_METHOD(MLContext::GetSize) {
+  if (info[0]->IsNumber()) {
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+    unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
+    // unsigned int width = halfWidth * 2;
+    unsigned int height = mlContext->render_targets_info.buffers[0].color.height;
+    
+    Local<Object> result = Nan::New<Object>();
+    result->Set(JS_STR("width"), JS_INT(halfWidth));
+    result->Set(JS_STR("height"), JS_INT(height));
+    info.GetReturnValue().Set(result);
+  } else {
+    Nan::ThrowError("MLContext::SetContentTexture: invalid arguments");
+  }
+}
+
+NAN_METHOD(MLContext::SetContentTexture) {
+  if (info[0]->IsNumber()) {
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+    mlContext->contentTexture = info[0]->Uint32Value();
+  } else {
+    Nan::ThrowError("MLContext::SetContentTexture: invalid arguments");
+  }
 }
 
 NAN_METHOD(MLContext::RequestMeshing) {

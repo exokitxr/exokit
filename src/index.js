@@ -644,69 +644,62 @@ if (nativeBindings.nativeMl) {
 
         // fps = ML_FPS;
 
-        const initResult = mlPresentState.mlContext.Present(windowHandle, context);
-        if (initResult) {
-          const {
-            width: halfWidth,
-            height,
-            fbo,
-            colorTex: tex,
-            depthStencilTex: depthTex,
-            msFbo,
-            msColorTex: msTex,
-            msDepthStencilTex: msDepthTex,
-          } = initResult;
-          const width = halfWidth * 2;
-          xrState.renderWidth[0] = halfWidth;
-          xrState.renderHeight[0] = height;
+        const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();
+        const width = halfWidth * 2;
 
-          mlPresentState.mlFbo = fbo;
-          mlPresentState.mlTex = tex;
-          mlPresentState.mlDepthTex = depthTex;
-          mlPresentState.mlMsFbo = msFbo;
-          mlPresentState.mlMsTex = msTex;
-          mlPresentState.mlMsDepthTex = msDepthTex;
+        mlPresentState.mlContext.Present(windowHandle, context);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        /* const {
+          width: halfWidth,
+          height,
+          fbo,
+          colorTex: tex,
+          depthStencilTex: depthTex,
+          msFbo,
+          msColorTex: msTex,
+          msDepthStencilTex: msDepthTex,
+        } = initResult; */
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
 
-          canvas.framebuffer = {
-            width,
-            height,
-            msFbo,
-            msTex,
-            msDepthTex,
-            fbo,
-            tex,
-            depthTex,
-          };
+        mlPresentState.mlFbo = fbo;
+        mlPresentState.mlTex = tex;
+        mlPresentState.mlDepthTex = depthTex;
+        mlPresentState.mlMsFbo = msFbo;
+        mlPresentState.mlMsTex = msTex;
+        mlPresentState.mlMsDepthTex = msDepthTex;
 
-          const cleanups = [];
-          mlPresentState.mlCleanups = cleanups;
+        canvas.framebuffer = {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
 
-          const _attribute = (name, value) => {
-            if (name === 'width' || name === 'height') {
-              nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
+        const cleanups = [];
+        mlPresentState.mlCleanups = cleanups;
 
-              nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
-            }
-          };
-          canvas.on('attribute', _attribute);
-          cleanups.push(() => {
-            canvas.removeListener('attribute', _attribute);
-          });
+        const _attribute = (name, value) => {
+          if (name === 'width' || name === 'height') {
+            nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
-          /* window.top.updateVrFrame({
-            renderWidth: xrState.renderWidth[0],
-            renderHeight: xrState.renderHeight[0],
-            force: true,
-          }); */
+            nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+          }
+        };
+        canvas.on('attribute', _attribute);
+        cleanups.push(() => {
+          canvas.removeListener('attribute', _attribute);
+        });
 
-          context.setDefaultFramebuffer(msFbo);
+        context.setDefaultFramebuffer(msFbo);
 
-          mlPresentState.mlGlContext = context;
+        mlPresentState.mlGlContext = context;
 
-          return canvas.framebuffer;
-        } else {
-          throw new Error('failed to present ml context');
-        }
+        return canvas.framebuffer;
       } else if (canvas.ownerDocument.framebuffer) {
         const {width, height} = canvas;
         const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;

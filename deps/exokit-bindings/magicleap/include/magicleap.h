@@ -294,6 +294,8 @@ public:
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
+  static NAN_METHOD(GetSize);
+  static NAN_METHOD(SetContentTexture);
   static NAN_METHOD(RequestMeshing);
   static NAN_METHOD(RequestPlaneTracking);
   static NAN_METHOD(RequestHitTest);
