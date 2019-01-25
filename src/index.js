@@ -1061,8 +1061,6 @@ const _startRenderLoop = () => {
 
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
-          const window = context.canvas.ownerDocument.defaultView;
-          
           // console.log('blit layers', fakePresentState.layers.length);
 
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
