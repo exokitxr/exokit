@@ -3647,19 +3647,15 @@ NAN_METHOD(MLContext::IsSimulated) {
 }
 
 NAN_METHOD(MLContext::GetSize) {
-  if (info[0]->IsNumber()) {
-    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-    unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
-    // unsigned int width = halfWidth * 2;
-    unsigned int height = mlContext->render_targets_info.buffers[0].color.height;
-    
-    Local<Object> result = Nan::New<Object>();
-    result->Set(JS_STR("width"), JS_INT(halfWidth));
-    result->Set(JS_STR("height"), JS_INT(height));
-    info.GetReturnValue().Set(result);
-  } else {
-    Nan::ThrowError("MLContext::SetContentTexture: invalid arguments");
-  }
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+  unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
+  // unsigned int width = halfWidth * 2;
+  unsigned int height = mlContext->render_targets_info.buffers[0].color.height;
+  
+  Local<Object> result = Nan::New<Object>();
+  result->Set(JS_STR("width"), JS_INT(halfWidth));
+  result->Set(JS_STR("height"), JS_INT(height));
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(MLContext::SetContentTexture) {
