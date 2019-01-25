@@ -27,6 +27,10 @@ if (require.main === module) {
 // const cwd = process.cwd();
 // process.chdir(__dirname); // needed for global bin to find libraries
 
+console.log('event loop native 1');
+const eventLoopNative = require('event-loop-native');
+console.log('event loop native 2', eventLoopNative);
+
 const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
