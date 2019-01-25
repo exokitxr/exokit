@@ -147,7 +147,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
   const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    if (!window[symbols.optionsSymbol].args.headless) {
+    if (!args.headless) {
       try {
         const visible = document.documentElement.contains(canvas);
         const {hidden} = document;
