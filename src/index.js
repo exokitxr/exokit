@@ -644,10 +644,11 @@ if (nativeBindings.nativeMl) {
 
         // fps = ML_FPS;
 
+        mlPresentState.mlContext.Present(windowHandle, context);
+
         const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();
         const width = halfWidth * 2;
 
-        mlPresentState.mlContext.Present(windowHandle, context);
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
         mlPresentState.mlContext.SetContentTexture(tex);
         /* const {
