@@ -649,6 +649,7 @@ if (nativeBindings.nativeMl) {
 
         mlPresentState.mlContext.Present(windowHandle, context);
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        mlPresentState.mlContext.SetContentTexture(tex);
         /* const {
           width: halfWidth,
           height,
