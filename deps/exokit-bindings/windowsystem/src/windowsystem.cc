@@ -673,10 +673,11 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 }
 
 NAN_METHOD(ComposeLayers) {
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray()) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray() && info[3]->IsObject()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
     GLuint fbo = info[1]->Uint32Value();
     Local<Array> array = Local<Array>::Cast(info[2]);
+    Local<Object> xrStateObj = Local<Array>::Cast(info[3]);
 
     std::vector<LayerSpec> layers;
     layers.reserve(8);
@@ -727,24 +728,51 @@ NAN_METHOD(ComposeLayers) {
           }
           case LayerType::IFRAME_2D: {
             Local<Object> browserObj = Local<Object>::Cast(elementObj->Get(JS_STR("browser")));
-            GLuint tex = Local<Object>::Cast(browserObj->Get(JS_STR("texture")))->Get(JS_STR("id"))->Uint32Value();
-            Local<Array> viewportsArray = Local<Array>::Cast(browserObj->Get(JS_STR("viewports")));
-            Local<Float32Array> viewportsFloat32Arrays[] = {
-              Local<Float32Array>::Cast(viewportsArray->Get(0)),
-              Local<Float32Array>::Cast(viewportsArray->Get(1)),
-            };
-            Local<Array> modelViewArray = Local<Array>::Cast(browserObj->Get(JS_STR("modelView")));
-            Local<Float32Array> modelViewFloat32Arrays[] = {
-              Local<Float32Array>::Cast(modelViewArray->Get(0)),
-              Local<Float32Array>::Cast(modelViewArray->Get(1)),
-            };
-            Local<Array> projectionArray = Local<Array>::Cast(browserObj->Get(JS_STR("projection")));
-            Local<Float32Array> projectionFloat32Arrays[] = {
-              Local<Float32Array>::Cast(projectionArray->Get(0)),
-              Local<Float32Array>::Cast(projectionArray->Get(1)),
-            };
             int width = browserObj->Get(JS_STR("width"))->Int32Value();
             int height = browserObj->Get(JS_STR("height"))->Int32Value();
+            GLuint tex = Local<Object>::Cast(browserObj->Get(JS_STR("texture")))->Get(JS_STR("id"))->Uint32Value();
+
+            Local<Float32Array> renderWidthFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderWidth")));
+            const float renderWidth = renderWidthFloat32Array->Get(0)->NumberValue();
+            Local<Float32Array> renderHeightFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderHeight")));
+            const float renderHeight = renderWidthFloat32Array->Get(0)->NumberValue();
+            float leftViewport[] = {
+              0,
+              0,
+              renderWidth/2,
+              renderHeight,
+            };
+            float rightViewport[] = {
+              renderWidth/2,
+              0,
+              renderWidth/2,
+              renderHeight,
+            };
+            
+            Local<Float32Array> leftViewMatrixFloat32Array = xrState->Get(JS_STR("leftViewMatrix"));
+            MLMat4f leftViewMatrix;
+            memcpy(leftViewMatrix.values, (float *)((char *)leftViewMatrixFloat32Array->GetContents().Data() + leftViewMatrixFloat32Array->ByteOffset()), sizeof(leftViewMatrix.values));
+            
+            Local<Float32Array> rightViewMatrixFloat32Array = xrState->Get(JS_STR("rightViewMatrix"));
+            MLMat4f rightViewMatrix;
+            memcpy(rightViewMatrix.values, (float *)((char *)rightViewMatrixFloat32Array->GetContents().Data() + rightViewMatrixFloat32Array->ByteOffset()), sizeof(rightViewMatrix.values));
+
+            Local<Value> xrOffsetValue = element->Get(JS_STR("xrOffset"));
+            if (xrOffsetValue->BooleanValue()) {
+              Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
+              Local<Float32Array> xrOffsetMatrixFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrix")));
+
+              MLMat4f xrOffsetMatrix;
+              memcpy(xrOffsetMatrix.values, (float *)(xrOffsetMatrixFloat32Array->GetContents().Data() + xrOffsetMatrixFloat32Array->ByteOffset()), sizeof(xrOffsetMatrix.values));
+              
+              leftViewMatrix = multiplyMatrices(leftViewMatrix, xrOffsetMatrix);
+              rightViewMatrix = multiplyMatrices(rightViewMatrix, xrOffsetMatrix);
+            }
+            
+            Local<Float32Array> leftProjectionMatrixFloat32Array = xrState->Get(JS_STR("leftProjectionMatrix"));
+            float *leftProjectionMatrix = (float *)((char *)leftProjectionMatrixFloat32Array->GetContents().Data() + leftProjectionMatrixFloat32Array->ByteOffset());
+            Local<Float32Array> rightProjectionMatrixFloat32Array = xrState->Get(JS_STR("rightProjectionMatrix"));
+            float *rightProjectionMatrix = (float *)((char *)rightProjectionMatrixFloat32Array->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset());
 
             layers.push_back(LayerSpec{
               width,
@@ -754,16 +782,16 @@ NAN_METHOD(ComposeLayers) {
               tex,
               0,
               { // viewports
-                (float *)((char *)(viewportsFloat32Arrays[0]->Buffer()->GetContents().Data()) + viewportsFloat32Arrays[0]->ByteOffset()),
-                (float *)((char *)(viewportsFloat32Arrays[1]->Buffer()->GetContents().Data()) + viewportsFloat32Arrays[1]->ByteOffset())
+                leftViewport,
+                rightViewport,
               },
               { // modelView
-                (float *)((char *)(modelViewFloat32Arrays[0]->Buffer()->GetContents().Data()) + modelViewFloat32Arrays[0]->ByteOffset()),
-                (float *)((char *)(modelViewFloat32Arrays[1]->Buffer()->GetContents().Data()) + modelViewFloat32Arrays[1]->ByteOffset())
+                leftViewMatrix,
+                rightViewMatrix,
               },
               { // projection
-                (float *)((char *)(projectionFloat32Arrays[0]->Buffer()->GetContents().Data()) + projectionFloat32Arrays[0]->ByteOffset()),
-                (float *)((char *)(projectionFloat32Arrays[1]->Buffer()->GetContents().Data()) + projectionFloat32Arrays[1]->ByteOffset())
+                leftProjectionMatrix,
+                rightProjectionMatrix,
               }
             });
             break;
