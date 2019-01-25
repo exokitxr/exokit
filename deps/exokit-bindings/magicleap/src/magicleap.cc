@@ -1949,6 +1949,8 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "Present", Present);
   Nan::SetMethod(proto, "Exit", Exit);
   // Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
+  Nan::SetMethod(proto, "GetSize", GetSize);
+  Nan::SetMethod(proto, "SetContentTexture", SetContentTexture);
   Nan::SetMethod(proto, "RequestGetPoses", RequestGetPoses);
   Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
@@ -1959,8 +1961,6 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
-  Nan::SetMethod(ctorFn, "GetSize", GetSize);
-  Nan::SetMethod(ctorFn, "SetContentTexture", SetContentTexture);
   Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
   Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
   Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
