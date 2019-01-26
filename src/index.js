@@ -49,6 +49,9 @@ const {THREE} = core;
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const nativeBindings = require(nativeBindingsModulePath);
 
+const eventLoopNative = require('event-loop-native');
+nativeBindings.nativeWindow.setEventLoop(eventLoopNative);
+
 const {getGamepads} = require('./VR.js');
 // const {_setNativeBindingsModule} = require('./Window');
 

@@ -17,7 +17,7 @@
 using namespace v8;
 
 namespace node {
-  extern std::map<std::string, void *> dlibs;
+  extern std::map<std::string, std::pair<void *, bool>> dlibs;
   int Start(int argc, char* argv[]);
 }
 
