@@ -5,8 +5,8 @@ const find = require('find');
 const dirname = process.argv[2];
 
 find.file(/\.node$/, dirname, files => {
+  const header = `#include <v8.h>\n#include <node_api.h>\n\n`;
   let decls = `extern "C" {\n`;
-  let decls_napi = `extern "C" {\n`;
   let registers = `inline void registerDlibs(std::map<std::string, void *> &dlibs) {\n`;
 
   for (let i = 0; i < files.length; i++) {
@@ -27,9 +27,9 @@ find.file(/\.node$/, dirname, files => {
             decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
             registers += `  dlibs["/package${relpath}${binName}.node"] = (void *)&${registerName};\n`;
           } else if (npmName.replace(/-/g, '_') + '_napi' === binName) {
-            const registerName = `node_register_module_${binName})_napi`;
-            decls_napi += `  napi_value ${registerName}(napi_env env, napi_value exports);\n`;
-            registers += `  dlibs_napi["/package${relpath}${binName}.node"] = (void *)&${registerName};\n`;
+            const registerName = `node_register_module_${binName}`;
+            decls += `  napi_value ${registerName}(napi_env env, napi_value exports);\n`;
+            registers += `  dlibs["/package${relpath}${binName}.node"] = (void *)&${registerName};\n`;
           }
         }
       }
@@ -37,10 +37,9 @@ find.file(/\.node$/, dirname, files => {
   }
   
   decls += `}\n`;
-  decls_napi += `}\n`;
   registers += `}\n`;
   
+  console.log(header);
   console.log(decls);
-  console.log(decls_napi);
   console.log(registers);
 });
