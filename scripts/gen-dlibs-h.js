@@ -29,7 +29,7 @@ find.file(/\.node$/, dirname, files => {
           } else if (npmName.replace(/-/g, '_') + '_napi' === binName) {
             const registerName = `node_register_module_${binName}`;
             decls += `  napi_value ${registerName}(napi_env env, napi_value exports);\n`;
-            registers += `  dlibs_napi["/package${relpath}${binName}.node"] = std::pair<void *, bool>((void *)&${registerName}, true);\n`;
+            registers += `  dlibs["/package${relpath}${binName}.node"] = std::pair<void *, bool>((void *)&${registerName}, true);\n`;
           }
         }
       }
