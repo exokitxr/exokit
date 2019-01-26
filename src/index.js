@@ -27,10 +27,6 @@ if (require.main === module) {
 // const cwd = process.cwd();
 // process.chdir(__dirname); // needed for global bin to find libraries
 
-console.log('event loop native 1');
-const eventLoopNative = require('event-loop-native');
-console.log('event loop native 2', eventLoopNative);
-
 const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
@@ -52,6 +48,14 @@ const {THREE} = core;
 
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const nativeBindings = require(nativeBindingsModulePath);
+
+console.log('event loop native 1');
+const eventLoopNative = require('event-loop-native');
+console.log('event loop native 2', eventLoopNative);
+nativeBindings.nativeWindow.setEventLoop(eventLoopNative);
+console.log('event loop native 3');
+const eventLoopNative2 = nativeBindings.nativeWindow.getEventLoop();
+console.log('event loop native 4', eventLoopNative2);
 
 const {getGamepads} = require('./VR.js');
 // const {_setNativeBindingsModule} = require('./Window');
