@@ -20,17 +20,15 @@ find.file(/\.node$/, dirname, files => {
           const match = relpath.match(/\/node_modules\/([^\/]+)/);
           return match && match[1];
         })();
-        if (npmName) {
-          // ignore incompatible modules
-          if (npmName.replace(/-/g, '_') === binName) {
-            const registerName = `node_register_module_${binName}`;
-            decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
-            registers += `  dlibs["/package${relpath}${binName}.node"] = std::pair<void *, bool>((void *)&${registerName}, false);\n`;
-          } else if (npmName.replace(/-/g, '_') + '_napi' === binName) {
-            const registerName = `node_register_module_${binName}`;
-            decls += `  napi_value ${registerName}(napi_env env, napi_value exports);\n`;
-            registers += `  dlibs["/package${relpath}${binName}.node"] = std::pair<void *, bool>((void *)&${registerName}, true);\n`;
-          }
+        // ignore incompatible modules
+        if (!npmName || npmName.replace(/-/g, '_') === binName) {
+          const registerName = `node_register_module_${binName}`;
+          decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
+          registers += `  dlibs["/package${relpath}${binName}.node"] = std::pair<void *, bool>((void *)&${registerName}, false);\n`;
+        } else if (npmName && npmName.replace(/-/g, '_') + '_napi' === binName) {
+          const registerName = `node_register_module_${binName}`;
+          decls += `  napi_value ${registerName}(napi_env env, napi_value exports);\n`;
+          registers += `  dlibs["/package${relpath}${binName}.node"] = std::pair<void *, bool>((void *)&${registerName}, true);\n`;
         }
       }
     }
