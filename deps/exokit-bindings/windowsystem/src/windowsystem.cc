@@ -808,12 +808,28 @@ NAN_METHOD(ComposeLayers) {
   }
 }
 
+thread_local uv_loop_t *eventLoop;
+NAN_METHOD(GetEventLoop) {
+  info.GetReturnValue().Set(pointerToArray(eventLoop));
+}
+NAN_METHOD(SetEventLoop) {
+  if (info[0]->IsArray()) {
+    Local<Array> loopArray = Local<Array>::Cast(info[0]);
+    uv_loop_t *loop = (uv_loop_t *)arrayToPointer(loopArray);
+    eventLoop = loop;
+  } else {
+    Nan::ThrowError("WindowSystem::SetEventLoop: invalid arguments");
+  }
+}
+
 void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
   // Nan::SetMethod(target, "renderPlane", RenderPlane);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
+  Nan::SetMethod(target, "getEventLoop", GetEventLoop);
+  Nan::SetMethod(target, "setEventLoop", SetEventLoop);
 }
 
 }

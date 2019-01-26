@@ -73,6 +73,8 @@ NAN_METHOD(ResizeRenderTarget);
 NAN_METHOD(DestroyRenderTarget);
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
 NAN_METHOD(ComposeLayers);
+NAN_METHOD(GetEventLoop);
+NAN_METHOD(SetEventLoop);
 void Decorate(Local<Object> target);
 
 }
