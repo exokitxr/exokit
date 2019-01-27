@@ -132,14 +132,9 @@ public:
 
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer);
-  MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
   void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged);
 
-  GLuint positionBuffer;
-  GLuint normalBuffer;
-  GLuint indexBuffer;
   float *positions;
   uint32_t numPositions;
   float *normals;
