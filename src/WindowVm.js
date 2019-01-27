@@ -7,13 +7,12 @@ const _makeWindow = (options = {}) => {
     args: options,
   });
   
-  window.on('exit', () => {
-    window.emit('destroy');
-  });
-  
   window.tickAnimationFrame = () => {
     window.runDetached(`window.tickAnimationFrame();`);
   };
+  window.on('exit', () => {
+    window.emit('destroy');
+  });
 
   return window;
 };
