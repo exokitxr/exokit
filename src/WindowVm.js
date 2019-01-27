@@ -15,11 +15,6 @@ const _makeWindow = (options = {}) => {
     window.runDetached(`window.tickAnimationFrame();`);
   };
 
-  GlobalContext.windows.push(window);
-  window.on('destroy', () => {
-    GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
-  });
-
   return window;
 };
 module.exports._makeWindow = _makeWindow;
