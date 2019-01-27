@@ -465,10 +465,7 @@ MLPoll::~MLPoll() {}
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) :
-  positionBuffer(positionBuffer),
-  normalBuffer(normalBuffer),
-  indexBuffer(indexBuffer),
+MeshBuffer::MeshBuffer() :
   positions(nullptr),
   numPositions(0),
   normals(nullptr),
@@ -477,7 +474,7 @@ MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexB
   isNew(true),
   isUnchanged(false)
   {}
-MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
+/* MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
   normalBuffer = meshBuffer.normalBuffer;
   indexBuffer = meshBuffer.indexBuffer;
@@ -488,19 +485,9 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   numIndices = meshBuffer.numIndices;
   isNew = meshBuffer.isNew;
   isUnchanged = meshBuffer.isUnchanged;
-}
-MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), isNew(true), isUnchanged(false) {}
+} */
 
 void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged) {
-  glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
-
-  glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(normals[0]), normals, GL_DYNAMIC_DRAW);
-
-  glBindBuffer(GL_ARRAY_BUFFER, indexBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numIndices * sizeof(indices[0]), indices, GL_DYNAMIC_DRAW);
-
   this->positions = positions;
   this->numPositions = numPositions;
   this->normals = normals;
@@ -575,20 +562,14 @@ void MLMesher::Update() {
   types.reserve(dataCount);
   std::vector<std::string> ids;
   ids.reserve(dataCount);
-  std::vector<int> positionBuffers;
-  positionBuffers.reserve(dataCount);
   std::vector<float *> positionArrays;
   positionArrays.reserve(dataCount);
   std::vector<int> positionCounts;
   positionCounts.reserve(dataCount);
-  std::vector<int> normalBuffers;
-  normalBuffers.reserve(dataCount);
   std::vector<float *> normalArrays;
   normalArrays.reserve(dataCount);
   std::vector<int> normalCounts;
   normalCounts.reserve(dataCount);
-  std::vector<int> indexBuffers;
-  indexBuffers.reserve(dataCount);
   std::vector<uint16_t *> indexArrays;
   indexArrays.reserve(dataCount);
   std::vector<int> counts;
@@ -615,13 +596,10 @@ void MLMesher::Update() {
         }
         types.push_back(type);
         ids.push_back(std::move(id));
-        positionBuffers.push_back(meshBuffer.positionBuffer);
         positionArrays.push_back(meshBuffer.positions);
         positionCounts.push_back(meshBuffer.numPositions);
-        normalBuffers.push_back(meshBuffer.normalBuffer);
         normalArrays.push_back(meshBuffer.normals);
         normalCounts.push_back(meshBuffer.numPositions);
-        indexBuffers.push_back(meshBuffer.indexBuffer);
         indexArrays.push_back(meshBuffer.indices);
         counts.push_back(meshBuffer.numIndices);
         
@@ -632,13 +610,10 @@ void MLMesher::Update() {
     } else {
       types.push_back(MLUpdateType::REMOVE);
       ids.push_back(std::move(id));
-      positionBuffers.push_back(0);
       positionArrays.push_back(nullptr);
       positionCounts.push_back(0);
-      normalBuffers.push_back(0);
       normalArrays.push_back(nullptr);
       normalCounts.push_back(0);
-      indexBuffers.push_back(0);
       indexArrays.push_back(nullptr);
       counts.push_back(0);
       
@@ -653,13 +628,10 @@ void MLMesher::Update() {
     transformMatrix,
     types{std::move(types)},
     ids{std::move(ids)},
-    positionBuffers{std::move(positionBuffers)},
     positionArrays{std::move(positionArrays)},
     positionCounts{std::move(positionCounts)},
-    normalBuffers{std::move(normalBuffers)},
     normalArrays{std::move(normalArrays)},
     normalCounts{std::move(normalCounts)},
-    indexBuffers{std::move(indexBuffers)},
     indexArrays{std::move(indexArrays)},
     counts{std::move(counts)},
     numResults
@@ -705,23 +677,14 @@ void MLMesher::Update() {
           Local<Float32Array> transformMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transformMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
           obj->Set(JS_STR("transformMatrix"), transformMatrixArray);
 
-          Local<Object> positionBuffer = Nan::New<Object>();
-          positionBuffer->Set(JS_STR("id"), JS_INT(positionBuffers[i]));
-          obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), positionArrays[i], positionCounts[i] * sizeof(float)), 0, positionCounts[i]);
           obj->Set(JS_STR("positionArray"), positionArray);
           obj->Set(JS_STR("positionCount"), JS_INT(positionCounts[i]));
 
-          Local<Object> normalBuffer = Nan::New<Object>();
-          normalBuffer->Set(JS_STR("id"), JS_INT(normalBuffers[i]));
-          obj->Set(JS_STR("normalBuffer"), normalBuffer);
           Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normalArrays[i], normalCounts[i] * sizeof(float)), 0, normalCounts[i]);
           obj->Set(JS_STR("normalArray"), normalArray);
           obj->Set(JS_STR("normalCount"), JS_INT(positionCounts[i]));
 
-          Local<Object> indexBuffer = Nan::New<Object>();
-          indexBuffer->Set(JS_STR("id"), JS_INT(indexBuffers[i]));
-          obj->Set(JS_STR("indexBuffer"), indexBuffer);
           Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), indexArrays[i], counts[i] * sizeof(uint16_t)), 0, counts[i]);
           obj->Set(JS_STR("indexArray"), indexArray);
           obj->Set(JS_STR("count"), JS_INT(counts[i]));
@@ -3929,9 +3892,6 @@ void setFingerValue(float data[1 + 3]) {
 
 NAN_METHOD(MLContext::Update) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
-  
-  windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
   MLSnapshot *snapshot = nullptr;
 
@@ -4145,37 +4105,13 @@ NAN_METHOD(MLContext::Update) {
         const std::string &id = id2String(blockMesh.id);
 
         if (!meshRequestRemovedMap[id]) {
-          MeshBuffer *meshBuffer;
-          auto iter = meshBuffers.find(id);
-          if (iter != meshBuffers.end()) {
-            meshBuffer = &iter->second;
-          } else {
-            GLuint buffers[3];
-            glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2]);
-            meshBuffer = &meshBuffers[id];
-          }
-
           meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
         } else {
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
-            MeshBuffer *meshBuffer = &iter->second;
-            GLuint buffers[3] = {
-              meshBuffer->positionBuffer,
-              meshBuffer->normalBuffer,
-              meshBuffer->indexBuffer,
-            };
-            glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
             meshBuffers.erase(iter);
           }
         }
-      }
-
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      } else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
       }
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
