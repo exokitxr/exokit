@@ -55,7 +55,7 @@ const _decorateGlIntercepts = gl => {
   })(gl.getUniformLocation);
   gl.setCompatibleXRDevice = () => Promise.resolve();
 };
-const _onGlConstruct = (gl, canvas) => {
+const _onGl3DConstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
@@ -334,7 +334,7 @@ bindings.nativeGl = (nativeGl => {
   function WebGLRenderingContext(canvas) {
     const gl = new nativeGl();
     _decorateGlIntercepts(gl);
-    _onGlConstruct(gl, canvas);
+    _onGl3DConstruct(gl, canvas);
     return gl;
   }
   for (const k in nativeGl) {
@@ -346,7 +346,7 @@ bindings.nativeGl2 = (nativeGl2 => {
   function WebGL2RenderingContext(canvas) {
     const gl = new nativeGl2();
     _decorateGlIntercepts(gl);
-    _onGlConstruct(gl, canvas);
+    _onGl3DConstruct(gl, canvas);
     return gl;
   }
   for (const k in nativeGl2) {
@@ -355,16 +355,70 @@ bindings.nativeGl2 = (nativeGl2 => {
   return WebGL2RenderingContext;
 })(bindings.nativeGl2);
 
+const _onGl2DConstruct = (ctx, canvas) => {
+  const canvasWidth = canvas.width || innerWidth;
+  const canvasHeight = canvas.height || innerHeight;
+
+  ctx.canvas = canvas;
+
+  const window = canvas.ownerDocument.defaultView;
+
+  const windowSpec = (() => {
+    if (!window[symbols.optionsSymbol].args.headless) {
+      try {
+        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+        return nativeBindings.nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
+      } catch (err) {
+        console.warn(err.message);
+        return null;
+      }
+    } else {
+      return null;
+    }
+  })();
+
+  if (windowSpec) {
+    const [windowHandle, tex] = windowSpec;
+
+    ctx.setWindowHandle(windowHandle);
+    ctx.setTexture(tex, canvasWidth, canvasHeight);
+    
+    ctx.destroy = (destroy => function() {
+      destroy.call(this);
+      
+      nativeWindow.destroy(windowHandle);
+      canvas._context = null;
+      
+      window.postMessage({
+        method: 'context.destroy',
+        args: {
+          address: ctx.toAddressArray(),
+        },
+      });
+      // contexts.splice(contexts.indexOf(ctx), 1);
+    })(ctx.destroy);
+  } else {
+    ctx.destroy();
+  }
+  
+  window.postMessage({
+    method: 'context.create',
+    args: {
+      address: ctx.toAddressArray(),
+    },
+  });
+  // contexts.push(ctx);
+};
+};
 bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
   function CanvasRenderingContext2D(canvas) {
     const ctx = new nativeCanvasRenderingContext2D();
-    CanvasRenderingContext2D.onconstruct(ctx, canvas);
+    _onGl2DConstruct(ctx, canvas);
     return ctx;
   }
   for (const k in nativeCanvasRenderingContext2D) {
     CanvasRenderingContext2D[k] = nativeCanvasRenderingContext2D[k];
   }
-  CanvasRenderingContext2D.onconstruct = null;
   return CanvasRenderingContext2D;
 })(bindings.nativeCanvasRenderingContext2D);
 GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
