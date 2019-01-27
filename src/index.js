@@ -77,7 +77,7 @@ const args = (() => {
         'tab',
         'webgl',
         'xr',
-        'size',
+        // 'size',
         'download',
       ],
       alias: {
@@ -89,7 +89,7 @@ const args = (() => {
         x: 'xr',
         p: 'performance',
         perf: 'performance',
-        s: 'size',
+        // s: 'size',
         f: 'frame',
         m: 'minimalFrame',
         q: 'quit',
@@ -107,7 +107,7 @@ const args = (() => {
       webgl: minimistArgs.webgl || '2',
       xr: minimistArgs.xr || 'all',
       performance: !!minimistArgs.performance,
-      size: minimistArgs.size,
+      // size: minimistArgs.size,
       frame: minimistArgs.frame,
       minimalFrame: minimistArgs.minimalFrame,
       quit: minimistArgs.quit,
@@ -301,8 +301,8 @@ const fakePresentState = {
 GlobalContext.fakePresentState = fakePresentState;
 GlobalContext.fakeVrDisplayEnabled = false;
 
-let innerWidth = 1280; // XXX do not track this globally
-let innerHeight = 1024;
+// let innerWidth = 1280; // XXX do not track this globally
+// let innerHeight = 1024;
 const isMac = os.platform() === 'darwin';
 
 class XRState {
@@ -357,7 +357,7 @@ GlobalContext.xrState = new XRState();
 const _startRenderLoop = () => {
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
-      const context = contexts[i];
+      const context = contexts[i]; // XXX unwrap this from threads
 
       const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context;
       if (isDirty) {
@@ -377,7 +377,7 @@ const _startRenderLoop = () => {
             if (vrPresentState.layers.length > 0) {
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
             } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false); // XXX port this to not use only context, canvas
             }
 
             vrPresentState.compositor.Submit(context, vrPresentState.tex);
@@ -634,7 +634,7 @@ const _startRenderLoop = () => {
       }
       
       mlPresentState.mlContext.PrepareFrame(
-        mlPresentState.mlGlContext,
+        mlPresentState.mlGlContext, // gl context for depth population
         mlPresentState.mlMsFbo,
         xrState.renderWidth[0]*2,
         xrState.renderHeight[0],
@@ -799,7 +799,7 @@ const _startRenderLoop = () => {
     nativeBindings.nativeBrowser.Browser.updateAll();
     // update magic leap state
     if (mlPresentState.mlGlContext) {
-      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
+      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext); // gl context for mesh buffer population
       nativeBindings.nativeMl.Poll();
     }
     if (args.performance) {
@@ -860,17 +860,17 @@ const _startRenderLoop = () => {
 let currentRenderLoop = _startRenderLoop();
 
 const _bindWindow = (window, newWindowCb) => {
-  window.innerWidth = innerWidth;
-  window.innerHeight = innerHeight;
+  // window.innerWidth = innerWidth;
+  // window.innerHeight = innerHeight;
 
   window.on('navigate', newWindowCb);
-  window.document.on('paste', e => {
+  window.document.on('paste', e => { // XXX pipe this in from the parent
     e.clipboardData = new window.DataTransfer();
     const clipboardContents = nativeWindow.getClipboard().slice(0, 256);
     const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
     e.clipboardData.items.push(dataTransferItem);
   });
-  window.document.addEventListener('pointerlockchange', () => {
+  window.document.addEventListener('pointerlockchange', () => { // XXX pipe this in from the parent
     const {pointerLockElement} = window.document;
 
     if (pointerLockElement) {
@@ -901,7 +901,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
-  window.document.addEventListener('fullscreenchange', () => {
+  window.document.addEventListener('fullscreenchange', () => { // XXX pipe this in from the parent
     const {fullscreenElement} = window.document;
 
     if (fullscreenElement) {
@@ -932,7 +932,8 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
-  if (args.quit) {
+  
+  if (args.quit) { // XXX move this to top level handling
     window.document.resources.addEventListener('drain', () => {
       console.log('drain');
       process.exit();
@@ -944,7 +945,7 @@ const _bindWindow = (window, newWindowCb) => {
     const {window} = e;
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-      if (context.canvas.ownerDocument.defaultView === window) {
+      if (context.canvas.ownerDocument.defaultView === window) { // XXX match contexts to windows
         context.destroy();
       }
     }
@@ -1173,7 +1174,7 @@ if (require.main === module) {
     console.log(version);
     process.exit(0);
   }
-  if (args.size) {
+  /* if (args.size) {
     const match = args.size.match(/^([0-9]+)x([0-9]+)$/);
     if (match) {
       const w = parseInt(match[1], 10);
@@ -1183,7 +1184,7 @@ if (require.main === module) {
         innerHeight = h;
       }
     }
-  }
+  } */
   if (args.frame || args.minimalFrame) {
     bindings.nativeGl = (OldWebGLRenderingContext => {
       function WebGLRenderingContext() {

@@ -306,13 +306,13 @@ const _onGl3DConstruct = (gl, canvas) => {
       }
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
-      window.postMessage({
+      window.postInternalMessage({
+        type: 'postRequestAsync',
         method: 'context.destroy',
         args: {
           address: gl.toAddressArray(),
         },
       });
-      // contexts.splice(contexts.indexOf(gl), 1);
 
       if (!contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // XXX handle this in the parent
         process.exit();
@@ -322,13 +322,13 @@ const _onGl3DConstruct = (gl, canvas) => {
     gl.destroy();
   }
 
-  window.postMessage({ // XXX handle these
+  window.postInternalMessage({
+    type: 'postRequestAsync',
     method: 'context.create',
     args: {
       address: gl.toAddressArray(),
     },
   });
-  // contexts.push(gl);
 };
 bindings.nativeGl = (nativeGl => {
   function WebGLRenderingContext(canvas) {
@@ -389,25 +389,25 @@ const _onGl2DConstruct = (ctx, canvas) => {
       nativeWindow.destroy(windowHandle);
       canvas._context = null;
       
-      window.postMessage({
+      window.postInternalMessage({
+        type: 'postRequestAsync',
         method: 'context.destroy',
         args: {
           address: ctx.toAddressArray(),
         },
       });
-      // contexts.splice(contexts.indexOf(ctx), 1);
     })(ctx.destroy);
   } else {
     ctx.destroy();
   }
   
-  window.postMessage({
+  window.postInternalMessage({
+    type: 'postRequestAsync',
     method: 'context.create',
     args: {
       address: ctx.toAddressArray(),
     },
   });
-  // contexts.push(ctx);
 };
 bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
   function CanvasRenderingContext2D(canvas) {
@@ -604,7 +604,8 @@ if (nativeVr) {
         }
         const window = canvas.ownerDocument.defaultView;
 
-        await window.postRequest({ // XXX implement these
+        await window.postInternalMessage({
+          type: 'postRequestAsync',
           method: 'requestPresentVr',
         });
         
@@ -736,10 +737,6 @@ if (nativeVr) {
 if (nativeMl) {
   mlPresentState.mlContext = new nativeMl(); // XXX move this to on present
   nativeMl.requestPresent = async function(layers) { // XXX handle this inside window context
-    await window.postRequest({
-      method: 'requestPresentMl',
-    });
-  
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
@@ -749,6 +746,11 @@ if (nativeMl) {
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
         }
+
+        await window.postInternalMessage({
+          type: 'postRequestAsync',
+          method: 'requestPresentMl',
+        });
 
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);

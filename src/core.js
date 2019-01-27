@@ -296,7 +296,7 @@ exokit.download = (src, dst) => exokit.load(src, {
   },
 })
   .then(window => new Promise((accept, reject) => {
-    window.document.resources.addEventListener('drain', () => {
+    window.document.resources.addEventListener('drain', () => { // XXX make this work in the child, since we don't have access here
       accept();
     });
   }));

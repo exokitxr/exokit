@@ -1883,7 +1883,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           (async () => {
             if (this.d === 2) {
               if (!this.browser) {
-                const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+                const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument); // XXX use global compositor context here
                 if (context) {
                   this.browser = new GlobalContext.nativeBrowser.Browser(
                     context,
