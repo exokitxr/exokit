@@ -1,93 +1,9 @@
-const events = require('events');
-const {EventEmitter} = events;
-const path = require('path');
-const fs = require('fs');
-const url = require('url');
-const http = require('http');
-const https = require('https');
-const ws = require('ws');
-const os = require('os');
-const util = require('util');
-const {URL} = url;
-const {TextEncoder, TextDecoder} = util;
-const {performance} = require('perf_hooks');
-
-const mkdirp = require('mkdirp');
-
-const {_makeWindowWithDocument} = require('./WindowVm');
-const {FileReader} = require('./File');
-
-const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
-
 const fetch = require('window-fetch');
-const {Request, Response, Headers, Blob} = fetch;
-
-const WebSocket = require('ws/lib/websocket');
-
-const nativeWorker = require('worker-native');
-
-const {LocalStorage} = require('node-localstorage');
-const indexedDB = require('fake-indexeddb');
-const parseXml = require('@rgrove/parse-xml');
-const THREE = require('../lib/three-min.js');
-const {
-  MRDisplay,
-  VRDisplay,
-  FakeVRDisplay,
-  VRFrameData,
-  VRPose,
-  VRStageParameters,
-  Gamepad,
-  GamepadButton,
-  getGamepads,
-} = require('./VR.js');
-
-const {defaultCanvasSize} = require('./constants');
+// const THREE = require('../lib/three-min.js');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {urls} = require('./urls');
-
-GlobalContext.args = {};
-GlobalContext.version = '';
-
-// Class imports.
-const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
-const {
-  Element,
-  HTMLElement,
-  HTMLBodyElement,
-  HTMLAnchorElement,
-  HTMLStyleElement,
-  HTMLScriptElement,
-  HTMLLinkElement,
-  HTMLImageElement,
-  HTMLAudioElement,
-  HTMLVideoElement,
-  HTMLSourceElement,
-  HTMLIFrameElement,
-  SVGElement,
-  HTMLCanvasElement,
-  HTMLTemplateElement,
-  createImageBitmap,
-  DOMRect,
-  DOMPoint,
-  Node,
-  NodeList,
-  Text,
-  Comment,
-  HTMLCollection,
-} = require('./DOM');
-const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
-const {History} = require('./History');
-const {Location} = require('./Location');
-const {XMLHttpRequest} = require('./Network');
-const XR = require('./XR');
-const DevTools = require('./DevTools');
-const utils = require('./utils');
-const {_elementGetter, _elementSetter, _download} = utils;
-
-const btoa = s => Buffer.from(s, 'binary').toString('base64');
-const atob = s => Buffer.from(s, 'base64').toString('binary');
+const {_getBaseUrl, _download} = require('./utils');
+const {_makeWindowWithDocument} = require('./WindowVm');
 
 const maxParallelResources = 8;
 class Resource {
@@ -362,7 +278,7 @@ exokit.load = (src, options = {}) => {
       if (options.baseUrl) {
         baseUrl = options.baseUrl;
       } else {
-        baseUrl = utils._getBaseUrl(src);
+        baseUrl = _getBaseUrl(src);
       }
 
       return exokit(htmlString, {
@@ -384,7 +300,7 @@ exokit.download = (src, dst) => exokit.load(src, {
       accept();
     });
   }));
-exokit.THREE = THREE;
+// exokit.THREE = THREE;
 exokit.setArgs = newArgs => {
   GlobalContext.args = newArgs;
 };
