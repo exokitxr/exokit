@@ -99,139 +99,177 @@ NAN_METHOD(SetMonitor) {
 
 /* @Module: Window handling */
 thread_local NATIVEwindow *currentWindow = nullptr;
+thread_local std::map<NATIVEwindow *, Nan::Persistent<Function>> eventHandlerMap;
+thread_local std::mutex eventHandlerMapMutex;
 int lastX = 0, lastY = 0; // XXX track this per-window
-std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 
-void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
+/* void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   if (eventHandler && !(*eventHandler).IsEmpty()) {
     Local<Function> eventHandlerFn = Nan::New(*eventHandler);
     eventHandlerFn->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), argc, argv);
   }
-}
+} */
+
+Local<Function> GetWindowEventHandler(NATIVEwindow *window) {
+  Local<Function> result; 
+  {
+    std::lock_guard lock(eventHandlerMapMutex);
+    
+    auto iter = eventHandlerMap.find(window);
+    if (iter != iter.end(eventHandlerMap)) {
+      result = Nan::New(iter->second);
+    }
+  }
+  return result;
+]
 
 // Window callbacks handling
 void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
   Nan::HandleScope scope;
+  
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("window_pos"));
+    evt->Set(JS_STR("xpos"),JS_INT(xpos));
+    evt->Set(JS_STR("ypos"),JS_INT(ypos));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("window_pos"));
-  evt->Set(JS_STR("xpos"),JS_INT(xpos));
-  evt->Set(JS_STR("ypos"),JS_INT(ypos));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("window_pos"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("window_pos"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("resize"));
-  evt->Set(JS_STR("width"),JS_INT(w));
-  evt->Set(JS_STR("height"),JS_INT(h));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("resize"));
+    evt->Set(JS_STR("width"),JS_INT(w));
+    evt->Set(JS_STR("height"),JS_INT(h));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR("windowResize"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("windowResize"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 void APIENTRY windowFramebufferSizeCB(NATIVEwindow *window, int w, int h) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
-  evt->Set(JS_STR("width"),JS_INT(w));
-  evt->Set(JS_STR("height"),JS_INT(h));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
+    evt->Set(JS_STR("width"),JS_INT(w));
+    evt->Set(JS_STR("height"),JS_INT(h));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR("framebufferResize"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("framebufferResize"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 void APIENTRY windowDropCB(NATIVEwindow *window, int count, const char **paths) {
   Nan::HandleScope scope;
 
-  Local<Array> pathsArray = Nan::New<Array>(count);
-  for (int i = 0; i < count; i++) {
-    pathsArray->Set(i, JS_STR(paths[i]));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Array> pathsArray = Nan::New<Array>(count);
+    for (int i = 0; i < count; i++) {
+      pathsArray->Set(i, JS_STR(paths[i]));
+    }
+
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("paths"), pathsArray);
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+
+    Local<Value> argv[] = {
+      JS_STR("drop"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
   }
-
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-  evt->Set(JS_STR("paths"), pathsArray);
-
-  Local<Value> argv[] = {
-    JS_STR("drop"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
 }
 
 void APIENTRY windowCloseCB(NATIVEwindow *window) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR("quit"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("quit"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 void APIENTRY windowRefreshCB(NATIVEwindow *window) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("refresh"));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("refresh"));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR("refresh"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("refresh"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("iconified"));
-  evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("iconified"));
+    evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR("iconified"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("iconified"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("focused"));
-  evt->Set(JS_STR("focused"),JS_BOOL(focused));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("focused"));
+    evt->Set(JS_STR("focused"),JS_BOOL(focused));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR("focus"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("focus"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 static int jsKeyCode[]={
@@ -309,321 +347,336 @@ static int jsKeyCode[]={
 
 const char *actionNames = "keyup\0  keydown\0keypress";
 void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int mods) {
-  if (key >= 0) { // media keys are -1
-    Nan::HandleScope scope;
-
-    bool isPrintable = true;
-    switch (key) {
-      case GLFW_KEY_ESCAPE:
-      case GLFW_KEY_ENTER:
-      case GLFW_KEY_TAB:
-      case GLFW_KEY_BACKSPACE:
-      case GLFW_KEY_INSERT:
-      case GLFW_KEY_DELETE:
-      case GLFW_KEY_RIGHT:
-      case GLFW_KEY_LEFT:
-      case GLFW_KEY_DOWN:
-      case GLFW_KEY_UP:
-      case GLFW_KEY_PAGE_UP:
-      case GLFW_KEY_PAGE_DOWN:
-      case GLFW_KEY_HOME:
-      case GLFW_KEY_END:
-      case GLFW_KEY_CAPS_LOCK:
-      case GLFW_KEY_SCROLL_LOCK:
-      case GLFW_KEY_NUM_LOCK:
-      case GLFW_KEY_PRINT_SCREEN:
-      case GLFW_KEY_PAUSE:
-      case GLFW_KEY_F1:
-      case GLFW_KEY_F2:
-      case GLFW_KEY_F3:
-      case GLFW_KEY_F4:
-      case GLFW_KEY_F5:
-      case GLFW_KEY_F6:
-      case GLFW_KEY_F7:
-      case GLFW_KEY_F8:
-      case GLFW_KEY_F9:
-      case GLFW_KEY_F10:
-      case GLFW_KEY_F11:
-      case GLFW_KEY_F12:
-      case GLFW_KEY_F13:
-      case GLFW_KEY_F14:
-      case GLFW_KEY_F15:
-      case GLFW_KEY_F16:
-      case GLFW_KEY_F17:
-      case GLFW_KEY_F18:
-      case GLFW_KEY_F19:
-      case GLFW_KEY_F20:
-      case GLFW_KEY_F21:
-      case GLFW_KEY_F22:
-      case GLFW_KEY_F23:
-      case GLFW_KEY_F24:
-      case GLFW_KEY_F25:
-      case GLFW_KEY_LEFT_SHIFT:
-      case GLFW_KEY_LEFT_CONTROL:
-      case GLFW_KEY_LEFT_ALT:
-      case GLFW_KEY_LEFT_SUPER:
-      case GLFW_KEY_RIGHT_SHIFT:
-      case GLFW_KEY_RIGHT_CONTROL:
-      case GLFW_KEY_RIGHT_ALT:
-      case GLFW_KEY_RIGHT_SUPER:
-      case GLFW_KEY_MENU:
-        isPrintable = false;
-    }
-
-    if (!isPrintable && action == GLFW_REPEAT) {
-      action = GLFW_PRESS;
-    }
-
-    int charCode = key;
-    if (action == GLFW_RELEASE || action == GLFW_PRESS) {
+  Nan::HandleScope scope;
+  
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    if (key >= 0) { // media keys are -1
+      bool isPrintable = true;
       switch (key) {
-        case GLFW_KEY_SLASH:        key = 191; break; // /
-        case GLFW_KEY_GRAVE_ACCENT: key = 192; break; // `
-        case GLFW_KEY_LEFT_BRACKET: key = 219; break; // [
-        case GLFW_KEY_BACKSLASH:    key = 220; break; /* \ */
-        case GLFW_KEY_RIGHT_BRACKET: key = 221; break; // ]
-        case GLFW_KEY_APOSTROPHE:   key = 222; break; // '
-        case GLFW_KEY_PERIOD:       key = 190; break; // '
-        case GLFW_KEY_COMMA:        key = 188; break; // '
-        case GLFW_KEY_SEMICOLON:    key = 186; break; // ;
-        case GLFW_KEY_EQUAL:        key = 187; break; // =
-        case GLFW_KEY_MINUS:        key = 189; break; // -
+        case GLFW_KEY_ESCAPE:
+        case GLFW_KEY_ENTER:
+        case GLFW_KEY_TAB:
+        case GLFW_KEY_BACKSPACE:
+        case GLFW_KEY_INSERT:
+        case GLFW_KEY_DELETE:
+        case GLFW_KEY_RIGHT:
+        case GLFW_KEY_LEFT:
+        case GLFW_KEY_DOWN:
+        case GLFW_KEY_UP:
+        case GLFW_KEY_PAGE_UP:
+        case GLFW_KEY_PAGE_DOWN:
+        case GLFW_KEY_HOME:
+        case GLFW_KEY_END:
+        case GLFW_KEY_CAPS_LOCK:
+        case GLFW_KEY_SCROLL_LOCK:
+        case GLFW_KEY_NUM_LOCK:
+        case GLFW_KEY_PRINT_SCREEN:
+        case GLFW_KEY_PAUSE:
+        case GLFW_KEY_F1:
+        case GLFW_KEY_F2:
+        case GLFW_KEY_F3:
+        case GLFW_KEY_F4:
+        case GLFW_KEY_F5:
+        case GLFW_KEY_F6:
+        case GLFW_KEY_F7:
+        case GLFW_KEY_F8:
+        case GLFW_KEY_F9:
+        case GLFW_KEY_F10:
+        case GLFW_KEY_F11:
+        case GLFW_KEY_F12:
+        case GLFW_KEY_F13:
+        case GLFW_KEY_F14:
+        case GLFW_KEY_F15:
+        case GLFW_KEY_F16:
+        case GLFW_KEY_F17:
+        case GLFW_KEY_F18:
+        case GLFW_KEY_F19:
+        case GLFW_KEY_F20:
+        case GLFW_KEY_F21:
+        case GLFW_KEY_F22:
+        case GLFW_KEY_F23:
+        case GLFW_KEY_F24:
+        case GLFW_KEY_F25:
+        case GLFW_KEY_LEFT_SHIFT:
+        case GLFW_KEY_LEFT_CONTROL:
+        case GLFW_KEY_LEFT_ALT:
+        case GLFW_KEY_LEFT_SUPER:
+        case GLFW_KEY_RIGHT_SHIFT:
+        case GLFW_KEY_RIGHT_CONTROL:
+        case GLFW_KEY_RIGHT_ALT:
+        case GLFW_KEY_RIGHT_SUPER:
+        case GLFW_KEY_MENU:
+          isPrintable = false;
       }
-    }
-    switch (key) {
-      case GLFW_KEY_ESCAPE:       key = 27; break;
-      case GLFW_KEY_ENTER:        key = 13; break;
-      case GLFW_KEY_TAB:          key = 9; break;
-      case GLFW_KEY_BACKSPACE:    key = 8; break;
-      case GLFW_KEY_INSERT:       key = 45; break;
-      case GLFW_KEY_DELETE:       key = 46; break;
-      case GLFW_KEY_RIGHT:        key = 39; break;
-      case GLFW_KEY_LEFT:         key = 37; break;
-      case GLFW_KEY_DOWN:         key = 40; break;
-      case GLFW_KEY_UP:           key = 38; break;
-      case GLFW_KEY_PAGE_UP:      key = 33; break;
-      case GLFW_KEY_PAGE_DOWN:    key = 34; break;
-      case GLFW_KEY_HOME:         key = 36; break;
-      case GLFW_KEY_END:          key = 35; break;
-      case GLFW_KEY_CAPS_LOCK:    key = 20; break;
-      case GLFW_KEY_SCROLL_LOCK:  key = 145; break;
-      case GLFW_KEY_NUM_LOCK:     key = 144; break;
-      case GLFW_KEY_PRINT_SCREEN: key = 144; break; /* TODO */
-      case GLFW_KEY_PAUSE:        key = 19; break;
-      case GLFW_KEY_F1:           key = 112; break;
-      case GLFW_KEY_F2:           key = 113; break;
-      case GLFW_KEY_F3:           key = 114; break;
-      case GLFW_KEY_F4:           key = 115; break;
-      case GLFW_KEY_F5:           key = 116; break;
-      case GLFW_KEY_F6:           key = 117; break;
-      case GLFW_KEY_F7:           key = 118; break;
-      case GLFW_KEY_F8:           key = 119; break;
-      case GLFW_KEY_F9:           key = 120; break;
-      case GLFW_KEY_F10:          key = 121; break;
-      case GLFW_KEY_F11:          key = 122; break;
-      case GLFW_KEY_F12:          key = 123; break;
-      case GLFW_KEY_F13:          key = 123; break; /* unknown */
-      case GLFW_KEY_F14:          key = 123; break; /* unknown */
-      case GLFW_KEY_F15:          key = 123; break; /* unknown */
-      case GLFW_KEY_F16:          key = 123; break; /* unknown */
-      case GLFW_KEY_F17:          key = 123; break; /* unknown */
-      case GLFW_KEY_F18:          key = 123; break; /* unknown */
-      case GLFW_KEY_F19:          key = 123; break; /* unknown */
-      case GLFW_KEY_F20:          key = 123; break; /* unknown */
-      case GLFW_KEY_F21:          key = 123; break; /* unknown */
-      case GLFW_KEY_F22:          key = 123; break; /* unknown */
-      case GLFW_KEY_F23:          key = 123; break; /* unknown */
-      case GLFW_KEY_F24:          key = 123; break; /* unknown */
-      case GLFW_KEY_F25:          key = 123; break; /* unknown */
-      case GLFW_KEY_KP_0:         key = 96; break;
-      case GLFW_KEY_KP_1:         key = 97; break;
-      case GLFW_KEY_KP_2:         key = 98; break;
-      case GLFW_KEY_KP_3:         key = 99; break;
-      case GLFW_KEY_KP_4:         key = 100; break;
-      case GLFW_KEY_KP_5:         key = 101; break;
-      case GLFW_KEY_KP_6:         key = 102; break;
-      case GLFW_KEY_KP_7:         key = 103; break;
-      case GLFW_KEY_KP_8:         key = 104; break;
-      case GLFW_KEY_KP_9:         key = 105; break;
-      case GLFW_KEY_KP_DECIMAL:   key = 110; break;
-      case GLFW_KEY_KP_DIVIDE:    key = 111; break;
-      case GLFW_KEY_KP_MULTIPLY:  key = 106; break;
-      case GLFW_KEY_KP_SUBTRACT:  key = 109; break;
-      case GLFW_KEY_KP_ADD:       key = 107; break;
-      case GLFW_KEY_KP_ENTER:     key = 13; break;
-      case GLFW_KEY_KP_EQUAL:     key = 187; break;
-      case GLFW_KEY_LEFT_SHIFT:   key = 16; break;
-      case GLFW_KEY_LEFT_CONTROL: key = 17; break;
-      case GLFW_KEY_LEFT_ALT:     key = 18; break;
-      case GLFW_KEY_LEFT_SUPER:   key = 91; break;
-      case GLFW_KEY_RIGHT_SHIFT:  key = 16; break;
-      case GLFW_KEY_RIGHT_CONTROL: key = 17; break;
-      case GLFW_KEY_RIGHT_ALT:    key = 18; break;
-      case GLFW_KEY_RIGHT_SUPER:  key = 93; break;
-      case GLFW_KEY_MENU:         key = 18; break;
-    }
-    if (
-      action == 2 && // keypress
-      key >= 65 && // A
-      key <= 90 // Z
-    ) {
-      key += 32;
-    }
 
-    int which = key;
+      if (!isPrintable && action == GLFW_REPEAT) {
+        action = GLFW_PRESS;
+      }
 
-    Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"), JS_STR(&actionNames[action << 3]));
-    evt->Set(JS_STR("ctrlKey"), JS_BOOL(mods & GLFW_MOD_CONTROL));
-    evt->Set(JS_STR("shiftKey"), JS_BOOL(mods & GLFW_MOD_SHIFT));
-    evt->Set(JS_STR("altKey"), JS_BOOL(mods & GLFW_MOD_ALT));
-    evt->Set(JS_STR("metaKey"), JS_BOOL(mods & GLFW_MOD_SUPER));
-    evt->Set(JS_STR("which"), JS_INT(which));
-    evt->Set(JS_STR("keyCode"), JS_INT(key));
-    evt->Set(JS_STR("charCode"), JS_INT(charCode));
-    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+      int charCode = key;
+      if (action == GLFW_RELEASE || action == GLFW_PRESS) {
+        switch (key) {
+          case GLFW_KEY_SLASH:        key = 191; break; // /
+          case GLFW_KEY_GRAVE_ACCENT: key = 192; break; // `
+          case GLFW_KEY_LEFT_BRACKET: key = 219; break; // [
+          case GLFW_KEY_BACKSLASH:    key = 220; break; /* \ */
+          case GLFW_KEY_RIGHT_BRACKET: key = 221; break; // ]
+          case GLFW_KEY_APOSTROPHE:   key = 222; break; // '
+          case GLFW_KEY_PERIOD:       key = 190; break; // '
+          case GLFW_KEY_COMMA:        key = 188; break; // '
+          case GLFW_KEY_SEMICOLON:    key = 186; break; // ;
+          case GLFW_KEY_EQUAL:        key = 187; break; // =
+          case GLFW_KEY_MINUS:        key = 189; break; // -
+        }
+      }
+      switch (key) {
+        case GLFW_KEY_ESCAPE:       key = 27; break;
+        case GLFW_KEY_ENTER:        key = 13; break;
+        case GLFW_KEY_TAB:          key = 9; break;
+        case GLFW_KEY_BACKSPACE:    key = 8; break;
+        case GLFW_KEY_INSERT:       key = 45; break;
+        case GLFW_KEY_DELETE:       key = 46; break;
+        case GLFW_KEY_RIGHT:        key = 39; break;
+        case GLFW_KEY_LEFT:         key = 37; break;
+        case GLFW_KEY_DOWN:         key = 40; break;
+        case GLFW_KEY_UP:           key = 38; break;
+        case GLFW_KEY_PAGE_UP:      key = 33; break;
+        case GLFW_KEY_PAGE_DOWN:    key = 34; break;
+        case GLFW_KEY_HOME:         key = 36; break;
+        case GLFW_KEY_END:          key = 35; break;
+        case GLFW_KEY_CAPS_LOCK:    key = 20; break;
+        case GLFW_KEY_SCROLL_LOCK:  key = 145; break;
+        case GLFW_KEY_NUM_LOCK:     key = 144; break;
+        case GLFW_KEY_PRINT_SCREEN: key = 144; break; /* TODO */
+        case GLFW_KEY_PAUSE:        key = 19; break;
+        case GLFW_KEY_F1:           key = 112; break;
+        case GLFW_KEY_F2:           key = 113; break;
+        case GLFW_KEY_F3:           key = 114; break;
+        case GLFW_KEY_F4:           key = 115; break;
+        case GLFW_KEY_F5:           key = 116; break;
+        case GLFW_KEY_F6:           key = 117; break;
+        case GLFW_KEY_F7:           key = 118; break;
+        case GLFW_KEY_F8:           key = 119; break;
+        case GLFW_KEY_F9:           key = 120; break;
+        case GLFW_KEY_F10:          key = 121; break;
+        case GLFW_KEY_F11:          key = 122; break;
+        case GLFW_KEY_F12:          key = 123; break;
+        case GLFW_KEY_F13:          key = 123; break; /* unknown */
+        case GLFW_KEY_F14:          key = 123; break; /* unknown */
+        case GLFW_KEY_F15:          key = 123; break; /* unknown */
+        case GLFW_KEY_F16:          key = 123; break; /* unknown */
+        case GLFW_KEY_F17:          key = 123; break; /* unknown */
+        case GLFW_KEY_F18:          key = 123; break; /* unknown */
+        case GLFW_KEY_F19:          key = 123; break; /* unknown */
+        case GLFW_KEY_F20:          key = 123; break; /* unknown */
+        case GLFW_KEY_F21:          key = 123; break; /* unknown */
+        case GLFW_KEY_F22:          key = 123; break; /* unknown */
+        case GLFW_KEY_F23:          key = 123; break; /* unknown */
+        case GLFW_KEY_F24:          key = 123; break; /* unknown */
+        case GLFW_KEY_F25:          key = 123; break; /* unknown */
+        case GLFW_KEY_KP_0:         key = 96; break;
+        case GLFW_KEY_KP_1:         key = 97; break;
+        case GLFW_KEY_KP_2:         key = 98; break;
+        case GLFW_KEY_KP_3:         key = 99; break;
+        case GLFW_KEY_KP_4:         key = 100; break;
+        case GLFW_KEY_KP_5:         key = 101; break;
+        case GLFW_KEY_KP_6:         key = 102; break;
+        case GLFW_KEY_KP_7:         key = 103; break;
+        case GLFW_KEY_KP_8:         key = 104; break;
+        case GLFW_KEY_KP_9:         key = 105; break;
+        case GLFW_KEY_KP_DECIMAL:   key = 110; break;
+        case GLFW_KEY_KP_DIVIDE:    key = 111; break;
+        case GLFW_KEY_KP_MULTIPLY:  key = 106; break;
+        case GLFW_KEY_KP_SUBTRACT:  key = 109; break;
+        case GLFW_KEY_KP_ADD:       key = 107; break;
+        case GLFW_KEY_KP_ENTER:     key = 13; break;
+        case GLFW_KEY_KP_EQUAL:     key = 187; break;
+        case GLFW_KEY_LEFT_SHIFT:   key = 16; break;
+        case GLFW_KEY_LEFT_CONTROL: key = 17; break;
+        case GLFW_KEY_LEFT_ALT:     key = 18; break;
+        case GLFW_KEY_LEFT_SUPER:   key = 91; break;
+        case GLFW_KEY_RIGHT_SHIFT:  key = 16; break;
+        case GLFW_KEY_RIGHT_CONTROL: key = 17; break;
+        case GLFW_KEY_RIGHT_ALT:    key = 18; break;
+        case GLFW_KEY_RIGHT_SUPER:  key = 93; break;
+        case GLFW_KEY_MENU:         key = 18; break;
+      }
+      if (
+        action == 2 && // keypress
+        key >= 65 && // A
+        key <= 90 // Z
+      ) {
+        key += 32;
+      }
 
-    Local<Value> argv[] = {
-      JS_STR(&actionNames[action << 3]), // event name
-      evt,
-    };
-    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+      int which = key;
 
-    if (action == GLFW_PRESS && isPrintable) {
-      keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
+      Local<Object> evt = Nan::New<Object>();
+      evt->Set(JS_STR("type"), JS_STR(&actionNames[action << 3]));
+      evt->Set(JS_STR("ctrlKey"), JS_BOOL(mods & GLFW_MOD_CONTROL));
+      evt->Set(JS_STR("shiftKey"), JS_BOOL(mods & GLFW_MOD_SHIFT));
+      evt->Set(JS_STR("altKey"), JS_BOOL(mods & GLFW_MOD_ALT));
+      evt->Set(JS_STR("metaKey"), JS_BOOL(mods & GLFW_MOD_SUPER));
+      evt->Set(JS_STR("which"), JS_INT(which));
+      evt->Set(JS_STR("keyCode"), JS_INT(key));
+      evt->Set(JS_STR("charCode"), JS_INT(charCode));
+      // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+
+      Local<Value> argv[] = {
+        JS_STR(&actionNames[action << 3]), // event name
+        evt,
+      };
+      eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+
+      if (action == GLFW_PRESS && isPrintable) {
+        keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
+      }
     }
   }
 }
 
 void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
-  int w, h;
-  glfwGetWindowSize(window, &w, &h);
-  if(x<0 || x>=w) return;
-  if(y<0 || y>=h) return;
-
-  int mode = glfwGetInputMode(window, GLFW_CURSOR);
-  int movementX, movementY;
-  if (mode == GLFW_CURSOR_DISABLED) {
-    movementX = x - (w / 2);
-    movementY = y - (h / 2);
-
-    glfwSetCursorPos(window, w / 2, h / 2);
-  } else {
-    movementX = 0;
-    movementY = 0;
-  }
-
-  lastX = x;
-  lastY = y;
-
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("mousemove"));
-  evt->Set(JS_STR("clientX"),JS_NUM(x));
-  evt->Set(JS_STR("clientY"),JS_NUM(y));
-  evt->Set(JS_STR("pageX"),JS_NUM(x));
-  evt->Set(JS_STR("pageY"),JS_NUM(y));
-  evt->Set(JS_STR("offsetX"),JS_NUM(x));
-  evt->Set(JS_STR("offsetY"),JS_NUM(y));
-  evt->Set(JS_STR("movementX"),JS_NUM(movementX));
-  evt->Set(JS_STR("movementY"),JS_NUM(movementY));
-  evt->Set(JS_STR("ctrlKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS));
-  evt->Set(JS_STR("shiftKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS));
-  evt->Set(JS_STR("altKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS));
-  evt->Set(JS_STR("metaKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {  
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    if(x<0 || x>=w) return;
+    if(y<0 || y>=h) return;
 
-  Local<Value> argv[] = {
-    JS_STR("mousemove"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    int mode = glfwGetInputMode(window, GLFW_CURSOR);
+    int movementX, movementY;
+    if (mode == GLFW_CURSOR_DISABLED) {
+      movementX = x - (w / 2);
+      movementY = y - (h / 2);
+
+      glfwSetCursorPos(window, w / 2, h / 2);
+    } else {
+      movementX = 0;
+      movementY = 0;
+    }
+
+    lastX = x;
+    lastY = y;
+
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("mousemove"));
+    evt->Set(JS_STR("clientX"),JS_NUM(x));
+    evt->Set(JS_STR("clientY"),JS_NUM(y));
+    evt->Set(JS_STR("pageX"),JS_NUM(x));
+    evt->Set(JS_STR("pageY"),JS_NUM(y));
+    evt->Set(JS_STR("offsetX"),JS_NUM(x));
+    evt->Set(JS_STR("offsetY"),JS_NUM(y));
+    evt->Set(JS_STR("movementX"),JS_NUM(movementX));
+    evt->Set(JS_STR("movementY"),JS_NUM(movementY));
+    evt->Set(JS_STR("ctrlKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS));
+    evt->Set(JS_STR("shiftKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS));
+    evt->Set(JS_STR("altKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS));
+    evt->Set(JS_STR("metaKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+
+    Local<Value> argv[] = {
+      JS_STR("mousemove"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("mouseenter"));
-  evt->Set(JS_STR("entered"),JS_INT(entered));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("mouseenter"));
+    evt->Set(JS_STR("entered"),JS_INT(entered));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR("mouseenter"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("mouseenter"), // event name
+      evt,
+    };
+    eventHandler->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mods) {
   Nan::HandleScope scope;
 
-  {
-    Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
-    evt->Set(JS_STR("button"),JS_INT(button));
-    evt->Set(JS_STR("which"),JS_INT(button));
-    evt->Set(JS_STR("clientX"),JS_INT(lastX));
-    evt->Set(JS_STR("clientY"),JS_INT(lastY));
-    evt->Set(JS_STR("pageX"),JS_INT(lastX));
-    evt->Set(JS_STR("pageY"),JS_INT(lastY));
-    evt->Set(JS_STR("offsetX"),JS_INT(lastX));
-    evt->Set(JS_STR("offsetY"),JS_INT(lastY));
-    evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
-    evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
-    evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
-    evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
-    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    {
+      Local<Object> evt = Nan::New<Object>();
+      evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
+      evt->Set(JS_STR("button"),JS_INT(button));
+      evt->Set(JS_STR("which"),JS_INT(button));
+      evt->Set(JS_STR("clientX"),JS_INT(lastX));
+      evt->Set(JS_STR("clientY"),JS_INT(lastY));
+      evt->Set(JS_STR("pageX"),JS_INT(lastX));
+      evt->Set(JS_STR("pageY"),JS_INT(lastY));
+      evt->Set(JS_STR("offsetX"),JS_INT(lastX));
+      evt->Set(JS_STR("offsetY"),JS_INT(lastY));
+      evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
+      evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
+      evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
+      evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+      // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-    Local<Value> argv[] = {
-      JS_STR(action ? "mousedown" : "mouseup"), // event name
-      evt
-    };
-    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+      Local<Value> argv[] = {
+        JS_STR(action ? "mousedown" : "mouseup"), // event name
+        evt
+      };
+      eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+    }
 
-  if (!action) {
-    Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("click"));
-    evt->Set(JS_STR("button"),JS_INT(button));
-    evt->Set(JS_STR("which"),JS_INT(button));
-    evt->Set(JS_STR("clientX"),JS_INT(lastX));
-    evt->Set(JS_STR("clientY"),JS_INT(lastY));
-    evt->Set(JS_STR("pageX"),JS_INT(lastX));
-    evt->Set(JS_STR("pageY"),JS_INT(lastY));
-    evt->Set(JS_STR("offsetX"),JS_INT(lastX));
-    evt->Set(JS_STR("offsetY"),JS_INT(lastY));
-    evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
-    evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
-    evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
-    evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
-    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+    if (!action) {
+      Local<Object> evt = Nan::New<Object>();
+      evt->Set(JS_STR("type"),JS_STR("click"));
+      evt->Set(JS_STR("button"),JS_INT(button));
+      evt->Set(JS_STR("which"),JS_INT(button));
+      evt->Set(JS_STR("clientX"),JS_INT(lastX));
+      evt->Set(JS_STR("clientY"),JS_INT(lastY));
+      evt->Set(JS_STR("pageX"),JS_INT(lastX));
+      evt->Set(JS_STR("pageY"),JS_INT(lastY));
+      evt->Set(JS_STR("offsetX"),JS_INT(lastX));
+      evt->Set(JS_STR("offsetY"),JS_INT(lastY));
+      evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
+      evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
+      evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
+      evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+      // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-    Local<Value> argv[] = {
-      JS_STR("click"), // event name
-      evt,
-    };
-    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+      Local<Value> argv[] = {
+        JS_STR("click"), // event name
+        evt,
+      };
+      eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+    }
   }
 }
 
 void APIENTRY scrollCB(NATIVEwindow *window, double xoffset, double yoffset) {
   Nan::HandleScope scope;
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("wheel"));
-  evt->Set(JS_STR("deltaX"),JS_NUM(-xoffset*120));
-  evt->Set(JS_STR("deltaY"),JS_NUM(-yoffset*120));
-  evt->Set(JS_STR("deltaZ"),JS_INT(0));
-  evt->Set(JS_STR("deltaMode"),JS_INT(0));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
+  if (eventHandlerFn) {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("wheel"));
+    evt->Set(JS_STR("deltaX"),JS_NUM(-xoffset*120));
+    evt->Set(JS_STR("deltaY"),JS_NUM(-yoffset*120));
+    evt->Set(JS_STR("deltaZ"),JS_INT(0));
+    evt->Set(JS_STR("deltaMode"),JS_INT(0));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Value> argv[] = {
-    JS_STR("wheel"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("wheel"), // event name
+      evt,
+    };
+    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  }
 }
 
 /* NAN_METHOD(testJoystick) {
@@ -856,14 +909,16 @@ NAN_METHOD(BlitFrameBuffer) {
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
 
-  glBlitFramebuffer(0, 0,
+  glBlitFramebuffer(
+    0, 0,
     sw, sh,
     0, 0,
     dw, dh,
     (color ? GL_COLOR_BUFFER_BIT : 0) |
     (depth ? GL_DEPTH_BUFFER_BIT : 0) |
     (stencil ? GL_STENCIL_BUFFER_BIT : 0),
-    (depth || stencil) ? GL_NEAREST : GL_LINEAR);
+    (depth || stencil) ? GL_NEAREST : GL_LINEAR
+  );
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -1283,13 +1338,28 @@ NAN_METHOD(Create2D) {
 NAN_METHOD(Destroy) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   glfwDestroyWindow(window);
+  
+  {
+    std::lock_guard lock(eventHandlerMapMutex);
+    
+    eventHandlerMap.erase(window);
+  }
 }
 
 NAN_METHOD(SetEventHandler) {
-  if (!eventHandler) {
-    eventHandler.reset(new Nan::Persistent<Function>());
+  if (info[0]->IsArray() && info[1]->IsFunction()) {
+    Local<Array> windowHandle = Local<Array>::Cast(info[0]);
+    Local<Function> handler = Local<Function>::Cast(info[1]);
+    
+    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+    {
+      std::lock_guard lock(eventHandlerMapMutex);
+      
+      eventHandlerMap.emplace(window, handler);
+    }
+  } else {
+    Nan::ThrowError("SetEventHandler: invalid arguments");
   }
-  (*eventHandler).Reset(Local<Function>::Cast(info[0]));
 }
 
 NAN_METHOD(PollEvents) {
