@@ -1211,7 +1211,7 @@ const _startRenderLoop = () => {
         .multiply(hmdMatrix);
       localMatrix2.toArray(xrState.leftViewMatrix);
 
-      vrPresentState.system.GetProjectionMatrix(0, depthNear, depthFar, localFloat32Array4);
+      vrPresentState.system.GetProjectionMatrix(0, xrState.depthNear[0], xrState.depthFar[0], localFloat32Array4);
       _normalizeMatrixArray(localFloat32Array4);
       xrState.leftProjectionMatrix.set(localFloat32Array4);
 
@@ -1230,7 +1230,7 @@ const _startRenderLoop = () => {
         .multiply(hmdMatrix);
       localMatrix2.toArray(xrState.rightViewMatrix);
 
-      vrPresentState.system.GetProjectionMatrix(1, depthNear, depthFar, localFloat32Array4);
+      vrPresentState.system.GetProjectionMatrix(1, xrState.depthNear[0], xrState.depthFar[0], localFloat32Array4);
       _normalizeMatrixArray(localFloat32Array4);
       xrState.rightProjectionMatrix.set(localFloat32Array4);
 
