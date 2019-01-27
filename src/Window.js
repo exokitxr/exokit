@@ -247,115 +247,6 @@ class Screen {
   set availHeight(availHeight) {}
 }
 
-const localVector = new THREE.Vector3();
-const localVector2 = new THREE.Vector3();
-const localQuaternion = new THREE.Quaternion();
-const localMatrix = new THREE.Matrix4();
-const maxNumPlanes = 32 * 3;
-const planeEntrySize = 3 + 4 + 2 + 1;
-class MLDisplay extends MRDisplay {
-  constructor() {
-    super('ML');
-
-    this._frameData = new VRFrameData();
-    this._planesArray = new Float32Array(maxNumPlanes * planeEntrySize);
-    this._numPlanes = 0;
-    this._context = null;
-  }
-
-  requestPresent(layers) {
-    if (this.onrequestpresent) {
-      this.onrequestpresent(layers);
-    }
-
-    this.isPresenting = true;
-
-    if (this.onvrdisplaypresentchange) {
-      this.onvrdisplaypresentchange();
-    }
-
-    return Promise.resolve();
-  }
-
-  exitPresent() {
-    return (this.onexitpresent ? this.onexitpresent() : Promise.resolve())
-      .then(() => {
-        this.isPresenting = false;
-
-        for (let i = 0; i < this._rafs.length; i++) {
-          this.cancelAnimationFrame(this._rafs[i]);
-        }
-        this._rafs.length = 0;
-
-        if (this.onvrdisplaypresentchange) {
-          this.onvrdisplaypresentchange();
-        }
-      });
-  }
-
-  getFrameData(frameData) {
-    frameData.copy(this._frameData);
-
-    if (frameData.planes) {
-      frameData.planes.set(this._planesArray);
-      frameData.numPlanes = this._numPlanes;
-    }
-  }
-
-  update(update) {
-    const {
-      depthNear,
-      depthFar,
-      renderWidth,
-      renderHeight,
-      leftOffset,
-      leftFov,
-      rightOffset,
-      rightFov,
-      frameData,
-      stageParameters,
-      handsArray,
-    } = update;
-
-    if (depthNear !== undefined) {
-      this.depthNear = depthNear;
-    }
-    if (depthFar !== undefined) {
-      this.depthFar = depthFar;
-    }
-    if (renderWidth !== undefined) {
-      this._width = renderWidth;
-    }
-    if (renderHeight !== undefined) {
-      this._height = renderHeight;
-    }
-    if (leftOffset !== undefined) {
-      this._leftOffset.set(leftOffset);
-    }
-    if (leftFov !== undefined) {
-      this._leftFov.set(leftFov);
-    }
-    if (rightOffset !== undefined) {
-      this._rightOffset.set(rightOffset);
-    }
-    if (rightFov !== undefined) {
-      this._rightFov.set(rightFov);
-    }
-    if (frameData !== undefined) {
-      this._frameData.copy(frameData);
-    }
-    if (update.planesArray !== undefined) {
-      this._planesArray.set(update.planesArray);
-    }
-    if (update.numPlanes !== undefined) {
-      this._numPlanes = update.numPlanes;
-    }
-    if (update.context !== undefined) {
-      this._context = update.context;
-    }
-  }
-}
-
 class MediaRecorder extends EventEmitter {
   constructor() {
     super();
@@ -423,70 +314,7 @@ class Worker {
   }
 }
 
-let rafCbs = [];
-let timeouts = [];
-let intervals = [];
 let rafIndex = 0;
-const localCbs = [];
-const _cacheLocalCbs = cbs => {
-  for (let i = 0; i < cbs.length; i++) {
-    localCbs[i] = cbs[i];
-  }
-  for (let i = cbs.length; i < localCbs.length; i++) {
-    localCbs[i] = null;
-  }
-};
-const _clearLocalCbs = () => {
-  for (let i = 0; i < localCbs.length; i++) {
-    localCbs[i] = null;
-  }
-};
-function tickAnimationFrame() {
-  if (rafCbs.length > 0) {
-    _cacheLocalCbs(rafCbs);
-
-    tickAnimationFrame.window = this;
-
-    const performanceNow = performance.now();
-
-    // hidden rafs
-    for (let i = 0; i < localCbs.length; i++) {
-      const rafCb = localCbs[i];
-      if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
-        try {
-          rafCb(performanceNow);
-        } catch (e) {
-          console.warn(e);
-        }
-
-        const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-        if (index !== -1) {
-          rafCbs[index] = null;
-        }
-      }
-    }
-    // visible rafs
-    for (let i = 0; i < localCbs.length; i++) {
-      const rafCb = localCbs[i];
-      if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
-        try {
-          rafCb(performanceNow);
-        } catch (e) {
-          console.warn(e);
-        }
-        const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-        if (index !== -1) {
-          rafCbs[index] = null;
-        }
-      }
-    }
-
-    tickAnimationFrame.window = null;
-  }
-
-  _clearLocalCbs(); // release garbage
-}
-tickAnimationFrame.window = null;
 const _findFreeSlot = a => {
   let i;
   for (i = 0; i < a.length; i++) {
@@ -502,28 +330,14 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   fn[symbols.prioritySymbol] = priority;
   const id = ++rafIndex;
   fn[symbols.idSymbol] = id;
+  const rafCbs = window[symbols.rafCbsSymbol];
   rafCbs[_findFreeSlot(rafCbs)] = fn;
   rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
 };
 const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
-const _getFakeVrDisplay = window => {
-  const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
-  return fakeVrDisplay.isActive ? fakeVrDisplay : null;
-};
-const _getVrDisplay = window => window[symbols.mrDisplaysSymbol].vrDisplay;
-const _getMlDisplay = window => window[symbols.mrDisplaysSymbol].mlDisplay;
-const _cloneMrDisplays = (mrDisplays, window) => {
-  const result = {};
-  for (const k in mrDisplays) {
-    const mrDisplayClone = mrDisplays[k].clone();
-    mrDisplayClone.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    mrDisplayClone.onrequesthittest = _makeOnRequestHitTest(window);
-    mrDisplayClone.window = window;
-    result[k] = mrDisplayClone;
-  }
-  return result;
-};
+
+GlobalContext.fakeVrDisplayEnabled = false;
 
 const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
@@ -620,23 +434,21 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
     getVRDisplaysSync() {
       const result = [];
-      const fakeVrDisplay = _getFakeVrDisplay(window);
-      if (fakeVrDisplay) {
-        result.push(fakeVrDisplay);
+      if (GlobalContext.fakeVrDisplayEnabled) {
+        result.push(window[symbols.mrDisplaysSymbol].fakeVrDisplay);
       }
       if (nativeMl && nativeMl.IsPresent()) {
-        result.push(_getMlDisplay(window));
+        result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
       }
       if (nativeVr && nativeVr.VR_IsHmdPresent()) {
-        result.push(_getVrDisplay(window));
+        result.push(window[symbols.mrDisplaysSymbol].vrDisplay);
       }
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
       return result;
     },
     createVRDisplay() {
-      const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
-      fakeVrDisplay.isActive = true;
-      return fakeVrDisplay;
+      GlobalContext.fakeVrDisplayEnabled = true;
+      return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
     getGamepads,
     clipboard:{
@@ -650,29 +462,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         resolve();
       })
     }
-    /* getVRMode: () => vrMode,
-    setVRMode: newVrMode => {
-      for (let i = 0; i < vrDisplays.length; i++) {
-        vrDisplays[i].destroy();
-      }
-
-      if (newVrMode === 'vr') {
-        vrDisplays = [new VRDisplay(window, 0)];
-      } else if (newVrMode === 'ar') {
-        display = new ARDisplay(window, 1);
-      } else if (newVrMode === 'ml') {
-        vrDisplays = [new MLDisplay(window, 2)];
-      }
-      vrMode = newVrMode;
-    },
-    getVRTexture: () => vrTexture,
-    setVRTexture: newVrTexture => {
-      vrTexture = newVrTexture;
-    },
-    getVRTextures: () => vrTextures,
-    setVRTextures: newVrTextures => {
-      vrTextures = newVrTextures;
-    }, */
   };
 
   // WebVR enabled.
@@ -1126,7 +915,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Gamepad = Gamepad;
   window.VRStageParameters = VRStageParameters;
   window.VRDisplay = VRDisplay;
-  window.MLDisplay = MLDisplay;
   window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
@@ -1317,10 +1105,78 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       loading = true;
     }
   });
+  
+  const rafCbs = [];
+  window[symbols.rafCbsSymbol] = rafCbs;
+  const timeouts = [];
+  const intervals = [];
+  window.tickAnimationFrame = (() => {
+    const localCbs = [];
+    const _cacheLocalCbs = cbs => {
+      for (let i = 0; i < cbs.length; i++) {
+        localCbs[i] = cbs[i];
+      }
+      for (let i = cbs.length; i < localCbs.length; i++) {
+        localCbs[i] = null;
+      }
+    };
+    const _clearLocalCbs = () => {
+      for (let i = 0; i < localCbs.length; i++) {
+        localCbs[i] = null;
+      }
+    };
+    function tickAnimationFrame() {
+      if (rafCbs.length > 0) {
+        _cacheLocalCbs(rafCbs);
 
-  if (!parent) {
-    window.tickAnimationFrame = tickAnimationFrame;
+        // tickAnimationFrame.window = this;
 
+        const performanceNow = performance.now();
+
+        // hidden rafs
+        for (let i = 0; i < localCbs.length; i++) {
+          const rafCb = localCbs[i];
+          if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
+            try {
+              // console.log('tick raf', rafCb.stack);
+              rafCb(performanceNow);
+            } catch (e) {
+              console.warn(e);
+            }
+
+            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+            if (index !== -1) {
+              rafCbs[index] = null;
+            }
+          }
+        }
+        // visible rafs
+        for (let i = 0; i < localCbs.length; i++) {
+          const rafCb = localCbs[i];
+          if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
+            try {
+              // console.log('tick raf', rafCb.stack);
+              rafCb(performanceNow);
+            } catch (e) {
+              console.warn(e);
+            }
+            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+            if (index !== -1) {
+              rafCbs[index] = null;
+            }
+          }
+        }
+
+        // tickAnimationFrame.window = null;
+      }
+
+      _clearLocalCbs(); // release garbage
+    }
+    // tickAnimationFrame.window = null;
+    return tickAnimationFrame;
+  })();
+  
+  const _makeMrDisplays = () => {
     const _bindMRDisplay = display => {
       display.onrequestanimationframe = _makeRequestAnimationFrame(window);
       display.oncancelanimationframe = window.cancelAnimationFrame;
@@ -1332,14 +1188,30 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         });
       };
     };
+    
+    const fakeVrDisplay = new FakeVRDisplay(window);
+    fakeVrDisplay.onrequestpresent = layers => {
+      if (!GlobalContext.fakePresentState.fakeVrDisplay) {
+        GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
+        fakeVrDisplay.waitGetPoses();
+      }
 
-    const fakeVrDisplay = new FakeVRDisplay();
-    fakeVrDisplay.isActive = false;
+      const [{source: canvas}] = layers;
+      const {_context: context} = canvas;
+      return {
+        width: context.drawingBufferWidth,
+        height: context.drawingBufferHeight,
+        msFbo: null,
+      };
+    };
+    fakeVrDisplay.onexitpresent = () => {
+      GlobalContext.fakePresentState.fakeVrDisplay = null;
+    };
     fakeVrDisplay.onlayers = layers => {
       GlobalContext.fakePresentState.layers = layers;
     };
 
-    const vrDisplay = new VRDisplay();
+    const vrDisplay = new VRDisplay('VR');
     _bindMRDisplay(vrDisplay);
     vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
     vrDisplay.onexitpresent = () => nativeVr.exitPresent();
@@ -1366,7 +1238,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
-    const mlDisplay = new MLDisplay();
+    const mlDisplay = new VRDisplay('AR');
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
     mlDisplay.onexitpresent = () => nativeMl.exitPresent();
@@ -1395,75 +1267,21 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.mlPresentState.layers = layers;
     };
 
-    window[symbols.mrDisplaysSymbol] = {
+    return {
       fakeVrDisplay,
       vrDisplay,
       xrDisplay,
       mlDisplay,
       xmDisplay,
     };
+  };
+  window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
 
-    const _updateGamepads = newGamepads => {
-      if (newGamepads !== undefined) {
-        const gamepads = getGamepads();
+  GlobalContext.windows.push(window);
+  window.on('destroy', () => {
+    GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
+  });
 
-        if (newGamepads[0]) {
-          gamepads[0].copy(newGamepads[0]);
-        }
-        if (newGamepads[1]) {
-          gamepads[1].copy(newGamepads[1]);
-        }
-      }
-    };
-    window.updateVrFrame = update => {
-      let updatedHmd = false;
-      if (vrDisplay.isPresenting || update.force) {
-        vrDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (xrDisplay.session || update.force) {
-        xrDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (mlDisplay.isPresenting || update.force) {
-        mlDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (xmDisplay.session || update.force) {
-        xmDisplay.update(update);
-        updatedHmd = true;
-      }
-      if (updatedHmd) {
-        _updateGamepads(update.gamepads);
-      }
-    };
-    /* window.updateArFrame = (viewMatrix, projectionMatrix) => {
-      arDisplay.update(viewMatrix, projectionMatrix);
-    }; */
-
-    if (nativeMl) {
-      let lastPresent = nativeMl.IsPresent();
-
-      nativeMl.OnPresentChange(isPresent => {
-        if (isPresent && !lastPresent) {
-          const e = new Event('vrdisplayconnect');
-          e.display = _getMlDisplay(window);
-          window.dispatchEvent(e);
-        } else if (!isPresent && lastPresent) {
-          const e = new Event('vrdisplaydisconnect');
-          e.display = _getMlDisplay(window);
-          window.dispatchEvent(e);
-        }
-        lastPresent = isPresent;
-      });
-    }
-  } else {
-    window[symbols.mrDisplaysSymbol] = _cloneMrDisplays(top[symbols.mrDisplaysSymbol], window);
-
-    top.on('vrdisplaypresentchange', e => {
-      window._emit('vrdisplaypresentchange', e);
-    });
-  }
   return window;
 };
 module.exports._makeWindow = _makeWindow;

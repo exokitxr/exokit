@@ -551,7 +551,7 @@ const _makeRenderer = () => {
   // scene.background = new THREE.Color(0x7E57C2);
   scene.matrixAutoUpdate = false;
 
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.y = 1.6;
   // camera.position.z = 1;
 
@@ -2701,8 +2701,6 @@ function animate(time, frame) {
 
 const _bootFakeDisplay = async () => {
   fakeDisplay = _makeFakeDisplay();
-  camera.projectionMatrix.toArray(fakeDisplay._frameData.leftProjectionMatrix);
-  camera.projectionMatrix.toArray(fakeDisplay._frameData.rightProjectionMatrix);
   fakeDisplay.position.set(0, 1.6, 0);
   // const canvas = renderer.domElement;
   const session = await fakeDisplay.enter({
@@ -2721,8 +2719,8 @@ const _bootFakeDisplay = async () => {
 
   console.log('loaded root in 2D');
 };
-if (navigator.xr && !query.fake) {
-  (async () => {
+(async () => {
+  if (navigator.xr && !query.fake) {
     display = await navigator.xr.requestDevice();
 
     if (display) {
@@ -2773,15 +2771,15 @@ if (navigator.xr && !query.fake) {
         console.log('loaded root in XR');
       });
     } else {
-      _bootFakeDisplay();
+      await _bootFakeDisplay();
     }
-  })()
-    .catch(err => {
-      console.warn(err.stack);
-    });
-} else {
-  _bootFakeDisplay();
-}
+  } else {
+    await _bootFakeDisplay();
+  }
+})()
+  .catch(err => {
+    console.warn(err.stack);
+  });
 
 // renderer.setAnimationLoop(animate);
 // _openRig(new THREE.Vector3(0, 1.5, -1), new THREE.Quaternion());

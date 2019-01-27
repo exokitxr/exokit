@@ -6,13 +6,6 @@ const THREE = require('../lib/three-min.js');
 const symbols = require('./symbols');
 const {_elementGetter, _elementSetter} = require('./utils');
 
-const _getXrDisplay = window => window[symbols.mrDisplaysSymbol].xrDisplay;
-const _getXmDisplay = window => window[symbols.mrDisplaysSymbol].xmDisplay;
-const _getFakeVrDisplay = window => {
-  const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
-  return fakeVrDisplay.isActive ? fakeVrDisplay : null;
-};
-
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
@@ -27,13 +20,12 @@ class XR extends EventEmitter {
     this._window = window;
   }
   requestDevice(name = null) {
-    const fakeVrDisplay = _getFakeVrDisplay(this._window);
-    if (fakeVrDisplay) {
-      return Promise.resolve(fakeVrDisplay);
+    if (GlobalContext.fakeVrDisplayEnabled) {
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].fakeVrDisplay);
     } else if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
-      return Promise.resolve(_getXrDisplay(this._window));
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].xrDisplay);
     } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
-      return Promise.resolve(_getXmDisplay(this._window));
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].xmDisplay);
     } else {
       return Promise.resolve(null);
     }
@@ -51,7 +43,6 @@ class XRDevice {
   constructor(name = 'VR') {
     this.name = name; // non-standard
     this.session = null; // non-standard
-    this.ownerDocument = null; // non-standard
     
     this._layers = [];
   }
@@ -72,11 +63,6 @@ class XRDevice {
     }
     return Promise.resolve(this.session);
   }
-  update(update) {
-    if (this.session) {
-      this.session.update(update);
-    }
-  }
   get layers() {
     return this._layers;
   }
@@ -86,17 +72,6 @@ class XRDevice {
     if (this.onlayers) {
       this.onlayers(layers);
     }
-  }
-  clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    if (o.session) {
-      o.session = o.session.clone();
-      o.session.device = o;
-    }
-    return o;
   }
 }
 module.exports.XRDevice = XRDevice;
@@ -109,8 +84,6 @@ class XRSession extends EventTarget {
     this.exclusive = exclusive;
     this.outputContext = outputContext;
 
-    this.depthNear = 0.1;
-    this.depthFar = 10000.0;
     this.baseLayer = null;
 
     this._frame = new XRPresentationFrame(this);
@@ -122,6 +95,14 @@ class XRSession extends EventTarget {
     this._lastPresseds = [false, false];
     this._rafs = [];
   }
+  get depthNear() {
+    return GlobalContext.xrState.depthNear[0];
+  }
+  set depthNear(depthNear) {}
+  get depthFar() {
+    return GlobalContext.xrState.depthFar[0];
+  }
+  set depthFar(depthFar) {}
   get layers() {
     return this.device.layers;
   }
@@ -133,7 +114,7 @@ class XRSession extends EventTarget {
     return Promise.resolve(this._frameOfReference);
   }
   getInputSources() {
-    return this._inputSources.filter(inputSource => inputSource._connected);
+    return this._inputSources.filter(inputSource => inputSource.connected);
   }
   requestAnimationFrame(fn) {
     if (this.device.onrequestanimationframe) {
@@ -170,14 +151,43 @@ class XRSession extends EventTarget {
     this.emit('end');
     return Promise.resolve();
   }
-  update(update) {
+  update() {
+    if (this.session) {
+      const gamepads = GlobalContext.getGamepads();
+      
+      for (let i = 0; i < gamepads.length; i++) {
+        const gamepad = gamepads[i];
+        const inputSource = this._inputSources[i];
+        
+        const pressed = gamepad.buttons[1].pressed;
+        const lastPressed = this._lastPresseds[i];
+        if (pressed && !lastPressed) {
+          this.emit('selectstart', new XRInputSourceEvent('selectstart', {
+            frame: this._frame,
+            inputSource,
+          }));
+          this.emit('select', new XRInputSourceEvent('select', {
+            frame: this._frame,
+            inputSource,
+          }));
+        } else if (lastPressed && !pressed) {
+          this.emit('selectend', new XRInputSourceEvent('selectend', {
+            frame: this._frame,
+            inputSource,
+          }));
+        }
+        this._lastPresseds[i] = pressed;
+      }
+    }
+  }
+  /* update(update) {
     const {
       depthNear,
       depthFar,
       renderWidth,
       renderHeight,
       frameData,
-      stageParameters,
+      // stageParameters,
       gamepads,
     } = update;
 
@@ -213,9 +223,9 @@ class XRSession extends EventTarget {
         this._frame.views[1]._viewMatrix.set(frameData.rightViewMatrix);
       }
     }
-    /* if (stageParameters !== undefined) {
-      this._frameOfReference.emulatedHeight = stageParameters.position.y; // XXX
-    } */
+    // if (stageParameters !== undefined) {
+      // this._frameOfReference.emulatedHeight = stageParameters.position.y; // XXX
+    // }
     if (gamepads !== undefined) {
       const scale = localVector3.set(1, 1, 1);
 
@@ -224,7 +234,7 @@ class XRSession extends EventTarget {
         if (gamepad) {
           const inputSource = this._inputSources[i];
           inputSource._connected = gamepad.connected;
-          const position = localVector.fromArray(gamepad.pose.position);
+          const position = localVector.fromArray(gamepad.pose.position); // XXX bind position/orientation
           const quaternion = localQuaternion.fromArray(gamepad.pose.orientation);
           const direction = localVector2.set(0, 0, -1).applyQuaternion(quaternion);
           const inputMatrix = localMatrix.compose(position, quaternion, scale);
@@ -259,17 +269,7 @@ class XRSession extends EventTarget {
         }
       }
     }
-  }
-  clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    o.baseLayer = null;
-    o._frame = o._frame.clone();
-    o._frame.session = o;
-    return o;
-  }
+  } */
   get onblur() {
     return _elementGetter(this, 'blur');
   }
@@ -393,55 +393,54 @@ class XRPresentationFrame {
       }
     }
 
-    localMatrix.toArray(inputSource._pose.targetRay.transformMatrix);
+    localMatrix
+      .toArray(inputSource._pose.targetRay.transformMatrix)
+    localMatrix
+      .toArray(inputSource._pose.gripMatrix);
     
     return inputSource._pose;
-  }
-  clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    o._pose = o._pose.clone();
-    o._pose.frame = o;
-    return o;
   }
 }
 module.exports.XRPresentationFrame = XRPresentationFrame;
 
 class XRView {
-  constructor(
-    eye = 'left',
-    projectionMatrix = Float32Array.from([
-      2.1445069205095586, 0, 0, 0,
-      0, 2.1445069205095586, 0, 0,
-      0, 0, -1.00010000500025, -1,
-      0, 0, -0.200010000500025, 0,
-    ]),
-  ) {
+  constructor(eye = 'left') {
     this.eye = eye;
-    this.projectionMatrix = projectionMatrix;
+    this.projectionMatrix = eye === 'left' ? GlobalContext.xrState.leftProjectionMatrix : GlobalContext.xrState.rightProjectionMatrix;
 
-    this._viewport = new XRViewport();
-    this._viewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this._localViewMatrix = this._viewMatrix.slice();
+    this._viewport = new XRViewport(eye);
+    this._viewMatrix = eye === 'left' ? GlobalContext.xrState.leftViewMatrix : GlobalContext.xrState.rightViewMatrix;
+    this._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 }
 module.exports.XRView = XRView;
 
 class XRViewport {
-  constructor(x = 0, y = 0, width = defaultCanvasSize[0], height = defaultCanvasSize[1]) {
+  constructor(eye) {
+    this.eye = eye;
+  }
+  get x() {
+    return this.eye === 'left' ? 0 : GlobalContext.xrState.renderWidth[0];
+  }
+  set x(x) {}
+  get y() {
+    return 0;
+  }
+  set y(y) {}
+  get width() {
+    return GlobalContext.xrState.renderWidth[0];
+  }
+  set width(width) {}
+  get height() {
+    return GlobalContext.xrState.renderHeight[0];
+  }
+  set height(height) {}
+  /* set(x, y, width, height) {
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
-  }
-  set(x, y, width, height) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-  }
+  } */
 }
 module.exports.XRViewport = XRViewport;
 
@@ -451,8 +450,9 @@ class XRDevicePose {
     this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
   getViewMatrix(view) {
-    if (this.frame && this.frame.session && this.frame.session.device && this.frame.session.device.window) {
-      const {xrOffset} = this.frame.session.device.window.document;
+    if (this.frame && this.frame.session && this.frame.session.baseLayer && this.frame.session.baseLayer.context.canvas.ownerDocument.xrOffset) {
+      const {xrOffset} = this.frame.session.baseLayer.context.canvas.ownerDocument;
+      
       localMatrix
         .fromArray(view._viewMatrix)
         .multiply(
@@ -464,13 +464,6 @@ class XRDevicePose {
     }
     return view._localViewMatrix;
   }
-  clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    return o;
-  }
 }
 module.exports.XRDevicePose = XRDevicePose;
 
@@ -479,16 +472,23 @@ class XRInputSource {
     this.handedness = handedness;
     this.pointerOrigin = pointerOrigin;
 
-    this._connected = false;
     this._pose = new XRInputPose();
+    const gamepad = GlobalContext.xrState.gamepads[handedness === 'left' ? 0 : 1];
+    this._pose.targetRay.origin.values = gamepad.position;
+    this._pose.targetRay.direction.values = gamepad.direction;
+    this._pose._localPointerMatrix = gamepad.transformMatrix;
   }
+  get connected() {
+    return GlobalContext.xrState.gamepads[this.handedness === 'left' ? 0 : 1].connected[0] !== 0;
+  }
+  set connected(connected) {}
 }
 module.exports.XRInputSource = XRInputSource;
 
 class XRRay {
   constructor() {
-    this.origin = new GlobalContext.DOMPoint(0, 0, 0, 1);
-    this.direction = new GlobalContext.DOMPoint(0, 0, 1, 0);
+    this.origin = new GlobalContext.DOMPoint();
+    this.direction = new GlobalContext.DOMPoint(0, 0, -1);
     this.transformMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 }
@@ -513,6 +513,7 @@ class XRInputSourceEvent extends Event {
   }
 }
 module.exports.XRInputSourceEvent = XRInputSourceEvent;
+GlobalContext.XRInputSourceEvent = XRInputSourceEvent;
 
 class XRRigidTransform {
   constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 1}, scale = {x: 1, y: 1, z: 1}) {
@@ -529,7 +530,11 @@ class XRRigidTransform {
 
   updateMatrix() {
     localMatrix
-      .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
+      .compose(
+        localVector.fromArray(this.position),
+        localQuaternion.fromArray(this.orientation),
+        localVector2.fromArray(this.scale)
+      )
       .toArray(this.matrix)
     localMatrix
       .getInverse(localMatrix)

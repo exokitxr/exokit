@@ -1,77 +1,109 @@
+const {EventEmitter} = require('events');
+const {Event} = require('./Event');
 const THREE = require('../lib/three-min.js');
-const {defaultCanvasSize} = require('./constants.js');
-
-const defaultEyeSeparation = 0.625;
+const {defaultCanvasSize, defaultEyeSeparation} = require('./constants.js');
+const GlobalContext = require('./GlobalContext');
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
+const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 class VRPose {
-  constructor(position = new Float32Array(3), orientation = Float32Array.from([0, 0, 0, 1])) {
-    this.position = position;
-    this.orientation = orientation;
+  constructor() {
+    this.position = GlobalContext.xrState.position;
+    this.orientation = GlobalContext.xrState.orientation;
   }
 
-  set(position, orientation) {
+  /* set(position, orientation) {
     position.toArray(this.position);
     orientation.toArray(this.orientation);
-  }
+  } */
 
-  copy(vrPose) {
+  /* copy(vrPose) {
     if (this.position) {
       this.position.set(vrPose.position);
     }
     if (this.orientation) {
       this.orientation.set(vrPose.orientation);
     }
-  }
+  } */
 }
 class VRFrameData {
   constructor() {
+    this.leftProjectionMatrix = GlobalContext.xrState.leftProjectionMatrix;
+    /* this.leftProjectionMatrix.set(Float32Array.from([
+      1.0000000000000002, 0, 0, 0,
+      0, 1.0000000000000002, 0, 0,
+      0, 0, -1.00010000500025, -1,
+      0, 0, -0.200010000500025, 0,
+    ])); */
     // c = new THREE.PerspectiveCamera(); c.fov = 90; c.updateProjectionMatrix(); c.projectionMatrix.elements
-    this.leftProjectionMatrix = Float32Array.from([1.0000000000000002, 0, 0, 0, 0, 1.0000000000000002, 0, 0, 0, 0, -1.00010000500025, -1, 0, 0, -0.200010000500025, 0]);
+    this.leftViewMatrix = GlobalContext.xrState.leftViewMatrix;
+    // this.leftViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
     // new THREE.Matrix4().toArray()
-    this.leftViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this.rightProjectionMatrix = this.leftProjectionMatrix.slice();
-    this.rightViewMatrix = this.leftViewMatrix.slice();
+
+    this.rightProjectionMatrix = GlobalContext.xrState.rightProjectionMatrix;
+    this.rightViewMatrix = GlobalContext.xrState.rightViewMatrix;
+
     this.pose = new VRPose();
   }
 
-  copy(frameData) {
+  /* copy(frameData) {
     this.leftProjectionMatrix.set(frameData.leftProjectionMatrix);
     this.leftViewMatrix.set(frameData.leftViewMatrix);
     this.rightProjectionMatrix.set(frameData.rightProjectionMatrix);
     this.rightViewMatrix.set(frameData.rightViewMatrix);
     this.pose.copy(frameData.pose);
-  }
+  } */
 }
 class GamepadButton {
-  constructor() {
-     this.value = 0;
-     this.pressed = false;
-     this.touched = false;
+  constructor(_value, _pressed, _touched) {
+    this._value = _value;
+    this._pressed = _pressed;
+    this._touched = _touched;
   }
 
-  copy(button) {
+  get value() {
+    return this._value[0] !== 0;
+  }
+  set value(value) {
+    this._value[0] = value ? 1 : 0;
+  }
+  get pressed() {
+    return this._pressed[0] !== 0;
+  }
+  set pressed(pressed) {
+    this._pressed[0] = pressed ? 1 : 0;
+  }
+  get touched() {
+    return this._touched[0] !== 0;
+  }
+  set touched(touched) {
+    this._touched[0] = touched ? 1 : 0;
+  }
+
+  /* copy(button) {
     this.value = button.value;
     this.pressed = button.pressed;
     this.touched = button.touched;
-  }
+  } */
 }
 class GamepadPose {
-  constructor() {
+  constructor(position, orientation) {
     this.hasPosition = true;
     this.hasOrientation = true;
-    this.position = new Float32Array(3);
+    this.position = position;
     this.linearVelocity = new Float32Array(3);
     this.linearAcceleration = new Float32Array(3);
-    this.orientation = Float32Array.from([0, 0, 0, 1]);
+    this.orientation = orientation;
     this.angularVelocity = new Float32Array(3);
     this.angularAcceleration = new Float32Array(3);
   }
 
-  copy(pose) {
+  /* copy(pose) {
     this.hasPosition = pose.hasPosition;
     this.hasOrientation = pose.hasOrientation;
     this.position.set(pose.position);
@@ -80,19 +112,29 @@ class GamepadPose {
     this.orientation.set(pose.orientation);
     this.angularVelocity.set(pose.angularVelocity);
     this.angularAcceleration.set(pose.angularAcceleration);
-  }
+  } */
 }
 class GamepadHapticActuator {
-  constructor(gamepad) {
-    this.gamepad = gamepad;
+  constructor(index) {
+    this.index = index;
   }
   get type() {
     return 'vibration';
   }
   set type(type) {}
   pulse(value, duration) {
-    if (this.gamepad.ontriggerhapticpulse) {
-      this.gamepad.ontriggerhapticpulse(value, duration);
+    if (GlobalContext.vrPresentState.isPresenting) {
+      value = Math.min(Math.max(value, 0), 1);
+      const deviceIndex = GlobalContext.vrPresentState.system.GetTrackedDeviceIndexForControllerRole(this.index + 1);
+
+      const startTime = Date.now();
+      const _recurse = () => {
+        if ((Date.now() - startTime) < duration) {
+          GlobalContext.vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
+          setTimeout(_recurse, 50);
+        }
+      };
+      setTimeout(_recurse, 50);
     }
   }
 }
@@ -102,27 +144,30 @@ class Gamepad {
     this.hand = hand;
     this.index = index;
 
+    const gamepad = GlobalContext.xrState.gamepads[index];
+
     this.connected = false;
     this.mapping = 'standard';
-    this.buttons = Array(16);
-    for (let i = 0; i < this.buttons.length; i++) {
-      this.buttons[i] = new GamepadButton();
-    }
-    this.pose = new GamepadPose();
-    this.axes = new Float32Array(10);
-    this.hapticActuators = [new GamepadHapticActuator(this)];
-
-    this.ontriggerhapticpulse = null;
+    this.buttons = (() => {
+      const result = Array(5);
+      for (let i = 0; i < result.length; i++) {
+        result[i] = new GamepadButton(gamepad.buttons[i].value, gamepad.buttons[i].pressed, gamepad.buttons[i].touched);
+      }
+      return result;
+    })();
+    this.pose = new GamepadPose(gamepad.position, gamepad.orientation);
+    this.axes = gamepad.axes;
+    this.hapticActuators = [new GamepadHapticActuator(index)];
   }
 
-  copy(gamepad) {
+  /* copy(gamepad) {
     this.connected = gamepad.connected;
     for (let i = 0; i < this.buttons.length; i++) {
       this.buttons[i].copy(gamepad.buttons[i]);
     }
     this.pose.copy(gamepad.pose);
     this.axes.set(gamepad.axes);
-  }
+  } */
 }
 class VRStageParameters {
   constructor() {
@@ -130,13 +175,15 @@ class VRStageParameters {
     this.sittingToStandingTransform = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 
-  copy(vrStageParameters) {
+  /* copy(vrStageParameters) {
     this.sittingToStandingTransform.set(vrStageParameters.sittingToStandingTransform);
-  }
+  } */
 }
 
-class MRDisplay {
+class VRDisplay extends EventEmitter {
   constructor(displayName) {
+    super();
+    
     this.displayName = displayName;
 
     this.isPresenting = false;
@@ -146,8 +193,6 @@ class MRDisplay {
       hasPosition: true,
       maxLayers: 1,
     };
-    this.depthNear = 0.1;
-    this.depthFar = 10000.0;
     this.stageParameters = new VRStageParameters();
 
     this.onrequestpresent = null;
@@ -155,13 +200,17 @@ class MRDisplay {
     this.onrequestanimationframe = null;
     this.onvrdisplaypresentchange = null;
 
-    this._width = defaultCanvasSize[0] / 2;
-    this._height = defaultCanvasSize[1];
-    this._leftOffset = Float32Array.from([-defaultEyeSeparation/2, 0, 0]);
-    this._leftFov = Float32Array.from([45, 45, 45, 45]);
-    this._rightOffset = Float32Array.from([defaultEyeSeparation/2, 0, 0]);
-    this._rightFov = Float32Array.from([45, 45, 45, 45]);
+    this._frameData = new VRFrameData();
     this._rafs = [];
+  }
+
+  getFrameData(frameData) {
+    frameData.leftProjectionMatrix.set(GlobalContext.xrState.leftProjectionMatrix);
+    frameData.leftViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
+    frameData.rightViewMatrix.set(GlobalContext.xrState.rightViewMatrix);
+    frameData.rightProjectionMatrix.set(GlobalContext.xrState.rightProjectionMatrix);
+    frameData.pose.position.set(GlobalContext.xrState.position);
+    frameData.pose.orientation.set(GlobalContext.xrState.orientation);
   }
 
   getLayers() {
@@ -183,10 +232,10 @@ class MRDisplay {
       downDegrees: fovArray[3],
     });
     return {
-      renderWidth: this._width,
-      renderHeight: this._height,
-      offset: leftEye ? this._leftOffset : this._rightOffset,
-      fieldOfView: _fovArrayToVRFieldOfView(leftEye ? this._leftFov : this._rightFov),
+      renderWidth: GlobalContext.xrState.renderWidth[0],
+      renderHeight:  GlobalContext.xrState.renderHeight[0],
+      offset: leftEye ? GlobalContext.xrState.leftOffset : GlobalContext.xrState.rightOffset,
+      fieldOfView: _fovArrayToVRFieldOfView(leftEye ? GlobalContext.xrState.leftFov : GlobalContext.xrState.rightFov),
     };
   }
 
@@ -244,162 +293,80 @@ class MRDisplay {
 
   submitFrame() {}
 
-  clone() {
-    const o = new this.constructor();
-    for (const k in this) {
-      o[k] = this[k];
-    }
-    if (o.session) {
-      o.session = o.session.clone();
-      o.session.device = o;
-    }
-    return o;
-  }
-
   destroy() {
     for (let i = 0; i < this._rafs.length; i++) {
       this.cancelAnimationFrame(this._rafs[i]);
     }
   }
 }
-class VRDisplay extends MRDisplay {
-  constructor(displayName = 'VR') {
-    super(displayName);
 
-    this._frameData = new VRFrameData();
-  }
-
-  getFrameData(frameData) {
-    frameData.leftProjectionMatrix.set(this._frameData.leftProjectionMatrix);
-    frameData.leftViewMatrix.set(this._frameData.leftViewMatrix);
-    frameData.rightViewMatrix.set(this._frameData.rightViewMatrix);
-    frameData.rightProjectionMatrix.set(this._frameData.rightProjectionMatrix);
-    frameData.pose.position.set(this._frameData.pose.position);
-    frameData.pose.orientation.set(this._frameData.pose.orientation);
-  }
-
-  update(update) {
-    const {
-      depthNear,
-      depthFar,
-      renderWidth,
-      renderHeight,
-      leftOffset,
-      leftFov,
-      rightOffset,
-      rightFov,
-      frameData,
-      stageParameters,
-    } = update;
-
-    if (depthNear !== undefined) {
-      this.depthNear = depthNear;
-    }
-    if (depthFar !== undefined) {
-      this.depthFar = depthFar;
-    }
-    if (renderWidth !== undefined) {
-      this._width = renderWidth;
-    }
-    if (renderHeight !== undefined) {
-      this._height = renderHeight;
-    }
-    if (leftOffset !== undefined) {
-      this._leftOffset.set(leftOffset);
-    }
-    if (leftFov !== undefined) {
-      this._leftFov.set(leftFov);
-    }
-    if (rightOffset !== undefined) {
-      this._rightOffset.set(rightOffset);
-    }
-    if (rightFov !== undefined) {
-      this._rightFov.set(rightFov);
-    }
-    if (frameData !== undefined) {
-      this._frameData.copy(frameData);
-    }
-    if (stageParameters !== undefined) {
-      this.stageParameters.copy(stageParameters);
-    }
-  }
-}
-class FakeVRDisplay extends MRDisplay {
-  constructor() {
+class FakeVRDisplay extends VRDisplay {
+  constructor(window) {
     super('FAKE');
+    
+    this.window = window;
 
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
-    this.gamepads = gamepads;
-
+    this.gamepads = [
+      new Gamepad('left', 0),
+      new Gamepad('right', 1),
+    ];
+    for (let i = 0; i < this.gamepads.length; i++) {
+      const gamepad = this.gamepads[i];
+      gamepad.handedness = gamepad.hand;
+      gamepad.pose.targetRay = {
+        transformMatrix: new Float32Array(16),
+      };
+      gamepad.pose._localPointerMatrix = new Float32Array(16);
+    }
     this.isPresenting = false;
-    this.depthNear = 0.1;
-    this.depthFar = 10 * 1024;
-    this._width = defaultCanvasSize[0];
-    this._height = defaultCanvasSize[1];
-    this._leftOffset = Float32Array.from([-defaultEyeSeparation/2, 0, 0]);
-    this._leftFov = Float32Array.from([45, 45, 45, 45]);
-    this._rightOffset = Float32Array.from([defaultEyeSeparation/2, 0, 0]);
-    this._rightFov = Float32Array.from([45, 45, 45, 45]);
     this.stageParameters = new VRStageParameters();
 
-    this._frameData = new VRFrameData();
-    this._stereo = false;
+    this.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
+    this.onvrdisplaypresentchange = () => {
+      setTimeout(() => {
+        const e = new Event('vrdisplaypresentchange');
+        e.display = this;
+        window.dispatchEvent(e);
+      });
+    };
+
+    this._layers = [];
+    this._onends = [];
+    this._lastPresseds = [false, false];
+
+    // this._frameData = new VRFrameData();
   }
 
-  setSize(width, height) {
-    this._width = this._stereo ? width*2 : width;
-    this._height = height;
+  get depthNear() {
+    return GlobalContext.xrState.depthNear[0];
+  }
+  set depthNear(depthNear) {
+    GlobalContext.xrState.depthNear[0] = depthNear;
+  }
+  get depthFar() {
+    return GlobalContext.xrState.depthFar[0];
+  }
+  set depthFar(depthFar) {
+    GlobalContext.xrState.depthFar[0] = depthFar;
   }
 
-  getStereo(newStereo) {
-    return this._stereo;
-  }
-  setStereo(newStereo) {
-    if (!this._stereo && newStereo) {
-      this._width *= 2;
-    } else if (this._stereo && !newStereo) {
-      this._width /= 2;
-    }
-    this._stereo = newStereo;
-  }
-
-  update() {
-    if (!this._stereo) {
-      localMatrix.compose(
-        this.position,
-        this.quaternion,
-        localVector.set(1, 1, 1)
-      )
-       .getInverse(localMatrix)
-       .toArray(this._frameData.leftViewMatrix);
-      localMatrix.toArray(this._frameData.rightViewMatrix);
-      this._frameData.pose.set(this.position, this.quaternion);
-    } else {
-      localMatrix.compose(
-        localVector.copy(this.position)
-          .add(localVector2.set(-0.1, 0, 0).applyQuaternion(this.quaternion)),
-        this.quaternion,
-        localVector2.set(1, 1, 1)
-      )
-       .getInverse(localMatrix)
-       .toArray(this._frameData.leftViewMatrix);
-       
-     localMatrix.compose(
-        localVector.copy(this.position)
-          .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
-        this.quaternion,
-        localVector2.set(1, 1, 1)
-      )
-       .getInverse(localMatrix)
-       .toArray(this._frameData.rightViewMatrix);
-
-      this._frameData.pose.set(this.position, this.quaternion);
-    }
-  }
+  /* setSize(width, height) {
+    GlobalContext.xrState.renderWidth[0] = width;
+    GlobalContext.xrState.renderHeight[0] = height;
+  } *?
+  
+  /* setProjection(projectionMatrix) {
+    GlobalContext.xrState.leftProjectionMatrix.set(projectionMatrix);
+    GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
+  } */
 
   requestPresent() {
     this.isPresenting = true;
+    
+    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio;
+    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
 
     if (this.onvrdisplaypresentchange) {
       this.onvrdisplaypresentchange();
@@ -417,10 +384,120 @@ class FakeVRDisplay extends MRDisplay {
 
     return Promise.resolve();
   }
+  
+  requestSession({exclusive = true} = {}) {
+    const self = this;
 
-  getFrameData(frameData) {
-    frameData.copy(this._frameData);
+    const session = {
+      addEventListener(e, fn) {
+        if (e === 'end') {
+          self._onends.push(fn);
+        }
+      },
+      device: self,
+      baseLayer: null,
+      // layers,
+      _frame: null, // defer
+      getInputSources() {
+        return this.device.gamepads;
+      },
+      requestFrameOfReference() {
+        return Promise.resolve({});
+      },
+      requestAnimationFrame(fn) {
+        return this.device.onrequestanimationframe(timestamp => {
+          fn(timestamp, this._frame);
+        });
+      },
+      end() {
+        for (let i = 0; i < self._onends.length; i++) {
+          self._onends[i]();
+        }
+        return self.exitPresent();
+      },
+    };
+
+    const {xrState} = GlobalContext;
+    const _frame = {
+      session,
+      views: [{
+        eye: 'left',
+        projectionMatrix: xrState.leftProjectionMatrix,
+        _viewport: {
+          x: 0,
+          y: 0,
+          width: xrState.renderWidth[0],
+          height: xrState.renderHeight[0],
+        },
+      }],
+      _pose: null, // defer
+      getDevicePose() {
+        return this._pose;
+      },
+      getInputPose(inputSource, coordinateSystem) {
+        localMatrix.fromArray(inputSource.pose._localPointerMatrix);
+
+        const {xrOffset} = self.window.document;
+        if (xrOffset) {
+          localMatrix
+            .premultiply(
+              localMatrix2.compose(
+                localVector.fromArray(xrOffset.position),
+                localQuaternion.fromArray(xrOffset.orientation),
+                localVector2.fromArray(xrOffset.scale)
+              )
+              .getInverse(localMatrix2)
+            );
+        }
+
+        localMatrix.toArray(inputSource.pose.targetRay.transformMatrix);
+
+        return inputSource.pose; // XXX or _pose
+      },
+    };
+    session._frame = _frame;
+    const _pose = {
+      frame: _frame,
+      getViewMatrix(view) {
+        const viewMatrix = view.eye === 'left' ? xrState.leftViewMatrix : xrState.rightViewMatrix;
+
+        const {xrOffset} = self.window.document;
+        if (xrOffset) {
+          localMatrix
+            .fromArray(viewMatrix)
+            .multiply(
+              localMatrix2.compose(
+                localVector.fromArray(xrOffset.position),
+                localQuaternion.fromArray(xrOffset.orientation),
+                localVector2.fromArray(xrOffset.scale)
+              )
+            )
+            .toArray(localViewMatrix);
+        } else {
+          localViewMatrix.set(viewMatrix);
+        }
+        return localViewMatrix;
+      },
+    };
+    _frame._pose = _pose;
+
+    return Promise.resolve(session);
   }
+  
+  get layers() {
+    return this._layers;
+  }
+  set layers(layers) {
+    this._layers = layers;
+
+    if (this.onlayers) {
+      this.onlayers(layers);
+    }
+  }
+
+  /* getFrameData(frameData) {
+    frameData.copy(this._frameData);
+  } */
 
   getLayers() {
     if (!this._stereo) {
@@ -444,29 +521,96 @@ class FakeVRDisplay extends MRDisplay {
   
   getEyeParameters(eye) {
     const result = super.getEyeParameters(eye);
-    if (this._stereo) {
-      result.renderWidth /= 2;
+    if (eye === 'right') {
+      result.renderWidth = 0;
     }
     return result;
   }
   
   waitGetPoses() {
-    if (this.onwaitgetposes) {
-      this.onwaitgetposes();
+    // update hmd
+    this.position.toArray(GlobalContext.xrState.position);
+    this.quaternion.toArray(GlobalContext.xrState.orientation);
+    
+    localMatrix.compose(
+      this.position,
+      this.quaternion,
+      localVector2.set(1, 1, 1)
+    )
+     .getInverse(localMatrix)
+     .toArray(GlobalContext.xrState.leftViewMatrix);
+     
+    /* localMatrix.compose(
+      localVector.copy(this.position)
+        .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
+      this.quaternion,
+      localVector2.set(1, 1, 1)
+    )
+     .getInverse(localMatrix)
+     .toArray(GlobalContext.xrState.rightViewMatrix); */
+
+    // update gamepads
+    for (let i = 0; i < this.gamepads.length; i++) {
+      const gamepad = this.gamepads[i];
+      localVector.copy(this.position)
+        .add(
+          localVector2.set(-0.3 + i*0.6, -0.3, 0)
+            .applyQuaternion(this.quaternion)
+        ).toArray(gamepad.pose.position);
+      this.quaternion.toArray(gamepad.pose.orientation);
+
+      localMatrix2
+        .compose(
+          localVector.fromArray(gamepad.pose.position),
+          localQuaternion.fromArray(gamepad.pose.orientation),
+          localVector2.set(1, 1, 1)
+        )
+        .toArray(gamepad.pose._localPointerMatrix);
+    }
+
+    // emit gamepad events
+    for (let i = 0; i < this.gamepads.length; i++) {
+      const gamepad = this.gamepads[i];
+      const pressed = gamepad.buttons[1].pressed;
+      const lastPressed = this._lastPresseds[i];
+      if (pressed && !lastPressed) {
+        this.emit('selectstart', new GlobalContext.XRInputSourceEvent('selectstart', {
+          frame: this._frame,
+          inputSource: gamepad,
+        }));
+        this.emit('select', new GlobalContext.XRInputSourceEvent('select', {
+          frame: this._frame,
+          inputSource: gamepad,
+        }));
+      } else if (lastPressed && !pressed) {
+        this.emit('selectend', new GlobalContext.XRInputSourceEvent('selectend', {
+          frame: this._frame,
+          inputSource: gamepad,
+        }));
+      }
+      this._lastPresseds[i] = pressed;
     }
   }
 }
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const gamepads =  [
-  new Gamepad('left', 0),
-  new Gamepad('right', 1),
-];
-const getGamepads = () => gamepads;
+const getGamepads = (() => {
+  let gamepads = null;
+  
+  return () => {
+    if (!gamepads) {
+      gamepads = [
+        new Gamepad('left', 0),
+        new Gamepad('right', 1),
+      ];
+    }
+    return gamepads;
+  };
+})();
+GlobalContext.getGamepads = getGamepads;
 
 module.exports = {
-  MRDisplay,
   VRDisplay,
   FakeVRDisplay,
   VRFrameData,
