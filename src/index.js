@@ -54,6 +54,8 @@ const eventLoopNative = require('event-loop-native');
 nativeBindings.nativeWindow.setEventLoop(eventLoopNative);
 
 const GlobalContext = require('./GlobalContext');
+GlobalContext.args = {};
+GlobalContext.version = '';
 GlobalContext.commands = [];
 
 const args = (() => {
