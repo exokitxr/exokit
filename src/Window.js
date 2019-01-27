@@ -801,9 +801,11 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   window.postMessage = function(data) {
-    setImmediate(() => {
-      window._emit('message', new MessageEvent('message', {data}));
-    });
+    if (window.top === window) {
+      setImmediate(() => {
+        window._emit('message', new MessageEvent('message', {data}));
+      });
+    }
   };
   /*
     Treat function onload() as a special case that disables automatic event attach for onload, because this is how browsers work. E.g.
