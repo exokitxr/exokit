@@ -8,7 +8,6 @@ const exokitNode = (() => {
   process.chdir(oldCwd);
   return exokitNode;
 })();
-const WindowWorker = require('window-worker');
 const vmOne = require('vm-one');
 const webGlToOpenGl = require('webgl-to-opengl');
 const GlobalContext = require('./GlobalContext');
@@ -17,7 +16,6 @@ const bindings = {};
 for (const k in exokitNode) {
   bindings[k] = exokitNode[k];
 }
-bindings.nativeWorker = WindowWorker;
 bindings.nativeVm = vmOne;
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {
