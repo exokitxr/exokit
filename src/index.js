@@ -276,10 +276,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         process.exit();
       }
     })(gl.destroy);
-
-    canvas.ownerDocument.defaultView.on('unload', () => {
-      gl.destroy();
-    });
   } else {
     gl.destroy();
   }
