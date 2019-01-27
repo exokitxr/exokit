@@ -10,6 +10,34 @@ const _makeWindow = (options = {}) => {
   window.tickAnimationFrame = () => {
     window.runDetached(`window.tickAnimationFrame();`);
   };
+  {
+    const requestHandlers = {};
+    window.setRequestHandler = (method, handler) => {
+      requestHandlers[method] = handler;
+    };
+    window.oninternalmessage = async m => {
+      switch (m.type) {
+        case 'postRequestAsync': {
+          const handler = requestHandlers[m.method];
+          if (handler) {
+            let result, error;
+            try {
+              result = await handler(args);
+            } catch(err) {
+              error = err;
+            }
+            window,postInternalMessage({
+              type: 'postRequestAsync',
+              id: m.id,
+              result,
+              error,
+            });
+          }
+          break;
+        }
+      }
+    };
+  }
   window.on('exit', () => {
     window.emit('destroy');
   });
