@@ -11,13 +11,11 @@ const {isMainThread} = require('worker_threads');
 })(); */
 const {
   exokitNode,
-  WindowWorker,
   vmOne,
 } = (() => {
   if (isMainThread) {
     return {
      exokitNode: require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node')),
-     WindowWorker: require('window-worker'),
      vmOne: require('vm-one'),
     };
   } else {
@@ -31,7 +29,6 @@ const bindings = {};
 for (const k in exokitNode) {
   bindings[k] = exokitNode[k];
 }
-bindings.nativeWorker = WindowWorker;
 bindings.nativeVm = vmOne;
 const isAndroid = bindings.nativePlatform === 'android';
 const glslVersion = isAndroid ? '300 es' : '330';
