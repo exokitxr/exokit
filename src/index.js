@@ -129,11 +129,9 @@ const dataPath = (() => {
 })();
 const MLSDK_PORT = 17955;
 
-const contexts = [];
-GlobalContext.contexts = contexts;
-const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
-
 const windows = [];
+const contexts = [];
+const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
