@@ -592,4 +592,367 @@ GlobalContext.nativeVr = bindings.nativeVr;
 GlobalContext.nativeMl = bindings.nativeMl;
 GlobalContext.nativeBrowser = bindings.nativeBrowser;
 
+if (nativeVr) {
+  nativeVr.requestPresent = async function(layers) { // XXX handle this inside window context
+    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+    if (layer) {
+      const canvas = layer.source;
+      
+      if (!vrPresentState.glContext) {
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
+        }
+        const window = canvas.ownerDocument.defaultView;
+
+        await window.postRequest({ // XXX implement these
+          method: 'requestPresentVr',
+        });
+        
+        const windowHandle = context.getWindowHandle();
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
+        const vrContext = vrPresentState.vrContext || nativeVr.getContext();
+        const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+        const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
+
+        // const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
+
+        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        const width = halfWidth * 2;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
+
+        const cleanups = [];
+
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+
+        context.setDefaultFramebuffer(msFbo);
+
+        vrPresentState.isPresenting = true; // XXX make these objects use SharedArrayBuffer
+        vrPresentState.vrContext = vrContext; // XXX bubble this up to the top for WaitGetPoses/SubmitFrame
+        vrPresentState.system = system;
+        vrPresentState.compositor = compositor;
+        vrPresentState.glContext = context;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.msDepthTex = msDepthTex;
+        vrPresentState.fbo = fbo;
+        vrPresentState.tex = tex;
+        vrPresentState.depthTex = depthTex;
+        vrPresentState.cleanups = cleanups;
+
+        // vrPresentState.lmContext = lmContext;
+
+        canvas.framebuffer = { // XXX bubble this up to the top for layers support
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+
+        const _attribute = (name, value) => {
+          if (name === 'width' || name === 'height') {
+            nativeWindow.setCurrentWindowContext(windowHandle);
+
+            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+          }
+        };
+        canvas.on('attribute', _attribute);
+        cleanups.push(() => {
+          canvas.removeListener('attribute', _attribute);
+        });
+
+        return canvas.framebuffer;
+      } else if (canvas.ownerDocument.framebuffer) {
+        const {width, height} = canvas;
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
+        return {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+      } else {
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+        return {
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+      }
+    } else {
+      throw new Error('no HTMLCanvasElement source provided');
+    }
+  };
+  nativeVr.exitPresent = await function() {
+    await window.postRequest({
+      method: 'exitPresentVr',
+    });
+    
+    if (vrPresentState.isPresenting) {
+      nativeVr.VR_Shutdown();
+
+      nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
+      nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
+
+      const context = vrPresentState.glContext;
+      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      context.setDefaultFramebuffer(0);
+
+      for (let i = 0; i < vrPresentState.cleanups.length; i++) {
+        vrPresentState.cleanups[i]();
+      }
+
+      vrPresentState.isPresenting = false;
+      vrPresentState.system = null;
+      vrPresentState.compositor = null;
+      vrPresentState.glContext = null;
+      vrPresentState.msFbo = null;
+      vrPresentState.msTex = null;
+      vrPresentState.msDepthTex = null;
+      vrPresentState.fbo = null;
+      vrPresentState.tex = null;
+      vrPresentState.depthTex = null;
+      vrPresentState.cleanups = null;
+    }
+
+    return Promise.resolve();
+  };
+}
+
+if (nativeMl) {
+  mlPresentState.mlContext = new nativeMl(); // XXX move this to on present
+  nativeMl.requestPresent = async function(layers) { // XXX handle this inside window context
+    await window.postRequest({
+      method: 'requestPresentMl',
+    });
+  
+    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+    if (layer) {
+      const canvas = layer.source;
+      
+      if (!mlPresentState.mlGlContext) {
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
+        }
+
+        const windowHandle = context.getWindowHandle();
+        nativeWindow.setCurrentWindowContext(windowHandle);
+
+        mlPresentState.mlContext.Present(windowHandle, context);
+
+        const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();
+        const width = halfWidth * 2;
+
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        mlPresentState.mlContext.SetContentTexture(tex);
+        /* const {
+          width: halfWidth,
+          height,
+          fbo,
+          colorTex: tex,
+          depthStencilTex: depthTex,
+          msFbo,
+          msColorTex: msTex,
+          msDepthStencilTex: msDepthTex,
+        } = initResult; */
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
+
+        mlPresentState.mlFbo = fbo;
+        mlPresentState.mlTex = tex;
+        mlPresentState.mlDepthTex = depthTex;
+        mlPresentState.mlMsFbo = msFbo;
+        mlPresentState.mlMsTex = msTex;
+        mlPresentState.mlMsDepthTex = msDepthTex;
+
+        canvas.framebuffer = {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+
+        const cleanups = [];
+        mlPresentState.mlCleanups = cleanups;
+
+        const _attribute = (name, value) => {
+          if (name === 'width' || name === 'height') {
+            nativeWindow.setCurrentWindowContext(windowHandle);
+
+            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+          }
+        };
+        canvas.on('attribute', _attribute);
+        cleanups.push(() => {
+          canvas.removeListener('attribute', _attribute);
+        });
+
+        context.setDefaultFramebuffer(msFbo);
+
+        mlPresentState.mlGlContext = context;
+
+        return canvas.framebuffer;
+      } else if (canvas.ownerDocument.framebuffer) {
+        const {width, height} = canvas;
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
+        
+        return {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+      } else {
+        return {
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
+          msFbo: mlPresentState.mlMsFbo,
+          msTex: mlPresentState.mlMsTex,
+          msDepthTex: mlPresentState.mlMsDepthTex,
+          fbo: mlPresentState.mlFbo,
+          tex: mlPresentState.mlTex,
+          depthTex: mlPresentState.mlDepthTex,
+        };
+      }
+    } else {
+      throw new Error('no HTMLCanvasElement source provided');
+    }
+  };
+  nativeMl.exitPresent = function() {
+    await window.postRequest({
+      method: 'exitPresentMl',
+    });
+    
+    nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
+    nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
+
+    nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle());
+    mlPresentState.mlGlContext.setDefaultFramebuffer(0);
+
+    for (let i = 0; i < mlPresentState.mlCleanups.length; i++) {
+      mlPresentState.mlCleanups[i]();
+    }
+
+    mlPresentState.mlFbo = null;
+    mlPresentState.mlTex = null;
+    mlPresentState.mlDepthTex = null;
+    mlPresentState.mlMsFbo = null;
+    mlPresentState.mlMsTex = null;
+    mlPresentState.mlMsDepthTex = null;
+    mlPresentState.mlGlContext = null;
+    mlPresentState.mlCleanups = null;
+    mlPresentState.mlHasPose = false;
+  };
+
+  const _mlLifecycleEvent = e => {
+    console.log('got ml lifecycle event', e);
+
+    switch (e) {
+      case 'newInitArg': {
+        break;
+      }
+      case 'stop':
+      case 'pause': {
+        if (mlPresentState.mlContext) {
+          mlPresentState.mlContext.Exit();
+        }
+        nativeMl.DeinitLifecycle();
+        process.exit();
+        break;
+      }
+      case 'resume': {
+        break;
+      }
+      case 'unloadResources': {
+        break;
+      }
+      default: {
+        console.warn('invalid ml lifecycle event', e);
+        break;
+      }
+    }
+  };
+  const _mlKeyboardEvent = e => {
+    // console.log('got ml keyboard event', e);
+
+    if (mlPresentState.mlGlContext) {
+      const {canvas} = mlPresentState.mlGlContext; // XXX handle this per-window, like native window
+      const window = canvas.ownerDocument.defaultView;
+
+      switch (e.type) {
+        case 'keydown': {
+          let handled = false;
+          if (e.keyCode === 27) { // ESC
+            if (window.top.document.pointerLockElement) {
+              window.top.document.exitPointerLock();
+              handled = true;
+            }
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            }
+          }
+          if (e.keyCode === 122) { // F11
+            if (window.top.document.fullscreenElement) {
+              window.top.document.exitFullscreen();
+              handled = true;
+            } else {
+              window.top.document.requestFullscreen();
+              handled = true;
+            }
+          }
+
+          if (!handled) {
+            canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+          }
+          break;
+        }
+        case 'keyup':
+        case 'keypress': {
+          canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  };
+  if (!nativeMl.IsSimulated()) {
+    nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+  } else {
+    // try to connect to MLSDK
+    const MLSDK_PORT = 17955;
+    const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
+      s.destroy();
+
+      nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+    });
+    s.on('error', () => {});
+  }
+}
+
 module.exports = bindings;
