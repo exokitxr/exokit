@@ -1,21 +1,13 @@
 const url = require('url');
 const {URL} = url;
 
-const {_makeWindowWithDocument} = require('./WindowVm');
+const {Event, EventTarget} = require('./Event');
 
 const fetch = require('window-fetch');
-
-const THREE = require('../lib/three-min.js');
-
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-
-const {Event, EventTarget} = require('./Event');
-const utils = require('./utils');
-const {_download} = utils;
-
-GlobalContext.args = {};
-GlobalContext.version = '';
+const {_getBaseUrl, _download} = require('./utils');
+const {_makeWindowWithDocument} = require('./WindowVm');
 
 const maxParallelResources = 8;
 class Resource {
@@ -300,7 +292,7 @@ exokit.load = (src, options = {}) => {
       if (options.baseUrl) {
         baseUrl = options.baseUrl;
       } else {
-        baseUrl = utils._getBaseUrl(src);
+        baseUrl = _getBaseUrl(src);
       }
 
       return exokit(htmlString, {
@@ -323,7 +315,6 @@ exokit.download = (src, dst) => exokit.load(src, {
       accept();
     });
   }));
-exokit.THREE = THREE;
 exokit.setArgs = newArgs => {
   GlobalContext.args = newArgs;
 };
