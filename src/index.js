@@ -159,7 +159,7 @@ const localFloat32Array4 = new Float32Array(16);
 const localFovArray = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
-const handEntrySize = (1 + (5 * 5)) * (3 + 3);
+// const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
 /* const handsArray = [
