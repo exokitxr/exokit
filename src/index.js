@@ -1189,11 +1189,6 @@ const _startRenderLoop = () => {
       _normalizeMatrixArray(localFloat32Array3);
 
       // build xr state
-      xrState.renderWidth[0] = renderWidth;
-      xrState.renderHeight[0] = renderHeight;
-      xrState.depthNear[0] = depthNear;
-      xrState.depthFar[0] = depthFar;
-
       const hmdMatrix = localMatrix.fromArray(localFloat32Array);
 
       hmdMatrix.decompose(localVector, localQuaternion, localVector2);
