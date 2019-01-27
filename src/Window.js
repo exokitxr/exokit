@@ -800,6 +800,36 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       rafCbs[index] = null;
     }
   };
+  {
+    const requestCbs = {};
+    let requestId = 0;
+    window.postRequestAsync = (method, args) => {
+      const id = ++requestId;
+      window.postInternalMessage({
+        type: 'postRequestAsync',
+        method,
+        args,
+        id,
+      });
+      return new Promise((accept, reject) => {
+        requestCbs[id] = {accept, reject};
+      });
+    };
+    window.oninternalmessage = m => {
+      switch (m.type) {
+        case 'postRequestAsync': {
+          const requestCb = requestCbs[m.id];
+          if (!m.errorr) {
+            requestCb.accept(m.result);
+          } else {
+            requestCb.reject(m.error);
+          }
+          delete requestCbs[m.id];
+          break;
+        }
+      }
+    };
+  }
   window.postMessage = function(data) {
     if (window.top === window) {
       setImmediate(() => {
