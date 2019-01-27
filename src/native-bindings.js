@@ -9,6 +9,7 @@ const exokitNode = (() => {
   return exokitNode;
 })();
 const vmOne = require('vm-one');
+const {nativeWindow} = exokitNode;
 const webGlToOpenGl = require('webgl-to-opengl');
 const GlobalContext = require('./GlobalContext');
 
@@ -64,7 +65,6 @@ const _onGl3DConstruct = (gl, canvas) => {
   const document = canvas.ownerDocument;
   const window = document.defaultView;
 
-  const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
     if (!args.headless) {
       try {
@@ -86,7 +86,7 @@ const _onGl3DConstruct = (gl, canvas) => {
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
-    nativeBindings.nativeWindow.setEventHandler(windowHandle, (type, data) => {
+    nativeWindow.setEventHandler(windowHandle, (type, data) => {
       switch (type) {
         case 'focus': {
           const {focused} = data;
@@ -288,7 +288,7 @@ const _onGl3DConstruct = (gl, canvas) => {
       nativeWindow.setCurrentWindowContext(windowHandle);
 
       if (gl === vrPresentState.glContext) {
-        nativeBindings.nativeVr.VR_Shutdown();
+        nativeVr.VR_Shutdown();
 
         vrPresentState.glContext = null;
         vrPresentState.system = null;
@@ -367,7 +367,7 @@ const _onGl2DConstruct = (ctx, canvas) => {
     if (!window[symbols.optionsSymbol].args.headless) {
       try {
         const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-        return nativeBindings.nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
+        return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
       } catch (err) {
         console.warn(err.message);
         return null;
