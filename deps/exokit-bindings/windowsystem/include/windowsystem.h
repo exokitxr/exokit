@@ -71,6 +71,8 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
 NAN_METHOD(CreateRenderTarget);
 NAN_METHOD(ResizeRenderTarget);
 NAN_METHOD(DestroyRenderTarget);
+NAN_METHOD(GetSync);
+NAN_METHOD(WaitSync);
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
 NAN_METHOD(ComposeLayers);
 NAN_METHOD(GetEventLoop);
