@@ -234,20 +234,22 @@ const _makeWindow = (options = {}) => {
     switch (m.type) {
       case 'postRequestAsync': {
         const handler = requestHandlers[m.method];
+        let result, error;
         if (handler) {
-          let result, error;
           try {
             result = await handler(args);
           } catch(err) {
             error = err;
           }
-          window,postInternalMessage({
-            type: 'postRequestAsync',
-            id: m.id,
-            result,
-            error,
-          });
+        } else {
+          error = new Error(`method not found: ${m.method}`);
         }
+        window.postInternalMessage({
+          type: 'postRequestAsync',
+          id: m.id,
+          result,
+          error,
+        });
         break;
       }
     }
