@@ -4,7 +4,10 @@ const GlobalContext = require('./GlobalContext');
 const _makeWindow = (options = {}) => {
   const window = nativeWorker.make({
     initModule: path.join(__dirname, 'Window.js'),
-    args: options,
+    args: {
+      options,
+      xrState: GlobalContext.xrState,
+    },
   });
   
   window.tickAnimationFrame = () => window.runAsync(`return window.tickAnimationFrame();`);

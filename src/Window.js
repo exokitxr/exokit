@@ -11,7 +11,14 @@ const util = require('util');
 const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
 const {performance} = require('perf_hooks');
-const {workerData: {args: options}} = require('worker_threads');
+const {
+  workerData: {
+    args: {
+      options,
+      xrState,
+    },
+  },
+} = require('worker_threads');
 
 const {FileReader} = require('./File.js');
 
@@ -102,8 +109,9 @@ const {
   nativeOculusVR
 } = bindings;
 
-GlobalContext.args = {};
-GlobalContext.version = '';
+// GlobalContext.args = {};
+// GlobalContext.version = '';
+GlobalContext.xrState = xrState;
 
 // Class imports.
 const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
