@@ -383,7 +383,7 @@ const _onGl2DConstruct = (ctx, canvas) => {
   const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.headless) {
       try {
-        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null; // XXX use top level gl context for sharing
         return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
       } catch (err) {
         console.warn(err.message);
