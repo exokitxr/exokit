@@ -102,7 +102,7 @@ const _onGl3DConstruct = (gl, canvas) => {
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
-    nativeWindow.setEventHandler(windowHandle, (type, data) => { // XXX ensure these are called in the window's event loop
+    nativeWindow.setEventHandler(windowHandle, (type, data) => {
       switch (type) {
         case 'focus': {
           const {focused} = data;
