@@ -25,6 +25,16 @@ typedef GLFWwindow NATIVEwindow;
 #define windowsystem glfw
 
 namespace glfw {
+  class EventHandler {
+  public:
+    EventHandler(NATIVEwindow *window, uv_async_t *async, Local<Function> handlerFn);
+    
+    NATIVEwindow *window;
+    uv_async_t *async;
+    Nan::Persistent<Function> handlerFn;
+    std::deque<std::function<void(Local<Function>)>> fns;
+  };
+  
   NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow);
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   void GetFramebufferSize(NATIVEwindow *window, int *width, int *height);

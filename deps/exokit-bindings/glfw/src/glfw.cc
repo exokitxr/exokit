@@ -6,6 +6,36 @@
 
 namespace glfw {
 
+/* @Module: Window handling */
+thread_local NATIVEwindow *currentWindow = nullptr;
+thread_local std::map<NATIVEwindow *, EventHandler *> eventHandlerMap;
+thread_local std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
+thread_local std::mutex eventHandlerMapMutex;
+int lastX = 0, lastY = 0; // XXX track this per-window
+
+EventHandler::EventHandler(NATIVEwindow *window, uv_async_t *async, Local<Function> handlerFn) : window(window), async(async), handlerFn(handlerFn) {}
+
+void RunEventInMainThread(uv_async_t *async) {
+  Nan::HandleScope scope;
+
+  std::deque<std::function<void()>> localFns;
+  Local<Function> handlerFn;
+  {
+    std::lock_guard lock(eventHandlerMapMutex);
+    
+    EventHandler *handler = eventHandlerMap2[async];
+    localFns = std::move(handler->fns);
+    handler->fns.clear();
+    
+    handlerFn = Nan::New(handler->handlerFn);
+  } 
+  for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
+    Nan::HandleScope scope;
+
+    (*iter)(handlerFn);
+  }
+}
+
 GLFWmonitor* _activeMonitor;
 GLFWmonitor* getMonitor() {
   if (_activeMonitor) {
@@ -97,12 +127,6 @@ NAN_METHOD(SetMonitor) {
   _activeMonitor = monitors[index];
 }
 
-/* @Module: Window handling */
-thread_local NATIVEwindow *currentWindow = nullptr;
-thread_local std::map<NATIVEwindow *, Nan::Persistent<Function>> eventHandlerMap;
-thread_local std::mutex eventHandlerMapMutex;
-int lastX = 0, lastY = 0; // XXX track this per-window
-
 /* void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   if (eventHandler && !(*eventHandler).IsEmpty()) {
     Local<Function> eventHandlerFn = Nan::New(*eventHandler);
@@ -110,25 +134,21 @@ int lastX = 0, lastY = 0; // XXX track this per-window
   }
 } */
 
-Local<Function> GetWindowEventHandler(NATIVEwindow *window) {
-  Local<Function> result; 
+void QueueEvent(NATIVEwindow *window, std::function<void(Local<Function>)> fn) {
+  EventHandler *eventHandler;
   {
     std::lock_guard lock(eventHandlerMapMutex);
     
-    auto iter = eventHandlerMap.find(window);
-    if (iter != iter.end(eventHandlerMap)) {
-      result = Nan::New(iter->second);
-    }
+    eventHandler = eventHandlerMap[window];
+    eventHandler->fns.push_back(fn);
   }
-  return result;
-]
+  
+  uv_async_send(eventHandler->async);
+}
 
 // Window callbacks handling
 void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
-  Nan::HandleScope scope;
-  
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("window_pos"));
     evt->Set(JS_STR("xpos"),JS_INT(xpos));
@@ -139,15 +159,12 @@ void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
       JS_STR("window_pos"), // event name
       evt,
     };
-    eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+    handlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("resize"));
     evt->Set(JS_STR("width"),JS_INT(w));
@@ -159,14 +176,11 @@ void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 void APIENTRY windowFramebufferSizeCB(NATIVEwindow *window, int w, int h) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
     evt->Set(JS_STR("width"),JS_INT(w));
@@ -178,17 +192,23 @@ void APIENTRY windowFramebufferSizeCB(NATIVEwindow *window, int w, int h) {
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 void APIENTRY windowDropCB(NATIVEwindow *window, int count, const char **paths) {
-  Nan::HandleScope scope;
+  std::vector<char *> localPaths(count);
+  for (int i = 0; i < count; i++) {
+    const char *path = paths[i];
+    size_t size = strlen(path) + 1;
+    char *localPath = new char[size];
+    memcpy(localPath, path, size);
+    localPaths[i] = localPath;
+  }
 
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
-    Local<Array> pathsArray = Nan::New<Array>(count);
-    for (int i = 0; i < count; i++) {
-      pathsArray->Set(i, JS_STR(paths[i]));
+  QueueEvent(window, [localPaths{std::move(localPaths)}](Local<Function> eventHandlerFn) -> void {
+    Local<Array> pathsArray = Nan::New<Array>(localPaths.size());
+    for (int i = 0; i < localPaths.size(); i++) {
+      pathsArray->Set(i, JS_STR(localPaths[i]));
     }
 
     Local<Object> evt = Nan::New<Object>();
@@ -200,14 +220,15 @@ void APIENTRY windowDropCB(NATIVEwindow *window, int count, const char **paths) 
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+    
+    for (int i = 0; i < localPaths.size(); i++) {
+      delete[] localPaths[i];
+    }
+  });
 }
 
 void APIENTRY windowCloseCB(NATIVEwindow *window) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
@@ -216,14 +237,11 @@ void APIENTRY windowCloseCB(NATIVEwindow *window) {
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 void APIENTRY windowRefreshCB(NATIVEwindow *window) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("refresh"));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
@@ -233,14 +251,11 @@ void APIENTRY windowRefreshCB(NATIVEwindow *window) {
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("iconified"));
     evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
@@ -251,14 +266,11 @@ void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("focused"));
     evt->Set(JS_STR("focused"),JS_BOOL(focused));
@@ -269,7 +281,7 @@ void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 static int jsKeyCode[]={
@@ -347,10 +359,7 @@ static int jsKeyCode[]={
 
 const char *actionNames = "keyup\0  keydown\0keypress";
 void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int mods) {
-  Nan::HandleScope scope;
-  
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     if (key >= 0) { // media keys are -1
       bool isPrintable = true;
       switch (key) {
@@ -533,14 +542,11 @@ void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int
         keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
       }
     }
-  }
+  });
 }
 
 void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {  
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {  
     int w, h;
     glfwGetWindowSize(window, &w, &h);
     if(x<0 || x>=w) return;
@@ -582,14 +588,11 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("mouseenter"));
     evt->Set(JS_STR("entered"),JS_INT(entered));
@@ -600,14 +603,11 @@ void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
       evt,
     };
     eventHandler->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mods) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     {
       Local<Object> evt = Nan::New<Object>();
       evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
@@ -655,14 +655,11 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
       };
       eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
     }
-  }
+  });
 }
 
 void APIENTRY scrollCB(NATIVEwindow *window, double xoffset, double yoffset) {
-  Nan::HandleScope scope;
-
-  Local<Function> eventHandlerFn = GetWindowEventHandler(window);
-  if (eventHandlerFn) {
+  QueueEvent(window, [=](Local<Function> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("wheel"));
     evt->Set(JS_STR("deltaX"),JS_NUM(-xoffset*120));
@@ -676,7 +673,7 @@ void APIENTRY scrollCB(NATIVEwindow *window, double xoffset, double yoffset) {
       evt,
     };
     eventHandlerFn->Call(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+  });
 }
 
 /* NAN_METHOD(testJoystick) {
@@ -1341,21 +1338,29 @@ NAN_METHOD(Destroy) {
   
   {
     std::lock_guard lock(eventHandlerMapMutex);
-    
+
+    EventHandler *handler = eventHandlerMap[window];
     eventHandlerMap.erase(window);
+    eventHandlerMap2.erase(handler->async);
+    delete handler;
   }
 }
 
 NAN_METHOD(SetEventHandler) {
   if (info[0]->IsArray() && info[1]->IsFunction()) {
     Local<Array> windowHandle = Local<Array>::Cast(info[0]);
-    Local<Function> handler = Local<Function>::Cast(info[1]);
+    Local<Function> handlerFn = Local<Function>::Cast(info[1]);
     
     NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
     {
       std::lock_guard lock(eventHandlerMapMutex);
+
+      uv_async_t *async = new uv_async_t();
+      uv_async_init(windowsystem::GetEventLoop(), async, RunEventInMainThread);
+      EventHandler *handler = new EventHandler(window, async, handlerFn);
       
-      eventHandlerMap.emplace(window, handler);
+      eventHandlerMap[window] = handler;
+      eventHandlerMap2[async] = handler;
     }
   } else {
     Nan::ThrowError("SetEventHandler: invalid arguments");
