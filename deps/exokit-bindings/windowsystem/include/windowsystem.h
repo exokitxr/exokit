@@ -73,6 +73,7 @@ NAN_METHOD(ResizeRenderTarget);
 NAN_METHOD(DestroyRenderTarget);
 NAN_METHOD(GetSync);
 NAN_METHOD(WaitSync);
+NAN_METHOD(DeleteSync);
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
 NAN_METHOD(ComposeLayers);
 NAN_METHOD(GetEventLoop);
