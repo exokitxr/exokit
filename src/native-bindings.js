@@ -86,8 +86,8 @@ const _onGl3DConstruct = (gl, canvas) => {
       try {
         const visible = document.documentElement.contains(canvas);
         const {hidden} = document;
-        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null; // XXX use top level gl context for sharing
-        return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
+        const windowHandle = Array.from(GlobalContext.xrState.windowHandle);
+        return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, windowHandle, gl);
       } catch (err) {
         console.warn(err.message);
         return null;
@@ -383,8 +383,8 @@ const _onGl2DConstruct = (ctx, canvas) => {
   const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.headless) {
       try {
-        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null; // XXX use top level gl context for sharing
-        return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
+        const windowHandle = Array.from(GlobalContext.xrState.windowHandle);
+        return nativeWindow.create2d(canvasWidth, canvasHeight, windowHandle);
       } catch (err) {
         console.warn(err.message);
         return null;
