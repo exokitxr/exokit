@@ -880,8 +880,11 @@ NAN_METHOD(ComposeLayers) {
 }
 
 thread_local uv_loop_t *eventLoop;
+uv_loop_t *GetEventLoop() {
+  return eventLoop;
+}
 NAN_METHOD(GetEventLoop) {
-  info.GetReturnValue().Set(pointerToArray(eventLoop));
+  info.GetReturnValue().Set(pointerToArray(GetEventLoop()));
 }
 NAN_METHOD(SetEventLoop) {
   if (info[0]->IsArray()) {
