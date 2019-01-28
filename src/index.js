@@ -961,7 +961,7 @@ const _startRenderLoop = () => {
     }
 
     // tick animation frames
-    const syncs = (await Promise.all(windows.map(async window => {
+    const syncs = (await Promise.all(windows.map(async window => { // XXX tick hidden windows first
       const syncs = await window.tickAnimationFrame();
       return syncs.map(({id, sync}) => ({
         window,
