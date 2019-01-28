@@ -299,6 +299,14 @@ NAN_METHOD(Create2D) {
   info.GetReturnValue().Set(result);
 }
 
+NAN_METHOD(CreateNull) {
+  NATIVEwindow *sharedWindow = info[0]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0])) : nullptr;
+  NATIVEwindow *windowHandle = CreateNativeWindow(1, 1, false, sharedWindow);
+  SetCurrentWindowContext(windowHandle);
+
+  info.GetReturnValue().Set(pointerToArray(windowHandle));
+}
+
 NAN_METHOD(Destroy) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   eglDestroyContext(window->display, window->context);
@@ -357,6 +365,7 @@ Local<Object> makeWindow() {
 
   Nan::SetMethod(target, "create3d", egl::Create3D);
   Nan::SetMethod(target, "create2d", egl::Create2D);
+  Nan::SetMethod(target, "createNull", egl::CreateNull);
   Nan::SetMethod(target, "destroy", egl::Destroy);
   Nan::SetMethod(target, "show", egl::Show);
   Nan::SetMethod(target, "hide", egl::Hide);
