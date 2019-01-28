@@ -102,7 +102,7 @@ const _onGl3DConstruct = (gl, canvas) => {
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
-    nativeWindow.setEventHandler(windowHandle, (type, data) => { // XXX make sure these are called in the window's event loop
+    nativeWindow.setEventHandler(windowHandle, (type, data) => { // XXX ensure these are called in the window's event loop
       switch (type) {
         case 'focus': {
           const {focused} = data;
@@ -842,11 +842,12 @@ if (nativeOpenVR) {
 }
 
 if (nativeMl) {
+  let canvas = null;
   const cleanups = [];
   nativeMl.requestPresent = async function(layers) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
-      const canvas = layer.source;
+      canvas = layer.source;
       
       const presentSpec = await window.postInternalMessage({
         type: 'postRequestAsync',
@@ -941,6 +942,7 @@ if (nativeMl) {
       nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle()); // XXX get the real context
       mlPresentState.mlGlContext.setDefaultFramebuffer(0);
 
+      canvas = null;
       for (let i = 0; i < cleanups.length; i++) {
         cleanups[i]();
       }
@@ -976,49 +978,46 @@ if (nativeMl) {
       }
     }
   };
-  const _mlKeyboardEvent = e => { // XXX move this to the parent
+  const _mlKeyboardEvent = e => { // XXX ensure these are called in the window's event loop
     // console.log('got ml keyboard event', e);
 
-    if (mlPresentState.mlGlContext) {
-      const {canvas} = mlPresentState.mlGlContext; // XXX handle this per-window, like native window
-      const window = canvas.ownerDocument.defaultView;
+    const window = canvas.ownerDocument.defaultView;
 
-      switch (e.type) {
-        case 'keydown': {
-          let handled = false;
-          if (e.keyCode === 27) { // ESC
-            if (window.top.document.pointerLockElement) {
-              window.top.document.exitPointerLock();
-              handled = true;
-            }
-            if (window.top.document.fullscreenElement) {
-              window.top.document.exitFullscreen();
-              handled = true;
-            }
+    switch (e.type) {
+      case 'keydown': {
+        let handled = false;
+        if (e.keyCode === 27) { // ESC
+          if (window.top.document.pointerLockElement) {
+            window.top.document.exitPointerLock();
+            handled = true;
           }
-          if (e.keyCode === 122) { // F11
-            if (window.top.document.fullscreenElement) {
-              window.top.document.exitFullscreen();
-              handled = true;
-            } else {
-              window.top.document.requestFullscreen();
-              handled = true;
-            }
+          if (window.top.document.fullscreenElement) {
+            window.top.document.exitFullscreen();
+            handled = true;
           }
-
-          if (!handled) {
-            canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
-          }
-          break;
         }
-        case 'keyup':
-        case 'keypress': {
+        if (e.keyCode === 122) { // F11
+          if (window.top.document.fullscreenElement) {
+            window.top.document.exitFullscreen();
+            handled = true;
+          } else {
+            window.top.document.requestFullscreen();
+            handled = true;
+          }
+        }
+
+        if (!handled) {
           canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
-          break;
         }
-        default:
-          break;
+        break;
       }
+      case 'keyup':
+      case 'keypress': {
+        canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
+        break;
+      }
+      default:
+        break;
     }
   };
   if (!nativeMl.IsSimulated()) { // XXX move this to the parent
