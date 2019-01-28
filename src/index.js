@@ -381,8 +381,10 @@ const _startRenderLoop = () => {
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
+      
+      // XXX wait for child gl sync object
 
-      const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context;
+      const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context; // XXX do we need to track dirty?
       if (isDirty) {
         const windowHandle = context.getWindowHandle();
 
@@ -392,7 +394,7 @@ const _startRenderLoop = () => {
           context.flush();
         }
 
-        const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || oculusMobileVrPresentState.glContext === context || mlPresentState.mlGlContext === context;
+        const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || oculusMobileVrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           if (vrPresentState.glContext === context && vrPresentState.oculusSystem && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
@@ -446,7 +448,7 @@ const _startRenderLoop = () => {
         if (isMac) {
           context.bindFramebufferRaw(context.FRAMEBUFFER, null);
         }
-        nativeWindow.swapBuffers(windowHandle);
+        nativeWindow.swapBuffers(windowHandle); // XXX swap buffers on the child side
         if (isMac) {
           const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
           if (drawFramebuffer) {
@@ -865,7 +867,7 @@ const _startRenderLoop = () => {
       }
 
       mlPresentState.mlContext.PrepareFrame(
-        mlPresentState.mlGlContext,
+        mlPresentState.mlGlContext, // gl context for depth population
         mlPresentState.mlMsFbo,
         xrState.renderWidth[0]*2,
         xrState.renderHeight[0],
@@ -1031,7 +1033,7 @@ const _startRenderLoop = () => {
     nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX unlock when oculus mobile supports it
     // update magic leap state
     if (mlPresentState.mlGlContext) {
-      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
+      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext); // gl context for mesh buffer population
       nativeBindings.nativeMl.Poll();
     }
     if (args.performance) {
