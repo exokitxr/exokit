@@ -1039,7 +1039,7 @@ const _startRenderLoop = () => {
             mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
             mlPresentState.mlHasPose = false;
           } else if (fakePresentState.layers.length > 0) { // XXX blit only to the intended context
-            nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
+            nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState); // XXX move this into the owning window
           }
         }
 
