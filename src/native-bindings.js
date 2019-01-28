@@ -102,7 +102,7 @@ const _onGl3DConstruct = (gl, canvas) => {
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
-    nativeWindow.setEventHandler(windowHandle, (type, data) => {
+    nativeWindow.setEventHandler(windowHandle, (type, data) => { // XXX make sure these are called in the window context
       switch (type) {
         case 'focus': {
           const {focused} = data;
@@ -735,18 +735,20 @@ if (nativeOpenVR) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
-      
-      if (!vrPresentState.glContext) { // XXX request existing context from the parent
+
+      const presentSpec = await window.postInternalMessage({
+        type: 'postRequestAsync',
+        method: 'requestPresentVr',
+      });
+
+      if (!presentSpec.wasPresenting) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
         }
         const window = canvas.ownerDocument.defaultView;
 
-        const {width, height} = await window.postInternalMessage({
-          type: 'postRequestAsync',
-          method: 'requestPresentVr',
-        });
+        const {width, height} = presentSpec;
         
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
@@ -801,7 +803,8 @@ if (nativeOpenVR) {
           depthTex,
         };
       } else {
-        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+        return presentSpec;
+        /* const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
         return {
           width: xrState.renderWidth[0] * 2,
           height: xrState.renderHeight[0],
@@ -811,22 +814,22 @@ if (nativeOpenVR) {
           fbo,
           tex,
           depthTex,
-        };
+        }; */
       }
     } else {
       throw new Error('no HTMLCanvasElement source provided');
     }
   };
   nativeOpenVR.exitPresent = await function() {
-    if (vrPresentState.isPresenting) {
-      await window.postRequest({
-        method: 'exitPresentVr',
-      });
+    const presentSpec = await window.postRequest({
+      method: 'exitPresentVr',
+    });
+      
+    if (presentSpec) {
+      nativeWindow.destroyRenderTarget(presentSpec.msFbo, presentSpec.msTex, presentSpec.msDepthStencilTex);
+      nativeWindow.destroyRenderTarget(presentSpec.fbo, presentSpec.tex, presentSpec.msDepthTex);
 
-      nativeWindow.destroyRenderTarget(vrPresentState.msFbo, vrPresentState.msTex, vrPresentState.msDepthStencilTex);
-      nativeWindow.destroyRenderTarget(vrPresentState.fbo, vrPresentState.tex, vrPresentState.msDepthTex);
-
-      const context = vrPresentState.glContext;
+      const context = vrPresentState.glContext; // XXX get the real context
       nativeWindow.setCurrentWindowContext(context.getWindowHandle());
       context.setDefaultFramebuffer(0);
 
@@ -835,8 +838,6 @@ if (nativeOpenVR) {
       }
       cleanups.length = 0;
     }
-
-    return Promise.resolve();
   };
 }
 
@@ -847,16 +848,18 @@ if (nativeMl) {
     if (layer) {
       const canvas = layer.source;
       
-      if (!mlPresentState.mlGlContext) {
+      const presentSpec = await window.postInternalMessage({
+        type: 'postRequestAsync',
+        method: 'requestPresentMl',
+      });
+
+      if (!presentSpec.wasPresenting) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
         }
-
-        const {width, height} = await window.postInternalMessage({
-          type: 'postRequestAsync',
-          method: 'requestPresentMl',
-        });
+        
+        const {width, height} = presentSpec;
 
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
@@ -910,7 +913,8 @@ if (nativeMl) {
           depthTex,
         };
       } else {
-        return {
+        return presentSpec;
+        /* return {
           width: xrState.renderWidth[0] * 2,
           height: xrState.renderHeight[0],
           msFbo: mlPresentState.mlMsFbo,
@@ -919,27 +923,29 @@ if (nativeMl) {
           fbo: mlPresentState.mlFbo,
           tex: mlPresentState.mlTex,
           depthTex: mlPresentState.mlDepthTex,
-        };
+        }; */
       }
     } else {
       throw new Error('no HTMLCanvasElement source provided');
     }
   };
-  nativeMl.exitPresent = function() {
-    await window.postRequest({
+  nativeMl.exitPresent = async function() {
+    const presentSpec = await window.postRequest({
       method: 'exitPresentMl',
     });
-    
-    nativeWindow.destroyRenderTarget(mlPresentState.mlMsFbo, mlPresentState.mlMsTex, mlPresentState.mlMsDepthTex);
-    nativeWindow.destroyRenderTarget(mlPresentState.mlFbo, mlPresentState.mlTex, mlPresentState.mlDepthTex);
 
-    nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle());
-    mlPresentState.mlGlContext.setDefaultFramebuffer(0);
+    if (presentSpec) {
+      nativeWindow.destroyRenderTarget(presentSpec.mlMsFbo, presentSpec.mlMsTex, presentSpec.mlMsDepthTex);
+      nativeWindow.destroyRenderTarget(presentSpec.mlFbo, presentSpec.mlTex, presentSpec.mlDepthTex);
 
-    for (let i = 0; i < cleanups.length; i++) {
-      cleanups[i]();
+      nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle()); // XXX get the real context
+      mlPresentState.mlGlContext.setDefaultFramebuffer(0);
+
+      for (let i = 0; i < cleanups.length; i++) {
+        cleanups[i]();
+      }
+      cleanups.length = 0;
     }
-    cleanups.length = 0;
   };
 
   const _mlLifecycleEvent = e => {
@@ -970,7 +976,7 @@ if (nativeMl) {
       }
     }
   };
-  const _mlKeyboardEvent = e => {
+  const _mlKeyboardEvent = e => { // XXX move this to the parent
     // console.log('got ml keyboard event', e);
 
     if (mlPresentState.mlGlContext) {
@@ -1015,7 +1021,7 @@ if (nativeMl) {
       }
     }
   };
-  if (!nativeMl.IsSimulated()) {
+  if (!nativeMl.IsSimulated()) { // XXX move this to the parent
     nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
   } else {
     // try to connect to MLSDK

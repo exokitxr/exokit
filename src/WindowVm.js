@@ -29,32 +29,50 @@ const _makeWindow = (options = {}) => {
       }
     },
     requestPresentVr() {
-      const vrContext = vrPresentState.vrContext || nativeVr.getContext();
-      const system = vrPresentState.system || nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
-      const compositor = vrPresentState.compositor || vrContext.compositor.NewCompositor();
+      const {vrPresentState} = GlobalContext;
+      
+      if (!vrPresentState.vrContext) {
+        const vrContext = nativeVr.getContext();
+        const system = nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+        const compositor = vrContext.compositor.NewCompositor();
 
-      // const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
+        // const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
 
-      vrPresentState.vrContext = vrContext;
-      vrPresentState.system = system;
-      vrPresentState.compositor = compositor;
+        vrPresentState.vrContext = vrContext;
+        vrPresentState.system = system;
+        vrPresentState.compositor = compositor;
 
-      let {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-      const MAX_TEXTURE_SIZE = 4096;
-      const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
-      if (halfWidth > MAX_TEXTURE_SIZE_HALF) {
-        const factor = halfWidth / MAX_TEXTURE_SIZE_HALF;
-        halfWidth = MAX_TEXTURE_SIZE_HALF;
-        height = Math.floor(height / factor);
+        let {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        const MAX_TEXTURE_SIZE = 4096;
+        const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
+        if (halfWidth > MAX_TEXTURE_SIZE_HALF) {
+          const factor = halfWidth / MAX_TEXTURE_SIZE_HALF;
+          halfWidth = MAX_TEXTURE_SIZE_HALF;
+          height = Math.floor(height / factor);
+        }
+        const width = halfWidth * 2;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
+
+        return Promise.resolve({
+          wasPresenting: false,
+          width,
+          height,
+        });
+      } else {
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+        return Promise.resolve({
+          wasPresenting: true,
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        });
       }
-      const width = halfWidth * 2;
-      xrState.renderWidth[0] = halfWidth;
-      xrState.renderHeight[0] = height;
-
-      return Promise.resolve({
-        width,
-        height,
-      });
     },
     'vr.bind'(args) {
       const {framebuffer, id} = args;
@@ -66,6 +84,7 @@ const _makeWindow = (options = {}) => {
         tex,
         depthTex,
       } = framebuffer;
+      const {vrPresentState} = GlobalContext;
       
       vrPresentState.isPresenting = true;
       const context = GlobalContext.contexts.find(context => context.window === window && context.id === id);
@@ -79,32 +98,80 @@ const _makeWindow = (options = {}) => {
       vrPresentState.depthTex = depthTex;
     },
     exitPresentVr() {
-      nativeVr.VR_Shutdown();
+      const {vrPresentState} = GlobalContext;
       
-      vrPresentState.isPresenting = false;
-      vrPresentState.system = null;
-      vrPresentState.compositor = null;
-      vrPresentState.glContext = null;
-      vrPresentState.msFbo = null;
-      vrPresentState.msTex = null;
-      vrPresentState.msDepthTex = null;
-      vrPresentState.fbo = null;
-      vrPresentState.tex = null;
-      vrPresentState.depthTex = null;
+      if (vrPresentState.vrContext) {
+        nativeVr.VR_Shutdown();
+        
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+        
+        vrPresentState.isPresenting = false;
+        vrPresentState.vrContext = null;
+        vrPresentState.system = null;
+        vrPresentState.compositor = null;
+        vrPresentState.glContext = null;
+        vrPresentState.msFbo = null;
+        vrPresentState.msTex = null;
+        vrPresentState.msDepthTex = null;
+        vrPresentState.fbo = null;
+        vrPresentState.tex = null;
+        vrPresentState.depthTex = null;
+        
+        return Promise.resolve({
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        });
+      } else {
+        return Promise.resolve(null);
+      }
     },
     requestPresentMl() {
-      mlPresentState.mlContext = new nativeMl();
-      mlPresentState.mlContext.Present(windowHandle, context); // XXX remove context dependency
-
-      const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();
-      const width = halfWidth * 2;
-      xrState.renderWidth[0] = halfWidth;
-      xrState.renderHeight[0] = height;
+      const {mlPresentState} = GlobalContext;
       
-      return Promise.resolve({
-        width,
-        height,
-      });
+      if (!mlPresentState.mlContext) {
+        mlPresentState.mlContext = new nativeMl();
+        mlPresentState.mlContext.Present(windowHandle, context); // XXX remove context dependency
+
+        const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();
+        const width = halfWidth * 2;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
+        
+        return Promise.resolve({
+          wasPresenting: false,
+          width,
+          height,
+        });
+      } else {
+        const {mlMsFbo: msFbo, mlMsTex: msTex, mlMsDepthTex: msDepthTex, mlFbo: fbo, mlTex: tex, mlDepthTex: depthTex} = mlPresentState;
+        return Promise.resolve({
+          wasPresenting: true,
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        });
+        /* const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+        return {
+          wasPresenting: true,
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        }; */
+      }
     },
     'ml.bind'(args) {
       const {framebuffer, id} = args;
@@ -116,6 +183,7 @@ const _makeWindow = (options = {}) => {
         tex,
         depthTex,
       } = framebuffer;
+      const {mlPresentState} = GlobalContext;
 
       mlPresentState.mlContext.SetContentTexture(tex);
 
@@ -130,24 +198,38 @@ const _makeWindow = (options = {}) => {
       mlPresentState.mlMsDepthTex = msDepthTex
     },
     exitPresentMl() {
-      mlPresentState.mlContext.Exit();
-      mlPresentState.mlContext.Destroy();
+      const {mlPresentState} = GlobalContext;
+      
+      if (mlPresentState.mlContext) {
+        mlPresentState.mlContext.Exit();
+        mlPresentState.mlContext.Destroy();
 
-      mlPresentState.mlContext = null;
-      mlPresentState.mlFbo = null;
-      mlPresentState.mlTex = null;
-      mlPresentState.mlDepthTex = null;
-      mlPresentState.mlMsFbo = null;
-      mlPresentState.mlMsTex = null;
-      mlPresentState.mlMsDepthTex = null;
-      mlPresentState.mlGlContext = null;
-      mlPresentState.mlCleanups = null;
-      mlPresentState.mlHasPose = false;
+        const {mlMsFbo: msFbo, mlMsTex: msTex, mlMsDepthTex: msDepthTex, mlFbo: fbo, mlTex: tex, mlDepthTex: depthTex} = mlPresentState;
+
+        mlPresentState.mlContext = null;
+        mlPresentState.mlFbo = null;
+        mlPresentState.mlTex = null;
+        mlPresentState.mlDepthTex = null;
+        mlPresentState.mlMsFbo = null;
+        mlPresentState.mlMsTex = null;
+        mlPresentState.mlMsDepthTex = null;
+        mlPresentState.mlGlContext = null;
+        mlPresentState.mlCleanups = null;
+        mlPresentState.mlHasPose = false;
+        
+        return Promise.resolve({
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        });
+      } else {
+        return Promise.resolve(null);
+      }
     },
   };
-  /* window.setRequestHandler = (method, handler) => {
-    requestHandlers[method] = handler;
-  }; */
   window.oninternalmessage = async m => {
     switch (m.type) {
       case 'postRequestAsync': {
