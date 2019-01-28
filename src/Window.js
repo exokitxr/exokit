@@ -128,6 +128,9 @@ const {_elementGetter, _elementSetter, _download} = utils;
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
+const contexts = [];
+GlobalContext.contexts = contexts;
+
 class CustomElementRegistry {
   constructor(window) {
     this._window = window;
@@ -1195,8 +1198,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
       // return syncs for dirty contexts
       const syncs = [];
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
+      for (let i = 0; i < GlobalContext.contexts.length; i++) {
+        const context = GlobalContext.contexts[i];
         
         if (context.isDirty && context.isDirty()) {
           nativeWindow.setCurrentWindowContext(context.getWindowHandle());
