@@ -1192,11 +1192,25 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
         _clearLocalCbs(); // release garbage
       }
-      
-      // XXX return gl sync objects for each context
-      {
-        throw new Error('not implemented');
+
+      // return syncs for dirty contexts
+      const syncs = [];
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+        
+        if (context.isDirty && context.isDirty()) {
+          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+          const sync = nativeWindow.getSync();
+          
+          syncs.push({
+            id: context.id,
+            sync,
+          });
+          
+          context.clearDirty();
+        }
       }
+      return syncs;
     }
     // tickAnimationFrame.window = null;
     return tickAnimationFrame;
