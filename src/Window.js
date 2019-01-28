@@ -972,7 +972,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       switch (m.type) {
         case 'postRequestAsync': {
           const requestCb = requestCbs[m.id];
-          if (!m.errorr) {
+          if (!m.error) {
             requestCb.accept(m.result);
           } else {
             requestCb.reject(m.error);
