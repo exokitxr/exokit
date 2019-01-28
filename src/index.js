@@ -1048,10 +1048,15 @@ const _startRenderLoop = () => {
       console.log('-'.repeat(80) + 'start frame');
     }
 
-    // tick animation frames    
-    for (let i = 0; i < windows.length; i++) {
-      windows[i].tickAnimationFrame();
-    }
+    // tick animation frames
+    const syncs = (await Promise.all(windows.map(async window => {
+      const syncs = await window.tickAnimationFrame();
+      return syncs.map(({id, sync}) => ({
+        window,
+        id,
+        sync,
+      }));
+    }))).flat();
     
     if (args.performance) {
       const now = Date.now();
