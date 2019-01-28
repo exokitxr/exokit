@@ -1145,51 +1145,58 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
       
       // call user rafs
-      if (rafCbs.length > 0) {
-        _cacheLocalCbs(rafCbs);
+      {
+        if (rafCbs.length > 0) {
+          _cacheLocalCbs(rafCbs);
 
-        // tickAnimationFrame.window = this;
+          // tickAnimationFrame.window = this;
 
-        const performanceNow = performance.now();
+          const performanceNow = performance.now();
 
-        // hidden rafs
-        for (let i = 0; i < localCbs.length; i++) {
-          const rafCb = localCbs[i];
-          if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
-            try {
-              // console.log('tick raf', rafCb.stack);
-              rafCb(performanceNow);
-            } catch (e) {
-              console.warn(e);
-            }
+          // hidden rafs
+          for (let i = 0; i < localCbs.length; i++) {
+            const rafCb = localCbs[i];
+            if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
+              try {
+                // console.log('tick raf', rafCb.stack);
+                rafCb(performanceNow);
+              } catch (e) {
+                console.warn(e);
+              }
 
-            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-            if (index !== -1) {
-              rafCbs[index] = null;
-            }
-          }
-        }
-        // visible rafs
-        for (let i = 0; i < localCbs.length; i++) {
-          const rafCb = localCbs[i];
-          if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
-            try {
-              // console.log('tick raf', rafCb.stack);
-              rafCb(performanceNow);
-            } catch (e) {
-              console.warn(e);
-            }
-            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-            if (index !== -1) {
-              rafCbs[index] = null;
+              const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+              if (index !== -1) {
+                rafCbs[index] = null;
+              }
             }
           }
+          // visible rafs
+          for (let i = 0; i < localCbs.length; i++) {
+            const rafCb = localCbs[i];
+            if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
+              try {
+                // console.log('tick raf', rafCb.stack);
+                rafCb(performanceNow);
+              } catch (e) {
+                console.warn(e);
+              }
+              const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+              if (index !== -1) {
+                rafCbs[index] = null;
+              }
+            }
+          }
+
+          // tickAnimationFrame.window = null;
         }
 
-        // tickAnimationFrame.window = null;
+        _clearLocalCbs(); // release garbage
       }
-
-      _clearLocalCbs(); // release garbage
+      
+      // XXX return gl sync objects for each context
+      {
+        throw new Error('not implemented');
+      }
     }
     // tickAnimationFrame.window = null;
     return tickAnimationFrame;
