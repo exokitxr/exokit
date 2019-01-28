@@ -378,94 +378,6 @@ class XRState {
 GlobalContext.xrState = new XRState();
 
 const _startRenderLoop = () => {
-  const _blit = () => {
-    for (let i = 0; i < contexts.length; i++) {
-      const context = contexts[i];
-      
-      // XXX wait for child gl sync object
-
-      const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context; // XXX do we need to track dirty?
-      if (isDirty) {
-        const windowHandle = context.getWindowHandle();
-
-        const {nativeWindow} = nativeBindings;
-        nativeWindow.setCurrentWindowContext(windowHandle);
-        if (isMac) {
-          context.flush();
-        }
-
-        const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || oculusMobileVrPresentState.glContext === context || mlPresentState.mlGlContext === context;
-        if (isVisible) {
-          if (vrPresentState.glContext === context && vrPresentState.oculusSystem && vrPresentState.hasPose) {
-            if (vrPresentState.layers.length > 0) {
-              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
-            } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
-            }
-
-            vrPresentState.oculusSystem.Submit();
-            vrPresentState.hasPose = false;
-            
-            const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
-            const height = vrPresentState.glContext.canvas.height;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width, height, true, false, false);
-          } else if (vrPresentState.glContext === context && vrPresentState.system && vrPresentState.hasPose) {
-            if (vrPresentState.layers.length > 0) {
-              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
-            } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
-            }
-
-            vrPresentState.compositor.Submit(context, vrPresentState.tex);
-            vrPresentState.hasPose = false;
-
-            const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
-            const height = vrPresentState.glContext.canvas.height;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width, height, true, false, false);
-          } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
-            if (oculusMobileVrPresentState.layers.length > 0) {
-              nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
-            } else {
-              nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
-            }
-
-            oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrPresentState.glContext, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height);
-            oculusMobileVrPresentState.hasPose = false;
-          } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
-            if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
-              nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers, xrState);
-            } else {
-              nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
-            }
-
-            mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
-            mlPresentState.mlHasPose = false;
-          } else if (fakePresentState.layers.length > 0) {
-            nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
-          }
-        }
-
-        if (isMac) {
-          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
-        }
-        nativeWindow.swapBuffers(windowHandle); // XXX swap buffers on the child side
-        if (isMac) {
-          const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
-          if (drawFramebuffer) {
-            context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
-          }
-
-          const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
-          if (readFramebuffer) {
-            context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
-          }
-        }
-
-        context.clearDirty();
-      }
-    }
-  }
-
   const timestamps = {
     frames: 0,
     last: Date.now(),
@@ -1066,9 +978,88 @@ const _startRenderLoop = () => {
       timestamps.last = now;
     }
     
-    // composite image
+    // blit composite image
+    {
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+        const sync = syncs.find(sync => sync.window === context.window && sync.id === context.id);
+        if (sync) {
+          nativeWindow.waitSync(sync.sync);
+        }
 
-    _blit();
+        const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context; // XXX do we need to track dirty?
+        if (isDirty) {
+          const windowHandle = context.getWindowHandle();
+
+          const {nativeWindow} = nativeBindings;
+          nativeWindow.setCurrentWindowContext(windowHandle);
+          if (isMac) { // XXX move these to window internal
+            context.flush();
+          }
+
+          const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || oculusMobileVrPresentState.glContext === context || mlPresentState.mlGlContext === context;
+          if (isVisible) {
+            if (vrPresentState.glContext === context && vrPresentState.hasPose) {
+              if (vrPresentState.layers.length > 0) {
+                nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+              } else {
+                nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
+              }
+
+              vrPresentState.compositor.Submit(context, vrPresentState.tex);
+              if (vrPresentState.oculusSystem) {
+                vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
+              } else if (vrPresentState.compositor) {
+                vrPresentState.compositor.Submit(context, vrPresentState.tex);
+              }
+              vrPresentState.hasPose = false;
+
+              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+            } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
+              if (oculusMobileVrPresentState.layers.length > 0) {
+                nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
+              } else {
+                nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
+              }
+
+              oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrPresentState.glContext, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height);
+              oculusMobileVrPresentState.hasPose = false;
+            } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
+              if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
+                nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers, xrState);
+              } else {
+                nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+              }
+
+              mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
+              mlPresentState.mlHasPose = false;
+
+              // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+            } else if (fakePresentState.layers.length > 0) { // XXX blit only to the intended context
+              nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
+            }
+          }
+
+          if (isMac) {
+            context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+          }
+          nativeWindow.swapBuffers(windowHandle); // XXX swap buffers on the child side
+          if (isMac) {
+            const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+            if (drawFramebuffer) {
+              context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+            }
+
+            const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+            if (readFramebuffer) {
+              context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+            }
+          }
+
+          context.clearDirty();
+        }
+      }
+    }
 
     // lastFrameTime = Date.now()
 
