@@ -2693,7 +2693,7 @@ NAN_METHOD(MLContext::DeinitLifecycle) {
 
 NAN_METHOD(MLContext::SetEventHandlers) {
   if (info[0]->IsFunction() && info[1]->IsFunction()) {
-    eventsCb.Reset(Local<Function>::Cast(info[0]));
+    eventsCb.Reset(Local<Function>::Cast(info[0])); // XXX track this per-window, not globally
     keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
 
     uv_loop_t *loop = windowsystem::GetEventLoop();
