@@ -286,6 +286,7 @@ public:
   static NAN_METHOD(New);
   static NAN_METHOD(InitLifecycle);
   static NAN_METHOD(DeinitLifecycle);
+  static NAN_METHOD(SetEventHandlers);
   static NAN_METHOD(Present);
   static NAN_METHOD(Exit);
   // static NAN_METHOD(WaitGetPoses);

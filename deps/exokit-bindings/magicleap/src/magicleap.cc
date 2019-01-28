@@ -1959,6 +1959,7 @@ Local<Object> MLContext::Initialize(Isolate *isolate) {
 
   Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
   Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
+  Nan::SetMethod(ctorFn, "SetEventHandlers", SetEventHandlers);
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
   Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
@@ -2548,153 +2549,159 @@ void main() {\n\
 }\n\
 ";
 NAN_METHOD(MLContext::InitLifecycle) {
-  if (info[0]->IsFunction() && info[1]->IsFunction()) {
-    eventsCb.Reset(Local<Function>::Cast(info[0]));
-    keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
+  uv_loop_t *loop = windowsystem::GetEventLoop();
 
-    uv_sem_init(&reqSem, 0);
-    uv_sem_init(&resSem, 0);
-    uv_async_init(uv_default_loop(), &resAsync, RunResInMainThread);
-    frameThread = std::thread([]() -> void {
+  uv_sem_init(&reqSem, 0);
+  uv_sem_init(&resSem, 0);
+  uv_async_init(loop, &resAsync, RunResInMainThread);
+  frameThread = std::thread([]() -> void {
+    uv_sem_wait(&reqSem);
+
+    windowsystem::SetCurrentWindowContext(application_context.mlContext->graphicsClientWindow);
+    MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
+    MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(application_context.mlContext->graphicsClientWindow));
+    {
+      MLResult result = MLGraphicsCreateClientGL(&graphics_options, opengl_context, &application_context.mlContext->graphics_client);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: Failed to create graphics clent: %x", application_name, result);
+        return;
+      }
+    }
+    {
+      MLResult result = MLGraphicsGetRenderTargets(application_context.mlContext->graphics_client, &application_context.mlContext->render_targets_info);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: Failed to get graphics render targets: %x", application_name, result);
+        return;
+      }
+    }
+    
+    uv_sem_post(&resSem);
+    
+    glGenFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
+    glGenFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
+
+    for (;;) {
       uv_sem_wait(&reqSem);
 
-      windowsystem::SetCurrentWindowContext(application_context.mlContext->graphicsClientWindow);
-      MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
-      MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(application_context.mlContext->graphicsClientWindow));
+      std::function<bool()> reqCb;
       {
-        MLResult result = MLGraphicsCreateClientGL(&graphics_options, opengl_context, &application_context.mlContext->graphics_client);
-        if (result != MLResult_Ok) {
-          ML_LOG(Error, "%s: Failed to create graphics clent: %x", application_name, result);
-          return;
+        std::lock_guard<std::mutex> lock(reqMutex);
+
+        if (reqCbs.size() > 0) {
+          reqCb = reqCbs.front();
+          reqCbs.pop_front();
         }
       }
-      {
-        MLResult result = MLGraphicsGetRenderTargets(application_context.mlContext->graphics_client, &application_context.mlContext->render_targets_info);
-        if (result != MLResult_Ok) {
-          ML_LOG(Error, "%s: Failed to get graphics render targets: %x", application_name, result);
-          return;
-        }
-      }
-      
-      uv_sem_post(&resSem);
-      
-      glGenFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
-      glGenFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
+      if (reqCb) {
+        bool frameOk = reqCb();
 
-      for (;;) {
-        uv_sem_wait(&reqSem);
+        if (frameOk) {
+          uv_sem_wait(&reqSem);
+          
+          std::function<bool()> reqCb;
+          {
+            std::lock_guard<std::mutex> lock(reqMutex);
 
-        std::function<bool()> reqCb;
-        {
-          std::lock_guard<std::mutex> lock(reqMutex);
-
-          if (reqCbs.size() > 0) {
-            reqCb = reqCbs.front();
-            reqCbs.pop_front();
-          }
-        }
-        if (reqCb) {
-          bool frameOk = reqCb();
-
-          if (frameOk) {
-            uv_sem_wait(&reqSem);
-            
-            std::function<bool()> reqCb;
-            {
-              std::lock_guard<std::mutex> lock(reqMutex);
-
-              if (reqCbs.size() > 0) {
-                reqCb = reqCbs.front();
-                reqCbs.pop_front();
-              }
-            }
-            if (reqCb) {
-              reqCb();
-            } else {
-              break;
-            }
-
-            MLResult result = MLGraphicsEndFrame(application_context.mlContext->graphics_client, application_context.mlContext->frame_handle);
-            if (result != MLResult_Ok) {
-              ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+            if (reqCbs.size() > 0) {
+              reqCb = reqCbs.front();
+              reqCbs.pop_front();
             }
           }
-        } else {
-          break;
+          if (reqCb) {
+            reqCb();
+          } else {
+            break;
+          }
+
+          MLResult result = MLGraphicsEndFrame(application_context.mlContext->graphics_client, application_context.mlContext->frame_handle);
+          if (result != MLResult_Ok) {
+            ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+          }
         }
+      } else {
+        break;
       }
-      
-      glDeleteFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
-      glDeleteFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
-    });
+    }
+    
+    glDeleteFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
+    glDeleteFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
+  });
 
-    uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
-    uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
-    uv_async_init(uv_default_loop(), &cameraAsync, RunCameraInMainThread);
-    uv_async_init(uv_default_loop(), &cameraConvertAsync, RunCameraConvertInMainThread);
-    uv_sem_init(&cameraConvertSem, 0);
+  uv_async_init(loop, &cameraAsync, RunCameraInMainThread);
+  uv_async_init(loop, &cameraConvertAsync, RunCameraConvertInMainThread);
+  uv_sem_init(&cameraConvertSem, 0);
 
-    mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
-    mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
-    mlHandTrackerConstructor.Reset(MLHandTracker::Initialize(Isolate::GetCurrent()));
-    mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
-    mlImageTrackerConstructor.Reset(MLImageTracker::Initialize(Isolate::GetCurrent()));
+  mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
+  mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
+  mlHandTrackerConstructor.Reset(MLHandTracker::Initialize(Isolate::GetCurrent()));
+  mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
+  mlImageTrackerConstructor.Reset(MLImageTracker::Initialize(Isolate::GetCurrent()));
 
-    lifecycle_callbacks.on_new_initarg = onNewInitArg;
-    lifecycle_callbacks.on_stop = onStop;
-    lifecycle_callbacks.on_pause = onPause;
-    lifecycle_callbacks.on_resume = onResume;
-    lifecycle_callbacks.on_unload_resources = onUnloadResources;
-    lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void *)(&application_context));
-    if (lifecycle_status != MLResult_Ok) {
-      Nan::ThrowError("MLContext::InitLifecycle failed to initialize lifecycle");
+  lifecycle_callbacks.on_new_initarg = onNewInitArg;
+  lifecycle_callbacks.on_stop = onStop;
+  lifecycle_callbacks.on_pause = onPause;
+  lifecycle_callbacks.on_resume = onResume;
+  lifecycle_callbacks.on_unload_resources = onUnloadResources;
+  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void *)(&application_context));
+  if (lifecycle_status != MLResult_Ok) {
+    Nan::ThrowError("MLContext::InitLifecycle failed to initialize lifecycle");
+    return;
+  }
+
+  {
+    cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
+    cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
+    cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
+    cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
+    cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
+    cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
+    cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
+    MLResult result = MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+      Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
       return;
     }
-
-    {
-      cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
-      cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
-      cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
-      cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
-      cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
-      cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
-      cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
-      MLResult result = MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
-        Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
-        return;
-      }
-    }
-
-    {
-      cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
-      cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
-      cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
-      cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
-      cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
-      cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
-      MLResult result = MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
-        Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
-        return;
-      }
-    }
-
-    // HACK: prevent exit hang
-    std::atexit([]() {
-      quick_exit(0);
-    });
-
-    application_context.dummy_value = DummyValue::STOPPED;
-  } else {
-    Nan::ThrowError("invalid arguments");
   }
+
+  {
+    cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
+    cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
+    cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
+    cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
+    cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
+    cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
+    MLResult result = MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+      Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+      return;
+    }
+  }
+
+  // HACK: prevent exit hang
+  std::atexit([]() {
+    quick_exit(0);
+  });
+
+  application_context.dummy_value = DummyValue::STOPPED;
 }
 
 NAN_METHOD(MLContext::DeinitLifecycle) {
   application_context.dummy_value = DummyValue::STOPPED;
+}
+
+NAN_METHOD(MLContext::SetEventHandlers) {
+  if (info[0]->IsFunction() && info[1]->IsFunction()) {
+    eventsCb.Reset(Local<Function>::Cast(info[0]));
+    keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
+
+    uv_loop_t *loop = windowsystem::GetEventLoop();
+    uv_async_init(loop, &eventsAsync, RunEventsInMainThread);
+    uv_async_init(loop, &keyboardEventsAsync, RunKeyboardEventsInMainThread);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
 }
 
 NAN_METHOD(MLContext::Present) {

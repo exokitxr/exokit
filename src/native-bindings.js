@@ -1024,8 +1024,9 @@ if (nativeMl) {
         break;
     }
   };
-  if (!nativeMl.IsSimulated()) { // XXX move this to the parent
-    nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+  if (!nativeMl.IsSimulated()) {
+    nativeMl.InitLifecycle(); // XXX do this only in the top level thread
+    nativeMl.SetEventHandlers(_mlLifecycleEvent, _mlKeyboardEvent);
   } else {
     // try to connect to MLSDK
     const MLSDK_PORT = 17955;
