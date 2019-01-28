@@ -86,7 +86,7 @@ const _onGl3DConstruct = (gl, canvas) => {
       try {
         const visible = document.documentElement.contains(canvas);
         const {hidden} = document;
-        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
+        const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null; // XXX use top level gl context for sharing
         return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
       } catch (err) {
         console.warn(err.message);
