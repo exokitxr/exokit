@@ -978,11 +978,11 @@ const _startRenderLoop = () => {
       timestamps.last = now;
     }
     
-    // blit composite image
+    // blit composite framebuffers
     {
       for (let i = 0; i < contexts.length; i++) {
         const context = contexts[i];
-        const sync = syncs.find(sync => sync.window === context.window && sync.id === context.id);
+        const sync = syncs.find(sync => sync.window === context.window && sync.id === context.id); // XXX only perform sync in the blitting case; delete sync object otherwise
         if (sync) {
           nativeWindow.waitSync(sync.sync);
         }
