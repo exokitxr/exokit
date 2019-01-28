@@ -540,6 +540,22 @@ NAN_METHOD(DestroyRenderTarget) {
   }
 }
 
+NAN_METHOD(GetSync) {
+  GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+  info.GetReturnValue().Set(pointerToArray((void *)sync);
+}
+
+NAN_METHOD(WaitSync) {
+  if (info[0]->IsArray()) {
+    Local<Array> syncArray = Local<Array>::Cast(info[0]);
+    GLsync sync = (GLSync)arrayToPointer(syncArray);
+    glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+    glDeleteSync(sync);
+  } else {
+    Nan::ThrowError("WaitSync: invalid arguments");
+  }
+}
+
 void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
   if (layer.viewports[0] == nullptr) {
     glBindVertexArray(composeSpec->composeVao);
@@ -871,6 +887,8 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
+  Nan::SetMethod(target, "getSync", GetSync);
+  Nan::SetMethod(target, "waitSync", WaitSync);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
   Nan::SetMethod(target, "getEventLoop", GetEventLoop);
   Nan::SetMethod(target, "setEventLoop", SetEventLoop);
