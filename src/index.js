@@ -987,76 +987,76 @@ const _startRenderLoop = () => {
           nativeWindow.waitSync(sync.sync);
         }
 
-        const isDirty = (!!context.isDirty && context.isDirty()) || mlPresentState.mlGlContext === context; // XXX do we need to track dirty?
-        if (isDirty) {
-          const windowHandle = context.getWindowHandle();
+        const windowHandle = context.getWindowHandle();
 
-          const {nativeWindow} = nativeBindings;
-          nativeWindow.setCurrentWindowContext(windowHandle);
-          if (isMac) { // XXX move these to window internal
-            context.flush();
-          }
+        const {nativeWindow} = nativeBindings;
+        nativeWindow.setCurrentWindowContext(windowHandle);
+        if (isMac) { // XXX move these to window internal
+          context.flush();
+        }
 
-          const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || oculusMobileVrPresentState.glContext === context || mlPresentState.mlGlContext === context;
-          if (isVisible) {
-            if (vrPresentState.glContext === context && vrPresentState.hasPose) {
-              if (vrPresentState.layers.length > 0) {
-                nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
-              } else {
-                nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
-              }
-
-              vrPresentState.compositor.Submit(context, vrPresentState.tex);
-              if (vrPresentState.oculusSystem) {
-                vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
-              } else if (vrPresentState.compositor) {
-                vrPresentState.compositor.Submit(context, vrPresentState.tex);
-              }
-              vrPresentState.hasPose = false;
-
-              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
-            } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
-              if (oculusMobileVrPresentState.layers.length > 0) {
-                nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
-              } else {
-                nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
-              }
-
-              oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrPresentState.glContext, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height);
-              oculusMobileVrPresentState.hasPose = false;
-            } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
-              if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
-                nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers, xrState);
-              } else {
-                nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
-              }
-
-              mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
-              mlPresentState.mlHasPose = false;
-
-              // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
-            } else if (fakePresentState.layers.length > 0) { // XXX blit only to the intended context
-              nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
-            }
-          }
-
-          if (isMac) {
-            context.bindFramebufferRaw(context.FRAMEBUFFER, null);
-          }
-          nativeWindow.swapBuffers(windowHandle); // XXX swap buffers on the child side
-          if (isMac) {
-            const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
-            if (drawFramebuffer) {
-              context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+        const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || oculusMobileVrPresentState.glContext === context || mlPresentState.mlGlContext === context;
+        if (isVisible) {
+          if (vrPresentState.oculusSystem && vrPresentState.glContext === context && vrPresentState.hasPose) {
+            if (vrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
             }
 
-            const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
-            if (readFramebuffer) {
-              context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+            vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
+            vrPresentState.hasPose = false;
+
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+
+          } else if (vrPresentState.compositor && vrPresentState.glContext === context && vrPresentState.hasPose) {
+            if (vrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
             }
+
+            vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
+            vrPresentState.hasPose = false;
+
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+          } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
+            if (oculusMobileVrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
+            }
+
+            oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrPresentState.glContext, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height);
+            oculusMobileVrPresentState.hasPose = false;
+          } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
+            if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
+              nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers, xrState);
+            } else {
+              nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
+            }
+
+            mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
+            mlPresentState.mlHasPose = false;
+          } else if (fakePresentState.layers.length > 0) { // XXX blit only to the intended context
+            nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
+          }
+        }
+
+        if (isMac) {
+          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+        }
+        nativeWindow.swapBuffers(windowHandle); // XXX swap buffers on the child side
+        if (isMac) {
+          const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+          if (drawFramebuffer) {
+            context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
           }
 
-          context.clearDirty();
+          const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+          if (readFramebuffer) {
+            context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+          }
         }
       }
     }
