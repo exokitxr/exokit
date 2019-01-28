@@ -7,9 +7,7 @@ const _makeWindow = (options = {}) => {
     args: options,
   });
   
-  window.tickAnimationFrame = () => {
-    window.runDetached(`window.tickAnimationFrame();`);
-  };
+  window.tickAnimationFrame = () => window.runAsync(`return window.tickAnimationFrame();`);
   const requestHandlers = {
     'context.create'(args) {
       const {id} = args;
