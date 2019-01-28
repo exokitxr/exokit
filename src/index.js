@@ -182,89 +182,90 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 
-class XRState {
-  constructor() {
-    const sab = new SharedArrayBuffer(4*1024);
-    let index = 0;
-    const _makeTypedArray = (c, n) => {
-      const result = new c(sab, index, n);
-      index += result.byteLength;
-      return result;
-    };
+const xrState = (() => {
+  const result = {};
+  
+  const sab = new SharedArrayBuffer(1024);
+  let index = 0;
+  const _makeTypedArray = (c, n) => {
+    const result = new c(sab, index, n);
+    index += result.byteLength;
+    return result;
+  };
 
-    this.renderWidth = _makeTypedArray(Float32Array, 1);
-    this.renderHeight = _makeTypedArray(Float32Array, 1);
-    this.depthNear = _makeTypedArray(Float32Array, 1);
-    this.depthNear[0] = 0.1;
-    this.depthFar = _makeTypedArray(Float32Array, 1);
-    this.depthFar[0] = 10000.0;
-    this.position = _makeTypedArray(Float32Array, 3);
-    this.orientation = _makeTypedArray(Float32Array, 4);
-    this.orientation[3] = 1;
-    this.leftViewMatrix = _makeTypedArray(Float32Array, 16);
-    this.leftViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
-    this.rightViewMatrix = _makeTypedArray(Float32Array, 16);
-    this.rightViewMatrix.set(this.leftViewMatrix);
-    this.leftProjectionMatrix = _makeTypedArray(Float32Array, 16);
-    this.leftProjectionMatrix.set(Float32Array.from([
-      0.8000000000000002, 0, 0, 0,
-      0, 1.0000000000000002, 0, 0,
-      0, 0, -1.002002002002002, -1,
-      0, 0, -0.20020020020020018, 0,
-    ]));
-    this.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
-    this.rightProjectionMatrix.set(this.leftProjectionMatrix);
-    this.leftOffset = _makeTypedArray(Float32Array, 3);
-    this.leftOffset.set(Float32Array.from([-defaultEyeSeparation/2, 0, 0]));
-    this.rightOffset = _makeTypedArray(Float32Array, 3);
-    this.leftOffset.set(Float32Array.from([defaultEyeSeparation/2, 0, 0]));
-    this.leftFov = _makeTypedArray(Float32Array, 4);
-    this.leftFov.set(Float32Array.from([45, 45, 45, 45]));
-    this.rightFov = _makeTypedArray(Float32Array, 4);
-    this.rightFov.set(this.leftFov);
-    const _makeGamepad = () => {
-      return {
-        connected: _makeTypedArray(Uint32Array, 1),
-        position: _makeTypedArray(Float32Array, 3),
-        orientation: (() => {
-          const result = _makeTypedArray(Float32Array, 4);
-          result[3] = 1;
-          return result;
-        })(),
-        direction: (() => { // derived
-          const result = _makeTypedArray(Float32Array, 4);
-          result[2] = -1;
-          return result;
-        })(),
-        transformMatrix: (() => { // derived
-          const result = _makeTypedArray(Float32Array, 16);
-          result.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
-          return result;
-        })(),
-        buttons: (() => {
-          const result = Array(6);
-          for (let i = 0; i < result.length; i++) {
-            result[i] = {
-              pressed: _makeTypedArray(Uint32Array, 1),
-              touched: _makeTypedArray(Uint32Array, 1),
-              value: _makeTypedArray(Float32Array, 1),
-            };
-          }
-          return result;
-        })(),
-        axes: _makeTypedArray(Float32Array, 10),
-      };
-    };
-    this.gamepads = (() => {
-      const result = Array(2+maxNumTrackers);
+  result.windowHandle = _makeTypedArray(Uint32Array, 2);
+  result.renderWidth = _makeTypedArray(Float32Array, 1);
+  result.renderHeight = _makeTypedArray(Float32Array, 1);
+  result.depthNear = _makeTypedArray(Float32Array, 1);
+  result.depthNear[0] = 0.1;
+  result.depthFar = _makeTypedArray(Float32Array, 1);
+  result.depthFar[0] = 10000.0;
+  result.position = _makeTypedArray(Float32Array, 3);
+  result.orientation = _makeTypedArray(Float32Array, 4);
+  result.orientation[3] = 1;
+  result.leftViewMatrix = _makeTypedArray(Float32Array, 16);
+  result.leftViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
+  result.rightViewMatrix = _makeTypedArray(Float32Array, 16);
+  result.rightViewMatrix.set(result.leftViewMatrix);
+  result.leftProjectionMatrix = _makeTypedArray(Float32Array, 16);
+  result.leftProjectionMatrix.set(Float32Array.from([
+    0.8000000000000002, 0, 0, 0,
+    0, 1.0000000000000002, 0, 0,
+    0, 0, -1.002002002002002, -1,
+    0, 0, -0.20020020020020018, 0,
+  ]));
+  result.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
+  result.rightProjectionMatrix.set(result.leftProjectionMatrix);
+  result.leftOffset = _makeTypedArray(Float32Array, 3);
+  result.leftOffset.set(Float32Array.from([-defaultEyeSeparation/2, 0, 0]));
+  result.rightOffset = _makeTypedArray(Float32Array, 3);
+  result.leftOffset.set(Float32Array.from([defaultEyeSeparation/2, 0, 0]));
+  result.leftFov = _makeTypedArray(Float32Array, 4);
+  result.leftFov.set(Float32Array.from([45, 45, 45, 45]));
+  result.rightFov = _makeTypedArray(Float32Array, 4);
+  result.rightFov.set(result.leftFov);
+  const _makeGamepad = () => ({
+    connected: _makeTypedArray(Uint32Array, 1),
+    position: _makeTypedArray(Float32Array, 3),
+    orientation: (() => {
+      const result = _makeTypedArray(Float32Array, 4);
+      result[3] = 1;
+      return result;
+    })(),
+    direction: (() => { // derived
+      const result = _makeTypedArray(Float32Array, 4);
+      result[2] = -1;
+      return result;
+    })(),
+    transformMatrix: (() => { // derived
+      const result = _makeTypedArray(Float32Array, 16);
+      result.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
+      return result;
+    })(),
+    buttons: (() => {
+      const result = Array(6);
       for (let i = 0; i < result.length; i++) {
-        result[i] = _makeGamepad();
+        result[i] = {
+          pressed: _makeTypedArray(Uint32Array, 1),
+          touched: _makeTypedArray(Uint32Array, 1),
+          value: _makeTypedArray(Float32Array, 1),
+        };
       }
       return result;
-    })();
-  }
-}
-const xrState = GlobalContext.xrState = new XRState();
+    })(),
+    axes: _makeTypedArray(Float32Array, 10),
+  });
+  result.gamepads = (() => {
+    const result = Array(2 + maxNumTrackers);
+    for (let i = 0; i < result.length; i++) {
+      result[i] = _makeGamepad();
+    }
+    return result;
+  })();
+ 
+  return result;
+})();
+GlobalContext.xrState = xrState;
 
 const vrPresentState = {
   vrContext: null,
