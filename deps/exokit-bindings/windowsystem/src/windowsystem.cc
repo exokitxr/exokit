@@ -871,7 +871,6 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
-  // Nan::SetMethod(target, "renderPlane", RenderPlane);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
   Nan::SetMethod(target, "getEventLoop", GetEventLoop);
   Nan::SetMethod(target, "setEventLoop", SetEventLoop);
