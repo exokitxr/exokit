@@ -32,7 +32,7 @@ namespace glfw {
     NATIVEwindow *window;
     uv_async_t *async;
     Nan::Persistent<Function> handlerFn;
-    std::deque<std::function<void(Local<Function>)>> fns;
+    std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> fns;
   };
   
   NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow);
