@@ -392,10 +392,6 @@ const _startRenderLoop = () => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 100;
-  // const gamepads = getGamepads();
-  // const [leftGamepad, rightGamepad] = gamepads; // XXX merge this into XRState
-  // const frameData = new window.VRFrameData(); // XXX globalize frame data
-  // const stageParameters = new window.VRStageParameters(); // XXX globalize stage parameters
 
   const _renderLoop = async () => {
     if (args.performance) {
