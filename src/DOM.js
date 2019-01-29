@@ -1704,9 +1704,9 @@ class HTMLScriptElement extends HTMLLoadableElement {
             return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
           }
         })
-        .then(s => {
-          utils._runJavascript(s, this.ownerDocument.defaultView, url); // XXX vm
-
+        .then(s => this.ownerDocument.defaultView.runAsync(s))
+        // utils._runJavascript(s, this.ownerDocument.defaultView, url); // XXX inject url into the call
+        .then(() => {
           this.readyState = 'complete';
 
           this.dispatchEvent(new Event('load', {target: this}));
@@ -1733,13 +1733,26 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const window = this.ownerDocument.defaultView;
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0); // XXX vm
+      window.runAsync(innerHTML)
+        .then(() => {
+          // utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0); // XXX inject url into the call
 
-      this.readyState = 'complete';
-      
-      this.dispatchEvent(new Event('load', {target: this}));
+          this.readyState = 'complete';
+          
+          this.dispatchEvent(new Event('load', {target: this}));
 
-      cb();
+          cb();
+        })
+        .catch(err => {
+          this.readyState = 'complete';
+
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
+          
+          cb(err);
+        });
     });
   }
 
