@@ -5,48 +5,46 @@
     var yourVideo = document.querySelector('#yours');
     var theirVideo = document.querySelector('#theirs');
 
-    navigator.getUserMedia({ video: true, audio: false }, function (stream) {
+    /* navigator.getUserMedia({ video: true, audio: false }, function (stream) {
         yourVideo.src = window.URL.createObjectURL(stream);
 
         startPeerConnection(stream);
 
     }, function (error) {
         console.log(error);
-    });
+    }); */
 
-    localConnection = new RTCPeerConnection();
+    startPeerConnection(null);
 
 function startPeerConnection(stream) {
     var configuration = {
         // 'iceServers': [{ 'url': 'stun:stun.1.google.com:19302'}]
     };
-    console.log(stream);
+    /* console.log(stream);
     console.log("\n");
-    console.log("\n");
+    console.log("\n"); */
 
-    var yourConnection = new RTCPeerConnection(configuration);
-    var theirConnection = new RTCPeerConnection(configuration);
-    console.log('yourConnection: ');
-    console.log(yourConnection);
-    console.log("\n");
-    console.log("\n");
+    const yourConnection = new RTCPeerConnection(configuration);
+    const theirConnection = new RTCPeerConnection(configuration);
+    console.log('yourConnection: ', yourConnection);
+    // console.log("\n");
+    // console.log("\n");
 
-    console.log('theirConnection: ');
-    console.log(theirConnection);
-    console.log("\n");
-    console.log("\n");
+    console.log('theirConnection: ', theirConnection);
+    // console.log("\n");
+    // console.log("\n");
 
     /* yourConnection.addStream(stream);
     theirConnection.onaddstream = function(e) {
-        console.log('onaddstream: ')
-        console.log(e);
-        console.log("\n");
-        console.log("\n");
+        console.log('onaddstream: ', e);
+        // console.log("\n");
+        // console.log("\n");
 
         theirVideo.src = window.URL.createObjectURL(e.stream);
     }; */
 
-    const sendChannel = localConnection.createDataChannel("sendChannel");
+
+    const sendChannel = yourConnection.createDataChannel("sendChannel");
     sendChannel.onopen = () => {
       console.log('send channel open');
 
@@ -78,10 +76,9 @@ function startPeerConnection(stream) {
     };
 
     yourConnection.onicecandidate = function (event) {
-        console.log('your onicecandidate: ');
-        console.log(event);
-        console.log("\n");
-        console.log("\n");
+        console.log('your onicecandidate: ', event);
+        // console.log("\n");
+        // console.log("\n");
 
         if (event.candidate) {
             theirConnection.addIceCandidate(new RTCIceCandidate(event.candidate));
@@ -89,10 +86,9 @@ function startPeerConnection(stream) {
     };
 
     theirConnection.onicecandidate = function (event) {
-        console.log('their onicecandidate:');
-        console.log(event);
-        console.log("\n");
-        console.log("\n");
+        console.log('their onicecandidate:', event);
+        // console.log("\n");
+        // console.log("\n");
 
         if (event.candidate) {
             yourConnection.addIceCandidate(new RTCIceCandidate(event.candidate));
@@ -100,20 +96,17 @@ function startPeerConnection(stream) {
     }
 
     yourConnection.createOffer(function (offer) {
-        console.log('your offer: ');
-        console.log(offer);
-        console.log("\n");
-        console.log("\n");
+        console.log('your offer: ', offer);
+        // console.log("\n");
+        // console.log("\n");
 
         yourConnection.setLocalDescription(offer);
         theirConnection.setRemoteDescription(offer);
 
         theirConnection.createAnswer(function (offer) {
-            console.log('their offer: ');
-            console.log(offer);
-            console.log("\n");
-            console.log("\n");
-
+            console.log('their offer: ', offer);
+            // console.log("\n");
+            // console.log("\n");
 
             theirConnection.setLocalDescription(offer);
             yourConnection.setRemoteDescription(offer);
