@@ -22,6 +22,20 @@ const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
 
 const WebSocket = require('ws/lib/websocket');
+const {
+  // getUserMedia,
+  MediaStream,
+  MediaStreamTrack,
+  RTCDataChannel,
+  RTCDataChannelEvent,
+  RTCIceCandidate,
+  RTCPeerConnection,
+  RTCPeerConnectionIceEvent,
+  RTCRtpReceiver,
+  RTCRtpSender,
+  RTCRtpTransceiver,
+  RTCSessionDescription,
+} = require('wrtc');
 
 const nativeWorker = require('worker-native');
 
@@ -692,6 +706,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Comment = Comment;
   window.NodeList = NodeList;
   window.HTMLCollection = HTMLCollection;
+
+  window.MediaStream = MediaStream;
+  window.MediaStreamTrack = MediaStreamTrack;
+  window.RTCDataChannel = RTCDataChannel;
+  window.RTCDataChannelEvent = RTCDataChannelEvent;
+  window.RTCIceCandidate = RTCIceCandidate;
+  window.RTCPeerConnection = RTCPeerConnection;
+  window.RTCPeerConnectionIceEvent = RTCPeerConnectionIceEvent;
+  window.RTCRtcReceiver = RTCRtcReceiver;
+  window.RTCRtpSender = RTCRtpSender;
+  window.RTCRtpTransceiver = RTCRtpTransceiver;
+  window.RTCSessionDescription = RTCSessionDescription;
 
   window.customElements = new CustomElementRegistry(window);
   window.CustomElementRegistry = CustomElementRegistry;
