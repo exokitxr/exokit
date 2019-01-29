@@ -36,7 +36,7 @@ fi
 ./magicleap-js/hack-toolchain.js
 
 pushd ..
-npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
+npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64 --no-optional
 find -name '\.bin' | xargs rm -Rf
 popd
 
