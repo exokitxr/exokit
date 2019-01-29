@@ -19,7 +19,6 @@ export AR="$MLSDK/tools/toolchains/bin/aarch64-linux-android-ar"
 EXTRA_FLAGS="-I$MLSDK/lumin/stl/libc++/include -I$MLSDK/lumin/usr/include"
 export CFLAGS="$CFLAGS $EXTRA_FLAGS"
 export CXXFLAGS="$CXXFLAGS $EXTRA_FLAGS"
-export TARGET_ARCH="arm64" # for wrtc install prebuilt
 
 export LUMIN=1
 
@@ -36,6 +35,7 @@ fi
 ./magicleap-js/hack-toolchain.js
 
 pushd ..
+export TARGET_ARCH="arm64" # for wrtc install prebuilt
 npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64 --no-optional
 find -name '\.bin' | xargs rm -Rf
 popd
