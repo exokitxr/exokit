@@ -60,7 +60,7 @@ enum DummyValue {
   PAUSED,
 };
 
-enum Event {
+/* enum Event {
   NEW_INIT_ARG,
   STOP,
   PAUSE,
@@ -72,7 +72,7 @@ enum KeyboardEventType {
   CHAR,
   KEY_DOWN,
   KEY_UP,
-};
+}; */
 
 class MLPoseRes {
 public:
@@ -95,7 +95,19 @@ struct application_context_t {
   NATIVEwindow *window;
 };
 
-class KeyboardEvent {
+class EventHandler {
+public:
+  EventHandler(uv_async_t *eventsAsync, Local<Function> eventsCb, uv_async_t *keyboardEventsAsync, Local<Function> keyboardEventsCb);
+
+  uv_async_t *eventsAsync;
+  Nan::Persistent<Function> eventsCb;
+  std::deque<std::function<void(int, Local<Value> *)>> eventsFns;
+  uv_async_t *keyboardEventsAsync;
+  Nan::Persistent<Function> keyboardEventsCb;
+  std::deque<std::function<void(int, Local<Value> *)>> keyboardEventsFns;
+};
+
+/* class KeyboardEvent {
 public:
   KeyboardEvent(KeyboardEventType type, uint32_t char_utf32);
   KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask);
@@ -104,7 +116,7 @@ public:
   uint32_t char_utf32;
   MLKeyCode key_code;
   uint32_t modifier_mask;
-};
+}; */
 
 void RunResInMainThread(uv_async_t *handle);
 

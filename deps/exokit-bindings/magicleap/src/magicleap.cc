@@ -26,13 +26,35 @@ MLInputKeyboardCallbacks keyboardCallbacks;
 MLCameraDeviceStatusCallbacks cameraDeviceStatusCallbacks;
 MLCameraCaptureCallbacks cameraCaptureCallbacks;
 
-Nan::Persistent<Function> eventsCb;
+/* Nan::Persistent<Function> eventsCb;
 std::vector<Event> events;
 uv_async_t eventsAsync;
 
 Nan::Persistent<Function> keyboardEventsCb;
 std::vector<KeyboardEvent> keyboardEvents;
-uv_async_t keyboardEventsAsync;
+uv_async_t keyboardEventsAsync; */
+
+EventHandler *eventHandler;
+std::mutex eventHandlerMutex;
+
+void QueueEvent(std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
+  {
+    std::lock_guard lock(eventHandlerMutex);
+    
+    eventHandler->eventsFns.push_back(fn);
+  }
+  
+  uv_async_send(eventHandler->eventsAsync);
+}
+void QueueKeyboardEvent(std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
+  {
+    std::lock_guard lock(eventHandlerMutex);
+    
+    eventHandler->keyboardEventsFns.push_back(fn);
+  }
+  
+  uv_async_send(eventHandler->keybaordEventsAsync);
+}
 
 uv_sem_t reqSem;
 uv_sem_t resSem;
@@ -151,6 +173,10 @@ std::string id2String(const uint64_t &id) {
   sprintf(idbuf, "%016llx", id);
   return std::string(idbuf);
 }
+
+EventHandler::EventHandler(uv_async_t *eventsAsync, Local<Function> eventsCb, uv_async_t *keyboardEventsAsync, Local<Function> keyboardEventsCb) :
+  eventsAsync(eventsAsync), eventsCb(eventsCb), keyboardEventsAsync(keyboardEventsAsync), keyboardEventsCb(keyboardEventsCb)
+  {}
 
 MLPoseRes::MLPoseRes(Local<Function> cb) : cb(cb) {}
 
@@ -304,36 +330,60 @@ static void onNewInitArg(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On new init arg called %x.", application_name, args);
 
-  events.push_back(Event::NEW_INIT_ARG);
-  uv_async_send(&eventsAsync);
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Value> argv[] = {
+      JS_STR("newInitArg"),
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static void onStop(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On stop called.", application_name);
-  events.push_back(Event::STOP);
-  uv_async_send(&eventsAsync);
+  
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Value> argv[] = {
+      JS_STR("stop"),
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static void onPause(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
   ML_LOG(Info, "%s: On pause called.", application_name);
-  events.push_back(Event::PAUSE);
-  uv_async_send(&eventsAsync);
+  
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Value> argv[] = {
+      JS_STR("pause"),
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static void onResume(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On resume called.", application_name);
-  events.push_back(Event::RESUME);
-  uv_async_send(&eventsAsync);
+  
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Value> argv[] = {
+      JS_STR("resume"),
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static void onUnloadResources(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On unload resources called.", application_name);
-  events.push_back(Event::UNLOAD_RESOURCES);
-  uv_async_send(&eventsAsync);
+  
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Value> argv[] = {
+      JS_STR("unloadResources"),
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
@@ -1593,23 +1643,63 @@ NAN_METHOD(MLEyeTracker::Destroy) {
 
 // keyboard callbacks
 
+void setKeyEvent(Local<Object> obj, uint32_t charCode, MLKeyCode mlKeyCode, uint32_t modifier_mask) {
+  uint32_t keyCode = mlKeycodeToKeycode(mlKeyCode);
+  obj->Set(JS_STR("charCode"), JS_INT(charCode));
+  obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
+  obj->Set(JS_STR("which"), JS_INT(keyCode));
+  obj->Set(JS_STR("shiftKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SHIFT));
+  obj->Set(JS_STR("altKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_ALT));
+  obj->Set(JS_STR("ctrlKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_CTRL));
+  obj->Set(JS_STR("metaKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_META));
+  // obj->Set(JS_STR("sym"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SYM));
+  // obj->Set(JS_STR("function"), JS_BOOL(modifier_mask & MLKEYMODIFIER_FUNCTION));
+  // obj->Set(JS_STR("capsLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
+  // obj->Set(JS_STR("numLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_NUM_LOCK));
+  // obj->Set(JS_STR("scrollLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
+}
+
 void onChar(uint32_t char_utf32, void *data) {
-  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::CHAR, char_utf32));
-  uv_async_send(&keyboardEventsAsync);
+  QueueKeyboardEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("keypress"));
+    setKeyEvent(obj, char_utf32, MLKEYCODE_UNKNOWN, 0);
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 void onKeyDown(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
-  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::KEY_DOWN, key_code, modifier_mask));
-  uv_async_send(&keyboardEventsAsync);
+  QueueKeyboardEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("keydown"));
+    setKeyEvent(obj, 0, key_code, modifier_mask);
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 void onKeyUp(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
-  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::KEY_UP, key_code, modifier_mask));
-  uv_async_send(&keyboardEventsAsync);
+  QueueKeyboardEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("keyup"));
+    setKeyEvent(obj, 0, key_code, modifier_mask);
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 // KeyboardEvent
 
-KeyboardEvent::KeyboardEvent(KeyboardEventType type, uint32_t char_utf32) : type(type), char_utf32(char_utf32), key_code(MLKEYCODE_UNKNOWN), modifier_mask(0) {}
-KeyboardEvent::KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask) : type(type), char_utf32(0), key_code(key_code), modifier_mask(modifier_mask) {}
+/* KeyboardEvent::KeyboardEvent(KeyboardEventType type, uint32_t char_utf32) : type(type), char_utf32(char_utf32), key_code(MLKEYCODE_UNKNOWN), modifier_mask(0) {}
+KeyboardEvent::KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask) : type(type), char_utf32(0), key_code(key_code), modifier_mask(modifier_mask) {} */
 
 // camera device status callbacks
 
@@ -1985,7 +2075,7 @@ NAN_METHOD(MLContext::New) {
   info.GetReturnValue().Set(mlContextObj);
 }
 
-void RunEventsInMainThread(uv_async_t *handle) {
+/* void RunEventsInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
   for (const auto &event : events) {
@@ -2027,6 +2117,30 @@ void RunEventsInMainThread(uv_async_t *handle) {
     asyncResource.MakeCallback(eventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
   }
   events.clear();
+} */
+void RunEventsInMainThread(uv_async_t *async) {
+  Nan::HandleScope scope;
+
+  std::deque<std::function<void(int argc, Local<Value> *argv)>> localFns;
+  Local<Function> handlerFn;
+  {
+    std::lock_guard lock(eventHandlerMutex);
+    
+    localFns = std::move(eventHandler->fns);
+    eventHandler->fns.clear();
+    
+    handlerFn = Nan::New(eventHndler->eventsCb);
+  } 
+  for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
+    Nan::HandleScope scope;
+
+    (*iter)([&](int argc, Local<Value> *argv) -> void {
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
+      
+      asyncResource.MakeCallback(handlerFn, argc, argv);
+    });
+  }
 }
 
 inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
@@ -2316,7 +2430,7 @@ inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
   }
 }
 
-void RunKeyboardEventsInMainThread(uv_async_t *handle) {
+/* void RunKeyboardEventsInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
   for (const auto &keyboardEvent : keyboardEvents) {
@@ -2367,6 +2481,30 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
     asyncResource.MakeCallback(keyboardEventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
   }
   keyboardEvents.clear();
+} */
+void RunKeyboardEventsInMainThread(uv_async_t *async) {
+  Nan::HandleScope scope;
+
+  std::deque<std::function<void(int argc, Local<Value> *argv)>> localFns;
+  Local<Function> handlerFn;
+  {
+    std::lock_guard lock(eventHandlerMapMutex);
+    
+    localFns = std::move(eventHandler->fns);
+    eventHandler->fns.clear();
+    
+    handlerFn = Nan::New(eventHandler->keyboardEventsCb);
+  } 
+  for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
+    Nan::HandleScope scope;
+
+    (*iter)([&](int argc, Local<Value> *argv) -> void {
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlKeyboardEvents");
+      
+      asyncResource.MakeCallback(handlerFn, argc, argv);
+    });
+  }
 }
 
 void RunCameraInMainThread(uv_async_t *handle) {
@@ -2693,12 +2831,19 @@ NAN_METHOD(MLContext::DeinitLifecycle) {
 
 NAN_METHOD(MLContext::SetEventHandlers) {
   if (info[0]->IsFunction() && info[1]->IsFunction()) {
-    eventsCb.Reset(Local<Function>::Cast(info[0])); // XXX track this per-window, not globally
-    keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
+    Local<Function> eventsCb = Local<Function>::Cast(info[0]);
+    Local<Function> keyboardEventsCb = Local<Function>::Cast(info[1]);
 
-    uv_loop_t *loop = windowsystem::GetEventLoop();
-    uv_async_init(loop, &eventsAsync, RunEventsInMainThread);
-    uv_async_init(loop, &keyboardEventsAsync, RunKeyboardEventsInMainThread);
+    {
+      std::lock_guard lock(eventHandlerMutex);
+      
+      uv_loop_t *loop = windowsystem::GetEventLoop();
+      uv_async_t *eventsAsync = new uv_async_t();
+      uv_async_init(loop, eventsAsync, RunEventsInMainThread);
+      uv_async_t *keyboardEventsAsync = new uv_async_t();
+      uv_async_init(loop, keyboardEventsAsync, RunKeyboardEventsInMainThread);
+      eventHandler = new EventHandler(eventsAsync, keyboardEventsAsync, eventsCb, keyboardEventsCb);
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }
