@@ -714,7 +714,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.RTCIceCandidate = RTCIceCandidate;
   window.RTCPeerConnection = RTCPeerConnection;
   window.RTCPeerConnectionIceEvent = RTCPeerConnectionIceEvent;
-  window.RTCRtcReceiver = RTCRtcReceiver;
+  window.RTCRtpReceiver = RTCRtpReceiver;
   window.RTCRtpSender = RTCRtpSender;
   window.RTCRtpTransceiver = RTCRtpTransceiver;
   window.RTCSessionDescription = RTCSessionDescription;
