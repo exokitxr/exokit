@@ -240,7 +240,7 @@
                     "-Wl,-rpath,./../node_modules/native-video-deps/lib/linux/libswscale",
                     "-Wl,-rpath,./../node_modules/native-video-deps/lib/linux/libswresample",
                     "-Wl,-rpath,./../node_modules/native-browser-deps-linux/lib4/linux",
-                    "-Wl,-rpath,./../node_modules/native-rtc-deps-linux/lib/linux",
+                    "-Wl,-rpath,./../node_modules/native-rtc-deps/lib/linux",
                     "-Wl,-rpath,./../node_modules/native-openvr-deps/bin/linux64",
                     "-Wl,-rpath,./node_modules/native-openvr-deps/bin/linux64",
                   ],
