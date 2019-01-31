@@ -14,6 +14,7 @@
 #include <AudioContext.h>
 #include <Video.h>
 #include <browser.h>
+#include <webrtc.h>
 #if _WIN32
 #include <leapmotion.h>
 #endif
