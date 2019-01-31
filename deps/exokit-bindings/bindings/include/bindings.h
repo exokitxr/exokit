@@ -33,5 +33,6 @@ Local<Object> makeCanvasPattern();
 Local<Object> makeAudio();
 Local<Object> makeVideo(Local<Value> imageDataCons);
 Local<Object> makeBrowser();
+Local<Object> makeRtc();
 
 #endif

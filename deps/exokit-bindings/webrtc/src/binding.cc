@@ -7,6 +7,7 @@
  */
 #include "node.h"
 
+#include "webrtc.h"
 #include "datachannel.h"
 #include "rtcstatsreport.h"
 #include "rtcstatsresponse.h"
@@ -31,14 +32,3 @@ void init(v8::Handle<v8::Object> exports) {
 }
 
 }
-
-NODE_MODULE(wrtc, node_webrtc::init)
-#ifndef LUMIN
-NODE_MODULE(NODE_GYP_MODULE_NAME, NODE_MODULE(wrtc, node_webrtc::init))
-#else
-extern "C" {
-  void node_register_module_wrtc(Local<Object> exports, Local<Value> module, Local<Context> context) {
-    node_webrtc::init(exports);
-  }
-}
-#endif
