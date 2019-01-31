@@ -131,6 +131,7 @@
                 'OPENVR',
                 'LEAPMOTION',
                 'WRAPPING_CEF_SHARED',
+                'WEBRTC_WIN',
               ],
             }],
             ['OS=="linux"', {
@@ -248,6 +249,7 @@
                     'NOMINMAX',
                     'OPENVR',
                     'WRAPPING_CEF_SHARED',
+                    'WEBRTC_POSIX',
                   ],
                 }],
                 ['"<!(node -e \"console.log(process.arch)\")"=="arm64"', {
@@ -344,6 +346,7 @@
                   ],
                   'defines': [
                     'NOMINMAX',
+                    'WEBRTC_POSIX',
                   ],
                 }],
               ],
@@ -462,6 +465,7 @@
               'defines': [
                 'OPENVR',
                 'WRAPPING_CEF_SHARED',
+                'WEBRTC_POSIX',
               ],
             }],
           ],
@@ -545,6 +549,7 @@
             'NOMINMAX',
             'LUMIN',
             'WRAPPING_CEF_SHARED',
+            'WEBRTC_POSIX',
           ],
         }],
       ],
