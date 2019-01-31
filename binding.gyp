@@ -21,6 +21,7 @@
                 'deps/exokit-bindings/videocontext/src/win/*.cpp',
                 'deps/exokit-bindings/windowsystem/src/*.cc',
                 'deps/exokit-bindings/glfw/src/*.cc',
+                'deps/exokit-bindings/webrtc/src/*.cc',
                 'deps/openvr/src/*.cpp',
                 'deps/exokit-bindings/leapmotion/src/*.cc',
               ],
@@ -34,6 +35,8 @@
                 "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
+                "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/include')\")",
+                "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/include/webrtc')\")",
                 "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/headers')\")",
                 "<!(node -e \"console.log(require.resolve('leapmotion').slice(0, -9) + '/include')\")",
                 '<(module_root_dir)/deps/exokit-bindings',
@@ -51,6 +54,7 @@
                 '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
                 '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
                 '<(module_root_dir)/deps/exokit-bindings/glfw/include',
+                '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
                 '<(module_root_dir)/deps/openvr/include',
                 '<(module_root_dir)/deps/exokit-bindings/leapmotion/include',
               ],
@@ -63,6 +67,7 @@
                 "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/lib/win64')\")",
                 "<!(node -e \"console.log(require.resolve('leapmotion').slice(0, -9) + '/lib/win')\")",
                 "<!(node -e \"console.log(require.resolve('native-browser-deps-windows').slice(0, -9) + '/lib2/windows')\")",
+                "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/lib/windows')\")",
               ],
               'libraries': [
                 'opengl32.lib',
@@ -81,6 +86,7 @@
                 'Leap.lib',
                 'libcef.lib',
                 'libcef_dll_wrapper.lib',
+                'webrtc.lib',
               ],
               'copies': [
                 {
@@ -144,6 +150,7 @@
                     '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
                     '<!@(ls -1 deps/exokit-bindings/windowsystem/src/*.cc)',
                     '<!@(ls -1 deps/exokit-bindings/glfw/src/*.cc)',
+                    '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)',
                     '<!@(ls -1 deps/openvr/src/*.cpp)',
                   ],
                   'include_dirs': [
@@ -156,6 +163,8 @@
                     "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/include')\")",
                     "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
                     "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
+                    "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/include')\")",
+                    "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/include/webrtc')\")",
                     "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/headers')\")",
                     '<(module_root_dir)/deps/exokit-bindings',
                     '<(module_root_dir)/deps/exokit-bindings/utf8',
@@ -172,6 +181,7 @@
                     '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
                     '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
                     '<(module_root_dir)/deps/exokit-bindings/glfw/include',
+                    '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
                     '<(module_root_dir)/deps/openvr/include',
                   ],
                   'library_dirs': [
@@ -182,6 +192,7 @@
                     "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/linux')\")",
                     "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/lib/linux64')\")",
                     "<!(node -e \"console.log(require.resolve('native-browser-deps-linux').slice(0, -9) + '/lib4/linux')\")",
+                    "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/lib/linux')\")",
                   ],
                   'libraries': [
                     '-lGL',
@@ -211,6 +222,7 @@
                     '-lexpat',
                     '-lcef',
                     '-lcef_dll_wrapper',
+                    '-lwebrtc',
                   ],
                   'ldflags': [
                     '-Wl,-Bsymbolic', # required for ffmpeg asm linkage
@@ -228,6 +240,7 @@
                     "-Wl,-rpath,./../node_modules/native-video-deps/lib/linux/libswscale",
                     "-Wl,-rpath,./../node_modules/native-video-deps/lib/linux/libswresample",
                     "-Wl,-rpath,./../node_modules/native-browser-deps-linux/lib4/linux",
+                    "-Wl,-rpath,./../node_modules/native-rtc-deps-linux/lib/linux",
                     "-Wl,-rpath,./../node_modules/native-openvr-deps/bin/linux64",
                     "-Wl,-rpath,./node_modules/native-openvr-deps/bin/linux64",
                   ],
@@ -251,6 +264,7 @@
                     '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
                     '<!@(ls -1 deps/exokit-bindings/windowsystem/src/*.cc)',
                     '<!@(ls -1 deps/exokit-bindings/glfw/src/*.cc)',
+                    '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)',
                   ],
                   'include_dirs': [
                     "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
@@ -275,6 +289,7 @@
                     '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
                     '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
                     '<(module_root_dir)/deps/exokit-bindings/glfw/include',
+                    '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
                   ],
                   'library_dirs': [
                     "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib2/arm64/glew')\")",
@@ -348,6 +363,7 @@
                 '<!@(ls -1 deps/exokit-bindings/videocontext/src/mac/*.mm)',
                 '<!@(ls -1 deps/exokit-bindings/windowsystem/src/*.cc)',
                 '<!@(ls -1 deps/exokit-bindings/glfw/src/*.cc)',
+                '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)',
                 '<!@(ls -1 deps/openvr/src/*.cpp)',
               ],
               'include_dirs': [
@@ -360,6 +376,8 @@
                 "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
+                "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/lib')\")",
+                "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/lib/webrtc')\")",
                 "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/headers')\")",
                 '<(module_root_dir)/deps/exokit-bindings',
                 '<(module_root_dir)/deps/exokit-bindings/utf8',
@@ -376,6 +394,7 @@
                 '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
                 '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
                 '<(module_root_dir)/deps/exokit-bindings/glfw/include',
+                '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
                 '<(module_root_dir)/deps/openvr/include',
               ],
               'library_dirs': [
@@ -385,6 +404,7 @@
                 "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib/macos')\")",
                 "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/macos')\")",
                 "<!(node -e \"console.log(require.resolve('native-browser-deps-macos').slice(0, -9) + '/lib3/macos')\")",
+                "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/lib/macos')\")",
               ],
               'libraries': [
                 '-framework OpenGL',
@@ -407,6 +427,8 @@
                 '-lpostproc.55',
                 '-lcef_dll_wrapper',
                 "-F <!(node -e \"console.log(require.resolve('native-browser-deps-macos').slice(0, -9) + '/lib3/macos')\")",
+                "-F <!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/lib/macos')\")",
+                '-lwebrtc',
                 "-framework 'Chromium Embedded Framework'",
                 "-F <!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/bin/osx64')\")",
                 "-framework OpenVR",
@@ -416,6 +438,7 @@
                   "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib/macos')\")",
                   "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/macos')\")",
                   "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-browser-deps-macos').slice(0, -9) + '/lib3/macos')\")",
+                  "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/lib/macos')\")",
                   "-framework 'Chromium Embedded Framework'",
                   "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/bin/osx64')\")",
                   '-framework OpenVR',
@@ -470,6 +493,7 @@
             "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/include')\")",
             "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
             "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
+            # "<!(node -e \"console.log(require.resolve('native-rtc-deps').slice(0, -9) + '/lib/linux')\")",
             '<(module_root_dir)/deps/exokit-bindings',
             '<(module_root_dir)/deps/exokit-bindings/utf8',
             '<(module_root_dir)/deps/exokit-bindings/node',
@@ -500,6 +524,7 @@
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-video-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-browser-deps-magicleap/lib5/magicleap",
+            # "<(module_root_dir)/node_modules/native-rtc-deps/lib/magicleap",
           ],
           'libraries': [
             '-lskia',
@@ -512,6 +537,7 @@
             '-lswresample',
             '-lopus',
             '-llog',
+            '-lwebrtc',
           ],
           'ldflags': [
           ],
