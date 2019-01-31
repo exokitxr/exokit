@@ -35,7 +35,7 @@ const {
   RTCRtpSender,
   RTCRtpTransceiver,
   RTCSessionDescription,
-} = require('wrtc');
+} = require('./RTC/index.js');
 
 const nativeWorker = require('worker-native');
 
