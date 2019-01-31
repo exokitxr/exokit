@@ -73,7 +73,6 @@ const args = (() => {
         'headless',
       ],
       string: [
-        'tab',
         'webgl',
         'xr',
         'size',
@@ -83,7 +82,6 @@ const args = (() => {
         v: 'version',
         h: 'home',
         l: 'log',
-        t: 'tab',
         w: 'webgl',
         x: 'xr',
         p: 'performance',
@@ -101,9 +99,8 @@ const args = (() => {
     return {
       version: minimistArgs.version,
       url: minimistArgs._[0] || '',
-      home: minimistArgs.home || !!minimistArgs.tab,
+      home: minimistArgs.home,
       log: minimistArgs.log,
-      tab: minimistArgs.tab,
       webgl: minimistArgs.webgl || '2',
       xr: minimistArgs.xr || 'all',
       performance: !!minimistArgs.performance,
@@ -1753,7 +1750,7 @@ const _prepare = () => Promise.all([
 const _start = () => {
   let {url: u} = args;
   if (!u && args.home) {
-    u = 'file://' + path.join(path.dirname(require.resolve('exokit-home')), 'index.html') + (args.tag ? ('?t=' + encodeURIComponent(args.tab)) : '');
+    u = 'file://' + path.join(__dirname, 'examples', 'realitytabs.html');
   }
   if (u) {
     if (u === '.') {
