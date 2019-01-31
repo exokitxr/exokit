@@ -152,32 +152,30 @@ class XRSession extends EventTarget {
     return Promise.resolve();
   }
   update() {
-    if (this.session) {
-      const gamepads = GlobalContext.getGamepads();
+    const gamepads = GlobalContext.getGamepads();
+    
+    for (let i = 0; i < gamepads.length; i++) {
+      const gamepad = gamepads[i];
+      const inputSource = this._inputSources[i];
       
-      for (let i = 0; i < gamepads.length; i++) {
-        const gamepad = gamepads[i];
-        const inputSource = this._inputSources[i];
-        
-        const pressed = gamepad.buttons[1].pressed;
-        const lastPressed = this._lastPresseds[i];
-        if (pressed && !lastPressed) {
-          this.emit('selectstart', new XRInputSourceEvent('selectstart', {
-            frame: this._frame,
-            inputSource,
-          }));
-          this.emit('select', new XRInputSourceEvent('select', {
-            frame: this._frame,
-            inputSource,
-          }));
-        } else if (lastPressed && !pressed) {
-          this.emit('selectend', new XRInputSourceEvent('selectend', {
-            frame: this._frame,
-            inputSource,
-          }));
-        }
-        this._lastPresseds[i] = pressed;
+      const pressed = gamepad.buttons[1].pressed;
+      const lastPressed = this._lastPresseds[i];
+      if (pressed && !lastPressed) {
+        this.emit('selectstart', new XRInputSourceEvent('selectstart', {
+          frame: this._frame,
+          inputSource,
+        }));
+        this.emit('select', new XRInputSourceEvent('select', {
+          frame: this._frame,
+          inputSource,
+        }));
+      } else if (lastPressed && !pressed) {
+        this.emit('selectend', new XRInputSourceEvent('selectend', {
+          frame: this._frame,
+          inputSource,
+        }));
       }
+      this._lastPresseds[i] = pressed;
     }
   }
   /* update(update) {
