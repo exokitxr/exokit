@@ -514,6 +514,7 @@
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
             '<(module_root_dir)/deps/exokit-bindings/egl/include',
+            '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
             '<(module_root_dir)/deps/exokit-bindings/magicleap/include',
             '<(module_root_dir)/deps/exokit-bindings/magicleap/deps/sjpeg/src',
             "<!(echo $MLSDK)/lumin/stl/libc++/include",
