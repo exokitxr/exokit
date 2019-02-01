@@ -165,7 +165,8 @@ STLIBS = node \
   avdevice \
   swscale \
   swresample \
-  opus
+  opus \
+  webrtc
 
 # shared libs to link in
 #
