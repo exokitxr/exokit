@@ -667,7 +667,7 @@ NAN_GETTER(PeerConnection::GetIceGatheringState) {
 }
 
 NAN_SETTER(PeerConnection::ReadOnly) {
-  INFO("PeerConnection::ReadOnly");
+  // INFO("PeerConnection::ReadOnly");
 }
 
 void PeerConnection::Init(v8::Handle<Object> exports) {

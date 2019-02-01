@@ -115,7 +115,7 @@ NAN_GETTER(RTCStatsReport::GetType) {
 }
 
 NAN_SETTER(RTCStatsReport::ReadOnly) {
-  INFO("RTCStatsReport::ReadOnly");
+  // INFO("RTCStatsReport::ReadOnly");
 }
 
 void RTCStatsReport::Init(Handle<Object> exports) {

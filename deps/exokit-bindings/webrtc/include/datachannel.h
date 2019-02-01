@@ -23,6 +23,8 @@
 
 #include "peerconnectionfactory.h"
 
+#undef ERROR
+
 namespace node_webrtc {
 
 class DataChannelObserver;
