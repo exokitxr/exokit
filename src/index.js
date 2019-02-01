@@ -111,7 +111,7 @@ const args = (() => {
       blit: minimistArgs.blit,
       require: minimistArgs.require,
       headless: minimistArgs.headless,
-      download: minimistArgs.download,
+      download: minimistArgs.download !== undefined ? (minimistArgs.download || path.join(process.cwd(), 'downloads')) : undefined,
     };
   } else {
     return {};
