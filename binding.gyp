@@ -485,6 +485,7 @@
             '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/windowsystem/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/egl/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/magicleap/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/magicleap/deps/sjpeg/src/*.cc)',
           ],
