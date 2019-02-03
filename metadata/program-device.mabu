@@ -91,6 +91,7 @@ DATAS = ../package.json : / \
   ../build/Release/exokit.node : /build/Release/exokit.node \
   ../node_modules/ : /node_modules/ \
   ../node_modules/native-browser-deps-magicleap/lib5/magicleap/libmlservo.so : /bin/ \
+  ../node_modules/native-webrtc-deps/lib/magicleap/libOpenSLES.so : /bin/ \
   ../examples/ : /examples/ \
   ../metadata/fonts.xml : /etc/fonts.xml \
   ../assets/fonts/ : /assets/fonts/ \
@@ -175,7 +176,8 @@ SHLIBS = ml_privileges \
   ml_camera \
   ml_audio \
   log \
-  mlservo
+  mlservo \
+  OpenSLES
 
 # paths for finding libraries above
 #
