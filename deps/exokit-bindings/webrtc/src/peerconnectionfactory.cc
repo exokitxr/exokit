@@ -8,6 +8,8 @@
 #include "peerconnectionfactory.h"
 
 #include "webrtc/rtc_base/ssladapter.h"
+#include "webrtc/api/video_codecs/video_encoder_factory.h"
+#include "webrtc/api/video_codecs/video_decoder_factory.h"
 
 #include "common.h"
 
@@ -32,25 +34,7 @@ int PeerConnectionFactory::_references = 0;
 PeerConnectionFactory::PeerConnectionFactory(rtc::scoped_refptr<webrtc::AudioDeviceModule> audioDeviceModule) {
   TRACE_CALL;
 
-  bool result;
-
-  _networkThread = std::unique_ptr<rtc::Thread>(new rtc::Thread());
-  assert(_networkThread);
-
-  _workerThread = std::unique_ptr<rtc::Thread>(new rtc::Thread());
-  assert(_workerThread);
-
-  result = _workerThread->Start();
-  assert(result);
-
-  _signalingThread = std::unique_ptr<rtc::Thread>(new rtc::Thread());
-  assert(_signalingThread);
-
-  result = _signalingThread->Start();
-  assert(result);
-
-  _factory = webrtc::CreatePeerConnectionFactory(_networkThread.get(), _workerThread.get(), _signalingThread.get(), audioDeviceModule,
-          nullptr, nullptr, nullptr, nullptr);
+  _factory = webrtc::CreatePeerConnectionFactory(nullptr, nullptr, nullptr, audioDeviceModule, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
   assert(_factory);
 
   TRACE_END;
@@ -60,12 +44,6 @@ PeerConnectionFactory::~PeerConnectionFactory() {
   TRACE_CALL;
 
   _factory = nullptr;
-
-  _workerThread->Stop();
-  _signalingThread->Stop();
-
-  _workerThread = nullptr;
-  _signalingThread = nullptr;
 
   TRACE_END;
 }
