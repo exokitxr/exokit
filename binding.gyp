@@ -87,6 +87,11 @@
                 'libcef.lib',
                 'libcef_dll_wrapper.lib',
                 'webrtc.lib',
+                'winmm.lib',
+                'wmcodecdspuuid.lib',
+                'secur32.lib',
+                'msdmo.lib',
+                'dmoguids.lib',
               ],
               'copies': [
                 {
