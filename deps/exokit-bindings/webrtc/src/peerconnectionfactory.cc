@@ -33,8 +33,16 @@ int PeerConnectionFactory::_references = 0;
 
 PeerConnectionFactory::PeerConnectionFactory(rtc::scoped_refptr<webrtc::AudioDeviceModule> audioDeviceModule) {
   TRACE_CALL;
+  
+  _signalingThread = std::unique_ptr<rtc::Thread>(new rtc::Thread());
+  assert(_signalingThread);
 
-  _factory = webrtc::CreatePeerConnectionFactory(nullptr, nullptr, nullptr, audioDeviceModule, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+  {
+    bool result = _signalingThread->Start();
+    assert(result);
+  }
+
+  _factory = webrtc::CreatePeerConnectionFactory(nullptr, nullptr, _signalingThread.get(), audioDeviceModule, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
   assert(_factory);
 
   TRACE_END;
@@ -44,6 +52,9 @@ PeerConnectionFactory::~PeerConnectionFactory() {
   TRACE_CALL;
 
   _factory = nullptr;
+
+  _signalingThread->Stop();
+  _signalingThread = nullptr;
 
   TRACE_END;
 }

@@ -69,6 +69,8 @@ class PeerConnectionFactory
   static int _references;
 
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _factory;
+  
+  std::unique_ptr<rtc::Thread> _signalingThread;
 };
 
 }  // namespace node_webrtc
