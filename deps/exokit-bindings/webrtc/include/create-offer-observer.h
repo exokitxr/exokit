@@ -11,6 +11,7 @@
 #include <string>
 
 #include "webrtc/api/jsep.h"
+#include "webrtc/api/rtcerror.h"
 
 namespace node_webrtc {
 
@@ -24,8 +25,9 @@ class CreateOfferObserver
  public:
   explicit CreateOfferObserver(PeerConnection* connection): parent(connection) {}
 
-  virtual void OnSuccess(webrtc::SessionDescriptionInterface* sdp);
-  virtual void OnFailure(const std::string& msg);
+  virtual void OnSuccess(webrtc::SessionDescriptionInterface* sdp) override;
+  virtual void OnFailure(webrtc::RTCError error) override;
+  virtual void OnFailure(const std::string& msg) override;
 };
 
 }  // namespace node_webrtc

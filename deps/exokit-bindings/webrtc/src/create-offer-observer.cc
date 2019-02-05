@@ -20,6 +20,14 @@ void CreateOfferObserver::OnSuccess(webrtc::SessionDescriptionInterface* sdp) {
   TRACE_END;
 }
 
+void CreateOfferObserver::OnFailure(webrtc::RTCError error) {
+  TRACE_CALL;
+  const char *msg = error.message();
+  PeerConnection::ErrorEvent* data = new PeerConnection::ErrorEvent(msg);
+  parent->QueueEvent(PeerConnection::CREATE_OFFER_ERROR, static_cast<void*>(data));
+  TRACE_END;
+}
+
 void CreateOfferObserver::OnFailure(const std::string& msg) {
   TRACE_CALL;
   PeerConnection::ErrorEvent* data = new PeerConnection::ErrorEvent(msg);
