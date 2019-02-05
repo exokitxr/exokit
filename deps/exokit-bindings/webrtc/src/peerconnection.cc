@@ -346,7 +346,8 @@ NAN_METHOD(PeerConnection::CreateOffer) {
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.This());
 
   if (self->_jinglePeerConnection != nullptr) {
-    self->_jinglePeerConnection->CreateOffer(self->_createOfferObserver, nullptr);
+    webrtc::PeerConnectionInterface::RTCOfferAnswerOptions options;
+    self->_jinglePeerConnection->CreateOffer(self->_createOfferObserver, options);
   }
 
   TRACE_END;
@@ -359,7 +360,8 @@ NAN_METHOD(PeerConnection::CreateAnswer) {
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.This());
 
   if (self->_jinglePeerConnection != nullptr) {
-    self->_jinglePeerConnection->CreateAnswer(self->_createAnswerObserver, nullptr);
+    webrtc::PeerConnectionInterface::RTCOfferAnswerOptions options;
+    self->_jinglePeerConnection->CreateAnswer(self->_createAnswerObserver, options);
   }
 
   TRACE_END;
