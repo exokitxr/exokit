@@ -563,6 +563,26 @@ NAN_METHOD(PeerConnection::Close) {
   info.GetReturnValue().Set(Nan::Undefined());
 }
 
+void Nan::SetMethod(v8::Local<v8::Object> recv,
+                    const char *name,
+                    Nan::FunctionCallback callback)
+
+NAN_METHOD(PeerConnection::GetSenders) {
+  TRACE_CALL;
+
+  info.GetReturnValue().Set(Nan::New<Array>());
+
+  TRACE_END;
+}
+
+NAN_METHOD(PeerConnection::GetReceivers) {
+  TRACE_CALL;
+
+  info.GetReturnValue().Set(Nan::New<Array>());
+
+  TRACE_END;
+}
+
 NAN_GETTER(PeerConnection::GetLocalDescription) {
   TRACE_CALL;
 
@@ -686,6 +706,8 @@ void PeerConnection::Init(v8::Handle<Object> exports) {
   Nan::SetPrototypeMethod(tpl, "addIceCandidate", AddIceCandidate);
   Nan::SetPrototypeMethod(tpl, "createDataChannel", CreateDataChannel);
   Nan::SetPrototypeMethod(tpl, "close", Close);
+  Nan::SetPrototypeMethod(tpl, "getSenders", GetSenders);
+  Nan::SetPrototypeMethod(tpl, "getReceivers", GetReceivers);
 
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("localDescription").ToLocalChecked(), GetLocalDescription, ReadOnly);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("remoteDescription").ToLocalChecked(), GetRemoteDescription, ReadOnly);

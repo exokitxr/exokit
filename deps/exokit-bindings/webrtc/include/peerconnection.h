@@ -165,6 +165,8 @@ class PeerConnection
   */
   static NAN_METHOD(GetStats);
   static NAN_METHOD(Close);
+  static NAN_METHOD(GetSenders);
+  static NAN_METHOD(GetReceivers);
 
   static NAN_GETTER(GetLocalDescription);
   static NAN_GETTER(GetRemoteDescription);
