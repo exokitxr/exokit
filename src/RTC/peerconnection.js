@@ -368,6 +368,20 @@ function RTCPeerConnection(configuration, constraints) {
       args: []
     });
   };
+  
+  this.getSenders = function close() {
+    return runImmediately({
+      func: 'getSenders',
+      args: []
+    });
+  };
+  
+  this.getReceivers = function close() {
+    return runImmediately({
+      func: 'getReceivers',
+      args: []
+    });
+  };
 }
 
 RTCPeerConnection.prototype.RTCIceConnectionStates = [
