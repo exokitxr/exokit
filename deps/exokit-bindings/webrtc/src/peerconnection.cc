@@ -563,10 +563,6 @@ NAN_METHOD(PeerConnection::Close) {
   info.GetReturnValue().Set(Nan::Undefined());
 }
 
-void Nan::SetMethod(v8::Local<v8::Object> recv,
-                    const char *name,
-                    Nan::FunctionCallback callback)
-
 NAN_METHOD(PeerConnection::GetSenders) {
   TRACE_CALL;
 
