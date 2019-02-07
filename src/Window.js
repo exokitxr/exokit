@@ -23,17 +23,17 @@ const {Request, Response, Headers, Blob} = fetch;
 
 const WebSocket = require('ws/lib/websocket');
 const {
-  // getUserMedia,
+  /* getUserMedia,
   MediaStream,
   MediaStreamTrack,
   RTCDataChannel,
-  RTCDataChannelEvent,
+  RTCDataChannelEvent, */
   RTCIceCandidate,
   RTCPeerConnection,
-  RTCPeerConnectionIceEvent,
+  /* RTCPeerConnectionIceEvent,
   RTCRtpReceiver,
   RTCRtpSender,
-  RTCRtpTransceiver,
+  RTCRtpTransceiver, */
   RTCSessionDescription,
 } = require('./RTC/index.js');
 
@@ -707,7 +707,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.NodeList = NodeList;
   window.HTMLCollection = HTMLCollection;
 
-  window.MediaStream = MediaStream;
+  /* window.MediaStream = MediaStream;
   window.MediaStreamTrack = MediaStreamTrack;
   window.RTCDataChannel = RTCDataChannel;
   window.RTCDataChannelEvent = RTCDataChannelEvent;
@@ -717,7 +717,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.RTCRtpReceiver = RTCRtpReceiver;
   window.RTCRtpSender = RTCRtpSender;
   window.RTCRtpTransceiver = RTCRtpTransceiver;
+  window.RTCSessionDescription = RTCSessionDescription; */
+  window.MediaStream = class MediaStream {};
+  window.RTCPeerConnection = RTCPeerConnection;
   window.RTCSessionDescription = RTCSessionDescription;
+  window.RTCIceCandidate = RTCIceCandidate;
 
   window.customElements = new CustomElementRegistry(window);
   window.CustomElementRegistry = CustomElementRegistry;
