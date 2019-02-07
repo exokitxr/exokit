@@ -379,7 +379,7 @@ bool MLRaycaster::Update() {
     if (raycastResult.state == MLRaycastResultState_HitObserved) {
       const MLVec3f &position = raycastResult.hitpoint;
       const MLVec3f &normal = raycastResult.normal;
-      const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 0, -1}, normal);
+      const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 1, 0}, normal);
       const MLVec3f &scale = {1, 1, 1};
       MLMat4f hitMatrix = composeMatrix(position, quaternion, scale);
 
