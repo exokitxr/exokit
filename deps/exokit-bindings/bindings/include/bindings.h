@@ -14,6 +14,7 @@
 #include <AudioContext.h>
 #include <Video.h>
 #include <browser.h>
+#include <webrtc.h>
 #if _WIN32
 #include <leapmotion.h>
 #endif
@@ -33,5 +34,6 @@ Local<Object> makeCanvasPattern();
 Local<Object> makeAudio();
 Local<Object> makeVideo(Local<Value> imageDataCons);
 Local<Object> makeBrowser();
+Local<Object> makeRtc();
 
 #endif

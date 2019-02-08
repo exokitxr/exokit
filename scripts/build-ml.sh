@@ -35,7 +35,8 @@ fi
 ./magicleap-js/hack-toolchain.js
 
 pushd ..
-npm i --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64
+export TARGET_ARCH="arm64" # for wrtc install prebuilt
+npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64 --no-optional
 find -name '\.bin' | xargs rm -Rf
 popd
 

@@ -7,6 +7,8 @@
 
 #include "bindings.h"
 
+#include "bindings.h"
+
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl() {
   return WebGLRenderingContext::Initialize(Isolate::GetCurrent());
 }
@@ -137,6 +139,18 @@ Local<Object> makeBrowser() {
   Local<Object> exports = Nan::New<Object>();
 
   exports->Set(JS_STR("Browser"), browser::Browser::Initialize(isolate));
+
+  return scope.Escape(exports);
+}
+
+Local<Object> makeRtc() {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  Local<Object> exports = Nan::New<Object>();
+
+  node_webrtc::init(exports);
 
   return scope.Escape(exports);
 }

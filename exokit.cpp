@@ -178,6 +178,9 @@ void InitExports(Handle<Object> exports) {
   Local<Value> browser = makeBrowser();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeBrowser"), browser);
 
+  Local<Value> rtc = makeRtc();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeRtc"), rtc);
+
   /* Local<Value> glfw = makeGlfw();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
 

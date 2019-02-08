@@ -16,7 +16,7 @@ RUN \
   mv node-v11.6.0-linux-x64 node
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
-  npm install --unsafe-perm . && \
+  npm install --unsafe-perm --no-optional . && \
   export TEST_ENV=ci && \
   npm run test
 RUN \
