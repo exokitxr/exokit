@@ -22,10 +22,10 @@
 #include <include/cef_load_handler.h>
 #include <include/cef_render_handler.h>
 
-#include <libcef_dll/cpptoc/app_cpptoc.h>
+/* #include <libcef_dll/cpptoc/app_cpptoc.h>
 #include <libcef_dll/cpptoc/client_cpptoc.h>
 #include <libcef_dll/ctocpp/request_context_ctocpp.h>
-#include <libcef_dll/ctocpp/browser_ctocpp.h>
+#include <libcef_dll/ctocpp/browser_ctocpp.h> */
 
 using namespace std;
 using namespace v8;
@@ -33,7 +33,8 @@ using namespace node;
 
 namespace browser {
 
-typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
+// typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
+typedef (cef_browser_t *) EmbeddedBrowser;
 
 enum class EmbeddedKeyModifiers {
   SHIFT,

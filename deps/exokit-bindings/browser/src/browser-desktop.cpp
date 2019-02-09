@@ -15,7 +15,7 @@ void CefDoMessageLoopWork2() {
   cef_do_message_loop_work();
 }
 
-CefRefPtr<CefBrowser> CreateBrowserSync(
+EmbeddedBrowser CreateBrowserSync(
     const CefWindowInfo& windowInfo,
     CefRefPtr<CefClient> client,
     const CefString& url,
@@ -31,7 +31,8 @@ CefRefPtr<CefBrowser> CreateBrowserSync(
       CefRequestContextCToCpp::Unwrap(request_context));
 
   // Return type: refptr_same
-  return CefBrowserCToCpp::Wrap(_retval);
+  // return CefBrowserCToCpp::Wrap(_retval);
+  return _retval;
 }
 
 CefBrowserHost::MouseButtonType GetMouseButton(int button){
@@ -380,9 +381,8 @@ RenderHandler::~RenderHandler() {}
 	height = h;
 } */
 
-bool RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
+void RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
 	rect = CefRect(0, 0, width, height);
-	return true;
 }
 
 void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects, const void *buffer, int width, int height) {

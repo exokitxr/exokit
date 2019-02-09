@@ -95,7 +95,7 @@ public:
 	// void resize(int w, int h);
 
 	// CefRenderHandler interface
-	virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
+	virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
 	virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects, const void *buffer, int width, int height) override;
 
 // protected:
