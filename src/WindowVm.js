@@ -91,10 +91,9 @@ const _makeWindow = (options = {}) => {
       } = framebuffer;
       const {vrPresentState} = GlobalContext;
       
-      vrPresentState.isPresenting = true;
       const context = GlobalContext.contexts.find(context => context.window === window && context.id === id);
       context.framebuffer = framebuffer;
-      vrPresentState.glContext = context;
+      vrPresentState.glContextId = context.id;
       vrPresentState.msFbo = msFbo;
       vrPresentState.msTex = msTex;
       vrPresentState.msDepthTex = msDepthTex;
@@ -109,12 +108,11 @@ const _makeWindow = (options = {}) => {
         nativeVr.VR_Shutdown();
         
         const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
-        
-        vrPresentState.isPresenting = false;
+
         vrPresentState.vrContext = null;
         vrPresentState.system = null;
         vrPresentState.compositor = null;
-        vrPresentState.glContext = null;
+        vrPresentState.glContextId = 0;
         vrPresentState.msFbo = null;
         vrPresentState.msTex = null;
         vrPresentState.msDepthTex = null;
@@ -194,7 +192,7 @@ const _makeWindow = (options = {}) => {
 
       const context = GlobalContext.contexts.find(context => context.window === window && context.id === id);
       context.framebuffer = framebuffer;
-      mlPresentState.mlGlContext = context;
+      mlPresentState.mlGlContextId = context.id;
       mlPresentState.mlFbo = fbo;
       mlPresentState.mlTex = tex;
       mlPresentState.mlDepthTex = depthTex;
@@ -212,13 +210,13 @@ const _makeWindow = (options = {}) => {
         const {mlMsFbo: msFbo, mlMsTex: msTex, mlMsDepthTex: msDepthTex, mlFbo: fbo, mlTex: tex, mlDepthTex: depthTex} = mlPresentState;
 
         mlPresentState.mlContext = null;
+        mlPresentState.mlGlContextId = 0;
         mlPresentState.mlFbo = null;
         mlPresentState.mlTex = null;
         mlPresentState.mlDepthTex = null;
         mlPresentState.mlMsFbo = null;
         mlPresentState.mlMsTex = null;
         mlPresentState.mlMsDepthTex = null;
-        mlPresentState.mlGlContext = null;
         mlPresentState.mlCleanups = null;
         mlPresentState.mlHasPose = false;
         

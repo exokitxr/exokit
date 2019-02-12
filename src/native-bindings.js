@@ -71,7 +71,6 @@ const _decorateGlIntercepts = gl => {
   })(gl.getUniformLocation);
   gl.setCompatibleXRDevice = () => Promise.resolve();
 };
-let contextId = 0;
 const _onGl3DConstruct = (gl, canvas) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
@@ -303,15 +302,17 @@ const _onGl3DConstruct = (gl, canvas) => {
 
       nativeWindow.setCurrentWindowContext(windowHandle);
 
-      if (gl === vrPresentState.glContext) {
-        nativeVr.VR_Shutdown();
+      if (gl.id === vrPresentState.glContextId) {
+        throw new Error('destroyed vr presenting context');
+        /* nativeVr.VR_Shutdown();
 
-        vrPresentState.glContext = null;
+        vrPresentState.glContextId = 0;
         vrPresentState.system = null;
-        vrPresentState.compositor = null;
+        vrPresentState.compositor = null; */
       }
-      if (gl === mlPresentState.mlGlContext) {
-        mlPresentState.mlGlContext = null;
+      if (gl.id === mlPresentState.mlGlContextId) {
+        throw new Error('destroyed ml presenting context');
+        // mlPresentState.mlGlContextId = 0;
       }
 
       nativeWindow.destroy(windowHandle);
@@ -335,7 +336,7 @@ const _onGl3DConstruct = (gl, canvas) => {
     gl.destroy();
   }
 
-  const id = ++contextId;
+  const id = Atomics.add(GlobalContext.xrState.id, 0);
   gl.id = id;
   window.postInternalMessage({
     type: 'postRequestAsync',
@@ -943,8 +944,9 @@ if (nativeMl) {
       nativeWindow.destroyRenderTarget(presentSpec.mlMsFbo, presentSpec.mlMsTex, presentSpec.mlMsDepthTex);
       nativeWindow.destroyRenderTarget(presentSpec.mlFbo, presentSpec.mlTex, presentSpec.mlDepthTex);
 
-      nativeWindow.setCurrentWindowContext(mlPresentState.mlGlContext.getWindowHandle()); // XXX get the real context
-      mlPresentState.mlGlContext.setDefaultFramebuffer(0);
+      const mlGlContext = GlobalContext.contexts.find(context => context.id === mlPresentState.mlGlContextId);
+      nativeWindow.setCurrentWindowContext(mlGlContext.getWindowHandle());
+      mlGlContext.setDefaultFramebuffer(0);
 
       canvas = null;
       for (let i = 0; i < cleanups.length; i++) {
