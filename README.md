@@ -100,7 +100,8 @@ Exokit runs on Windows, macOS, Linux (x64), Linux (ARM64), and Magic Leap (ARM64
 - `<script>`
 - DOM
 - WebGL
-- WebXL
+- WebXR
+- WebVR
 - Canvas2D
 - WebSocket
 - Web Workers
