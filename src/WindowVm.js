@@ -16,23 +16,6 @@ const _makeWindow = (options = {}) => {
   
   window.tickAnimationFrame = () => window.runAsync(`return window.tickAnimationFrame();`);
   const requestHandlers = {
-    'context.create'(args) {
-      const {id} = args;
-      GlobalContext.contexts.push({
-        window,
-        id,
-        framebuffer,
-      });
-    },
-    'context.destroy'(args) {
-      const {id} = args;
-      const index = GlobalContext.contexts.findIndex(context => context.window === window && context.id === id);
-      GlobalContext.contexts.splice(index, 1);
-      
-      if (!GlobalContext.contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // XXX handle window handle access
-        process.exit();
-      }
-    },
     requestPresentVr() {
       const {vrPresentState} = GlobalContext;
       

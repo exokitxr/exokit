@@ -323,30 +323,20 @@ const _onGl3DConstruct = (gl, canvas) => {
       } */
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
-      window.postInternalMessage({
-        type: 'postRequestAsync',
-        method: 'context.destroy',
-        args: {
-          id,
-        },
-      });
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);
+
+      if (gl.id === 1) {
+        process.exit();
+      }
     })(gl.destroy);
   } else {
     gl.destroy();
   }
 
-  const id = Atomics.add(GlobalContext.xrState.id, 0);
-  gl.id = id;
-  window.postInternalMessage({
-    type: 'postRequestAsync',
-    method: 'context.create',
-    args: {
-      id,
-      framebuffer,
-    },
-  });
+  gl.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
   GlobalContext.contexts.push(gl);
+
+  Atomics.add(GlobalContext.xrState.numContexts, 0);
 };
 bindings.nativeGl = (nativeGl => {
   function WebGLRenderingContext(canvas) {
@@ -420,16 +410,10 @@ const _onGl2DConstruct = (ctx, canvas) => {
     ctx.destroy();
   }
 
-  const id = ++contextId;
-  ctx.id = id;
-  window.postInternalMessage({
-    type: 'postRequestAsync',
-    method: 'context.create',
-    args: {
-      id,
-    },
-  });
+  ctx.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
   GlobalContext.contexts.push(ctx);
+
+  Atomics.add(GlobalContext.xrState.numContexts, 0);
 };
 bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
   function CanvasRenderingContext2D(canvas) {
