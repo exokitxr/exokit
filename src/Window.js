@@ -1222,18 +1222,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       localCbs[i] = null;
     }
   };
-  const _tickAnimationFrameVisibility = visible => {
-    /*
-    // XXX wait for syncs from the last round
-    // XXX add our own contexts here too
-    const syncs = (await Promise.all(windows.map(async window => {
-      const syncs = await window.tickAnimationFrame();
-      return syncs.map(({id, sync}) => ({
-        window,
-        id,
-        sync,
-      }));
-    }))).flat(); */
+  const _tickAnimationFrameRaf = top => () => {
+    const currentWindowContext = nativeWindow.getCurrentWindowContext();
+    const childSyncs = (await Promise.all(windows.map(window => window.tickAnimationFrame(currentWindowContext ? 'child' : 'top')))).flat();
+    for (let i = 0; i < GlobalContext.contexts.length; i++) {
+      GlobalContext.contexts[i].setPrereqSyncs(childSyncs); // XXX implement this
+    }
 
     if (rafCbs.length > 0) {
       _cacheLocalCbs(rafCbs);
@@ -1242,7 +1236,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
       for (let i = 0; i < localCbs.length; i++) {
         const rafCb = localCbs[i];
-        if (rafCb && !rafCb[symbols.windowSymbol].document.hidden === visible) {
+        if (rafCb) {
           try {
             rafCb(performanceNow);
           } catch (e) {
@@ -1259,28 +1253,29 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       _clearLocalCbs(); // release garbage
     }
 
-    // return syncs for dirty contexts
     const syncs = [];
     for (let i = 0; i < GlobalContext.contexts.length; i++) {
       const context = GlobalContext.contexts[i];
       
       if (context.isDirty && context.isDirty()) {
-        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-        const sync = nativeWindow.getSync();
-        
-        syncs.push({
-          id: context.id,
-          sync,
-        });
+        if (!top) {
+          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+          syncs.push(nativeWindow.getSync());
+        }
         
         context.clearDirty();
       }
+
+      context.clearPrereqSyncs();
+    }
+    for (let i = 0; i < childSyncs.length; i++) {
+      nativeWindow.deleteSync(childSyncs[i]);
     }
 
     return syncs;
   };
-  const _tickAnimationFrameHidden = _tickAnimationFrameVisibility(false);
-  const _tickAnimationFrameVisible = _tickAnimationFrameVisibility(true);
+  const _tickAnimationFrameTop = _tickAnimationFrameRaf(true);
+  const _tickAnimationFrameChild = _tickAnimationFrameRaf(false);
   const _tickAnimationFrameWait = () => {
     // perform the wait
     if (fakePresentState.fakeVrDisplay) {
@@ -1850,8 +1845,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.tickAnimationFrame = type => {
     switch (type) {
       case 'wait': return _tickAnimationFrameWait();
-      case 'hidden': return _tickAnimationFrameHidden();
-      case 'visible': return _tickAnimationFrameVisible();
+      case 'top': return _tickAnimationFrameTop();
+      case 'child': return _tickAnimationFrameChild();
       case 'submit': return _tickAnimationFrameSubmit();
       default: throw new Error(`unknown tick animation frame mode: ${type}`);
     }
