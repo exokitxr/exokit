@@ -725,10 +725,50 @@ if (nativeOpenVR) {
     if (layer) {
       const canvas = layer.source;
 
-      const presentSpec = await window.postInternalMessage({
-        type: 'postRequestAsync',
-        method: 'requestPresentVr',
-      });
+      const presentSpec = (() => {
+        const {xrState} = GlobalContext;
+        
+        if (!xrState.isPresenting[0]) {
+          const vrContext = nativeVr.getContext();
+          const system = nativeVr.VR_Init(nativeVr.EVRApplicationType.Scene);
+          const compositor = vrContext.compositor.NewCompositor();
+
+          // const lmContext = vrPresentState.lmContext || (nativeLm && new nativeLm());
+
+          vrPresentState.vrContext = vrContext;
+          vrPresentState.system = system;
+          vrPresentState.compositor = compositor;
+
+          let {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+          const MAX_TEXTURE_SIZE = 4096;
+          const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
+          if (halfWidth > MAX_TEXTURE_SIZE_HALF) {
+            const factor = halfWidth / MAX_TEXTURE_SIZE_HALF;
+            halfWidth = MAX_TEXTURE_SIZE_HALF;
+            height = Math.floor(height / factor);
+          }
+          const width = halfWidth * 2;
+
+          return Promise.resolve({
+            wasPresenting: false,
+            width,
+            height,
+          });
+        } else {
+          const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+          return Promise.resolve({
+            wasPresenting: true,
+            width: xrState.renderWidth[0] * 2,
+            height: xrState.renderHeight[0],
+            msFbo,
+            msTex,
+            msDepthTex,
+            fbo,
+            tex,
+            depthTex,
+          });
+        }
+      })();
 
       if (!presentSpec.wasPresenting) {
         let context = canvas._context;
@@ -756,12 +796,21 @@ if (nativeOpenVR) {
           tex,
           depthTex,
         };
-        await window.postInternalMessage({
-          type: 'postRequestAsync',
-          method: 'vr.bind',
-          id: context.id,
-          framebuffer,
-        });
+
+        xrState.isPresenting[0] = 1;
+        const halfWidth = width/2;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
+
+        const context = GlobalContext.contexts.find(context => context.window === window && context.id === id);
+        context.framebuffer = framebuffer;
+        vrPresentState.glContextId = context.id;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.msDepthTex = msDepthTex;
+        vrPresentState.fbo = fbo;
+        vrPresentState.tex = tex;
+        vrPresentState.depthTex = depthTex;
         
         context.setDefaultFramebuffer(msFbo);
 
@@ -810,15 +859,26 @@ if (nativeOpenVR) {
     }
   };
   nativeOpenVR.exitPresent = await function() {
-    const presentSpec = await window.postRequest({
-      method: 'exitPresentVr',
-    });
+    if (vrPresentState.vrContext) {
+      nativeVr.VR_Shutdown();
       
-    if (presentSpec) {
-      nativeWindow.destroyRenderTarget(presentSpec.msFbo, presentSpec.msTex, presentSpec.msDepthStencilTex);
-      nativeWindow.destroyRenderTarget(presentSpec.fbo, presentSpec.tex, presentSpec.msDepthTex);
+      const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
 
-      const context = vrPresentState.glContext; // XXX get the real context
+      vrPresentState.vrContext = null;
+      vrPresentState.system = null;
+      vrPresentState.compositor = null;
+      vrPresentState.glContextId = 0;
+      vrPresentState.msFbo = null;
+      vrPresentState.msTex = null;
+      vrPresentState.msDepthTex = null;
+      vrPresentState.fbo = null;
+      vrPresentState.tex = null;
+      vrPresentState.depthTex = null;
+
+      nativeWindow.destroyRenderTarget(msFbo, msTex, msDepthStencilTex);
+      nativeWindow.destroyRenderTarget(fbo, tex, msDepthTex);
+
+      const context = GlobalContext.contexts.find(contex => contex.id === vrPresentState.glContextId);
       nativeWindow.setCurrentWindowContext(context.getWindowHandle());
       context.setDefaultFramebuffer(0);
 
