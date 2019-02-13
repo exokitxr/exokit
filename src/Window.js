@@ -113,7 +113,6 @@ const {
 // GlobalContext.version = '';
 GlobalContext.xrState = xrState;
 
-// Class imports.
 const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {
   HTMLElement,
@@ -135,6 +134,53 @@ const {_elementGetter, _elementSetter, _download} = utils;
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
+
+const zeroMatrix = new THREE.Matrix4();
+const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array4 = new Float32Array(16);
+const localFloat32PoseArray = new Float32Array(16*(1+2+maxNumTrackers));
+const localFloat32HmdPoseArray = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 0*Float32Array.BYTES_PER_ELEMENT*16, 16);
+const localFloat32GamepadPoseArrays = [
+  new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 1*Float32Array.BYTES_PER_ELEMENT*16, 16),
+  new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 2*Float32Array.BYTES_PER_ELEMENT*16, 16),
+];
+const localFloat32TrackerPoseArrays = (() => {
+  const result = Array(maxNumTrackers);
+  for (let i = 0; i < maxNumTrackers; i++) {
+    result[i] = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + (3+i)*Float32Array.BYTES_PER_ELEMENT*16, 16);
+  }
+  return result;
+})();
+const localFloat32MatrixArray = new Float32Array(16);
+const localFovArray = new Float32Array(4);
+const localGamepadArray = new Float32Array(24);
+
+const localPositionArray3 = new Float32Array(3);
+const localQuaternionArray4 = new Float32Array(4);
+
+const leftControllerPositionArray3 = new Float32Array(3);
+const leftControllerQuaternionArray4 = new Float32Array(4);
+const rightControllerPositionArray3 = new Float32Array(3);
+const rightControllerQuaternionArray4 = new Float32Array(4);
+
+const oculusMobilePoseFloat32Array = new Float32Array(3 + 4 + 1 + 4 + (16*2) + (16*2) + (16+5) + (16+5));
+
+// const handEntrySize = (1 + (5 * 5)) * (3 + 3);
+const transformArray = new Float32Array(7 * 2);
+const projectionArray = new Float32Array(16 * 2);
+/* const handsArray = [
+  new Float32Array(handEntrySize),
+  new Float32Array(handEntrySize),
+]; */
+const controllersArray = new Float32Array((1 + 3 + 4 + 6) * 2);
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
 
 const contexts = [];
 GlobalContext.contexts = contexts;
