@@ -385,7 +385,7 @@ class XRState {
 }
 GlobalContext.xrState = new XRState();
 
-const _startRenderLoop = () => {
+const _startTopRenderLoop = () => {
   const timestamps = {
     frames: 0,
     last: Date.now(),
@@ -400,7 +400,7 @@ const _startRenderLoop = () => {
   };
   const TIMESTAMP_FRAMES = 100;
 
-  const _renderLoop = async () => {
+  const _topRenderLoop = async () => {
     if (args.performance) {
       if (timestamps.frames >= TIMESTAMP_FRAMES) {
         console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.idle}ms idle | ${timestamps.wait}ms wait | ${timestamps.prepare}ms prepare | ${timestamps.events}ms events | ${timestamps.media}ms media | ${timestamps.user}ms user | ${timestamps.submit}ms submit`);
@@ -1099,9 +1099,9 @@ const _startRenderLoop = () => {
     }
 
     // wait for next frame
-    immediate = setImmediate(_renderLoop);
+    immediate = setImmediate(_topRenderLoop);
   };
-  let immediate = setImmediate(_renderLoop);
+  let immediate = setImmediate(_topRenderLoop);
 
   return {
     stop() {
@@ -1110,7 +1110,7 @@ const _startRenderLoop = () => {
     },
   };
 };
-let currentRenderLoop = _startRenderLoop();
+_startTopRenderLoop();
 
 const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
