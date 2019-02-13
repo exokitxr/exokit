@@ -1115,55 +1115,24 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       localCbs[i] = null;
     }
   };
-  window.tickAnimationFrame = () => {
-    // emit xr events
-    {
-      window[symbols.mrDisplaysSymbol].oculusVRDevice.session && window[symbols.mrDisplaysSymbol].oculusVRDevice.session.update();
-      window[symbols.mrDisplaysSymbol].openVRDevice.session && window[symbols.mrDisplaysSymbol].openVRDevice.session.update();
-      window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session && window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session.update();
-      window[symbols.mrDisplaysSymbol].magicLeapARDevice.session && window[symbols.mrDisplaysSymbol].magicLeapARDevice.session.update();
-    }
-    
-    // call user rafs
-    {
-      if (rafCbs.length > 0) {
-        _cacheLocalCbs(rafCbs);
+  const _tickAnimationFrameVisibility = visible => {
+    if (rafCbs.length > 0) {
+      _cacheLocalCbs(rafCbs);
+      
+      const performanceNow = performance.now();
 
-        // tickAnimationFrame.window = this;
-
-        const performanceNow = performance.now();
-
-        // hidden rafs
-        for (let i = 0; i < localCbs.length; i++) {
-          const rafCb = localCbs[i];
-          if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
-            try {
-              // console.log('tick raf', rafCb.stack);
-              rafCb(performanceNow);
-            } catch (e) {
-              console.warn(e);
-            }
-
-            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-            if (index !== -1) {
-              rafCbs[index] = null;
-            }
+      for (let i = 0; i < localCbs.length; i++) {
+        const rafCb = localCbs[i];
+        if (rafCb && !rafCb[symbols.windowSymbol].document.hidden === visible) {
+          try {
+            rafCb(performanceNow);
+          } catch (e) {
+            console.warn(e);
           }
-        }
-        // visible rafs
-        for (let i = 0; i < localCbs.length; i++) {
-          const rafCb = localCbs[i];
-          if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
-            try {
-              // console.log('tick raf', rafCb.stack);
-              rafCb(performanceNow);
-            } catch (e) {
-              console.warn(e);
-            }
-            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-            if (index !== -1) {
-              rafCbs[index] = null;
-            }
+
+          const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+          if (index !== -1) {
+            rafCbs[index] = null;
           }
         }
       }
@@ -1190,6 +1159,29 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
 
     return syncs;
+  };
+  const _tickAnimationFrameHidden = _tickAnimationFrameVisibility(false);
+  const _tickAnimationFrameVisible = _tickAnimationFrameVisibility(true);
+  const _tickAnimationFrameWait = () => {
+    // XXX perform the wait
+
+    // emit xr events
+    window[symbols.mrDisplaysSymbol].oculusVRDevice.session && window[symbols.mrDisplaysSymbol].oculusVRDevice.session.update();
+    window[symbols.mrDisplaysSymbol].openVRDevice.session && window[symbols.mrDisplaysSymbol].openVRDevice.session.update();
+    window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session && window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session.update();
+    window[symbols.mrDisplaysSymbol].magicLeapARDevice.session && window[symbols.mrDisplaysSymbol].magicLeapARDevice.session.update();
+  };
+  const _tickAnimationFrameSubmit = () => {
+    // XXX perform the submit
+  };
+  window.tickAnimationFrame = type => {
+    switch (type) {
+      case 'wait': return _tickAnimationFrameWait();
+      case 'hidden': return _tickAnimationFrameHidden();
+      case 'visible': return _tickAnimationFrameVisible();
+      case 'submit': return _tickAnimationFrameSubmit();
+      default: throw new Error(`unknown tick animation frame mode: ${type}`);
+    }
   };
   
   const _makeMrDisplays = () => {
