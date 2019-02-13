@@ -21,7 +21,7 @@ void RunEventInWindowThread(uv_async_t *async) {
   std::deque<std::function<void(int argc, Local<Value> *argv)>> localFns;
   Local<Function> handlerFn;
   {
-    std::lock_guard lock(eventHandlerMapMutex);
+    std::lock_guard<mutex> lock(eventHandlerMapMutex);
     
     EventHandler *handler = eventHandlerMap2[async];
     localFns = std::move(handler->fns);
@@ -142,7 +142,7 @@ NAN_METHOD(SetMonitor) {
 void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
   EventHandler *eventHandler;
   {
-    std::lock_guard lock(eventHandlerMapMutex);
+    std::lock_guard<mutex> lock(eventHandlerMapMutex);
     
     eventHandler = eventHandlerMap[window];
     eventHandler->fns.push_back(fn);
@@ -1350,7 +1350,7 @@ NAN_METHOD(Destroy) {
   glfwDestroyWindow(window);
   
   {
-    std::lock_guard lock(eventHandlerMapMutex);
+    std::lock_guard<mutex> lock(eventHandlerMapMutex);
 
     EventHandler *handler = eventHandlerMap[window];
     eventHandlerMap.erase(window);
@@ -1366,7 +1366,7 @@ NAN_METHOD(SetEventHandler) {
     
     NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
     {
-      std::lock_guard lock(eventHandlerMapMutex);
+      std::lock_guard<mutex> lock(eventHandlerMapMutex);
 
       uv_loop *loop = windowsystem::GetEventLoop();
       uv_async_t *async = new uv_async_t();
