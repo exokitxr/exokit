@@ -43,6 +43,15 @@ NAN_METHOD(glCallWrap) {
   if (gl->live) {
     if (gl->windowHandle) {
       windowsystem::SetCurrentWindowContext(gl->windowHandle);
+
+      size_t size = gl->prereqSyncs.size();
+      if (size > 0) {
+        for (size_t i = 0; i < size; i++) {
+          GLSync sync = gl->prereqSyncs[i];
+          glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+        }
+        gl->prereqSyncs.clear();
+      }
     }
 
     F(info);
@@ -943,6 +952,8 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "setDefaultVao", SetDefaultVao);
   Nan::SetMethod(proto, "isDirty", IsDirty);
   Nan::SetMethod(proto, "clearDirty", ClearDirty);
+  Nan::SetMethod(proto, "setPrereqSyncs", SetPrereqSyncs);
+  Nan::SetMethod(proto, "clearPrereqSyncs", ClearPrereqSyncs);
 
   Nan::SetMethod(proto, "uniform1f", glCallWrap<Uniform1f>);
   Nan::SetMethod(proto, "uniform2f", glCallWrap<Uniform2f>);
@@ -1166,8 +1177,8 @@ WebGLRenderingContext::WebGLRenderingContext() :
   live(true),
   windowHandle(nullptr),
   defaultVao(0),
-  dirty(false),
   defaultFramebuffer(0),
+  dirty(false),
   flipY(false),
   premultiplyAlpha(true),
   packAlignment(4),
@@ -1221,6 +1232,28 @@ NAN_METHOD(WebGLRenderingContext::IsDirty) {
 NAN_METHOD(WebGLRenderingContext::ClearDirty) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   gl->dirty = false;
+}
+
+NAN_METHOD(WebGLRenderingContext::SetPrereqSyncs) {
+  if (info[0]->IsArray()) {
+    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+    Local<Array> array = Local<Array>::Cast(info[0]);
+
+    unsigned int length = array.Length();
+    gl->prereqSyncs.resize(length);
+    for (unsigned int i = 0; i < length; i++) {
+      Local<Array> syncArray = Local<Array>::Cast(array->Get(i));
+      GLsync sync = (GLSync)arrayToPointer(syncArray);
+      gl->prereqSyncs[i] = sync;
+    }
+  } else {
+    Nan::ThrowError("SetPrereqSyncs: invalid arguments");
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearPrereqSyncs) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  gl->prereqSyncs.clear();
 }
 
 // GL CALLS

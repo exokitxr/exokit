@@ -125,6 +125,8 @@ public:
   static NAN_METHOD(SetDefaultVao);
   static NAN_METHOD(IsDirty);
   static NAN_METHOD(ClearDirty);
+  static NAN_METHOD(SetPrereqSyncs);
+  static NAN_METHOD(ClearPrereqSyncs);
 
   static NAN_METHOD(Uniform1f);
   static NAN_METHOD(Uniform2f);
@@ -394,8 +396,9 @@ public:
   bool live;
   NATIVEwindow *windowHandle;
   GLuint defaultVao;
-  bool dirty;
   GLuint defaultFramebuffer;
+  bool dirty;
+  std::vector<GLSync> prereqSyncs;
   bool flipY;
   bool premultiplyAlpha;
   GLint packAlignment;

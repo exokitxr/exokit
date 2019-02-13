@@ -1226,7 +1226,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     const currentWindowContext = nativeWindow.getCurrentWindowContext();
     const childSyncs = (await Promise.all(windows.map(window => window.tickAnimationFrame(currentWindowContext ? 'child' : 'top')))).flat();
     for (let i = 0; i < GlobalContext.contexts.length; i++) {
-      GlobalContext.contexts[i].setPrereqSyncs(childSyncs); // XXX implement this
+      GlobalContext.contexts[i].setPrereqSyncs(childSyncs);
     }
 
     if (rafCbs.length > 0) {
