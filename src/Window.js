@@ -1101,102 +1101,97 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window[symbols.rafCbsSymbol] = rafCbs;
   const timeouts = [];
   const intervals = [];
-  window.tickAnimationFrame = (() => {
-    const localCbs = [];
-    const _cacheLocalCbs = cbs => {
-      for (let i = 0; i < cbs.length; i++) {
-        localCbs[i] = cbs[i];
-      }
-      for (let i = cbs.length; i < localCbs.length; i++) {
-        localCbs[i] = null;
-      }
-    };
-    const _clearLocalCbs = () => {
-      for (let i = 0; i < localCbs.length; i++) {
-        localCbs[i] = null;
-      }
-    };
-    function tickAnimationFrame() {
-      // emit xr events
-      {
-        window[symbols.mrDisplaysSymbol].oculusVRDevice.session && window[symbols.mrDisplaysSymbol].oculusVRDevice.session.update();
-        window[symbols.mrDisplaysSymbol].openVRDevice.session && window[symbols.mrDisplaysSymbol].openVRDevice.session.update();
-        window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session && window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session.update();
-        window[symbols.mrDisplaysSymbol].magicLeapARDevice.session && window[symbols.mrDisplaysSymbol].magicLeapARDevice.session.update();
-      }
-      
-      // call user rafs
-      {
-        if (rafCbs.length > 0) {
-          _cacheLocalCbs(rafCbs);
-
-          // tickAnimationFrame.window = this;
-
-          const performanceNow = performance.now();
-
-          // hidden rafs
-          for (let i = 0; i < localCbs.length; i++) {
-            const rafCb = localCbs[i];
-            if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
-              try {
-                // console.log('tick raf', rafCb.stack);
-                rafCb(performanceNow);
-              } catch (e) {
-                console.warn(e);
-              }
-
-              const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-              if (index !== -1) {
-                rafCbs[index] = null;
-              }
-            }
-          }
-          // visible rafs
-          for (let i = 0; i < localCbs.length; i++) {
-            const rafCb = localCbs[i];
-            if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
-              try {
-                // console.log('tick raf', rafCb.stack);
-                rafCb(performanceNow);
-              } catch (e) {
-                console.warn(e);
-              }
-              const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-              if (index !== -1) {
-                rafCbs[index] = null;
-              }
-            }
-          }
-
-          // tickAnimationFrame.window = null;
-        }
-
-        _clearLocalCbs(); // release garbage
-      }
-
-      // return syncs for dirty contexts
-      const syncs = [];
-      for (let i = 0; i < GlobalContext.contexts.length; i++) {
-        const context = GlobalContext.contexts[i];
-        
-        if (context.isDirty && context.isDirty()) {
-          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-          const sync = nativeWindow.getSync();
-          
-          syncs.push({
-            id: context.id,
-            sync,
-          });
-          
-          context.clearDirty();
-        }
-      }
-      return syncs;
+  const localCbs = [];
+  const _cacheLocalCbs = cbs => {
+    for (let i = 0; i < cbs.length; i++) {
+      localCbs[i] = cbs[i];
     }
-    // tickAnimationFrame.window = null;
-    return tickAnimationFrame;
-  })();
+    for (let i = cbs.length; i < localCbs.length; i++) {
+      localCbs[i] = null;
+    }
+  };
+  const _clearLocalCbs = () => {
+    for (let i = 0; i < localCbs.length; i++) {
+      localCbs[i] = null;
+    }
+  };
+  window.tickAnimationFrame = () => {
+    // emit xr events
+    {
+      window[symbols.mrDisplaysSymbol].oculusVRDevice.session && window[symbols.mrDisplaysSymbol].oculusVRDevice.session.update();
+      window[symbols.mrDisplaysSymbol].openVRDevice.session && window[symbols.mrDisplaysSymbol].openVRDevice.session.update();
+      window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session && window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session.update();
+      window[symbols.mrDisplaysSymbol].magicLeapARDevice.session && window[symbols.mrDisplaysSymbol].magicLeapARDevice.session.update();
+    }
+    
+    // call user rafs
+    {
+      if (rafCbs.length > 0) {
+        _cacheLocalCbs(rafCbs);
 
+        // tickAnimationFrame.window = this;
+
+        const performanceNow = performance.now();
+
+        // hidden rafs
+        for (let i = 0; i < localCbs.length; i++) {
+          const rafCb = localCbs[i];
+          if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
+            try {
+              // console.log('tick raf', rafCb.stack);
+              rafCb(performanceNow);
+            } catch (e) {
+              console.warn(e);
+            }
+
+            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+            if (index !== -1) {
+              rafCbs[index] = null;
+            }
+          }
+        }
+        // visible rafs
+        for (let i = 0; i < localCbs.length; i++) {
+          const rafCb = localCbs[i];
+          if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
+            try {
+              // console.log('tick raf', rafCb.stack);
+              rafCb(performanceNow);
+            } catch (e) {
+              console.warn(e);
+            }
+            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+            if (index !== -1) {
+              rafCbs[index] = null;
+            }
+          }
+        }
+      }
+
+      _clearLocalCbs(); // release garbage
+    }
+
+    // return syncs for dirty contexts
+    const syncs = [];
+    for (let i = 0; i < GlobalContext.contexts.length; i++) {
+      const context = GlobalContext.contexts[i];
+      
+      if (context.isDirty && context.isDirty()) {
+        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+        const sync = nativeWindow.getSync();
+        
+        syncs.push({
+          id: context.id,
+          sync,
+        });
+        
+        context.clearDirty();
+      }
+    }
+
+    return syncs;
+  };
+  
   const _makeMrDisplays = () => {
     const _bindMRDisplay = display => {
       display.onrequestanimationframe = _makeRequestAnimationFrame(window);
