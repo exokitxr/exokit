@@ -196,6 +196,7 @@ const xrState = (() => {
 
   const result = {};
   result.windowHandle = _makeTypedArray(Uint32Array, 2);
+  result.isPresenting = _makeTypedArray(Uint32Array, 1);
   result.renderWidth = _makeTypedArray(Float32Array, 1);
   result.renderHeight = _makeTypedArray(Float32Array, 1);
   result.depthNear = _makeTypedArray(Float32Array, 1);
