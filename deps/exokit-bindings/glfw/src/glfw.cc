@@ -18,7 +18,7 @@ EventHandler::EventHandler(NATIVEwindow *window, uv_async_t *async, Local<Functi
 void RunEventInWindowThread(uv_async_t *async) {
   Nan::HandleScope scope;
 
-  std::deque<std::function<void(int argc, Local<Value> *argv)>> localFns;
+  std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> localFns;
   Local<Function> handlerFn;
   {
     std::lock_guard<mutex> lock(eventHandlerMapMutex);
