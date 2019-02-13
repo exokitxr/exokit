@@ -897,26 +897,59 @@ if (nativeMl) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       canvas = layer.source;
+      let context = canvas._context;
+      if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+        context = canvas.getContext('webgl');
+      }
       
-      const presentSpec = await window.postInternalMessage({
-        type: 'postRequestAsync',
-        method: 'requestPresentMl',
-      });
+      const presentSpec = (() => {
+        const {mlPresentState} = GlobalContext;
+
+        if (!xrState.isPresenting[0]) {
+          mlPresentState.mlContext = new nativeMl();
+          mlPresentState.mlContext.Present(windowHandle, context);
+
+          const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();
+          const width = halfWidth * 2;
+          
+          return {
+            wasPresenting: false,
+            width,
+            height,
+          };
+        } else {
+          const {mlMsFbo: msFbo, mlMsTex: msTex, mlMsDepthTex: msDepthTex, mlFbo: fbo, mlTex: tex, mlDepthTex: depthTex} = mlPresentState;
+          return {
+            wasPresenting: true,
+            width: xrState.renderWidth[0] * 2,
+            height: xrState.renderHeight[0],
+            msFbo,
+            msTex,
+            msDepthTex,
+            fbo,
+            tex,
+            depthTex,
+          };
+        }
+      })();
 
       if (!presentSpec.wasPresenting) {
-        let context = canvas._context;
-        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
-          context = canvas.getContext('webgl');
-        }
-        
         const {width, height} = presentSpec;
 
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
 
+        const halfWidth = width/2;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
+
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
-        const framebuffer = {
+        const {mlPresentState} = GlobalContext;
+        mlPresentState.mlContext.SetContentTexture(tex);
+
+        const context = GlobalContext.contexts.find(context => context.window === window && context.id === id);
+        context.framebuffer = {
           width,
           height,
           msFbo,
@@ -926,12 +959,14 @@ if (nativeMl) {
           tex,
           depthTex,
         };
-        await window.postInternalMessage({
-          type: 'postRequestAsync',
-          method: 'ml.bind',
-          id: context.id,
-          framebuffer,
-        });
+
+        mlPresentState.mlGlContextId = context.id;
+        mlPresentState.mlFbo = fbo;
+        mlPresentState.mlTex = tex;
+        mlPresentState.mlDepthTex = depthTex;
+        mlPresentState.mlMsFbo = msFbo;
+        mlPresentState.mlMsTex = msTex;
+        mlPresentState.mlMsDepthTex = msDepthTex
 
         const _attribute = (name, value) => {
           if (name === 'width' || name === 'height') {
@@ -947,7 +982,7 @@ if (nativeMl) {
 
         context.setDefaultFramebuffer(msFbo);
 
-        return framebuffer;
+        return context.framebuffer;
       } else if (canvas.ownerDocument.framebuffer) {
         const {width, height} = canvas;
         const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
@@ -980,15 +1015,29 @@ if (nativeMl) {
     }
   };
   nativeMl.exitPresent = async function() {
-    const presentSpec = await window.postRequest({
-      method: 'exitPresentMl',
-    });
+    const {mlPresentState} = GlobalContext;
+      
+    if (mlPresentState.mlContext) {
+      mlPresentState.mlContext.Exit();
+      mlPresentState.mlContext.Destroy();
 
-    if (presentSpec) {
-      nativeWindow.destroyRenderTarget(presentSpec.mlMsFbo, presentSpec.mlMsTex, presentSpec.mlMsDepthTex);
-      nativeWindow.destroyRenderTarget(presentSpec.mlFbo, presentSpec.mlTex, presentSpec.mlDepthTex);
+      const {mlGlContextId, mlMsFbo: msFbo, mlMsTex: msTex, mlMsDepthTex: msDepthTex, mlFbo: fbo, mlTex: tex, mlDepthTex: depthTex} = mlPresentState;
 
-      const mlGlContext = GlobalContext.contexts.find(context => context.id === mlPresentState.mlGlContextId);
+      mlPresentState.mlContext = null;
+      mlPresentState.mlGlContextId = 0;
+      mlPresentState.mlFbo = null;
+      mlPresentState.mlTex = null;
+      mlPresentState.mlDepthTex = null;
+      mlPresentState.mlMsFbo = null;
+      mlPresentState.mlMsTex = null;
+      mlPresentState.mlMsDepthTex = null;
+      mlPresentState.mlCleanups = null;
+      mlPresentState.mlHasPose = false;
+
+      nativeWindow.destroyRenderTarget(mlMsFbo, msTex, msDepthTex);
+      nativeWindow.destroyRenderTarget(mlFbo, mlTex, depthTex);
+
+      const mlGlContext = GlobalContext.contexts.find(context => context.id === mlGlContextId);
       nativeWindow.setCurrentWindowContext(mlGlContext.getWindowHandle());
       mlGlContext.setDefaultFramebuffer(0);
 
