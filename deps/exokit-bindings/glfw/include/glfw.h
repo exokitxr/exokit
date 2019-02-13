@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <functional>
 
 #include <v8.h>
 #include <nan.h>
