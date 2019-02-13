@@ -398,7 +398,7 @@ public:
   GLuint defaultVao;
   GLuint defaultFramebuffer;
   bool dirty;
-  std::vector<GLSync> prereqSyncs;
+  std::vector<GLsync> prereqSyncs;
   bool flipY;
   bool premultiplyAlpha;
   GLint packAlignment;

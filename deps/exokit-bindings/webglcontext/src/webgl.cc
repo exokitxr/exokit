@@ -47,7 +47,7 @@ NAN_METHOD(glCallWrap) {
       size_t size = gl->prereqSyncs.size();
       if (size > 0) {
         for (size_t i = 0; i < size; i++) {
-          GLSync sync = gl->prereqSyncs[i];
+          GLsync sync = gl->prereqSyncs[i];
           glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
         }
         gl->prereqSyncs.clear();
@@ -1243,7 +1243,7 @@ NAN_METHOD(WebGLRenderingContext::SetPrereqSyncs) {
     gl->prereqSyncs.resize(length);
     for (unsigned int i = 0; i < length; i++) {
       Local<Array> syncArray = Local<Array>::Cast(array->Get(i));
-      GLsync sync = (GLSync)arrayToPointer(syncArray);
+      GLsync sync = (GLsync)arrayToPointer(syncArray);
       gl->prereqSyncs[i] = sync;
     }
   } else {
