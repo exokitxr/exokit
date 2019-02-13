@@ -542,7 +542,7 @@ NAN_METHOD(DestroyRenderTarget) {
 
 NAN_METHOD(GetSync) {
   GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-  info.GetReturnValue().Set(pointerToArray((void *)sync);
+  info.GetReturnValue().Set(pointerToArray((void *)sync));
 }
 
 NAN_METHOD(WaitSync) {
