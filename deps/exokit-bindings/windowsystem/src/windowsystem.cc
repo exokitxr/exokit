@@ -550,7 +550,7 @@ NAN_METHOD(WaitSync) {
     Local<Array> syncArray = Local<Array>::Cast(info[0]);
     GLsync sync = (GLSync)arrayToPointer(syncArray);
     glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-    glDeleteSync(sync);
+    // glDeleteSync(sync);
   } else {
     Nan::ThrowError("WaitSync: invalid arguments");
   }
