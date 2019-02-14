@@ -73,8 +73,8 @@ bindings.nativeGl = (nativeGl => {
 bindings.nativeGl2 = (nativeGl2 => {
   function WebGL2RenderingContext(canvas) {
     const gl = new nativeGl2();
-    _decorateGlIntercepts(gl);
-    WebGLRenderingContext.onconstruct(gl, canvas);
+  //  _decorateGlIntercepts(gl);   // this should not be needed; left as comment only
+    bindings.nativeGl.onconstruct(gl, canvas);
     return gl;
   }
   for (const k in nativeGl2) {
