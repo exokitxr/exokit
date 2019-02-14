@@ -792,11 +792,11 @@ NAN_METHOD(ComposeLayers) {
               renderHeight,
             };
 
-            Local<Float32Array> leftViewMatrixFloat32Array = xrState->Get(JS_STR("leftViewMatrix"));
+            Local<Float32Array> leftViewMatrixFloat32Array = xrStateObj->Get(JS_STR("leftViewMatrix"));
             MLMat4f leftViewMatrix;
             memcpy(leftViewMatrix.values, (float *)((char *)leftViewMatrixFloat32Array->GetContents().Data() + leftViewMatrixFloat32Array->ByteOffset()), sizeof(leftViewMatrix.values));
 
-            Local<Float32Array> rightViewMatrixFloat32Array = xrState->Get(JS_STR("rightViewMatrix"));
+            Local<Float32Array> rightViewMatrixFloat32Array = xrStateObj->Get(JS_STR("rightViewMatrix"));
             MLMat4f rightViewMatrix;
             memcpy(rightViewMatrix.values, (float *)((char *)rightViewMatrixFloat32Array->GetContents().Data() + rightViewMatrixFloat32Array->ByteOffset()), sizeof(rightViewMatrix.values));
 
@@ -812,9 +812,9 @@ NAN_METHOD(ComposeLayers) {
               rightViewMatrix = multiplyMatrices(rightViewMatrix, xrOffsetMatrix);
             }
 
-            Local<Float32Array> leftProjectionMatrixFloat32Array = xrState->Get(JS_STR("leftProjectionMatrix"));
+            Local<Float32Array> leftProjectionMatrixFloat32Array = xrStateObj->Get(JS_STR("leftProjectionMatrix"));
             float *leftProjectionMatrix = (float *)((char *)leftProjectionMatrixFloat32Array->GetContents().Data() + leftProjectionMatrixFloat32Array->ByteOffset());
-            Local<Float32Array> rightProjectionMatrixFloat32Array = xrState->Get(JS_STR("rightProjectionMatrix"));
+            Local<Float32Array> rightProjectionMatrixFloat32Array = xrStateObj->Get(JS_STR("rightProjectionMatrix"));
             float *rightProjectionMatrix = (float *)((char *)rightProjectionMatrixFloat32Array->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset());
 
             layers.push_back(LayerSpec{
