@@ -1239,7 +1239,7 @@ NAN_METHOD(WebGLRenderingContext::SetPrereqSyncs) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
     Local<Array> array = Local<Array>::Cast(info[0]);
 
-    unsigned int length = array.Length();
+    unsigned int length = array->Length();
     gl->prereqSyncs.resize(length);
     for (unsigned int i = 0; i < length; i++) {
       Local<Array> syncArray = Local<Array>::Cast(array->Get(i));
