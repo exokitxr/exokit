@@ -1372,7 +1372,7 @@ NAN_METHOD(SetEventHandler) {
     {
       std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
 
-      uv_loop_t *loop = windowsystem::GetEventLoop();
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
       uv_async_t *async = new uv_async_t();
       uv_async_init(loop, async, RunEventInWindowThread);
       EventHandler *handler = new EventHandler(window, async, handlerFn);
