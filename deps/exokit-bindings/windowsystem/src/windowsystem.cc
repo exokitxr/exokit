@@ -852,9 +852,9 @@ NAN_METHOD(ComposeLayers) {
               rightViewMatrix = multiplyMatrices(rightViewMatrix, xrOffsetMatrix);
             }
 
-            Local<Float32Array> leftProjectionMatrixFloat32Array = xrStateObj->Get(JS_STR("leftProjectionMatrix"));
+            Local<Float32Array> leftProjectionMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftProjectionMatrix")));
             float *leftProjectionMatrix = (float *)((char *)leftProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + leftProjectionMatrixFloat32Array->ByteOffset());
-            Local<Float32Array> rightProjectionMatrixFloat32Array = xrStateObj->Get(JS_STR("rightProjectionMatrix"));
+            Local<Float32Array> rightProjectionMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightProjectionMatrix")));
             float *rightProjectionMatrix = (float *)((char *)rightProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset());
 
             layers.push_back(LayerSpec{
