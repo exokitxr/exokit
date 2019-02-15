@@ -481,7 +481,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   // WebVR enabled.
   if (['all', 'webvr'].includes(options.args.xr)) {
     window.navigator.getVRDisplays = function() {
-      return Promise.resolve(this.getVRDisplaysSync());
+      return Promise.resolve(this.getVRDisplaysSync().filter(display => display instanceof VRDisplay || display instanceof FakeVRDisplay));
     }
   }
 
