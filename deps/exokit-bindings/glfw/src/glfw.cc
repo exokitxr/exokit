@@ -611,7 +611,7 @@ void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
       JS_STR("mouseenter"), // event name
       evt,
     };
-    eventHandler(sizeof(argv)/sizeof(argv[0]), argv);
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
   });
 }
 
