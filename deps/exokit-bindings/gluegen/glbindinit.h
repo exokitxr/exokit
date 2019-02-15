@@ -399,3 +399,10 @@
 	_gl->Set(v8::String::NewFromUtf8(isolate, "vertexAttrib4f"), v8::FunctionTemplate::New(isolate, __vertexAttrib4f));
 	_gl->Set(v8::String::NewFromUtf8(isolate, "vertexAttribPointer"), v8::FunctionTemplate::New(isolate, __vertexAttribPointer));
 	_gl->Set(v8::String::NewFromUtf8(isolate, "viewport"), v8::FunctionTemplate::New(isolate, __viewport));
+	_gl->Set(v8::String::NewFromUtf8(isolate, "createQuery"), v8::FunctionTemplate::New(isolate, __createQuery));
+	_gl->Set(v8::String::NewFromUtf8(isolate, "beginQuery"), v8::FunctionTemplate::New(isolate, __beginQuery));
+	_gl->Set(v8::String::NewFromUtf8(isolate, "endQuery"), v8::FunctionTemplate::New(isolate, __endQuery));
+	_gl->Set(v8::String::NewFromUtf8(isolate, "getQuery"), v8::FunctionTemplate::New(isolate, __getQuery));
+	_gl->Set(v8::String::NewFromUtf8(isolate, "getQueryParameter"), v8::FunctionTemplate::New(isolate, __getQueryParameter));
+	_gl->Set(v8::String::NewFromUtf8(isolate, "isQuery"), v8::FunctionTemplate::New(isolate, __isQuery));
+	_gl->Set(v8::String::NewFromUtf8(isolate, "deleteQuery"), v8::FunctionTemplate::New(isolate, __deleteQuery));

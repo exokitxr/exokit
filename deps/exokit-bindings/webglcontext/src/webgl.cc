@@ -4833,6 +4833,17 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGL2RenderingContext::Initia
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("WebGL2RenderingContext"));
 
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+
+  Nan::SetMethod(proto, "createQuery", glCallWrap<CreateQuery>);
+  Nan::SetMethod(proto, "beginQuery", glCallWrap<BeginQuery>);
+  Nan::SetMethod(proto, "endQuery", glCallWrap<EndQuery>);
+  Nan::SetMethod(proto, "getQuery", glCallWrap<GetQuery>);
+  Nan::SetMethod(proto, "getQueryParameter", glCallWrap<GetQueryParameter>);
+  Nan::SetMethod(proto, "isQuery", glCallWrap<IsQuery>);
+  Nan::SetMethod(proto, "deleteQuery", glCallWrap<DeleteQuery>);
+
   Local<Function> ctorFn = ctor->GetFunction();
   setGlConstants(ctorFn);
 
@@ -4845,6 +4856,77 @@ NAN_METHOD(WebGL2RenderingContext::New) {
   gl2->Wrap(gl2Obj);
 
   info.GetReturnValue().Set(gl2Obj);
+}
+
+// reference used https://www.khronos.org/registry/OpenGL-Refpages/es3.0/
+NAN_METHOD(WebGL2RenderingContext::CreateQuery) { // adapted from CreateBuffer
+  GLuint queryId;
+  glGenQueries(1, &queryId);
+
+  Local<Object> queryObject = Nan::New<Object>();
+  queryObject->Set(JS_STR("id"), JS_INT(queryId));
+  info.GetReturnValue().Set(queryObject);
+}
+
+NAN_METHOD(WebGL2RenderingContext::BeginQuery) { // adapted from BindBuffer
+  GLenum target = info[0]->Int32Value();
+  GLuint query = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glBeginQuery(target, query);
+}
+
+NAN_METHOD(WebGL2RenderingContext::EndQuery) {
+  GLenum target = info[0]->Int32Value();
+  glEndQuery(target);
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetQuery) {
+  GLenum target = info[0]->Int32Value();
+  GLenum pname = info[1]->Int32Value();
+  GLint value;
+  
+  glGetQueryiv(target, pname, &value);
+  Local<Object> queryObject = Nan::New<Object>();
+  queryObject->Set(JS_STR("id"), JS_INT(value));
+
+  info.GetReturnValue().Set(queryObject);
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetQueryParameter) { // adapted from GetProgramParameter
+  GLint queryId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLenum pname = info[1]->Int32Value();
+  
+  switch (pname) {
+    case GL_QUERY_RESULT_AVAILABLE:
+      GLint value;
+      glGetQueryObjectiv(queryId, pname, &value);
+      info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(value)));
+      break;
+    case GL_QUERY_RESULT:
+      GLuint uValue;
+      glGetQueryObjectuiv(queryId, pname, &uValue);
+      info.GetReturnValue().Set(JS_FLOAT(static_cast<unsigned long>(uValue)));
+      break;
+    default:
+      Nan::ThrowTypeError("GetQueryParameter: Invalid Enum");
+  }
+}
+
+NAN_METHOD(WebGL2RenderingContext::IsQuery) { // adapted from IsVertexArray
+  if (info[0]->IsObject()) {
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+    bool ret = glIsQuery(arg);
+
+    info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }
+}
+
+NAN_METHOD(WebGL2RenderingContext::DeleteQuery) { // adapted from DeleteBuffer
+  GLuint query = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glDeleteQueries(1, &query);
 }
 
 /* struct GLObj {

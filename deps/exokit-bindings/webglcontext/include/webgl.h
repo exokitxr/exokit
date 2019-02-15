@@ -418,6 +418,14 @@ public:
   static std::pair<Local<Object>, Local<FunctionTemplate>> Initialize(Isolate *isolate, Local<FunctionTemplate> baseCtor);
 
   static NAN_METHOD(New);
+  
+  static NAN_METHOD(CreateQuery);
+  static NAN_METHOD(BeginQuery);
+  static NAN_METHOD(EndQuery);
+  static NAN_METHOD(GetQuery);
+  static NAN_METHOD(GetQueryParameter);
+  static NAN_METHOD(IsQuery);
+  static NAN_METHOD(DeleteQuery);
 };
 
 #endif
