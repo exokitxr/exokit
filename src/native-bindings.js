@@ -9,19 +9,7 @@ const {isMainThread} = require('worker_threads');
   process.chdir(oldCwd);
   return exokitNode;
 })(); */
-const {
-  exokitNode,
-  vmOne,
-} = (() => {
-  if (isMainThread) {
-    return {
-     exokitNode: require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node')),
-     vmOne: require('vm-one'),
-    };
-  } else {
-    return {};
-  }
-})();
+const exokitNode = isMainThread ? require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node')) : null;
 const {nativeWindow} = exokitNode;
 const webGlToOpenGl = require('webgl-to-opengl');
 const GlobalContext = require('./GlobalContext');
@@ -30,9 +18,10 @@ const bindings = {};
 for (const k in exokitNode) {
   bindings[k] = exokitNode[k];
 }
-bindings.nativeVm = vmOne;
+
 const isAndroid = bindings.nativePlatform === 'android';
 const glslVersion = isAndroid ? '300 es' : '330';
+
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {
     const result = createShader.call(this, type);
