@@ -875,10 +875,10 @@ if (bindings.nativeOpenVR) {
   };
 }
 
-if (nativeMl) {
+if (bindings.nativeMl) {
   let canvas = null;
   const cleanups = [];
-  nativeMl.requestPresent = async function(layers) {
+  bindings.nativeMl.requestPresent = async function(layers) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       canvas = layer.source;
@@ -891,7 +891,7 @@ if (nativeMl) {
         const {mlPresentState} = GlobalContext;
 
         if (!xrState.isPresenting[0]) {
-          mlPresentState.mlContext = new nativeMl();
+          mlPresentState.mlContext = new bindings.nativeMl();
           mlPresentState.mlContext.Present(windowHandle, context);
 
           const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();
@@ -999,7 +999,7 @@ if (nativeMl) {
       throw new Error('no HTMLCanvasElement source provided');
     }
   };
-  nativeMl.exitPresent = async function() {
+  bindings.nativeMl.exitPresent = async function() {
     const {mlPresentState} = GlobalContext;
       
     if (mlPresentState.mlContext) {
@@ -1046,7 +1046,7 @@ if (nativeMl) {
         if (mlPresentState.mlContext) {
           mlPresentState.mlContext.Exit();
         }
-        nativeMl.DeinitLifecycle();
+        bindings.nativeMl.DeinitLifecycle();
         process.exit();
         break;
       }
@@ -1104,16 +1104,16 @@ if (nativeMl) {
         break;
     }
   };
-  if (!nativeMl.IsSimulated()) {
-    nativeMl.InitLifecycle(); // XXX do this only in the top level thread
-    nativeMl.SetEventHandlers(_mlLifecycleEvent, _mlKeyboardEvent);
+  if (!bindings.nativeMl.IsSimulated()) {
+    bindings.nativeMl.InitLifecycle(); // XXX do this only in the top level thread
+    bindings.nativeMl.SetEventHandlers(_mlLifecycleEvent, _mlKeyboardEvent);
   } else {
     // try to connect to MLSDK
     const MLSDK_PORT = 17955;
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+      bindings.nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
     });
     s.on('error', () => {});
   }
