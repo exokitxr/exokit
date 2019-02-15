@@ -364,7 +364,7 @@ static int jsKeyCode[]={
 
 const char *actionNames = "keyup\0  keydown\0keypress";
 void APIENTRY keyCB(NATIVEwindow *window, int keyArg, int scancodeArg, int actionArg, int modsArg) {
-  QueueEvent(windowArg, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     int key = keyArg;
     int scancode = scancodeArg;
     int action = actionArg;
