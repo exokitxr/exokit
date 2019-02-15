@@ -832,11 +832,11 @@ NAN_METHOD(ComposeLayers) {
               renderHeight,
             };
 
-            Local<Float32Array> leftViewMatrixFloat32Array = xrStateObj->Get(JS_STR("leftViewMatrix"));
+            Local<Float32Array> leftViewMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftViewMatrix")));
             std::vector<float> leftViewMatrix;
             memcpy(leftViewMatrix.data(), (float *)((char *)leftViewMatrixFloat32Array->Buffer()->GetContents().Data() + leftViewMatrixFloat32Array->ByteOffset()), sizeof(leftViewMatrix.data()));
 
-            Local<Float32Array> rightViewMatrixFloat32Array = xrStateObj->Get(JS_STR("rightViewMatrix"));
+            Local<Float32Array> rightViewMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightViewMatrix")));
             std::vector<float> rightViewMatrix;
             memcpy(rightViewMatrix.data(), (float *)((char *)rightViewMatrixFloat32Array->Buffer()->GetContents().Data() + rightViewMatrixFloat32Array->ByteOffset()), sizeof(rightViewMatrix.data()));
 
