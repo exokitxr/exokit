@@ -846,7 +846,7 @@ NAN_METHOD(ComposeLayers) {
               Local<Float32Array> xrOffsetMatrixFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrix")));
 
               std::vector<float> xrOffsetMatrix;
-              memcpy(xrOffsetMatrix.data(), (float *)(xrOffsetMatrixFloat32Array->Buffer()->GetContents().Data() + xrOffsetMatrixFloat32Array->ByteOffset()), sizeof(xrOffsetMatrix.data()));
+              memcpy(xrOffsetMatrix.data(), (float *)((char *)xrOffsetMatrixFloat32Array->Buffer()->GetContents().Data() + xrOffsetMatrixFloat32Array->ByteOffset()), sizeof(xrOffsetMatrix.data()));
 
               leftViewMatrix = multiplyMatrices(leftViewMatrix, xrOffsetMatrix);
               rightViewMatrix = multiplyMatrices(rightViewMatrix, xrOffsetMatrix);
