@@ -834,11 +834,11 @@ NAN_METHOD(ComposeLayers) {
 
             Local<Float32Array> leftViewMatrixFloat32Array = xrStateObj->Get(JS_STR("leftViewMatrix"));
             std::vector<float> leftViewMatrix;
-            memcpy(leftViewMatrix.data(), (float *)((char *)leftViewMatrixFloat32Array->GetContents().Data() + leftViewMatrixFloat32Array->ByteOffset()), sizeof(leftViewMatrix.data()));
+            memcpy(leftViewMatrix.data(), (float *)((char *)leftViewMatrixFloat32Array->Buffer()->GetContents().Data() + leftViewMatrixFloat32Array->ByteOffset()), sizeof(leftViewMatrix.data()));
 
             Local<Float32Array> rightViewMatrixFloat32Array = xrStateObj->Get(JS_STR("rightViewMatrix"));
             std::vector<float> rightViewMatrix;
-            memcpy(rightViewMatrix.data(), (float *)((char *)rightViewMatrixFloat32Array->GetContents().Data() + rightViewMatrixFloat32Array->ByteOffset()), sizeof(rightViewMatrix.data()));
+            memcpy(rightViewMatrix.data(), (float *)((char *)rightViewMatrixFloat32Array->Buffer()->GetContents().Data() + rightViewMatrixFloat32Array->ByteOffset()), sizeof(rightViewMatrix.data()));
 
             Local<Value> xrOffsetValue = element->Get(JS_STR("xrOffset"));
             if (xrOffsetValue->BooleanValue()) {
@@ -846,16 +846,16 @@ NAN_METHOD(ComposeLayers) {
               Local<Float32Array> xrOffsetMatrixFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrix")));
 
               std::vector<float> xrOffsetMatrix;
-              memcpy(xrOffsetMatrix.data(), (float *)(xrOffsetMatrixFloat32Array->GetContents().Data() + xrOffsetMatrixFloat32Array->ByteOffset()), sizeof(xrOffsetMatrix.data()));
+              memcpy(xrOffsetMatrix.data(), (float *)(xrOffsetMatrixFloat32Array->Buffer()->GetContents().Data() + xrOffsetMatrixFloat32Array->ByteOffset()), sizeof(xrOffsetMatrix.data()));
 
               leftViewMatrix = multiplyMatrices(leftViewMatrix, xrOffsetMatrix);
               rightViewMatrix = multiplyMatrices(rightViewMatrix, xrOffsetMatrix);
             }
 
             Local<Float32Array> leftProjectionMatrixFloat32Array = xrStateObj->Get(JS_STR("leftProjectionMatrix"));
-            float *leftProjectionMatrix = (float *)((char *)leftProjectionMatrixFloat32Array->GetContents().Data() + leftProjectionMatrixFloat32Array->ByteOffset());
+            float *leftProjectionMatrix = (float *)((char *)leftProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + leftProjectionMatrixFloat32Array->ByteOffset());
             Local<Float32Array> rightProjectionMatrixFloat32Array = xrStateObj->Get(JS_STR("rightProjectionMatrix"));
-            float *rightProjectionMatrix = (float *)((char *)rightProjectionMatrixFloat32Array->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset());
+            float *rightProjectionMatrix = (float *)((char *)rightProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset());
 
             layers.push_back(LayerSpec{
               width,
