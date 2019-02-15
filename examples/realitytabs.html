@@ -1002,6 +1002,7 @@ const _makeRig = () => {
         mesh.urlState.cursor++;
         mesh.updateText();
       };
+      let isShifted = false;
       const _handleKey = (code, shiftKey) => {
         if (code === 8) { // backspace
           if (mesh.urlState.cursor > 0) {
@@ -1036,7 +1037,9 @@ const _makeRig = () => {
           code === 27 || // esc
           code === 91 // win
         ) {
-          // nothing
+          if (code === 16) { // shift
+            isShifted = !isShifted;
+          }
         } else if (code === 37) { // left
           mesh.urlState.cursor = Math.max(mesh.urlState.cursor - 1, 0);
           _updateText();
@@ -1111,7 +1114,8 @@ const _makeRig = () => {
         } else if (code === -1) {
           // nothing
         } else {
-          _handleDefaultKey(code, shiftKey);
+          _handleDefaultKey(code, shiftKey || isShifted);
+          isShifted = false;
         }
       };
       mesh.handleKey = _handleKey;
