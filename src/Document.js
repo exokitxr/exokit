@@ -195,8 +195,8 @@ function initDocument (document, window) {
     document.dispatchEvent(new Event('load', {target: document}));
     window.dispatchEvent(new Event('load', {target: window}));
 
-    const displays = window.navigator.getVRDisplaysSync();
-    if (displays.length > 0 && (!window[symbols.optionsSymbol].args || ['all', 'webvr'].includes(window[symbols.optionsSymbol].args.xr))) {
+    const vrDisplays = window.navigator.getVRDisplaysSync().filter(display => display.constructor.name === 'VRDisplay' || display.constructor.name === 'FakeVRDisplay');
+    if (vrDisplays.length > 0 && (!window[symbols.optionsSymbol].args || ['all', 'webvr'].includes(window[symbols.optionsSymbol].args.xr))) {
       const _initDisplays = () => {
         if (!_tryEmitDisplay()) {
           _delayFrames(() => {
@@ -205,14 +205,14 @@ function initDocument (document, window) {
         }
       };
       const _tryEmitDisplay = () => {
-        const presentingDisplay = displays.find(display => display.isPresenting);
+        const presentingDisplay = vrDisplays.find(display => display.isPresenting);
         if (presentingDisplay) {
           if (presentingDisplay.constructor.name === 'FakeVRDisplay') {
             _emitOneDisplay(presentingDisplay);
           }
           return true;
         } else {
-          _emitOneDisplay(displays[0]);
+          _emitOneDisplay(vrDisplays[0]);
           return false;
         }
       };
