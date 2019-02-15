@@ -1,5 +1,6 @@
 const nativeWorker = require('worker-native');
 const GlobalContext = require('./GlobalContext');
+const {nativeWindow} = require('./native-bindings');
 
 const _makeWindow = (options = {}) => {
   if (!GlobalContext.xrState.windowHandle[0] && !GlobalContext.xrState.windowHandle[1]) {
