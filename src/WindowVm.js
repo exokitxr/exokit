@@ -1,3 +1,4 @@
+const path = require('path');
 const nativeWorker = require('worker-native');
 const GlobalContext = require('./GlobalContext');
 const {nativeWindow} = require('./native-bindings');
