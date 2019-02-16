@@ -345,8 +345,9 @@ const _bindWindow = (window, newWindowCb) => {
   window.innerWidth = innerWidth;
   window.innerHeight = innerHeight;
 
+  // XXX move these to WindowVm/Window
   window.on('navigate', newWindowCb);
-  window.document.on('paste', e => {
+  /* window.document.on('paste', e => {
     e.clipboardData = new window.DataTransfer();
     const clipboardContents = nativeWindow.getClipboard().slice(0, 256);
     const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
@@ -419,10 +420,10 @@ const _bindWindow = (window, newWindowCb) => {
       console.log('drain');
       process.exit();
     });
-  }
+  } */
   
   windows.push(window);
-  window.addEventListener('destroy', e => {
+  window.on('destroy', e => {
     const {window} = e;
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -434,7 +435,7 @@ const _bindWindow = (window, newWindowCb) => {
     windows.splice(windows.indexOf(window), 1);
   });
   
-  window.addEventListener('error', err => {
+  window.on('error', err => {
     console.warn('got error', err);
   });
 };
