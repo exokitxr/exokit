@@ -559,7 +559,27 @@ class XRRigidTransform {
       .getInverse(localMatrix)
       .toArray(this.matrixInverse);
   }
+
+  toJSON() {
+    return this.matrix.slice();
+  }
 }
+XRRigidTransform.fromJSON = matrixArray => {
+  const result = new XRRigidTransform();
+  localMatrix
+    .fromArray(matrixArray);
+  localMatrix
+    .decompose(localVector, localQuaternion, localVector2);
+  localVector.toArray(result.position);
+  localQuaternion.toArray(result.orientation);
+  localVector2.toArray(result.scale);
+  localMatrix
+    .toArray(result.matrix);
+  localMatrix
+    .getInverse(localMatrix)
+    .toArray(result.matrixInverse);
+  return result;
+};
 module.exports.XRRigidTransform = XRRigidTransform;
 
 class XRCoordinateSystem {
