@@ -16,7 +16,7 @@ const _makeWindow = (options = {}) => {
     },
   });
   
-  window.tickAnimationFrame = type => window.runAsync(`return window.tickAnimationFrame("${type}");`);
+  window.tickAnimationFrame = type => window.runAsync(`window.tickAnimationFrame("${type}");`);
   window.on('exit', () => {
     window.emit('destroy');
   });
