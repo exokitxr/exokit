@@ -25,10 +25,3 @@ const _makeWindow = (options = {}) => {
 };
 module.exports._makeWindow = _makeWindow;
 GlobalContext._makeWindow = _makeWindow;
-
-const _makeWindowWithDocument = (s, options) => { // XXX fold this into Window
-  const window = _makeWindow(options);
-  window.document = _parseDocument(s, window);
-  return window;
-};
-module.exports._makeWindowWithDocument = _makeWindowWithDocument;
