@@ -182,6 +182,7 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 
+const windows = [];
 const contexts = [];
 GlobalContext.contexts = contexts;
 
@@ -1232,8 +1233,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   const _tickAnimationFrameRaf = top => async () => {
-    const currentWindowContext = nativeWindow.getCurrentWindowContext();
-    const childSyncs = (await Promise.all(windows.map(window => window.tickAnimationFrame(currentWindowContext ? 'child' : 'top')))).flat();
+    const childSyncs = (await Promise.all(windows.map(window => window.tickAnimationFrame(GlobalContext.contexts.length > 0 ? 'child' : 'top')))).flat();
     for (let i = 0; i < GlobalContext.contexts.length; i++) {
       GlobalContext.contexts[i].setPrereqSyncs(childSyncs);
     }
