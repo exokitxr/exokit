@@ -131,7 +131,7 @@ const dataPath = (() => {
 })();
 
 const windows = [];
-const contexts = [];
+// const contexts = [];
 
 const xrState = (() => {
   const _makeSab = size => {
