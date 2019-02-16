@@ -1933,7 +1933,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.d = null;
     this.browser = null;
     this.onconsole = null;
-    this.xrOffset = new XRRigidTransform();
+    this.xrOffset = new XRRigidTransform(); // XXX need to feed through changes to the underlying frame
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
