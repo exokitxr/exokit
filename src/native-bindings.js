@@ -9,7 +9,7 @@ const {isMainThread} = require('worker_threads');
   process.chdir(oldCwd);
   return exokitNode;
 })(); */
-const exokitNode = isMainThread ? require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node')) : null;
+const exokitNode = isMainThread ? require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node')) : {};
 const {nativeWindow} = exokitNode;
 const webGlToOpenGl = require('webgl-to-opengl');
 const GlobalContext = require('./GlobalContext');
