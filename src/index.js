@@ -14,6 +14,7 @@ const url = require('url');
 const net = require('net');
 const child_process = require('child_process');
 const os = require('os');
+const util = require('util');
 const repl = require('repl');
 
 const core = require('./core.js');
@@ -576,48 +577,49 @@ const _start = () => {
 
     const prompt = '[x] ';
 
-    let lastUnderscore = window._;
     const replEval = (cmd, context, filename, callback) => {
       cmd = cmd.slice(0, -1); // remove trailing \n
 
-      let result, err = null, match;
+      let result, err;
+      let match;
 
       if (/^[a-z]+:\/\//.test(cmd)) {
-        window.location.href = cmd;
+        cmd = `window.location.href = ${JSON.stringify(cmd)};`;
       } else if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
-        const e = window.document.createElement('div');
-        e.innerHTML = cmd;
-        if (e.childNodes.length === 0) {
-          result = undefined;
-        } else if (e.childNodes.length === 1) {
-          result = e.childNodes[0];
-        } else {
-          result = e.childNodes;
-        }
+        cmd = `(() => {
+          const e = window.document.createElement('div');
+          e.innerHTML = ${JSON.stringify(cmd)};
+          if (e.childNodes.length === 0) {
+            return window._ = undefined;
+          } else if (e.childNodes.length === 1) {
+            return window._ = e.childNodes[0];
+          } else {
+            return window._ = e.childNodes;
+          }
+        })();`;
       } else if (match = cmd.match(/^\s*(?:const|var|let)?\s*([a-z][a-z0-9]*)\s*=\s*(<(?:\!\-*)?[a-z].*)$/im)) {
-        const e = window.document.createElement('div');
-        e.innerHTML = match[2];
-        if (e.childNodes.length === 0) {
-          result = undefined;
-        } else if (e.childNodes.length === 1) {
-          result = e.childNodes[0];
-        } else {
-          result = e.childNodes;
-        }
-        window[match[1]] = result;
-      } else {
-        try {
-          result = window.runRepl(cmd);
-        } catch(e) {
-          err = e;
-        }
+        const name = match[1];
+        const src = match[2];
+        cmd = `(() => {
+          const name = ${JSON.stringify(name)};
+          const e = window.document.createElement('div');
+          e.innerHTML = ${JSON.stringify(src)};
+          if (e.childNodes.length === 0) {
+            return window[name] = window._ = undefined;
+          } else if (e.childNodes.length === 1) {
+            return window[name] = window._ = e.childNodes[0];
+          } else {
+            return window[name] = window._ = e.childNodes;
+          }
+        })();`;
+      }
+      try {
+        result = window.runRepl(cmd);
+      } catch(e) {
+        err = e;
       }
 
       if (!err) {
-        if (window._ === lastUnderscore) {
-          window._ = result;
-          lastUnderscore = result;
-        }
         if (result !== undefined) {
           r.setPrompt(prompt);
         }
@@ -629,7 +631,7 @@ const _start = () => {
 
       GlobalContext.commands.push(cmd);
 
-      callback(err, result);
+      callback(err, {[util.inspect.custom]() { return result; }});
     };
     const r = repl.start({
       prompt,
