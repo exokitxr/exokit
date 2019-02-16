@@ -1237,7 +1237,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       localCbs[i] = null;
     }
   };
-  const _tickAnimationFrameRaf = async top => () => {
+  const _tickAnimationFrameRaf = top => async () => {
     const currentWindowContext = nativeWindow.getCurrentWindowContext();
     const childSyncs = (await Promise.all(windows.map(window => window.tickAnimationFrame(currentWindowContext ? 'child' : 'top')))).flat();
     for (let i = 0; i < GlobalContext.contexts.length; i++) {
@@ -1291,7 +1291,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   };
   const _tickAnimationFrameTop = _tickAnimationFrameRaf(true);
   const _tickAnimationFrameChild = _tickAnimationFrameRaf(false);
-  const _tickAnimationFrameWait = () => {
+  const _tickAnimationFrameWait = async () => {
     // perform the wait
     if (fakePresentState.fakeVrDisplay) {
       fakePresentState.fakeVrDisplay.waitGetPoses();
