@@ -1143,14 +1143,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       _elementSetter(window, 'error', onerror);
     },
   });
-  Object.defineProperty(window, 'onmessage', {
-    get() {
-      return _elementGetter(window, 'message');
-    },
-    set(onmessage) {
-      _elementSetter(window, 'message', onmessage);
-    },
-  });
   Object.defineProperty(window, 'onpopstate', {
     get() {
       return _elementGetter(window, 'popstate');
