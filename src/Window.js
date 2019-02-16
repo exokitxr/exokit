@@ -1070,13 +1070,15 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       rafCbs[index] = null;
     }
   };
-  window.postMessage = function(data) {
+  window.postMessage = (postMessage => function(data) {
     if (window.top === window) {
       setImmediate(() => {
         window._emit('message', new MessageEvent('message', {data}));
       });
+    } else {
+      postMessage.apply(this, arguments);
     }
-  };
+  })(window.postMessage);
   /*
     Treat function onload() as a special case that disables automatic event attach for onload, because this is how browsers work. E.g.
       <!doctype html><html><head><script>
