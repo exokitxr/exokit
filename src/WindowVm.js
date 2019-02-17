@@ -8,6 +8,8 @@ const _makeWindow = (options = {}) => {
     initModule: path.join(__dirname, 'Window.js'),
     args: {
       options,
+      args: GlobalContext.args,
+      version: GlobalContext.version,
       xrState: GlobalContext.xrState,
     },
   });
