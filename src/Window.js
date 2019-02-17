@@ -1263,6 +1263,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   const _tickAnimationFrameTop = _tickAnimationFrameRaf(true);
   const _tickAnimationFrameChild = _tickAnimationFrameRaf(false);
   const _tickAnimationFrameWait = async () => {
+    const childWaits = Promise.all(windows.map(window => window.tickAnimationFrame('wait')));
+    
     // perform the wait
     if (fakePresentState.fakeVrDisplay) {
       fakePresentState.fakeVrDisplay.waitGetPoses();
@@ -1743,6 +1745,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     window[symbols.mrDisplaysSymbol].openVRDevice.session && window[symbols.mrDisplaysSymbol].openVRDevice.session.update();
     window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session && window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session.update();
     window[symbols.mrDisplaysSymbol].magicLeapARDevice.session && window[symbols.mrDisplaysSymbol].magicLeapARDevice.session.update();
+    
+    await childWaits;
   };
   const _tickAnimationFrameSubmit = () => {
     // composite framebuffers
