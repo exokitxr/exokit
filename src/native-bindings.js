@@ -1,4 +1,5 @@
 const path = require('path');
+const {process} = global;
 
 const exokitNode = (() => {
   if (typeof requireNative === 'undefined') {
