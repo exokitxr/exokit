@@ -1,6 +1,8 @@
 const path = require('path');
 const {process} = global;
 
+const symbols = require('./symbols');
+
 const exokitNode = (() => {
   if (typeof requireNative === 'undefined') {
     const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
