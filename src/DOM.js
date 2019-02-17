@@ -1,7 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
+const vm = require('vm');
 const util = require('util');
+
 const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
@@ -1704,8 +1706,11 @@ class HTMLScriptElement extends HTMLLoadableElement {
             return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
           }
         })
-        .then(s => this.ownerDocument.defaultView.runAsync(s))
-        // utils._runJavascript(s, this.ownerDocument.defaultView, url); // XXX inject url into the call
+        .then(s => {
+          vm.runInThisContext(s, {
+            filename: url,
+          });
+        })
         .then(() => {
           this.readyState = 'complete';
 
@@ -1733,10 +1738,14 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const window = this.ownerDocument.defaultView;
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      window.runAsync(innerHTML)
+      (async () => {
+        vm.runInThisContext(innerHTML, {
+          filename: window.location.href,
+          lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
+          columnOffset: this.location && this.location.col !== null ? this.location.col - 1 : 0,
+        });
+      })()
         .then(() => {
-          // utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0); // XXX inject url into the call
-
           this.readyState = 'complete';
           
           this.dispatchEvent(new Event('load', {target: this}));
