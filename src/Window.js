@@ -1761,6 +1761,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         context.flush();
       }
 
+      const oculusVrGlContext = _getOculusVrGlContext();
+      const openVrGlContext = _getOpenVrGlContext();
+      const oculusMobileVrGlContext = _getOculusMobileVrGlContext();
+      const mlGlContext = _getMlGlContext();
       const isVisible = nativeWindow.isVisible(windowHandle) || oculusVrGlContext === context || oculusMobileVrGlContext === context || mlGlContext === context;
       if (isVisible) {
         if (vrPresentState.oculusSystem && oculusVrGlContext === context && vrPresentState.hasPose) {
