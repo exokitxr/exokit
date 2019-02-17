@@ -112,6 +112,7 @@ const nativeWorker = require('worker-native');
 
 const eventLoopNative = require('event-loop-native');
 nativeWindow.setEventLoop(eventLoopNative);
+nativeWorker.setEventLoop(eventLoopNative);
 nativeWorker.dlclose(eventLoopNative.getDlibPath());
 
 GlobalContext.args = args;
