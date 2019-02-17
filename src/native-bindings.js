@@ -236,7 +236,7 @@ const _onGl3DConstruct = (gl, canvas) => {
     // window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
     // window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
 
-    const title = `Exokit ${version}`;
+    const title = `Exokit ${GlobalContext.version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
 
     let framebuffer;
