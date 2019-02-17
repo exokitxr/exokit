@@ -1,8 +1,6 @@
 const url = require('url');
 const {URL} = url;
 
-const {Event, EventTarget} = require('./Event');
-
 const fetch = require('window-fetch');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
