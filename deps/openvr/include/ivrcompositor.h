@@ -5,6 +5,7 @@
 #include <v8.h>
 
 #include <webgl.h>
+#include <windowsystem.h>
 
 // Forward declaration of OpenVR class.
 // We only need the pointer here, so this is cleaner than importing the header.

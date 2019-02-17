@@ -63,7 +63,8 @@ NAN_MODULE_INIT(IVRCompositor::Init)
   constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
 
   uv_sem_init(&vr::reqSem, 0);
-  uv_async_init(uv_default_loop(), &vr::resAsync, vr::RunResInMainThread);
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  uv_async_init(loop, &vr::resAsync, vr::RunResInMainThread);
   vr::reqThead = std::thread([]() -> void {
     for (;;) {
       uv_sem_wait(&vr::reqSem);
