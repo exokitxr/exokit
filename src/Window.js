@@ -1748,13 +1748,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     // composite framebuffers
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-      // XXX collect syncs globally
-      // XXX only perform sync in the blitting case; delete sync object otherwise
-      const sync = syncs.find(sync => sync.window === context.window && sync.id === context.id);
-      if (sync) {
-        nativeWindow.waitSync(sync.sync);
-      }
-
       const windowHandle = context.getWindowHandle();
 
       const {nativeWindow} = nativeBindings;
