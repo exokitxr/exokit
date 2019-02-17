@@ -141,6 +141,8 @@ const {_elementGetter, _elementSetter, _download} = utils;
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
+const isMac = os.platform() === 'darwin';
+
 const zeroMatrix = new THREE.Matrix4();
 const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
 const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));

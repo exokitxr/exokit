@@ -229,7 +229,6 @@ GlobalContext.fakeVrDisplayEnabled = false; // XXX globalize thisd
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
-const isMac = os.platform() === 'darwin';
 
 const _startTopRenderLoop = () => {
   const timestamps = {
