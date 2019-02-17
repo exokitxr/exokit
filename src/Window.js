@@ -497,7 +497,6 @@ const _findFreeSlot = a => {
 };
 const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   fn = fn.bind(window);
-  fn[symbols.windowSymbol] = window;
   fn[symbols.prioritySymbol] = priority;
   const id = ++rafIndex;
   fn[symbols.idSymbol] = id;
@@ -631,41 +630,41 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.URL = URL;
   window.console = console;
   window.alert = console.log;
-  window.setTimeout = (fn, timeout, args) => {
+  window.setTimeout = (setTimeout => (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
-    fn[symbols.windowSymbol] = window;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
-    timeouts[_findFreeSlot(timeouts)] = fn;
+    let id = _findFreeSlot(timeouts);
+    id++;
+    timeouts[id] = fn;
     fn[symbols.timeoutSymbol] = setTimeout(fn, timeout, args);
     return id;
-  };
-  window.clearTimeout = id => {
-    const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
-    if (index !== -1) {
-      clearTimeout(timeouts[index][symbols.timeoutSymbol]);
-      timeouts[index] = null;
+  })(setTimeout);
+  window.clearTimeout = (clearTimeout => id => {
+    id--;
+    const fn = timeouts[id];
+    if (fn) {
+      clearTimeout(fn[symbols.timeoutSymbol]);
+      timeouts[id] = null;
     }
-  };
-  window.setInterval = (fn, interval, args) => {
+  })(clearTimeout);
+  window.setInterval = (setInterval => (fn, interval, args) => {
     if (interval < 10) {
       interval = 10;
     }
     fn = fn.bind.apply(fn, [window].concat(args));
-    fn[symbols.windowSymbol] = window;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
-    intervals[_findFreeSlot(intervals)] = fn;
+    let id = _findFreeSlot(intervals);
+    id++;
+    intervals[id] = fn;
     fn[symbols.timeoutSymbol] = setInterval(fn, interval, args);
     return id;
-  };
-  window.clearInterval = id => {
-    const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
-    if (index !== -1) {
-      clearInterval(intervals[index][symbols.timeoutSymbol]);
-      intervals[index] = null;
+  })(setInterval);
+  window.clearInterval = (clearInterval => id => {
+    id--;
+    const fn = intervals[id];
+    if (fn) {
+      clearInterval(fn[symbols.timeoutSymbol]);
+      intervals[id] = null;
     }
-  };
+  })(clearInterval);
   const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
   window.fetch = (u, options) => {
     const _boundFetch = (u, options) => fetch(u, options)
@@ -1155,33 +1154,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     },
   });
 
-  const _destroyTimeouts = window => {
-    const _pred = fn => fn[symbols.windowSymbol] === window;
-    for (let i = 0; i < rafCbs.length; i++) {
-      const rafCb = rafCbs[i];
-      if (rafCb && _pred(rafCb)) {
-        rafCbs[i] = null;
-      }
-    }
-    for (let i = 0; i < timeouts.length; i++) {
-      const timeout = timeouts[i];
-      if (timeout && _pred(timeout)) {
-        clearTimeout(timeout[symbols.timeoutSymbol]);
-        timeouts[i] = null;
-      }
-    }
-    for (let i = 0; i < intervals.length; i++) {
-      const interval = intervals[i];
-      if (interval && _pred(interval)) {
-        clearInterval(interval[symbols.timeoutSymbol]);
-        intervals[i] = null;
-      }
-    }
-  };
-
-  window.on('destroy', e => {
-    _destroyTimeouts(e.window);
-  });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
 
@@ -1199,8 +1171,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           window._emit('beforeunload');
           window._emit('unload');
           window._emit('navigate', newWindow);
-
-          _destroyTimeouts(window);
         })
         .catch(err => {
           loading = false;
