@@ -30,8 +30,11 @@ const {THREE} = core;
 const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
 const nativeBindings = require(nativeBindingsModulePath);
 
+const nativeWorker = require('worker-native');
+
 const eventLoopNative = require('event-loop-native');
 nativeBindings.nativeWindow.setEventLoop(eventLoopNative);
+nativeWorker.dlclose(eventLoopNative.getDlibPath());
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.args = {};
