@@ -9,6 +9,7 @@
 
 #include <defines.h>
 #include <browser-common.h>
+#include <windowsystem.h>
 
 #include <chrono>
 #include <deque>

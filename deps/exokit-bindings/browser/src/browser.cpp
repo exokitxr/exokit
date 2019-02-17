@@ -27,11 +27,6 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), win
 Browser::~Browser() {}
 
 Local<Object> Browser::Initialize(Isolate *isolate) {
-  uv_async_init(uv_default_loop(), &mainThreadAsync, MainThreadAsync);
-  // uv_sem_init(&constructSem, 0);
-  uv_sem_init(&mainThreadSem, 0);
-  uv_sem_init(&browserThreadSem, 0);
-  
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -84,6 +79,12 @@ NAN_METHOD(Browser::New) {
     std::string dataPath(*dataPathValue, dataPathValue.length());
 
     if (!embeddedInitialized) {
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
+      uv_async_init(loop, &mainThreadAsync, MainThreadAsync);
+      // uv_sem_init(&constructSem, 0);
+      uv_sem_init(&mainThreadSem, 0);
+      uv_sem_init(&browserThreadSem, 0);
+      
       browserThread = std::thread([dataPath{std::move(dataPath)}]() -> void {
         // exout << "initialize web core manager 1" << std::endl;
         const bool success = initializeEmbedded(dataPath);
