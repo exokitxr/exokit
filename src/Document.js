@@ -1,3 +1,5 @@
+const {process} = global;
+
 const parse5 = require('parse5');
 
 const DOM = require('./DOM');
