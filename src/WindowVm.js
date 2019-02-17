@@ -1,13 +1,9 @@
 const path = require('path');
 const nativeWorker = require('worker-native');
-const GlobalContext = require('./GlobalContext');
 const {nativeWindow} = require('./native-bindings');
+const GlobalContext = require('./GlobalContext');
 
 const _makeWindow = (options = {}) => {
-  if (!GlobalContext.xrState.windowHandle[0] && !GlobalContext.xrState.windowHandle[1]) {
-    GlobalContext.xrState.windowHandle.set(nativeWindow.createNull());
-  }
-  
   const window = nativeWorker.make({
     initModule: path.join(__dirname, 'Window.js'),
     args: {
