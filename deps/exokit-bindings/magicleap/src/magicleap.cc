@@ -2687,7 +2687,7 @@ void main() {\n\
 }\n\
 ";
 NAN_METHOD(MLContext::InitLifecycle) {
-  uv_loop_t *loop = windowsystem::GetEventLoop();
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
 
   uv_sem_init(&reqSem, 0);
   uv_sem_init(&resSem, 0);
@@ -2837,8 +2837,8 @@ NAN_METHOD(MLContext::SetEventHandlers) {
     {
       std::lock_guard lock(eventHandlerMutex);
       
-      uv_loop_t *loop = windowsystem::GetEventLoop();
       uv_async_t *eventsAsync = new uv_async_t();
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
       uv_async_init(loop, eventsAsync, RunEventsInMainThread);
       uv_async_t *keyboardEventsAsync = new uv_async_t();
       uv_async_init(loop, keyboardEventsAsync, RunKeyboardEventsInMainThread);
