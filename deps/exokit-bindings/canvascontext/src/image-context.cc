@@ -82,7 +82,8 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
     this->error = "";
 
     threadAsyncHandle = (uv_async_t *)malloc(sizeof(uv_async_t));
-    uv_async_init(uv_default_loop(), threadAsyncHandle, RunInMainThread);
+    uv_loop_t *loop = windowsystembase::GetEventLoop();
+    uv_async_init(loop, threadAsyncHandle, RunInMainThread);
 
     handleToImageMap[threadAsyncHandle] = this;
 

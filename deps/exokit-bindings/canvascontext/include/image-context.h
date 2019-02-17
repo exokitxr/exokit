@@ -13,6 +13,7 @@
 #include <SkImage.h>
 #include <nanosvg.h>
 #include <nanosvgrast.h>
+#include <windowsystem.h>
 #include <string>
 #include <thread>
 
