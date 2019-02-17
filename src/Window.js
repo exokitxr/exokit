@@ -1750,7 +1750,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       const context = contexts[i];
       const windowHandle = context.getWindowHandle();
 
-      const {nativeWindow} = nativeBindings;
       nativeWindow.setCurrentWindowContext(windowHandle);
       if (isMac) { // XXX move these to window internal
         context.flush();
