@@ -27,15 +27,10 @@ const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const symbols = require('./symbols');
 const {THREE} = core;
 
-const nativeBindingsModulePath = path.join(__dirname, 'native-bindings.js');
-const nativeBindings = require(nativeBindingsModulePath);
+const nativeBindings = require(path.join(__dirname, 'native-bindings.js'));
 
 const nativeWorker = require('worker-native');
-
-const eventLoopNative = require('event-loop-native');
-nativeBindings.nativeWindow.setEventLoop(eventLoopNative);
-nativeWorker.setEventLoop(eventLoopNative);
-nativeWorker.dlclose(eventLoopNative.getDlibPath());
+nativeBindings.nativeWindow.setEventLoop(nativeWorker.getEventLoop());
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.args = {};

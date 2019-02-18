@@ -109,11 +109,7 @@ const {
 } = require('./native-bindings');
 
 const nativeWorker = require('worker-native');
-
-const eventLoopNative = require('event-loop-native');
-nativeWindow.setEventLoop(eventLoopNative);
-nativeWorker.setEventLoop(eventLoopNative);
-nativeWorker.dlclose(eventLoopNative.getDlibPath());
+nativeWindow.setEventLoop(nativeWorker.getEventLoop());
 
 GlobalContext.args = args;
 GlobalContext.version = version;
