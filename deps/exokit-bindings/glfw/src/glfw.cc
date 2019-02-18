@@ -1176,7 +1176,7 @@ NAN_METHOD(ExtensionSupported) {
   info.GetReturnValue().Set(JS_BOOL(glfwExtensionSupported(*str)==1));
 } */
 
-bool glfwInitialized = false;
+bool glfwInitialized = GL_FALSE;
 NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
