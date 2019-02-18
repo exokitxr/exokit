@@ -73,7 +73,7 @@ const _onGl3DConstruct = (gl, canvas) => {
   const window = document.defaultView;
 
   const windowSpec = (() => {
-    if (!args.headless) {
+    if (!window[symbols.optionsSymbol].args.headless) {
       try {
         const visible = document.documentElement.contains(canvas);
         const {hidden} = document;
