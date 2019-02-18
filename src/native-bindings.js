@@ -77,8 +77,29 @@ const _onGl3DConstruct = (gl, canvas) => {
       try {
         const visible = document.documentElement.contains(canvas);
         const {hidden} = document;
-        const windowHandle = Array.from(GlobalContext.xrState.windowHandle);
-        return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, windowHandle, gl);
+        const sharedWindowHandle = Array.from(GlobalContext.xrState.windowHandle);
+        const title = `Exokit ${GlobalContext.version}`;
+        const windowHandle = global.runSyncTop(`(() => {
+          const {
+            canvasWidth,
+            canvasHeight,
+            visible,
+            hidden,
+            sharedWindowHandle,
+            title,
+          } = global._;
+          const windowHandle = nativeBindings.nativeWindow.createWindowHandle(canvasWidth, canvasHeight, visible && !hidden, sharedWindowHandle);
+          nativeBindings.nativeWindow.setWindowTitle(windowHandle, title);
+          return windowHandle;
+        })()`, {
+          canvasWidth,
+          canvasHeight,
+          visible,
+          hidden,
+          sharedWindowHandle,
+          title,
+        });
+        return nativeWindow.initWindow3D(windowHandle, gl);
       } catch (err) {
         console.warn(err.stack);
         return null;
@@ -239,9 +260,6 @@ const _onGl3DConstruct = (gl, canvas) => {
     // window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
     // window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
 
-    const title = `Exokit ${GlobalContext.version}`;
-    nativeWindow.setWindowTitle(windowHandle, title);
-
     let framebuffer;
 
     const {hidden} = document;
@@ -250,7 +268,7 @@ const _onGl3DConstruct = (gl, canvas) => {
 
       gl.setDefaultFramebuffer(msFbo);
 
-      gl.resize = (width, height) => {
+      gl.resize = (width, height) => { // XXX run this on the main thread
         nativeWindow.setCurrentWindowContext(windowHandle);
         nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
       };
@@ -264,7 +282,7 @@ const _onGl3DConstruct = (gl, canvas) => {
         depthTex,
       };
     } else {
-      gl.resize = (width, height) => {
+      gl.resize = (width, height) => { // XXX run this on the main thread
         nativeWindow.setCurrentWindowContext(windowHandle);
         nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
@@ -277,11 +295,26 @@ const _onGl3DConstruct = (gl, canvas) => {
           const windowVisible = nativeWindow.isVisible(windowHandle);
           if (domVisible) {
             if (!windowVisible) {
-              nativeWindow.show(windowHandle);
+              global.runSyncTop(`(() => {
+                const {
+                  windowHandle,
+                } = global._;
+                nativeBindings.nativeWindow.show(windowHandle);
+              })()`, {
+                windowHandle,
+              });
             }
           } else {
             if (windowVisible) {
-              nativeWindow.hide(windowHandle);
+              // XXX can run async
+              global.runSyncTop(`(() => {
+                const {
+                  windowHandle,
+                } = global._;
+                nativeBindings.nativeWindow.hide(windowHandle);
+              })()`, {
+                windowHandle,
+              });
             }
           }
         }
@@ -364,8 +397,20 @@ const _onGl2DConstruct = (ctx, canvas) => {
   const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.headless) {
       try {
-        const windowHandle = Array.from(GlobalContext.xrState.windowHandle);
-        return nativeWindow.create2d(canvasWidth, canvasHeight, windowHandle);
+        const sharedWindowHandle = Array.from(GlobalContext.xrState.windowHandle);
+        const windowHandle = global.runSyncTop(`(() => {
+          const {
+            canvasWidth,
+            canvasHeight,
+            sharedWindowHandle,
+          } = global._;
+          return nativeBindings.nativeWindow.createWindowHandle(canvasWidth, canvasHeight, false, sharedWindowHandle);
+        })()`, {
+          canvasWidth,
+          canvasHeight,
+          sharedWindowHandle,
+        });
+        return nativeWindow.initWindow2D(windowHandle);
       } catch (err) {
         console.warn(err.message);
         return null;
