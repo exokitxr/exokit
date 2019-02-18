@@ -21,7 +21,7 @@ class XR extends EventEmitter {
     this._window = window;
   }
   requestDevice() {
-    if (GlobalContext.fakeVrDisplayEnabled) {
+    if (GlobalContext.xrState.fakeVrDisplayEnabled[0]) {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].fakeVrDisplay);
     } else if (GlobalContext.nativeOculusVR && GlobalContext.nativeOculusVR.Oculus_IsHmdPresent()) {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusVRDevice);

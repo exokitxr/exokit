@@ -244,7 +244,6 @@ const fakePresentState = {
   layers: [],
 };
 GlobalContext.fakePresentState = fakePresentState;
-GlobalContext.fakeVrDisplayEnabled = false;
 
 const _getOculusVrGlContext = () => vrPresentState.oculusSystem ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
 const _getOpenVrGlContext = () => vrPresentState.system ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
@@ -576,7 +575,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     webkitGetUserMedia: getUserMedia, // for feature detection
     getVRDisplaysSync() {
       const result = [];
-      if (GlobalContext.fakeVrDisplayEnabled) {
+      if (GlobalContext.xrState.fakeVrDisplayEnabled[0]) {
         result.push(window[symbols.mrDisplaysSymbol].fakeVrDisplay);
       }
 
@@ -599,7 +598,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       return result;
     },
     createVRDisplay() {
-      GlobalContext.fakeVrDisplayEnabled = true;
+      GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
     getGamepads: getGamepads.bind(null, window),
