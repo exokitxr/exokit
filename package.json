@@ -47,7 +47,6 @@
     "bugsnag": "^2.4.3",
     "cross-env": "^5.2.0",
     "css": "^2.2.4",
-    "event-loop-native": "0.0.9",
     "events": "^3.0.0",
     "fake-indexeddb": "^2.0.4",
     "fault-zone": "0.0.20",
