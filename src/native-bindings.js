@@ -340,7 +340,14 @@ const _onGl3DConstruct = (gl, canvas) => {
         // GlobalContext.mlPresentState.mlGlContextId = 0;
       }
 
-      nativeWindow.destroy(windowHandle);
+      global.runSyncTop(`(() => {
+        const {
+          windowHandle,
+        } = global._;
+        nativeBindings.nativeWindow.destroy(windowHandle);
+      })()`, {
+        windowHandle,
+      });
       canvas._context = null;
 
       /* if (hidden) {
