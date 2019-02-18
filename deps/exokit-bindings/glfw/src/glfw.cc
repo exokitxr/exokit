@@ -8,9 +8,9 @@ namespace glfw {
 
 /* @Module: Window handling */
 thread_local NATIVEwindow *currentWindow = nullptr;
-thread_local std::map<NATIVEwindow *, EventHandler *> eventHandlerMap;
-thread_local std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
-thread_local std::mutex eventHandlerMapMutex;
+std::map<NATIVEwindow *, EventHandler *> eventHandlerMap;
+std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
+std::mutex eventHandlerMapMutex;
 int lastX = 0, lastY = 0; // XXX track this per-window
 
 EventHandler::EventHandler(NATIVEwindow *window, uv_async_t *async, Local<Function> handlerFn) : window(window), async(async), handlerFn(handlerFn) {}
