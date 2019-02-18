@@ -80,7 +80,7 @@ const _onGl3DConstruct = (gl, canvas) => {
         const windowHandle = Array.from(GlobalContext.xrState.windowHandle);
         return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, windowHandle, gl);
       } catch (err) {
-        console.warn(err.message);
+        console.warn(err.stack);
         return null;
       }
     } else {
