@@ -2036,7 +2036,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   const parentWindow = this.ownerDocument.defaultView;
                   const options = parentWindow[symbols.optionsSymbol];
 
-                  url = utils._makeNormalizeUrl(options.baseUrl)(url);
+                  url = _makeNormalizeUrl(options.baseUrl)(url);
                   const parent = {};
                   const top = parentWindow === parentWindow.top ? parent : {};
                   const contentWindow = _makeWindow({
