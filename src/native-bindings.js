@@ -358,7 +358,7 @@ const _onGl3DConstruct = (gl, canvas) => {
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);
 
       if (gl.id === 1) {
-        process.exit();
+        process.kill(process.pid); // XXX make this a softer process.exit()
       }
     })(gl.destroy);
     
