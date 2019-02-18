@@ -327,17 +327,17 @@ const _onGl3DConstruct = (gl, canvas) => {
 
       nativeWindow.setCurrentWindowContext(windowHandle);
 
-      if (gl.id === vrPresentState.glContextId) {
+      if (gl.id === GlobalContext.vrPresentState.glContextId) {
         throw new Error('destroyed vr presenting context');
         /* bindings.nativeVr.VR_Shutdown();
 
-        vrPresentState.glContextId = 0;
-        vrPresentState.system = null;
-        vrPresentState.compositor = null; */
+        GlobalContext.vrPresentState.glContextId = 0;
+        GlobalContext.vrPresentState.system = null;
+        GlobalContext.vrPresentState.compositor = null; */
       }
-      if (gl.id === mlPresentState.mlGlContextId) {
+      if (gl.id === GlobalContext.mlPresentState.mlGlContextId) {
         throw new Error('destroyed ml presenting context');
-        // mlPresentState.mlGlContextId = 0;
+        // GlobalContext.mlPresentState.mlGlContextId = 0;
       }
 
       nativeWindow.destroy(windowHandle);
