@@ -17,11 +17,11 @@ const htmlUnescape = require('unescape');
 const bindings = require('./native-bindings');
 const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
+const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {urls} = require('./urls');
-const utils = require('./utils');
-const {_elementGetter, _elementSetter} = utils;
+const {_elementGetter, _elementSetter, _makeNormalizeUrl} = require('./utils');
 const {XRRigidTransform} = require('./XR');
 
 he.encode.options.useNamedReferences = true;
@@ -2039,7 +2039,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   url = utils._makeNormalizeUrl(options.baseUrl)(url);
                   const parent = {};
                   const top = parentWindow === parentWindow.top ? parent : {};
-                  const contentWindow = GlobalContext._makeWindow({
+                  const contentWindow = _makeWindow({
                     url,
                     baseUrl: url,
                     args: options.args,

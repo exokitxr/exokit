@@ -22,4 +22,3 @@ const _makeWindow = (options = {}) => {
   return window;
 };
 module.exports._makeWindow = _makeWindow;
-GlobalContext._makeWindow = _makeWindow;
