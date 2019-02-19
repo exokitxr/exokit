@@ -555,27 +555,28 @@ void APIENTRY keyCB(NATIVEwindow *window, int keyArg, int scancodeArg, int actio
 }
 
 void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
+  int w, h;
+  glfwGetWindowSize(window, &w, &h);
+  if(x<0 || x>=w) return;
+  if(y<0 || y>=h) return;
+
+  int mode = glfwGetInputMode(window, GLFW_CURSOR);
+  
+  int movementX, movementY;
+  if (mode == GLFW_CURSOR_DISABLED) {
+    movementX = x - (w / 2);
+    movementY = y - (h / 2);
+
+    glfwSetCursorPos(window, w / 2, h / 2);
+  } else {
+    movementX = 0;
+    movementY = 0;
+  }
+
+  lastX = x;
+  lastY = y;
+  
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
-    int w, h;
-    glfwGetWindowSize(window, &w, &h);
-    if(x<0 || x>=w) return;
-    if(y<0 || y>=h) return;
-
-    int mode = glfwGetInputMode(window, GLFW_CURSOR);
-    int movementX, movementY;
-    if (mode == GLFW_CURSOR_DISABLED) {
-      movementX = x - (w / 2);
-      movementY = y - (h / 2);
-
-      glfwSetCursorPos(window, w / 2, h / 2);
-    } else {
-      movementX = 0;
-      movementY = 0;
-    }
-
-    lastX = x;
-    lastY = y;
-
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("mousemove"));
     evt->Set(JS_STR("clientX"),JS_NUM(x));
