@@ -49,7 +49,7 @@ class XRDevice {
     this.name = name; // non-standard
     this.window = window; // non-standard
     this.session = null; // non-standard
-    
+
     this._layers = [];
   }
   supportsSession() {
@@ -536,15 +536,52 @@ GlobalContext.XRInputSourceEvent = XRInputSourceEvent;
 
 class XRRigidTransform {
   constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 1}, scale = {x: 1, y: 1, z: 1}) {
-    this.position = Float32Array.from([position.x, position.y, position.z]);
-    this.orientation = Float32Array.from([orientation.x, orientation.y, orientation.z, orientation.w]);
-    this.scale = Float32Array.from([scale.x, scale.y, scale.z]); // non-standard
-    this.matrix = localMatrix
-      .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
-      .toArray(new Float32Array(16));
-    this.matrixInverse = localMatrix
-      .getInverse(localMatrix)
-      .toArray(new Float32Array(16));
+    if (position instanceof SharedArrayBuffer) {
+      this.initialize(position);
+    } else {
+      this.initialize();
+
+      this.position[0] = position.x;
+      this.position[1] = position.y;
+      this.position[2] = position.z;
+
+      this.orientation[0] = orientation.x;
+      this.orientation[1] = orientation.y;
+      this.orientation[2] = orientation.z;
+      this.orientation[3] = orientation.w;
+
+      this.scale[0] = scale.x;
+      this.scale[1] = scale.y;
+      this.scale[2] = scale.z;
+
+      localMatrix
+        .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
+        .toArray(this.matrix);
+
+      localMatrix
+        .getInverse(localMatrix)
+        .toArray(this.matrixInverse);
+    }
+  }
+  
+  initialize(_buffer = new SharedArrayBuffer((3 + 4 + 3 + 16*2) * Float32Array.BYTES_PER_ELEMENT)) {
+    this._buffer = _buffer;
+    let index = 0;
+
+    this.position = new Float32Array(this._buffer, index, 3);
+    index += 3 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.orientation = new Float32Array(this._buffer, index, 4);
+    index += 4 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.scale = new Float32Array(this._buffer, index, 3);
+    index += 3 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.matrix = new Float32Array(this._buffer, index, 16);
+    index += 16 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.matrix = new Float32Array(this._buffer, index, 16);
+    index += 16 * Float32Array.BYTES_PER_ELEMENT;
   }
 
   updateMatrix() {
@@ -559,27 +596,7 @@ class XRRigidTransform {
       .getInverse(localMatrix)
       .toArray(this.matrixInverse);
   }
-
-  toJSON() {
-    return this.matrix.slice();
-  }
 }
-XRRigidTransform.fromJSON = matrixArray => {
-  const result = new XRRigidTransform();
-  localMatrix
-    .fromArray(matrixArray);
-  localMatrix
-    .decompose(localVector, localQuaternion, localVector2);
-  localVector.toArray(result.position);
-  localQuaternion.toArray(result.orientation);
-  localVector2.toArray(result.scale);
-  localMatrix
-    .toArray(result.matrix);
-  localMatrix
-    .getInverse(localMatrix)
-    .toArray(result.matrixInverse);
-  return result;
-};
 module.exports.XRRigidTransform = XRRigidTransform;
 
 class XRCoordinateSystem {
