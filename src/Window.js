@@ -187,6 +187,7 @@ const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 
 const windows = [];
+GlobalContext.windows = windows;
 const contexts = [];
 GlobalContext.contexts = contexts;
 
