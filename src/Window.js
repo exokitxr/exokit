@@ -1997,7 +1997,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   window.document = _parseDocument(options.htmlString, window);
   window.document.hidden = options.hidden || false;
-  window.document.xrOffset = options.xrOffset ? XRRigidTransform.fromJSON(options.xrOffset) : new XRRigidTransform();
+  window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
 })(global);
 
 global.require = undefined;
