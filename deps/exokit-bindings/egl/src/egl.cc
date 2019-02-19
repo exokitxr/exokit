@@ -222,18 +222,18 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   return new NATIVEwindow{display, context, width, height};
 }
 
-NAN_METHOD(Create3D) {
-  unsigned int width = TO_UINT32(info[0]);
-  unsigned int height = TO_UINT32(info[1]);
-  bool initialVisible = TO_BOOL(info[2]);
-  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[4]));
-
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+NAN_METHOD(InitWindow3D) {
+  NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+  
+  SetCurrentWindowContext(windowHandle);
   
   GLuint framebuffers[2];
   GLuint framebufferTextures[4];
-  if (sharedWindow != nullptr) {
+    
+  glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
+  glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
+  /* if (sharedWindow != nullptr) {
     SetCurrentWindowContext(sharedWindow);
 
     glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
@@ -245,7 +245,7 @@ NAN_METHOD(Create3D) {
     
     glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  }
+  } */
 
   windowsystembase::InitializeLocalGlState(gl);
 
@@ -273,15 +273,16 @@ NAN_METHOD(Create3D) {
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(Create2D) {
-  unsigned int width = TO_UINT32(info[0]);
-  unsigned int height = TO_UINT32(info[1]);
-  NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
+NAN_METHOD(InitWindow2D) {
+  NATIVEwindow *sharedWindow = info[0]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0])) : nullptr;
 
   NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, sharedWindow);
+  
+  SetCurrentWindowContext(windowHandle);
 
   GLuint tex;
-  if (sharedWindow != nullptr) {
+  glGenTextures(1, &tex);
+  /* if (sharedWindow != nullptr) {
     SetCurrentWindowContext(sharedWindow);
 
     glGenTextures(1, &tex);
@@ -291,7 +292,7 @@ NAN_METHOD(Create2D) {
     SetCurrentWindowContext(windowHandle);
     
     glGenTextures(1, &tex);
-  }
+  } */
 
   Local<Array> result = Nan::New<Array>(2);
   result->Set(0, pointerToArray(windowHandle));
@@ -299,10 +300,16 @@ NAN_METHOD(Create2D) {
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(CreateNull) {
-  NATIVEwindow *sharedWindow = info[0]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0])) : nullptr;
-  NATIVEwindow *windowHandle = CreateNativeWindow(1, 1, false, sharedWindow);
-  SetCurrentWindowContext(windowHandle);
+NAN_METHOD(CreateWindowHandle) {
+  unsigned int width = info[0]->Uint32Value();
+  unsigned int height = info[1]->Uint32Value();
+  bool initialVisible = info[2]->BooleanValue();
+  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
+  
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+  if (!GetCurrentWindowContext()) {
+    SetCurrentWindowContext(windowHandle);
+  }
 
   info.GetReturnValue().Set(pointerToArray(windowHandle));
 }
@@ -363,9 +370,9 @@ Local<Object> makeWindow() {
 
   windowsystembase::Decorate(target);
 
-  Nan::SetMethod(target, "create3d", egl::Create3D);
-  Nan::SetMethod(target, "create2d", egl::Create2D);
-  Nan::SetMethod(target, "createNull", egl::CreateNull);
+  Nan::SetMethod(target, "initWindow3D", egl::InitWindow3D);
+  Nan::SetMethod(target, "initWindow2D", egl::InitWindow2D);
+  Nan::SetMethod(target, "createWindowHandle", egl::CreateWindowHandle);
   Nan::SetMethod(target, "destroy", egl::Destroy);
   Nan::SetMethod(target, "show", egl::Show);
   Nan::SetMethod(target, "hide", egl::Hide);
