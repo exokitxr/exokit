@@ -260,8 +260,6 @@ const _onGl3DConstruct = (gl, canvas) => {
     // window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
     // window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
 
-    let framebuffer;
-
     const {hidden} = document;
     if (hidden) {
       const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
@@ -271,16 +269,25 @@ const _onGl3DConstruct = (gl, canvas) => {
       gl.resize = (width, height) => { // XXX run these on the main thread
         nativeWindow.setCurrentWindowContext(windowHandle);
         nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+        
+        window.windowEmit('resize', {
+          width,
+          height,
+        });
       };
 
-      framebuffer = {
+      window.windowEmit('resize', {
+        width: canvas.width,
+        height: canvas.height,
+      });
+      window.windowEmit('framebuffer', {
         msFbo,
         msTex,
         msDepthTex,
         fbo,
         tex,
         depthTex,
-      };
+      });
     } else {
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
@@ -350,9 +357,9 @@ const _onGl3DConstruct = (gl, canvas) => {
       });
       canvas._context = null;
 
-      /* if (hidden) {
-        document._emit('framebuffer', null);
-      } */
+      if (hidden) {
+        window.windowEmit('framebuffer', null);
+      }
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);

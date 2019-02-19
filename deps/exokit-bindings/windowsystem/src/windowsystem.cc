@@ -788,13 +788,14 @@ NAN_METHOD(ComposeLayers) {
 
         switch (layerType) {
           case LayerType::IFRAME_3D: {
-            Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
-            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
+            Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer")));
+            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex"));
             GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
             GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
             GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
-            int width = TO_INT32(JS_OBJ(framebufferObj->Get(JS_STR("canvas")))->Get(JS_STR("width")));
-            int height = TO_INT32(JS_OBJ(framebufferObj->Get(JS_STR("canvas")))->Get(JS_STR("height")));
+            Local<Object> windowObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentWindow")));
+            int width = TO_INT32(windowObj->Get(JS_STR("width")));
+            int height = TO_INT32(windowObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
               width,

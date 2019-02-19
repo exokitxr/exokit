@@ -15,6 +15,13 @@ const _makeWindow = (options = {}) => {
   });
   
   window.tickAnimationFrame = type => window.runAsync(`window.tickAnimationFrame("${type}");`);
+  window.on('resize', ({width, height}) => {
+    window.width = width;
+    window.height = height;
+  });
+  window.on('framebuffer', framebuffer => {
+    window.document.framebuffer = framebuffer;
+  });
   window.on('error', err => {
     console.warn(err.stack);
   });
