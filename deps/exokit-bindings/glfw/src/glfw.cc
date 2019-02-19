@@ -363,173 +363,168 @@ static int jsKeyCode[]={
 };
 
 const char *actionNames = "keyup\0  keydown\0keypress";
-void APIENTRY keyCB(NATIVEwindow *window, int keyArg, int scancodeArg, int actionArg, int modsArg) {
-  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
-    int key = keyArg;
-    int scancode = scancodeArg;
-    int action = actionArg;
-    int mods = modsArg;
-    if (key >= 0) { // media keys are -1
-      bool isPrintable = true;
+void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int mods) {
+  if (key >= 0) { // media keys are -1
+    bool isPrintable = true;
+    switch (key) {
+      case GLFW_KEY_ESCAPE:
+      case GLFW_KEY_ENTER:
+      case GLFW_KEY_TAB:
+      case GLFW_KEY_BACKSPACE:
+      case GLFW_KEY_INSERT:
+      case GLFW_KEY_DELETE:
+      case GLFW_KEY_RIGHT:
+      case GLFW_KEY_LEFT:
+      case GLFW_KEY_DOWN:
+      case GLFW_KEY_UP:
+      case GLFW_KEY_PAGE_UP:
+      case GLFW_KEY_PAGE_DOWN:
+      case GLFW_KEY_HOME:
+      case GLFW_KEY_END:
+      case GLFW_KEY_CAPS_LOCK:
+      case GLFW_KEY_SCROLL_LOCK:
+      case GLFW_KEY_NUM_LOCK:
+      case GLFW_KEY_PRINT_SCREEN:
+      case GLFW_KEY_PAUSE:
+      case GLFW_KEY_F1:
+      case GLFW_KEY_F2:
+      case GLFW_KEY_F3:
+      case GLFW_KEY_F4:
+      case GLFW_KEY_F5:
+      case GLFW_KEY_F6:
+      case GLFW_KEY_F7:
+      case GLFW_KEY_F8:
+      case GLFW_KEY_F9:
+      case GLFW_KEY_F10:
+      case GLFW_KEY_F11:
+      case GLFW_KEY_F12:
+      case GLFW_KEY_F13:
+      case GLFW_KEY_F14:
+      case GLFW_KEY_F15:
+      case GLFW_KEY_F16:
+      case GLFW_KEY_F17:
+      case GLFW_KEY_F18:
+      case GLFW_KEY_F19:
+      case GLFW_KEY_F20:
+      case GLFW_KEY_F21:
+      case GLFW_KEY_F22:
+      case GLFW_KEY_F23:
+      case GLFW_KEY_F24:
+      case GLFW_KEY_F25:
+      case GLFW_KEY_LEFT_SHIFT:
+      case GLFW_KEY_LEFT_CONTROL:
+      case GLFW_KEY_LEFT_ALT:
+      case GLFW_KEY_LEFT_SUPER:
+      case GLFW_KEY_RIGHT_SHIFT:
+      case GLFW_KEY_RIGHT_CONTROL:
+      case GLFW_KEY_RIGHT_ALT:
+      case GLFW_KEY_RIGHT_SUPER:
+      case GLFW_KEY_MENU:
+        isPrintable = false;
+    }
+
+    if (!isPrintable && action == GLFW_REPEAT) {
+      action = GLFW_PRESS;
+    }
+
+    int charCode = key;
+    if (action == GLFW_RELEASE || action == GLFW_PRESS) {
       switch (key) {
-        case GLFW_KEY_ESCAPE:
-        case GLFW_KEY_ENTER:
-        case GLFW_KEY_TAB:
-        case GLFW_KEY_BACKSPACE:
-        case GLFW_KEY_INSERT:
-        case GLFW_KEY_DELETE:
-        case GLFW_KEY_RIGHT:
-        case GLFW_KEY_LEFT:
-        case GLFW_KEY_DOWN:
-        case GLFW_KEY_UP:
-        case GLFW_KEY_PAGE_UP:
-        case GLFW_KEY_PAGE_DOWN:
-        case GLFW_KEY_HOME:
-        case GLFW_KEY_END:
-        case GLFW_KEY_CAPS_LOCK:
-        case GLFW_KEY_SCROLL_LOCK:
-        case GLFW_KEY_NUM_LOCK:
-        case GLFW_KEY_PRINT_SCREEN:
-        case GLFW_KEY_PAUSE:
-        case GLFW_KEY_F1:
-        case GLFW_KEY_F2:
-        case GLFW_KEY_F3:
-        case GLFW_KEY_F4:
-        case GLFW_KEY_F5:
-        case GLFW_KEY_F6:
-        case GLFW_KEY_F7:
-        case GLFW_KEY_F8:
-        case GLFW_KEY_F9:
-        case GLFW_KEY_F10:
-        case GLFW_KEY_F11:
-        case GLFW_KEY_F12:
-        case GLFW_KEY_F13:
-        case GLFW_KEY_F14:
-        case GLFW_KEY_F15:
-        case GLFW_KEY_F16:
-        case GLFW_KEY_F17:
-        case GLFW_KEY_F18:
-        case GLFW_KEY_F19:
-        case GLFW_KEY_F20:
-        case GLFW_KEY_F21:
-        case GLFW_KEY_F22:
-        case GLFW_KEY_F23:
-        case GLFW_KEY_F24:
-        case GLFW_KEY_F25:
-        case GLFW_KEY_LEFT_SHIFT:
-        case GLFW_KEY_LEFT_CONTROL:
-        case GLFW_KEY_LEFT_ALT:
-        case GLFW_KEY_LEFT_SUPER:
-        case GLFW_KEY_RIGHT_SHIFT:
-        case GLFW_KEY_RIGHT_CONTROL:
-        case GLFW_KEY_RIGHT_ALT:
-        case GLFW_KEY_RIGHT_SUPER:
-        case GLFW_KEY_MENU:
-          isPrintable = false;
+        case GLFW_KEY_SLASH:        key = 191; break; // /
+        case GLFW_KEY_GRAVE_ACCENT: key = 192; break; // `
+        case GLFW_KEY_LEFT_BRACKET: key = 219; break; // [
+        case GLFW_KEY_BACKSLASH:    key = 220; break; /* \ */
+        case GLFW_KEY_RIGHT_BRACKET: key = 221; break; // ]
+        case GLFW_KEY_APOSTROPHE:   key = 222; break; // '
+        case GLFW_KEY_PERIOD:       key = 190; break; // '
+        case GLFW_KEY_COMMA:        key = 188; break; // '
+        case GLFW_KEY_SEMICOLON:    key = 186; break; // ;
+        case GLFW_KEY_EQUAL:        key = 187; break; // =
+        case GLFW_KEY_MINUS:        key = 189; break; // -
       }
+    }
+    switch (key) {
+      case GLFW_KEY_ESCAPE:       key = 27; break;
+      case GLFW_KEY_ENTER:        key = 13; break;
+      case GLFW_KEY_TAB:          key = 9; break;
+      case GLFW_KEY_BACKSPACE:    key = 8; break;
+      case GLFW_KEY_INSERT:       key = 45; break;
+      case GLFW_KEY_DELETE:       key = 46; break;
+      case GLFW_KEY_RIGHT:        key = 39; break;
+      case GLFW_KEY_LEFT:         key = 37; break;
+      case GLFW_KEY_DOWN:         key = 40; break;
+      case GLFW_KEY_UP:           key = 38; break;
+      case GLFW_KEY_PAGE_UP:      key = 33; break;
+      case GLFW_KEY_PAGE_DOWN:    key = 34; break;
+      case GLFW_KEY_HOME:         key = 36; break;
+      case GLFW_KEY_END:          key = 35; break;
+      case GLFW_KEY_CAPS_LOCK:    key = 20; break;
+      case GLFW_KEY_SCROLL_LOCK:  key = 145; break;
+      case GLFW_KEY_NUM_LOCK:     key = 144; break;
+      case GLFW_KEY_PRINT_SCREEN: key = 144; break; /* TODO */
+      case GLFW_KEY_PAUSE:        key = 19; break;
+      case GLFW_KEY_F1:           key = 112; break;
+      case GLFW_KEY_F2:           key = 113; break;
+      case GLFW_KEY_F3:           key = 114; break;
+      case GLFW_KEY_F4:           key = 115; break;
+      case GLFW_KEY_F5:           key = 116; break;
+      case GLFW_KEY_F6:           key = 117; break;
+      case GLFW_KEY_F7:           key = 118; break;
+      case GLFW_KEY_F8:           key = 119; break;
+      case GLFW_KEY_F9:           key = 120; break;
+      case GLFW_KEY_F10:          key = 121; break;
+      case GLFW_KEY_F11:          key = 122; break;
+      case GLFW_KEY_F12:          key = 123; break;
+      case GLFW_KEY_F13:          key = 123; break; /* unknown */
+      case GLFW_KEY_F14:          key = 123; break; /* unknown */
+      case GLFW_KEY_F15:          key = 123; break; /* unknown */
+      case GLFW_KEY_F16:          key = 123; break; /* unknown */
+      case GLFW_KEY_F17:          key = 123; break; /* unknown */
+      case GLFW_KEY_F18:          key = 123; break; /* unknown */
+      case GLFW_KEY_F19:          key = 123; break; /* unknown */
+      case GLFW_KEY_F20:          key = 123; break; /* unknown */
+      case GLFW_KEY_F21:          key = 123; break; /* unknown */
+      case GLFW_KEY_F22:          key = 123; break; /* unknown */
+      case GLFW_KEY_F23:          key = 123; break; /* unknown */
+      case GLFW_KEY_F24:          key = 123; break; /* unknown */
+      case GLFW_KEY_F25:          key = 123; break; /* unknown */
+      case GLFW_KEY_KP_0:         key = 96; break;
+      case GLFW_KEY_KP_1:         key = 97; break;
+      case GLFW_KEY_KP_2:         key = 98; break;
+      case GLFW_KEY_KP_3:         key = 99; break;
+      case GLFW_KEY_KP_4:         key = 100; break;
+      case GLFW_KEY_KP_5:         key = 101; break;
+      case GLFW_KEY_KP_6:         key = 102; break;
+      case GLFW_KEY_KP_7:         key = 103; break;
+      case GLFW_KEY_KP_8:         key = 104; break;
+      case GLFW_KEY_KP_9:         key = 105; break;
+      case GLFW_KEY_KP_DECIMAL:   key = 110; break;
+      case GLFW_KEY_KP_DIVIDE:    key = 111; break;
+      case GLFW_KEY_KP_MULTIPLY:  key = 106; break;
+      case GLFW_KEY_KP_SUBTRACT:  key = 109; break;
+      case GLFW_KEY_KP_ADD:       key = 107; break;
+      case GLFW_KEY_KP_ENTER:     key = 13; break;
+      case GLFW_KEY_KP_EQUAL:     key = 187; break;
+      case GLFW_KEY_LEFT_SHIFT:   key = 16; break;
+      case GLFW_KEY_LEFT_CONTROL: key = 17; break;
+      case GLFW_KEY_LEFT_ALT:     key = 18; break;
+      case GLFW_KEY_LEFT_SUPER:   key = 91; break;
+      case GLFW_KEY_RIGHT_SHIFT:  key = 16; break;
+      case GLFW_KEY_RIGHT_CONTROL: key = 17; break;
+      case GLFW_KEY_RIGHT_ALT:    key = 18; break;
+      case GLFW_KEY_RIGHT_SUPER:  key = 93; break;
+      case GLFW_KEY_MENU:         key = 18; break;
+    }
+    if (
+      action == 2 && // keypress
+      key >= 65 && // A
+      key <= 90 // Z
+    ) {
+      key += 32;
+    }
 
-      if (!isPrintable && action == GLFW_REPEAT) {
-        action = GLFW_PRESS;
-      }
-
-      int charCode = key;
-      if (action == GLFW_RELEASE || action == GLFW_PRESS) {
-        switch (key) {
-          case GLFW_KEY_SLASH:        key = 191; break; // /
-          case GLFW_KEY_GRAVE_ACCENT: key = 192; break; // `
-          case GLFW_KEY_LEFT_BRACKET: key = 219; break; // [
-          case GLFW_KEY_BACKSLASH:    key = 220; break; /* \ */
-          case GLFW_KEY_RIGHT_BRACKET: key = 221; break; // ]
-          case GLFW_KEY_APOSTROPHE:   key = 222; break; // '
-          case GLFW_KEY_PERIOD:       key = 190; break; // '
-          case GLFW_KEY_COMMA:        key = 188; break; // '
-          case GLFW_KEY_SEMICOLON:    key = 186; break; // ;
-          case GLFW_KEY_EQUAL:        key = 187; break; // =
-          case GLFW_KEY_MINUS:        key = 189; break; // -
-        }
-      }
-      switch (key) {
-        case GLFW_KEY_ESCAPE:       key = 27; break;
-        case GLFW_KEY_ENTER:        key = 13; break;
-        case GLFW_KEY_TAB:          key = 9; break;
-        case GLFW_KEY_BACKSPACE:    key = 8; break;
-        case GLFW_KEY_INSERT:       key = 45; break;
-        case GLFW_KEY_DELETE:       key = 46; break;
-        case GLFW_KEY_RIGHT:        key = 39; break;
-        case GLFW_KEY_LEFT:         key = 37; break;
-        case GLFW_KEY_DOWN:         key = 40; break;
-        case GLFW_KEY_UP:           key = 38; break;
-        case GLFW_KEY_PAGE_UP:      key = 33; break;
-        case GLFW_KEY_PAGE_DOWN:    key = 34; break;
-        case GLFW_KEY_HOME:         key = 36; break;
-        case GLFW_KEY_END:          key = 35; break;
-        case GLFW_KEY_CAPS_LOCK:    key = 20; break;
-        case GLFW_KEY_SCROLL_LOCK:  key = 145; break;
-        case GLFW_KEY_NUM_LOCK:     key = 144; break;
-        case GLFW_KEY_PRINT_SCREEN: key = 144; break; /* TODO */
-        case GLFW_KEY_PAUSE:        key = 19; break;
-        case GLFW_KEY_F1:           key = 112; break;
-        case GLFW_KEY_F2:           key = 113; break;
-        case GLFW_KEY_F3:           key = 114; break;
-        case GLFW_KEY_F4:           key = 115; break;
-        case GLFW_KEY_F5:           key = 116; break;
-        case GLFW_KEY_F6:           key = 117; break;
-        case GLFW_KEY_F7:           key = 118; break;
-        case GLFW_KEY_F8:           key = 119; break;
-        case GLFW_KEY_F9:           key = 120; break;
-        case GLFW_KEY_F10:          key = 121; break;
-        case GLFW_KEY_F11:          key = 122; break;
-        case GLFW_KEY_F12:          key = 123; break;
-        case GLFW_KEY_F13:          key = 123; break; /* unknown */
-        case GLFW_KEY_F14:          key = 123; break; /* unknown */
-        case GLFW_KEY_F15:          key = 123; break; /* unknown */
-        case GLFW_KEY_F16:          key = 123; break; /* unknown */
-        case GLFW_KEY_F17:          key = 123; break; /* unknown */
-        case GLFW_KEY_F18:          key = 123; break; /* unknown */
-        case GLFW_KEY_F19:          key = 123; break; /* unknown */
-        case GLFW_KEY_F20:          key = 123; break; /* unknown */
-        case GLFW_KEY_F21:          key = 123; break; /* unknown */
-        case GLFW_KEY_F22:          key = 123; break; /* unknown */
-        case GLFW_KEY_F23:          key = 123; break; /* unknown */
-        case GLFW_KEY_F24:          key = 123; break; /* unknown */
-        case GLFW_KEY_F25:          key = 123; break; /* unknown */
-        case GLFW_KEY_KP_0:         key = 96; break;
-        case GLFW_KEY_KP_1:         key = 97; break;
-        case GLFW_KEY_KP_2:         key = 98; break;
-        case GLFW_KEY_KP_3:         key = 99; break;
-        case GLFW_KEY_KP_4:         key = 100; break;
-        case GLFW_KEY_KP_5:         key = 101; break;
-        case GLFW_KEY_KP_6:         key = 102; break;
-        case GLFW_KEY_KP_7:         key = 103; break;
-        case GLFW_KEY_KP_8:         key = 104; break;
-        case GLFW_KEY_KP_9:         key = 105; break;
-        case GLFW_KEY_KP_DECIMAL:   key = 110; break;
-        case GLFW_KEY_KP_DIVIDE:    key = 111; break;
-        case GLFW_KEY_KP_MULTIPLY:  key = 106; break;
-        case GLFW_KEY_KP_SUBTRACT:  key = 109; break;
-        case GLFW_KEY_KP_ADD:       key = 107; break;
-        case GLFW_KEY_KP_ENTER:     key = 13; break;
-        case GLFW_KEY_KP_EQUAL:     key = 187; break;
-        case GLFW_KEY_LEFT_SHIFT:   key = 16; break;
-        case GLFW_KEY_LEFT_CONTROL: key = 17; break;
-        case GLFW_KEY_LEFT_ALT:     key = 18; break;
-        case GLFW_KEY_LEFT_SUPER:   key = 91; break;
-        case GLFW_KEY_RIGHT_SHIFT:  key = 16; break;
-        case GLFW_KEY_RIGHT_CONTROL: key = 17; break;
-        case GLFW_KEY_RIGHT_ALT:    key = 18; break;
-        case GLFW_KEY_RIGHT_SUPER:  key = 93; break;
-        case GLFW_KEY_MENU:         key = 18; break;
-      }
-      if (
-        action == 2 && // keypress
-        key >= 65 && // A
-        key <= 90 // Z
-      ) {
-        key += 32;
-      }
-
-      int which = key;
-
+    int which = key;
+    QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
       Local<Object> evt = Nan::New<Object>();
       evt->Set(JS_STR("type"), JS_STR(&actionNames[action << 3]));
       evt->Set(JS_STR("ctrlKey"), JS_BOOL(mods & GLFW_MOD_CONTROL));
@@ -546,12 +541,12 @@ void APIENTRY keyCB(NATIVEwindow *window, int keyArg, int scancodeArg, int actio
         evt,
       };
       eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
-
-      if (action == GLFW_PRESS && isPrintable) {
-        keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
-      }
+    });
+    
+    if (action == GLFW_PRESS && isPrintable) {
+      keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
     }
-  });
+  }
 }
 
 void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
