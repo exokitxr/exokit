@@ -1853,7 +1853,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
     const fakeVrDisplay = new FakeVRDisplay(window);
     fakeVrDisplay.onrequestpresent = layers => {
-      if (!GlobalContext.fakePresentState.fakeVrDisplay) {
+      if (!xrState.isPresenting[0]) {
+        xrState.isPresenting[0] = 1;
         GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
       }
 
