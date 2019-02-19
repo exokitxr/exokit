@@ -20,7 +20,11 @@ const _makeWindow = (options = {}) => {
   });
   window.on('exit', () => {
     window.emit('destroy');
+    
+    GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
   });
+  
+  GlobalContext.windows.push(window);
 
   return window;
 };
