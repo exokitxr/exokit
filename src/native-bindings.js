@@ -986,6 +986,7 @@ if (bindings.nativeMl) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
 
+        xrState.isPresenting[0] = 1;
         const halfWidth = width/2;
         xrState.renderWidth[0] = halfWidth;
         xrState.renderHeight[0] = height;
