@@ -15,6 +15,9 @@ const _makeWindow = (options = {}) => {
   });
   
   window.tickAnimationFrame = type => window.runAsync(`window.tickAnimationFrame("${type}");`);
+  window.on('error', err => {
+    console.warn(err.stack);
+  });
   window.on('exit', () => {
     window.emit('destroy');
   });
