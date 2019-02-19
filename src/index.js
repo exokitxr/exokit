@@ -385,70 +385,8 @@ const _bindWindow = (window, newWindowCb) => {
     const clipboardContents = nativeWindow.getClipboard().slice(0, 256);
     const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
     e.clipboardData.items.push(dataTransferItem);
-  });
-  window.document.addEventListener('pointerlockchange', () => {
-    const {pointerLockElement} = window.document;
-
-    if (pointerLockElement) {
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-
-        if (context.canvas.ownerDocument.defaultView === window) {
-          const windowHandle = context.getWindowHandle();
-
-          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-            nativeBindings.nativeWindow.setCursorMode(windowHandle, false);
-            break;
-          }
-        }
-      }
-    } else {
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-
-        if (context.canvas.ownerDocument.defaultView === window) {
-          const windowHandle = context.getWindowHandle();
-
-          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-            nativeBindings.nativeWindow.setCursorMode(windowHandle, true);
-            break;
-          }
-        }
-      }
-    }
-  });
-  window.document.addEventListener('fullscreenchange', () => {
-    const {fullscreenElement} = window.document;
-
-    if (fullscreenElement) {
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-
-        if (context.canvas.ownerDocument.defaultView === window) {
-          const windowHandle = context.getWindowHandle();
-
-          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-            nativeBindings.nativeWindow.setFullscreen(windowHandle);
-            break;
-          }
-        }
-      }
-    } else {
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-
-        if (context.canvas.ownerDocument.defaultView === window) {
-          const windowHandle = context.getWindowHandle();
-
-          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-            nativeBindings.nativeWindow.exitFullscreen(windowHandle);
-            break;
-          }
-        }
-      }
-    }
-  });
-  if (args.quit) {
+  }); */
+  /* if (args.quit) {
     window.document.resources.addEventListener('drain', () => {
       console.log('drain');
       process.exit();

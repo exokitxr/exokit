@@ -124,19 +124,63 @@ function initDocument (document, window) {
 
   if (window.top === window) {
     document.addEventListener('pointerlockchange', () => {
+      const windowHandles = GlobalContext.contexts.map(context => context.getWindowHandle());
+      const pointerLockElement = !!document[symbols.pointerLockElementSymbol];
+      global.runSyncTop(`(() => {
+        const {
+          windowHandles,
+          pointerLockElement,
+        } = global._;
+        for (let i = 0; i < windowHandles.length; i++) {
+          const windowHandle = windowHandles[i];
+
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            console.log('set cursor mode', windowHandle, !pointerLockElement);
+            nativeBindings.nativeWindow.setCursorMode(windowHandle, !pointerLockElement);
+          }
+        }
+      })()`, {
+        windowHandles,
+        pointerLockElement,
+      });
+
       const iframes = document.getElementsByTagName('iframe');
       for (let i = 0; i < iframes.length; i++) {
         const iframe = iframes[i];
         if (iframe.contentDocument) {
-          iframe.contentDocument._emit('pointerlockchange');
+          // iframe.contentDocument._emit('pointerlockchange'); // XXX send this down
         }
       }
     });
     document.addEventListener('fullscreenchange', () => {
+      const windowHandles = contexts.map(context => context.getWindowHandle());
+      const fullscreenElement = !!document[symbols.fullscreenElementSymbol];
+      global.runSyncTop(`(() => {
+        const {
+          windowHandles,
+          fullscreenElement,
+        } = global._;
+        for (let i = 0; i < windowHandles.length; i++) {
+          const windowHandle = windowHandles[i];
+
+          if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
+            if (fullscreenElement) {
+              nativeBindings.nativeWindow.setFullscreen(windowHandle);
+            } else {
+              nativeBindings.nativeWindow.exitFullscreen(windowHandle);
+            }
+          }
+        }
+      })()`, {
+        windowHandles,
+        fullscreenElement,
+      });
+      
       const iframes = document.getElementsByTagName('iframe');
       for (let i = 0; i < iframes.length; i++) {
         const iframe = iframes[i];
         if (iframe.contentDocument) {
+          // iframe.contentDocument._emit('pointerlockchange'); // XXX send this down
           iframe.contentDocument._emit('fullscreenchange');
         }
       }
