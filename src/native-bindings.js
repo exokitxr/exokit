@@ -268,7 +268,7 @@ const _onGl3DConstruct = (gl, canvas) => {
 
       gl.setDefaultFramebuffer(msFbo);
 
-      gl.resize = (width, height) => { // XXX run this on the main thread
+      gl.resize = (width, height) => { // XXX run these on the main thread
         nativeWindow.setCurrentWindowContext(windowHandle);
         nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
       };
@@ -282,7 +282,7 @@ const _onGl3DConstruct = (gl, canvas) => {
         depthTex,
       };
     } else {
-      gl.resize = (width, height) => { // XXX run this on the main thread
+      gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
         nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
