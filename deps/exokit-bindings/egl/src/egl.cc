@@ -274,9 +274,7 @@ NAN_METHOD(InitWindow3D) {
 }
 
 NAN_METHOD(InitWindow2D) {
-  NATIVEwindow *sharedWindow = info[0]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0])) : nullptr;
-
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, sharedWindow);
+  NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   
   SetCurrentWindowContext(windowHandle);
 
