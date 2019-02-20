@@ -13,13 +13,17 @@
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
-#include <browser.h>
 #include <webrtc.h>
 #if _WIN32
 #include <leapmotion.h>
 #endif
 #if defined(LUMIN)
 #include <magicleap.h>
+#endif
+
+// Stub out on Android for now until get libcef working on Android.
+#if !defined(__ANDROID__)
+  #include <browser.h>
 #endif
 
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl();

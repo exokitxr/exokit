@@ -122,6 +122,7 @@ Local<Object> makeVideo(Local<Value> imageDataCons) {
   return scope.Escape(exports);
 }
 
+#if !defined(__ANDROID__)
 Local<Object> makeBrowser() {
   Isolate *isolate = Isolate::GetCurrent();
 
@@ -133,6 +134,7 @@ Local<Object> makeBrowser() {
 
   return scope.Escape(exports);
 }
+#endif
 
 Local<Object> makeRtc() {
   Isolate *isolate = Isolate::GetCurrent();
