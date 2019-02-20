@@ -16,7 +16,7 @@
 #include <mutex>
 #include <functional>
 
-#ifndef LUMIN
+#if !defined(LUMIN) && !defined(__ANDROID__)
 
 #include <include/capi/cef_app_capi.h>
 #include <include/cef_client.h>
@@ -41,7 +41,7 @@ using namespace node;
 
 namespace browser {
 
-#ifndef LUMIN
+#if !defined(LUMIN) && !defined(__ANDROID__)
 typedef CefRefPtr<CefBrowser> EmbeddedBrowser;
 #else
 typedef std::shared_ptr<Servo2D> EmbeddedBrowser;
