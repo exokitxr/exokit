@@ -2488,7 +2488,7 @@ void RunKeyboardEventsInMainThread(uv_async_t *async) {
   std::deque<std::function<void(int argc, Local<Value> *argv)>> localFns;
   Local<Function> handlerFn;
   {
-    std::lock_guard lock(eventHandlerMapMutex);
+    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
     
     localFns = std::move(eventHandler->fns);
     eventHandler->fns.clear();
@@ -2835,7 +2835,7 @@ NAN_METHOD(MLContext::SetEventHandlers) {
     Local<Function> keyboardEventsCb = Local<Function>::Cast(info[1]);
 
     {
-      std::lock_guard lock(eventHandlerMutex);
+      std::lock_guard<std::mutex> lock(eventHandlerMutex);
       
       uv_async_t *eventsAsync = new uv_async_t();
       uv_loop_t *loop = windowsystembase::GetEventLoop();
