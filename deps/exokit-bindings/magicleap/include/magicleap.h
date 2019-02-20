@@ -97,14 +97,11 @@ struct application_context_t {
 
 class EventHandler {
 public:
-  EventHandler(uv_async_t *eventsAsync, Local<Function> eventsCb, uv_async_t *keyboardEventsAsync, Local<Function> keyboardEventsCb);
+  EventHandler(uv_async_t *async, Local<Function> handlerFn);
 
-  uv_async_t *eventsAsync;
-  Nan::Persistent<Function> eventsCb;
-  std::deque<std::function<void(int, Local<Value> *)>> eventsFns;
-  uv_async_t *keyboardEventsAsync;
-  Nan::Persistent<Function> keyboardEventsCb;
-  std::deque<std::function<void(int, Local<Value> *)>> keyboardEventsFns;
+  uv_async_t *async;
+  Nan::Persistent<Function> handlerFn;
+  std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> fns;
 };
 
 /* class KeyboardEvent {
@@ -298,7 +295,7 @@ public:
   static NAN_METHOD(New);
   static NAN_METHOD(InitLifecycle);
   static NAN_METHOD(DeinitLifecycle);
-  static NAN_METHOD(SetEventHandlers);
+  static NAN_METHOD(SetEventHandler);
   static NAN_METHOD(Present);
   static NAN_METHOD(Exit);
   // static NAN_METHOD(WaitGetPoses);

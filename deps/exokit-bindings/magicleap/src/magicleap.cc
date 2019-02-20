@@ -34,26 +34,19 @@ Nan::Persistent<Function> keyboardEventsCb;
 std::vector<KeyboardEvent> keyboardEvents;
 uv_async_t keyboardEventsAsync; */
 
-EventHandler *eventHandler;
+EventHandler *eventHandler = nullptr;
 std::mutex eventHandlerMutex;
+
+EventHandler::EventHandler(uv_async_t *async, Local<Function> handlerFn) : async(async), handlerFn(handlerFn) {}
 
 void QueueEvent(std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
   {
-    std::lock_guard lock(eventHandlerMutex);
-    
-    eventHandler->eventsFns.push_back(fn);
+    std::lock_guard<std::mutex> lock(eventHandlerMutex);
+
+    eventHandler->fns.push_back(fn);
   }
   
-  uv_async_send(eventHandler->eventsAsync);
-}
-void QueueKeyboardEvent(std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
-  {
-    std::lock_guard lock(eventHandlerMutex);
-    
-    eventHandler->keyboardEventsFns.push_back(fn);
-  }
-  
-  uv_async_send(eventHandler->keybaordEventsAsync);
+  uv_async_send(eventHandler->async);
 }
 
 uv_sem_t reqSem;
@@ -173,10 +166,6 @@ std::string id2String(const uint64_t &id) {
   sprintf(idbuf, "%016llx", id);
   return std::string(idbuf);
 }
-
-EventHandler::EventHandler(uv_async_t *eventsAsync, Local<Function> eventsCb, uv_async_t *keyboardEventsAsync, Local<Function> keyboardEventsCb) :
-  eventsAsync(eventsAsync), eventsCb(eventsCb), keyboardEventsAsync(keyboardEventsAsync), keyboardEventsCb(keyboardEventsCb)
-  {}
 
 MLPoseRes::MLPoseRes(Local<Function> cb) : cb(cb) {}
 
@@ -331,8 +320,11 @@ static void onNewInitArg(void* application_context) {
   ML_LOG(Info, "%s: On new init arg called %x.", application_name, args);
 
   QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("newInitArg"));
+    
     Local<Value> argv[] = {
-      JS_STR("newInitArg"),
+      obj,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
   });
@@ -343,8 +335,11 @@ static void onStop(void* application_context) {
   ML_LOG(Info, "%s: On stop called.", application_name);
   
   QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("stop"));
+    
     Local<Value> argv[] = {
-      JS_STR("stop"),
+      obj,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
   });
@@ -355,8 +350,11 @@ static void onPause(void* application_context) {
   ML_LOG(Info, "%s: On pause called.", application_name);
   
   QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("pause"));
+    
     Local<Value> argv[] = {
-      JS_STR("pause"),
+      obj,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
   });
@@ -367,8 +365,11 @@ static void onResume(void* application_context) {
   ML_LOG(Info, "%s: On resume called.", application_name);
   
   QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("resume"));
+    
     Local<Value> argv[] = {
-      JS_STR("resume"),
+      obj,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
   });
@@ -379,8 +380,11 @@ static void onUnloadResources(void* application_context) {
   ML_LOG(Info, "%s: On unload resources called.", application_name);
   
   QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("unloadResources"));
+    
     Local<Value> argv[] = {
-      JS_STR("unloadResources"),
+      obj,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
   });
@@ -1643,506 +1647,6 @@ NAN_METHOD(MLEyeTracker::Destroy) {
 
 // keyboard callbacks
 
-void setKeyEvent(Local<Object> obj, uint32_t charCode, MLKeyCode mlKeyCode, uint32_t modifier_mask) {
-  uint32_t keyCode = mlKeycodeToKeycode(mlKeyCode);
-  obj->Set(JS_STR("charCode"), JS_INT(charCode));
-  obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
-  obj->Set(JS_STR("which"), JS_INT(keyCode));
-  obj->Set(JS_STR("shiftKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SHIFT));
-  obj->Set(JS_STR("altKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_ALT));
-  obj->Set(JS_STR("ctrlKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_CTRL));
-  obj->Set(JS_STR("metaKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_META));
-  // obj->Set(JS_STR("sym"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SYM));
-  // obj->Set(JS_STR("function"), JS_BOOL(modifier_mask & MLKEYMODIFIER_FUNCTION));
-  // obj->Set(JS_STR("capsLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
-  // obj->Set(JS_STR("numLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_NUM_LOCK));
-  // obj->Set(JS_STR("scrollLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
-}
-
-void onChar(uint32_t char_utf32, void *data) {
-  QueueKeyboardEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
-    Local<Object> obj = Nan::New<Object>();
-    obj->Set(JS_STR("type"), JS_STR("keypress"));
-    setKeyEvent(obj, char_utf32, MLKEYCODE_UNKNOWN, 0);
-    
-    Local<Value> argv[] = {
-      obj,
-    };
-    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
-  });
-}
-void onKeyDown(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
-  QueueKeyboardEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
-    Local<Object> obj = Nan::New<Object>();
-    obj->Set(JS_STR("type"), JS_STR("keydown"));
-    setKeyEvent(obj, 0, key_code, modifier_mask);
-    
-    Local<Value> argv[] = {
-      obj,
-    };
-    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
-  });
-}
-void onKeyUp(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
-  QueueKeyboardEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
-    Local<Object> obj = Nan::New<Object>();
-    obj->Set(JS_STR("type"), JS_STR("keyup"));
-    setKeyEvent(obj, 0, key_code, modifier_mask);
-    
-    Local<Value> argv[] = {
-      obj,
-    };
-    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
-  });
-}
-
-// KeyboardEvent
-
-/* KeyboardEvent::KeyboardEvent(KeyboardEventType type, uint32_t char_utf32) : type(type), char_utf32(char_utf32), key_code(MLKEYCODE_UNKNOWN), modifier_mask(0) {}
-KeyboardEvent::KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask) : type(type), char_utf32(0), key_code(key_code), modifier_mask(modifier_mask) {} */
-
-// camera device status callbacks
-
-void cameraOnDeviceAvailable(void *data) {
-  // XXX
-}
-void cameraOnDeviceUnavailable(void *data) {
-  // XXX
-}
-void cameraOnDeviceOpened(void *data) {
-  // XXX
-}
-void cameraOnDeviceClosed(void *data) {
-  // XXX
-}
-void cameraOnDeviceDisconnected(void *data) {
-  // XXX
-}
-void cameraOnDeviceError(MLCameraError error, void *data) {
-  // XXX
-}
-void cameraOnPreviewBufferAvailable(MLHandle output, void *data) {
-  uv_async_send(&cameraAsync);
-}
-
-// camera capture callbacks
-
-void cameraOnCaptureStarted(const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnCaptureFailed(const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnCaptureBufferLost(const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnCaptureProgressed(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
-  /* if (!cameraResponsePending) {
-    {
-      std::unique_lock<std::mutex> lock(cameraRequestsMutex);
-      std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
-        c->Set(output);
-      });
-    }
-    cameraResponsePending = true;
-  } */
-}
-
-// CameraRequest
-
-CameraRequest::CameraRequest(Local<Function> cbFn) : cbFn(cbFn) {}
-
-void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
-  this->width = width;
-  this->height = height;
-  // this->stride = stride;
-
-  Local<ArrayBuffer> arrayBuffer;
-  if (size > 0) {
-    // exout << "got jpeg " << size << std::endl;
-
-    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), size);
-    memcpy(arrayBuffer->GetContents().Data(), data, size);
-  } else {
-    // exout << "failed to get jpeg " << size << std::endl;
-
-    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), 4);
-  }
-  this->data.Reset(arrayBuffer);
-}
-
-void CameraRequest::Update() {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
-
-  Local<Function> cbFn = Nan::New(this->cbFn);
-
-  Local<Object> obj = Nan::New<Object>();
-  obj->Set(JS_STR("data"), Nan::New(data));
-  data.Reset();
-  obj->Set(JS_STR("width"), JS_INT(width));
-  obj->Set(JS_STR("height"), JS_INT(height));
-  // obj->Set(JS_STR("bpp"), JS_INT(bpp));
-  // obj->Set(JS_STR("stride"), JS_INT(stride));
-
-  Local<Value> argv[] = {
-    obj,
-  };
-  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-}
-
-// MLImageTracker
-
-bool imageTrackingEnabled = false;
-size_t numImageTrackers = 0;
-
-MLImageTracker::MLImageTracker(Local<Object> windowObj, MLHandle trackerHandle, float size) : windowObj(windowObj), trackerHandle(trackerHandle), size(size), valid(false) {}
-
-MLImageTracker::~MLImageTracker() {}
-
-NAN_METHOD(MLImageTracker::New) {
-  if (!imageTrackingEnabled) {
-    imageTrackerSettings.enable_image_tracking = true;
-    imageTrackerSettings.max_simultaneous_targets = 2;
-
-    MLResult result = MLImageTrackerCreate(&imageTrackerSettings, &imageTrackerHandle);
-
-    if (result == MLResult_Ok) {
-      imageTrackingEnabled = true;
-    } else {
-      ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
-      Nan::ThrowError("failed to connect camera");
-    }
-  }
-
-  Local<Object> windowObj = Local<Object>::Cast(info[0]);
-  Local<Object> imageObj = Local<Object>::Cast(info[1]);
-  Local<Number> dimensionNumber = Local<Number>::Cast(info[2]);
-
-  MLHandle trackerHandle;
-  MLImageTrackerTargetSettings trackerSettings;
-  trackerSettings.is_enabled = true;
-  trackerSettings.is_stationary = true;
-  float longerDimension = TO_FLOAT(dimensionNumber);
-  trackerSettings.longer_dimension = longerDimension;
-  char name[64];
-  sprintf(name, "tracker%u", numImageTrackers++);
-  trackerSettings.name = name;
-
-  Image *image = ObjectWrap::Unwrap<Image>(imageObj);
-  Local<Uint8ClampedArray> dataArray = Local<Uint8ClampedArray>::Cast(imageObj->Get(JS_STR("data")));
-  Local<ArrayBuffer> dataArrayBuffer = dataArray->Buffer();
-
-  uint32_t width = image->GetWidth();
-  uint32_t height = image->GetHeight();
-  MLResult result = MLImageTrackerAddTargetFromArray(
-    imageTrackerHandle,
-    &trackerSettings,
-    (uint8_t *)dataArrayBuffer->GetContents().Data() + dataArray->ByteOffset(),
-    width,
-    height,
-    MLImageTrackerImageFormat_RGBA,
-    &trackerHandle
-  );
-
-  if (result == MLResult_Ok) {
-    MLImageTracker *mlImageTracker = new MLImageTracker(windowObj, trackerHandle, longerDimension);
-    Local<Object> mlImageTrackerObj = info.This();
-    mlImageTracker->Wrap(mlImageTrackerObj);
-
-    Nan::SetAccessor(mlImageTrackerObj, JS_STR("ontrack"), OnTrackGetter, OnTrackSetter);
-
-    info.GetReturnValue().Set(mlImageTrackerObj);
-
-    imageTrackers.push_back(mlImageTracker);
-  } else {
-    Nan::ThrowError("MLImageTracker::New: failed to create tracker");
-  }
-}
-
-Local<Function> MLImageTracker::Initialize(Isolate *isolate) {
-  Nan::EscapableHandleScope scope;
-
-  // constructor
-  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
-  ctor->InstanceTemplate()->SetInternalFieldCount(1);
-  ctor->SetClassName(JS_STR("MLImageTracker"));
-
-  // prototype
-  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "destroy", Destroy);
-
-  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
-
-  return scope.Escape(ctorFn);
-}
-
-NAN_GETTER(MLImageTracker::OnTrackGetter) {
-  // Nan::HandleScope scope;
-  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
-
-  Local<Function> cb = Nan::New(mlImageTracker->cb);
-  info.GetReturnValue().Set(cb);
-}
-
-NAN_SETTER(MLImageTracker::OnTrackSetter) {
-  // Nan::HandleScope scope;
-  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
-
-  if (value->IsFunction()) {
-    Local<Function> localCb = Local<Function>::Cast(value);
-    mlImageTracker->cb.Reset(localCb);
-  } else {
-    Nan::ThrowError("MLImageTracker::OnTrackSetter: invalid arguments");
-  }
-}
-
-void MLImageTracker::Update(MLSnapshot *snapshot) {
-  MLImageTrackerTargetResult trackerTargetResult;
-  MLResult result = MLImageTrackerGetTargetResult(
-    imageTrackerHandle,
-    trackerHandle,
-    &trackerTargetResult
-  );
-  if (result == MLResult_Ok) {
-    const bool &lastValid = valid;
-    MLImageTrackerTargetStatus &status = trackerTargetResult.status;
-    const bool newValid = (status == MLImageTrackerTargetStatus_Tracked || status == MLImageTrackerTargetStatus_Unreliable);
-
-    if (newValid) {
-      MLImageTrackerTargetStaticData trackerTargetStaticData;
-      MLResult result = MLImageTrackerGetTargetStaticData(
-        imageTrackerHandle,
-        trackerHandle,
-        &trackerTargetStaticData
-      );
-      if (result == MLResult_Ok) {
-        MLTransform transform;
-        MLResult result = MLSnapshotGetTransform(snapshot, &trackerTargetStaticData.coord_frame_target, &transform);
-
-        if (result == MLResult_Ok) {
-          MLVec3f &position = transform.position;
-          MLQuaternionf &rotation = transform.rotation;
-          MLVec3f scale = {1, 1, 1};
-
-          MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
-          if (!isIdentityMatrix(transformMatrix)) {
-            MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
-            decomposeMatrix(transform, position, rotation, scale);
-          }
-
-          Local<Object> localWindowObj = Nan::New(this->windowObj);
-
-          polls.push_back(new MLPoll(localWindowObj, [this, position, rotation]() -> void {
-            if (!this->cb.IsEmpty()) {
-              Local<Object> asyncObject = Nan::New<Object>();
-              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
-
-              Local<Function> cbFn = Nan::New(this->cb);
-              Local<Object> objVal = Nan::New<Object>();
-
-              Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4)*sizeof(float));
-              char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
-              size_t index = 0;
-
-              memcpy(arrayBufferData + index, position.values, sizeof(position.values));
-              objVal->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
-              index += sizeof(position.values);
-
-              memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
-              objVal->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
-              index += sizeof(rotation.values);
-
-              objVal->Set(JS_STR("size"), JS_NUM(this->size));
-
-              Local<Value> argv[] = {
-                objVal,
-              };
-
-              asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-            }
-          }));
-
-          valid = newValid;
-        } else {
-          ML_LOG(Error, "%s: ML failed to get eye fixation transform!", application_name);
-        }
-      } else {
-        ML_LOG(Error, "%s: Image tracker get static data failed! %x", application_name, result);
-      }
-    } else {
-      if (lastValid) {
-        Local<Object> localWindowObj = Nan::New(this->windowObj);
-
-        polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
-          if (!this->cb.IsEmpty()) {
-            Local<Object> asyncObject = Nan::New<Object>();
-            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
-
-            Local<Function> cbFn = Nan::New(cb);
-            Local<Value> objVal = Nan::Null();
-            Local<Value> argv[] = {
-              objVal,
-            };
-
-            asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-          }
-        }));
-      }
-
-      valid = newValid;
-    }
-  } else {
-    ML_LOG(Error, "%s: ML failed to get image tracker target result!", application_name);
-  }
-}
-
-NAN_METHOD(MLImageTracker::Destroy) {
-  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
-
-  imageTrackers.erase(std::remove_if(imageTrackers.begin(), imageTrackers.end(), [&](MLImageTracker *i) -> bool {
-    if (i == mlImageTracker) {
-      MLResult result = MLImageTrackerRemoveTarget(imageTrackerHandle, i->trackerHandle);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "%s: ML failed to remove image tracker target!", application_name);
-      }
-      
-      delete i;
-      return true;
-    } else {
-      return false;
-    }
-  }));
-}
-
-// MLContext
-
-MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
-
-MLContext::~MLContext() {}
-
-Local<Object> MLContext::Initialize(Isolate *isolate) {
-  Nan::EscapableHandleScope scope;
-
-  // constructor
-  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
-  ctor->InstanceTemplate()->SetInternalFieldCount(1);
-
-  // prototype
-  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "Present", Present);
-  Nan::SetMethod(proto, "Exit", Exit);
-  // Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
-  Nan::SetMethod(proto, "GetSize", GetSize);
-  Nan::SetMethod(proto, "SetContentTexture", SetContentTexture);
-  Nan::SetMethod(proto, "RequestGetPoses", RequestGetPoses);
-  Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
-  Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
-
-  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
-
-  Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
-  Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
-  Nan::SetMethod(ctorFn, "SetEventHandlers", SetEventHandlers);
-  Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
-  Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
-  Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
-  Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
-  Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
-  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
-  Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
-  Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
-  Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
-  Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
-  Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
-  Nan::SetMethod(ctorFn, "Update", Update);
-  Nan::SetMethod(ctorFn, "Poll", Poll);
-
-  return scope.Escape(ctorFn);
-}
-
-NAN_METHOD(MLContext::New) {
-  Local<Object> mlContextObj = info.This();
-  MLContext *mlContext = new MLContext();
-  mlContext->Wrap(mlContextObj);
-
-  info.GetReturnValue().Set(mlContextObj);
-}
-
-/* void RunEventsInMainThread(uv_async_t *handle) {
-  Nan::HandleScope scope;
-
-  for (const auto &event : events) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
-
-    Local<Value> arg;
-    switch (event) {
-      case Event::NEW_INIT_ARG: {
-        arg = JS_STR("newInitArg");
-        break;
-      }
-      case Event::STOP: {
-        arg = JS_STR("stop");
-        break;
-      }
-      case Event::PAUSE: {
-        arg = JS_STR("pause");
-        break;
-      }
-      case Event::RESUME: {
-        arg = JS_STR("resume");
-        break;
-      }
-      case Event::UNLOAD_RESOURCES: {
-        arg = JS_STR("unloadResources");
-        break;
-      }
-      default: {
-        arg = Nan::Null();
-        break;
-      }
-    }
-
-    Local<Function> eventsCbFn = Nan::New(eventsCb);
-    Local<Value> argv[] = {
-      arg,
-    };
-    asyncResource.MakeCallback(eventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
-  }
-  events.clear();
-} */
-void RunEventsInMainThread(uv_async_t *async) {
-  Nan::HandleScope scope;
-
-  std::deque<std::function<void(int argc, Local<Value> *argv)>> localFns;
-  Local<Function> handlerFn;
-  {
-    std::lock_guard lock(eventHandlerMutex);
-    
-    localFns = std::move(eventHandler->fns);
-    eventHandler->fns.clear();
-    
-    handlerFn = Nan::New(eventHndler->eventsCb);
-  } 
-  for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
-    Nan::HandleScope scope;
-
-    (*iter)([&](int argc, Local<Value> *argv) -> void {
-      Local<Object> asyncObject = Nan::New<Object>();
-      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
-      
-      asyncResource.MakeCallback(handlerFn, argc, argv);
-    });
-  }
-}
-
 inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
   switch (mlKeycode) {
     case MLKEYCODE_UNKNOWN: return 0;
@@ -2430,77 +1934,457 @@ inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
   }
 }
 
-/* void RunKeyboardEventsInMainThread(uv_async_t *handle) {
-  Nan::HandleScope scope;
+void setKeyEvent(Local<Object> obj, uint32_t charCode, MLKeyCode mlKeyCode, uint32_t modifier_mask) {
+  uint32_t keyCode = mlKeycodeToKeycode(mlKeyCode);
+  obj->Set(JS_STR("charCode"), JS_INT(charCode));
+  obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
+  obj->Set(JS_STR("which"), JS_INT(keyCode));
+  obj->Set(JS_STR("shiftKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SHIFT));
+  obj->Set(JS_STR("altKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_ALT));
+  obj->Set(JS_STR("ctrlKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_CTRL));
+  obj->Set(JS_STR("metaKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_META));
+  // obj->Set(JS_STR("sym"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SYM));
+  // obj->Set(JS_STR("function"), JS_BOOL(modifier_mask & MLKEYMODIFIER_FUNCTION));
+  // obj->Set(JS_STR("capsLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
+  // obj->Set(JS_STR("numLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_NUM_LOCK));
+  // obj->Set(JS_STR("scrollLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
+}
 
-  for (const auto &keyboardEvent : keyboardEvents) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "keyboardEvents");
-
+void onChar(uint32_t char_utf32, void *data) {
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> obj = Nan::New<Object>();
-
-    Local<Value> typeArg;
-    switch (keyboardEvent.type) {
-      case KeyboardEventType::CHAR: {
-        typeArg = JS_STR("keypress");
-        break;
-      }
-      case KeyboardEventType::KEY_DOWN: {
-        typeArg = JS_STR("keydown");
-        break;
-      }
-      case KeyboardEventType::KEY_UP: {
-        typeArg = JS_STR("keyup");
-        break;
-      }
-      default: {
-        typeArg = Nan::Null();
-        break;
-      }
-    }
-    obj->Set(JS_STR("type"), typeArg);
-    uint32_t charCode = (uint32_t)keyboardEvent.char_utf32;
-    uint32_t keyCode = mlKeycodeToKeycode(keyboardEvent.key_code);
-    obj->Set(JS_STR("charCode"), JS_INT(charCode));
-    obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
-    obj->Set(JS_STR("which"), JS_INT(keyCode));
-    obj->Set(JS_STR("shiftKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SHIFT));
-    obj->Set(JS_STR("altKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_ALT));
-    obj->Set(JS_STR("ctrlKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CTRL));
-    obj->Set(JS_STR("metaKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_META));
-    // obj->Set(JS_STR("sym"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SYM));
-    // obj->Set(JS_STR("function"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_FUNCTION));
-    // obj->Set(JS_STR("capsLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
-    // obj->Set(JS_STR("numLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_NUM_LOCK));
-    // obj->Set(JS_STR("scrollLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
-
-    Local<Function> keyboardEventsCbFn = Nan::New(keyboardEventsCb);
+    obj->Set(JS_STR("type"), JS_STR("keypress"));
+    setKeyEvent(obj, char_utf32, MLKEYCODE_UNKNOWN, 0);
+    
     Local<Value> argv[] = {
       obj,
     };
-    asyncResource.MakeCallback(keyboardEventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+void onKeyDown(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("keydown"));
+    setKeyEvent(obj, 0, key_code, modifier_mask);
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+void onKeyUp(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("keyup"));
+    setKeyEvent(obj, 0, key_code, modifier_mask);
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+
+// KeyboardEvent
+
+/* KeyboardEvent::KeyboardEvent(KeyboardEventType type, uint32_t char_utf32) : type(type), char_utf32(char_utf32), key_code(MLKEYCODE_UNKNOWN), modifier_mask(0) {}
+KeyboardEvent::KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask) : type(type), char_utf32(0), key_code(key_code), modifier_mask(modifier_mask) {} */
+
+// camera device status callbacks
+
+void cameraOnDeviceAvailable(void *data) {
+  // XXX
+}
+void cameraOnDeviceUnavailable(void *data) {
+  // XXX
+}
+void cameraOnDeviceOpened(void *data) {
+  // XXX
+}
+void cameraOnDeviceClosed(void *data) {
+  // XXX
+}
+void cameraOnDeviceDisconnected(void *data) {
+  // XXX
+}
+void cameraOnDeviceError(MLCameraError error, void *data) {
+  // XXX
+}
+void cameraOnPreviewBufferAvailable(MLHandle output, void *data) {
+  uv_async_send(&cameraAsync);
+}
+
+// camera capture callbacks
+
+void cameraOnCaptureStarted(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureFailed(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureBufferLost(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureProgressed(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
+  /* if (!cameraResponsePending) {
+    {
+      std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+      std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
+        c->Set(output);
+      });
+    }
+    cameraResponsePending = true;
+  } */
+}
+
+// CameraRequest
+
+CameraRequest::CameraRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+
+void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
+  this->width = width;
+  this->height = height;
+  // this->stride = stride;
+
+  Local<ArrayBuffer> arrayBuffer;
+  if (size > 0) {
+    // exout << "got jpeg " << size << std::endl;
+
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), size);
+    memcpy(arrayBuffer->GetContents().Data(), data, size);
+  } else {
+    // exout << "failed to get jpeg " << size << std::endl;
+
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), 4);
   }
-  keyboardEvents.clear();
-} */
-void RunKeyboardEventsInMainThread(uv_async_t *async) {
+  this->data.Reset(arrayBuffer);
+}
+
+void CameraRequest::Update() {
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
+
+  Local<Function> cbFn = Nan::New(this->cbFn);
+
+  Local<Object> obj = Nan::New<Object>();
+  obj->Set(JS_STR("data"), Nan::New(data));
+  data.Reset();
+  obj->Set(JS_STR("width"), JS_INT(width));
+  obj->Set(JS_STR("height"), JS_INT(height));
+  // obj->Set(JS_STR("bpp"), JS_INT(bpp));
+  // obj->Set(JS_STR("stride"), JS_INT(stride));
+
+  Local<Value> argv[] = {
+    obj,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+}
+
+// MLImageTracker
+
+bool imageTrackingEnabled = false;
+size_t numImageTrackers = 0;
+
+MLImageTracker::MLImageTracker(Local<Object> windowObj, MLHandle trackerHandle, float size) : windowObj(windowObj), trackerHandle(trackerHandle), size(size), valid(false) {}
+
+MLImageTracker::~MLImageTracker() {}
+
+NAN_METHOD(MLImageTracker::New) {
+  if (!imageTrackingEnabled) {
+    imageTrackerSettings.enable_image_tracking = true;
+    imageTrackerSettings.max_simultaneous_targets = 2;
+
+    MLResult result = MLImageTrackerCreate(&imageTrackerSettings, &imageTrackerHandle);
+
+    if (result == MLResult_Ok) {
+      imageTrackingEnabled = true;
+    } else {
+      ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
+      Nan::ThrowError("failed to connect camera");
+    }
+  }
+
+  Local<Object> windowObj = Local<Object>::Cast(info[0]);
+  Local<Object> imageObj = Local<Object>::Cast(info[1]);
+  Local<Number> dimensionNumber = Local<Number>::Cast(info[2]);
+
+  MLHandle trackerHandle;
+  MLImageTrackerTargetSettings trackerSettings;
+  trackerSettings.is_enabled = true;
+  trackerSettings.is_stationary = true;
+  float longerDimension = (float)dimensionNumber->NumberValue();
+  trackerSettings.longer_dimension = longerDimension;
+  char name[64];
+  sprintf(name, "tracker%u", numImageTrackers++);
+  trackerSettings.name = name;
+
+  Image *image = ObjectWrap::Unwrap<Image>(imageObj);
+  Local<Uint8ClampedArray> dataArray = Local<Uint8ClampedArray>::Cast(imageObj->Get(JS_STR("data")));
+  Local<ArrayBuffer> dataArrayBuffer = dataArray->Buffer();
+
+  uint32_t width = image->GetWidth();
+  uint32_t height = image->GetHeight();
+  MLResult result = MLImageTrackerAddTargetFromArray(
+    imageTrackerHandle,
+    &trackerSettings,
+    (uint8_t *)dataArrayBuffer->GetContents().Data() + dataArray->ByteOffset(),
+    width,
+    height,
+    MLImageTrackerImageFormat_RGBA,
+    &trackerHandle
+  );
+
+  if (result == MLResult_Ok) {
+    MLImageTracker *mlImageTracker = new MLImageTracker(windowObj, trackerHandle, longerDimension);
+    Local<Object> mlImageTrackerObj = info.This();
+    mlImageTracker->Wrap(mlImageTrackerObj);
+
+    Nan::SetAccessor(mlImageTrackerObj, JS_STR("ontrack"), OnTrackGetter, OnTrackSetter);
+
+    info.GetReturnValue().Set(mlImageTrackerObj);
+
+    imageTrackers.push_back(mlImageTracker);
+  } else {
+    Nan::ThrowError("MLImageTracker::New: failed to create tracker");
+  }
+}
+
+Local<Function> MLImageTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLImageTracker"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLImageTracker::OnTrackGetter) {
+  // Nan::HandleScope scope;
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  Local<Function> cb = Nan::New(mlImageTracker->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLImageTracker::OnTrackSetter) {
+  // Nan::HandleScope scope;
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  if (value->IsFunction()) {
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlImageTracker->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLImageTracker::OnTrackSetter: invalid arguments");
+  }
+}
+
+void MLImageTracker::Update(MLSnapshot *snapshot) {
+  MLImageTrackerTargetResult trackerTargetResult;
+  MLResult result = MLImageTrackerGetTargetResult(
+    imageTrackerHandle,
+    trackerHandle,
+    &trackerTargetResult
+  );
+  if (result == MLResult_Ok) {
+    const bool &lastValid = valid;
+    MLImageTrackerTargetStatus &status = trackerTargetResult.status;
+    const bool newValid = (status == MLImageTrackerTargetStatus_Tracked || status == MLImageTrackerTargetStatus_Unreliable);
+
+    if (newValid) {
+      MLImageTrackerTargetStaticData trackerTargetStaticData;
+      MLResult result = MLImageTrackerGetTargetStaticData(
+        imageTrackerHandle,
+        trackerHandle,
+        &trackerTargetStaticData
+      );
+      if (result == MLResult_Ok) {
+        MLTransform transform;
+        MLResult result = MLSnapshotGetTransform(snapshot, &trackerTargetStaticData.coord_frame_target, &transform);
+
+        if (result == MLResult_Ok) {
+          MLVec3f &position = transform.position;
+          MLQuaternionf &rotation = transform.rotation;
+          MLVec3f scale = {1, 1, 1};
+
+          MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
+          if (!isIdentityMatrix(transformMatrix)) {
+            MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+            decomposeMatrix(transform, position, rotation, scale);
+          }
+
+          Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+          polls.push_back(new MLPoll(localWindowObj, [this, position, rotation]() -> void {
+            if (!this->cb.IsEmpty()) {
+              Local<Object> asyncObject = Nan::New<Object>();
+              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
+
+              Local<Function> cbFn = Nan::New(this->cb);
+              Local<Object> objVal = Nan::New<Object>();
+
+              Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4)*sizeof(float));
+              char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
+              size_t index = 0;
+
+              memcpy(arrayBufferData + index, position.values, sizeof(position.values));
+              objVal->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
+              index += sizeof(position.values);
+
+              memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
+              objVal->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
+              index += sizeof(rotation.values);
+
+              objVal->Set(JS_STR("size"), JS_NUM(this->size));
+
+              Local<Value> argv[] = {
+                objVal,
+              };
+
+              asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+            }
+          }));
+
+          valid = newValid;
+        } else {
+          ML_LOG(Error, "%s: ML failed to get eye fixation transform!", application_name);
+        }
+      } else {
+        ML_LOG(Error, "%s: Image tracker get static data failed! %x", application_name, result);
+      }
+    } else {
+      if (lastValid) {
+        Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+        polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
+          if (!this->cb.IsEmpty()) {
+            Local<Object> asyncObject = Nan::New<Object>();
+            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
+
+            Local<Function> cbFn = Nan::New(cb);
+            Local<Value> objVal = Nan::Null();
+            Local<Value> argv[] = {
+              objVal,
+            };
+
+            asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+          }
+        }));
+      }
+
+      valid = newValid;
+    }
+  } else {
+    ML_LOG(Error, "%s: ML failed to get image tracker target result!", application_name);
+  }
+}
+
+NAN_METHOD(MLImageTracker::Destroy) {
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  imageTrackers.erase(std::remove_if(imageTrackers.begin(), imageTrackers.end(), [&](MLImageTracker *i) -> bool {
+    if (i == mlImageTracker) {
+      MLResult result = MLImageTrackerRemoveTarget(imageTrackerHandle, i->trackerHandle);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: ML failed to remove image tracker target!", application_name);
+      }
+      
+      delete i;
+      return true;
+    } else {
+      return false;
+    }
+  }));
+}
+
+// MLContext
+
+MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
+
+MLContext::~MLContext() {}
+
+Handle<Object> MLContext::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "Present", Present);
+  Nan::SetMethod(proto, "Exit", Exit);
+  // Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
+  Nan::SetMethod(proto, "GetSize", GetSize);
+  Nan::SetMethod(proto, "SetContentTexture", SetContentTexture);
+  Nan::SetMethod(proto, "RequestGetPoses", RequestGetPoses);
+  Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
+  Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
+
+  Local<Function> ctorFn = ctor->GetFunction();
+
+  Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
+  Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
+  Nan::SetMethod(ctorFn, "SetEventHandler", SetEventHandler);
+  Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
+  Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
+  Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
+  Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
+  Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
+  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
+  Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
+  Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
+  Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
+  Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
+  Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
+  Nan::SetMethod(ctorFn, "Update", Update);
+  Nan::SetMethod(ctorFn, "Poll", Poll);
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_METHOD(MLContext::New) {
+  Local<Object> mlContextObj = info.This();
+  MLContext *mlContext = new MLContext();
+  mlContext->Wrap(mlContextObj);
+
+  info.GetReturnValue().Set(mlContextObj);
+}
+
+void RunEventsInMainThread(uv_async_t *async) {
   Nan::HandleScope scope;
 
-  std::deque<std::function<void(int argc, Local<Value> *argv)>> localFns;
+  std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> localFns;
   Local<Function> handlerFn;
   {
-    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
-    
+    std::lock_guard<std::mutex> lock(eventHandlerMutex);
+
     localFns = std::move(eventHandler->fns);
     eventHandler->fns.clear();
     
-    handlerFn = Nan::New(eventHandler->keyboardEventsCb);
+    handlerFn = Nan::New(eventHandler->handlerFn);
   } 
   for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
     Nan::HandleScope scope;
 
     (*iter)([&](int argc, Local<Value> *argv) -> void {
       Local<Object> asyncObject = Nan::New<Object>();
-      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlKeyboardEvents");
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
       
       asyncResource.MakeCallback(handlerFn, argc, argv);
     });
@@ -2829,20 +2713,18 @@ NAN_METHOD(MLContext::DeinitLifecycle) {
   application_context.dummy_value = DummyValue::STOPPED;
 }
 
-NAN_METHOD(MLContext::SetEventHandlers) {
-  if (info[0]->IsFunction() && info[1]->IsFunction()) {
-    Local<Function> eventsCb = Local<Function>::Cast(info[0]);
-    Local<Function> keyboardEventsCb = Local<Function>::Cast(info[1]);
+NAN_METHOD(MLContext::SetEventHandler) {
+  if (info[0]->IsFunction()) {
+    Local<Function> handlerFn = Local<Function>::Cast(info[0]);
 
     {
       std::lock_guard<std::mutex> lock(eventHandlerMutex);
       
-      uv_async_t *eventsAsync = new uv_async_t();
+      uv_async_t *async = new uv_async_t();
       uv_loop_t *loop = windowsystembase::GetEventLoop();
-      uv_async_init(loop, eventsAsync, RunEventsInMainThread);
-      uv_async_t *keyboardEventsAsync = new uv_async_t();
-      uv_async_init(loop, keyboardEventsAsync, RunKeyboardEventsInMainThread);
-      eventHandler = new EventHandler(eventsAsync, keyboardEventsAsync, eventsCb, keyboardEventsCb);
+      uv_async_init(loop, async, RunEventsInMainThread);
+      
+      eventHandler = new EventHandler(async, handlerFn);
     }
   } else {
     Nan::ThrowError("invalid arguments");
