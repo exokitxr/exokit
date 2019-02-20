@@ -184,7 +184,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 
     gl->keys[GlKey::GL_KEY_COMPOSE] = composeSpec;
   }
-  
+
   // plane
   {
     PlaneSpec *planeSpec = new PlaneSpec();
@@ -335,7 +335,7 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     }
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-#ifndef LUMIN
+#if !defined(ANDROID) && !defined(LUMIN)
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
 #else
     glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
@@ -350,14 +350,14 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     }
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-#ifndef LUMIN
+#if !defined(ANDROID) && !defined(LUMIN)
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
 #else
     glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
 #endif
     // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, samples);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
-    
+
     glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
   }
   {
@@ -385,7 +385,7 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
-    
+
     glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
   }
 
@@ -528,7 +528,7 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
   if (layer.viewports[0] == nullptr) {
     glBindVertexArray(composeSpec->composeVao);
     glUseProgram(composeSpec->composeProgram);
-    
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
     glUniform1i(composeSpec->msTexLocation, 0);
@@ -545,7 +545,7 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
   } else {
     glBindVertexArray(planeSpec->planeVao);
     glUseProgram(planeSpec->planeProgram);
-    
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, layer.tex);
     glUniform1i(planeSpec->texLocation, 0);
@@ -686,7 +686,7 @@ NAN_METHOD(ComposeLayers) {
 
       if (element->IsObject()) {
         Local<Object> elementObj = Local<Object>::Cast(element);
-        
+
         LayerType layerType = LayerType::NONE;
         if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))) {
           if (
@@ -702,7 +702,7 @@ NAN_METHOD(ComposeLayers) {
             layerType = LayerType::RAW_CANVAS;
           }
         }
-        
+
         switch (layerType) {
           case LayerType::IFRAME_3D: {
             Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));

@@ -2,8 +2,11 @@
   'targets': [
     {
       'target_name': 'exokit',
+			'xcode_settings': {
+        'CLANG_CXX_LIBRARY': 'libstdc++'
+			},
       'conditions': [
-        ['"<!(echo $LUMIN)"!="1"', {
+        ['"<!(echo $LUMIN$ANDROID)"!="1"', {
           'conditions': [
             ['OS=="win"', {
               'sources': [
@@ -566,6 +569,88 @@
             'WRAPPING_CEF_SHARED',
             'WEBRTC_POSIX',
           ],
+        }],
+        ['"<!(echo $ANDROID)"=="1"', {
+          'sources': [
+            'exokit.cpp',
+            '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
+            # '<!@(ls -1 deps/exokit-bindings/browser/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/nanosvg/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/canvascontext/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/webglcontext/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/webaudiocontext/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/videocontext/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/windowsystem/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/egl/src/*.cc)',
+            '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)'
+          ],
+          'include_dirs': [
+            "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/core')\")",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/config')\")",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/gpu')\")",
+            "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/effects')\")",
+            "<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/include')\")",
+            "<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/include')\")",
+            # "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
+            "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include')\")",
+            "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include/webrtc')\")",
+            '<(module_root_dir)/deps/exokit-bindings',
+            '<(module_root_dir)/deps/exokit-bindings/utf8',
+            '<(module_root_dir)/deps/exokit-bindings/node',
+            '<(module_root_dir)/deps/exokit-bindings/native_app_glue',
+            '<(module_root_dir)/deps/exokit-bindings/util/include',
+            '<(module_root_dir)/deps/exokit-bindings/bindings/include',
+            '<(module_root_dir)/deps/exokit-bindings/canvas/include',
+            '<(module_root_dir)/deps/exokit-bindings/browser/include',
+            '<(module_root_dir)/deps/exokit-bindings/nanosvg/include',
+            '<(module_root_dir)/deps/exokit-bindings/canvascontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/webglcontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/webaudiocontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
+            '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
+            '<(module_root_dir)/deps/exokit-bindings/egl/include',
+            '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
+            "<!(echo $TOOLCHAIN_INCLUDE_LIB)",
+            "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)",
+            "<!(echo $TOOLCHAIN_INCLUDE_EGL)"
+          ],
+          'library_dirs': [
+            "<!(echo $TOOLCHAIN_LIB)",
+            "<!(echo $TOOLCHAIN_LIB_CXX)",
+            "<!(echo $TOOLCHAIN_LIB_64)",
+            "<(module_root_dir)/node_modules/native-canvas-deps/lib2/android",
+            "<(module_root_dir)/node_modules/native-audio-deps/lib2/android",
+            "<(module_root_dir)/node_modules/native-video-deps/lib2/android",
+            "<(module_root_dir)/node_modules/native-webrtc-deps/lib/magicleap",
+          ],
+          'libraries': [
+            "<!(echo $TOOLCHAIN_LIB_CXX)/libstdc++.a",
+            "<(module_root_dir)/node_modules/libnode.a/libnode.a",
+            "<(module_root_dir)/node_modules/native-audio-deps/lib2/android/libLabSound.a",
+            '-lskia',
+            '-lLabSound',
+            '-lavformat',
+            '-lavcodec',
+            '-lavutil',
+            '-lavdevice',
+            '-lswscale',
+            '-lswresample',
+            '-lopus',
+            '-lwebrtc',
+          ],
+          'ldflags': [
+          ],
+          'defines': [
+            'ANDROID',
+            '__ANDROID__',
+            'NOMINMAX',
+            'WRAPPING_CEF_SHARED',
+            'WEBRTC_POSIX',
+          ]
         }],
       ],
     },
