@@ -1097,10 +1097,12 @@ if (bindings.nativeMl) {
     }
   };
 
-  const _mlLifecycleEvent = e => {
-    console.log('got ml lifecycle event', e);
+  const _mlEvent = e => {
+    // console.log('got ml keyboard event', e);
 
-    switch (e) {
+    const window = canvas.ownerDocument.defaultView;
+
+    switch (e.type) {
       case 'newInitArg': {
         break;
       }
@@ -1119,18 +1121,6 @@ if (bindings.nativeMl) {
       case 'unloadResources': {
         break;
       }
-      default: {
-        console.warn('invalid ml lifecycle event', e);
-        break;
-      }
-    }
-  };
-  const _mlKeyboardEvent = e => { // XXX ensure these are called in the window's event loop
-    // console.log('got ml keyboard event', e);
-
-    const window = canvas.ownerDocument.defaultView;
-
-    switch (e.type) {
       case 'keydown': {
         let handled = false;
         if (e.keyCode === 27) { // ESC
@@ -1169,14 +1159,15 @@ if (bindings.nativeMl) {
   };
   if (!bindings.nativeMl.IsSimulated()) {
     bindings.nativeMl.InitLifecycle(); // XXX do this only in the top level thread
-    bindings.nativeMl.SetEventHandlers(_mlLifecycleEvent, _mlKeyboardEvent);
+    bindings.nativeMl.SetEventHandler(_mlEvent);
   } else {
     // try to connect to MLSDK
     const MLSDK_PORT = 17955;
     const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
       s.destroy();
 
-      bindings.nativeMl.InitLifecycle(_mlLifecycleEvent, _mlKeyboardEvent);
+      bindings.nativeMl.InitLifecycle();
+      bindings.nativeMl.SetEventHandler(_mlEvent);
     });
     s.on('error', () => {});
   }
