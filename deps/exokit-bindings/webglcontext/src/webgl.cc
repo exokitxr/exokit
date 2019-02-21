@@ -631,6 +631,7 @@ void setGlConstants(T &proto) {
   // WebGL 2 constants from:
   // https://www.khronos.org/registry/webgl/specs/latest/2.0/
   // Those commented out already defined for WebGL
+  JS_GL_CONSTANT(CURRENT_QUERY);
   JS_GL_CONSTANT(READ_BUFFER);
   JS_GL_CONSTANT(UNPACK_ROW_LENGTH);
   JS_GL_CONSTANT(UNPACK_SKIP_ROWS);
@@ -5160,10 +5161,13 @@ NAN_METHOD(WebGL2RenderingContext::GetQuery) {
   GLint value;
   
   glGetQueryiv(target, pname, &value);
-  Local<Object> queryObject = Nan::New<Object>();
-  queryObject->Set(JS_STR("id"), JS_INT(value));
+  if (glGetError() == GL_NO_ERROR) {
+    Local<Object> queryObject = Nan::New<Object>();
+    queryObject->Set(JS_STR("id"), JS_INT(value));
 
-  info.GetReturnValue().Set(queryObject);
+    info.GetReturnValue().Set(queryObject);
+  }
+  else Nan::ThrowTypeError("oh crap what to do?");
 }
 
 NAN_METHOD(WebGL2RenderingContext::GetQueryParameter) { // adapted from GetProgramParameter
