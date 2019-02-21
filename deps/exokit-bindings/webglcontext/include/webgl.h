@@ -85,9 +85,6 @@ enum GlKey {
   GL_KEY_PLANE,
 };
 
-// missing from WebGL2 standard; needed for getQuery
-#define GL_CURRENT_QUERY 0x8865
-
 #define GL_READ_BUFFER                                  0x0C02
 #define GL_UNPACK_ROW_LENGTH                            0x0CF2
 #define GL_UNPACK_SKIP_ROWS                             0x0CF3
