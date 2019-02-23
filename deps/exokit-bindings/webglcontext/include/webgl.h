@@ -125,8 +125,6 @@ public:
   static NAN_METHOD(SetDefaultVao);
   static NAN_METHOD(IsDirty);
   static NAN_METHOD(ClearDirty);
-  static NAN_METHOD(SetPrereqSyncs);
-  static NAN_METHOD(ClearPrereqSyncs);
 
   static NAN_METHOD(Uniform1f);
   static NAN_METHOD(Uniform2f);
@@ -398,7 +396,6 @@ public:
   GLuint defaultVao;
   GLuint defaultFramebuffer;
   bool dirty;
-  std::vector<GLsync> prereqSyncs;
   bool flipY;
   bool premultiplyAlpha;
   GLint packAlignment;
