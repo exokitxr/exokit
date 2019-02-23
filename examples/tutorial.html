@@ -330,32 +330,37 @@
     (async () => {
       console.log('request device');
       display = await navigator.xr.requestDevice();
-      console.log('request session');
-      const session = await display.requestSession({
-        exclusive: true,
-      });
-      display.session = session;
 
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+      if (display) {
+        console.log('request session');
+        const session = await display.requestSession({
+          exclusive: true,
         });
+        display.session = session;
 
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
 
-        renderer.setSize(width * 2, height);
+          const viewport = session.baseLayer.getViewport(frame.views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
 
-        renderer.setAnimationLoop(null);
+          renderer.setSize(width * 2, height);
 
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
+          renderer.setAnimationLoop(null);
 
-        console.log('running!');
-      });
+          renderer.vr.enabled = true;
+          renderer.vr.setDevice(display);
+          renderer.vr.setAnimationLoop(animate);
+
+          console.log('running!');
+        });
+      } else {
+        renderer.setAnimationLoop(animate);
+      }
     })()
       .catch(err => {
         console.warn(err.stack);
