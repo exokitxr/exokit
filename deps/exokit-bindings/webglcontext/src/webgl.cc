@@ -43,15 +43,6 @@ NAN_METHOD(glCallWrap) {
   if (gl->live) {
     if (gl->windowHandle) {
       windowsystem::SetCurrentWindowContext(gl->windowHandle);
-
-      size_t size = gl->prereqSyncs.size();
-      if (size > 0) {
-        for (size_t i = 0; i < size; i++) {
-          GLsync sync = gl->prereqSyncs[i];
-          glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-        }
-        gl->prereqSyncs.clear();
-      }
     }
 
     F(info);
