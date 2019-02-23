@@ -1206,57 +1206,73 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       localCbs[i] = null;
     }
   };
-  const _tickAnimationFrameRaf = top => async () => {
-    const childSyncs = (await Promise.all(windows.map(window => window.tickAnimationFrame(GlobalContext.contexts.length > 0 ? 'child' : 'top')))).flat();
-    for (let i = 0; i < childSyncs.length; i++) {
-      const childSync = childSyncs[i];
-      nativeWindow.waitSync(childSync);
-      nativeWindow.deleteSync(childSync);
-    }
-
-    if (rafCbs.length > 0) {
-      _cacheLocalCbs(rafCbs);
-      
-      const performanceNow = performance.now();
-
-      for (let i = 0; i < localCbs.length; i++) {
-        const rafCb = localCbs[i];
-        if (rafCb) {
-          try {
-            rafCb(performanceNow);
-          } catch (e) {
-            console.warn(e);
-          }
-
-          const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-          if (index !== -1) {
-            rafCbs[index] = null;
-          }
-        }
-      }
-
-      _clearLocalCbs(); // release garbage
-    }
-
-    const syncs = [];
-    for (let i = 0; i < GlobalContext.contexts.length; i++) {
-      const context = GlobalContext.contexts[i];
-      
-      if (context.isDirty && context.isDirty()) {
-        if (!top) {
-          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-          syncs.push(nativeWindow.getSync());
-        }
+  const _tickAnimationFrameRaf = type => async () => {
+    const _renderLocal = async () => {
+      if (rafCbs.length > 0) {
+        _cacheLocalCbs(rafCbs);
         
-        context.clearDirty();
+        const performanceNow = performance.now();
+
+        for (let i = 0; i < localCbs.length; i++) {
+          const rafCb = localCbs[i];
+          if (rafCb) {
+            try {
+              rafCb(performanceNow);
+            } catch (e) {
+              console.warn(e);
+            }
+
+            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
+            if (index !== -1) {
+              rafCbs[index] = null;
+            }
+          }
+        }
+
+        _clearLocalCbs(); // release garbage
       }
 
-      context.clearPrereqSyncs && context.clearPrereqSyncs();
+      for (let i = 0; i < GlobalContext.contexts.length; i++) {
+        const context = GlobalContext.contexts[i];
+        
+        if (context.isDirty && context.isDirty()) {
+          if (type === 'child') {
+            nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+            syncs.push(nativeWindow.getSync());
+          }
+          
+          context.clearDirty();
+        }
+      }
+    };
+    const _renderChildren = async () => {
+      const childSyncs = (await Promise.all(windows.map(window => window.tickAnimationFrame('child')))).flat();
+      for (let i = 0; i < GlobalContext.contexts.length; i++) {
+        const context = GlobalContext.contexts[i];
+        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+
+        for (let j = 0; j < childSyncs.length; j++) {
+          nativeWindow.waitSync(childSyncs[j]);
+        }
+      }
+      for (let i = 0; i < childSyncs.length; i++) {
+        nativeWindow.deleteSync(childSyncs[i]);
+      }
+    };
+    
+    const syncs = [];
+    if (type === 'top') {
+      _renderLocal();
+      await _renderChildren();
+    } else {
+      await _renderChildren();
+      _renderLocal();
     }
+
     return syncs;
   };
-  const _tickAnimationFrameTop = _tickAnimationFrameRaf(true);
-  const _tickAnimationFrameChild = _tickAnimationFrameRaf(false);
+  const _tickAnimationFrameTop = _tickAnimationFrameRaf('top');
+  const _tickAnimationFrameChild = _tickAnimationFrameRaf('child');
   const _tickAnimationFrameWait = async () => {
     const childWaits = Promise.all(windows.map(window => window.tickAnimationFrame('wait')));
     
@@ -1746,20 +1762,17 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   const _tickAnimationFrameSubmit = async () => {
     const childSubmits = Promise.all(windows.map(window => window.tickAnimationFrame('submit')));
 
-    // composite framebuffers
+    const oculusVrGlContext = _getOculusVrGlContext();
+    const openVrGlContext = _getOpenVrGlContext();
+    const oculusMobileVrGlContext = _getOculusMobileVrGlContext();
+    const mlGlContext = _getMlGlContext();
+
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
       const windowHandle = context.getWindowHandle();
 
       nativeWindow.setCurrentWindowContext(windowHandle);
-      if (isMac) { // XXX move these to window internal
-        context.flush();
-      }
 
-      const oculusVrGlContext = _getOculusVrGlContext();
-      const openVrGlContext = _getOpenVrGlContext();
-      const oculusMobileVrGlContext = _getOculusMobileVrGlContext();
-      const mlGlContext = _getMlGlContext();
       const isVisible = nativeWindow.isVisible(windowHandle) || oculusVrGlContext === context || oculusMobileVrGlContext === context || mlGlContext === context;
       if (isVisible) {
         if (vrPresentState.oculusSystem && oculusVrGlContext === context && vrPresentState.hasPose) {
@@ -1805,13 +1818,11 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           mlPresentState.mlHasPose = false;
         } else if (fakePresentState.layers.length > 0) { // XXX blit only to the intended context
           nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
+          context.finish();
         }
       }
 
-      if (isMac) {
-        context.bindFramebufferRaw(context.FRAMEBUFFER, null);
-      }
-      nativeWindow.swapBuffers(windowHandle); // XXX swap buffers on the child side
+      nativeWindow.swapBuffers(windowHandle);
       if (isMac) {
         const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
         if (drawFramebuffer) {
@@ -1824,7 +1835,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         }
       }
     }
-    
+
     await childSubmits;
   };
   window.tickAnimationFrame = type => {
