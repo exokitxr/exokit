@@ -5,9 +5,7 @@ const symbols = require('./symbols');
 
 const exokitNode = (() => {
   if (typeof requireNative === 'undefined') {
-    const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
-    require('worker-native').setNativeRequire('exokit.node', exokitNode.initFunctionAddress);
-    return exokitNode;
+    return require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
   } else {
     return requireNative('exokit.node');
   }
@@ -16,6 +14,12 @@ const exokitNode = (() => {
 const {nativeWindow} = exokitNode;
 const webGlToOpenGl = require('webgl-to-opengl');
 const GlobalContext = require('./GlobalContext');
+
+const nativeWorker = require('worker-native');
+nativeWindow.setEventLoop(nativeWorker.getEventLoop());
+if (typeof requireNative === 'undefined') {
+  nativeWorker.setNativeRequire('exokit.node', exokitNode.initFunctionAddress);
+}
 
 const bindings = {};
 for (const k in exokitNode) {
@@ -511,6 +515,8 @@ if (bindings.nativeAudio) {
   })(bindings.nativeAudio.AudioContext);
   bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
 }
+
+bindings.nativeWorker = nativeWorker;
 
 if (bindings.nativeOpenVR) {
 	bindings.nativeOpenVR.EVRInitError = {

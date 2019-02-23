@@ -24,7 +24,7 @@ find.file(/\.node$/, dirname, files => {
           return match && match[1];
         })();
         // ignore incompatible modules
-        if (!npmName || npmName.replace(/-/g, '_') === binName) {
+        if (!npmName || (npmName.replace(/-/g, '_') === binName || (npmName.replace(/-/g, '_') + '2') === binName)) {
           const registerName = `node_register_module_${binName}`;
           decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
           registers += `  dlibs["/package${relpath}${binName}.node"] = std::pair<void *, bool>((void *)&${registerName}, false);\n`;
