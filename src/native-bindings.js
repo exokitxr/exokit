@@ -1,4 +1,5 @@
 const path = require('path');
+const {isMainThread} = require('worker_threads');
 const {process} = global;
 
 const symbols = require('./symbols');
@@ -1163,19 +1164,21 @@ if (bindings.nativeMl) {
         break;
     }
   };
-  if (!bindings.nativeMl.IsSimulated()) {
-    bindings.nativeMl.InitLifecycle(); // XXX do this only in the top level thread
-    bindings.nativeMl.SetEventHandler(_mlEvent);
-  } else {
-    // try to connect to MLSDK
-    const MLSDK_PORT = 17955;
-    const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
-      s.destroy();
-
+  if (isMainThread) {
+    if (!bindings.nativeMl.IsSimulated()) {
       bindings.nativeMl.InitLifecycle();
       bindings.nativeMl.SetEventHandler(_mlEvent);
-    });
-    s.on('error', () => {});
+    } else {
+      // try to connect to MLSDK
+      const MLSDK_PORT = 17955;
+      const s = net.connect(MLSDK_PORT, '127.0.0.1', () => {
+        s.destroy();
+
+        bindings.nativeMl.InitLifecycle();
+        bindings.nativeMl.SetEventHandler(_mlEvent);
+      });
+      s.on('error', () => {});
+    }
   }
 }
 
