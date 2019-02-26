@@ -5118,6 +5118,17 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGL2RenderingContext::Initia
   Nan::SetMethod(proto, "isQuery", glCallWrap<IsQuery>);
   Nan::SetMethod(proto, "deleteQuery", glCallWrap<DeleteQuery>);
 
+  Nan::SetMethod(proto, "createTransformFeedback", glCallWrap<CreateTransformFeedback>);
+  Nan::SetMethod(proto, "deleteTransformFeedback", glCallWrap<DeleteTransformFeedback>);
+  Nan::SetMethod(proto, "isTransformFeedback", glCallWrap<IsTransformFeedback>);
+  Nan::SetMethod(proto, "bindTransformFeedback", glCallWrap<BindTransformFeedback>);
+  Nan::SetMethod(proto, "beginTransformFeedback", glCallWrap<BeginTransformFeedback>);
+  Nan::SetMethod(proto, "endTransformFeedback", glCallWrap<EndTransformFeedback>);
+  Nan::SetMethod(proto, "transformFeedbackVaryings", glCallWrap<TransformFeedbackVaryings>);
+  Nan::SetMethod(proto, "getTransformFeedbackVarying", glCallWrap<GetTransformFeedbackVarying>);
+  Nan::SetMethod(proto, "pauseTransformFeedback", glCallWrap<PauseTransformFeedback>);
+  Nan::SetMethod(proto, "resumeTransformFeedback", glCallWrap<ResumeTransformFeedback>);
+
   Local<Function> ctorFn = ctor->GetFunction();
   setGlConstants(ctorFn);
 
@@ -5204,6 +5215,81 @@ NAN_METHOD(WebGL2RenderingContext::DeleteQuery) { // adapted from DeleteBuffer
   GLuint query = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
 
   glDeleteQueries(1, &query);
+}
+
+NAN_METHOD(WebGL2RenderingContext::CreateTransformFeedback) {
+  GLuint transformId;
+  glGenTransformFeedbacks(1, &transformId);
+
+  Local<Object> transformObject = Nan::New<Object>();
+  transformObject->Set(JS_STR("id"), JS_INT(transformId));
+  info.GetReturnValue().Set(transformObject);
+}
+
+NAN_METHOD(WebGL2RenderingContext::DeleteTransformFeedback) {
+  GLuint transform = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glDeleteTransformFeedbacks(1, &transform);
+}
+
+NAN_METHOD(WebGL2RenderingContext::IsTransformFeedback) {
+  if (info[0]->IsObject()) {
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+    bool ret = glIsTransformFeedback(arg);
+
+    info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }   
+}
+
+NAN_METHOD(WebGL2RenderingContext::BindTransformFeedback) {
+  GLenum target = info[0]->Int32Value();
+  GLuint transform = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glBindTransformFeedback(target, transform);
+}
+
+NAN_METHOD(WebGL2RenderingContext::BeginTransformFeedback) {
+  GLenum primitiveMode = info[0]->Int32Value();
+  glBeginTransformFeedback(primitiveMode);
+}
+
+NAN_METHOD(WebGL2RenderingContext::EndTransformFeedback) {
+  glEndTransformFeedback();
+}
+
+NAN_METHOD(WebGL2RenderingContext::TransformFeedbackVaryings) {
+  GLuint program = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+   
+  Local<Array> jsVaryings = Local<Array>::Cast(info[1]);
+  GLsizei count = jsVaryings->Length();
+  
+  char **varyings = new char*[count];
+
+  for (int i = 0; i < count; i++) {
+    String::Utf8Value v(jsVaryings->Get(i));
+    varyings[i] = *v;
+  }
+  
+  GLenum bufferMode = info[2]->Int32Value();
+
+  glTransformFeedbackVaryings(program, count, varyings, bufferMode);
+  delete [] varyings;
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetTransformFeedbackVarying) {
+  GLuint program = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLuint index = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+    
+}
+
+NAN_METHOD(WebGL2RenderingContext::PauseTransformFeedback) {
+  glPauseTransformFeedback();  
+}
+
+NAN_METHOD(WebGL2RenderingContext::ResumeTransformFeedback) {
+  glResumeTransformFeedback();  
 }
 
 /* struct GLObj {

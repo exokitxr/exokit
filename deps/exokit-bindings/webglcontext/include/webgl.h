@@ -697,6 +697,17 @@ public:
   static NAN_METHOD(GetQueryParameter);
   static NAN_METHOD(IsQuery);
   static NAN_METHOD(DeleteQuery);
+  
+  static NAN_METHOD(CreateTransformFeedback);
+  static NAN_METHOD(DeleteTransformFeedback);
+  static NAN_METHOD(IsTransformFeedback);
+  static NAN_METHOD(BindTransformFeedback);
+  static NAN_METHOD(BeginTransformFeedback);
+  static NAN_METHOD(EndTransformFeedback);
+  static NAN_METHOD(TransformFeedbackVaryings);
+  static NAN_METHOD(GetTransformFeedbackVarying);
+  static NAN_METHOD(PauseTransformFeedback);
+  static NAN_METHOD(ResumeTransformFeedback);
 };
 
 #endif
