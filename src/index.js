@@ -311,13 +311,13 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 
     ctx.setWindowHandle(windowHandle);
     ctx.setTexture(tex, canvasWidth, canvasHeight);
-    
+
     ctx.destroy = (destroy => function() {
       destroy.call(this);
-      
+
       nativeWindow.destroy(windowHandle);
       canvas._context = null;
-      
+
       contexts.splice(contexts.indexOf(ctx), 1);
     })(ctx.destroy);
   } else {
@@ -460,7 +460,7 @@ if (nativeBindings.nativeVr) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
-      
+
       if (!vrPresentState.glContext) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
@@ -620,13 +620,22 @@ const mlPresentState = {
   layers: [],
 };
 GlobalContext.mlPresentState = mlPresentState;
+
+let isOculusConnected = nativeBindings.oculusVr.Oculus_Init();
+
+if (isOculusConnected) {
+  console.log("OCULUS CONNECTED");
+} else {
+  console.log("OCULUS NOT CONNECTED");
+}
+
 if (nativeBindings.nativeMl) {
   mlPresentState.mlContext = new nativeBindings.nativeMl();
   nativeBindings.nativeMl.requestPresent = function(layers) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
-      
+
       if (!mlPresentState.mlGlContext) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
@@ -699,7 +708,7 @@ if (nativeBindings.nativeMl) {
       } else if (canvas.ownerDocument.framebuffer) {
         const {width, height} = canvas;
         const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
-        
+
         return {
           width,
           height,
@@ -1009,11 +1018,11 @@ const _startRenderLoop = () => {
         new Float32Array(16),
       ];
     }
-    
+
     const [{leftBounds, rightBounds}] = display.getLayers();
     const {renderWidth, renderHeight} = display.getEyeParameters('left');
     const offsetMatrix = localMatrix2.compose(localVector.fromArray(layer.xrOffset.position), localQuaternion.fromArray(layer.xrOffset.orientation), localVector2.fromArray(layer.xrOffset.scale));
-    
+
     o.viewports[0][0] = leftBounds[0]*renderWidth * factor;
     o.viewports[0][1] = leftBounds[1]*renderHeight;
     o.viewports[0][2] = leftBounds[2]*renderWidth * factor;
@@ -1056,7 +1065,7 @@ const _startRenderLoop = () => {
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           const window = context.canvas.ownerDocument.defaultView;
-          
+
           // console.log('blit layers', fakePresentState.layers.length);
 
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
@@ -1271,7 +1280,7 @@ const _startRenderLoop = () => {
         vrPresentState.system.GetControllerState(1, localGamepadArray);
         if (!isNaN(localGamepadArray[0])) {
           rightGamepad.connected[0] = 1;
-          
+
           localMatrix.fromArray(localFloat32Array3);
           localMatrix.decompose(localVector, localQuaternion, localVector2);
           localVector.toArray(rightGamepad.position);
@@ -1326,7 +1335,7 @@ const _startRenderLoop = () => {
       if (!immediate) {
         return;
       }
-      
+
       mlPresentState.mlContext.PrepareFrame(
         mlPresentState.mlGlContext,
         mlPresentState.mlMsFbo,
@@ -1483,7 +1492,7 @@ const _startRenderLoop = () => {
         .compose(localVector, localQuaternion, localVector2)
         .toArray(gamepad.transformMatrix);
     }
-    
+
     // poll xr device events
     for (let i = 0; i < windows.length; i++) {
       const window = windows[i];

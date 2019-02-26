@@ -13,6 +13,10 @@
 #include <openvr-bindings.h>
 #endif
 
+#ifdef OCULUSVR
+#include <oculus-bindings.h>
+#endif
+
 using namespace v8;
 
 namespace exokit {
@@ -174,7 +178,7 @@ void InitExports(Local<Object> exports) {
 
   Local<Value> video = makeVideo(imageData);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVideo"), video);
-  
+
   Local<Value> browser = makeBrowser();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeBrowser"), browser);
 
@@ -190,6 +194,11 @@ void InitExports(Local<Object> exports) {
 #ifdef OPENVR
   Local<Value> vr = makeVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
+#endif
+
+#ifdef OCULUSVR
+  Local<Value> oculusVR = makeOculusVr();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "oculusVr"), oculusVR);
 #endif
 
 #if LEAPMOTION
