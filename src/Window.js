@@ -920,6 +920,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.MessageEvent = MessageEvent;
   window.PromiseRejectionEvent = PromiseRejectionEvent;
   window.CustomEvent = CustomEvent;
+  window.EventTarget = EventTarget;
   window.addEventListener = EventTarget.prototype.addEventListener.bind(window);
   window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
   window.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(window);
