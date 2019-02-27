@@ -5280,8 +5280,23 @@ NAN_METHOD(WebGL2RenderingContext::TransformFeedbackVaryings) {
 
 NAN_METHOD(WebGL2RenderingContext::GetTransformFeedbackVarying) {
   GLuint program = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-  GLuint index = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+  GLuint index = info[1]->Int32Value();
     
+  char name[1024];
+  GLsizei length = 0;
+  GLsizei size;
+  GLenum type;
+
+  glGetTransformFeedbackVarying(program, index, sizeof(name), &length, &size, &type, name);
+  if (length > 0) {
+    Local<Object> activeInfo = Nan::New<Object>();
+    activeInfo->Set(JS_STR("name"), JS_STR(name));
+    activeInfo->Set(JS_STR("size"), JS_INT(size));
+    activeInfo->Set(JS_STR("type"), JS_INT(type));
+
+    info.GetReturnValue().Set(activeInfo);
+  }
+  else info.GetReturnValue().Set(Nan::Null());
 }
 
 NAN_METHOD(WebGL2RenderingContext::PauseTransformFeedback) {
