@@ -455,7 +455,122 @@ class XRState {
 }
 const xrState = GlobalContext.xrState = new XRState();
 
-if (nativeBindings.nativeVr) {
+if (nativeBindings.oculusVr) {
+  nativeBindings.nativeVr.requestPresent = function (layers) {
+    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+    if (layer) {
+      const canvas = layer.source;
+
+      if (!vrPresentState.glContext) {
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
+        }
+        const window = canvas.ownerDocument.defaultView;
+
+        const windowHandle = context.getWindowHandle();
+        nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
+
+        // fps = VR_FPS;
+
+        const session = vrPresentState.session || nativeBindings.oculusVr.Oculus_Init();
+        const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
+
+        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        const width = halfWidth * 2;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
+
+        const cleanups = [];
+
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        session.setupSwapChain();
+
+        context.setDefaultFramebuffer(msFbo);
+
+        vrPresentState.isPresenting = true;
+        vrPresentState.session = session;
+        vrPresentState.glContext = context;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.msDepthTex = msDepthTex;
+        vrPresentState.fbo = fbo;
+        vrPresentState.tex = tex;
+        vrPresentState.depthTex = depthTex;
+        vrPresentState.cleanups = cleanups;
+
+        vrPresentState.lmContext = lmContext;
+
+        canvas.framebuffer = {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+
+        const _attribute = (name, value) => {
+          if (name === 'width' || name === 'height') {
+            nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
+
+            nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+          }
+        };
+        canvas.on('attribute', _attribute);
+        cleanups.push(() => {
+          canvas.removeListener('attribute', _attribute);
+        });
+
+        /* window.top.updateVrFrame({
+          renderWidth: xrState.renderWidth[0],
+          renderHeight: xrState.renderHeight[0],
+          force: true,
+        }); */
+
+        return canvas.framebuffer;
+      } else if (canvas.ownerDocument.framebuffer) {
+        const {width, height} = canvas;
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
+        return {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+      } else {
+        /* const {width: halfWidth, height} = vrPresentState.system.GetRecommendedRenderTargetSize();
+        const width = halfWidth * 2; */
+
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
+        return {
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+      }
+    } else {
+      throw new Error('no HTMLCanvasElement source provided');
+    }
+    // let isOculusConnected = nativeBindings.oculusVr.Oculus_Init();
+    // if (isOculusConnected) {
+    //   console.log("OCULUS CONNECTED");
+    // } else {
+    //   console.log("OCULUS NOT CONNECTED");
+    // }
+  }
+} else if (nativeBindings.nativeVr) {
   nativeBindings.nativeVr.requestPresent = function(layers) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
@@ -620,14 +735,6 @@ const mlPresentState = {
   layers: [],
 };
 GlobalContext.mlPresentState = mlPresentState;
-
-let isOculusConnected = nativeBindings.oculusVr.Oculus_Init();
-
-if (isOculusConnected) {
-  console.log("OCULUS CONNECTED");
-} else {
-  console.log("OCULUS NOT CONNECTED");
-}
 
 if (nativeBindings.nativeMl) {
   mlPresentState.mlContext = new nativeBindings.nativeMl();

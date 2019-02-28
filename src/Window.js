@@ -97,6 +97,7 @@ const {
   nativeMl,
   nativeBrowser,
   nativeWindow,
+  oculusVr
 } = bindings;
 
 GlobalContext.args = {};
@@ -476,6 +477,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
       }
       if (nativeVr && nativeVr.VR_IsHmdPresent()) {
+        result.push(window[symbols.mrDisplaysSymbol].vrDisplay);
+      }
+      if (oculusVr && oculusVr.Oculus_IsHmdPresent()) {
         result.push(window[symbols.mrDisplaysSymbol].vrDisplay);
       }
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
@@ -1200,7 +1204,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       loading = true;
     }
   });
-  
+
   const rafCbs = [];
   window[symbols.rafCbsSymbol] = rafCbs;
   const timeouts = [];
@@ -1270,7 +1274,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     // tickAnimationFrame.window = null;
     return tickAnimationFrame;
   })();
-  
+
   const _makeMrDisplays = () => {
     const _bindMRDisplay = display => {
       display.onrequestanimationframe = _makeRequestAnimationFrame(window);
@@ -1283,7 +1287,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         });
       };
     };
-    
+
     const fakeVrDisplay = new FakeVRDisplay(window);
     fakeVrDisplay.onrequestpresent = layers => {
       if (!GlobalContext.fakePresentState.fakeVrDisplay) {

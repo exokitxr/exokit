@@ -5,17 +5,43 @@
 #include <node.h>
 
 // Include the Oculus SDK
-#include "OVR_CAPI_GL.h"
+#include "ovrsession.h"
 #include <v8.h>
+
+using namespace v8;
 
 NAN_METHOD(Oculus_Init)
 {
-  bool returnValue;
+  if (info.Length() != 0)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
 
+  ovrSession * session = (ovrSession *) malloc(sizeof(ovrSession));
   ovrResult result = ovr_Initialize(nullptr);
   if (OVR_FAILURE(result)) { return; }
 
+  ovrGraphicsLuid luid;
+  result = ovr_Create(session, &luid);
+  if (OVR_FAILURE(result))
+  {
+    ovr_Shutdown();
+    return;
+  }
+
+  auto sessionResult = OVRSession::NewInstance(session);
+  info.GetReturnValue().Set(sessionResult);
+}
+
+NAN_METHOD(Oculus_IsHmdPresent)
+{
+  bool returnValue;
+
   ovrSession session;
+  ovrResult result = ovr_Initialize(nullptr);
+  if (OVR_FAILURE(result)) { return; }
+
   ovrGraphicsLuid luid;
   result = ovr_Create(&session, &luid);
   if (OVR_FAILURE(result))
@@ -43,6 +69,7 @@ Local<Object> makeOculusVr() {
   Local<Object> exports = Object::New(Isolate::GetCurrent());
 
   exports->Set(Nan::New("Oculus_Init").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Oculus_Init)->GetFunction());
+  exports->Set(Nan::New("Oculus_IsHmdPresent").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Oculus_IsHmdPresent)->GetFunction());
 
   return scope.Escape(exports);
 }
