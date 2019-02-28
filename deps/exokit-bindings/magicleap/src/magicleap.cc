@@ -2030,84 +2030,84 @@ void RunEventsInMainThread(uv_async_t *handle) {
 
 inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
   switch (mlKeycode) {
-    // MLKEYCODE_UNKNOWN                       = 0,
-    MLKEYCODE_SOFT_LEFT: return 37;
-    MLKEYCODE_SOFT_RIGHT: return 39;
+    case MLKEYCODE_UNKNOWN: return 0;
+    case MLKEYCODE_SOFT_LEFT: return 37;
+    case MLKEYCODE_SOFT_RIGHT: return 39;
     /* MLKEYCODE_HOME                          = 3,
     MLKEYCODE_BACK                          = 4,
     MLKEYCODE_CALL                          = 5,
     MLKEYCODE_ENDCALL                       = 6, */
-    MLKEYCODE_0: return 48;
-    MLKEYCODE_1: return 49;
-    MLKEYCODE_2: return 50;
-    MLKEYCODE_3: return 51;
-    MLKEYCODE_4: return 52;
-    MLKEYCODE_5: return 53;
-    MLKEYCODE_6: return 54;
-    MLKEYCODE_7: return 55;
-    MLKEYCODE_8: return 56;
-    MLKEYCODE_9: return 57;
-    MLKEYCODE_STAR: return 56;
-    MLKEYCODE_POUND: return 51;
-    MLKEYCODE_DPAD_UP: return 38;
-    MLKEYCODE_DPAD_DOWN: return 40;
-    MLKEYCODE_DPAD_LEFT: return 37;
-    MLKEYCODE_DPAD_RIGHT: return 39;
+    case MLKEYCODE_0: return 48;
+    case MLKEYCODE_1: return 49;
+    case MLKEYCODE_2: return 50;
+    case MLKEYCODE_3: return 51;
+    case MLKEYCODE_4: return 52;
+    case MLKEYCODE_5: return 53;
+    case MLKEYCODE_6: return 54;
+    case MLKEYCODE_7: return 55;
+    case MLKEYCODE_8: return 56;
+    case MLKEYCODE_9: return 57;
+    case MLKEYCODE_STAR: return 56;
+    case MLKEYCODE_POUND: return 51;
+    case MLKEYCODE_DPAD_UP: return 38;
+    case MLKEYCODE_DPAD_DOWN: return 40;
+    case MLKEYCODE_DPAD_LEFT: return 37;
+    case MLKEYCODE_DPAD_RIGHT: return 39;
     // MLKEYCODE_DPAD_CENTER                   = 23,
     /* MLKEYCODE_VOLUME_UP                     = 24,
     MLKEYCODE_VOLUME_DOWN                   = 25,
     MLKEYCODE_POWER                         = 26,
     MLKEYCODE_CAMERA                        = 27,
     MLKEYCODE_CLEAR                         = 28, */
-    MLKEYCODE_A: return 65;
-    MLKEYCODE_B: return 66;
-    MLKEYCODE_C: return 67;
-    MLKEYCODE_D: return 68;
-    MLKEYCODE_E: return 69;
-    MLKEYCODE_F: return 70;
-    MLKEYCODE_G: return 71;
-    MLKEYCODE_H: return 72;
-    MLKEYCODE_I: return 73;
-    MLKEYCODE_J: return 74;
-    MLKEYCODE_K: return 75;
-    MLKEYCODE_L: return 76;
-    MLKEYCODE_M: return 77;
-    MLKEYCODE_N: return 78;
-    MLKEYCODE_O: return 79;
-    MLKEYCODE_P: return 80;
-    MLKEYCODE_Q: return 81;
-    MLKEYCODE_R: return 82;
-    MLKEYCODE_S: return 83;
-    MLKEYCODE_T: return 84;
-    MLKEYCODE_U: return 85;
-    MLKEYCODE_V: return 86;
-    MLKEYCODE_W: return 87;
-    MLKEYCODE_X: return 88;
-    MLKEYCODE_Y: return 89;
-    MLKEYCODE_Z: return 90;
-    MLKEYCODE_COMMA: return 188;
-    MLKEYCODE_PERIOD: return 190;
-    MLKEYCODE_ALT_LEFT: return 18;
-    MLKEYCODE_ALT_RIGHT: return 18;
-    MLKEYCODE_SHIFT_LEFT: return 16;
-    MLKEYCODE_SHIFT_RIGHT: return 16;
-    MLKEYCODE_TAB: return 9;
-    MLKEYCODE_SPACE: return 32;
+    case MLKEYCODE_A: return 65;
+    case MLKEYCODE_B: return 66;
+    case MLKEYCODE_C: return 67;
+    case MLKEYCODE_D: return 68;
+    case MLKEYCODE_E: return 69;
+    case MLKEYCODE_F: return 70;
+    case MLKEYCODE_G: return 71;
+    case MLKEYCODE_H: return 72;
+    case MLKEYCODE_I: return 73;
+    case MLKEYCODE_J: return 74;
+    case MLKEYCODE_K: return 75;
+    case MLKEYCODE_L: return 76;
+    case MLKEYCODE_M: return 77;
+    case MLKEYCODE_N: return 78;
+    case MLKEYCODE_O: return 79;
+    case MLKEYCODE_P: return 80;
+    case MLKEYCODE_Q: return 81;
+    case MLKEYCODE_R: return 82;
+    case MLKEYCODE_S: return 83;
+    case MLKEYCODE_T: return 84;
+    case MLKEYCODE_U: return 85;
+    case MLKEYCODE_V: return 86;
+    case MLKEYCODE_W: return 87;
+    case MLKEYCODE_X: return 88;
+    case MLKEYCODE_Y: return 89;
+    case MLKEYCODE_Z: return 90;
+    case MLKEYCODE_COMMA: return 188;
+    case MLKEYCODE_PERIOD: return 190;
+    case MLKEYCODE_ALT_LEFT: return 18;
+    case MLKEYCODE_ALT_RIGHT: return 18;
+    case MLKEYCODE_SHIFT_LEFT: return 16;
+    case MLKEYCODE_SHIFT_RIGHT: return 16;
+    case MLKEYCODE_TAB: return 9;
+    case MLKEYCODE_SPACE: return 32;
     // MLKEYCODE_SYM                           = 63,
     // MLKEYCODE_EXPLORER                      = 64,
     // MLKEYCODE_ENVELOPE                      = 65,
-    MLKEYCODE_ENTER: return 13;
-    MLKEYCODE_DEL: return 8;
-    MLKEYCODE_GRAVE: return 192;
-    MLKEYCODE_MINUS: return 189;
-    MLKEYCODE_EQUALS: return 187;
-    MLKEYCODE_LEFT_BRACKET: return 57;
-    MLKEYCODE_RIGHT_BRACKET: return 48;
-    MLKEYCODE_BACKSLASH: return 220;
-    MLKEYCODE_SEMICOLON: return 186;
-    MLKEYCODE_APOSTROPHE: return 222;
-    MLKEYCODE_SLASH: return 191;
-    MLKEYCODE_AT: return 50;
+    case MLKEYCODE_ENTER: return 13;
+    case MLKEYCODE_DEL: return 8;
+    case MLKEYCODE_GRAVE: return 192;
+    case MLKEYCODE_MINUS: return 189;
+    case MLKEYCODE_EQUALS: return 187;
+    case MLKEYCODE_LEFT_BRACKET: return 57;
+    case MLKEYCODE_RIGHT_BRACKET: return 48;
+    case MLKEYCODE_BACKSLASH: return 220;
+    case MLKEYCODE_SEMICOLON: return 186;
+    case MLKEYCODE_APOSTROPHE: return 222;
+    case MLKEYCODE_SLASH: return 191;
+    case MLKEYCODE_AT: return 50;
     /* MLKEYCODE_NUM                           = 78,
     MLKEYCODE_HEADSETHOOK                   = 79,
     MLKEYCODE_FOCUS                         = 80,
@@ -2122,8 +2122,8 @@ inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
     MLKEYCODE_MEDIA_REWIND                  = 89,
     MLKEYCODE_MEDIA_FAST_FORWARD            = 90,
     MLKEYCODE_MUTE                          = 91, */
-    MLKEYCODE_PAGE_UP: return 33;
-    MLKEYCODE_PAGE_DOWN: return 34;
+    case MLKEYCODE_PAGE_UP: return 33;
+    case MLKEYCODE_PAGE_DOWN: return 34;
     /* MLKEYCODE_PICTSYMBOLS                   = 94,
     MLKEYCODE_SWITCH_CHARSET                = 95,
     MLKEYCODE_BUTTON_A                      = 96,
@@ -2141,38 +2141,38 @@ inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
     MLKEYCODE_BUTTON_START                  = 108,
     MLKEYCODE_BUTTON_SELECT                 = 109,
     MLKEYCODE_BUTTON_MODE                   = 110, */
-    MLKEYCODE_ESCAPE: return 27;
-    MLKEYCODE_FORWARD_DEL: return 46;
-    MLKEYCODE_CTRL_LEFT: return 17;
-    MLKEYCODE_CTRL_RIGHT: return 17;
-    MLKEYCODE_CAPS_LOCK: return 20;
-    MLKEYCODE_SCROLL_LOCK: return 145;
-    MLKEYCODE_META_LEFT: return 91;
-    MLKEYCODE_META_RIGHT: return 91;
+    case MLKEYCODE_ESCAPE: return 27;
+    case MLKEYCODE_FORWARD_DEL: return 46;
+    case MLKEYCODE_CTRL_LEFT: return 17;
+    case MLKEYCODE_CTRL_RIGHT: return 17;
+    case MLKEYCODE_CAPS_LOCK: return 20;
+    case MLKEYCODE_SCROLL_LOCK: return 145;
+    case MLKEYCODE_META_LEFT: return 91;
+    case MLKEYCODE_META_RIGHT: return 91;
     // MLKEYCODE_FUNCTION                      = 119,
     // MLKEYCODE_SYSRQ                         = 120,
-    MLKEYCODE_BREAK: return 19;
-    MLKEYCODE_MOVE_HOME: return 36;
-    MLKEYCODE_MOVE_END: return 35;
-    MLKEYCODE_INSERT: return 45;
+    case MLKEYCODE_BREAK: return 19;
+    case MLKEYCODE_MOVE_HOME: return 36;
+    case MLKEYCODE_MOVE_END: return 35;
+    case MLKEYCODE_INSERT: return 45;
     /* MLKEYCODE_FORWARD                       = 125,
     MLKEYCODE_MEDIA_PLAY                    = 126,
     MLKEYCODE_MEDIA_PAUSE                   = 127,
     MLKEYCODE_MEDIA_CLOSE                   = 128,
     MLKEYCODE_MEDIA_EJECT                   = 129,
     MLKEYCODE_MEDIA_RECORD                  = 130, */
-    MLKEYCODE_F1: return 112;
-    MLKEYCODE_F2: return 113;
-    MLKEYCODE_F3: return 114;
-    MLKEYCODE_F4: return 115;
-    MLKEYCODE_F5: return 116;
-    MLKEYCODE_F6: return 117;
-    MLKEYCODE_F7: return 118;
-    MLKEYCODE_F8: return 119;
-    MLKEYCODE_F9: return 120;
-    MLKEYCODE_F10: return 121;
-    MLKEYCODE_F11: return 122;
-    MLKEYCODE_F12: return 123;
+    case MLKEYCODE_F1: return 112;
+    case MLKEYCODE_F2: return 113;
+    case MLKEYCODE_F3: return 114;
+    case MLKEYCODE_F4: return 115;
+    case MLKEYCODE_F5: return 116;
+    case MLKEYCODE_F6: return 117;
+    case MLKEYCODE_F7: return 118;
+    case MLKEYCODE_F8: return 119;
+    case MLKEYCODE_F9: return 120;
+    case MLKEYCODE_F10: return 121;
+    case MLKEYCODE_F11: return 122;
+    case MLKEYCODE_F12: return 123;
     /* MLKEYCODE_NUM_LOCK                      = 143,
     MLKEYCODE_NUMPAD_0                      = 144,
     MLKEYCODE_NUMPAD_1                      = 145,
@@ -2298,10 +2298,10 @@ inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
     MLKEYCODE_STEM_1                        = 265,
     MLKEYCODE_STEM_2                        = 266,
     MLKEYCODE_STEM_3                        = 267, */
-    MLKEYCODE_DPAD_UP_LEFT: return 38;
-    MLKEYCODE_DPAD_DOWN_LEFT: return 40;
-    MLKEYCODE_DPAD_UP_RIGHT: return 38;
-    MLKEYCODE_DPAD_DOWN_RIGHT: return 40;
+    case MLKEYCODE_DPAD_UP_LEFT: return 38;
+    case MLKEYCODE_DPAD_DOWN_LEFT: return 40;
+    case MLKEYCODE_DPAD_UP_RIGHT: return 38;
+    case MLKEYCODE_DPAD_DOWN_RIGHT: return 40;
     /* MLKEYCODE_MEDIA_SKIP_FORWARD            = 272,
     MLKEYCODE_MEDIA_SKIP_BACKWARD           = 273,
     MLKEYCODE_MEDIA_STEP_FORWARD            = 274,
@@ -2311,6 +2311,7 @@ inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
     MLKEYCODE_COPY                          = 278,
     MLKEYCODE_PASTE                         = 279,
     MLKEYCODE_COUNT, */
+    default: return 0;
   }
 }
 
@@ -2326,7 +2327,7 @@ void RunKeyboardEventsInMainThread(uv_async_t *handle) {
     Local<Value> typeArg;
     switch (keyboardEvent.type) {
       case KeyboardEventType::CHAR: {
-        typeArg = JS_STR("keypresss");
+        typeArg = JS_STR("keypress");
         break;
       }
       case KeyboardEventType::KEY_DOWN: {

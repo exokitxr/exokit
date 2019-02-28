@@ -1,12 +1,3 @@
-/*
- * bindings.cc
- *
- *  Created on: Dec 13, 2011
- *      Author: ngk437
- */
-
-#include "bindings.h"
-
 #include "bindings.h"
 
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl() {
