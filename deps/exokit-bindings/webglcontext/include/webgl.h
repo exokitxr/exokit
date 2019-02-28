@@ -708,6 +708,14 @@ public:
   static NAN_METHOD(GetTransformFeedbackVarying);
   static NAN_METHOD(PauseTransformFeedback);
   static NAN_METHOD(ResumeTransformFeedback);
+  
+  static NAN_METHOD(CreateSampler);
+  static NAN_METHOD(DeleteSampler);
+  static NAN_METHOD(IsSampler);
+  static NAN_METHOD(BindSampler);
+  static NAN_METHOD(SamplerParameteri);
+  static NAN_METHOD(SamplerParameterf);
+  static NAN_METHOD(GetSamplerParameter);
 };
 
 #endif

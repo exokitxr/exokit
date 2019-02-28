@@ -5129,6 +5129,14 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGL2RenderingContext::Initia
   Nan::SetMethod(proto, "pauseTransformFeedback", glCallWrap<PauseTransformFeedback>);
   Nan::SetMethod(proto, "resumeTransformFeedback", glCallWrap<ResumeTransformFeedback>);
 
+  Nan::SetMethod(proto, "createSampler", glCallWrap<CreateSampler>);
+  Nan::SetMethod(proto, "deleteSampler", glCallWrap<DeleteSampler>);
+  Nan::SetMethod(proto, "isSampler", glCallWrap<IsSampler>);
+  Nan::SetMethod(proto, "bindSampler", glCallWrap<BindSampler>);
+  Nan::SetMethod(proto, "samplerParameteri", glCallWrap<SamplerParameteri>);
+  Nan::SetMethod(proto, "samplerParameterf", glCallWrap<SamplerParameterf>);
+  Nan::SetMethod(proto, "getSamplerParameter", glCallWrap<GetSamplerParameter>);
+
   Local<Function> ctorFn = ctor->GetFunction();
   setGlConstants(ctorFn);
 
@@ -5305,6 +5313,80 @@ NAN_METHOD(WebGL2RenderingContext::PauseTransformFeedback) {
 
 NAN_METHOD(WebGL2RenderingContext::ResumeTransformFeedback) {
   glResumeTransformFeedback();  
+}
+
+NAN_METHOD(WebGL2RenderingContext::CreateSampler) {
+  GLuint samplerId;
+  glGenSamplers(1, &samplerId);
+
+  Local<Object> samplerObject = Nan::New<Object>();
+  samplerObject->Set(JS_STR("id"), JS_INT(samplerId));
+  info.GetReturnValue().Set(samplerObject);
+}
+
+NAN_METHOD(WebGL2RenderingContext::DeleteSampler) {
+  GLuint sampler = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glDeleteSamplers(1, &sampler);
+}
+
+NAN_METHOD(WebGL2RenderingContext::IsSampler) {
+  if (info[0]->IsObject()) {
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+    bool ret = glIsSampler(arg);
+
+    info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }
+}
+
+NAN_METHOD(WebGL2RenderingContext::BindSampler) {
+  GLuint unit = info[0]->Uint32Value();
+  GLuint sampler = info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+
+  glBindSampler(unit, sampler);
+}
+
+NAN_METHOD(WebGL2RenderingContext::SamplerParameteri) {
+  GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLenum pname = info[1]->Int32Value();
+  GLint param =  info[2]->Int32Value();
+    
+  glSamplerParameteri(sampler, pname, param);
+}
+
+NAN_METHOD(WebGL2RenderingContext::SamplerParameterf) {
+  GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLenum pname = info[1]->Int32Value();
+  GLfloat param = info[2]->NumberValue();
+    
+  glSamplerParameterf(sampler, pname, param);
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetSamplerParameter) {
+  GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLenum pname = info[1]->Int32Value();
+  
+  switch (pname) {
+    case GL_TEXTURE_MIN_LOD:
+    case GL_TEXTURE_MAX_LOD:
+      GLfloat fValue;
+      glGetSamplerParameterfv(sampler, pname, &fValue);
+      info.GetReturnValue().Set(JS_FLOAT(fValue));
+      break;
+    case GL_TEXTURE_COMPARE_FUNC:
+    case GL_TEXTURE_COMPARE_MODE:
+    case GL_TEXTURE_MAG_FILTER:
+    case GL_TEXTURE_MIN_FILTER:
+    case GL_TEXTURE_WRAP_R:
+    case GL_TEXTURE_WRAP_S:
+    case GL_TEXTURE_WRAP_T:
+      GLint iValue;
+      glGetSamplerParameteriv(sampler, pname, &iValue);
+      info.GetReturnValue().Set(JS_INT(iValue));
+      break;
+  }
 }
 
 /* struct GLObj {
