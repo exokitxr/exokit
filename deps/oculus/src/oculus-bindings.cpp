@@ -30,6 +30,9 @@ NAN_METHOD(Oculus_Init)
     return;
   }
 
+  v8::Local<v8::Object> s = v8::Object::New(v8::Isolate::GetCurrent());
+  OVRSession::Init(s);
+
   auto sessionResult = OVRSession::NewInstance(session);
   info.GetReturnValue().Set(sessionResult);
 }

@@ -2,6 +2,7 @@
 #include <ovrsession.h>
 #include <node.h>
 #include <v8.h>
+#include <webgl.h>
 
 using namespace v8;
 
@@ -15,6 +16,8 @@ NAN_MODULE_INIT(OVRSession::Init)
 
   // Declare the stored number of fields (just the wrapped C++ object).
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
+
+  Nan::SetPrototypeMethod(tpl, "SetupSwapChain", SetupSwapChain);
 
   // Set a static constructor function to reference the `New` function template.
   constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
@@ -60,13 +63,11 @@ NAN_METHOD(OVRSession::New)
 
 NAN_METHOD(OVRSession::SetupSwapChain)
 {
-  auto session = static_cast<ovrSession*>(
-    Local<External>::Cast(info[0])->Value());
-
+  OVRSession* session = ObjectWrap::Unwrap<OVRSession>(info.Holder());
   // Configure Stereo settings.
-  ovrHmdDesc hmdDesc = ovr_GetHmdDesc(*session);
-  ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(*session, ovrEye_Left, hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
-  ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(*session, ovrEye_Right, hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
+  ovrHmdDesc hmdDesc = ovr_GetHmdDesc(*session->self_);
+  ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(*session->self_, ovrEye_Left, hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
+  ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(*session->self_, ovrEye_Right, hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
   ovrSizei bufferSize;
   bufferSize.w  = recommenedTex0Size.w + recommenedTex1Size.w;
   bufferSize.h = std::max(recommenedTex0Size.h, recommenedTex1Size.h);
@@ -83,10 +84,14 @@ NAN_METHOD(OVRSession::SetupSwapChain)
   desc.SampleCount = 1;
   desc.StaticImage = ovrFalse;
 
-  if (ovr_CreateTextureSwapChainGL(*session, &desc, &textureSwapChain) == ovrSuccess)
+  WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+
+  ovrResult result = ovr_CreateTextureSwapChainGL(*session->self_, &desc, &textureSwapChain);
+  info.GetReturnValue().Set(result);
+  if (OVR_SUCCESS(result))
   {
-      unsigned int texId;
-      ovr_GetTextureSwapChainBufferGL(*session, textureSwapChain, 0, &texId);
-      info.GetReturnValue().Set(texId);
+    unsigned int texId;
+    ovr_GetTextureSwapChainBufferGL(*session->self_, textureSwapChain, 0, &texId);
+    info.GetReturnValue().Set(texId);
   }
 }

@@ -476,7 +476,9 @@ if (nativeBindings.oculusVr) {
         const session = vrPresentState.session || nativeBindings.oculusVr.Oculus_Init();
         const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
-        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        const kk = session.SetupSwapChain(contexts[0]);
+        console.log("CACA " + kk);
+        const {width: halfWidth, height} = session.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
         xrState.renderWidth[0] = halfWidth;
         xrState.renderHeight[0] = height;
