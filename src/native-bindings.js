@@ -970,6 +970,8 @@ if (bindings.nativeMl) {
         const {mlPresentState} = GlobalContext;
 
         if (!xrState.isPresenting[0]) {
+          const windowHandle = context.getWindowHandle();
+          
           mlPresentState.mlContext = new bindings.nativeMl();
           mlPresentState.mlContext.Present(windowHandle, context);
 
@@ -1003,11 +1005,6 @@ if (bindings.nativeMl) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
 
-        xrState.isPresenting[0] = 1;
-        const halfWidth = width/2;
-        xrState.renderWidth[0] = halfWidth;
-        xrState.renderHeight[0] = height;
-
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
         const {mlPresentState} = GlobalContext;
@@ -1024,6 +1021,11 @@ if (bindings.nativeMl) {
           tex,
           depthTex,
         };
+        
+        xrState.isPresenting[0] = 1;
+        const halfWidth = width/2;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
 
         mlPresentState.mlGlContextId = context.id;
         mlPresentState.mlFbo = fbo;
