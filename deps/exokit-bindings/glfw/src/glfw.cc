@@ -1039,14 +1039,25 @@ NAN_METHOD(RestoreWindow) {
   glfwRestoreWindow(window);
 }
 
-NAN_METHOD(Show) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwShowWindow(window);
+void SetVisibility(NATIVEwindow *window, bool visible) {
+  if (visible) {
+    glfwShowWindow(window);
+  } else {
+    glfwHideWindow(window);
+  }
 }
-
-NAN_METHOD(Hide) {
+uintptr_t SetVisibilityFn(unsigned char *argsBuffer) {
+  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
+  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
+  bool visible = (bool)(uint32_t)argsBufferArray[2];
+  SetVisibility(window, visible);
+  return 0;
+}
+NAN_METHOD(SetVisibility) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwHideWindow(window);
+  bool visible = info[1]->BooleanValue();
+  
+  SetVisibility(window, visible);
 }
 
 NAN_METHOD(IsVisible) {
@@ -1070,26 +1081,36 @@ const GLFWvidmode *getBestVidMode(NATIVEwindow *window, GLFWmonitor *monitor) {
   return bestVidMode;
 }
 
-NAN_METHOD(SetFullscreen) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+bool SetFullscreen(NATIVEwindow *window, bool enabled) {
   GLFWmonitor *monitor = getMonitor();
 
-  const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
-  if (vidMode != nullptr) {
-    glfwSetWindowMonitor(window, monitor, 0, 0, vidMode->width, vidMode->height, 0);
+  if (enabled) {
+    const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
+    if (vidMode != nullptr) {
+      glfwSetWindowMonitor(window, monitor, 0, 0, vidMode->width, vidMode->height, 0);
 
-    info.GetReturnValue().Set(JS_BOOL(true));
+      return true;
+    } else {
+      return false;
+    }
   } else {
-    info.GetReturnValue().Set(JS_BOOL(false));
+    const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
+    glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
+    return true;
   }
 }
-
-NAN_METHOD(ExitFullscreen) {
+uintptr_t SetFullscreenFn(unsigned char *argsBuffer) {
+  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
+  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
+  bool enabled = (bool)(uint32_t)(argsBuffer[2]);
+  bool result = SetFullscreen(window, enabled);
+  return result ? 1 : 0;
+}
+NAN_METHOD(SetFullscreen) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  GLFWmonitor *monitor = getMonitor();
-
-  const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
-  glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
+  bool enabled = info[1]->BooleanValue();
+  bool result = SetFullscreen(window, enabled);
+  info.GetReturnValue().Set(JS_BOOL(result));
 }
 
 /* NAN_METHOD(WindowShouldClose) {
@@ -1200,7 +1221,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
       glfwWindowHint(GLFW_CONTEXT_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_NONE);
 
       glfwSetErrorCallback([](int err, const char *errString) {
-        fprintf(stderr, "%s", errString);
+        fprintf(stderr, "GLFW error: %d: %s", err, errString);
       });
 
       glfwInitialized = true;
@@ -1218,6 +1239,9 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
     abort();
   }
   return window;
+}
+void DestroyNativeWindow(NATIVEwindow *window) {
+  glfwDestroyWindow(window);
 }
 
 NAN_METHOD(InitWindow3D) {
@@ -1291,53 +1315,75 @@ NAN_METHOD(InitWindow2D) {
   info.GetReturnValue().Set(result);
 }
 
+NATIVEwindow *CreateWindowHandle(unsigned int  width, unsigned int  height, bool initialVisible, NATIVEwindow *sharedWindow) {
+  exout << "create window handle 1 " << width << " " << height << " " << initialVisible << " " << sharedWindow << std::endl;
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+  exout << "create window handle 2 " << (void *)windowHandle << std::endl;
+
+  if (windowHandle) {
+    SetCurrentWindowContext(windowHandle);
+
+    GLenum err = glewInit();
+    if (!err) {
+      glfwSwapInterval(0);
+      
+      glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+      // window callbacks
+      glfwSetWindowPosCallback(windowHandle, windowPosCB);
+      glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
+      glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
+      glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
+      glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
+      glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
+      glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
+      glfwSetDropCallback(windowHandle, windowDropCB);
+
+      // input callbacks
+      glfwSetKeyCallback(windowHandle, keyCB);
+      glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
+      glfwSetCursorPosCallback(windowHandle, cursorPosCB);
+      glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
+      glfwSetScrollCallback(windowHandle, scrollCB);
+    } else {
+      /* Problem: glewInit failed, something is seriously wrong. */
+      exerr << "Can't init GLEW (glew error " << (const char *)glewGetErrorString(err) << ")" << std::endl;
+      
+      DestroyNativeWindow(windowHandle);
+      
+      windowHandle = nullptr;
+    }
+    
+    SetCurrentWindowContext(nullptr);
+  }
+    
+  return windowHandle;
+}
+uintptr_t CreateWindowHandleFn(unsigned char *argsBuffer) {
+  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
+  unsigned int width = argsBufferArray[0];
+  unsigned int height = argsBufferArray[1];
+  bool initialVisible = (bool)(uint32_t)argsBufferArray[2];
+  NATIVEwindow *sharedWindow = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[3]) << 32) | (uintptr_t)(argsBufferArray[4]));
+  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible, sharedWindow);
+  return (uintptr_t)windowHandle;
+}
 NAN_METHOD(CreateWindowHandle) {
   unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
   unsigned int height = info[1]->IsNumber() ?  TO_UINT32(info[1]) : 1;
   bool initialVisible = TO_BOOL(info[2]);
   NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
 
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
-  if (!GetCurrentWindowContext()) {
-    SetCurrentWindowContext(windowHandle);
-  }
-
-  GLenum err = glewInit();
-  if (!err) {
-    glfwSwapInterval(0);
-    
-    glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-    // window callbacks
-    glfwSetWindowPosCallback(windowHandle, windowPosCB);
-    glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
-    glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
-    glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
-    glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
-    glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
-    glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
-    glfwSetDropCallback(windowHandle, windowDropCB);
-
-    // input callbacks
-    glfwSetKeyCallback(windowHandle, keyCB);
-    glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
-    glfwSetCursorPosCallback(windowHandle, cursorPosCB);
-    glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
-    glfwSetScrollCallback(windowHandle, scrollCB);
-    
+  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible, sharedWindow);
+  if (windowHandle) {
     info.GetReturnValue().Set(pointerToArray(windowHandle));
   } else {
-    /* Problem: glewInit failed, something is seriously wrong. */
-    std::string msg = "Can't init GLEW (glew error ";
-    msg += (const char *)glewGetErrorString(err);
-    msg += ")";
-    Nan::ThrowError(msg.c_str());
+    info.GetReturnValue().Set(Nan::Null());
   }
 }
 
-NAN_METHOD(Destroy) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwDestroyWindow(window);
+void DestroyWindowHandle(NATIVEwindow *window) {
+  DestroyNativeWindow(window);
   
   {
     std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
@@ -1347,6 +1393,16 @@ NAN_METHOD(Destroy) {
     eventHandlerMap2.erase(handler->async);
     delete handler;
   }
+}
+uintptr_t DestroyWindowHandleFn(unsigned char *argsBuffer) {
+  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
+  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
+  DestroyWindowHandle(window);
+  return 0;
+}
+NAN_METHOD(DestroyWindowHandle) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  DestroyWindowHandle(window);
 }
 
 NAN_METHOD(SetEventHandler) {
@@ -1371,8 +1427,12 @@ NAN_METHOD(SetEventHandler) {
   }
 }
 
-NAN_METHOD(PollEvents) {
+uint32_t PollEventsFn(unsigned char *argsBuffer) {
   glfwPollEvents();
+  return 0;
+}
+NAN_METHOD(PollEvents) {
+  PollEventsFn(nullptr);
 }
 
 NAN_METHOD(SwapBuffers) {
@@ -1394,9 +1454,8 @@ NAN_METHOD(GetRefreshRate) {
   info.GetReturnValue().Set(refreshRate);
 }
 
-NAN_METHOD(SetCursorMode) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  if (TO_BOOL(info[1])) {
+void SetCursorMode(NATIVEwindow *window, bool enabled) {
+  if (enabled) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   } else {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -1411,6 +1470,19 @@ NAN_METHOD(SetCursorMode) {
     lastX = centerX;
     lastY = centerY;
   }
+}
+uintptr_t SetCursorModeFn(unsigned char *argsBuffer) {
+  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
+  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
+  bool enabled = (bool)(uint32_t)(argsBufferArray[2]);
+  SetCursorMode(window, enabled);
+  return 0;
+}
+NAN_METHOD(SetCursorMode) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  bool enabled = info[1]->BooleanValue();
+
+  SetCursorMode(window, enabled);
 }
 
 NAN_METHOD(SetCursorPosition) {
@@ -1429,7 +1501,6 @@ NAN_METHOD(GetClipboard) {
     info.GetReturnValue().Set(Nan::Null());
   }
 }
-
 
 NAN_METHOD(SetClipboard) {
   if (info[0]->IsString()) {
@@ -1813,15 +1884,31 @@ Local<Object> makeWindow() {
 
   Nan::SetMethod(target, "initWindow3D", glfw::InitWindow3D);
   Nan::SetMethod(target, "initWindow2D", glfw::InitWindow2D);
-  Nan::SetMethod(target, "createWindowHandle", glfw::CreateWindowHandle);
-  Nan::SetMethod(target, "destroy", glfw::Destroy);
-  Nan::SetMethod(target, "show", glfw::Show);
-  Nan::SetMethod(target, "hide", glfw::Hide);
+
+  Local<String> functionAddressString = JS_STR("functionAddress");
+  {
+    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::CreateWindowHandle)->GetFunction();
+    fn->Set(functionAddressString, pointerToArray(glfw::CreateWindowHandleFn));
+    target->Set(JS_STR("createWindowHandle"), fn);
+  }
+  {
+    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::DestroyWindowHandle)->GetFunction();
+    fn->Set(functionAddressString, pointerToArray(glfw::DestroyWindowHandleFn));
+    target->Set(JS_STR("destroyWindowHandle"), fn);
+  }
+  {
+    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetVisibility)->GetFunction();
+    fn->Set(functionAddressString, pointerToArray(glfw::SetVisibilityFn));
+    target->Set(JS_STR("setVisibility"), fn);
+  }
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
-  Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
+  {
+    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetFullscreen)->GetFunction();
+    fn->Set(functionAddressString, pointerToArray(glfw::SetFullscreenFn));
+    target->Set(JS_STR("setFullscreen"), fn);
+  }
   Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
   Nan::SetMethod(target, "getMonitors", glfw::GetMonitors);
-  Nan::SetMethod(target, "exitFullscreen", glfw::ExitFullscreen);
   Nan::SetMethod(target, "setWindowTitle", glfw::SetWindowTitle);
   Nan::SetMethod(target, "getWindowSize", glfw::GetWindowSize);
   Nan::SetMethod(target, "setWindowSize", glfw::SetWindowSize);
@@ -1831,10 +1918,18 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "iconifyWindow", glfw::IconifyWindow);
   Nan::SetMethod(target, "restoreWindow", glfw::RestoreWindow);
   Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
-  Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
+  {
+    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::PollEvents)->GetFunction();
+    fn->Set(functionAddressString, pointerToArray(glfw::PollEventsFn));
+    target->Set(JS_STR("pollEvents"), fn);
+  }
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", glfw::GetRefreshRate);
-  Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
+  {
+    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetCursorMode)->GetFunction();
+    fn->Set(functionAddressString, pointerToArray(glfw::SetCursorModeFn));
+    target->Set(JS_STR("setCursorMode"), fn);
+  }
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
   Nan::SetMethod(target, "getClipboard", glfw::GetClipboard);
   Nan::SetMethod(target, "setClipboard", glfw::SetClipboard);
