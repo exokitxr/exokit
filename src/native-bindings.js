@@ -87,7 +87,6 @@ const _onGl3DConstruct = (gl, canvas) => {
         argsBuffer[2] = (visible && !hidden) ? 1 : 0;
         argsBuffer[3] = sharedWindowHandle[0];
         argsBuffer[4] = sharedWindowHandle[1];
-        console.log('run sync top 1', argsBuffer);
         const windowHandle = global.runSyncTop(nativeWindow.createWindowHandle.functionAddress, argsBuffer);
         // XXX also set title
         /* const windowHandle = global.runSyncTop(`(() => {
@@ -426,7 +425,6 @@ const _onGl2DConstruct = (ctx, canvas) => {
         argsBuffer[2] = 0;
         argsBuffer[3] = sharedWindowHandle[0];
         argsBuffer[4] = sharedWindowHandle[1];
-        console.log('run sync top 2', argsBuffer);
         const windowHandle = global.runSyncTop(nativeWindow.createWindowHandle.functionAddress, argsBuffer);
         /* const windowHandle = global.runSyncTop(`(() => {
           const {
