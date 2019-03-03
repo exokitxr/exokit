@@ -168,8 +168,21 @@ NAN_METHOD(RestoreWindow) {
   // nothing
 }
 
-NAN_METHOD(SetVisibility) {
+void SetVisibility(NATIVEwindow *window, bool visible) {
   // nothing
+}
+uintptr_t SetVisibilityFn(unsigned char *argsBuffer) {
+  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
+  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
+  bool visible = (bool)(uint32_t)argsBufferArray[2];
+  SetVisibility(window, visible);
+  return 0;
+}
+NAN_METHOD(SetVisibility) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  bool visible = info[1]->BooleanValue();
+  
+  SetVisibility(window, visible);
 }
 
 NAN_METHOD(IsVisible) {
@@ -333,7 +346,6 @@ NAN_METHOD(CreateWindowHandle) {
 }
 
 void DestroyWindowHandle(NATIVEwindow *window) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   eglDestroyContext(window->display, window->context);
   delete window;
 }
