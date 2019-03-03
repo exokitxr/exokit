@@ -5,6 +5,7 @@ const parse5 = require('parse5');
 const DOM = require('./DOM');
 const {Event, EventTarget} = require('./Event');
 const GlobalContext = require('./GlobalContext');
+const nativeBindings = require('./native-bindings');
 const symbols = require('./symbols');
 const utils = require('./utils');
 
