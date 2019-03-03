@@ -10,7 +10,7 @@ const {nativeWindow} = exokitNode;
 
 const nativeWorker = require('worker-native');
 nativeWindow.setEventLoop(nativeWorker.getEventLoop());
-if (typeof requireNative === 'undefined') {
+if (isMainThread) {
   nativeWorker.setNativeRequire('exokit.node', exokitNode.initFunctionAddress);
 }
 
