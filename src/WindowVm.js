@@ -4,15 +4,18 @@ const {nativeWindow} = require('./native-bindings');
 const GlobalContext = require('./GlobalContext');
 
 const _makeWindow = (options = {}) => {
+  const id = Atomics.add(GlobalContext.xrState.id, 0, 1) + 1;
   const window = nativeWorker.make({
     initModule: path.join(__dirname, 'Window.js'),
     args: {
       options,
+      id,
       args: GlobalContext.args,
       version: GlobalContext.version,
       xrState: GlobalContext.xrState,
     },
   });
+  window.id = id;
   
   window.tickAnimationFrame = type => window.runAsync(`window.tickAnimationFrame("${type}");`);
   window.on('resize', ({width, height}) => {
