@@ -323,9 +323,9 @@ uintptr_t CreateWindowHandleFn(unsigned char *argsBuffer) {
   return (uintptr_t)windowHandle;
 }
 NAN_METHOD(CreateWindowHandle) {
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
-  bool initialVisible = info[2]->BooleanValue();
+  unsigned int width = info[0]->IsNumber() ? info[0]->Uint32Value() : 1;
+  unsigned int height = info[1]->IsNumber() ? info[1]->Uint32Value() : 1;
+  bool initialVisible = info[2]->IsBoolean() ? info[2]->BooleanValue() : false;
   NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
   
   NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible, sharedWindow);
