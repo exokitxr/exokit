@@ -131,6 +131,9 @@ const windows = [];
 GlobalContext.windows = windows;
 // const contexts = [];
 
+const topRequestContext = nativeBindings.nativeWorker.makeRequestContext();
+topRequestContext.makeThread();
+nativeBindings.nativeWorker.setTopRequestContext(topRequestContext);
 const xrState = (() => {
   const _makeSab = size => {
     const sab = new SharedArrayBuffer(size);
@@ -226,33 +229,6 @@ const xrState = (() => {
 })();
 GlobalContext.xrState = xrState;
 GlobalContext.fakeVrDisplayEnabled = false; // XXX globalize this
-
-const topRequestContext = nativeBindings.nativeWorker.makeRequestContext();
-topRequestContext.setSyncHandler(m => {
-  switch (m.method) {
-    case 'runSync': {
-      let result, err;
-      try {
-        global._ = m.arg;
-        result = eval(m.jsString);
-      } catch(e) {
-        err = e;
-      } finally {
-        global._ = undefined;
-      }
-      
-      if (!err) {
-        return result;
-      } else {
-        throw err;
-      }
-    }
-    default: {
-      throw new Error(`top request context got unknown message type '${m.method}'`);
-    }
-  }
-});
-nativeBindings.nativeWorker.setTopRequestContext(topRequestContext);
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
