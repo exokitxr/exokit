@@ -421,23 +421,23 @@ Local<Object> makeWindow() {
   Local<String> functionAddressString = JS_STR("functionAddress");
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(egl::CreateWindowHandle)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(egl::CreateWindowHandleFn));
+    fn->Set(functionAddressString, pointerToArray((void *)egl::CreateWindowHandleFn));
     target->Set(JS_STR("createWindowHandle"), fn);
   }
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(egl::DestroyWindowHandle)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(egl::DestroyWindowHandleFn));
+    fn->Set(functionAddressString, pointerToArray((void *)egl::DestroyWindowHandleFn));
     target->Set(JS_STR("destroyWindowHandle"), fn);
   }
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(egl::SetVisibility)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(egl::SetVisibilityFn));
+    fn->Set(functionAddressString, pointerToArray((void *)egl::SetVisibilityFn));
     target->Set(JS_STR("setVisibility"), fn);
   }
   Nan::SetMethod(target, "isVisible", egl::IsVisible);
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(egl::SetFullscreen)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(egl::SetFullscreenFn));
+    fn->Set(functionAddressString, pointerToArray((void *)egl::SetFullscreenFn));
     target->Set(JS_STR("setFullscreen"), fn);
   }
   Nan::SetMethod(target, "setWindowTitle", egl::SetWindowTitle);
@@ -451,14 +451,14 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setEventHandler", egl::SetEventHandler);
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(egl::PollEvents)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(egl::PollEventsFn));
+    fn->Set(functionAddressString, pointerToArray((void *)egl::PollEventsFn));
     target->Set(JS_STR("pollEvents"), fn);
   }
   Nan::SetMethod(target, "swapBuffers", egl::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", egl::GetRefreshRate);
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(egl::SetCursorMode)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(egl::SetCursorModeFn));
+    fn->Set(functionAddressString, pointerToArray((void *)egl::SetCursorModeFn));
     target->Set(JS_STR("setCursorMode"), fn);
   }
   Nan::SetMethod(target, "setCursorPosition", egl::SetCursorPosition);
