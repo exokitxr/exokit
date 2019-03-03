@@ -4,8 +4,8 @@
 
 namespace egl {
 
-constexpr EGLint glMajorVersion = 3;
-constexpr EGLint glMinorVersion = 2;
+constexpr EGLint glMajorVersion = 4;
+constexpr EGLint glMinorVersion = 5;
 
 bool initialized = false;
 thread_local NATIVEwindow *currentWindow = nullptr;
