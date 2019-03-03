@@ -787,10 +787,9 @@ if (bindings.nativeOpenVR) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
+      const {xrState} = GlobalContext;
 
       const presentSpec = (() => {
-        const {xrState} = GlobalContext;
-        
         if (!xrState.isPresenting[0]) {
           const vrContext = bindings.nativeVr.getContext();
           const system = bindings.nativeVr.VR_Init(bindings.nativeVr.EVRApplicationType.Scene);
@@ -964,6 +963,8 @@ if (bindings.nativeMl) {
       if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
         context = canvas.getContext('webgl');
       }
+      
+      const {xrState} = GlobalContext;
       
       const presentSpec = (() => {
         const {mlPresentState} = GlobalContext;
