@@ -2,25 +2,21 @@ const path = require('path');
 const {isMainThread} = require('worker_threads');
 const {process} = global;
 
-const symbols = require('./symbols');
-
-const exokitNode = (() => {
-  if (typeof requireNative === 'undefined') {
-    return require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
-  } else {
-    return requireNative('exokit.node');
-  }
-})();
-
+const exokitNode = isMainThread ?
+  require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'))
+:
+  requireNative('exokit.node');
 const {nativeWindow} = exokitNode;
-const webGlToOpenGl = require('webgl-to-opengl');
-const GlobalContext = require('./GlobalContext');
 
 const nativeWorker = require('worker-native');
 nativeWindow.setEventLoop(nativeWorker.getEventLoop());
 if (typeof requireNative === 'undefined') {
   nativeWorker.setNativeRequire('exokit.node', exokitNode.initFunctionAddress);
 }
+
+const webGlToOpenGl = require('webgl-to-opengl');
+const symbols = require('./symbols');
+const GlobalContext = require('./GlobalContext');
 
 const bindings = {};
 for (const k in exokitNode) {
