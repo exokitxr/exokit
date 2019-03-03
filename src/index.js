@@ -147,12 +147,17 @@ const xrState = (() => {
   const _makeTypedArray = _makeSab(1024);
 
   const result = {};
-  
-  result.windowHandle = _makeTypedArray(Uint32Array, 2);
-  const windowHandle = nativeBindings.nativeWindow.createWindowHandle();
-  result.windowHandle.set(windowHandle);
-  nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
-  
+  {
+    result.windowHandle = _makeTypedArray(Uint32Array, 2);
+    const argsBuffer = new Uint32Array(2 + 1 + 2);
+    let index = 0;
+    argsBuffer[index++] = 1; // width
+    argsBuffer[index++] = 1; // height
+    argsBuffer[index++] = 0; // visible
+    argsBuffer[index++] = 0; argsBuffer[index++] = 0; // shared window handle
+    const windowHandle = topRequestContext.runSyncTop(nativeBindings.nativeWindow.createWindowHandle.functionAddress, argsBuffer);
+    result.windowHandle.set(windowHandle);
+  }
   result.isPresenting = _makeTypedArray(Uint32Array, 1);
   result.renderWidth = _makeTypedArray(Float32Array, 1);
   result.renderHeight = _makeTypedArray(Float32Array, 1);
