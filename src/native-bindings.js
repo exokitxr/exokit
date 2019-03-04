@@ -1,11 +1,20 @@
 const path = require('path');
 
+const _chdir = (dir) => {
+  try {
+    process.chdir(dir);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 const exokitNode = (() => {
   const oldCwd = process.cwd();
   const nodeModulesDir = path.resolve(path.dirname(require.resolve('native-graphics-deps')), '..');
-  process.chdir(nodeModulesDir);
+  if (!_chdir(nodeModulesDir)) return {};
   const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
-  process.chdir(oldCwd);
+  if (!_chdir(oldCwd)) return {};
   return exokitNode;
 })();
 const WindowWorker = require('window-worker');
