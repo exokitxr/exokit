@@ -207,6 +207,8 @@ NAN_METHOD(SetFullscreen) {
 }
 
 NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
+  Initialize();
+  
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
   EGLint config_attribs[] = {
@@ -418,8 +420,6 @@ NAN_METHOD(SetClipboard) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Local<Object> makeWindow() {
-  egl::Initialize();
-
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
 
