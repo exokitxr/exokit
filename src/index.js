@@ -112,6 +112,41 @@ const args = (() => {
       require: minimistArgs.require,
       headless: minimistArgs.headless,
       download: minimistArgs.download !== undefined ? (minimistArgs.download || path.join(process.cwd(), 'downloads')) : undefined,
+      help: minimistArgs.help !== undefined ? `
+    Usage
+      $ exokit [<url>] [options]
+ 
+    Options
+      --version, -v              Print version and exit
+      --url
+      --home, -h                 Boot into home environment
+      --log, -l
+      --webgl, -w
+      --xr, -x
+      --performance, --perf, -p  Enable performance profiling
+      --size, -s
+      --frame, -f
+      --minimalFrame, -m
+      --quit, -q                 Quit after loading the url
+      --blit, -b
+      --require, -r              Allow scripts to call require
+      --headless, -n
+      --download, -d             Download the url (similar to wget --mirror, but for webGL apps)
+ 
+    Examples
+      # start exokit command prompt, load and use jquery
+      $ exokit
+      [x] jq = <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+      <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+      [x] document.body.appendChild(jq)
+      <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+      [x] $.parseJSON(\`{"foo": 42}\`)
+      { foo: 42 }
+      [x] $.parseJSON(\`{"foo": 42}\`).foo
+      42
+      [x] parseInt($($.parseXML(\`<foo>99</foo>\`).firstElementChild).text())
+      99
+` : undefined,
     };
   } else {
     return {};
@@ -1872,6 +1907,10 @@ if (require.main === module) {
 
   if (args.version) {
     console.log(version);
+    process.exit(0);
+  }
+  if (args.help) {
+    console.log(args.help);
     process.exit(0);
   }
   if (args.size) {
