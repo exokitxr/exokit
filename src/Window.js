@@ -683,7 +683,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           default: throw new Error(`unknown algorithm: ${algo}`);
         }
         const hash = crypto.createHash(algo).update(bytes).digest();
-        return Promise.resolve(hash);
+        const result = new ArrayBuffer(hash.byteLength);
+        new Buffer(result).set(hash);
+        return Promise.resolve(result);
       },
     },
   };
