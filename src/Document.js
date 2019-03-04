@@ -248,6 +248,8 @@ function initDocument (document, window) {
     }
   });
 
+  document.queryCommandSupported = () => false
+
   return document;
 }
 module.exports.initDocument = initDocument;
