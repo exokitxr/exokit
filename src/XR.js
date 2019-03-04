@@ -580,7 +580,7 @@ class XRRigidTransform {
     this.matrix = new Float32Array(this._buffer, index, 16);
     index += 16 * Float32Array.BYTES_PER_ELEMENT;
 
-    this.matrix = new Float32Array(this._buffer, index, 16);
+    this.matrixInverse = new Float32Array(this._buffer, index, 16);
     index += 16 * Float32Array.BYTES_PER_ELEMENT;
   }
 
