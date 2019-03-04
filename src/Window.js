@@ -326,6 +326,9 @@ class Worker {
   set onerror(onerror) {
     this.worker.onerror = onerror;
   }
+
+  terminate() {
+  }
 }
 
 let rafIndex = 0;
@@ -1312,6 +1315,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.on('destroy', () => {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
   });
+
+  window.matchMedia = () => true
 
   return window;
 };
