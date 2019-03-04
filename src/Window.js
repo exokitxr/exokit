@@ -326,6 +326,9 @@ class Worker {
   set onerror(onerror) {
     this.worker.onerror = onerror;
   }
+
+  terminate() {
+  }
 }
 
 let rafIndex = 0;
