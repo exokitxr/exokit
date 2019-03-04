@@ -2778,6 +2778,8 @@ NAN_METHOD(MLContext::Present) {
   
   // initialize local graphics stack
 
+  windowsystem::SetCurrentWindowContext(window);
+
   unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
   unsigned int width = halfWidth * 2;
   unsigned int height = mlContext->render_targets_info.buffers[0].color.height;
