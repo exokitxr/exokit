@@ -19,7 +19,7 @@ const bugsnagApiKey = (() => {
     return null;
   }
 })();
-if (bugsnagApiKey) {
+if (bugsnagApiKey && !GlobalContext.args.noBugsnag) {
   bugsnag.register(bugsnagApiKey, {
     metaData: {
       argv: process.argv,

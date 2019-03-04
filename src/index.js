@@ -71,6 +71,7 @@ const args = (() => {
         'blit',
         'require',
         'headless',
+        'no-bugsnag',
       ],
       string: [
         'webgl',
@@ -94,6 +95,7 @@ const args = (() => {
         r: 'require',
         n: 'headless',
         d: 'download',
+        nobs: 'no-bugsnag',
       },
     });
     return {
@@ -112,6 +114,7 @@ const args = (() => {
       require: minimistArgs.require,
       headless: minimistArgs.headless,
       download: minimistArgs.download !== undefined ? (minimistArgs.download || path.join(process.cwd(), 'downloads')) : undefined,
+      noBugsnag: minimistArgs['no-bugsnag'] !== undefined ? true : undefined,
     };
   } else {
     return {};
