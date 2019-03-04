@@ -2735,6 +2735,7 @@ NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
+  NATIVEwindow *graphicsClientWindow = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2]));
 
   if (lifecycle_status != MLResult_Ok) {
     ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
@@ -2762,8 +2763,9 @@ NAN_METHOD(MLContext::Present) {
   
   // initialize graphics subsystem
   
-  mlContext->graphicsClientWindow = windowsystem::CreateNativeWindow(0, 0, false, window);
-  // mlContext->graphicsClientWindow = window;
+  mlContext->graphicsClientWindow = graphicsClientWindow;
+  // mlContext->graphicsClientWindow = windowsystem::CreateNativeWindow(0, 0, false, window);
+  // mlContext->graphicsClientWindow = topWindow;
   uv_sem_post(&reqSem);
   uv_sem_wait(&resSem);
   

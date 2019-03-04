@@ -970,10 +970,21 @@ if (bindings.nativeMl) {
         const {mlPresentState} = GlobalContext;
 
         if (!xrState.isPresenting[0]) {
-          const windowHandle = context.getWindowHandle();
-          
           mlPresentState.mlContext = new bindings.nativeMl();
-          mlPresentState.mlContext.Present(windowHandle, context);
+          const windowHandle = context.getWindowHandle();
+          const graphicsWindowHandle = (() => {
+            const argsBuffer = new Uint32Array(2 + 1 + 2);
+            let index = 0;
+            argsBuffer[index++] = 1; // width
+            argsBuffer[index++] = 1; // height
+            argsBuffer[index++] = 0; // visible
+            argsBuffer[index++] = xrState.windowHandle[0];
+            argsBuffer[index++] = xrState.windowHandle[1];
+            const topRequestContext = nativeWorker.getTopRequestContext();
+            const windowHandle = topRequestContext.runSyncTop(nativeWindow.createWindowHandle.functionAddress, argsBuffer);
+            return windowHandle;
+          })();
+          mlPresentState.mlContext.Present(windowHandle, context, graphicsWindowHandle);
 
           const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();
           const width = halfWidth * 2;
