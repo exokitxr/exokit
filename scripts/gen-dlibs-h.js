@@ -20,7 +20,7 @@ find.file(/\.node$/, dirname, files => {
         const relpath = match[1].slice(dirname.length);
         const binName = match[2];
         const npmName = (() => {
-          const match = relpath.match(/\/node_modules\/([^\/]+)/);
+          const match = relpath.match(/\/node_modules\/([^\/]+)$/);
           return match && match[1];
         })();
         // ignore incompatible modules
