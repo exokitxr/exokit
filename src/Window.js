@@ -1115,7 +1115,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      exokit.load(href, {
+      GlobalContext.exokit.load(href, {
         dataPath: options.dataPath,
       })
         .then(newWindow => {

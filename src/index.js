@@ -55,6 +55,7 @@ nativeBindings.nativeWindow.setEventLoop(eventLoopNative);
 
 const GlobalContext = require('./GlobalContext');
 GlobalContext.commands = [];
+GlobalContext.exokit = core;
 
 const args = (() => {
   if (require.main === module) {
