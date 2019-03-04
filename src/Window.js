@@ -5,17 +5,17 @@ const fs = require('fs');
 const url = require('url');
 const http = require('http');
 const https = require('https');
-const ws = require('ws');
+const crypto = require('crypto');
 const os = require('os');
 const util = require('util');
 const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
 const {performance} = require('perf_hooks');
 
-const mkdirp = require('mkdirp');
-
 const {FileReader} = require('./File.js');
 
+const mkdirp = require('mkdirp');
+const ws = require('ws');
 const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
 const fetch = require('window-fetch');
@@ -655,6 +655,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return WebSocket;
   })(WebSocket);
+  window.crypto = {
+    getRandomValues(typedArray) {
+      crypto.randomFillSync(Buffer.from(typedArray.buffer, typedArray.byteOffset, typedArray.byteLength));
+      return typedArray;
+    },
+  };
   window.event = new Event(); // XXX this needs to track the current event
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.sessionStorage = new LocalStorage(path.join(options.dataPath, '.sessionStorage'));
