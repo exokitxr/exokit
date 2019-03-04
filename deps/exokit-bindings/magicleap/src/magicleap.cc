@@ -2571,11 +2571,8 @@ void main() {\n\
 }\n\
 ";
 NAN_METHOD(MLContext::InitLifecycle) {
-  uv_loop_t *loop = windowsystembase::GetEventLoop();
-
   uv_sem_init(&reqSem, 0);
   uv_sem_init(&resSem, 0);
-  uv_async_init(loop, &resAsync, RunResInMainThread);
   frameThread = std::thread([]() -> void {
     uv_sem_wait(&reqSem);
 
@@ -2649,6 +2646,7 @@ NAN_METHOD(MLContext::InitLifecycle) {
     glDeleteFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
   });
 
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
   uv_async_init(loop, &cameraAsync, RunCameraInMainThread);
   uv_async_init(loop, &cameraConvertAsync, RunCameraConvertInMainThread);
   uv_sem_init(&cameraConvertSem, 0);
@@ -3115,6 +3113,9 @@ NAN_METHOD(MLContext::Present) {
 
   mlContext->TickFloor();
 
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  uv_async_init(loop, &resAsync, RunResInMainThread);
+
   // HACK: force the app to be "running"
   application_context.dummy_value = DummyValue::RUNNING;
 
@@ -3195,6 +3196,8 @@ NAN_METHOD(MLContext::Exit) {
     info.GetReturnValue().Set(JS_BOOL(false));
     return;
   }
+  
+  uv_close((uv_handle_t *)(&resAsync), nullptr);
 
   // HACK: force the app to be "stopped"
   application_context.dummy_value = DummyValue::STOPPED;
