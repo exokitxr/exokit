@@ -239,7 +239,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   EGLint context_attribs[] = {
     EGL_CONTEXT_MAJOR_VERSION_KHR, glMajorVersion,
     EGL_CONTEXT_MINOR_VERSION_KHR, glMinorVersion,
-    EGL_CONTEXT_RELEASE_BEHAVIOR_KHR, EGL_CONTEXT_RELEASE_BEHAVIOR_NONE_KHR,
+    // EGL_CONTEXT_RELEASE_BEHAVIOR_KHR, EGL_CONTEXT_RELEASE_BEHAVIOR_NONE_KHR,
     EGL_NONE
   };
 
