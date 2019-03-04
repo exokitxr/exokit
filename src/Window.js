@@ -576,7 +576,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     webkitGetUserMedia: getUserMedia, // for feature detection
     getVRDisplaysSync() {
       const result = [];
-      if (GlobalContext.xrState.fakeVrDisplayEnabled[0]) {
+      if (xrState.fakeVrDisplayEnabled[0]) {
         result.push(window[symbols.mrDisplaysSymbol].fakeVrDisplay);
       }
 
@@ -599,7 +599,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       return result;
     },
     createVRDisplay() {
-      GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
+      xrState.fakeVrDisplayEnabled[0] = 1;
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
     getGamepads: getGamepads.bind(null, window),
