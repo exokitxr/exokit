@@ -778,7 +778,7 @@ if (bindings.nativeOculusVR) {
       throw new Error('no HTMLCanvasElement source provided');
     }
   }
-  bindings.exitPresent = function () {
+  bindings.nativeOculusVR.exitPresent = function () {
     return Promise.resolve();
   };
 }
@@ -788,7 +788,7 @@ if (bindings.nativeOpenVR) {
   bindings.nativeOpenVR.requestPresent = function(layers) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
-      const canvas = layer.source;
+      canvas = layer.source;
       const {xrState} = GlobalContext;
 
       const presentSpec = (() => {
@@ -941,7 +941,7 @@ if (bindings.nativeOpenVR) {
       nativeWindow.destroyRenderTarget(msFbo, msTex, msDepthStencilTex);
       nativeWindow.destroyRenderTarget(fbo, tex, msDepthTex);
 
-      const context = GlobalContext.contexts.find(contex => contex.id === vrPresentState.glContextId);
+      const context = canvas._context;
       nativeWindow.setCurrentWindowContext(context.getWindowHandle());
       context.setDefaultFramebuffer(0);
 
