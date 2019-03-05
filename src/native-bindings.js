@@ -792,6 +792,8 @@ if (bindings.nativeOpenVR) {
       const {xrState} = GlobalContext;
 
       const presentSpec = (() => {
+        const {vrPresentState} = GlobalContext;
+
         if (!xrState.isPresenting[0]) {
           const vrContext = bindings.nativeVr.getContext();
           const system = bindings.nativeVr.VR_Init(bindings.nativeVr.EVRApplicationType.Scene);
@@ -848,6 +850,7 @@ if (bindings.nativeOpenVR) {
 
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
+        const {vrPresentState} = GlobalContext;
         // vrPresentState.lmContext = lmContext;
 
         canvas.framebuffer = {
@@ -921,6 +924,8 @@ if (bindings.nativeOpenVR) {
     }
   };
   bindings.nativeOpenVR.exitPresent = function() {
+    const {vrPresentState} = GlobalContext;
+
     if (vrPresentState.vrContext) {
       bindings.nativeVr.VR_Shutdown();
       
