@@ -286,17 +286,18 @@ const _onGl3DConstruct = (gl, canvas) => {
         });
       };
 
-      window.windowEmit('resize', {
-        width: canvas.width,
-        height: canvas.height,
-      });
-      window.windowEmit('framebuffer', {
+      window.document.framebuffer = {
         msFbo,
         msTex,
         msDepthTex,
         fbo,
         tex,
         depthTex,
+      };
+      window.windowEmit('framebuffer', window.document.framebuffer);
+      window.windowEmit('resize', {
+        width: canvas.width,
+        height: canvas.height,
       });
     } else {
       gl.resize = (width, height) => {
@@ -365,6 +366,7 @@ const _onGl3DConstruct = (gl, canvas) => {
       canvas._context = null;
 
       if (hidden) {
+        window.document.framebuffer = null;
         window.windowEmit('framebuffer', null);
       }
       canvas.ownerDocument.removeListener('domchange', ondomchange);
