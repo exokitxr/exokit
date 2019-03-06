@@ -1888,23 +1888,23 @@ Local<Object> makeWindow() {
   Local<String> functionAddressString = JS_STR("functionAddress");
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(glfw::CreateWindowHandle)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(glfw::CreateWindowHandleFn));
+    fn->Set(functionAddressString, pointerToArray((void *)glfw::CreateWindowHandleFn));
     target->Set(JS_STR("createWindowHandle"), fn);
   }
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(glfw::DestroyWindowHandle)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(glfw::DestroyWindowHandleFn));
+    fn->Set(functionAddressString, pointerToArray((void *)glfw::DestroyWindowHandleFn));
     target->Set(JS_STR("destroyWindowHandle"), fn);
   }
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetVisibility)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(glfw::SetVisibilityFn));
+    fn->Set(functionAddressString, pointerToArray((void *)glfw::SetVisibilityFn));
     target->Set(JS_STR("setVisibility"), fn);
   }
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetFullscreen)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(glfw::SetFullscreenFn));
+    fn->Set(functionAddressString, pointerToArray((void *)glfw::SetFullscreenFn));
     target->Set(JS_STR("setFullscreen"), fn);
   }
   Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
@@ -1920,14 +1920,14 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(glfw::PollEvents)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(glfw::PollEventsFn));
+    fn->Set(functionAddressString, pointerToArray((void *)glfw::PollEventsFn));
     target->Set(JS_STR("pollEvents"), fn);
   }
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", glfw::GetRefreshRate);
   {
     Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetCursorMode)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray(glfw::SetCursorModeFn));
+    fn->Set(functionAddressString, pointerToArray((void *)glfw::SetCursorModeFn));
     target->Set(JS_STR("setCursorMode"), fn);
   }
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
