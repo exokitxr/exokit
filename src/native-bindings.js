@@ -815,14 +815,14 @@ if (bindings.nativeOpenVR) {
           }
           const width = halfWidth * 2;
 
-          return Promise.resolve({
+          return {
             wasPresenting: false,
             width,
             height,
-          });
+          };
         } else {
           const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = vrPresentState;
-          return Promise.resolve({
+          return {
             wasPresenting: true,
             width: xrState.renderWidth[0] * 2,
             height: xrState.renderHeight[0],
@@ -832,7 +832,7 @@ if (bindings.nativeOpenVR) {
             fbo,
             tex,
             depthTex,
-          });
+          };
         }
       })();
 
