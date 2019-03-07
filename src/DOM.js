@@ -4,6 +4,8 @@ const url = require('url');
 const vm = require('vm');
 const util = require('util');
 
+const {process} = global;
+
 const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
