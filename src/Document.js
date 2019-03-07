@@ -169,13 +169,16 @@ function initDocument (document, window) {
 
       body.childNodes = bodyChildNodes;
 
-      document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
-
       try {
         await GlobalContext._runHtml(document.body, window);
       } catch(err) {
         console.warn(err);
       }
+
+      document.dispatchEvent(new Event('DOMContentLoaded', {
+        target: document,
+        bubbles: true,
+      }));
     } else {
       try {
         await GlobalContext._runHtml(document, window);
@@ -183,7 +186,10 @@ function initDocument (document, window) {
         console.warn(err);
       }
 
-      document.dispatchEvent(new Event('DOMContentLoaded', {target: document}));
+      document.dispatchEvent(new Event('DOMContentLoaded', {
+        target: document,
+        bubbles: true,
+      }));
     }
 
     document.readyState = 'interactive';
