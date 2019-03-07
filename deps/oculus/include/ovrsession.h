@@ -3,8 +3,15 @@
 
 #include <nan.h>
 #include <v8.h>
+#include <webgl.h>
 
 #include "OVR_CAPI_GL.h"
+
+typedef struct SwapChain {
+  ovrTextureSwapChain ColorTextureChain;
+  ovrTextureSwapChain DepthTextureChain;
+  ovrSizei textureSize;
+} EyeSwapChain;
 
 class OVRSession : public Nan::ObjectWrap
 {
@@ -20,7 +27,11 @@ private:
 
   // Node construction method for new instances.
   static NAN_METHOD(New);
+  static NAN_METHOD(GetPose);
   static NAN_METHOD(SetupSwapChain);
+  static NAN_METHOD(Submit);
+  static NAN_METHOD(RequestGetPoses);
+  static NAN_METHOD(GetRecommendedRenderTargetSize);
 
   /// Create a singleton reference to a constructor function.
   static inline Nan::Persistent<v8::Function>& constructor()
@@ -31,6 +42,11 @@ private:
 
   /// Reference to wrapped ovrSession instance.
   ovrSession * self_;
+  EyeSwapChain eyes[2];
+  ovrPosef eyeRenderPoses[2];
+  GLuint fboId;
+  int frameIndex;
+  double sensorSampleTime;
 };
 
 #endif
