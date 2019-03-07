@@ -660,6 +660,34 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       crypto.randomFillSync(Buffer.from(typedArray.buffer, typedArray.byteOffset, typedArray.byteLength));
       return typedArray;
     },
+
+    subtle: {
+      digest(algo, bytes) {
+        switch (algo) {
+          case 'SHA-1': {
+            algo = 'sha1';
+            break;
+          }
+          case 'SHA-256': {
+            algo = 'sha256';
+            break;
+          }
+          case 'SHA-384': {
+            algo = 'sha384';
+            break;
+          }
+          case 'SHA-512': {
+            algo = 'sha512';
+            break;
+          }
+          default: throw new Error(`unknown algorithm: ${algo}`);
+        }
+        const hash = crypto.createHash(algo).update(bytes).digest();
+        const result = new ArrayBuffer(hash.byteLength);
+        new Buffer(result).set(hash);
+        return Promise.resolve(result);
+      },
+    },
   };
   window.event = new Event(); // XXX this needs to track the current event
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
