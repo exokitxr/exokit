@@ -7,6 +7,7 @@
 #include <node.h>
 #include <openvr.h>
 #include <ivrsystem.h>
+#include <functional>
 
 using namespace v8;
 
