@@ -67,6 +67,7 @@ const args = (() => {
         'performance',
         'frame',
         'minimalFrame',
+        'tab',
         'quit',
         'blit',
         'require',
@@ -89,6 +90,7 @@ const args = (() => {
         s: 'size',
         f: 'frame',
         m: 'minimalFrame',
+        t: 'tab',
         q: 'quit',
         b: 'blit',
         r: 'require',
@@ -107,6 +109,7 @@ const args = (() => {
       size: minimistArgs.size,
       frame: minimistArgs.frame,
       minimalFrame: minimistArgs.minimalFrame,
+      tab: minimistArgs.tab,
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
       require: minimistArgs.require,
@@ -1747,16 +1750,20 @@ const _prepare = () => Promise.all([
   }),
 ]);
 
+const realityTabsUrl = 'file://' + path.join(__dirname, '..', 'examples', 'realitytabs.html');
 const _start = () => {
   let {url: u} = args;
   if (!u && args.home) {
-    u = 'file://' + path.join(__dirname, '..', 'examples', 'realitytabs.html');
+    u = realityTabsUrl;
   }
   if (u) {
     if (u === '.') {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
     }
     u = u.replace(/^exokit:/, '');
+    if (args.tab) {
+      u = `${realityTabsUrl}?t=${encodeURIComponent(u)}`
+    }
     if (u && !url.parse(u).protocol) {
       u = 'file://' + path.resolve(process.cwd(), u);
     }
