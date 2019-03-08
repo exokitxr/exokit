@@ -69,6 +69,7 @@ template <typename T>
 void setGlConstants(T &proto) {
   // OpenGL ES 2.1 constants
 
+   //---------------------------------------------------------------------------
   /* ClearBufferMask */
   JS_GL_CONSTANT(DEPTH_BUFFER_BIT);
   JS_GL_CONSTANT(STENCIL_BUFFER_BIT);
@@ -625,6 +626,279 @@ void setGlConstants(T &proto) {
 
   // external
   JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
+  
+  //----------------------------------------------------------------------------
+  // WebGL 2 constants from:
+  // https://www.khronos.org/registry/webgl/specs/latest/2.0/
+  // Those commented out already defined for WebGL
+  JS_GL_CONSTANT(READ_BUFFER);
+  JS_GL_CONSTANT(UNPACK_ROW_LENGTH);
+  JS_GL_CONSTANT(UNPACK_SKIP_ROWS);
+  JS_GL_CONSTANT(UNPACK_SKIP_PIXELS);
+  JS_GL_CONSTANT(PACK_ROW_LENGTH);
+  JS_GL_CONSTANT(PACK_SKIP_ROWS);
+  JS_GL_CONSTANT(PACK_SKIP_PIXELS);
+  JS_GL_CONSTANT(COLOR);
+  JS_GL_CONSTANT(DEPTH);
+  JS_GL_CONSTANT(STENCIL);
+  JS_GL_CONSTANT(RED);
+  //JS_GL_CONSTANT(RGB8);
+  //JS_GL_CONSTANT(RGBA8);
+  //JS_GL_CONSTANT(RGB10_A2);
+  JS_GL_CONSTANT(TEXTURE_BINDING_3D);
+  JS_GL_CONSTANT(UNPACK_SKIP_IMAGES);
+  JS_GL_CONSTANT(UNPACK_IMAGE_HEIGHT);
+  JS_GL_CONSTANT(TEXTURE_3D);
+  JS_GL_CONSTANT(TEXTURE_WRAP_R);
+  JS_GL_CONSTANT(MAX_3D_TEXTURE_SIZE);
+  JS_GL_CONSTANT(UNSIGNED_INT_2_10_10_10_REV);
+  JS_GL_CONSTANT(MAX_ELEMENTS_VERTICES);
+  JS_GL_CONSTANT(MAX_ELEMENTS_INDICES);
+  JS_GL_CONSTANT(TEXTURE_MIN_LOD);
+  JS_GL_CONSTANT(TEXTURE_MAX_LOD);
+  JS_GL_CONSTANT(TEXTURE_BASE_LEVEL);
+  JS_GL_CONSTANT(TEXTURE_MAX_LEVEL);
+  JS_GL_CONSTANT(MIN);
+  JS_GL_CONSTANT(MAX);
+  JS_GL_CONSTANT(DEPTH_COMPONENT24);
+  JS_GL_CONSTANT(MAX_TEXTURE_LOD_BIAS);
+  JS_GL_CONSTANT(TEXTURE_COMPARE_MODE);
+  JS_GL_CONSTANT(TEXTURE_COMPARE_FUNC);
+  JS_GL_CONSTANT(CURRENT_QUERY);
+  JS_GL_CONSTANT(QUERY_RESULT);
+  JS_GL_CONSTANT(QUERY_RESULT_AVAILABLE);
+  JS_GL_CONSTANT(STREAM_READ);
+  JS_GL_CONSTANT(STREAM_COPY);
+  JS_GL_CONSTANT(STATIC_READ);
+  JS_GL_CONSTANT(STATIC_COPY);
+  JS_GL_CONSTANT(DYNAMIC_READ);
+  JS_GL_CONSTANT(DYNAMIC_COPY);
+  //JS_GL_CONSTANT(MAX_DRAW_BUFFERS);
+  //JS_GL_CONSTANT(DRAW_BUFFER0);
+  //JS_GL_CONSTANT(DRAW_BUFFER1);
+  //JS_GL_CONSTANT(DRAW_BUFFER2);
+  //JS_GL_CONSTANT(DRAW_BUFFER3);
+  //JS_GL_CONSTANT(DRAW_BUFFER4);
+  //JS_GL_CONSTANT(DRAW_BUFFER5);
+  //JS_GL_CONSTANT(DRAW_BUFFER6);
+  //JS_GL_CONSTANT(DRAW_BUFFER7);
+  //JS_GL_CONSTANT(DRAW_BUFFER8);
+  //JS_GL_CONSTANT(DRAW_BUFFER9);
+  //JS_GL_CONSTANT(DRAW_BUFFER10);
+  //JS_GL_CONSTANT(DRAW_BUFFER11);
+  //JS_GL_CONSTANT(DRAW_BUFFER12);
+  //JS_GL_CONSTANT(DRAW_BUFFER13);
+  //JS_GL_CONSTANT(DRAW_BUFFER14);
+  //JS_GL_CONSTANT(DRAW_BUFFER15);
+  JS_GL_CONSTANT(MAX_FRAGMENT_UNIFORM_COMPONENTS);
+  JS_GL_CONSTANT(MAX_VERTEX_UNIFORM_COMPONENTS);
+  JS_GL_CONSTANT(SAMPLER_3D);
+  JS_GL_CONSTANT(SAMPLER_2D_SHADOW);
+  JS_GL_CONSTANT(FRAGMENT_SHADER_DERIVATIVE_HINT);
+  //JS_GL_CONSTANT(PIXEL_PACK_BUFFER);
+  //JS_GL_CONSTANT(PIXEL_UNPACK_BUFFER);
+  //JS_GL_CONSTANT(PIXEL_PACK_BUFFER_BINDING);
+  //JS_GL_CONSTANT(PIXEL_UNPACK_BUFFER_BINDING);
+  JS_GL_CONSTANT(FLOAT_MAT2x3);
+  JS_GL_CONSTANT(FLOAT_MAT2x4);
+  JS_GL_CONSTANT(FLOAT_MAT3x2);
+  JS_GL_CONSTANT(FLOAT_MAT3x4);
+  JS_GL_CONSTANT(FLOAT_MAT4x2);
+  JS_GL_CONSTANT(FLOAT_MAT4x3);
+  JS_GL_CONSTANT(SRGB);
+  //JS_GL_CONSTANT(SRGB8);
+  JS_GL_CONSTANT(SRGB8_ALPHA8);
+  JS_GL_CONSTANT(COMPARE_REF_TO_TEXTURE);
+  //JS_GL_CONSTANT(RGBA32F);
+  //JS_GL_CONSTANT(RGB32F);
+  //JS_GL_CONSTANT(RGBA16F);
+  //JS_GL_CONSTANT(RGB16F);
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_INTEGER);
+  JS_GL_CONSTANT(MAX_ARRAY_TEXTURE_LAYERS);
+  JS_GL_CONSTANT(MIN_PROGRAM_TEXEL_OFFSET);
+  JS_GL_CONSTANT(MAX_PROGRAM_TEXEL_OFFSET);
+  JS_GL_CONSTANT(MAX_VARYING_COMPONENTS);
+  JS_GL_CONSTANT(TEXTURE_2D_ARRAY);
+  JS_GL_CONSTANT(TEXTURE_BINDING_2D_ARRAY);
+  //JS_GL_CONSTANT(R11F_G11F_B10F);
+  JS_GL_CONSTANT(UNSIGNED_INT_10F_11F_11F_REV);
+  //JS_GL_CONSTANT(RGB9_E5);
+  JS_GL_CONSTANT(UNSIGNED_INT_5_9_9_9_REV);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_BUFFER_MODE);
+  JS_GL_CONSTANT(MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_VARYINGS);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_BUFFER_START);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_BUFFER_SIZE);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
+  JS_GL_CONSTANT(RASTERIZER_DISCARD);
+  JS_GL_CONSTANT(MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS);
+  JS_GL_CONSTANT(MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS);
+  JS_GL_CONSTANT(INTERLEAVED_ATTRIBS);
+  JS_GL_CONSTANT(SEPARATE_ATTRIBS);
+  //JS_GL_CONSTANT(TRANSFORM_FEEDBACK_BUFFER);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_BUFFER_BINDING);
+  JS_GL_CONSTANT(RGBA32UI);
+  JS_GL_CONSTANT(RGB32UI);
+  JS_GL_CONSTANT(RGBA16UI);
+  JS_GL_CONSTANT(RGB16UI);
+  //JS_GL_CONSTANT(RGBA8UI);
+  //JS_GL_CONSTANT(RGB8UI);
+  JS_GL_CONSTANT(RGBA32I);
+  JS_GL_CONSTANT(RGB32I);
+  JS_GL_CONSTANT(RGBA16I);
+  JS_GL_CONSTANT(RGB16I);
+  JS_GL_CONSTANT(RGBA8I);
+  JS_GL_CONSTANT(RGB8I);
+  JS_GL_CONSTANT(RED_INTEGER);
+  JS_GL_CONSTANT(RGB_INTEGER);
+  JS_GL_CONSTANT(RGBA_INTEGER);
+  JS_GL_CONSTANT(SAMPLER_2D_ARRAY);
+  JS_GL_CONSTANT(SAMPLER_2D_ARRAY_SHADOW);
+  JS_GL_CONSTANT(SAMPLER_CUBE_SHADOW);
+  JS_GL_CONSTANT(UNSIGNED_INT_VEC2);
+  JS_GL_CONSTANT(UNSIGNED_INT_VEC3);
+  JS_GL_CONSTANT(UNSIGNED_INT_VEC4);
+  JS_GL_CONSTANT(INT_SAMPLER_2D);
+  JS_GL_CONSTANT(INT_SAMPLER_3D);
+  JS_GL_CONSTANT(INT_SAMPLER_CUBE);
+  JS_GL_CONSTANT(INT_SAMPLER_2D_ARRAY);
+  JS_GL_CONSTANT(UNSIGNED_INT_SAMPLER_2D);
+  JS_GL_CONSTANT(UNSIGNED_INT_SAMPLER_3D);
+  JS_GL_CONSTANT(UNSIGNED_INT_SAMPLER_CUBE);
+  JS_GL_CONSTANT(UNSIGNED_INT_SAMPLER_2D_ARRAY);
+  JS_GL_CONSTANT(DEPTH_COMPONENT32F);
+  JS_GL_CONSTANT(DEPTH32F_STENCIL8);
+  JS_GL_CONSTANT(FLOAT_32_UNSIGNED_INT_24_8_REV);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_RED_SIZE);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_GREEN_SIZE);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_BLUE_SIZE);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE);
+  JS_GL_CONSTANT(FRAMEBUFFER_DEFAULT);
+  //JS_GL_CONSTANT(DEPTH_STENCIL_ATTACHMENT);
+  //JS_GL_CONSTANT(DEPTH_STENCIL);
+  JS_GL_CONSTANT(UNSIGNED_INT_24_8);
+  //JS_GL_CONSTANT(DEPTH24_STENCIL8);
+  JS_GL_CONSTANT(UNSIGNED_NORMALIZED);
+  //JS_GL_CONSTANT(DRAW_FRAMEBUFFER_BINDING); /* Same as FRAMEBUFFER_BINDING */
+  //JS_GL_CONSTANT(READ_FRAMEBUFFER);
+  //JS_GL_CONSTANT(DRAW_FRAMEBUFFER);
+  //JS_GL_CONSTANT(READ_FRAMEBUFFER_BINDING);
+  JS_GL_CONSTANT(RENDERBUFFER_SAMPLES);
+  JS_GL_CONSTANT(FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER);
+  //JS_GL_CONSTANT(MAX_COLOR_ATTACHMENTS);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT1);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT2);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT3);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT4);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT5);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT6);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT7);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT8);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT9);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT10);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT11);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT12);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT13);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT14);
+  //JS_GL_CONSTANT(COLOR_ATTACHMENT15);
+  JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_MULTISAMPLE);
+  JS_GL_CONSTANT(MAX_SAMPLES);
+  //JS_GL_CONSTANT(HALF_FLOAT);
+  JS_GL_CONSTANT(RG);
+  JS_GL_CONSTANT(RG_INTEGER);
+  //JS_GL_CONSTANT(R8);
+  //JS_GL_CONSTANT(RG8);
+  //JS_GL_CONSTANT(R16F);
+  //JS_GL_CONSTANT(R32F);
+  //JS_GL_CONSTANT(RG16F);
+  //JS_GL_CONSTANT(RG32F);
+  JS_GL_CONSTANT(R8I);
+  //JS_GL_CONSTANT(R8UI);
+  JS_GL_CONSTANT(R16I);
+  JS_GL_CONSTANT(R16UI);
+  JS_GL_CONSTANT(R32I);
+  JS_GL_CONSTANT(R32UI);
+  JS_GL_CONSTANT(RG8I);
+  //JS_GL_CONSTANT(RG8UI);
+  JS_GL_CONSTANT(RG16I);
+  //JS_GL_CONSTANT(RG16UI);
+  JS_GL_CONSTANT(RG32I);
+  //JS_GL_CONSTANT(RG32UI);
+  //JS_GL_CONSTANT(VERTEX_ARRAY_BINDING);
+  JS_GL_CONSTANT(R8_SNORM);
+  JS_GL_CONSTANT(RG8_SNORM);
+  JS_GL_CONSTANT(RGB8_SNORM);
+  JS_GL_CONSTANT(RGBA8_SNORM);
+  JS_GL_CONSTANT(SIGNED_NORMALIZED);
+  //JS_GL_CONSTANT(COPY_READ_BUFFER);
+  //JS_GL_CONSTANT(COPY_WRITE_BUFFER);
+  JS_GL_CONSTANT(COPY_READ_BUFFER_BINDING); /* Same as COPY_READ_BUFFER */
+  JS_GL_CONSTANT(COPY_WRITE_BUFFER_BINDING); /* Same as COPY_WRITE_BUFFER */
+  //JS_GL_CONSTANT(UNIFORM_BUFFER);
+  JS_GL_CONSTANT(UNIFORM_BUFFER_BINDING);
+  JS_GL_CONSTANT(UNIFORM_BUFFER_START);
+  JS_GL_CONSTANT(UNIFORM_BUFFER_SIZE);
+  JS_GL_CONSTANT(MAX_VERTEX_UNIFORM_BLOCKS);
+  JS_GL_CONSTANT(MAX_FRAGMENT_UNIFORM_BLOCKS);
+  JS_GL_CONSTANT(MAX_COMBINED_UNIFORM_BLOCKS);
+  JS_GL_CONSTANT(MAX_UNIFORM_BUFFER_BINDINGS);
+  JS_GL_CONSTANT(MAX_UNIFORM_BLOCK_SIZE);
+  JS_GL_CONSTANT(MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS);
+  JS_GL_CONSTANT(MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS);
+  JS_GL_CONSTANT(UNIFORM_BUFFER_OFFSET_ALIGNMENT);
+  JS_GL_CONSTANT(ACTIVE_UNIFORM_BLOCKS);
+  JS_GL_CONSTANT(UNIFORM_TYPE);
+  JS_GL_CONSTANT(UNIFORM_SIZE);
+  JS_GL_CONSTANT(UNIFORM_BLOCK_INDEX);
+  JS_GL_CONSTANT(UNIFORM_OFFSET);
+  JS_GL_CONSTANT(UNIFORM_ARRAY_STRIDE);
+  JS_GL_CONSTANT(UNIFORM_MATRIX_STRIDE);
+  JS_GL_CONSTANT(UNIFORM_IS_ROW_MAJOR);
+  JS_GL_CONSTANT(UNIFORM_BLOCK_BINDING);
+  JS_GL_CONSTANT(UNIFORM_BLOCK_DATA_SIZE);
+  JS_GL_CONSTANT(UNIFORM_BLOCK_ACTIVE_UNIFORMS);
+  JS_GL_CONSTANT(UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES);
+  JS_GL_CONSTANT(UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER);
+  JS_GL_CONSTANT(UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER);
+  JS_GL_CONSTANT(INVALID_INDEX);
+  JS_GL_CONSTANT(MAX_VERTEX_OUTPUT_COMPONENTS);
+  JS_GL_CONSTANT(MAX_FRAGMENT_INPUT_COMPONENTS);
+  JS_GL_CONSTANT(MAX_SERVER_WAIT_TIMEOUT);
+  //JS_GL_CONSTANT(OBJECT_TYPE);
+  //JS_GL_CONSTANT(SYNC_CONDITION);
+  //JS_GL_CONSTANT(SYNC_STATUS);
+  //JS_GL_CONSTANT(SYNC_FLAGS);
+  //JS_GL_CONSTANT(SYNC_FENCE);
+  //JS_GL_CONSTANT(SYNC_GPU_COMMANDS_COMPLETE);
+  //JS_GL_CONSTANT(UNSIGNALED);
+  //JS_GL_CONSTANT(SIGNALED);
+  //JS_GL_CONSTANT(ALREADY_SIGNALED);
+  //JS_GL_CONSTANT(TIMEOUT_EXPIRED);
+  //JS_GL_CONSTANT(CONDITION_SATISFIED);
+  //JS_GL_CONSTANT(WAIT_FAILED);
+  //JS_GL_CONSTANT(SYNC_FLUSH_COMMANDS_BIT);
+  JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_DIVISOR);
+  JS_GL_CONSTANT(ANY_SAMPLES_PASSED);
+  JS_GL_CONSTANT(ANY_SAMPLES_PASSED_CONSERVATIVE);
+  JS_GL_CONSTANT(SAMPLER_BINDING);
+  JS_GL_CONSTANT(RGB10_A2UI);
+  JS_GL_CONSTANT(INT_2_10_10_10_REV);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_PAUSED);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_ACTIVE);
+  JS_GL_CONSTANT(TRANSFORM_FEEDBACK_BINDING);
+  JS_GL_CONSTANT(TEXTURE_IMMUTABLE_FORMAT);
+  JS_GL_CONSTANT(MAX_ELEMENT_INDEX);
+  JS_GL_CONSTANT(TEXTURE_IMMUTABLE_LEVELS);
+
+  //const GLint64 TIMEOUT_IGNORED                              = -1;
+
+  /* WebGL-specific enums */
+  //JS_GL_SET_CONSTANT("MAX_CLIENT_WAIT_TIMEOUT_WEBGL", MAX_CLIENT_WAIT_TIMEOUT_WEBGL);
 }
 
 ViewportState::ViewportState(GLint x, GLint y, GLsizei w, GLsizei h, bool valid) : x(x), y(y), w(w), h(h), valid(valid) {}
@@ -4833,6 +5107,36 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGL2RenderingContext::Initia
   ctor->InstanceTemplate()->SetInternalFieldCount(1);
   ctor->SetClassName(JS_STR("WebGL2RenderingContext"));
 
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+
+  Nan::SetMethod(proto, "createQuery", glCallWrap<CreateQuery>);
+  Nan::SetMethod(proto, "beginQuery", glCallWrap<BeginQuery>);
+  Nan::SetMethod(proto, "endQuery", glCallWrap<EndQuery>);
+  Nan::SetMethod(proto, "getQuery", glCallWrap<GetQuery>);
+  Nan::SetMethod(proto, "getQueryParameter", glCallWrap<GetQueryParameter>);
+  Nan::SetMethod(proto, "isQuery", glCallWrap<IsQuery>);
+  Nan::SetMethod(proto, "deleteQuery", glCallWrap<DeleteQuery>);
+
+  Nan::SetMethod(proto, "createTransformFeedback", glCallWrap<CreateTransformFeedback>);
+  Nan::SetMethod(proto, "deleteTransformFeedback", glCallWrap<DeleteTransformFeedback>);
+  Nan::SetMethod(proto, "isTransformFeedback", glCallWrap<IsTransformFeedback>);
+  Nan::SetMethod(proto, "bindTransformFeedback", glCallWrap<BindTransformFeedback>);
+  Nan::SetMethod(proto, "beginTransformFeedback", glCallWrap<BeginTransformFeedback>);
+  Nan::SetMethod(proto, "endTransformFeedback", glCallWrap<EndTransformFeedback>);
+  Nan::SetMethod(proto, "transformFeedbackVaryings", glCallWrap<TransformFeedbackVaryings>);
+  Nan::SetMethod(proto, "getTransformFeedbackVarying", glCallWrap<GetTransformFeedbackVarying>);
+  Nan::SetMethod(proto, "pauseTransformFeedback", glCallWrap<PauseTransformFeedback>);
+  Nan::SetMethod(proto, "resumeTransformFeedback", glCallWrap<ResumeTransformFeedback>);
+
+  Nan::SetMethod(proto, "createSampler", glCallWrap<CreateSampler>);
+  Nan::SetMethod(proto, "deleteSampler", glCallWrap<DeleteSampler>);
+  Nan::SetMethod(proto, "isSampler", glCallWrap<IsSampler>);
+  Nan::SetMethod(proto, "bindSampler", glCallWrap<BindSampler>);
+  Nan::SetMethod(proto, "samplerParameteri", glCallWrap<SamplerParameteri>);
+  Nan::SetMethod(proto, "samplerParameterf", glCallWrap<SamplerParameterf>);
+  Nan::SetMethod(proto, "getSamplerParameter", glCallWrap<GetSamplerParameter>);
+
   Local<Function> ctorFn = ctor->GetFunction();
   setGlConstants(ctorFn);
 
@@ -4845,6 +5149,244 @@ NAN_METHOD(WebGL2RenderingContext::New) {
   gl2->Wrap(gl2Obj);
 
   info.GetReturnValue().Set(gl2Obj);
+}
+
+// reference used https://www.khronos.org/registry/OpenGL-Refpages/es3.0/
+NAN_METHOD(WebGL2RenderingContext::CreateQuery) { // adapted from CreateBuffer
+  GLuint queryId;
+  glGenQueries(1, &queryId);
+
+  Local<Object> queryObject = Nan::New<Object>();
+  queryObject->Set(JS_STR("id"), JS_INT(queryId));
+  info.GetReturnValue().Set(queryObject);
+}
+
+NAN_METHOD(WebGL2RenderingContext::BeginQuery) { // adapted from BindBuffer
+  GLenum target = info[0]->Int32Value();
+  GLuint query = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glBeginQuery(target, query);
+}
+
+NAN_METHOD(WebGL2RenderingContext::EndQuery) {
+  GLenum target = info[0]->Int32Value();
+  glEndQuery(target);
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetQuery) {
+  GLenum target = info[0]->Int32Value();
+  GLenum pname = info[1]->Int32Value();
+  GLint value;
+  
+  glGetQueryiv(target, pname, &value);
+  if (glGetError() == GL_NO_ERROR) {
+    Local<Object> queryObject = Nan::New<Object>();
+    queryObject->Set(JS_STR("id"), JS_INT(value));
+
+    info.GetReturnValue().Set(queryObject);
+  }
+  else info.GetReturnValue().Set(Nan::Null());
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetQueryParameter) { // adapted from GetProgramParameter
+  GLint queryId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLenum pname = info[1]->Int32Value();
+  
+  switch (pname) {
+    case GL_QUERY_RESULT_AVAILABLE:
+      GLint value;
+      glGetQueryObjectiv(queryId, pname, &value);
+      info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(value)));
+      break;
+    case GL_QUERY_RESULT:
+      GLuint uValue;
+      glGetQueryObjectuiv(queryId, pname, &uValue);
+      info.GetReturnValue().Set(JS_FLOAT(static_cast<unsigned long>(uValue)));
+      break;
+    default:
+      Nan::ThrowTypeError("GetQueryParameter: Invalid Enum");
+  }
+}
+
+NAN_METHOD(WebGL2RenderingContext::IsQuery) { // adapted from IsVertexArray
+  if (info[0]->IsObject()) {
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+    bool ret = glIsQuery(arg);
+
+    info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }
+}
+
+NAN_METHOD(WebGL2RenderingContext::DeleteQuery) { // adapted from DeleteBuffer
+  GLuint query = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glDeleteQueries(1, &query);
+}
+
+NAN_METHOD(WebGL2RenderingContext::CreateTransformFeedback) {
+  GLuint transformId;
+  glGenTransformFeedbacks(1, &transformId);
+
+  Local<Object> transformObject = Nan::New<Object>();
+  transformObject->Set(JS_STR("id"), JS_INT(transformId));
+  info.GetReturnValue().Set(transformObject);
+}
+
+NAN_METHOD(WebGL2RenderingContext::DeleteTransformFeedback) {
+  GLuint transform = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glDeleteTransformFeedbacks(1, &transform);
+}
+
+NAN_METHOD(WebGL2RenderingContext::IsTransformFeedback) {
+  if (info[0]->IsObject()) {
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+    bool ret = glIsTransformFeedback(arg);
+
+    info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }   
+}
+
+NAN_METHOD(WebGL2RenderingContext::BindTransformFeedback) {
+  GLenum target = info[0]->Int32Value();
+  GLuint transform = info[1]->IsObject() ? info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glBindTransformFeedback(target, transform);
+}
+
+NAN_METHOD(WebGL2RenderingContext::BeginTransformFeedback) {
+  GLenum primitiveMode = info[0]->Int32Value();
+  glBeginTransformFeedback(primitiveMode);
+}
+
+NAN_METHOD(WebGL2RenderingContext::EndTransformFeedback) {
+  glEndTransformFeedback();
+}
+
+NAN_METHOD(WebGL2RenderingContext::TransformFeedbackVaryings) {
+  GLuint program = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+   
+  Local<Array> jsVaryings = Local<Array>::Cast(info[1]);
+  GLsizei count = jsVaryings->Length();
+  
+  char **varyings = new char*[count];
+
+  for (int i = 0; i < count; i++) {
+    String::Utf8Value v(jsVaryings->Get(i));
+    varyings[i] = *v;
+  }
+  
+  GLenum bufferMode = info[2]->Int32Value();
+
+  glTransformFeedbackVaryings(program, count, varyings, bufferMode);
+  delete [] varyings;
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetTransformFeedbackVarying) {
+  GLuint program = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLuint index = info[1]->Int32Value();
+    
+  char name[1024];
+  GLsizei length = 0;
+  GLsizei size;
+  GLenum type;
+
+  glGetTransformFeedbackVarying(program, index, sizeof(name), &length, &size, &type, name);
+  if (length > 0) {
+    Local<Object> activeInfo = Nan::New<Object>();
+    activeInfo->Set(JS_STR("name"), JS_STR(name));
+    activeInfo->Set(JS_STR("size"), JS_INT(size));
+    activeInfo->Set(JS_STR("type"), JS_INT(type));
+
+    info.GetReturnValue().Set(activeInfo);
+  }
+  else info.GetReturnValue().Set(Nan::Null());
+}
+
+NAN_METHOD(WebGL2RenderingContext::PauseTransformFeedback) {
+  glPauseTransformFeedback();  
+}
+
+NAN_METHOD(WebGL2RenderingContext::ResumeTransformFeedback) {
+  glResumeTransformFeedback();  
+}
+
+NAN_METHOD(WebGL2RenderingContext::CreateSampler) {
+  GLuint samplerId;
+  glGenSamplers(1, &samplerId);
+
+  Local<Object> samplerObject = Nan::New<Object>();
+  samplerObject->Set(JS_STR("id"), JS_INT(samplerId));
+  info.GetReturnValue().Set(samplerObject);
+}
+
+NAN_METHOD(WebGL2RenderingContext::DeleteSampler) {
+  GLuint sampler = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+
+  glDeleteSamplers(1, &sampler);
+}
+
+NAN_METHOD(WebGL2RenderingContext::IsSampler) {
+  if (info[0]->IsObject()) {
+    GLuint arg = info[0]->IsObject() ? info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value() : 0;
+    bool ret = glIsSampler(arg);
+
+    info.GetReturnValue().Set(JS_BOOL(ret));
+  } else {
+    info.GetReturnValue().Set(Nan::New<Boolean>(false));
+  }
+}
+
+NAN_METHOD(WebGL2RenderingContext::BindSampler) {
+  GLuint unit = info[0]->Uint32Value();
+  GLuint sampler = info[1]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+
+  glBindSampler(unit, sampler);
+}
+
+NAN_METHOD(WebGL2RenderingContext::SamplerParameteri) {
+  GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLenum pname = info[1]->Int32Value();
+  GLint param =  info[2]->Int32Value();
+    
+  glSamplerParameteri(sampler, pname, param);
+}
+
+NAN_METHOD(WebGL2RenderingContext::SamplerParameterf) {
+  GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLenum pname = info[1]->Int32Value();
+  GLfloat param = info[2]->NumberValue();
+    
+  glSamplerParameterf(sampler, pname, param);
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetSamplerParameter) {
+  GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
+  GLenum pname = info[1]->Int32Value();
+  
+  switch (pname) {
+    case GL_TEXTURE_MIN_LOD:
+    case GL_TEXTURE_MAX_LOD:
+      GLfloat fValue;
+      glGetSamplerParameterfv(sampler, pname, &fValue);
+      info.GetReturnValue().Set(JS_FLOAT(fValue));
+      break;
+    case GL_TEXTURE_COMPARE_FUNC:
+    case GL_TEXTURE_COMPARE_MODE:
+    case GL_TEXTURE_MAG_FILTER:
+    case GL_TEXTURE_MIN_FILTER:
+    case GL_TEXTURE_WRAP_R:
+    case GL_TEXTURE_WRAP_S:
+    case GL_TEXTURE_WRAP_T:
+      GLint iValue;
+      glGetSamplerParameteriv(sampler, pname, &iValue);
+      info.GetReturnValue().Set(JS_INT(iValue));
+      break;
+  }
 }
 
 /* struct GLObj {
