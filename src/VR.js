@@ -364,8 +364,8 @@ class FakeVRDisplay extends VRDisplay {
 
   requestPresent() {
     this.isPresenting = true;
-    
-    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio;
+
+    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
     GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
 
     if (this.onvrdisplaypresentchange) {
@@ -425,6 +425,15 @@ class FakeVRDisplay extends VRDisplay {
         projectionMatrix: xrState.leftProjectionMatrix,
         _viewport: {
           x: 0,
+          y: 0,
+          width: xrState.renderWidth[0],
+          height: xrState.renderHeight[0],
+        },
+      }, {
+        eye: 'right',
+        projectionMatrix: xrState.rightProjectionMatrix,
+        _viewport: {
+          x: xrState.renderWidth[0],
           y: 0,
           width: xrState.renderWidth[0],
           height: xrState.renderHeight[0],
@@ -500,23 +509,13 @@ class FakeVRDisplay extends VRDisplay {
   } */
 
   getLayers() {
-    if (!this._stereo) {
-      return [
-        {
-          leftBounds: [0, 0, 1, 1],
-          rightBounds: [1, 0, 1, 1],
-          source: null,
-        }
-      ];
-    } else {
-      return [
-        {
-          leftBounds: [0, 0, 0.5, 1],
-          rightBounds: [0.5, 0, 1, 1],
-          source: null,
-        }
-      ];
-    }
+    return [
+      {
+        leftBounds: [0, 0, 0.5, 1],
+        rightBounds: [0.5, 0, 0.5, 1],
+        source: null,
+      }
+    ];
   }
   
   getEyeParameters(eye) {
@@ -539,7 +538,9 @@ class FakeVRDisplay extends VRDisplay {
     )
      .getInverse(localMatrix)
      .toArray(GlobalContext.xrState.leftViewMatrix);
-     
+
+    GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
+ 
     /* localMatrix.compose(
       localVector.copy(this.position)
         .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
