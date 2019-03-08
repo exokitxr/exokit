@@ -2712,7 +2712,16 @@ const _bootFakeDisplay = async () => {
 
   display = fakeDisplay;
 
-  _openUrl('tutorial.html');
+  const tabUrl = (() => {
+    const {t = 'examples/tutorial.html'} = query;
+    if (!/^[a-z]+:\/\//.test(t)) {
+      return `../${t}`;
+    } else {
+      return t;
+    }
+  })();
+  _openUrl(tabUrl);
+
   focusedTab = rig.menuMesh.urlMesh;
   rig.menuMesh.urlMesh.updateText();
   rig.menuMesh.listMesh.updateList();
