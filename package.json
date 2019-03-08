@@ -44,6 +44,7 @@
   "homepage": "https://github.com/exokitxr/exokit#readme",
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
+    "android-toolchain": "github:ngokevin/android-toolchain",
     "bugsnag": "^2.4.3",
     "cross-env": "^5.2.0",
     "css": "^2.2.4",

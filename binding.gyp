@@ -2,8 +2,28 @@
   'targets': [
     {
       'target_name': 'exokit',
+      'cflags': ['-fpie', '-fpic', '-shared'],
 			'xcode_settings': {
-        'CLANG_CXX_LIBRARY': 'libstdc++'
+        'CLANG_CXX_LIBRARY': 'libstdc++',
+        'OTHER_LDFLAGS': [
+          '-shared -Wl,-soname,libEGL.so',
+          '-Wl,-rpath,<!(echo $TOOLCHAIN_LIB)',
+          '-Wl,-rpath-link,<!(echo $TOOLCHAIN_LIB)',
+          '-Wl,--as-needed',
+          #'-shared',
+          # '-Wl,-shared',
+          '-Wl,--export-dynamic',
+          # '-Wl,-fpie',
+          # '-Wl,-fpic',
+          '-Wl,-pie',
+          '-Wl,-Bsymbolic', # required for ffmpeg asm linkage
+          "-Wl,-z,defs",
+          "-Wl,-Bdynamic",
+          "-Wl,-call_shared",
+          "-Wl,-dy",
+        ],
+        'ARCHS': ['aarch64'],
+        'LD_RUNTIME_SEARCH_PATHS': "<!(echo $TOOLCHAIN_LIB)"
 			},
       'conditions': [
         ['"<!(echo $LUMIN$ANDROID)"!="1"', {
@@ -598,6 +618,10 @@
             # "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
             "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include')\")",
             "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include/webrtc')\")",
+            "<!(echo $TOOLCHAIN_LIB)",
+            "<!(echo $TOOLCHAIN_INCLUDE_LIB)",
+            "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)/EGL",
+            "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)",
             '<(module_root_dir)/deps/exokit-bindings',
             '<(module_root_dir)/deps/exokit-bindings/utf8',
             '<(module_root_dir)/deps/exokit-bindings/node',
@@ -613,15 +637,13 @@
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
             '<(module_root_dir)/deps/exokit-bindings/egl/include',
-            '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
-            "<!(echo $TOOLCHAIN_INCLUDE_LIB)",
-            "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)",
-            "<!(echo $TOOLCHAIN_INCLUDE_EGL)"
+            '<(module_root_dir)/deps/exokit-bindings/webrtc/include'
           ],
           'library_dirs': [
+            "<!(echo $TOOLCHAIN_USR)",
             "<!(echo $TOOLCHAIN_LIB)",
-            "<!(echo $TOOLCHAIN_LIB_CXX)",
             "<!(echo $TOOLCHAIN_LIB_64)",
+            "<!(echo $TOOLCHAIN_LIB_CXX)",
             "<(module_root_dir)/node_modules/native-canvas-deps/lib2/android",
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/android",
             "<(module_root_dir)/node_modules/native-video-deps/lib2/android",
@@ -631,18 +653,17 @@
             "<!(echo $TOOLCHAIN_LIB_CXX)/libstdc++.a",
             "<(module_root_dir)/node_modules/libnode.a/libnode.a",
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/android/libLabSound.a",
+            # "-lEGL",
             '-lskia',
-            '-lLabSound',
             '-lavformat',
             '-lavcodec',
             '-lavutil',
             '-lavdevice',
+            '-lLabSound',
             '-lswscale',
             '-lswresample',
             '-lopus',
             '-lwebrtc',
-          ],
-          'ldflags': [
           ],
           'defines': [
             'ANDROID',
@@ -650,7 +671,15 @@
             'NOMINMAX',
             'WRAPPING_CEF_SHARED',
             'WEBRTC_POSIX',
-          ]
+          ],
+          'copies': [
+            {
+              'destination': '<(module_root_dir)/build/Release/',
+              'files': [
+                "<!(echo $TOOLCHAIN_LIB)/libEGL.so"
+              ]
+            },
+          ],
         }],
       ],
     },
