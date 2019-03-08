@@ -1188,13 +1188,12 @@ const _startRenderLoop = () => {
             }
 
             if (vrPresentState.oculusSystem) {
-              vrPresentState.oculusSystem.Submit(context, vrPresentState.tex, vrPresentState.fbo);
+              vrPresentState.oculusSystem.Submit(context, vrPresentState.tex, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
             } else {
               vrPresentState.compositor.Submit(context, vrPresentState.tex);
             }
 
             vrPresentState.hasPose = false;
-            // console.log("CACA " + vrPresentState.fbo);
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array

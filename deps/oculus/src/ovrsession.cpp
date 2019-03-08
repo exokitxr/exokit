@@ -73,11 +73,12 @@ NAN_METHOD(OVRSession::SetupSwapChain)
   ovrResult result;
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
   // Configure Stereo settings.
-  ovrHmdDesc hmdDesc = ovr_GetHmdDesc(session);
+  ovrHmdDesc *hmdDesc = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
+  *hmdDesc = ovr_GetHmdDesc(session);
   GLuint *fboId = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->fboId;
   EyeSwapChain *eyes = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
-  ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(session, ovrEye_Left, hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
-  ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(session, ovrEye_Right, hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
+  ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(session, ovrEye_Left, hmdDesc->DefaultEyeFov[ovrEye_Left], 1);
+  ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(session, ovrEye_Right, hmdDesc->DefaultEyeFov[ovrEye_Right], 1);
   ovrSizei bufferSize;
 
   eyes[0].textureSize.w = recommenedTex0Size.w;
@@ -154,7 +155,7 @@ NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)
   }
 
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
-  ovrHmdDesc hmdDesc = ovr_GetHmdDesc(session);
+  ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
 
   // Oculus: Initialize Swap Chain
   ovrSizei leftEyeTextureSize = ovr_GetFovTextureSize(session, ovrEye_Left, hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
@@ -185,6 +186,7 @@ NAN_METHOD(OVRSession::RequestGetPoses) {
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
   EyeSwapChain *eyes = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
+  ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
   Local<Float32Array> hmdFloat32Array = Local<Float32Array>::Cast(info[0]);
   Local<Float32Array> leftControllerFloat32Array = Local<Float32Array>::Cast(info[1]);
   Local<Float32Array> rightControllerFloat32Array = Local<Float32Array>::Cast(info[2]);
@@ -193,8 +195,6 @@ NAN_METHOD(OVRSession::RequestGetPoses) {
   float *hmdArray = (float *)((char *)hmdFloat32Array->Buffer()->GetContents().Data() + hmdFloat32Array->ByteOffset());
   float *leftControllerArray = (float *)((char *)leftControllerFloat32Array->Buffer()->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
   float *rightControllerArray = (float *)((char *)rightControllerFloat32Array->Buffer()->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
-
-  ovrHmdDesc hmdDesc = ovr_GetHmdDesc(session);
 
   // Call ovr_GetRenderDesc each frame to get the ovrEyeRenderDesc, as the returned values (e.g. HmdToEyePose) may change at runtime.
   ovrEyeRenderDesc eyeRenderDesc[2];
@@ -233,6 +233,7 @@ NAN_METHOD(OVRSession::GetPose) {
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
   EyeSwapChain *eyes = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
+  ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
   Local<Float32Array> position32Array = Local<Float32Array>::Cast(info[0]);
   Local<Float32Array> orientation32Array = Local<Float32Array>::Cast(info[1]);
   Local<Float32Array> leftView32Array = Local<Float32Array>::Cast(info[2]);
@@ -247,7 +248,6 @@ NAN_METHOD(OVRSession::GetPose) {
   float *rightViewArray = (float *)((char *)rightView32Array->Buffer()->GetContents().Data() + rightView32Array->ByteOffset());
   float *rightProjectionArray = (float *)((char *)rightProjection32Array->Buffer()->GetContents().Data() + rightProjection32Array->ByteOffset());
 
-  ovrHmdDesc hmdDesc = ovr_GetHmdDesc(session);
 
   // Call ovr_GetRenderDesc each frame to get the ovrEyeRenderDesc, as the returned values (e.g. HmdToEyePose) may change at runtime.
   ovrEyeRenderDesc eyeRenderDesc[2];
@@ -279,21 +279,40 @@ NAN_METHOD(OVRSession::GetPose) {
 
   // Left view / projection
   Matrix4f rollPitchYaw = Matrix4f(eyeRenderPoses[0].Orientation);
-  Vector3f up = rollPitchYaw.Transform(Vector3f(0, 1, 0));
-  Vector3f forward = rollPitchYaw.Transform(Vector3f(0, 0, -1));
-  Vector3f eye = rollPitchYaw.Transform(eyeRenderPoses[0].Position);
+  Vector3f up = Vector3f(0, 1, 0);
+  Vector3f forward = Vector3f(0, 0, -1);
+  Vector3f eye = eyeRenderPoses[0].Position;
 
-  Matrix4f leftViewMatrix =
-  Matrix4f::LookAtRH(eye, forward, up);
+  Matrix4f leftViewMatrix = Matrix4f::LookAtRH(eye, forward, up);
   Matrix4f leftProjectionMatrix = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[0], 0.2f, 1000.0f, ovrProjection_None);
 
   rollPitchYaw = Matrix4f(eyeRenderPoses[1].Orientation);
-  up = rollPitchYaw.Transform(Vector3f(0, 1, 0));
-  forward = rollPitchYaw.Transform(Vector3f(0, 0, -1));
-  eye = rollPitchYaw.Transform(eyeRenderPoses[1].Position);
+  up = Vector3f(0, 1, 0);
+  forward = Vector3f(0, 0, -1);
+  eye = eyeRenderPoses[1].Position;
 
   Matrix4f rightViewMatrix = Matrix4f::LookAtRH(eye, forward, up);
   Matrix4f rightProjectionMatrix = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[1], 0.2f, 1000.0f, ovrProjection_None);
+
+  // std::cout << "--- Matrix View ---" << std::endl;
+  // std::cout << rightViewMatrix.M[0][0] << ' ' << rightViewMatrix.M[0][1] << ' ' << rightViewMatrix.M[0][2] << ' ' << rightViewMatrix.M[0][3] << ' ' << std::endl;
+  // std::cout << rightViewMatrix.M[1][0] << ' ' << rightViewMatrix.M[1][1] << ' ' << rightViewMatrix.M[1][2] << ' ' << rightViewMatrix.M[1][3] << ' ' << std::endl;
+  // std::cout << rightViewMatrix.M[2][0] << ' ' << rightViewMatrix.M[2][1] << ' ' << rightViewMatrix.M[2][2] << ' ' << rightViewMatrix.M[2][3] << ' ' << std::endl;
+  // std::cout << rightViewMatrix.M[3][0] << ' ' << rightViewMatrix.M[3][1] << ' ' << rightViewMatrix.M[3][2] << ' ' << rightViewMatrix.M[3][3] << ' ' << std::endl;
+  // std::cout << "--- End Matrix ---" << std::endl;
+
+  // std::cout << "--- Matrix Projection ---" << std::endl;
+  // std::cout << rightProjectionMatrix.M[0][0] << ' ' << rightProjectionMatrix.M[0][1] << ' ' << rightProjectionMatrix.M[0][2] << ' ' << rightProjectionMatrix.M[0][3] << ' ' << std::endl;
+  // std::cout << rightProjectionMatrix.M[1][0] << ' ' << rightProjectionMatrix.M[1][1] << ' ' << rightProjectionMatrix.M[1][2] << ' ' << rightProjectionMatrix.M[1][3] << ' ' << std::endl;
+  // std::cout << rightProjectionMatrix.M[2][0] << ' ' << rightProjectionMatrix.M[2][1] << ' ' << rightProjectionMatrix.M[2][2] << ' ' << rightProjectionMatrix.M[2][3] << ' ' << std::endl;
+  // std::cout << rightProjectionMatrix.M[3][0] << ' ' << rightProjectionMatrix.M[3][1] << ' ' << rightProjectionMatrix.M[3][2] << ' ' << rightProjectionMatrix.M[3][3] << ' ' << std::endl;
+  // std::cout << "--- End Matrix ---" << std::endl;
+
+  // std::cout << "--- FOV ---" << std::endl;
+  // std::cout << hmdDesc.DefaultEyeFov[1].LeftTan << std::endl;
+  // std::cout << hmdDesc.DefaultEyeFov[1].RightTan << std::endl;
+  // std::cout << hmdDesc.DefaultEyeFov[1].UpTan << std::endl;
+  // std::cout << hmdDesc.DefaultEyeFov[1].DownTan << std::endl;
 
   for (unsigned int v = 0; v < 4; v++) {
     for (unsigned int u = 0; u < 4; u++) {
@@ -307,13 +326,32 @@ NAN_METHOD(OVRSession::GetPose) {
 
 NAN_METHOD(OVRSession::Submit)
 {
+
+  if (info.Length() != 5)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
+
+  if (!(info[0]->IsObject() && info[1]->IsNumber()))
+  {
+    Nan::ThrowError("Expected arguments (object, number).");
+    return;
+  }
+
+  WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  GLuint textureSource = info[1]->Uint32Value();
+  GLuint fboIdSource = info[2]->Uint32Value();
+  int canvasWidth = info[3]->Uint32Value();
+  int canvasHeight = info[4]->Uint32Value();
+
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
   int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
   GLuint fboId = ObjectWrap::Unwrap<OVRSession>(info.Holder())->fboId;
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
   double sensorSampleTime = ObjectWrap::Unwrap<OVRSession>(info.Holder())->sensorSampleTime;
   EyeSwapChain *eyes = ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
-  ovrHmdDesc hmdDesc = ovr_GetHmdDesc(session);
+  ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
 
   // Eye textures clear.
   GLuint colorTextureId;
@@ -338,6 +376,15 @@ NAN_METHOD(OVRSession::Submit)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTextureId, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTextureId, 0);
 
+    // glBlitNamedFramebuffer(
+    //   fboIdSource,
+    //   fboId,
+    //   eye == 0 ? 0 : canvasWidth / 2, 0,
+    //   eye == 0 ? canvasWidth / 2 : canvasWidth, canvasHeight,
+    //   0, 0, eyes[eye].textureSize.w, eyes[eye].textureSize.h,
+    //   GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+    //   GL_LINEAR);
+
     glViewport(0, 0, eyes[eye].textureSize.w, eyes[eye].textureSize.h);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_FRAMEBUFFER_SRGB);
@@ -347,6 +394,23 @@ NAN_METHOD(OVRSession::Submit)
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+
+    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+      glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+    } else {
+      glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+    } else {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    }
+    if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
+      glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
+    } else {
+      glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    }
+
   }
 
   // Distortion, Present and flush/sync
@@ -369,5 +433,4 @@ NAN_METHOD(OVRSession::Submit)
   ovrResult result = ovr_SubmitFrame(session, *frameIndex, nullptr, &layers, 1);
 
   *frameIndex += 1;
-  //std::cout << "CACA " << *fboId << std::endl;
 }
