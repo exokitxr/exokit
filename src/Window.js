@@ -495,6 +495,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.URL = URL;
   window.console = console;
+  window.alert = console.log;
   window.setTimeout = (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
     fn[symbols.windowSymbol] = window;
