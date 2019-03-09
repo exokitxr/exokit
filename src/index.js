@@ -495,7 +495,13 @@ if (nativeBindings.nativeVr) {
 
         const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
-        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        let {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+        const maxTextureSize = 4096;
+        if (halfWidth > maxTextureSize) {
+          const factor = halfWidth / maxTextureSize;
+          halfWidth = 4096;
+          height = Math.floor(height / factor);
+        }
         const width = halfWidth * 2;
         xrState.renderWidth[0] = halfWidth;
         xrState.renderHeight[0] = height;
