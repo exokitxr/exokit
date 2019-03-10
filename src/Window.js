@@ -646,7 +646,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     class WebSocket extends Old {
       constructor(url, protocols) {
         super(url, protocols, {
-          Origin: location.origin,
+          origin: location.origin,
         });
       }
       emit(type, event) {
