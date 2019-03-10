@@ -644,6 +644,11 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   })(XMLHttpRequest);
   window.WebSocket = (Old => {
     class WebSocket extends Old {
+      constructor(url, protocols) {
+        super(url, protocols, {
+          Origin: location.origin,
+        });
+      }
       emit(type, event) {
         if (type === 'message') {
           event = utils._normalizePrototype(event, window);
