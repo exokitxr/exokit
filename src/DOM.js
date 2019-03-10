@@ -689,11 +689,23 @@ class Element extends Node {
       throw new Error('The node to be removed is not a child of this node.');
     }
   }
+  
+  append() {
+    for (let i = 0; i < arguments.length; i++) {
+      const content = arguments[0];
+      if (typeof content === 'string') {
+        this.appendChild(this.ownerDocument.createTextNode(content));
+      } else {
+        this.appendChild(content);
+      }
+    }
+  }
   remove() {
     if (this.parentNode !== null) {
       this.parentNode.removeChild(this);
     }
   }
+  
   replaceChild(newChild, oldChild) {
     const index = this.childNodes.indexOf(oldChild);
     if (index !== -1) {
