@@ -1544,6 +1544,10 @@ class HTMLLinkElement extends HTMLLoadableElement {
 }
 module.exports.HTMLLinkElement = HTMLLinkElement;
 
+const _mapUrl = (u, window) => {
+  const v = window[symbols.optionsSymbol].replacements[u];
+  return v !== undefined ? v : u;
+};
 class HTMLScriptElement extends HTMLLoadableElement {
   constructor(attrs = [], value = '', location = null) {
     super('SCRIPT', attrs, value, location);
@@ -1640,7 +1644,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
   loadRunNow() {
     this.readyState = 'loading';
     
-    const url = this.src;
+    const url = _mapUrl(this.src, this.ownerDocument.defaultView);
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
       this.ownerDocument.defaultView.fetch(url)

@@ -314,6 +314,7 @@ const exokit = (s = '', options = {}) => {
   options.baseUrl = options.baseUrl || options.url;
   options.dataPath = options.dataPath || __dirname;
   options.args = options.args || {};
+  options.replacements = options.replacements || {};
   return _makeWindowWithDocument(s, options);
 };
 exokit.load = (src, options = {}) => {
@@ -321,6 +322,7 @@ exokit.load = (src, options = {}) => {
     src = 'http://' + src;
   }
   options.args = options.args || {};
+  options.replacements = options.replacements || {};
 
   let redirectCount = 0;
   const _fetchTextFollow = src => fetch(src, {
@@ -370,6 +372,7 @@ exokit.load = (src, options = {}) => {
         baseUrl,
         dataPath: options.dataPath,
         args: options.args,
+        replacements: options.replacements,
       });
     });
 };
