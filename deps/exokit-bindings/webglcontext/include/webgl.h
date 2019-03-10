@@ -306,6 +306,8 @@ public:
   static NAN_METHOD(GetVertexAttrib);
   static NAN_METHOD(GetSupportedExtensions);
   static NAN_METHOD(GetExtension);
+  static NAN_METHOD(GetContextAttributes);
+  
   static NAN_METHOD(CheckFramebufferStatus);
 
   static NAN_METHOD(CreateVertexArray);
