@@ -115,6 +115,7 @@ const {
   HTMLIFrameElement,
   SVGElement,
   HTMLCanvasElement,
+  HTMLTextareaElement,
   HTMLTemplateElement,
   createImageBitmap,
   DOMRect,
@@ -716,6 +717,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     SOURCE: HTMLSourceElement,
     IFRAME: HTMLIFrameElement,
     CANVAS: HTMLCanvasElement,
+    TEXTAREA: HTMLTextareaElement,
     TEMPLATE: HTMLTemplateElement,
   };
   window[symbols.optionsSymbol] = options;
@@ -735,6 +737,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.SVGElement = SVGElement;
   window.HTMLIFrameElement = HTMLIFrameElement;
   window.HTMLCanvasElement = HTMLCanvasElement;
+  window.HTMLTextareaElement = HTMLTextareaElement;
   window.HTMLTemplateElement = HTMLTemplateElement;
   window.Node = Node;
   window.Text = Text;
