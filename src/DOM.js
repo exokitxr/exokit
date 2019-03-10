@@ -10,6 +10,7 @@ const parseIntStrict = require('parse-int');
 const selector = require('window-selector');
 const fetch = require('window-fetch');
 const {Blob} = fetch;
+const htmlUnescape = require('unescape');
 
 const bindings = require('./native-bindings');
 const {defaultCanvasSize} = require('./constants');
@@ -2305,6 +2306,34 @@ class HTMLTemplateElement extends HTMLElement {
   }
 }
 module.exports.HTMLTemplateElement = HTMLTemplateElement;
+
+class HTMLTextareaElement extends HTMLElement {
+  constructor(attrs = [], value = '', location = null) {
+    super('TEXTAREA', attrs, value, location);
+  }
+
+  get value() {
+    return this.textContent;
+  }
+  set value(value) {
+    if (this.ownerDocument) { // if this isn't initialization
+      this.textContent = value;
+    }
+  }
+
+  get textLength() {
+    return this.value.length;
+  }
+  set textLength(textLength) {}
+
+  get innerHTML() {
+    return this.textContent;
+  }
+  set innerHTML(innerHTML) {
+    this.textContent = htmlUnescape(innerHTML);
+  }
+}
+module.exports.HTMLTextareaElement = HTMLTextareaElement;
 
 class CharacterNode extends Node {
   constructor(value) {
