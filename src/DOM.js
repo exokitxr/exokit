@@ -1044,7 +1044,7 @@ class Element extends Node {
     while (this.childNodes.length > 0) {
       this.removeChild(this.childNodes[this.childNodes.length - 1]);
     }
-    this.appendChild(new Text(textContent));
+    this.appendChild(this.ownerDocument.createTextNode(textContent));
   }
 
   get onclick() {
@@ -1628,7 +1628,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
   set innerHTML(innerHTML) {
     innerHTML = innerHTML + '';
 
-    this.childNodes = new NodeList([new Text(innerHTML)]);
+    this.childNodes = new NodeList([this.ownerDocument.createTextNode(innerHTML)]);
     this._emit('innerHTML', innerHTML);
   }
 
