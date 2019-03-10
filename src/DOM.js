@@ -2286,7 +2286,8 @@ class HTMLTemplateElement extends HTMLElement {
     return new NodeList();
   }
   set childNodes(childNodes) {
-    this._childNodes = childNodes; }
+    this._childNodes = childNodes;
+  }
 
   get children() {
     return [];
