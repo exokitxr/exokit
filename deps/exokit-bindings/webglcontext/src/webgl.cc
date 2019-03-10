@@ -1127,6 +1127,8 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "getShaderPrecisionFormat", glCallWrap<GetShaderPrecisionFormat>);
   Nan::SetMethod(proto, "getSupportedExtensions", glCallWrap<GetSupportedExtensions>);
   Nan::SetMethod(proto, "getExtension", glCallWrap<GetExtension>);
+  Nan::SetMethod(proto, "getContextAttributes", glCallWrap<GetContextAttributes>);
+
   Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
 
   Nan::SetMethod(proto, "createVertexArray", glCallWrap<CreateVertexArray>);
@@ -5033,6 +5035,18 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else {
     info.GetReturnValue().Set(Null(Isolate::GetCurrent()));
   }
+}
+
+NAN_METHOD(WebGLRenderingContext::GetContextAttributes) {
+  Local<Object> result = Object::New(Isolate::GetCurrent());
+  result->Set(JS_STR("alpha"), JS_BOOL(true));
+  result->Set(JS_STR("antialias"), JS_BOOL(true));
+  result->Set(JS_STR("depth"), JS_BOOL(true));
+  result->Set(JS_STR("failIfMajorPerformanceCaveat"), JS_BOOL(false));
+  result->Set(JS_STR("premultipliedAlpha"), JS_BOOL(true));
+  result->Set(JS_STR("preserveDrawingBuffer"), JS_BOOL(false));
+  result->Set(JS_STR("stencil"), JS_BOOL(false));
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(WebGLRenderingContext::CheckFramebufferStatus) {
