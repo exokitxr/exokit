@@ -399,6 +399,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
     global.process = undefined;
     global.setImmediate = undefined;
+    window.global = undefined;
   })();`;
 
   for (const k in EventEmitter.prototype) {
