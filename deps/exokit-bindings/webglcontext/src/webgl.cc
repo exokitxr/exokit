@@ -4629,12 +4629,8 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       break;
     }
     default: {
-      /* // return a long
-      GLint params;
-      glGetIntegerv(name, &params);
-
-      info.GetReturnValue().Set(JS_INT(params)); */
-      Nan::ThrowError("invalid arguments");
+      // Nan::ThrowError("WebGLRenderingContext::GetParameter: invalid parameter");
+      info.GetReturnValue().Set(Nan::Null());
       break;
     }
   }
