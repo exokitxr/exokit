@@ -78,6 +78,7 @@ const args = (() => {
         'xr',
         'size',
         'download',
+        'replace',
       ],
       alias: {
         v: 'version',
@@ -93,7 +94,8 @@ const args = (() => {
         t: 'tab',
         q: 'quit',
         b: 'blit',
-        r: 'require',
+        r: 'replace',
+        u: 'require',
         n: 'headless',
         d: 'download',
       },
@@ -112,6 +114,7 @@ const args = (() => {
       tab: minimistArgs.tab,
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
+      replace: Array.isArray(minimistArgs.replace) ? minimistArgs.replace : ((minimistArgs.replace !== undefined) ? [minimistArgs.replace] : []),
       require: minimistArgs.require,
       headless: minimistArgs.headless,
       download: minimistArgs.download !== undefined ? (minimistArgs.download || path.join(process.cwd(), 'downloads')) : undefined,
@@ -1767,9 +1770,23 @@ const _start = () => {
     if (u && !url.parse(u).protocol) {
       u = 'file://' + path.resolve(process.cwd(), u);
     }
+    const replacements = (() => {
+      const result = {};
+      for (let i = 0; i < args.replace.length; i++) {
+        const replaceArg = args.replace[i];
+        const replace = replaceArg.split(' ');
+        if (replace.length === 2) {
+          result[replace[0]] = 'file://' + path.resolve(process.cwd(), replace[1]);
+        } else {
+          console.warn(`invalid replace argument: ${replaceArg}`);
+        }
+      }
+      return result;
+    })();
     return core.load(u, {
       dataPath,
       args,
+      replacements,
     });
   } else {
     let window = null;
