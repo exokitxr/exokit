@@ -435,6 +435,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     appCodeName: 'Mozilla',
     appName: 'Netscape',
     appVersion: '5.0',
+    language: 'en-US',
     mediaDevices: {
       getUserMedia(constraints) {
         if (constraints.audio) {
