@@ -4414,6 +4414,50 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case GL_SUBPIXEL_BITS:
     case GL_UNPACK_ALIGNMENT:
     case UNPACK_COLORSPACE_CONVERSION_WEBGL:
+    case GL_FRAGMENT_SHADER_DERIVATIVE_HINT:
+    case GL_MAX_COLOR_ATTACHMENTS:
+    case GL_MAX_DRAW_BUFFERS:
+    case GL_DRAW_BUFFER0:
+    case GL_DRAW_BUFFER1:
+    case GL_DRAW_BUFFER2:
+    case GL_DRAW_BUFFER3:
+    case GL_DRAW_BUFFER4:
+    case GL_DRAW_BUFFER5:
+    case GL_DRAW_BUFFER6:
+    case GL_DRAW_BUFFER7:
+    case GL_DRAW_BUFFER8:
+    case GL_DRAW_BUFFER9:
+    case GL_DRAW_BUFFER10:
+    case GL_DRAW_BUFFER11:
+    case GL_DRAW_BUFFER12:
+    case GL_DRAW_BUFFER13:
+    case GL_DRAW_BUFFER14:
+    case GL_DRAW_BUFFER15:
+    case GL_MAX_3D_TEXTURE_SIZE:
+    case GL_MAX_ARRAY_TEXTURE_LAYERS:
+    case GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS:
+    case GL_MAX_COMBINED_UNIFORM_BLOCKS:
+    case GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS:
+    case GL_MAX_ELEMENT_INDEX:
+    case GL_MAX_ELEMENTS_INDICES:
+    case GL_MAX_ELEMENTS_VERTICES:
+    case GL_MAX_FRAGMENT_INPUT_COMPONENTS:
+    case GL_MAX_FRAGMENT_UNIFORM_BLOCKS:
+    case GL_MAX_FRAGMENT_UNIFORM_COMPONENTS:
+    case GL_MAX_PROGRAM_TEXEL_OFFSET:
+    case GL_MAX_SAMPLES:
+    case GL_MAX_SERVER_WAIT_TIMEOUT:
+    case GL_MAX_TEXTURE_LOD_BIAS:
+    case GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS:
+    case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS:
+    case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS:
+    case GL_MAX_UNIFORM_BLOCK_SIZE:
+    case GL_MAX_UNIFORM_BUFFER_BINDINGS:
+    case GL_MAX_VARYING_COMPONENTS:
+    case GL_MAX_VERTEX_OUTPUT_COMPONENTS:
+    case GL_MAX_VERTEX_UNIFORM_BLOCKS:
+    case GL_MAX_VERTEX_UNIFORM_COMPONENTS:
+    case GL_MIN_PROGRAM_TEXEL_OFFSET:
     {
       // return an int
       GLint param;
@@ -4585,12 +4629,8 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       break;
     }
     default: {
-      /* // return a long
-      GLint params;
-      glGetIntegerv(name, &params);
-
-      info.GetReturnValue().Set(JS_INT(params)); */
-      Nan::ThrowError("invalid arguments");
+      // Nan::ThrowError("WebGLRenderingContext::GetParameter: invalid parameter");
+      info.GetReturnValue().Set(Nan::Null());
       break;
     }
   }
