@@ -283,7 +283,10 @@ NAN_METHOD(OVRSession::GetPose) {
   Vector3f forward = Vector3f(0, 0, -1);
   Vector3f eye = eyeRenderPoses[0].Position;
 
-  Matrix4f leftViewMatrix = Matrix4f::LookAtRH(eye, forward, up);
+  Matrix4f leftViewMatrix = Matrix4f(eyeRenderPoses[0].Orientation);
+  leftViewMatrix.SetTranslation(eyeRenderPoses[0].Position);
+  leftViewMatrix.Invert();
+
   Matrix4f leftProjectionMatrix = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[0], 0.2f, 1000.0f, ovrProjection_None);
 
   rollPitchYaw = Matrix4f(eyeRenderPoses[1].Orientation);
@@ -291,7 +294,9 @@ NAN_METHOD(OVRSession::GetPose) {
   forward = Vector3f(0, 0, -1);
   eye = eyeRenderPoses[1].Position;
 
-  Matrix4f rightViewMatrix = Matrix4f::LookAtRH(eye, forward, up);
+  Matrix4f rightViewMatrix = Matrix4f(eyeRenderPoses[1].Orientation);
+  rightViewMatrix.SetTranslation(eyeRenderPoses[1].Position);
+  rightViewMatrix.Invert();
   Matrix4f rightProjectionMatrix = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[1], 0.2f, 1000.0f, ovrProjection_None);
 
   // std::cout << "--- Matrix View ---" << std::endl;
