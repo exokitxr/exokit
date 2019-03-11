@@ -355,6 +355,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
 GlobalContext.fakeVrDisplayEnabled = false;
 
 const _makeWindow = (options = {}, parent = null, top = null) => {
+  const _load = options.loadCallback || (() => { throw new Error(`Provide options.loadCallback for _makeWindow`); });
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
@@ -1160,7 +1161,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      exokit.load(href, {
+      _load(href, {
         dataPath: options.dataPath,
       })
         .then(newWindow => {
@@ -1176,7 +1177,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           const e = new ErrorEvent('error', {target: this});
           e.message = err.message;
           e.stack = err.stack;
-          this.dispatchEvent(e);
+          window.dispatchEvent(e);
         });
       loading = true;
     }
