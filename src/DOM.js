@@ -582,10 +582,10 @@ class Element extends Node {
     });
     this.on('children', (addedNodes, removedNodes, previousSibling, nextSiblings) => {
       for (let i = 0; i < addedNodes.length; i++) {
-        addedNodes[i].emit('attached');
+        addedNodes[i]._emit('attached');
       }
       for (let i = 0; i < removedNodes.length; i++) {
-        removedNodes[i].emit('removed');
+        removedNodes[i]._emit('removed');
       }
     });
   }
