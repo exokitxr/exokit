@@ -46,7 +46,7 @@ class XRDevice {
     
     this._layers = [];
   }
-  supportsSession({exclusive = false, outputContext = null} = {}) {
+  supportsSession() {
     return Promise.resolve(null);
   }
   requestSession({exclusive = false, outputContext = null} = {}) {
