@@ -1984,6 +1984,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     baseUrl: url,
                     args: options.args,
                     dataPath: options.dataPath,
+                    replacements: options.replacements,
                   }, parentWindow, parentWindow.top);
                   const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
 
