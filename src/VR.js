@@ -493,6 +493,10 @@ class FakeVRDisplay extends VRDisplay {
     return Promise.resolve(session);
   }
   
+  supportsSession() {
+    return Promise.resolve(null);
+  }
+  
   get layers() {
     return this._layers;
   }
