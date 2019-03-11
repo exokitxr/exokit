@@ -58,7 +58,7 @@ NAN_GETTER(glGetterWrap) {
     if (gl->windowHandle) {
       windowsystem::SetCurrentWindowContext(gl->windowHandle);
     }
-    
+
     F(property, info);
   } else {
     info.GetReturnValue().Set(JS_STR(""));
@@ -626,7 +626,7 @@ void setGlConstants(T &proto) {
 
   // external
   JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
-  
+
   //----------------------------------------------------------------------------
   // WebGL 2 constants from:
   // https://www.khronos.org/registry/webgl/specs/latest/2.0/
@@ -1258,11 +1258,11 @@ inline GLuint getImageTexture(Local<Value> arg) {
   if (arg->IsObject()) {
     Local<String> textureString = String::NewFromUtf8(Isolate::GetCurrent(), "texture", NewStringType::kInternalized).ToLocalChecked();
     Local<Value> textureVal = Local<Object>::Cast(arg)->Get(textureString);
-    
+
     if (textureVal->IsObject()) {
       Local<String> idString = String::NewFromUtf8(Isolate::GetCurrent(), "id", NewStringType::kInternalized).ToLocalChecked();
       Local<Value> idVal = Local<Object>::Cast(textureVal)->Get(idString);
-      
+
       if (idVal->IsNumber()) {
         tex = idVal->Uint32Value();
       }
@@ -2921,16 +2921,16 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, (void *)offsetV);
   } else if ((texV = getImageTexture(pixels)) != 0) {
     glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, NULL);
-    
+
     GLuint fbos[2];
     glGenFramebuffers(2, fbos);
-    
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbos[0]);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texV, 0);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasTextureBinding(gl->activeTexture, targetV) ? gl->GetTextureBinding(gl->activeTexture, targetV) : 0, 0);
-    
+
     if (gl->flipY) {
       glBlitFramebuffer(
         0, 0, widthV, heightV,
@@ -2948,7 +2948,7 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     }
 
     // glCopyTexImage2D(targetV, levelV, internalformatV, 0, 0, widthV, heightV, 0);
-    
+
     glDeleteFramebuffers(2, fbos);
 
     if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -4183,7 +4183,7 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
     }
 
     // glCopyTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, 0, 0, widthV, heightV);
-    
+
     glDeleteFramebuffers(2, fbos);
 
     if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -5231,7 +5231,7 @@ NAN_METHOD(WebGL2RenderingContext::GetQuery) {
   GLenum target = info[0]->Int32Value();
   GLenum pname = info[1]->Int32Value();
   GLint value;
-  
+
   glGetQueryiv(target, pname, &value);
   if (glGetError() == GL_NO_ERROR) {
     Local<Object> queryObject = Nan::New<Object>();
@@ -5243,13 +5243,13 @@ NAN_METHOD(WebGL2RenderingContext::GetQuery) {
 }
 
 NAN_METHOD(WebGL2RenderingContext::GetQueryParameter) { // adapted from GetProgramParameter
-  GLint queryId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLuint queryId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
   GLenum pname = info[1]->Int32Value();
-  
+
   switch (pname) {
     case GL_QUERY_RESULT_AVAILABLE:
-      GLint value;
-      glGetQueryObjectiv(queryId, pname, &value);
+      GLuint value;
+      glGetQueryObjectuiv(queryId, pname, &value);
       info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(value)));
       break;
     case GL_QUERY_RESULT:
@@ -5302,7 +5302,7 @@ NAN_METHOD(WebGL2RenderingContext::IsTransformFeedback) {
     info.GetReturnValue().Set(JS_BOOL(ret));
   } else {
     info.GetReturnValue().Set(Nan::New<Boolean>(false));
-  }   
+  }
 }
 
 NAN_METHOD(WebGL2RenderingContext::BindTransformFeedback) {
@@ -5323,17 +5323,17 @@ NAN_METHOD(WebGL2RenderingContext::EndTransformFeedback) {
 
 NAN_METHOD(WebGL2RenderingContext::TransformFeedbackVaryings) {
   GLuint program = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
-   
+
   Local<Array> jsVaryings = Local<Array>::Cast(info[1]);
   GLsizei count = jsVaryings->Length();
-  
+
   char **varyings = new char*[count];
 
   for (int i = 0; i < count; i++) {
     String::Utf8Value v(jsVaryings->Get(i));
     varyings[i] = *v;
   }
-  
+
   GLenum bufferMode = info[2]->Int32Value();
 
   glTransformFeedbackVaryings(program, count, varyings, bufferMode);
@@ -5343,7 +5343,7 @@ NAN_METHOD(WebGL2RenderingContext::TransformFeedbackVaryings) {
 NAN_METHOD(WebGL2RenderingContext::GetTransformFeedbackVarying) {
   GLuint program = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
   GLuint index = info[1]->Int32Value();
-    
+
   char name[1024];
   GLsizei length = 0;
   GLsizei size;
@@ -5362,11 +5362,11 @@ NAN_METHOD(WebGL2RenderingContext::GetTransformFeedbackVarying) {
 }
 
 NAN_METHOD(WebGL2RenderingContext::PauseTransformFeedback) {
-  glPauseTransformFeedback();  
+  glPauseTransformFeedback();
 }
 
 NAN_METHOD(WebGL2RenderingContext::ResumeTransformFeedback) {
-  glResumeTransformFeedback();  
+  glResumeTransformFeedback();
 }
 
 NAN_METHOD(WebGL2RenderingContext::CreateSampler) {
@@ -5406,7 +5406,7 @@ NAN_METHOD(WebGL2RenderingContext::SamplerParameteri) {
   GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
   GLenum pname = info[1]->Int32Value();
   GLint param =  info[2]->Int32Value();
-    
+
   glSamplerParameteri(sampler, pname, param);
 }
 
@@ -5414,14 +5414,14 @@ NAN_METHOD(WebGL2RenderingContext::SamplerParameterf) {
   GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
   GLenum pname = info[1]->Int32Value();
   GLfloat param = info[2]->NumberValue();
-    
+
   glSamplerParameterf(sampler, pname, param);
 }
 
 NAN_METHOD(WebGL2RenderingContext::GetSamplerParameter) {
   GLuint sampler = info[0]->ToObject()->Get(JS_STR("id"))->Uint32Value();
   GLenum pname = info[1]->Int32Value();
-  
+
   switch (pname) {
     case GL_TEXTURE_MIN_LOD:
     case GL_TEXTURE_MAX_LOD:
