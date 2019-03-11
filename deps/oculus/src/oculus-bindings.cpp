@@ -1,6 +1,7 @@
 #include <oculus-bindings.h>
 
 #include <nan.h>
+#include <iostream>
 
 #include <node.h>
 
@@ -10,6 +11,8 @@
 
 using namespace v8;
 
+bool returnValue;
+
 NAN_METHOD(Oculus_Init)
 {
   if (info.Length() != 0)
@@ -18,14 +21,13 @@ NAN_METHOD(Oculus_Init)
     return;
   }
 
-  ovrSession * session = (ovrSession *) malloc(sizeof(ovrSession));
-  ovrResult result = ovr_Initialize(nullptr);
-  if (OVR_FAILURE(result)) { return; }
-
+  ovrSession *session = (ovrSession *) malloc(sizeof(ovrSession));
+  ovrResult result;
   ovrGraphicsLuid luid;
   result = ovr_Create(session, &luid);
   if (OVR_FAILURE(result))
   {
+    Nan::ThrowError("Error creating ovr session");
     ovr_Shutdown();
     return;
   }
@@ -43,25 +45,17 @@ NAN_METHOD(Oculus_IsHmdPresent)
 
   ovrSession session;
   ovrResult result = ovr_Initialize(nullptr);
-  if (OVR_FAILURE(result)) { return; }
-
-  ovrGraphicsLuid luid;
-  result = ovr_Create(&session, &luid);
-  if (OVR_FAILURE(result))
-  {
-    ovr_Shutdown();
+  if (OVR_FAILURE(result)) {
+    Nan::ThrowError("Error initializing ovr");
     return;
   }
 
-  ovrHmdDesc desc = ovr_GetHmdDesc(session);
+  ovrHmdDesc desc = ovr_GetHmdDesc(nullptr);
   if (desc.Type == ovrHmd_None) {
     returnValue = false;
   } else {
     returnValue = true;
   }
-
-  ovr_Destroy(session);
-  ovr_Shutdown();
 
   info.GetReturnValue().Set(Nan::New<Boolean>(returnValue));
 }

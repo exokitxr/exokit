@@ -463,8 +463,7 @@ if (nativeBindings.oculusVr) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
-
-      if (!vrPresentState.glContext) {
+      if (!vrPresentState.glContext || nativeBindings.oculusVr) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
@@ -476,11 +475,19 @@ if (nativeBindings.oculusVr) {
 
         // fps = VR_FPS;
 
-        const system = vrPresentState.system || nativeBindings.oculusVr.Oculus_Init();
+        const system = vrPresentState.system = vrPresentState.system || nativeBindings.oculusVr.Oculus_Init();
         const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
         system.SetupSwapChain(contexts[0]);
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+
+        const maxTextureSize = 4096;
+        if (halfWidth > maxTextureSize) {
+          const factor = halfWidth / maxTextureSize;
+          halfWidth = 4096;
+          height = Math.floor(height / factor);
+        }
+
         const width = halfWidth * 2;
         xrState.renderWidth[0] = halfWidth;
         xrState.renderHeight[0] = height;
@@ -566,12 +573,6 @@ if (nativeBindings.oculusVr) {
     } else {
       throw new Error('no HTMLCanvasElement source provided');
     }
-    // let isOculusConnected = nativeBindings.oculusVr.Oculus_Init();
-    // if (isOculusConnected) {
-    //   console.log("OCULUS CONNECTED");
-    // } else {
-    //   console.log("OCULUS NOT CONNECTED");
-    // }
   }
   nativeBindings.nativeVr.exitPresent = function () {
     return Promise.resolve();
@@ -1290,6 +1291,7 @@ const _startRenderLoop = () => {
         timestamps.total += diff;
         timestamps.last = now;
       }
+
       if (vrPresentState.oculusSystem) {
         vrPresentState.oculusSystem.GetPose(
           localPositionArray3,   // hmd position
@@ -1310,7 +1312,6 @@ const _startRenderLoop = () => {
 
         localVector.toArray(xrState.position);
         localQuaternion.toArray(xrState.orientation);
-
         // console.log("CACA " +
         //   xrState.positon[0] + ' ' +
         //   xrState.positon[1] + ' ' +
