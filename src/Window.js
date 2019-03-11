@@ -452,6 +452,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           return Promise.reject(new Error('constraints not met'));
         }
       },
+      enumerateDevices() {
+        let deviceIds = 0;
+        let groupIds = 0;
+        return Promise.resolve([
+          {
+            deviceId: (++deviceIds) + '',
+            groupId: (++groupIds) + '',
+            kind: 'audioinput',
+            label: 'Microphone',
+          },
+        ]);
+      },
     },
     getVRDisplaysSync() {
       const result = [];
