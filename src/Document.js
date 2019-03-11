@@ -176,6 +176,9 @@ function initDocument (document, window) {
         console.warn(err);
       }
 
+      document.readyState = 'interactive';
+      document.dispatchEvent(new Event('readystatechange', {target: document}));
+
       document.dispatchEvent(new Event('DOMContentLoaded', {
         target: document,
         bubbles: true,
@@ -187,14 +190,14 @@ function initDocument (document, window) {
         console.warn(err);
       }
 
+      document.readyState = 'interactive';
+      document.dispatchEvent(new Event('readystatechange', {target: document}));
+
       document.dispatchEvent(new Event('DOMContentLoaded', {
         target: document,
         bubbles: true,
       }));
     }
-
-    document.readyState = 'interactive';
-    document.dispatchEvent(new Event('readystatechange', {target: document}));
 
     document.readyState = 'complete';
     document.dispatchEvent(new Event('readystatechange', {target: document}));
