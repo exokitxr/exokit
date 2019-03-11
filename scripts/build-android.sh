@@ -24,7 +24,7 @@ export CLANG_CXX_LIBRARY="libstdc++"
 export CC="$TOOLCHAIN/bin/aarch64-linux-android-clang"
 export CXX="$TOOLCHAIN/bin/aarch64-linux-android-clang++"
 export LINK="$TOOLCHAIN/bin/aarch64-linux-android-clang++"
-export PATH=$TOOLCHAIN/bin:$PATH
+# export PATH=$TOOLCHAIN/bin:$PATH
 export AR="$TOOLCHAIN/bin/aarch64-linux-android-ar"
 # export LD="$TOOLCHAIN/bin/aarch64-linux-android-ld"
 
