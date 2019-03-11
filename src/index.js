@@ -573,6 +573,9 @@ if (nativeBindings.oculusVr) {
     //   console.log("OCULUS NOT CONNECTED");
     // }
   }
+  nativeBindings.nativeVr.exitPresent = function () {
+    return Promise.resolve();
+  };
 } else if (nativeBindings.nativeVr) {
   nativeBindings.nativeVr.requestPresent = function(layers) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
@@ -1188,6 +1191,7 @@ const _startRenderLoop = () => {
             }
 
             if (vrPresentState.oculusSystem) {
+              nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
               vrPresentState.oculusSystem.Submit(context, vrPresentState.tex, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
             } else {
               vrPresentState.compositor.Submit(context, vrPresentState.tex);
