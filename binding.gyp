@@ -622,6 +622,7 @@
             "<!(echo $TOOLCHAIN_INCLUDE_LIB)",
             "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)/EGL",
             "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)",
+            "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)/c++/v1",
             '<(module_root_dir)/deps/exokit-bindings',
             '<(module_root_dir)/deps/exokit-bindings/utf8',
             '<(module_root_dir)/deps/exokit-bindings/node',
@@ -650,7 +651,7 @@
             "<(module_root_dir)/node_modules/native-webrtc-deps/lib/magicleap",
           ],
           'libraries': [
-            "<!(echo $TOOLCHAIN_LIB_CXX)/libstdc++.a",
+            "<!(echo $TOOLCHAIN_LIB)/libstdc++.a",
             "<(module_root_dir)/node_modules/libnode.a/libnode.a",
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/android/libLabSound.a",
             # "-lEGL",
