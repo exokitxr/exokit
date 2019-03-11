@@ -315,8 +315,9 @@ const exokit = (s = '', options = {}) => {
   options.dataPath = options.dataPath || __dirname;
   options.args = options.args || {};
   options.replacements = options.replacements || {};
-  options.loadCallback = options.loadCallback || ((href, opts) => exokit.load(href, opts));
-  return _makeWindowWithDocument(s, options);
+  return _makeWindowWithDocument(
+    (href, opts) => exokit.load(href, opts),
+    s, options);
 };
 exokit.load = (src, options = {}) => {
   if (!url.parse(src).protocol) {

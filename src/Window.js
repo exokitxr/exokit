@@ -354,8 +354,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
 
 GlobalContext.fakeVrDisplayEnabled = false;
 
-const _makeWindow = (options = {}, parent = null, top = null) => {
-  const _load = options.loadCallback || (() => { throw new Error(`Provide options.loadCallback for _makeWindow`); });
+const _makeWindow = (loadCallback, options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
@@ -1161,7 +1160,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      _load(href, {
+      loadCallback(href, {
         dataPath: options.dataPath,
       })
         .then(newWindow => {
@@ -1364,8 +1363,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 module.exports._makeWindow = _makeWindow;
 GlobalContext._makeWindow = _makeWindow;
 
-const _makeWindowWithDocument = (s, options, parent, top) => {
-  const window = _makeWindow(options, parent, top);
+const _makeWindowWithDocument = (loadCallback, s, options, parent, top) => {
+  const window = _makeWindow(loadCallback, options, parent, top);
   window.document = _parseDocument(s, window);
   return window;
 };
