@@ -2,29 +2,6 @@
   'targets': [
     {
       'target_name': 'exokit',
-      'cflags': ['-fpie', '-fpic', '-shared'],
-			'xcode_settings': {
-        'CLANG_CXX_LIBRARY': 'libstdc++',
-        'OTHER_LDFLAGS': [
-          '-shared -Wl,-soname,libEGL.so',
-          '-Wl,-rpath,<!(echo $TOOLCHAIN_LIB)',
-          '-Wl,-rpath-link,<!(echo $TOOLCHAIN_LIB)',
-          '-Wl,--as-needed',
-          #'-shared',
-          # '-Wl,-shared',
-          '-Wl,--export-dynamic',
-          # '-Wl,-fpie',
-          # '-Wl,-fpic',
-          '-Wl,-pie',
-          '-Wl,-Bsymbolic', # required for ffmpeg asm linkage
-          "-Wl,-z,defs",
-          "-Wl,-Bdynamic",
-          "-Wl,-call_shared",
-          "-Wl,-dy",
-        ],
-        'ARCHS': ['aarch64'],
-        'LD_RUNTIME_SEARCH_PATHS': "<!(echo $TOOLCHAIN_LIB)"
-			},
       'conditions': [
         ['"<!(echo $LUMIN$ANDROID)"!="1"', {
           'conditions': [
@@ -591,6 +568,10 @@
           ],
         }],
         ['"<!(echo $ANDROID)"=="1"', {
+          'xcode_settings': {
+            'ARCHS': ['aarch64'],
+            'CLANG_CXX_LIBRARY': 'libstdc++'
+          },
           'sources': [
             'exokit.cpp',
             '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
@@ -654,7 +635,6 @@
             "<!(echo $TOOLCHAIN_LIB)/libstdc++.a",
             "<(module_root_dir)/node_modules/libnode.a/libnode.a",
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/android/libLabSound.a",
-            # "-lEGL",
             '-lskia',
             '-lavformat',
             '-lavcodec',
@@ -677,7 +657,8 @@
             {
               'destination': '<(module_root_dir)/build/Release/',
               'files': [
-                "<!(echo $TOOLCHAIN_LIB)/libEGL.so"
+                "<!(echo $TOOLCHAIN_LIB)/libEGL.so",
+                "<!(echo $TOOLCHAIN_LIB)/libGLESv2.so"
               ]
             },
           ],
