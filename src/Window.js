@@ -31,8 +31,8 @@ const {
   RTCPeerConnection,
   /* RTCPeerConnectionIceEvent,
   RTCRtpReceiver,
-  RTCRtpSender,
-  RTCRtpTransceiver, */
+  RTCRtpSender, */
+  RTCRtpTransceiver,
   RTCSessionDescription,
   
   RTCPeerConnectionIceEvent,
@@ -768,15 +768,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.NodeList = NodeList;
   window.HTMLCollection = HTMLCollection;
 
-  /* window.MediaStream = MediaStream;
-  window.MediaStreamTrack = MediaStreamTrack;
-  window.RTCDataChannel = RTCDataChannel;
-  window.RTCIceCandidate = RTCIceCandidate;
-  window.RTCPeerConnection = RTCPeerConnection;
+  /* window.MediaStreamTrack = MediaStreamTrack;
   window.RTCRtpReceiver = RTCRtpReceiver;
-  window.RTCRtpSender = RTCRtpSender;
-  window.RTCRtpTransceiver = RTCRtpTransceiver;
-  window.RTCSessionDescription = RTCSessionDescription; */
+  window.RTCRtpSender = RTCRtpSender; */
   window.MediaStream = class MediaStream {};
   
   window.RTCPeerConnection = RTCPeerConnection;
@@ -787,6 +781,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.RTCDataChannelEvent = RTCDataChannelEvent;
   window.RTCDataChannelMessageEvent = RTCDataChannelMessageEvent;
   window.RTCTrackEvent = RTCTrackEvent;
+
+  window.RTCRtpTransceiver = RTCRtpTransceiver;
 
   window.customElements = new CustomElementRegistry(window);
   window.CustomElementRegistry = CustomElementRegistry;
