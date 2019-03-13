@@ -72,41 +72,12 @@ NAN_SETTER(AnalyserNode::FftSizeSetter) {
 
   if (value->IsNumber()) {
     AnalyserNode *analyserNode = ObjectWrap::Unwrap<AnalyserNode>(info.This());
-    shared_ptr<lab::AudioNode> oldAudioNode = analyserNode->audioNode;
-
+    shared_ptr<lab::AnalyserNode> labAnalyserNode = *(shared_ptr<lab::AnalyserNode> *)(&analyserNode->audioNode);
     Local<Object> audioContextObj = Nan::New(analyserNode->context);
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
-
-    unsigned int newValue = value->Uint32Value();
-    shared_ptr<lab::AudioNode> newAudioNode = make_shared<lab::AnalyserNode>(newValue);
-
-    shared_ptr<lab::AudioNodeInput> oldSrc = oldAudioNode->input(0);
-    if (oldSrc && oldSrc->node()) {
-      shared_ptr<lab::AudioNode> oldSrcNode(oldSrc->node(), shared_ptr_release_deleter<lab::AudioNode>());
-
-      size_t oldSrcOutputIndex = 0;
-      size_t numSrcOutputs = oldSrc->node()->numberOfOutputs();
-      for (size_t i = 0; i < numSrcOutputs; i++) {
-        if (oldSrcNode->output(i)->node() == oldAudioNode.get()) {
-          oldSrcOutputIndex = i;
-          break;
-        }
-      }
-      audioContext->audioContext->connect(newAudioNode, oldSrcNode, 0, oldSrcOutputIndex);
-    }
-    shared_ptr<lab::AudioNodeOutput> oldDst = oldAudioNode->output(0);
-    if (oldDst && oldDst->node()) {
-      shared_ptr<lab::AudioNode> oldDstNode(oldDst->node(), shared_ptr_release_deleter<lab::AudioNode>());
-
-      size_t oldDstInputIndex = 0;
-      size_t numDstOutputs = oldDst->node()->numberOfOutputs();
-      for (size_t i = 0; i < numDstOutputs; i++) {
-        if (oldDstNode->input(i)->node() == oldAudioNode.get()) {
-          oldDstInputIndex = i;
-          break;
-        }
-      }
-      audioContext->audioContext->connect(oldDstNode, newAudioNode, oldDstInputIndex, 0);
+    {
+      lab::ContextRenderLock lock(audioContext->audioContext.get(), "AnalyserNode::FftSizeSetter");
+      labAnalyserNode->setFFTSize(lock, value->Uint32Value());
     }
   } else {
     Nan::ThrowError("value: invalid arguments");
