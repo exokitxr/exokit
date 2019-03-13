@@ -3095,6 +3095,8 @@ NAN_METHOD(MLContext::Present) {
 }
 
 NAN_METHOD(MLContext::Exit) {
+  ML_LOG(Info, "%s: MLContext exit start", application_name);
+
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
   if (MLGraphicsDestroyClient(&mlContext->graphics_client) != MLResult_Ok) {
@@ -3158,6 +3160,8 @@ NAN_METHOD(MLContext::Exit) {
 
   // HACK: force the app to be "stopped"
   application_context.dummy_value = DummyValue::STOPPED;
+
+  ML_LOG(Info, "%s: MLContext exit end", application_name);
 }
 
 /* NAN_METHOD(MLContext::WaitGetPoses) {
