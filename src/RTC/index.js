@@ -9,4 +9,4 @@ exports.RTCDataChannelEvent = require('./datachannelevent');
 exports.RTCDataChannelMessageEvent = require('./datachannelmessageevent');
 exports.RTCTrackEvent = require('./trackevent');
 
-exports.RTCRtpTransceiver = require('./rtcttptransceiver');
+exports.RTCRtpTransceiver = require('./rtcrtptransceiver');
