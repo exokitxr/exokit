@@ -5243,22 +5243,27 @@ NAN_METHOD(WebGL2RenderingContext::GetQuery) {
 }
 
 NAN_METHOD(WebGL2RenderingContext::GetQueryParameter) { // adapted from GetProgramParameter
-  GLint queryId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
+  GLuint queryId = info[0]->ToObject()->Get(JS_STR("id"))->Int32Value();
   GLenum pname = info[1]->Int32Value();
   
   switch (pname) {
-    case GL_QUERY_RESULT_AVAILABLE:
-      GLint value;
-      glGetQueryObjectiv(queryId, pname, &value);
-      info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(value)));
+    case GL_QUERY_RESULT_AVAILABLE: {
+      GLuint value;
+      glGetQueryObjectuiv(queryId, pname, &value);
+      bool result = value != 0;
+      info.GetReturnValue().Set(JS_BOOL(result));
       break;
-    case GL_QUERY_RESULT:
-      GLuint uValue;
-      glGetQueryObjectuiv(queryId, pname, &uValue);
-      info.GetReturnValue().Set(JS_FLOAT(static_cast<unsigned long>(uValue)));
+    }
+    case GL_QUERY_RESULT: {
+      GLuint value;
+      glGetQueryObjectuiv(queryId, pname, &value);
+      info.GetReturnValue().Set(JS_INT(value));
       break;
-    default:
+    }
+    default: {
       Nan::ThrowTypeError("GetQueryParameter: Invalid Enum");
+      break;
+    }
   }
 }
 
