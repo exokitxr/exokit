@@ -8,3 +8,5 @@ exports.RTCPeerConnectionIceEvent = require('./rtcpeerconnectioniceevent');
 exports.RTCDataChannelEvent = require('./datachannelevent');
 exports.RTCDataChannelMessageEvent = require('./datachannelmessageevent');
 exports.RTCTrackEvent = require('./trackevent');
+
+exports.RTCRtpTransceiver = require('./rtcrtptransceiver');
