@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+  <body>
+    <script src="three.js"></script>
+    <script>
+let renderer, scene, hiddenScene, camera, iframe, planeMesh, renderTarget;
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localCoord = new THREE.Vector2();
+const localPlane = new THREE.Plane();
+const localLine = new THREE.Line3();
+const localLine2 = new THREE.Line3();
+
+const planeWorldWidth = 0.9;
+const planeWorldHeight = 0.9;
+const boxMeshSize = 0.02;
+const planeWidth = 1280;
+const planeHeight = 1024;
+
+function init() {
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+  });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // window.browser.magicleap.RequestDepthPopulation(true);
+  // renderer.autoClear = false;
+
+  document.body.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  scene.matrixAutoUpdate = false;
+
+  hiddenScene = new THREE.Scene();
+  hiddenScene.matrixAutoUpdate = false;
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  hiddenScene.add(camera);
+
+  const vertexShader = [
+    'attribute vec2 uv;',
+    'varying vec2 vUv;',
+    'void main() {',
+      // 'vec4 worldPosition = modelMatrix * vec4( position, 1.0 );',
+      // 'vWorldPosition = worldPosition.xyz;',
+      'gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
+      'vUv = uv;',
+    '}'
+  ].join('\n');
+  const fragmentShader = [
+    'sampler2D t;',
+    'varying vec2 vUv;',
+    'void main() {',
+      'gl_FragColor = texture2D(t, vUv);',
+    '}'
+  ].join('\n');
+
+  planeMesh = (() => {
+    const geometry = new THREE.PlaneBufferGeometry(planeWorldWidth, planeWorldHeight)
+      // .applyMatrix(new THREE.Matrix4().makeScale(-1, -1, 1));
+    const uvs = geometry.attributes.uv.array;
+    const numUvs = uvs.length / 2;
+    for (let i = 0; i < numUvs; i++) {
+      uvs[i*2+1] = 1 - uvs[i*2+1];
+    }
+    /* const material = new THREE.MeshPhongMaterial({
+      color: 0xFFFF00,
+    }); */
+    const texture = new THREE.Texture(
+      null,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.NearestFilter,
+      THREE.NearestFilter,
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType,
+      16
+    );
+    const properties = renderer.properties.get(texture);
+    properties.__webglTexture = iframe.texture;
+    properties.__webglInit = true;
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.z = -1;
+    mesh.projectMouse = (x, y) => {
+      const leftLine = localLine;
+      const topLine = localLine2;
+      const plane = localPlane;
+
+      leftLine.start
+        .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+        .applyMatrix4(mesh.matrixWorld);
+      leftLine.end
+        .set(-planeWorldWidth/2, -planeWorldHeight/2, 0)
+        .applyMatrix4(mesh.matrixWorld);
+
+      topLine.start
+        .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+        .applyMatrix4(mesh.matrixWorld);
+      topLine.end
+        .set(planeWorldWidth/2, planeWorldHeight / 2, 0)
+        .applyMatrix4(mesh.matrixWorld);
+
+      plane.setFromCoplanarPoints(
+        leftLine.start,
+        leftLine.end,
+        topLine.end
+      );
+    };
+
+    return mesh;
+  })();
+  hiddenScene.add(planeMesh);
+
+  const boxMesh = (() => {
+    const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize);
+      // .applyMatrix(new THREE.Matrix4().makeTranslation(-planeWorldWidth/2, planeWorldHeight/2, boxMeshSize/2));
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xFF0000,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    return mesh;
+  })();
+  hiddenScene.add(boxMesh);
+
+  renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+    format: THREE.RGBAFormat,
+  });
+  // renderTarget.transparent = false;
+
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneBufferGeometry(0.1, 0.1)
+      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.01)),
+    new THREE.MeshBasicMaterial({
+      // color: 0x0000FF,
+      map: renderTarget.texture,
+    })
+  );
+}
+
+init();
+
+function animate(timestamp, frame) {
+  renderer.render(hiddenScene, camera, renderTarget);
+
+  renderer.render(scene, camera);
+}
+
+  renderer.setAnimationLoop(animate);
+    </script>
+  </body>
+</html>
