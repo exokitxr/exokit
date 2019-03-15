@@ -1,4 +1,18 @@
 <html>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="theme-color" content="#008000"/>
+   <title>meshing_ml</title>
+   <link rel="manifest" href="meshing_ml_manifest.json">
+   <script>
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/meshing_ml_sw.js')
+        .then(function() {
+              console.log('Service Worker Registered');
+        });
+    }
+   </script>
   <head>
     <style>
       body {
@@ -7,6 +21,7 @@
     </style>
   </head>
   <body>
+  <h1>meshing_ml</h1>
   <script src="three.js"></script>
   <script>
     let container, scene, camera, display, model;

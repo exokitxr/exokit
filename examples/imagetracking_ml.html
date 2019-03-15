@@ -1,5 +1,19 @@
 <html>
   <head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="theme-color" content="#008000"/>
+   <title>imagetracking_ml</title>
+   <link rel="manifest" href="imagetracking_ml_manifest.json">
+   <script>
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/imagetracking_ml_sw.js')
+        .then(function() {
+              console.log('Service Worker Registered');
+        });
+    }
+   </script>
     <style>
       body {
         margin: 0;
@@ -7,6 +21,7 @@
     </style>
   </head>
   <body>
+  <h1>imagetracking_ml</h1>
   <script src="three.js"></script>
   <script src="inflate.min.js"></script>
   <script src="FBXLoader.js"></script>
