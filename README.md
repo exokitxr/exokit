@@ -1,6 +1,6 @@
 <h1 align="center">Exokit</h1>
 
-<p align="center"><a href="https://webmr.io" target="_blank"><img width="300" height="250" alt="Exokit" src="https://github.com/webmixedreality/exokit/blob/master/icon.png"/></a></p>
+<p align="center"><a href="https://webmr.io" target="_blank"><img width="300" height="250" alt="Exokit" src="icon.png"/></a></p>
 
 <p align="center"><b>:dark_sunglasses: Native VR and AR engine for JavaScript 🦖</b></p>
 
