@@ -1,12 +1,27 @@
 <html>
   <head>
-    <style>
-      body {
-        margin: 0;
-      }
-    </style>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="theme-color" content="#008000"/>
+   <title>hands_ml</title>
+   <link rel="manifest" href="hands_ml_manifest.json">
+   <script>
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/hands_ml_sw.js')
+        .then(function() {
+              console.log('Service Worker Registered');
+        });
+    }
+   </script>
+   <style>
+     body {
+       margin: 0;
+     }
+   </style>
   </head>
   <body>
+  <h1>hands_ml.html example</h1> 
   <script src="three.js"></script>
   <script>
     let container, scene, camera, display;
