@@ -8,8 +8,8 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is.
-
+ What happened, and what did you expect to happen?
+ 
 **To Reproduce**
 Steps or commands ran to reproduce the behavior:
 1. Go to '...'
@@ -23,7 +23,7 @@ Add any other context about the problem here.
 **System information:**
  - OS: [e.g. Windows 10]
  - Exokit Version [e.g. v0.0.512]
- - Node/other dependencies versions
+ - Node version
  - Npm version/build log if applicable
  - Is your Exokit downloaded or built?
 
