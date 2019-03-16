@@ -8,7 +8,8 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is.
+What happened, and what did you expect to happen?
+
 
 **To Reproduce**
 Steps or commands ran to reproduce the behavior:
@@ -21,10 +22,8 @@ Steps or commands ran to reproduce the behavior:
 Add any other context about the problem here.
 
 **System information:**
- - OS: [e.g. Windows 10]
- - Exokit Version [e.g. v0.0.512]
--  Node/other dependencies versions
 - Reality Tab mode of operation (opened through MLDB or the default mpk reality tabs)
+- URL loaded
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
