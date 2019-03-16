@@ -1,5 +1,5 @@
 const {EventEmitter} = require('events');
-const createMemoryHistory = require('history/createMemoryHistory').default;
+const {createMemoryHistory} = require('history');
 
 class History extends EventEmitter {
   constructor(u) {
