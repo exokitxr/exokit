@@ -431,6 +431,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
   });
   window.history = new History(location.href);
+  function getUserMedia(constraints) {
+    if (constraints.audio) {
+      return Promise.resolve(new MicrophoneMediaStream());
+    } else if (constraints.video) {
+      const dev = new VideoDevice();
+      dev.constraints = constraints.video;
+      return Promise.resolve(dev);
+    } else {
+      return Promise.reject(new Error('constraints not met'));
+    }
+  }
   window.navigator = {
     userAgent: `Mozilla/5.0 (OS) AppleWebKit/999.0 (KHTML, like Gecko) Chrome/999.0.0.0 Safari/999.0 Exokit/${GlobalContext.version}`,
     vendor: 'Exokit',
@@ -441,17 +452,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     appVersion: '5.0',
     language: 'en-US',
     mediaDevices: {
-      getUserMedia(constraints) {
-        if (constraints.audio) {
-          return Promise.resolve(new MicrophoneMediaStream());
-        } else if (constraints.video) {
-          const dev = new VideoDevice();
-          dev.constraints = constraints.video;
-          return Promise.resolve(dev);
-        } else {
-          return Promise.reject(new Error('constraints not met'));
-        }
-      },
+      getUserMedia,
       enumerateDevices() {
         let deviceIds = 0;
         let groupIds = 0;
