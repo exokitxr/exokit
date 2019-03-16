@@ -1868,6 +1868,7 @@ const _start = () => {
 
 if (require.main === module) {
   if (nativeBindings.nativeAnalytics) {
+    /*
     require(path.join(__dirname, 'bugsnag'));
     require('fault-zone').registerHandler((stack, stackLen) => {
       const message = new Buffer(stack, 0, stackLen).toString('utf8');
@@ -1879,6 +1880,7 @@ if (require.main === module) {
       });
       process.exit(1);
     });
+    */
   }
   if (args.log) {
     const RedirectOutput = require('redirect-output').default;
