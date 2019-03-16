@@ -52,7 +52,7 @@
     "fake-indexeddb": "^2.0.4",
     "fault-zone": "0.0.20",
     "he": "^1.1.1",
-    "history": "^4.7.2",
+    "history": "^4.9.0",
     "hterm-repl": "0.0.10",
     "isolator": "0.0.9",
     "leapmotion": "0.0.4",
