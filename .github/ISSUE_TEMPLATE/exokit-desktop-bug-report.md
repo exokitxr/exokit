@@ -23,7 +23,12 @@ Add any other context about the problem here.
 **System information:**
  - OS: [e.g. Windows 10]
  - Exokit Version [e.g. v0.0.512]
--  Node/other dependencies versions
+ - Node/other dependencies versions
+ - Npm version/build log if applicable
+ - Is your Exokit downloaded or built?
+
+
+
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
