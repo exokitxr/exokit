@@ -1,10 +1,11 @@
 #include <canvascontext/include/canvas-pattern.h>
+#include "../../helpers.h"
 
 using namespace v8;
 using namespace node;
 // using namespace std;
 
-Handle<Object> CanvasPattern::Initialize(Isolate *isolate) {
+Local<Object> CanvasPattern::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -15,7 +16,7 @@ Handle<Object> CanvasPattern::Initialize(Isolate *isolate) {
   // prototype
   // Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  return scope.Escape(ctor->GetFunction());
+  return scope.Escape(JS_FUNC(ctor));
 }
 
 CanvasPattern::CanvasPattern(sk_sp<SkShader> shader) : shader(shader) {}
@@ -33,7 +34,7 @@ NAN_METHOD(CanvasPattern::New) {
   if (image) {
     std::string repetition;
     if (info[1]->IsString()) {
-      v8::String::Utf8Value repetitionUtf8Value(info[1]);
+        Nan::Utf8String repetitionUtf8Value(info[1]);
       repetition = std::string(*repetitionUtf8Value, repetitionUtf8Value.length());
     }
 

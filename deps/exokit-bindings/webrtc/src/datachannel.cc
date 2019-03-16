@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "common.h"
+#include "../../helpers.h"
 
 using node_webrtc::DataChannel;
 using node_webrtc::DataChannelObserver;
@@ -250,8 +251,7 @@ NAN_METHOD(DataChannel::Send) {
 
   if (self->_jingleDataChannel != nullptr) {
     if (info[0]->IsString()) {
-      Local<String> str = Local<String>::Cast(info[0]);
-      std::string data = *String::Utf8Value(str);
+      std::string data = *Nan::Utf8String(info[0]);
 
       webrtc::DataBuffer buffer(data);
       self->_jingleDataChannel->Send(buffer);
@@ -351,7 +351,7 @@ NAN_SETTER(DataChannel::SetBinaryType) {
   TRACE_CALL;
 
   DataChannel* self = Nan::ObjectWrap::Unwrap<DataChannel>(info.Holder());
-  self->_binaryType = static_cast<BinaryType>(value->Uint32Value());
+  self->_binaryType = static_cast<BinaryType>(JS_UINT32(value));
 
   TRACE_END;
 }
@@ -360,7 +360,7 @@ NAN_SETTER(DataChannel::ReadOnly) {
   // INFO("PeerConnection::ReadOnly");
 }
 
-void DataChannel::Init(v8::Handle<Object> exports) {
+void DataChannel::Init(v8::Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
   tpl->SetClassName(Nan::New("DataChannel").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
@@ -373,8 +373,8 @@ void DataChannel::Init(v8::Handle<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("binaryType").ToLocalChecked(), GetBinaryType, SetBinaryType);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("readyState").ToLocalChecked(), GetReadyState, ReadOnly);
 
-  constructor.Reset(tpl->GetFunction());
-  exports->Set(Nan::New("DataChannel").ToLocalChecked(), tpl->GetFunction());
+  constructor.Reset(JS_FUNC(tpl));
+  exports->Set(Nan::New("DataChannel").ToLocalChecked(), JS_FUNC(tpl));
 
 #if NODE_MODULE_VERSION < 0x000C
   Local<Object> global = Nan::GetCurrentContext()->Global();

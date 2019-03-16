@@ -18,7 +18,7 @@ namespace webaudio {
 
 class AudioProcessingEvent : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
 
 protected:
   static NAN_METHOD(New);
@@ -37,7 +37,7 @@ protected:
 
 class ScriptProcessorNode : public AudioNode {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> audioBufferCons, Local<Value> audioProcessingEventCons);
+  static Local<Object> Initialize(Isolate *isolate, Local<Value> audioBufferCons, Local<Value> audioProcessingEventCons);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:

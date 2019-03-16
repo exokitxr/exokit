@@ -375,6 +375,7 @@
                 '<!@(ls -1 deps/openvr/src/*.cpp)',
               ],
               'include_dirs': [
+                '<(module_root_dir)/../node-jitless/deps/v8',
                 "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
                 "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-canvas-deps').slice(0, -9) + '/include/core')\")",

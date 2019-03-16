@@ -1,5 +1,6 @@
 #include <GainNode.h>
 #include <AudioContext.h>
+#include "../../helpers.h"
 
 namespace webaudio {
 
@@ -7,7 +8,7 @@ GainNode::GainNode() {}
 
 GainNode::~GainNode() {}
 
-Handle<Object> GainNode::Initialize(Isolate *isolate, Local<Value> audioParamCons) {
+Local<Object> GainNode::Initialize(Isolate *isolate, Local<Value> audioParamCons) {
   Nan::EscapableHandleScope scope;
   
   // constructor
@@ -20,7 +21,7 @@ Handle<Object> GainNode::Initialize(Isolate *isolate, Local<Value> audioParamCon
   AudioNode::InitializePrototype(proto);
   GainNode::InitializePrototype(proto);
   
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
   
   ctorFn->Set(JS_STR("AudioParam"), audioParamCons);
 
@@ -34,7 +35,7 @@ void GainNode::InitializePrototype(Local<ObjectTemplate> proto) {
 NAN_METHOD(GainNode::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
 
     GainNode *gainNode = new GainNode();
@@ -44,7 +45,7 @@ NAN_METHOD(GainNode::New) {
     gainNode->context.Reset(audioContextObj);
     gainNode->audioNode = make_shared<lab::GainNode>();
 
-    Local<Function> audioParamConstructor = Local<Function>::Cast(gainNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioParam")));
+    Local<Function> audioParamConstructor = Local<Function>::Cast(JS_OBJ(gainNodeObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioParam")));
     Local<Value> args[] = {
       audioContextObj,
     };

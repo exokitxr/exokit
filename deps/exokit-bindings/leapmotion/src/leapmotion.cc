@@ -151,7 +151,7 @@ LMContext::LMContext() {
 
 LMContext::~LMContext() {}
 
-Handle<Object> LMContext::Initialize(Isolate *isolate) {
+Local<Object> LMContext::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -254,7 +254,7 @@ NAN_METHOD(LMContext::WaitGetPoses) {
 
 }
 
-Handle<Object> makeLm() {
+Local<Object> makeLm() {
   Isolate *isolate = Isolate::GetCurrent();
 
   Nan::EscapableHandleScope scope;

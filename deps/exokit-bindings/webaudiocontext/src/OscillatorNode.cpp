@@ -1,4 +1,5 @@
 #include <OscillatorNode.h>
+#include "../../helpers.h"
 
 namespace webaudio {
 
@@ -6,7 +7,7 @@ OscillatorNode::OscillatorNode() {}
 
 OscillatorNode::~OscillatorNode() {}
 
-Handle<Object> OscillatorNode::Initialize(Isolate *isolate, Local<Value> audioParamCons) {
+Local<Object> OscillatorNode::Initialize(Isolate *isolate, Local<Value> audioParamCons) {
   Nan::EscapableHandleScope scope;
   
   // constructor
@@ -19,7 +20,7 @@ Handle<Object> OscillatorNode::Initialize(Isolate *isolate, Local<Value> audioPa
   AudioNode::InitializePrototype(proto);
   OscillatorNode::InitializePrototype(proto);
   
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
   
   ctorFn->Set(JS_STR("AudioParam"), audioParamCons);
 
@@ -34,7 +35,7 @@ void OscillatorNode::InitializePrototype(Local<ObjectTemplate> proto) {
 NAN_METHOD(OscillatorNode::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
 
     OscillatorNode *oscillatorNode = new OscillatorNode();
@@ -46,7 +47,7 @@ NAN_METHOD(OscillatorNode::New) {
 
     oscillatorNode->context.Reset(audioContextObj);
 
-    Local<Function> audioParamConstructor = Local<Function>::Cast(oscillatorNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioParam")));
+    Local<Function> audioParamConstructor = Local<Function>::Cast(JS_OBJ(oscillatorNodeObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioParam")));
     Local<Value> args[] = {
       audioContextObj,
     };

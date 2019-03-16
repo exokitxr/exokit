@@ -5,6 +5,8 @@
 #include <node.h>
 #include <openvr.h>
 
+#include "../../exokit-bindings/helpers.h"
+
 using namespace v8;
 
 using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTrackedDeviceCount>;
@@ -164,7 +166,7 @@ NAN_METHOD(IVRSystem::GetProjectionMatrix)
     return;
   }
 
-  uint32_t nEye = info[0]->Uint32Value();
+  uint32_t nEye = JS_UINT32(info[0]);
   if (nEye >= 2)
   {
     Nan::ThrowTypeError("Argument[0] was out of enum range (EVREye).");
@@ -190,8 +192,8 @@ NAN_METHOD(IVRSystem::GetProjectionMatrix)
   }
 
   vr::EVREye eEye = static_cast<vr::EVREye>(nEye);
-  float fNearZ = static_cast<float>(info[1]->NumberValue());
-  float fFarZ = static_cast<float>(info[2]->NumberValue());
+  float fNearZ = static_cast<float>(JS_NUM(info[1]));
+  float fFarZ = static_cast<float>(JS_NUM(info[2]));
   vr::HmdMatrix44_t matrix = obj->self_->GetProjectionMatrix(eEye, fNearZ, fFarZ);
 
   Local<Float32Array> float32Array = Local<Float32Array>::Cast(info[3]);
@@ -220,7 +222,7 @@ NAN_METHOD(IVRSystem::GetProjectionRaw)
     return;
   }
 
-  uint32_t nEye = info[0]->Uint32Value();
+  uint32_t nEye = JS_UINT32(info[0]);
   if (nEye >= 2)
   {
     Nan::ThrowTypeError("Argument[0] was out of enum range (EVREye).");
@@ -256,7 +258,7 @@ NAN_METHOD(IVRSystem::ComputeDistortion)
     return;
   }
 
-  uint32_t nEye = info[0]->Uint32Value();
+  uint32_t nEye = JS_UINT32(info[0]);
   if (nEye >= 2)
   {
     Nan::ThrowTypeError("Argument[0] was out of enum range (EVREye).");
@@ -276,8 +278,8 @@ NAN_METHOD(IVRSystem::ComputeDistortion)
   }
 
   vr::EVREye eEye = static_cast<vr::EVREye>(nEye);
-  float fU = static_cast<float>(info[1]->NumberValue());
-  float fV = static_cast<float>(info[2]->NumberValue());
+  float fU = static_cast<float>(JS_NUM(info[1]));
+  float fV = static_cast<float>(JS_NUM(info[2]));
   vr::DistortionCoordinates_t distortionCoordinates;
   bool success = obj->self_->ComputeDistortion(eEye, fU, fV, &distortionCoordinates);
 
@@ -313,7 +315,7 @@ NAN_METHOD(IVRSystem::GetEyeToHeadTransform)
     return;
   }
 
-  uint32_t nEye = info[0]->Uint32Value();
+  uint32_t nEye = JS_UINT32(info[0]);
   if (nEye >= 2)
   {
     Nan::ThrowTypeError("Argument[0] was out of enum range (EVREye).");
@@ -431,7 +433,7 @@ NAN_METHOD(IVRSystem::SetDisplayVisibility)
     return;
   }
 
-  bool bIsVisibleOnDesktop = info[0]->BooleanValue();
+  bool bIsVisibleOnDesktop = JS_BOOL(info[0]);
   bool bSuccess = obj->self_->SetDisplayVisibility(bIsVisibleOnDesktop);
   info.GetReturnValue().Set(Nan::New<Boolean>(bSuccess));
 }
@@ -454,7 +456,7 @@ NAN_METHOD(IVRSystem::GetDeviceToAbsoluteTrackingPose)
     return;
   }
 
-  uint32_t nOrigin = info[0]->Uint32Value();
+  uint32_t nOrigin = JS_UINT32(info[0]);
   if (nOrigin >= 3)
   {
     Nan::ThrowTypeError("Argument[0] was out of enum range (ETrackingUniverseOrigin).");
@@ -617,7 +619,7 @@ NAN_METHOD(IVRSystem::GetSortedTrackedDeviceIndicesOfClass)
     return;
   }
 
-  uint32_t nTrackedDeviceClass = info[0]->Uint32Value();
+  uint32_t nTrackedDeviceClass = JS_UINT32(info[0]);
   if (nTrackedDeviceClass >= 6)
   {
     Nan::ThrowTypeError("Argument[0] was out of enum range (ETrackedDeviceClass).");
@@ -634,7 +636,7 @@ NAN_METHOD(IVRSystem::GetSortedTrackedDeviceIndicesOfClass)
     }
     else
     {
-      unRelativeToTrackedDeviceIndex = info[1]->Uint32Value();
+      unRelativeToTrackedDeviceIndex = JS_UINT32(info[1]);
     }
   }
 
@@ -668,7 +670,7 @@ NAN_METHOD(IVRSystem::GetTrackedDeviceActivityLevel)
     return;
   }
 
-  uint32_t unDeviceId = info[0]->Uint32Value();
+  uint32_t unDeviceId = JS_UINT32(info[0]);
   vr::EDeviceActivityLevel deviceActivityLevel =
     obj->self_->GetTrackedDeviceActivityLevel(unDeviceId);
   info.GetReturnValue().Set(Nan::New<Number>(
@@ -721,7 +723,7 @@ NAN_METHOD(IVRSystem::GetTrackedDeviceIndexForControllerRole)
     return;
   }
 
-  vr::ETrackedControllerRole role = static_cast<vr::ETrackedControllerRole>(info[0]->Uint32Value());
+  vr::ETrackedControllerRole role = static_cast<vr::ETrackedControllerRole>(JS_UINT32(info[0]));
   vr::TrackedDeviceIndex_t deviceClass = obj->self_->GetTrackedDeviceIndexForControllerRole(role);
   info.GetReturnValue().Set(Nan::New<Number>(
     static_cast<uint32_t>(deviceClass)));
@@ -745,7 +747,7 @@ NAN_METHOD(IVRSystem::GetTrackedDeviceClass)
     return;
   }
 
-  uint32_t unDeviceIndex = info[0]->Uint32Value();
+  uint32_t unDeviceIndex = JS_UINT32(info[0]);
   vr::ETrackedDeviceClass trackedDeviceClass =
     obj->self_->GetTrackedDeviceClass(unDeviceIndex);
   info.GetReturnValue().Set(Nan::New<Number>(
@@ -777,7 +779,7 @@ NAN_METHOD(IVRSystem::GetControllerState)
   Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
   buttons->Set(0, Number::New(Isolate::GetCurrent(), std::numeric_limits<float>::quiet_NaN()));
 
-  uint32_t side = info[0]->Uint32Value();
+  uint32_t side = JS_UINT32(info[0]);
   for (unsigned int i = 0; i < vr::k_unMaxTrackedDeviceCount; i++) {
     vr::ETrackedDeviceClass deviceClass = obj->self_->GetTrackedDeviceClass(i);
     if (deviceClass == vr::TrackedDeviceClass_Controller) {
@@ -842,9 +844,9 @@ NAN_METHOD(IVRSystem::TriggerHapticPulse)
     return;
   }
   
-  vr::TrackedDeviceIndex_t unControllerDeviceIndex = info[0]->Uint32Value();
-  uint32_t unAxisId = info[1]->Uint32Value();
-  unsigned short usDurationMicroSec  = info[2]->Uint32Value();
+  vr::TrackedDeviceIndex_t unControllerDeviceIndex = JS_UINT32(info[0]);
+  uint32_t unAxisId = JS_UINT32(info[1]);
+  unsigned short usDurationMicroSec  = JS_UINT32(info[2]);
 
   obj->self_->TriggerHapticPulse(unControllerDeviceIndex, unAxisId, usDurationMicroSec);
 }

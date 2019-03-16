@@ -17,7 +17,7 @@ namespace webaudio {
 
 class AudioParam : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
 
 protected:
   static NAN_METHOD(New);

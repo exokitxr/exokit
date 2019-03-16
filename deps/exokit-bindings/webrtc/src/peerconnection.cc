@@ -18,6 +18,7 @@
 #include "set-local-description-observer.h"
 #include "set-remote-description-observer.h"
 #include "stats-observer.h"
+#include "../../helpers.h"
 
 using node_webrtc::PeerConnection;
 using node_webrtc::PeerConnectionFactory;
@@ -259,63 +260,63 @@ NAN_METHOD(PeerConnection::New) {
 
   // Check if we have a configuration object
   if (info[0]->IsObject()) {
-    const Local<Object> obj = info[0]->ToObject();
+    const Local<Object> obj = JS_OBJ(info[0]);
 
     // Extract keys into array for iteration
-    const Local<Array> props = obj->GetPropertyNames();
+    const Local<Array> props = Nan::GetPropertyNames(obj).ToLocalChecked();
 
     // Iterate all of the top-level config keys
     for (uint32_t i = 0; i < props->Length(); i++) {
       // Get the key and value for this particular config field
-      const Local<String> key = props->Get(i)->ToString();
+      const Local<String> key = EXO_ToString(props->Get(i));
       const Local<Value> value = obj->Get(key);
 
       // Annoyingly convert to std::string
-      String::Utf8Value _key(key);
+      Nan::Utf8String _key(key);
       std::string strKey = std::string(*_key);
 
       // Handle iceServers configuration
       if (strKey == "iceServers" && value->IsArray()) {
-        const v8::Handle<Array> iceServers = v8::Handle<Array>::Cast(value);
+        const Local<Array> iceServers = Local<Array>::Cast(value);
 
         // Iterate over all of the ice servers configured
         for (uint32_t j = 0; j < iceServers->Length(); j++) {
           if (iceServers->Get(j)->IsObject()) {
 
-            const Local<Object> iceServerObj = iceServers->Get(j)->ToObject();
+            const Local<Object> iceServerObj = JS_OBJ(iceServers->Get(j));
             webrtc::PeerConnectionInterface::IceServer iceServer;
 
-            const Local<Array> iceProps = iceServerObj->GetPropertyNames();
+            const Local<Array> iceProps = Nan::GetPropertyNames(iceServerObj).ToLocalChecked();
 
             // Now we have an iceserver object in iceServerObj - Lets iterate all of its fields
             for (uint32_t y = 0; y < iceProps->Length(); y++) {
-              String::Utf8Value _iceServerKey(iceProps->Get(y)->ToString());
+                Nan::Utf8String _iceServerKey(EXO_ToString(iceProps->Get(y)));
               std::string iceServerKey = std::string(*_iceServerKey);
 
-              Local<Value> iceValue = iceServerObj->Get(iceProps->Get(y)->ToString());
+              Local<Value> iceValue = iceServerObj->Get(EXO_ToString(iceProps->Get(y)));
 
               // Handle each field by casting the data and assigning to our iceServer intsance
               if ((iceServerKey == "url" || iceServerKey == "urls") && iceValue->IsString()) {
-                String::Utf8Value _iceUrl(iceValue->ToString());
+                  Nan::Utf8String _iceUrl(EXO_ToString(iceValue));
                 std::string iceUrl = std::string(*_iceUrl);
 
                 iceServer.uri = iceUrl;
               } else if ((iceServerKey == "url" || iceServerKey == "urls") && iceValue->IsArray()) {
-                v8::Handle<Array> iceUrls = v8::Handle<Array>::Cast(iceValue);
+                Local<Array> iceUrls = Local<Array>::Cast(iceValue);
 
                 for (uint32_t x = 0; x < iceUrls->Length(); x++) {
-                  String::Utf8Value _iceUrlsEntry(iceUrls->Get(x)->ToString());
+                    Nan::Utf8String _iceUrlsEntry(EXO_ToString(iceUrls->Get(x)));
                   std::string iceUrlsEntry = std::string(*_iceUrlsEntry);
 
                   iceServer.urls.push_back(iceUrlsEntry);
                 }
               } else if (iceServerKey == "credential" && iceValue->IsString()) {
-                String::Utf8Value _icePassword(iceValue->ToString());
+                  Nan::Utf8String _icePassword(EXO_ToString(iceValue));
                 std::string icePassword = std::string(*_icePassword);
 
                 iceServer.password = icePassword;
               } else if (iceServerKey == "username" && iceValue->IsString()) {
-                String::Utf8Value _iceUsername(iceValue->ToString());
+                  Nan::Utf8String _iceUsername(EXO_ToString(iceValue));
                 std::string iceUsername = std::string(*_iceUsername);
 
                 iceServer.username = iceUsername;
@@ -375,8 +376,8 @@ NAN_METHOD(PeerConnection::SetLocalDescription) {
 
   if (self->_jinglePeerConnection != nullptr) {
     Local<Object> desc = Local<Object>::Cast(info[0]);
-    String::Utf8Value _type(desc->Get(Nan::New("type").ToLocalChecked())->ToString());
-    String::Utf8Value _sdp(desc->Get(Nan::New("sdp").ToLocalChecked())->ToString());
+    Nan::Utf8String _type(EXO_ToString(desc->Get(Nan::New("type").ToLocalChecked())));
+    Nan::Utf8String _sdp(EXO_ToString(desc->Get(Nan::New("sdp").ToLocalChecked())));
 
     std::string type = *_type;
     std::string sdp = *_sdp;
@@ -397,8 +398,8 @@ NAN_METHOD(PeerConnection::SetRemoteDescription) {
 
   if (self->_jinglePeerConnection != nullptr) {
     Local<Object> desc = Local<Object>::Cast(info[0]);
-    String::Utf8Value _type(desc->Get(Nan::New("type").ToLocalChecked())->ToString());
-    String::Utf8Value _sdp(desc->Get(Nan::New("sdp").ToLocalChecked())->ToString());
+    Nan::Utf8String _type(EXO_ToString(desc->Get(Nan::New("type").ToLocalChecked())));
+    Nan::Utf8String _sdp(EXO_ToString(desc->Get(Nan::New("sdp").ToLocalChecked())));
 
     std::string type = *_type;
     std::string sdp = *_sdp;
@@ -416,13 +417,13 @@ NAN_METHOD(PeerConnection::AddIceCandidate) {
   TRACE_CALL;
 
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.This());
-  v8::Handle<Object> sdp = v8::Handle<Object>::Cast(info[0]);
+  Local<Object> sdp = Local<Object>::Cast(info[0]);
 
-  String::Utf8Value _candidate(sdp->Get(Nan::New("candidate").ToLocalChecked())->ToString());
+  Nan::Utf8String _candidate(EXO_ToString(sdp->Get(Nan::New("candidate").ToLocalChecked())));
   std::string candidate = *_candidate;
-  String::Utf8Value _sipMid(sdp->Get(Nan::New("sdpMid").ToLocalChecked())->ToString());
+  Nan::Utf8String _sipMid(EXO_ToString(sdp->Get(Nan::New("sdpMid").ToLocalChecked())));
   std::string sdp_mid = *_sipMid;
-  uint32_t sdp_mline_index = sdp->Get(Nan::New("sdpMLineIndex").ToLocalChecked())->Uint32Value();
+  uint32_t sdp_mline_index = JS_UINT32(sdp->Get(Nan::New("sdpMLineIndex").ToLocalChecked()));
 
   webrtc::SdpParseError sdpParseError;
   webrtc::IceCandidateInterface* ci = webrtc::CreateIceCandidate(sdp_mid, sdp_mline_index, candidate, &sdpParseError);
@@ -455,44 +456,44 @@ NAN_METHOD(PeerConnection::CreateDataChannel) {
     return;
   }
 
-  String::Utf8Value label(info[0]->ToString());
-  v8::Handle<Object> dataChannelDict = v8::Handle<Object>::Cast(info[1]);
+  Nan::Utf8String label(EXO_ToString(info[0]));
+  Local<Object> dataChannelDict = Local<Object>::Cast(info[1]);
 
   webrtc::DataChannelInit dataChannelInit;
-  if (dataChannelDict->Has(Nan::New("id").ToLocalChecked())) {
+  if (JS__HAS(dataChannelDict, Nan::New("id").ToLocalChecked())) {
     Local<Value> value = dataChannelDict->Get(Nan::New("id").ToLocalChecked());
     if (value->IsInt32()) {
-      dataChannelInit.id = value->Int32Value();
+      dataChannelInit.id = JS_INT32(value);
     }
   }
-  if (dataChannelDict->Has(Nan::New("maxRetransmitTime").ToLocalChecked())) {
+  if (JS__HAS(dataChannelDict, Nan::New("maxRetransmitTime").ToLocalChecked())) {
     Local<Value> value = dataChannelDict->Get(Nan::New("maxRetransmitTime").ToLocalChecked());
     if (value->IsInt32()) {
-      dataChannelInit.maxRetransmitTime = value->Int32Value();
+      dataChannelInit.maxRetransmitTime = JS_INT32(value);
     }
   }
-  if (dataChannelDict->Has(Nan::New("maxRetransmits").ToLocalChecked())) {
+  if (JS__HAS(dataChannelDict, Nan::New("maxRetransmits").ToLocalChecked())) {
     Local<Value> value = dataChannelDict->Get(Nan::New("maxRetransmits").ToLocalChecked());
     if (value->IsInt32()) {
-      dataChannelInit.maxRetransmits = value->Int32Value();
+      dataChannelInit.maxRetransmits = JS_INT32(value);
     }
   }
-  if (dataChannelDict->Has(Nan::New("negotiated").ToLocalChecked())) {
+  if (JS__HAS(dataChannelDict, Nan::New("negotiated").ToLocalChecked())) {
     Local<Value> value = dataChannelDict->Get(Nan::New("negotiated").ToLocalChecked());
     if (value->IsBoolean()) {
-      dataChannelInit.negotiated = value->BooleanValue();
+      dataChannelInit.negotiated = JS_BOOL(value);
     }
   }
-  if (dataChannelDict->Has(Nan::New("ordered").ToLocalChecked())) {
+  if (JS__HAS(dataChannelDict, Nan::New("ordered").ToLocalChecked())) {
     Local<Value> value = dataChannelDict->Get(Nan::New("ordered").ToLocalChecked());
     if (value->IsBoolean()) {
-      dataChannelInit.ordered = value->BooleanValue();
+      dataChannelInit.ordered = JS_BOOL(value);
     }
   }
-  if (dataChannelDict->Has(Nan::New("protocol").ToLocalChecked())) {
+  if (JS__HAS(dataChannelDict, Nan::New("protocol").ToLocalChecked())) {
     Local<Value> value = dataChannelDict->Get(Nan::New("protocol").ToLocalChecked());
     if (value->IsString()) {
-      dataChannelInit.protocol = *String::Utf8Value(value->ToString());
+      dataChannelInit.protocol = *Nan::Utf8String(EXO_ToString(value));
     }
   }
 
@@ -589,7 +590,7 @@ NAN_GETTER(PeerConnection::GetLocalDescription) {
     sdi = self->_jinglePeerConnection->local_description();
   }
 
-  v8::Handle<Value> value;
+  Local<Value> value;
   if (nullptr == sdi) {
     value = Nan::Null();
   } else {
@@ -616,7 +617,7 @@ NAN_GETTER(PeerConnection::GetRemoteDescription) {
     sdi = self->_jinglePeerConnection->remote_description();
   }
 
-  v8::Handle<Value> value;
+  Local<Value> value;
   if (nullptr == sdi) {
     value = Nan::Null();
   } else {
@@ -688,7 +689,7 @@ NAN_SETTER(PeerConnection::ReadOnly) {
   // INFO("PeerConnection::ReadOnly");
 }
 
-void PeerConnection::Init(v8::Handle<Object> exports) {
+void PeerConnection::Init(v8::Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
   tpl->SetClassName(Nan::New("PeerConnection").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
@@ -711,6 +712,6 @@ void PeerConnection::Init(v8::Handle<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("iceConnectionState").ToLocalChecked(), GetIceConnectionState, ReadOnly);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("iceGatheringState").ToLocalChecked(), GetIceGatheringState, ReadOnly);
 
-  constructor.Reset(tpl->GetFunction());
-  exports->Set(Nan::New("PeerConnection").ToLocalChecked(), tpl->GetFunction());
+  constructor.Reset(JS_FUNC(tpl));
+  exports->Set(Nan::New("PeerConnection").ToLocalChecked(), JS_FUNC(tpl));
 }

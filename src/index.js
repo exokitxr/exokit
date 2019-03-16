@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 if (require.main === module) {
-  if (/^11\./.test(process.versions.node)) {
+  if (/^12\./.test(process.versions.node)) {
     const hasWorkerThread = (() => {
       try {
         require('worker_threads');

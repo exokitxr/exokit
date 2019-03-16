@@ -1937,7 +1937,7 @@ MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1
 
 MLContext::~MLContext() {}
 
-Handle<Object> MLContext::Initialize(Isolate *isolate) {
+Local<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -4287,7 +4287,7 @@ MLVec3f MLContext::OffsetFloor(const MLVec3f &position) {
 
 }
 
-Handle<Object> makeMl() {
+Local<Object> makeMl() {
   Nan::EscapableHandleScope scope;
   return scope.Escape(ml::MLContext::Initialize(Isolate::GetCurrent()));
 }

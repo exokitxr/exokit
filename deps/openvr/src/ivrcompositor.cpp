@@ -9,6 +9,8 @@
 #include <ivrsystem.h>
 #include <functional>
 
+#include "../../exokit-bindings/helpers.h"
+
 using namespace v8;
 
 using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTrackedDeviceCount>;
@@ -314,7 +316,7 @@ NAN_METHOD(IVRCompositor::Submit)
   }
 
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  GLuint texture = info[1]->Uint32Value();
+  GLuint texture = JS_UINT32(info[1]);
 
   vr::EColorSpace colorSpace = vr::ColorSpace_Gamma;
 

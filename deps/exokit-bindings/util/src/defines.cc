@@ -1,5 +1,7 @@
 #include <defines.h>
 
+using namespace Nan;
+
 Local<Array> pointerToArray(void *ptr) {
   uintptr_t n = (uintptr_t)ptr;
   Local<Array> result = Nan::New<Array>(2);
@@ -9,6 +11,9 @@ Local<Array> pointerToArray(void *ptr) {
 }
 
 void *arrayToPointer(Local<Array> array) {
-  uintptr_t n = ((uintptr_t)array->Get(0)->Uint32Value() << 32) | (uintptr_t)array->Get(1)->Uint32Value();
+
+  uintptr_t n0 = To<uint32_t>(Nan::Get(array, 0).ToLocalChecked()).FromJust();
+  uintptr_t n1 = To<uint32_t>(Nan::Get(array, 1).ToLocalChecked()).FromJust();
+  uintptr_t n = (n0 << 32) | n1;
   return (void *)n;
 }

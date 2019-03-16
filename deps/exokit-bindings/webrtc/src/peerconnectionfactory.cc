@@ -12,6 +12,7 @@
 #include "webrtc/api/video_codecs/video_decoder_factory.h"
 
 #include "common.h"
+#include "../../helpers.h"
 
 using node_webrtc::PeerConnectionFactory;
 using v8::External;
@@ -98,7 +99,7 @@ void PeerConnectionFactory::Dispose() {
   rtc::CleanupSSL();
 }
 
-void PeerConnectionFactory::Init(v8::Handle<Object> exports) {
+void PeerConnectionFactory::Init(v8::Local<Object> exports) {
   uv_mutex_init(&_lock);
 
   bool result;
@@ -109,6 +110,6 @@ void PeerConnectionFactory::Init(v8::Handle<Object> exports) {
   tpl->SetClassName(Nan::New("PeerConnectionFactory").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
-  constructor.Reset(tpl->GetFunction());
-  exports->Set(Nan::New("PeerConnectionFactory").ToLocalChecked(), tpl->GetFunction());
+  constructor.Reset(JS_FUNC(tpl));
+  exports->Set(Nan::New("PeerConnectionFactory").ToLocalChecked(), JS_FUNC(tpl));
 }

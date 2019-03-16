@@ -1,6 +1,7 @@
 #include <Audio.h>
 #include <memory>
 #include <algorithm>
+#include "../../helpers.h"
 
 namespace webaudio {
 
@@ -12,7 +13,7 @@ Audio::Audio() : audioNode(new lab::FinishableSourceNode(
 
 Audio::~Audio() {}
 
-Handle<Object> Audio::Initialize(Isolate *isolate) {
+Local<Object> Audio::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -31,7 +32,7 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("loop"), LoopGetter, LoopSetter);
   Nan::SetAccessor(proto, JS_STR("onended"), OnEndedGetter, OnEndedSetter);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
 
   return scope.Escape(ctorFn);
 }
@@ -108,7 +109,7 @@ NAN_GETTER(Audio::PausedGetter) {
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
   bool paused = !audio->audioNode->isPlayingOrScheduled();
 
-  info.GetReturnValue().Set(JS_BOOL(paused));
+  info.GetReturnValue().Set(BOOL_TO_JS(paused));
 }
 
 NAN_GETTER(Audio::CurrentTimeGetter) {
@@ -121,7 +122,7 @@ NAN_GETTER(Audio::CurrentTimeGetter) {
   double duration = audio->audioNode->duration();
   double currentTime = std::min<double>(std::max<double>(startTime - now, 0), duration);
 
-  info.GetReturnValue().Set(JS_NUM(currentTime));
+  info.GetReturnValue().Set(DOUBLE_TO_JS(currentTime));
 }
 
 NAN_SETTER(Audio::CurrentTimeSetter) {
@@ -130,7 +131,7 @@ NAN_SETTER(Audio::CurrentTimeSetter) {
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
   if (value->IsNumber()) {
-    double currentTime = value->NumberValue();
+    double currentTime = JS_NUM(value);
 
     audio->audioNode->setCurrentTime(currentTime);
   } else {
@@ -144,7 +145,7 @@ NAN_GETTER(Audio::DurationGetter) {
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
   double duration = audio->audioNode->duration();
-  info.GetReturnValue().Set(JS_NUM(duration));
+  info.GetReturnValue().Set(DOUBLE_TO_JS(duration));
 }
 
 NAN_GETTER(Audio::LoopGetter) {
@@ -153,14 +154,14 @@ NAN_GETTER(Audio::LoopGetter) {
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
   bool loop = audio->audioNode->loop();
-  info.GetReturnValue().Set(JS_BOOL(loop));
+  info.GetReturnValue().Set(BOOL_TO_JS(loop));
 }
 
 NAN_SETTER(Audio::LoopSetter) {
   // Nan::HandleScope scope;
 
   if (value->IsBoolean()) {
-    bool loop = value->BooleanValue();
+    bool loop = JS_BOOL(value);
 
     Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
@@ -194,7 +195,7 @@ void Audio::ProcessInMainThread(Audio *self) {
 
   if (!self->onended.IsEmpty()) {
     Local<Function> onended = Nan::New(self->onended);
-    onended->Call(Nan::Null(), 0, nullptr);
+    onended->Call(JS_CONTEXT(), Nan::Null(), 0, nullptr);
   }
 }
 

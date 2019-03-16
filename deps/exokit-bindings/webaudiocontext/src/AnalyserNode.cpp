@@ -1,5 +1,6 @@
 #include <AnalyserNode.h>
 #include <AudioContext.h>
+#include "../../helpers.h"
 
 namespace webaudio {
 
@@ -7,7 +8,7 @@ AnalyserNode::AnalyserNode() {}
 
 AnalyserNode::~AnalyserNode() {}
 
-Handle<Object> AnalyserNode::Initialize(Isolate *isolate) {
+Local<Object> AnalyserNode::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -20,7 +21,7 @@ Handle<Object> AnalyserNode::Initialize(Isolate *isolate) {
   AudioNode::InitializePrototype(proto);
   AnalyserNode::InitializePrototype(proto);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
 
   return scope.Escape(ctorFn);
 }
@@ -40,7 +41,7 @@ void AnalyserNode::InitializePrototype(Local<ObjectTemplate> proto) {
 NAN_METHOD(AnalyserNode::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
 
     AnalyserNode *analyserNode = new AnalyserNode();
@@ -77,7 +78,7 @@ NAN_SETTER(AnalyserNode::FftSizeSetter) {
     Local<Object> audioContextObj = Nan::New(analyserNode->context);
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
-    unsigned int newValue = value->Uint32Value();
+    unsigned int newValue = JS_UINT32(value);
     shared_ptr<lab::AudioNode> newAudioNode = make_shared<lab::AnalyserNode>(newValue);
 
     shared_ptr<lab::AudioNodeInput> oldSrc = oldAudioNode->input(0);
@@ -121,7 +122,7 @@ NAN_GETTER(AnalyserNode::FrequencyBinCountGetter) {
 
   unsigned int frequencyBinCount = labAnalyserNode->frequencyBinCount();
 
-  info.GetReturnValue().Set(JS_INT(frequencyBinCount));
+  info.GetReturnValue().Set(INT32_TO_JS(frequencyBinCount));
 }
 
 NAN_GETTER(AnalyserNode::MinDecibelsGetter) {
@@ -132,7 +133,7 @@ NAN_GETTER(AnalyserNode::MinDecibelsGetter) {
 
   double minDecibels = labAnalyserNode->minDecibels();
 
-  info.GetReturnValue().Set(JS_NUM(minDecibels));
+  info.GetReturnValue().Set(DOUBLE_TO_JS(minDecibels));
 }
 
 NAN_GETTER(AnalyserNode::MaxDecibelsGetter) {
@@ -143,7 +144,7 @@ NAN_GETTER(AnalyserNode::MaxDecibelsGetter) {
 
   double maxDecibels = labAnalyserNode->maxDecibels();
 
-  info.GetReturnValue().Set(JS_NUM(maxDecibels));
+  info.GetReturnValue().Set(DOUBLE_TO_JS(maxDecibels));
 }
 
 NAN_GETTER(AnalyserNode::SmoothingTimeConstantGetter) {
@@ -154,7 +155,7 @@ NAN_GETTER(AnalyserNode::SmoothingTimeConstantGetter) {
 
   double smoothingTimeConstant = labAnalyserNode->smoothingTimeConstant();
 
-  info.GetReturnValue().Set(JS_NUM(smoothingTimeConstant));
+  info.GetReturnValue().Set(DOUBLE_TO_JS(smoothingTimeConstant));
 }
 
 NAN_METHOD(AnalyserNode::GetFloatFrequencyData) {

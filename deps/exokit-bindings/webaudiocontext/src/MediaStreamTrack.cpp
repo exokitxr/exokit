@@ -1,4 +1,5 @@
 #include <MediaStreamTrack.h>
+#include "../../helpers.h"
 
 namespace webaudio {
 
@@ -6,7 +7,7 @@ MediaStreamTrack::MediaStreamTrack(MediaStream *mediaStream) : mediaStream(media
 
 MediaStreamTrack::~MediaStreamTrack() {}
 
-Handle<Object> MediaStreamTrack::Initialize(Isolate *isolate) {
+Local<Object> MediaStreamTrack::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -18,7 +19,7 @@ Handle<Object> MediaStreamTrack::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   MediaStreamTrack::InitializePrototype(proto);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
 
   return scope.Escape(ctorFn);
 }
@@ -35,7 +36,7 @@ void MediaStreamTrack::InitializePrototype(Local<ObjectTemplate> proto) {
 NAN_METHOD(MediaStreamTrack::New) {
   // Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
     Local<Object> microphoneMediaStreamObj = Local<Object>::Cast(info[0]);
     MicrophoneMediaStream *microphoneMediaStream = ObjectWrap::Unwrap<MicrophoneMediaStream>(microphoneMediaStreamObj);
     
@@ -52,7 +53,7 @@ NAN_METHOD(MediaStreamTrack::New) {
 NAN_GETTER(MediaStreamTrack::EnabledGetter) {
   // Nan::HandleScope scope;
   
-  info.GetReturnValue().Set(JS_BOOL(true));
+  info.GetReturnValue().Set(BOOL_TO_JS(true));
 }
 
 NAN_GETTER(MediaStreamTrack::KindGetter) {
@@ -71,7 +72,7 @@ NAN_GETTER(MediaStreamTrack::MutedGetter) {
   // Nan::HandleScope scope;
   
   MediaStreamTrack *mediaStreamTrack = ObjectWrap::Unwrap<MediaStreamTrack>(info.This());
-  info.GetReturnValue().Set(JS_BOOL(mediaStreamTrack->muted));
+  info.GetReturnValue().Set(BOOL_TO_JS(mediaStreamTrack->muted));
 }
 
 NAN_SETTER(MediaStreamTrack::MutedSetter) {
@@ -80,7 +81,7 @@ NAN_SETTER(MediaStreamTrack::MutedSetter) {
   if (value->IsBoolean()) {
     MediaStreamTrack *mediaStreamTrack = ObjectWrap::Unwrap<MediaStreamTrack>(info.This());
     
-    bool muted = value->BooleanValue();
+    bool muted = JS_BOOL(value);
     mediaStreamTrack->muted = muted;
   } else {
     Nan::ThrowError("invalid arguments");

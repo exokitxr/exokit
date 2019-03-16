@@ -46,7 +46,7 @@ enum class Direction {
 
 class CanvasRenderingContext2D : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons);
+  static Local<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons);
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();

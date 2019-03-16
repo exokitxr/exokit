@@ -2,6 +2,7 @@
 #define _CANVASCONTEXT_IMAGE_H_
 
 #include <v8.h>
+#include "../../../../../node-jitless/deps/v8/src/handles.h"
 #include <node.h>
 #include <nan.h>
 #include <defines.h>
@@ -21,7 +22,7 @@ using namespace node;
 
 class Image : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();

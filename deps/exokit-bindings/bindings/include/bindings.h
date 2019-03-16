@@ -1,6 +1,7 @@
 #ifndef _EXOKIT_BINDINGS_H_
 #define _EXOKIT_BINDINGS_H_
 
+#include <browser.h>
 #include <v8.h>
 #include <node.h>
 #include <image-context.h>
@@ -13,7 +14,6 @@
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
-#include <browser.h>
 #include <webrtc.h>
 #if _WIN32
 #include <leapmotion.h>

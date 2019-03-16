@@ -26,7 +26,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), win
 
 Browser::~Browser() {}
 
-Handle<Object> Browser::Initialize(Isolate *isolate) {
+Local<Object> Browser::Initialize(Isolate *isolate) {
   uv_async_init(uv_default_loop(), &mainThreadAsync, MainThreadAsync);
   // uv_sem_init(&constructSem, 0);
   uv_sem_init(&mainThreadSem, 0);
@@ -64,7 +64,7 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "postMessage", PostMessage);
   Nan::SetMethod(proto, "destroy", Destroy);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
   Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
 
   return scope.Escape(ctorFn);
@@ -72,15 +72,15 @@ Handle<Object> Browser::Initialize(Isolate *isolate) {
 
 NAN_METHOD(Browser::New) {
   if (
-    info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) &&
+    info[0]->IsObject() && Nan::To<Object>(Nan::To<Object>(info[0]).ToLocalChecked()->Get(JS_STR("constructor"))).ToLocalChecked()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) &&
     info[1]->IsNumber() &&
     info[2]->IsNumber() &&
     info[3]->IsString()
   ) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    int width = info[1]->Int32Value();
-    int height = info[2]->Int32Value();
-    String::Utf8Value dataPathValue(Local<String>::Cast(info[3]));
+    int width = Nan::To<int>(info[1]).FromJust();
+    int height = Nan::To<int>(info[2]).FromJust();
+    Nan::Utf8String dataPathValue(Local<String>::Cast(info[3]));
     std::string dataPath(*dataPathValue, dataPathValue.length());
 
     if (!embeddedInitialized) {
@@ -153,7 +153,7 @@ void Browser::loadImmediate(const std::string &url) {
         
         if (!this->onloadstart.IsEmpty()) {
           Local<Function> onloadstart = Nan::New(this->onloadstart);
-          onloadstart->Call(Nan::Null(), 0, nullptr);
+          onloadstart->Call(v8::Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), 0, nullptr);
         }
       });
     },
@@ -166,7 +166,7 @@ void Browser::loadImmediate(const std::string &url) {
             JS_STR(url),
           };
           Local<Function> onloadend = Nan::New(this->onloadend);
-          onloadend->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+          onloadend->Call(v8::Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
         }
       });
     },
@@ -181,7 +181,7 @@ void Browser::loadImmediate(const std::string &url) {
             JS_STR(errorString),
             JS_STR(failedUrl),
           };
-          onloaderror->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+          onloaderror->Call(v8::Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
         }
       });
     },
@@ -196,7 +196,7 @@ void Browser::loadImmediate(const std::string &url) {
             JS_STR(scriptUrl),
             JS_INT(startLine),
           };
-          onconsole->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+          onconsole->Call(v8::Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
         }
       });
     },
@@ -209,7 +209,7 @@ void Browser::loadImmediate(const std::string &url) {
           Local<Value> argv[] = {
             JS_STR(m),
           };
-          onmessage->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+          onmessage->Call(v8::Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
         }
       });
     }
@@ -234,7 +234,7 @@ NAN_METHOD(Browser::UpdateAll) {
 NAN_METHOD(Browser::Load) {
   if (info[0]->IsString()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-    String::Utf8Value urlUtf8Value(Local<String>::Cast(info[0]));
+    Nan::Utf8String urlUtf8Value(Local<String>::Cast(info[0]));
     std::string url(*urlUtf8Value, urlUtf8Value.length());
     
     browser->load(url);
@@ -256,7 +256,7 @@ NAN_GETTER(Browser::WidthGetter) {
 NAN_SETTER(Browser::WidthSetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   if (browser->browser_) {
-    int width = value->Int32Value();
+    int width = Nan::To<int>(value).FromJust();
     
     QueueOnBrowserThread([browser, width]() -> void {
       setEmbeddedHeight(browser->browser_, width);
@@ -276,7 +276,7 @@ NAN_GETTER(Browser::HeightGetter) {
 NAN_SETTER(Browser::HeightSetter) {
   Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   if (browser->browser_) {
-    int height = value->Int32Value();
+    int height = Nan::To<int>(value).FromJust();
     
     QueueOnBrowserThread([browser, height]() -> void {
       setEmbeddedHeight(browser->browser_, height);
@@ -390,8 +390,8 @@ NAN_METHOD(Browser::SendMouseMove) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     if (browser->browser_) {
-      int x = info[0]->Int32Value();
-      int y = info[1]->Int32Value();
+      int x = Nan::To<int>(info[0]).FromJust();
+      int y = Nan::To<int>(info[1]).FromJust();
       
       QueueOnBrowserThread([browser, x, y]() -> void {
         embeddedMouseMove(browser->browser_, x, y);
@@ -406,9 +406,9 @@ NAN_METHOD(Browser::SendMouseDown) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     if (browser->browser_) {
-      int x = info[0]->Int32Value();
-      int y = info[1]->Int32Value();
-      int button = info[2]->Int32Value();
+      int x = Nan::To<int>(info[0]).FromJust();
+      int y = Nan::To<int>(info[1]).FromJust();
+      int button = Nan::To<int>(info[2]).FromJust();
       
       QueueOnBrowserThread([browser, x, y, button]() -> void {
         embeddedMouseDown(browser->browser_, x, y, button);
@@ -422,9 +422,9 @@ NAN_METHOD(Browser::SendMouseDown) {
 NAN_METHOD(Browser::SendMouseUp) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
-    int x = info[0]->Int32Value();
-    int y = info[1]->Int32Value();
-    int button = info[2]->Int32Value();
+    int x = Nan::To<int>(info[0]).FromJust();
+    int y = Nan::To<int>(info[1]).FromJust();
+    int button = Nan::To<int>(info[2]).FromJust();
     
     QueueOnBrowserThread([browser, x, y, button]() -> void {
       embeddedMouseUp(browser->browser_, x, y, button);
@@ -438,10 +438,10 @@ NAN_METHOD(Browser::SendMouseWheel) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     if (browser->browser_) {
-      int x = info[0]->Int32Value();
-      int y = info[1]->Int32Value();
-      int deltaX = info[2]->Int32Value();
-      int deltaY = info[3]->Int32Value();
+      int x = Nan::To<int>(info[0]).FromJust();
+      int y = Nan::To<int>(info[1]).FromJust();
+      int deltaX = Nan::To<int>(info[2]).FromJust();
+      int deltaY = Nan::To<int>(info[3]).FromJust();
       
       QueueOnBrowserThread([browser, x, y, deltaX, deltaY]() -> void {
         embeddedMouseWheel(browser->browser_, x, y, deltaX, deltaY);
@@ -454,13 +454,13 @@ NAN_METHOD(Browser::SendMouseWheel) {
 
 int GetKeyModifiers(Local<Object> modifiersObj) {
   int modifiers = 0;
-  if (modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()) {
+  if (Nan::To<bool>(modifiersObj->Get(JS_STR("shiftKey"))).FromJust()) {
     modifiers |= (int)EmbeddedKeyModifiers::SHIFT;
   }
-  if (modifiersObj->Get(JS_STR("ctrlKey"))->BooleanValue()) {
+  if (Nan::To<bool>(modifiersObj->Get(JS_STR("ctrlKey"))).FromJust()) {
     modifiers |= (int)EmbeddedKeyModifiers::CTRL;
   }
-  if (modifiersObj->Get(JS_STR("altKey"))->BooleanValue()) {
+  if (Nan::To<bool>(modifiersObj->Get(JS_STR("altKey"))).FromJust()) {
     modifiers |= (int)EmbeddedKeyModifiers::ALT;
   }
   return modifiers;
@@ -491,7 +491,7 @@ map<int, int> keyCodesMap{
 };
 
 int MutateKey(int key, Local<Object> modifiersObj){
-  if (modifiersObj->Get(JS_STR("shiftKey"))->BooleanValue()){
+  if (Nan::To<bool>(modifiersObj->Get(JS_STR("shiftKey"))).FromJust()){
     if (
       key >= 97 && // a
       key <= 122 // z
@@ -510,7 +510,7 @@ NAN_METHOD(Browser::SendKeyDown) {
   if (info[0]->IsNumber() && info[1]->IsObject()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     if (browser->browser_) {
-      int key = info[0]->Int32Value();
+      int key = Nan::To<int>(info[0]).FromJust();
     
       Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
       int modifiers = GetKeyModifiers(modifiersObj);
@@ -530,7 +530,7 @@ NAN_METHOD(Browser::SendKeyUp) {
   if (info[0]->IsNumber() && info[1]->IsObject()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     if (browser->browser_) {
-      int key = info[0]->Int32Value();
+      int key = Nan::To<int>(info[0]).FromJust();
     
       Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
       int modifiers = GetKeyModifiers(modifiersObj);
@@ -550,7 +550,7 @@ NAN_METHOD(Browser::SendKeyPress) {
   if (info[0]->IsNumber() && info[1]->IsObject()) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     if (browser->browser_) {
-      int key = info[0]->Uint32Value();
+      unsigned int key = Nan::To<unsigned int>(info[0]).FromJust();
     
       Local<Object> modifiersObj = Local<Object>::Cast(info[1]);
       int modifiers = GetKeyModifiers(modifiersObj);
@@ -570,13 +570,13 @@ NAN_METHOD(Browser::RunJs) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
     
     if (browser->browser_) {
-      String::Utf8Value jsStringValue(Local<String>::Cast(info[0]));
+        Nan::Utf8String jsStringValue(Local<String>::Cast(info[0]));
       string jsString(*jsStringValue, jsStringValue.length());
       
-      String::Utf8Value scriptUrlValue(Local<String>::Cast(info[1]));
+      Nan::Utf8String scriptUrlValue(Local<String>::Cast(info[1]));
       string scriptUrl(*scriptUrlValue, scriptUrlValue.length());
       
-      int startLine = info[2]->Int32Value();
+      int startLine = Nan::To<int>(info[2]).FromJust();
       
       QueueOnBrowserThread([browser, jsString, scriptUrl, startLine]() -> void {
         embeddedRunJs(browser->browser_, jsString, scriptUrl, startLine);
@@ -598,7 +598,7 @@ NAN_METHOD(Browser::PostMessage) {
     Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
 
     if (browser->browser_) {
-      String::Utf8Value messageJsonValue(Local<String>::Cast(info[0]));
+        Nan::Utf8String messageJsonValue(Local<String>::Cast(info[0]));
       string messageJson(*messageJsonValue, messageJsonValue.length());
 
       QueueOnBrowserThread([browser, messageJson]() -> void {

@@ -1,11 +1,12 @@
 #include <FakeAudioParam.h>
+#include "../../helpers.h"
 
 namespace webaudio {
 
 FakeAudioParam::FakeAudioParam() {}
 FakeAudioParam::~FakeAudioParam() {}
 
-Handle<Object> FakeAudioParam::Initialize(Isolate *isolate) {
+Local<Object> FakeAudioParam::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -27,7 +28,7 @@ Handle<Object> FakeAudioParam::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "cancelScheduledValues", CancelScheduledValues);
   Nan::SetMethod(proto, "cancelAndHoldAtTime", CancelAndHoldAtTime);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
 
   return scope.Escape(ctorFn);
 }
@@ -66,7 +67,7 @@ NAN_GETTER(FakeAudioParam::ValueGetter) {
   FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
   float value = fakeAudioParam->getter();
-  info.GetReturnValue().Set(JS_NUM(value));
+  info.GetReturnValue().Set(DOUBLE_TO_JS(value));
 }
 
 NAN_SETTER(FakeAudioParam::ValueSetter) {
@@ -75,7 +76,7 @@ NAN_SETTER(FakeAudioParam::ValueSetter) {
   if (value->IsNumber()) {
     FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
-    float newValue = value->NumberValue();
+    float newValue = JS_NUM(value);
     fakeAudioParam->setter(newValue);
   } else {
     Nan::ThrowError("value: invalid arguments");
@@ -86,7 +87,7 @@ NAN_METHOD(FakeAudioParam::SetValueAtTime) {
   if (info[0]->IsNumber()) {
     FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
-    float newValue = info[0]->NumberValue();
+    float newValue = JS_NUM(info[0]);
     fakeAudioParam->setter(newValue);
   } else {
     Nan::ThrowError("setValueAtTime: invalid arguments");
@@ -97,7 +98,7 @@ NAN_METHOD(FakeAudioParam::LinearRampToValueAtTime) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
-    float newValue = info[0]->NumberValue();
+    float newValue = JS_NUM(info[0]);
     fakeAudioParam->setter(newValue);
   } else {
     Nan::ThrowError("linearRampToValueAtTime: invalid arguments");
@@ -108,7 +109,7 @@ NAN_METHOD(FakeAudioParam::ExponentialRampToValueAtTime) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
-    float newValue = info[0]->NumberValue();
+    float newValue = JS_NUM(info[0]);
     fakeAudioParam->setter(newValue);
   } else {
     Nan::ThrowError("exponentialRampToValueAtTime: invalid arguments");
@@ -119,7 +120,7 @@ NAN_METHOD(FakeAudioParam::SetTargetAtTime) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
-    float newValue = info[0]->NumberValue();
+    float newValue = JS_NUM(info[0]);
     fakeAudioParam->setter(newValue);
   } else {
     Nan::ThrowError("setTargetAtTime: invalid arguments");
@@ -131,7 +132,7 @@ NAN_METHOD(FakeAudioParam::SetValueCurveAtTime) {
     FakeAudioParam *fakeAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(info.This());
 
     Local<Float32Array> curveValue = Local<Float32Array>::Cast(info[0]);
-    float newValue = curveValue->Length() == 0 ? 0 : curveValue->Get(curveValue->Length() - 1)->NumberValue();
+    float newValue = curveValue->Length() == 0 ? 0 : JS_NUM(curveValue->Get(curveValue->Length() - 1));
     fakeAudioParam->setter(newValue);
   } else {
     Nan::ThrowError("setValueCurveAtTime: invalid arguments");

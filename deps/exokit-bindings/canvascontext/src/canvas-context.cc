@@ -9,6 +9,8 @@
 
 #include <exout>
 
+#include "../../helpers.h"
+
 using namespace v8;
 using namespace node;
 
@@ -32,15 +34,15 @@ NAN_METHOD(ctxCallWrap) {
 }
 
 bool isImageValue(Local<Value> arg) {
-  if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
-    Local<Value> otherContextObj = arg->ToObject()->Get(JS_STR("_context"));
-    return otherContextObj->IsObject() && otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"));
+  if (JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
+    Local<Value> otherContextObj = JS_OBJ(arg)->Get(JS_STR("_context"));
+    return otherContextObj->IsObject() && JS_OBJ(JS_OBJ(otherContextObj)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"));
   } else {
     return arg->IsObject() && (
-      arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D")) ||
-      arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement")) ||
-      arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData")) ||
-      arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))
+      JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D")) ||
+      JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement")) ||
+      JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData")) ||
+      JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))
     );
   }
 }
@@ -50,7 +52,7 @@ bool isImageValue(Local<Value> arg) {
   canvas->scale(1.0, -1.0);
 } */
 
-Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
+Local<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -103,7 +105,7 @@ Handle<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Valu
   Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
   Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
   ctorFn->Set(JS_STR("CanvasGradient"), canvasGradientCons);
   ctorFn->Set(JS_STR("CanvasPattern"), canvasPatternCons);
@@ -403,7 +405,7 @@ NAN_SETTER(CanvasRenderingContext2D::LineWidthSetter) {
   if (value->IsNumber()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    float lineWidth = value->NumberValue();
+    float lineWidth = JS_NUM(value);
 
     context->strokePaint.setStrokeWidth(lineWidth);
     context->fillPaint.setStrokeWidth(lineWidth);
@@ -422,18 +424,18 @@ NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string strokeStyle(*text, text.length());
 
     canvas::web_color webColor = canvas::web_color::from_string(strokeStyle.c_str());
     context->strokePaint.setColor(((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0)));
     context->fillPaint.setShader(nullptr);
-  } else if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
+  } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasGradient->getShader());
-  } else if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
+  } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
@@ -453,18 +455,18 @@ NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string fillStyle(*text, text.length());
 
     canvas::web_color webColor = canvas::web_color::from_string(fillStyle.c_str());
     context->fillPaint.setColor(((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0)));
     context->fillPaint.setShader(nullptr);
-  } else if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
+  } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasGradient->getShader());
-  } else if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
+  } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
@@ -484,7 +486,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontSetter) {
   if (value->IsString()) {
     Local<Object> contextObj = info.This();
 
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string font(*text, text.length());
 
     canvas::FontDeclaration declaration = canvas::parse_short_font(font);
@@ -510,7 +512,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontFamilySetter) {
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string fontFamily(*text, text.length());
 
     SkTypeface *typeface = context->strokePaint.getTypeface();
@@ -532,7 +534,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontSizeSetter) {
   if (value->IsNumber() || value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    double fontSize = value->NumberValue();
+    double fontSize = JS_NUM(value);
 
     context->strokePaint.setTextSize(fontSize);
     context->fillPaint.setTextSize(fontSize);
@@ -551,7 +553,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
   if (value->IsNumber() || value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string fontStyleString(*text, text.length());
 
     unsigned int fontWeight;
@@ -560,7 +562,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
     } else if (fontStyleString == "bold") {
       fontWeight = 700;
     } else {
-      fontWeight = value->IsNumber() ? value->Uint32Value() : 400;
+      fontWeight = value->IsNumber() ? JS_UINT32(value) : 400;
     }
 
     SkTypeface *typeface = context->strokePaint.getTypeface();
@@ -592,7 +594,7 @@ NAN_SETTER(CanvasRenderingContext2D::LineHeightSetter) {
   if (value->IsNumber() || value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-    double lineHeight = value->NumberValue();
+    double lineHeight = JS_NUM(value);
 
     context->lineHeight = lineHeight;
   } else {
@@ -609,7 +611,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontStyleSetter) {
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string fontStyleString(*text, text.length());
 
     SkFontStyle::Slant slant;
@@ -665,7 +667,7 @@ NAN_SETTER(CanvasRenderingContext2D::TextAlignSetter) {
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string textAlignString(*text, text.length());
 
     if (textAlignString == "left") {
@@ -710,7 +712,7 @@ NAN_SETTER(CanvasRenderingContext2D::TextBaselineSetter) {
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string textBaselineString(*text, text.length());
 
     if (textBaselineString == "top") {
@@ -740,7 +742,7 @@ NAN_SETTER(CanvasRenderingContext2D::DirectionSetter) {
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-    v8::String::Utf8Value text(value);
+    Nan::Utf8String text(value);
     std::string direction(*text, text.length());
 
     if (direction == "ltr") {
@@ -759,8 +761,8 @@ NAN_METHOD(CanvasRenderingContext2D::Scale) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
   context->Scale(x, y);
 }
 
@@ -768,7 +770,7 @@ NAN_METHOD(CanvasRenderingContext2D::Rotate) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double angle = info[0]->NumberValue();
+  double angle = JS_NUM(info[0]);
   context->Rotate(angle);
 }
 
@@ -776,8 +778,8 @@ NAN_METHOD(CanvasRenderingContext2D::Translate) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
   context->Translate(x, y);
 }
 
@@ -785,12 +787,12 @@ NAN_METHOD(CanvasRenderingContext2D::Transform) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double a = info[0]->NumberValue();
-  double b = info[1]->NumberValue();
-  double c = info[2]->NumberValue();
-  double d = info[3]->NumberValue();
-  double e = info[4]->NumberValue();
-  double f = info[5]->NumberValue();
+  double a = JS_NUM(info[0]);
+  double b = JS_NUM(info[1]);
+  double c = JS_NUM(info[2]);
+  double d = JS_NUM(info[3]);
+  double e = JS_NUM(info[4]);
+  double f = JS_NUM(info[5]);
   context->Transform(a, b, c, d, e, f);
 }
 
@@ -798,12 +800,12 @@ NAN_METHOD(CanvasRenderingContext2D::SetTransform) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double a = info[0]->NumberValue();
-  double b = info[1]->NumberValue();
-  double c = info[2]->NumberValue();
-  double d = info[3]->NumberValue();
-  double e = info[4]->NumberValue();
-  double f = info[5]->NumberValue();
+  double a = JS_NUM(info[0]);
+  double b = JS_NUM(info[1]);
+  double c = JS_NUM(info[2]);
+  double d = JS_NUM(info[3]);
+  double e = JS_NUM(info[4]);
+  double f = JS_NUM(info[5]);
   context->SetTransform(a, b, c, d, e, f);
 }
 
@@ -818,7 +820,7 @@ NAN_METHOD(CanvasRenderingContext2D::MeasureText) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  v8::String::Utf8Value textUtf8(info[0]);
+  Nan::Utf8String textUtf8(info[0]);
   std::string text(*textUtf8, textUtf8.length());
 
   Local<Object> result = Object::New(Isolate::GetCurrent());
@@ -854,7 +856,7 @@ NAN_METHOD(CanvasRenderingContext2D::Stroke) {
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-  if (info[0]->BooleanValue() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("Path2D"))) {
+  if (JS_BOOL(info[0]) && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("Path2D"))) {
     Path2D *path2d = ObjectWrap::Unwrap<Path2D>(Local<Object>::Cast(info[0]));
     context->Stroke(*path2d);
   } else {
@@ -867,7 +869,7 @@ NAN_METHOD(CanvasRenderingContext2D::Fill) {
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-  if (info[0]->BooleanValue() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("Path2D"))) {
+  if (JS_BOOL(info[0]) && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("Path2D"))) {
     Path2D *path2d = ObjectWrap::Unwrap<Path2D>(Local<Object>::Cast(info[0]));
     context->Fill(*path2d);
   } else {
@@ -879,8 +881,8 @@ NAN_METHOD(CanvasRenderingContext2D::MoveTo) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
 
   context->MoveTo(x, y);
 }
@@ -889,8 +891,8 @@ NAN_METHOD(CanvasRenderingContext2D::LineTo) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
 
   context->LineTo(x, y);
 }
@@ -899,12 +901,12 @@ NAN_METHOD(CanvasRenderingContext2D::Arc) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
-  double radius = info[2]->NumberValue();
-  double startAngle = info[3]->NumberValue();
-  double endAngle = info[4]->NumberValue();
-  double anticlockwise = info[5]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
+  double radius = JS_NUM(info[2]);
+  double startAngle = JS_NUM(info[3]);
+  double endAngle = JS_NUM(info[4]);
+  double anticlockwise = JS_NUM(info[5]);
 
   context->Arc(x, y, radius, startAngle, endAngle, anticlockwise);
 }
@@ -913,11 +915,11 @@ NAN_METHOD(CanvasRenderingContext2D::ArcTo) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x1 = info[0]->NumberValue();
-  double y1 = info[1]->NumberValue();
-  double x2 = info[2]->NumberValue();
-  double y2 = info[3]->NumberValue();
-  double radius = info[4]->NumberValue();
+  double x1 = JS_NUM(info[0]);
+  double y1 = JS_NUM(info[1]);
+  double x2 = JS_NUM(info[2]);
+  double y2 = JS_NUM(info[3]);
+  double radius = JS_NUM(info[4]);
 
   context->ArcTo(x1, y1, x2, y2, radius);
 }
@@ -926,10 +928,10 @@ NAN_METHOD(CanvasRenderingContext2D::QuadraticCurveTo) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x1 = info[0]->NumberValue();
-  double y1 = info[1]->NumberValue();
-  double x2 = info[2]->NumberValue();
-  double y2 = info[3]->NumberValue();
+  double x1 = JS_NUM(info[0]);
+  double y1 = JS_NUM(info[1]);
+  double x2 = JS_NUM(info[2]);
+  double y2 = JS_NUM(info[3]);
 
   context->QuadraticCurveTo(x1, y1, x2, y2);
 }
@@ -938,12 +940,12 @@ NAN_METHOD(CanvasRenderingContext2D::BezierCurveTo) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x1 = info[0]->NumberValue();
-  double y1 = info[1]->NumberValue();
-  double x2 = info[2]->NumberValue();
-  double y2 = info[3]->NumberValue();
-  double x = info[4]->NumberValue();
-  double y = info[5]->NumberValue();
+  double x1 = JS_NUM(info[0]);
+  double y1 = JS_NUM(info[1]);
+  double x2 = JS_NUM(info[2]);
+  double y2 = JS_NUM(info[3]);
+  double x = JS_NUM(info[4]);
+  double y = JS_NUM(info[5]);
 
   context->BezierCurveTo(x1, y1, x2, y2, x, y);
 }
@@ -952,10 +954,10 @@ NAN_METHOD(CanvasRenderingContext2D::Rect) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
-  double w = info[2]->NumberValue();
-  double h = info[3]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
+  double w = JS_NUM(info[2]);
+  double h = JS_NUM(info[3]);
 
   context->Rect(x, y, w, h);
 
@@ -966,10 +968,10 @@ NAN_METHOD(CanvasRenderingContext2D::FillRect) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
-  double w = info[2]->NumberValue();
-  double h = info[3]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
+  double w = JS_NUM(info[2]);
+  double h = JS_NUM(info[3]);
 
   context->FillRect(x, y, w, h);
 
@@ -980,10 +982,10 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeRect) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
-  double w = info[2]->NumberValue();
-  double h = info[3]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
+  double w = JS_NUM(info[2]);
+  double h = JS_NUM(info[3]);
 
   context->StrokeRect(x, y, w, h);
 
@@ -994,10 +996,10 @@ NAN_METHOD(CanvasRenderingContext2D::ClearRect) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
-  double w = info[2]->NumberValue();
-  double h = info[3]->NumberValue();
+  double x = JS_NUM(info[0]);
+  double y = JS_NUM(info[1]);
+  double w = JS_NUM(info[2]);
+  double h = JS_NUM(info[3]);
 
   context->ClearRect(x, y, w, h);
 
@@ -1008,10 +1010,10 @@ NAN_METHOD(CanvasRenderingContext2D::FillText) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  v8::String::Utf8Value text(info[0]);
+  Nan::Utf8String text(info[0]);
   std::string string(*text, text.length());
-  double x = info[1]->NumberValue();
-  double y = info[2]->NumberValue();
+  double x = JS_NUM(info[1]);
+  double y = JS_NUM(info[2]);
 
   context->FillText(string, x, y);
 
@@ -1022,10 +1024,10 @@ NAN_METHOD(CanvasRenderingContext2D::StrokeText) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  v8::String::Utf8Value text(info[0]);
+  Nan::Utf8String text(info[0]);
   std::string string(*text, text.length());
-  double x = info[1]->NumberValue();
-  double y = info[2]->NumberValue();
+  double x = JS_NUM(info[1]);
+  double y = JS_NUM(info[2]);
 
   context->StrokeText(string, x, y);
 
@@ -1037,7 +1039,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreateLinearGradient) {
     Local<Object> contextObj = Local<Object>::Cast(info.This());
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(contextObj);
 
-    Local<Function> canvasGradientCons = Local<Function>::Cast(contextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("CanvasGradient")));
+    Local<Function> canvasGradientCons = Local<Function>::Cast(JS_OBJ(contextObj->Get(JS_STR("constructor")))->Get(JS_STR("CanvasGradient")));
     Local<Value> argv[] = {
       info[0],
       info[1],
@@ -1056,7 +1058,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreateRadialGradient) {
     Local<Object> contextObj = Local<Object>::Cast(info.This());
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(contextObj);
 
-    Local<Function> canvasGradientCons = Local<Function>::Cast(contextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("CanvasGradient")));
+    Local<Function> canvasGradientCons = Local<Function>::Cast(JS_OBJ(contextObj->Get(JS_STR("constructor")))->Get(JS_STR("CanvasGradient")));
     Local<Value> argv[] = {
       info[0],
       info[1],
@@ -1077,7 +1079,7 @@ NAN_METHOD(CanvasRenderingContext2D::CreatePattern) {
     Local<Object> contextObj = Local<Object>::Cast(info.This());
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(contextObj);
 
-    Local<Function> canvasPatternCons = Local<Function>::Cast(contextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("CanvasPattern")));
+    Local<Function> canvasPatternCons = Local<Function>::Cast(JS_OBJ(contextObj->Get(JS_STR("constructor")))->Get(JS_STR("CanvasPattern")));
     Local<Value> argv[] = {
       info[0],
       info[1],
@@ -1093,8 +1095,8 @@ NAN_METHOD(CanvasRenderingContext2D::Resize) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  unsigned int w = info[0]->Uint32Value();
-  unsigned int h = info[1]->Uint32Value();
+  unsigned int w = JS_UINT32(info[0]);
+  unsigned int h = JS_UINT32(info[1]);
   
   context->Resize(w, h);
 }
@@ -1107,22 +1109,22 @@ NAN_METHOD(CanvasRenderingContext2D::DrawImage) {
     if (image) {
       CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-      int x = info[1]->Int32Value();
-      int y = info[2]->Int32Value();
+      int x = JS_INT32(info[1]);
+      int y = JS_INT32(info[2]);
 
       if (info.Length() > 3) {
         if (info.Length() > 5) {
-          unsigned int sw = info[3]->Uint32Value();
-          unsigned int sh = info[4]->Uint32Value();
-          unsigned int dx = info[5]->Uint32Value();
-          unsigned int dy = info[6]->Uint32Value();
-          unsigned int dw = info[7]->Uint32Value();
-          unsigned int dh = info[8]->Uint32Value();
+          unsigned int sw = JS_UINT32(info[3]);
+          unsigned int sh = JS_UINT32(info[4]);
+          unsigned int dx = JS_UINT32(info[5]);
+          unsigned int dy = JS_UINT32(info[6]);
+          unsigned int dw = JS_UINT32(info[7]);
+          unsigned int dh = JS_UINT32(info[8]);
 
           context->DrawImage(image.get(), x, y, sw, sh, dx, dy, dw, dh);
         } else {
-          unsigned int dw = info[3]->Uint32Value();
-          unsigned int dh = info[4]->Uint32Value();
+          unsigned int dw = JS_UINT32(info[3]);
+          unsigned int dh = JS_UINT32(info[4]);
           unsigned int sw = image->width();
           unsigned int sh = image->height();
 
@@ -1146,11 +1148,11 @@ NAN_METHOD(CanvasRenderingContext2D::CreateImageData) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
-  double w = info[0]->NumberValue();
-  double h = info[1]->NumberValue();
+  double w = JS_NUM(info[0]);
+  double h = JS_NUM(info[1]);
 
   Local<Function> imageDataCons = Local<Function>::Cast(
-    Local<Object>::Cast(info.This())->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("ImageData"))
+    JS_OBJ(Local<Object>::Cast(info.This())->Get(JS_STR("constructor")))->Get(JS_STR("ImageData"))
   );
   Local<Value> argv[] = {
     Number::New(Isolate::GetCurrent(), w),
@@ -1165,13 +1167,13 @@ NAN_METHOD(CanvasRenderingContext2D::GetImageData) {
   // Nan::HandleScope scope;
 
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
-  int x = info[0]->Int32Value();
-  int y = info[1]->Int32Value();
-  unsigned int w = info[2]->Uint32Value();
-  unsigned int h = info[3]->Uint32Value();
+  int x = JS_INT32(info[0]);
+  int y = JS_INT32(info[1]);
+  unsigned int w = JS_UINT32(info[2]);
+  unsigned int h = JS_UINT32(info[3]);
 
   Local<Function> imageDataCons = Local<Function>::Cast(
-    Local<Object>::Cast(info.This())->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("ImageData"))
+    JS_OBJ(Local<Object>::Cast(info.This())->Get(JS_STR("constructor")))->Get(JS_STR("ImageData"))
   );
   Local<Value> argv[] = {
     Number::New(Isolate::GetCurrent(), w),
@@ -1192,14 +1194,14 @@ NAN_METHOD(CanvasRenderingContext2D::PutImageData) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(info.This()));
 
   ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(info[0]));
-  int x = info[1]->Int32Value();
-  int y = info[2]->Int32Value();
+  int x = JS_INT32(info[1]);
+  int y = JS_INT32(info[2]);
 
   if (info.Length() > 3) {
-    int dirtyX = info[3]->Int32Value();
-    int dirtyY = info[4]->Int32Value();
-    unsigned int dirtyWidth = info[5]->Uint32Value();
-    unsigned int dirtyHeight = info[6]->Uint32Value();
+    int dirtyX = JS_INT32(info[3]);
+    int dirtyY = JS_INT32(info[4]);
+    unsigned int dirtyWidth = JS_UINT32(info[5]);
+    unsigned int dirtyHeight = JS_UINT32(info[6]);
     unsigned int dw = imageData->GetWidth();
     unsigned int dh = imageData->GetHeight();
 
@@ -1235,7 +1237,7 @@ NAN_METHOD(CanvasRenderingContext2D::ToArrayBuffer) {
 
   std::string type;
   if (info[0]->IsString()) {
-    String::Utf8Value utf8Value(Local<String>::Cast(info[0]));
+      Nan::Utf8String utf8Value(Local<String>::Cast(info[0]));
     type = *utf8Value;
   }
   SkEncodedImageFormat format;
@@ -1250,7 +1252,7 @@ NAN_METHOD(CanvasRenderingContext2D::ToArrayBuffer) {
 
   int quality = 90;
   if (info[1]->IsNumber()) {
-    double d = std::min<double>(std::max<double>(info[1]->NumberValue(), 0), 1);
+    double d = std::min<double>(std::max<double>(JS_NUM(info[1]), 0), 1);
     quality = static_cast<int>(d * 100);
   }
 
@@ -1300,9 +1302,9 @@ NAN_METHOD(CanvasRenderingContext2D::SetWindowHandle) {
 NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
   CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
-    GLuint tex = info[0]->Uint32Value();
-    int width = info[1]->Int32Value();
-    int height = info[2]->Int32Value();
+    GLuint tex = JS_UINT32(info[0]);
+    int width = JS_INT32(info[1]);
+    int height = JS_INT32(info[2]);
     
     ctx->tex = tex;
 
@@ -1327,9 +1329,9 @@ NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
 }
 
 bool CanvasRenderingContext2D::isImageType(Local<Value> arg) {
-  Local<Value> constructorName = arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"));
+  Local<Value> constructorName = JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"));
 
-  v8::String::Utf8Value utf8Value(constructorName);
+  Nan::Utf8String utf8Value(constructorName);
   std::string stringValue(*utf8Value, utf8Value.length());
 
   return
@@ -1353,29 +1355,29 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImageFromContext(CanvasRenderingCont
 }
 
 sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
-  if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
-    Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(arg->ToObject()->Get(JS_STR("image"))));
+  if (JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement"))) {
+    Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(JS_OBJ(arg)->Get(JS_STR("image"))));
     return image->image;
-  } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLVideoElement"))) {
-    auto video = arg->ToObject()->Get(JS_STR("video"));
+  } else if (JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLVideoElement"))) {
+    auto video = JS_OBJ(arg)->Get(JS_STR("video"));
     if (video->IsObject()) {
-      return getImage(video->ToObject()->Get(JS_STR("imageData")));
+      return getImage(JS_OBJ(video)->Get(JS_STR("imageData")));
     }
     return nullptr;
-  } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
+  } else if (JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageData"))) {
     ImageData *imageData = ObjectWrap::Unwrap<ImageData>(Local<Object>::Cast(arg));
     return SkImage::MakeFromBitmap(imageData->bitmap);
-  } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))) {
+  } else if (JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("ImageBitmap"))) {
     ImageBitmap *imageBitmap = ObjectWrap::Unwrap<ImageBitmap>(Local<Object>::Cast(arg));
     return SkImage::MakeFromBitmap(imageBitmap->bitmap);
-  } else if (arg->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
-    Local<Value> otherContextObj = arg->ToObject()->Get(JS_STR("_context"));
-    if (otherContextObj->IsObject() && otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"))) {
+  } else if (JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
+    Local<Value> otherContextObj = JS_OBJ(arg)->Get(JS_STR("_context"));
+    if (otherContextObj->IsObject() && JS_OBJ(JS_OBJ(otherContextObj)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasRenderingContext2D"))) {
       CanvasRenderingContext2D *otherContext = ObjectWrap::Unwrap<CanvasRenderingContext2D>(Local<Object>::Cast(otherContextObj));
       return getImageFromContext(otherContext);
     } else if (otherContextObj->IsObject() && (
-      otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) ||
-      otherContextObj->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGL2RenderingContext"))
+      JS_OBJ(JS_OBJ(otherContextObj)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) ||
+      JS_OBJ(JS_OBJ(otherContextObj)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGL2RenderingContext"))
     )) {
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(otherContextObj));
 

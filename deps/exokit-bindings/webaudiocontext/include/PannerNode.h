@@ -18,7 +18,7 @@ namespace webaudio {
 
 class PannerNode : public AudioNode {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> fakeAudioParamCons);
+  static Local<Object> Initialize(Isolate *isolate, Local<Value> fakeAudioParamCons);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:

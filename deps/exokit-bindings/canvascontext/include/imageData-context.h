@@ -16,7 +16,7 @@ class CanvasRenderingContext2D;
 
 class ImageData : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();

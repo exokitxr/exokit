@@ -8,6 +8,8 @@
 #include <openvr.h>
 #include <v8.h>
 
+#include "../../exokit-bindings/helpers.h"
+
 using namespace v8;
 
 //=============================================================================
@@ -26,7 +28,7 @@ NAN_METHOD(VR_Init)
     return;
   }
 
-  uint32_t applicationType = info[0]->Uint32Value();
+  uint32_t applicationType = JS_UINT32(info[0]);
   // TODO: is there a better way to do this?
   constexpr uint32_t applicationTypeMax = vr::VRApplication_Max;
   if (applicationType >= applicationTypeMax)
@@ -127,7 +129,7 @@ NAN_METHOD(VR_GetVRInitErrorAsSymbol)
     return;
   }
 
-  uint32_t nError = info[0]->Uint32Value();
+  uint32_t nError = JS_UINT32(info[0]);
   vr::EVRInitError eError = static_cast<vr::EVRInitError>(nError);
   const char *result = vr::VR_GetVRInitErrorAsSymbol(eError);
   info.GetReturnValue().Set(Nan::New<String>(result).ToLocalChecked());
@@ -149,7 +151,7 @@ NAN_METHOD(VR_GetVRInitErrorAsEnglishDescription)
     return;
   }
 
-  uint32_t nError = info[0]->Uint32Value();
+  uint32_t nError = JS_UINT32(info[0]);
   vr::EVRInitError eError = static_cast<vr::EVRInitError>(nError);
   const auto result = vr::VR_GetVRInitErrorAsEnglishDescription(eError);
   info.GetReturnValue().Set(Nan::New<String>(result).ToLocalChecked());
@@ -178,7 +180,7 @@ NAN_METHOD(GetContext)
   result->Set(Nan::New("system").ToLocalChecked(), system);
 
   v8::Local<v8::Object> compositor = v8::Object::New(v8::Isolate::GetCurrent());
-  compositor->Set(Nan::New("NewCompositor").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(NewCompositor)->GetFunction());
+  compositor->Set(Nan::New("NewCompositor").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(NewCompositor)));
   IVRCompositor::Init(compositor);
   result->Set(Nan::New("compositor").ToLocalChecked(), compositor);
   
@@ -190,15 +192,15 @@ Local<Object> makeVr() {
   
   Local<Object> exports = Object::New(Isolate::GetCurrent());
 
-  exports->Set(Nan::New("VR_Init").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_Init)->GetFunction());
-  exports->Set(Nan::New("VR_Shutdown").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_Shutdown)->GetFunction());
-  exports->Set(Nan::New("VR_IsHmdPresent").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_IsHmdPresent)->GetFunction());
-  exports->Set(Nan::New("VR_IsRuntimeInstalled").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_IsRuntimeInstalled)->GetFunction());
-  exports->Set(Nan::New("VR_RuntimePath").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_RuntimePath)->GetFunction());
-  exports->Set(Nan::New("VR_GetVRInitErrorAsSymbol").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsSymbol)->GetFunction());
-  exports->Set(Nan::New("VR_GetVRInitErrorAsEnglishDescription").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsEnglishDescription)->GetFunction());
-  exports->Set(Nan::New("VR_GetInitToken").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(VR_GetInitToken)->GetFunction());
-  exports->Set(Nan::New("getContext").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(GetContext)->GetFunction());
+  exports->Set(Nan::New("VR_Init").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(VR_Init)));
+  exports->Set(Nan::New("VR_Shutdown").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(VR_Shutdown)));
+  exports->Set(Nan::New("VR_IsHmdPresent").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(VR_IsHmdPresent)));
+  exports->Set(Nan::New("VR_IsRuntimeInstalled").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(VR_IsRuntimeInstalled)));
+  exports->Set(Nan::New("VR_RuntimePath").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(VR_RuntimePath)));
+  exports->Set(Nan::New("VR_GetVRInitErrorAsSymbol").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsSymbol)));
+  exports->Set(Nan::New("VR_GetVRInitErrorAsEnglishDescription").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsEnglishDescription)));
+  exports->Set(Nan::New("VR_GetInitToken").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(VR_GetInitToken)));
+  exports->Set(Nan::New("getContext").ToLocalChecked(), JS_FUNC(Nan::New<v8::FunctionTemplate>(GetContext)));
 
   return scope.Escape(exports);
 }

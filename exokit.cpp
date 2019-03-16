@@ -6,8 +6,8 @@
 #include <thread>
 #include <functional>
 
-#include <v8.h>
 #include <bindings.h>
+#include <v8.h>
 
 #ifdef OPENVR
 #include <openvr-bindings.h>
@@ -25,18 +25,17 @@ void callFunction(const char *funcname, const int argc, Local<Value> argv[]) {
   Local<Object> global = localContext->Global();
 
   // get function
-  Local<String> jsfunc_name = String::NewFromUtf8(isolate,funcname);
-  Local<Value> jsfunc_val = global->Get(jsfunc_name);
+  Local<Value> jsfunc_val = Nan::Get(global, Nan::New<String>(funcname).ToLocalChecked()).ToLocalChecked();
   if (!jsfunc_val->IsFunction()) return;
   Local<Function> jsfunc = Local<Function>::Cast(jsfunc_val);
 
   // call function, 'this' points to global object
   TryCatch try_catch(Isolate::GetCurrent());
-  Local<Value> result = jsfunc->Call(global, argc, argv);
+  Local<Value> result = Nan::Call(jsfunc, global, argc, argv).ToLocalChecked();
 
   if (result.IsEmpty()) {
-    String::Utf8Value error(try_catch.Exception());
-    String::Utf8Value stacktrace(try_catch.StackTrace(localContext).ToLocalChecked());
+    Nan::Utf8String error(try_catch.Exception());
+    Nan::Utf8String stacktrace(try_catch.StackTrace(localContext).ToLocalChecked());
     // LOGI("Error calling %s: %s:\n%s",funcname,*error,*stacktrace);
   } else {
     // LOGI("%s called",funcname);
@@ -54,10 +53,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onResize
     unsigned int width = 1;
     unsigned int height = 1;
 
-    Handle<Number> js_width = v8::Integer::New(Isolate::GetCurrent(), width);
-    Handle<Number> js_height = v8::Integer::New(Isolate::GetCurrent(), height);
-
-    Local<Value> argv[] = {js_width, js_height};
+    Local<Value> argv[] = {Nan::New<Integer>(width), Nan::New<Integer>(height)};
     callFunction("onResize", sizeof(argv)/sizeof(argv[0]), argv);
   }
 }
@@ -141,65 +137,65 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
   }
 }
 
-void InitExports(Handle<Object> exports) {
+void InitExports(Local<Object> exports) {
   std::pair<Local<Value>, Local<FunctionTemplate>> glResult = makeGl();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), glResult.first);
+  exports->Set(Nan::New("nativeGl").ToLocalChecked(), glResult.first);
 
   std::pair<Local<Value>, Local<FunctionTemplate>> gl2Result = makeGl2(glResult.second);
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl2"), gl2Result.first);
+  exports->Set(Nan::New("nativeGl2").ToLocalChecked(), gl2Result.first);
 
   Local<Value> image = makeImage();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImage"), image);
+  exports->Set(Nan::New("nativeImage").ToLocalChecked(), image);
 
   Local<Value> imageData = makeImageData();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageData"), imageData);
+  exports->Set(Nan::New("nativeImageData").ToLocalChecked(), imageData);
 
   Local<Value> imageBitmap = makeImageBitmap();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeImageBitmap"), imageBitmap);
+  exports->Set(Nan::New("nativeImageBitmap").ToLocalChecked(), imageBitmap);
 
   Local<Value> path2d = makePath2D();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePath2D"), path2d);
+  exports->Set(Nan::New("nativePath2D").ToLocalChecked(), path2d);
 
   Local<Value> canvasGradient = makeCanvasGradient();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasGradient"), canvasGradient);
+  exports->Set(Nan::New("nativeCanvasGradient").ToLocalChecked(), canvasGradient);
 
   Local<Value> canvasPattern = makeCanvasPattern();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasPattern"), canvasPattern);
+  exports->Set(Nan::New("nativeCanvasPattern").ToLocalChecked(), canvasPattern);
 
   Local<Value> canvas = makeCanvasRenderingContext2D(imageData, canvasGradient, canvasPattern);
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasRenderingContext2D"), canvas);
+  exports->Set(Nan::New("nativeCanvasRenderingContext2D").ToLocalChecked(), canvas);
 
   Local<Value> audio = makeAudio();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
+  exports->Set(Nan::New("nativeAudio").ToLocalChecked(), audio);
 
   Local<Value> video = makeVideo(imageData);
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVideo"), video);
+  exports->Set(Nan::New("nativeVideo").ToLocalChecked(), video);
   
   Local<Value> browser = makeBrowser();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeBrowser"), browser);
+  exports->Set(Nan::New("nativeBrowser").ToLocalChecked(), browser);
 
   Local<Value> rtc = makeRtc();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeRtc"), rtc);
+  exports->Set(Nan::New("nativeRtc").ToLocalChecked(), rtc);
 
   /* Local<Value> glfw = makeGlfw();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
+  exports->Set(Nan::New("nativeGlfw").ToLocalChecked(), glfw); */
 
   Local<Value> window = makeWindow();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
+  exports->Set(Nan::New("nativeWindow").ToLocalChecked(), window);
 
 #ifdef OPENVR
   Local<Value> vr = makeVr();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
+  exports->Set(Nan::New("nativeVr").ToLocalChecked(), vr);
 #endif
 
 #if LEAPMOTION
   Local<Value> lm = makeLm();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeLm"), lm);
+  exports->Set(Nan::New("nativeLm").ToLocalChecked(), lm);
 #endif
 
 #if defined(LUMIN)
   Local<Value> ml = makeMl();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
+  exports->Set(Nan::New("nativeMl").ToLocalChecked(), ml);
 #endif
 
 #ifndef LUMIN
@@ -207,16 +203,16 @@ void InitExports(Handle<Object> exports) {
 #else
 #define NATIVE_ANALYTICS false
 #endif
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAnalytics"), JS_BOOL(NATIVE_ANALYTICS));
+  exports->Set(Nan::New("nativeAnalytics").ToLocalChecked(), JS_BOOL(NATIVE_ANALYTICS));
 
   uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
   initFunctionAddressArray->Set(0, Nan::New<Integer>((uint32_t)(initFunctionAddress >> 32)));
   initFunctionAddressArray->Set(1, Nan::New<Integer>((uint32_t)(initFunctionAddress & 0xFFFFFFFF)));
-  exports->Set(JS_STR("initFunctionAddress"), initFunctionAddressArray);
+  exports->Set(Nan::New("initFunctionAddress").ToLocalChecked(), initFunctionAddressArray);
 }
 
-void Init(Handle<Object> exports) {
+void Init(Local<Object> exports) {
   InitExports(exports);
 }
 

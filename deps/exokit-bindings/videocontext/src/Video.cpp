@@ -1,6 +1,7 @@
 #include <Video.h>
 #include <VideoMode.h>
 #include <VideoCamera.h>
+#include "../../helpers.h"
 
 using namespace v8;
 
@@ -223,7 +224,7 @@ Video::~Video() {
   videos.erase(std::find(videos.begin(), videos.end(), this));
 }
 
-Handle<Object> Video::Initialize(Isolate *isolate) {
+Local<Object> Video::Initialize(Isolate *isolate) {
   // initialize libav
   av_register_all();
   avcodec_register_all();
@@ -250,7 +251,7 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
 
   Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
   Nan::SetMethod(ctorFn, "getDevices", GetDevices);
@@ -414,7 +415,7 @@ NAN_GETTER(Video::LoopGetter) {
   Nan::HandleScope scope;
 
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
-  info.GetReturnValue().Set(JS_BOOL(video->loop));
+  info.GetReturnValue().Set(BOOL_TO_JS(video->loop));
 }
 
 NAN_SETTER(Video::LoopSetter) {
@@ -422,7 +423,7 @@ NAN_SETTER(Video::LoopSetter) {
 
   if (value->IsBoolean()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
-    video->loop = value->BooleanValue();
+    video->loop = JS_BOOL(value);
   } else {
     Nan::ThrowError("loop: invalid arguments`");
   }
@@ -458,7 +459,7 @@ NAN_GETTER(Video::CurrentTimeGetter) {
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
   double currentTime = video->getFrameCurrentTimeS();
-  info.GetReturnValue().Set(JS_NUM(currentTime));
+  info.GetReturnValue().Set(DOUBLE_TO_JS(currentTime));
 }
 
 NAN_SETTER(Video::CurrentTimeSetter) {
@@ -467,7 +468,7 @@ NAN_SETTER(Video::CurrentTimeSetter) {
   if (value->IsNumber()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-    double timestamp = value->NumberValue();
+    double timestamp = JS_NUM(value);
     video->SeekTo(timestamp);
   } else {
     Nan::ThrowError("currentTime: invalid arguments");
@@ -480,7 +481,7 @@ NAN_GETTER(Video::DurationGetter) {
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
   double duration = video->loaded ? ((double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE) : 1;
-  info.GetReturnValue().Set(JS_NUM(duration));
+  info.GetReturnValue().Set(DOUBLE_TO_JS(duration));
 }
 
 NAN_METHOD(Video::UpdateAll) {
@@ -512,9 +513,9 @@ NAN_METHOD(Video::GetDevices) {
     for (auto mode : modes) {
       Local<Object> obj = Object::New(Isolate::GetCurrent());
       lst->Set(j++, obj);
-      obj->Set(JS_STR("width"), JS_NUM(mode.width));
-      obj->Set(JS_STR("height"), JS_NUM(mode.height));
-      obj->Set(JS_STR("fps"), JS_NUM(mode.FPS));
+      obj->Set(JS_STR("width"), DOUBLE_TO_JS(mode.width));
+      obj->Set(JS_STR("height"), DOUBLE_TO_JS(mode.height));
+      obj->Set(JS_STR("fps"), DOUBLE_TO_JS(mode.FPS));
     }
     obj->Set(JS_STR("modes"), lst);
   }
@@ -562,7 +563,7 @@ VideoDevice::~VideoDevice() {
   videoDevices.erase(std::find(videoDevices.begin(), videoDevices.end(), this));
 }
 
-Handle<Object> VideoDevice::Initialize(Isolate *isolate, Local<Value> imageDataCons) {
+Local<Object> VideoDevice::Initialize(Isolate *isolate, Local<Value> imageDataCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -580,7 +581,7 @@ Handle<Object> VideoDevice::Initialize(Isolate *isolate, Local<Value> imageDataC
   Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
   Nan::SetAccessor(proto, JS_STR("imageData"), ImageDataGetter);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = JS_FUNC(ctor);
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
 
   return scope.Escape(ctorFn);
@@ -614,7 +615,7 @@ NAN_METHOD(VideoDevice::Open) {
       opts = std::string(*optsStr, optsStr.length());
     }
     video->dev = VideoMode::open(name, opts);
-    info.GetReturnValue().Set(JS_BOOL(video->dev != nullptr));
+    info.GetReturnValue().Set(BOOL_TO_JS(video->dev != nullptr));
   }
 }
 
@@ -671,7 +672,7 @@ NAN_GETTER(VideoDevice::DataGetter) {
       double h = video->dev->getHeight();
 
       Local<Function> imageDataCons = Local<Function>::Cast(
-          Local<Object>::Cast(info.This())->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("ImageData"))
+          JS_OBJ(Local<Object>::Cast(info.This())->Get(JS_STR("constructor")))->Get(JS_STR("ImageData"))
           );
       Local<Value> argv[] = {
         Number::New(Isolate::GetCurrent(), w),
