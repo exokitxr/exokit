@@ -21,9 +21,12 @@ Steps or commands ran to reproduce the behavior:
 **Additional context**
 Add any other context about the problem here.
 
+
 **System information:**
 - Reality Tab mode of operation (opened through MLDB or the default mpk reality tabs)
+
 - URL loaded
+
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
