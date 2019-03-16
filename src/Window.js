@@ -466,6 +466,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         ]);
       },
     },
+    webkitGetUserMedia, // for feature detection
     getVRDisplaysSync() {
       const result = [];
       if (GlobalContext.fakeVrDisplayEnabled) {
@@ -775,6 +776,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.MediaStream = class MediaStream {};
   
   window.RTCPeerConnection = RTCPeerConnection;
+  window.webkitRTCPeerConnection = RTCPeerConnection; // for feature detection
   window.RTCSessionDescription = RTCSessionDescription;
   window.RTCIceCandidate = RTCIceCandidate;
   
