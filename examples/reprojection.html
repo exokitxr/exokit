@@ -18,6 +18,7 @@
       var defaultVertexShader = [
 
         "varying vec2 vUv;",
+        "varying float vZDiff;",
         "uniform sampler2D dTexture;",
         "uniform mat4 projectionMatrixInverse;",
         "uniform mat4 matrixWorldInverse;",
@@ -26,47 +27,106 @@
         "uniform mat4 initialProjectionMatrix;",
         "uniform float zNear;",
         "uniform float zFar;",
+        "uniform vec2 size;",
         "uniform float aspect;",
         `
-        /* vec4 screen2WorldOld(vec2 screen) {
-          // input: x_coord, y_coord
-          vec2 xy = (screen + 1.0) / 2.0; //in [0,1] range
-          // vec2 xy = screen;
-          vec4 v_screen = vec4(xy, texture2D(dTexture, xy).r, 1.0 );
-          vec4 v_homo = projectionMatrixInverse * 2.0*(v_screen-vec4(0.5));
-          // vec3 v_eye = v_homo.xyz / v_homo.w; //transfer from homogeneous coordinates
-          // return vec4(screen.xy, v_homo.z/v_homo.w, v_homo.w);
-          return modelViewMatrix * vec4(screen.xy, v_homo.z/v_homo.w, 1.0);
-        } */
-        vec4 screen2World(vec2 screen) {
-          vec2 xy = (screen + 1.0) / 2.0; //in [0,1] range
+        float depthLimit = 0.95;
+        float getDepth(vec2 xy) {
+          float dx = 1.0/size.x;
+          float dy = 1.0/size.y;
+
+          float value = 0.0;
+          float count = 0.0;
+
+          float d = texture2D(dTexture, xy + vec2(-dx, -dy)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+          d = texture2D(dTexture, xy + vec2(0.0, -dy)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+          d = texture2D(dTexture, xy + vec2(dx, -dy)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+          d = texture2D(dTexture, xy + vec2(-dx, 0.0)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+          d = texture2D(dTexture, xy + vec2(dx, 0.0)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+          d = texture2D(dTexture, xy + vec2(-dx, dy)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+          d = texture2D(dTexture, xy + vec2(0.0, dy)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+          d = texture2D(dTexture, xy + vec2(dx, dy)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+          d = texture2D(dTexture, xy + vec2(0.0, 0.0)).r;
+          if (d > depthLimit) {
+            value += d;
+            count++;
+          }
+
+          if (count > 0.0) {
+            return d;
+          } else {
+            return 100.0;
+          }
+        }
+        void main() {
+          vec2 xy = (position.xy + 1.0) / 2.0; //in [0,1] range
+          // float z_b = getDepth(xy);
           float z_b = texture2D(dTexture, xy).r;
           float z_n = 2.0 * z_b - 1.0;
-          float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
-          // float z_e = zNear + (z_b)*(zFar - zNear)
-          vec4 offset = initialProjectionMatrix * vec4(0.0, 0.0, -z_e, 1.0);
-          float z = offset.z/offset.w;
-          return projectionMatrix * modelViewMatrix * inverseMatrix2 * vec4(screen.xy, z, 1.0);
+          float z_e = -(2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear)));
+          float zOrig = z_e;
+          vec4 offset = initialProjectionMatrix * vec4(0.0, 0.0, z_e, 1.0);
+          vec4 worldPosOrig = inverseMatrix2 * vec4(position.xy, offset.z/offset.w, 1.0);
+          float zNew = worldPosOrig.z/worldPosOrig.w;
+          vec4 worldPosNew = modelViewMatrix * worldPosOrig;
+          gl_Position = projectionMatrix * worldPosNew;
+          vUv = uv;
+          vZDiff = abs(zNew - zOrig);
         }
         `,
-        "void main(){",
-          "gl_Position = screen2World(position.xy);",
-          "vUv = uv;",
-        "}",
 
       ].join("\n");
 
       var defaultFragmentShader = [
 
-        `varying vec2 vUv;
+        `
+        varying vec2 vUv;
+        varying float vZDiff;
         uniform float numTextures;
         uniform sampler2D uTexture;
         uniform sampler2D dTexture;
         void main() {
-          vec4 c = texture2D(uTexture, vUv);
-          float d = (1.0 - texture2D(dTexture, vUv).r) * 20.0;
-          gl_FragColor = vec4(vec3(d) * c.rgb, c.a);
-        }`
+          if (vZDiff < 0.0001) {
+            vec4 c = texture2D(uTexture, vUv);
+            float dc = (1.0 - texture2D(dTexture, vUv).r) * 20.0;
+            gl_FragColor = vec4(vec3(dc) * c.rgb, c.a);
+          } else {
+            discard;
+          }
+        }
+        `
 
       ].join("\n");
 
@@ -116,6 +176,10 @@
             zFar: {
               type:'f',
               value: undefined !== params.zFar ? params.zFar : null
+            },
+            size: {
+              type:'v2',
+              value: undefined !== params.size ? params.size : null
             },
             aspect: {
               type:'f',
@@ -201,6 +265,7 @@ function init() {
   hiddenCamera.inverseMatrix = new THREE.Matrix4();
   hiddenCamera.inverseMatrix2 = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrix = new THREE.Matrix4();
+  hiddenCamera.size = new THREE.Vector2();
 
   {
     const ambientLight = new THREE.AmbientLight(0x808080);
@@ -268,6 +333,7 @@ function init() {
     matrixWorldInverse: hiddenCamera.matrixWorldInverse,
     zNear: hiddenCamera.near,
     zFar: hiddenCamera.far,
+    size: hiddenCamera.size,
     aspect: hiddenCamera.aspect,
     inverseMatrix: hiddenCamera.inverseMatrix,
     inverseMatrix2: hiddenCamera.inverseMatrix2,
@@ -299,6 +365,7 @@ window.addEventListener('keydown', e => {
   hiddenCamera.inverseMatrix.getInverse(hiddenCamera.inverseMatrix);
   hiddenCamera.inverseMatrix2.copy(hiddenCamera.projectionMatrixInverse);
   hiddenCamera.initialProjectionMatrix.copy(hiddenCamera.projectionMatrix);
+  hiddenCamera.size.set(renderTarget.width, renderTarget.height);
 
   renderer.render(hiddenScene, hiddenCamera, renderTarget);
   renderer.setRenderTarget(null);
