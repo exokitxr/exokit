@@ -21,6 +21,9 @@
         "uniform sampler2D dTexture;",
         "uniform mat4 projectionMatrixInverse;",
         "uniform mat4 matrixWorldInverse;",
+        "uniform mat4 inverseMatrix;",
+        "uniform mat4 inverseMatrix2;",
+        "uniform mat4 initialProjectionMatrix;",
         "uniform float zNear;",
         "uniform float zFar;",
         "uniform float aspect;",
@@ -41,41 +44,14 @@
           float z_n = 2.0 * z_b - 1.0;
           float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
           // float z_e = zNear + (z_b)*(zFar - zNear)
-          // vec4 lol = (matrixWorldInverse * projectionMatrixInverse * vec4(screen.xy, 0.0, 1.0));
-          // return vec4(screen.xy, (projectionMatrix * vec4(0.0, 0.0, 1.0-z_e, 1.0)).z, 1.0);
-          vec4 offset = projectionMatrix * vec4(0.0, 0.0, -z_e, 1.0);
-          return vec4(screen.xy, offset.z/offset.w, 1.0);
+          vec4 offset = initialProjectionMatrix * vec4(0.0, 0.0, -z_e, 1.0);
+          float z = offset.z/offset.w;
+          return projectionMatrix * modelViewMatrix * inverseMatrix2 * vec4(screen.xy, z, 1.0);
         }
         `,
         "void main(){",
-          // "gl_Position = vec4(position.xy, 1., 1.);",
           "gl_Position = screen2World(position.xy);",
           "vUv = uv;",
-        "}",
-
-      ].join("\n");
-
-      var defaultVertexShader2 = [
-
-        // "varying vec2 vUv;",
-        "uniform sampler2D dTexture;",
-        "uniform mat4 projectionMatrixInverse;",
-        `
-        /* vec4 screen2World(vec2 screen) {
-          // input: x_coord, y_coord
-          vec2 xy = (screen + 1.0) / 2.0; //in [0,1] range
-          // vec2 xy = screen;
-          vec4 v_screen = vec4(xy, texture2D(dTexture, xy).r, 1.0 );
-          vec4 v_homo = projectionMatrixInverse * 2.0*(v_screen-vec4(0.5));
-          // vec3 v_eye = v_homo.xyz / v_homo.w; //transfer from homogeneous coordinates
-          // return vec4(screen.xy, v_homo.z/v_homo.w, v_homo.w);
-          return modelViewMatrix * vec4(screen.xy, 0.0, 1.0);
-        } */
-        `,
-        "void main(){",
-          // "gl_Position = vec4(position.xy, 1., 1.);",
-          "gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
-          // "vUv = uv;",
         "}",
 
       ].join("\n");
@@ -88,17 +64,8 @@
         uniform sampler2D dTexture;
         void main() {
           vec4 c = texture2D(uTexture, vUv);
-          float d = (1.0 - texture2D(dTexture, vUv).r) * 10.0;
+          float d = (1.0 - texture2D(dTexture, vUv).r) * 20.0;
           gl_FragColor = vec4(vec3(d) * c.rgb, c.a);
-          // gl_FragColor.a = 1.0;
-        }`
-
-      ].join("\n");
-
-      var defaultFragmentShader2 = [
-
-        `void main() {
-          gl_FragColor = vec4(0.0, 0.0, 0.5, 0.1);
         }`
 
       ].join("\n");
@@ -130,6 +97,18 @@
               type:'m4',
               value: undefined !== params.matrixWorldInverse ? params.matrixWorldInverse : null
             },
+            inverseMatrix: {
+              type:'m4',
+              value: undefined !== params.inverseMatrix ? params.inverseMatrix : null
+            },
+            inverseMatrix2: {
+              type:'m4',
+              value: undefined !== params.inverseMatrix2 ? params.inverseMatrix2 : null
+            },
+            initialProjectionMatrix: {
+              type:'m4',
+              value: undefined !== params.initialProjectionMatrix ? params.initialProjectionMatrix : null
+            },
             zNear: {
               type:'f',
               value: undefined !== params.zNear ? params.zNear : null
@@ -144,9 +123,9 @@
             },
           },
 
-          vertexShader: params.lol ? defaultVertexShader : defaultVertexShader2,
+          vertexShader: defaultVertexShader,
 
-          fragmentShader: params.lol ? defaultFragmentShader : defaultFragmentShader2,
+          fragmentShader: defaultFragmentShader,
 
           // depthWrite: !params.lol,
 
@@ -219,6 +198,9 @@ function init() {
   hiddenScene.add(hiddenCamera);
   hiddenCamera.updateMatrixWorld();
   hiddenCamera.updateProjectionMatrix();
+  hiddenCamera.inverseMatrix = new THREE.Matrix4();
+  hiddenCamera.inverseMatrix2 = new THREE.Matrix4();
+  hiddenCamera.initialProjectionMatrix = new THREE.Matrix4();
 
   {
     const ambientLight = new THREE.AmbientLight(0x808080);
@@ -241,8 +223,6 @@ function init() {
     'attribute vec2 uv;',
     'varying vec2 vUv;',
     'void main() {',
-      // 'vec4 worldPosition = modelMatrix * vec4( position, 1.0 );',
-      // 'vWorldPosition = worldPosition.xyz;',
       'gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
       'vUv = uv;',
     '}'
@@ -250,19 +230,6 @@ function init() {
   const fragmentShader = [
     'sampler2D t;',
     'varying vec2 vUv;',
-    /* `
-    vec3 screen2screen(vec2 screen, mat4 transformMatrix) {
-      return transformMatrix * vec4(screen, 0.0, 1.0).xy;
-    }
-    vec3 screen2World(vec2 screen, mat4 projectionMatrixInverse, sampler2D samplerDepth) {
-      // input: x_coord, y_coord, samplerDepth
-      vec2 xy = vec2(screen.x,screen.y); //in [0,1] range
-      vec4 v_screen = vec4(xy, texture(samplerDepth, xy), 1.0 );
-      vec4 v_homo = projectionMatrixInverse * 2.0*(v_screen-vec4(0.5));
-      vec3 v_eye = v_homo.xyz / v_homo.w; //transfer from homogeneous coordinates
-      return v_eye;
-    }
-    ` */
     'void main() {',
       'gl_FragColor = texture2D(t, vUv);',
     '}'
@@ -270,7 +237,6 @@ function init() {
 
   const _makeBoxMesh = () => {
     const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize);
-      // .applyMatrix(new THREE.Matrix4().makeTranslation(-planeWorldWidth/2, planeWorldHeight/2, boxMeshSize/2));
     const material = new THREE.MeshPhongMaterial({
       color: 0xFF0000,
     });
@@ -282,7 +248,6 @@ function init() {
     return mesh;
   };
   boxMesh = _makeBoxMesh();
-  // boxMesh.position.y = 0.1;
   boxMesh.position.z = -2;
   scene.add(boxMesh);
 
@@ -296,8 +261,6 @@ function init() {
   // renderTarget.transparent = false;
   renderTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
 
-  console.log('got render target', hiddenCamera);
-
   screenQuad = new ScreenQuad({
     texture: renderTarget.texture,
     depthTexture: renderTarget.depthTexture,
@@ -306,20 +269,12 @@ function init() {
     zNear: hiddenCamera.near,
     zFar: hiddenCamera.far,
     aspect: hiddenCamera.aspect,
+    inverseMatrix: hiddenCamera.inverseMatrix,
+    inverseMatrix2: hiddenCamera.inverseMatrix2,
+    initialProjectionMatrix: hiddenCamera.initialProjectionMatrix,
     lol: true,
   });
   scene.add(screenQuad);
-
-  /* const screenQuad2 = new ScreenQuad({
-    texture: renderTarget.texture,
-    depthTexture: renderTarget.depthTexture,
-    projectionMatrixInverse: hiddenCamera.projectionMatrixInverse,
-    matrixWorldInverse: hiddenCamera.matrixWorldInverse,
-    zNear: hiddenCamera.near,
-    zFar: hiddenCamera.far,
-    aspect: hiddenCamera.aspect,
-  });
-  scene.add(screenQuad2); */
 }
 
 init();
@@ -332,6 +287,18 @@ window.addEventListener('keydown', e => {
   hiddenCamera.position.copy(camera.position);
   hiddenCamera.quaternion.copy(camera.quaternion);
   hiddenCamera.scale.copy(camera.scale);
+  hiddenCamera.updateMatrixWorld();
+  hiddenCamera.updateProjectionMatrix();
+
+  screenQuad.position.copy(camera.position);
+  screenQuad.quaternion.copy(camera.quaternion);
+  screenQuad.scale.copy(camera.scale);
+  screenQuad.updateMatrixWorld();
+
+  hiddenCamera.inverseMatrix.copy(hiddenCamera.matrixWorld).multiply(screenQuad.matrixWorld);
+  hiddenCamera.inverseMatrix.getInverse(hiddenCamera.inverseMatrix);
+  hiddenCamera.inverseMatrix2.copy(hiddenCamera.projectionMatrixInverse);
+  hiddenCamera.initialProjectionMatrix.copy(hiddenCamera.projectionMatrix);
 
   renderer.render(hiddenScene, hiddenCamera, renderTarget);
   renderer.setRenderTarget(null);
@@ -340,7 +307,7 @@ window.addEventListener('keydown', e => {
 function animate(timestamp, frame) {
   boxMesh.rotation.x += 0.01;
   boxMesh.rotation.y += 0.01;
-  boxMesh.rotation.z += 0.01; 
+  boxMesh.rotation.z += 0.01;
 
   renderer.render(scene, camera);
 }
