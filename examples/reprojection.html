@@ -1,9 +1,179 @@
 <!doctype html>
 <html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
   <body>
     <script src="three.js"></script>
+    <script src="OrbitControls.js"></script>
     <script>
-let renderer, scene, hiddenScene, camera, iframe, planeMesh, renderTarget;
+ window.ScreenQuad = (() => {
+
+      var defaultQuad = new THREE.PlaneBufferGeometry(2,2,1000, 1000);
+
+      var defaultVertexShader = [
+
+        "varying vec2 vUv;",
+        "uniform sampler2D dTexture;",
+        "uniform mat4 projectionMatrixInverse;",
+        "uniform mat4 matrixWorldInverse;",
+        "uniform float zNear;",
+        "uniform float zFar;",
+        "uniform float aspect;",
+        `
+        /* vec4 screen2WorldOld(vec2 screen) {
+          // input: x_coord, y_coord
+          vec2 xy = (screen + 1.0) / 2.0; //in [0,1] range
+          // vec2 xy = screen;
+          vec4 v_screen = vec4(xy, texture2D(dTexture, xy).r, 1.0 );
+          vec4 v_homo = projectionMatrixInverse * 2.0*(v_screen-vec4(0.5));
+          // vec3 v_eye = v_homo.xyz / v_homo.w; //transfer from homogeneous coordinates
+          // return vec4(screen.xy, v_homo.z/v_homo.w, v_homo.w);
+          return modelViewMatrix * vec4(screen.xy, v_homo.z/v_homo.w, 1.0);
+        } */
+        vec4 screen2World(vec2 screen) {
+          vec2 xy = (screen + 1.0) / 2.0; //in [0,1] range
+          float z_b = texture2D(dTexture, xy).r;
+          float z_n = 2.0 * z_b - 1.0;
+          float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
+          // float z_e = zNear + (z_b)*(zFar - zNear)
+          // vec4 lol = (matrixWorldInverse * projectionMatrixInverse * vec4(screen.xy, 0.0, 1.0));
+          // return vec4(screen.xy, (projectionMatrix * vec4(0.0, 0.0, 1.0-z_e, 1.0)).z, 1.0);
+          vec4 offset = projectionMatrix * vec4(0.0, 0.0, -z_e, 1.0);
+          return vec4(screen.xy, offset.z/offset.w, 1.0);
+        }
+        `,
+        "void main(){",
+          // "gl_Position = vec4(position.xy, 1., 1.);",
+          "gl_Position = screen2World(position.xy);",
+          "vUv = uv;",
+        "}",
+
+      ].join("\n");
+
+      var defaultVertexShader2 = [
+
+        // "varying vec2 vUv;",
+        "uniform sampler2D dTexture;",
+        "uniform mat4 projectionMatrixInverse;",
+        `
+        /* vec4 screen2World(vec2 screen) {
+          // input: x_coord, y_coord
+          vec2 xy = (screen + 1.0) / 2.0; //in [0,1] range
+          // vec2 xy = screen;
+          vec4 v_screen = vec4(xy, texture2D(dTexture, xy).r, 1.0 );
+          vec4 v_homo = projectionMatrixInverse * 2.0*(v_screen-vec4(0.5));
+          // vec3 v_eye = v_homo.xyz / v_homo.w; //transfer from homogeneous coordinates
+          // return vec4(screen.xy, v_homo.z/v_homo.w, v_homo.w);
+          return modelViewMatrix * vec4(screen.xy, 0.0, 1.0);
+        } */
+        `,
+        "void main(){",
+          // "gl_Position = vec4(position.xy, 1., 1.);",
+          "gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+          // "vUv = uv;",
+        "}",
+
+      ].join("\n");
+
+      var defaultFragmentShader = [
+
+        `varying vec2 vUv;
+        uniform float numTextures;
+        uniform sampler2D uTexture;
+        uniform sampler2D dTexture;
+        void main() {
+          vec4 c = texture2D(uTexture, vUv);
+          float d = (1.0 - texture2D(dTexture, vUv).r) * 10.0;
+          gl_FragColor = vec4(vec3(d) * c.rgb, c.a);
+          // gl_FragColor.a = 1.0;
+        }`
+
+      ].join("\n");
+
+      var defaultFragmentShader2 = [
+
+        `void main() {
+          gl_FragColor = vec4(0.0, 0.0, 0.5, 0.1);
+        }`
+
+      ].join("\n");
+
+      function ScreenQuad( params ){
+
+        params = params || {};
+
+        THREE.Mesh.apply( this, [ defaultQuad , new THREE.ShaderMaterial({
+
+          uniforms:{
+            numTextures: {
+              type: 'f',
+              value: undefined !== params.numTextures ? params.numTextures : 1
+            },
+            uTexture: {
+              type:'t',
+              value: undefined !== params.texture ? params.texture : null
+            },
+            dTexture: {
+              type:'t',
+              value: undefined !== params.depthTexture ? params.depthTexture : null
+            },
+            projectionMatrixInverse: {
+              type:'m4',
+              value: undefined !== params.projectionMatrixInverse ? params.projectionMatrixInverse : null
+            },
+            matrixWorldInverse: {
+              type:'m4',
+              value: undefined !== params.matrixWorldInverse ? params.matrixWorldInverse : null
+            },
+            zNear: {
+              type:'f',
+              value: undefined !== params.zNear ? params.zNear : null
+            },
+            zFar: {
+              type:'f',
+              value: undefined !== params.zFar ? params.zFar : null
+            },
+            aspect: {
+              type:'f',
+              value: undefined !== params.aspect ? params.aspect : null
+            },
+          },
+
+          vertexShader: params.lol ? defaultVertexShader : defaultVertexShader2,
+
+          fragmentShader: params.lol ? defaultFragmentShader : defaultFragmentShader2,
+
+          // depthWrite: !params.lol,
+
+          transparent: true,
+
+        })]);
+
+        this.frustumCulled = false;
+
+        this.renderOrder = -1;
+
+        //end mesh setup
+
+        // console.log( this , this.width , this.height );
+
+      }
+
+      ScreenQuad.prototype = Object.create( THREE.Mesh.prototype );
+
+      ScreenQuad.constructor = ScreenQuad;
+
+      return ScreenQuad
+
+})();
+    </script>
+    <script>
+let renderer, scene, hiddenScene, camera, hiddenCamera, iframe, boxMesh, boxMesh2, renderTarget, screenQuad;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -15,7 +185,7 @@ const localLine2 = new THREE.Line3();
 
 const planeWorldWidth = 0.9;
 const planeWorldHeight = 0.9;
-const boxMeshSize = 0.02;
+const boxMeshSize = 1;
 const planeWidth = 1280;
 const planeHeight = 1024;
 
@@ -39,7 +209,33 @@ function init() {
   hiddenScene.matrixAutoUpdate = false;
 
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  hiddenScene.add(camera);
+  camera.position.z = 1;
+  scene.add(camera);
+
+  new THREE.OrbitControls(camera);
+
+  hiddenCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  hiddenCamera.position.copy(camera.position);
+  hiddenScene.add(hiddenCamera);
+  hiddenCamera.updateMatrixWorld();
+  hiddenCamera.updateProjectionMatrix();
+
+  {
+    const ambientLight = new THREE.AmbientLight(0x808080);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+  }
+  {
+    const ambientLight = new THREE.AmbientLight(0x808080);
+    hiddenScene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+    directionalLight.position.set(1, 1, 1);
+    hiddenScene.add(directionalLight);
+  }
 
   const vertexShader = [
     'attribute vec2 uv;',
@@ -54,101 +250,97 @@ function init() {
   const fragmentShader = [
     'sampler2D t;',
     'varying vec2 vUv;',
+    /* `
+    vec3 screen2screen(vec2 screen, mat4 transformMatrix) {
+      return transformMatrix * vec4(screen, 0.0, 1.0).xy;
+    }
+    vec3 screen2World(vec2 screen, mat4 projectionMatrixInverse, sampler2D samplerDepth) {
+      // input: x_coord, y_coord, samplerDepth
+      vec2 xy = vec2(screen.x,screen.y); //in [0,1] range
+      vec4 v_screen = vec4(xy, texture(samplerDepth, xy), 1.0 );
+      vec4 v_homo = projectionMatrixInverse * 2.0*(v_screen-vec4(0.5));
+      vec3 v_eye = v_homo.xyz / v_homo.w; //transfer from homogeneous coordinates
+      return v_eye;
+    }
+    ` */
     'void main() {',
       'gl_FragColor = texture2D(t, vUv);',
     '}'
   ].join('\n');
 
-  planeMesh = (() => {
-    const geometry = new THREE.PlaneBufferGeometry(planeWorldWidth, planeWorldHeight)
-      // .applyMatrix(new THREE.Matrix4().makeScale(-1, -1, 1));
-    const uvs = geometry.attributes.uv.array;
-    const numUvs = uvs.length / 2;
-    for (let i = 0; i < numUvs; i++) {
-      uvs[i*2+1] = 1 - uvs[i*2+1];
-    }
-    /* const material = new THREE.MeshPhongMaterial({
-      color: 0xFFFF00,
-    }); */
-    const texture = new THREE.Texture(
-      null,
-      THREE.UVMapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.NearestFilter,
-      THREE.NearestFilter,
-      THREE.RGBAFormat,
-      THREE.UnsignedByteType,
-      16
-    );
-    const properties = renderer.properties.get(texture);
-    properties.__webglTexture = iframe.texture;
-    properties.__webglInit = true;
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = -1;
-    mesh.projectMouse = (x, y) => {
-      const leftLine = localLine;
-      const topLine = localLine2;
-      const plane = localPlane;
-
-      leftLine.start
-        .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
-        .applyMatrix4(mesh.matrixWorld);
-      leftLine.end
-        .set(-planeWorldWidth/2, -planeWorldHeight/2, 0)
-        .applyMatrix4(mesh.matrixWorld);
-
-      topLine.start
-        .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
-        .applyMatrix4(mesh.matrixWorld);
-      topLine.end
-        .set(planeWorldWidth/2, planeWorldHeight / 2, 0)
-        .applyMatrix4(mesh.matrixWorld);
-
-      plane.setFromCoplanarPoints(
-        leftLine.start,
-        leftLine.end,
-        topLine.end
-      );
-    };
-
-    return mesh;
-  })();
-  hiddenScene.add(planeMesh);
-
-  const boxMesh = (() => {
+  const _makeBoxMesh = () => {
     const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize);
       // .applyMatrix(new THREE.Matrix4().makeTranslation(-planeWorldWidth/2, planeWorldHeight/2, boxMeshSize/2));
     const material = new THREE.MeshPhongMaterial({
       color: 0xFF0000,
     });
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = Math.PI / 4;
+    mesh.rotation.y = Math.PI / 4;
+    mesh.rotation.z = Math.PI / 4;
+    mesh.rotation.order = 'YXZ';
     return mesh;
-  })();
-  hiddenScene.add(boxMesh);
+  };
+  boxMesh = _makeBoxMesh();
+  // boxMesh.position.y = 0.1;
+  boxMesh.position.z = -2;
+  scene.add(boxMesh);
+
+  boxMesh2 = _makeBoxMesh();
+  boxMesh2.position.z = -2;
+  hiddenScene.add(boxMesh2);
 
   renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
     format: THREE.RGBAFormat,
   });
   // renderTarget.transparent = false;
+  renderTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
 
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneBufferGeometry(0.1, 0.1)
-      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.01)),
-    new THREE.MeshBasicMaterial({
-      // color: 0x0000FF,
-      map: renderTarget.texture,
-    })
-  );
+  console.log('got render target', hiddenCamera);
+
+  screenQuad = new ScreenQuad({
+    texture: renderTarget.texture,
+    depthTexture: renderTarget.depthTexture,
+    projectionMatrixInverse: hiddenCamera.projectionMatrixInverse,
+    matrixWorldInverse: hiddenCamera.matrixWorldInverse,
+    zNear: hiddenCamera.near,
+    zFar: hiddenCamera.far,
+    aspect: hiddenCamera.aspect,
+    lol: true,
+  });
+  scene.add(screenQuad);
+
+  /* const screenQuad2 = new ScreenQuad({
+    texture: renderTarget.texture,
+    depthTexture: renderTarget.depthTexture,
+    projectionMatrixInverse: hiddenCamera.projectionMatrixInverse,
+    matrixWorldInverse: hiddenCamera.matrixWorldInverse,
+    zNear: hiddenCamera.near,
+    zFar: hiddenCamera.far,
+    aspect: hiddenCamera.aspect,
+  });
+  scene.add(screenQuad2); */
 }
 
 init();
 
+window.addEventListener('keydown', e => {
+  boxMesh2.position.copy(boxMesh.position);
+  boxMesh2.quaternion.copy(boxMesh.quaternion);
+  boxMesh2.scale.copy(boxMesh.scale);
+
+  hiddenCamera.position.copy(camera.position);
+  hiddenCamera.quaternion.copy(camera.quaternion);
+  hiddenCamera.scale.copy(camera.scale);
+
+  renderer.render(hiddenScene, hiddenCamera, renderTarget);
+  renderer.setRenderTarget(null);
+});
+
 function animate(timestamp, frame) {
-  renderer.render(hiddenScene, camera, renderTarget);
+  boxMesh.rotation.x += 0.01;
+  boxMesh.rotation.y += 0.01;
+  boxMesh.rotation.z += 0.01; 
 
   renderer.render(scene, camera);
 }
