@@ -393,7 +393,10 @@ const _makeStyleProxy = el => {
         const rule = rules[j];
         const {declarations} = rule;
         for (let k = 0; k < declarations.length; k++) {
-          const {property, value} = declarations[k];
+          let {property, value} = declarations[k];
+          if (/^\.[0-9]+[a-z]*$/i.test(value)) {
+            value = '0' + value;
+          }
           style[property] = value;
         }
       }
