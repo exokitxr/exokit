@@ -24,11 +24,13 @@
 #include "src/rtcvideosink.h"  // IWYU pragma: keep
 #include "src/rtcvideosource.h"  // IWYU pragma: keep
 
-static void dispose(void*) {
+/* static void dispose(void*) {
   node_webrtc::PeerConnectionFactory::Dispose();
-}
+} */
 
-static void init(v8::Handle<v8::Object> exports, v8::Handle<v8::Object> module) {
+namespace node_webrtc {
+
+void init(v8::Handle<v8::Object> exports, v8::Handle<v8::Object> module) {
   node_webrtc::ErrorFactory::Init(module);
   node_webrtc::GetUserMedia::Init(exports);
   node_webrtc::I420Helpers::Init(exports);
@@ -44,7 +46,9 @@ static void init(v8::Handle<v8::Object> exports, v8::Handle<v8::Object> module) 
   node_webrtc::RTCStatsResponse::Init(exports);
   node_webrtc::RTCVideoSink::Init(exports);
   node_webrtc::RTCVideoSource::Init(exports);
-  node::AtExit(dispose);
+  // node::AtExit(dispose);
 }
 
-NODE_MODULE(wrtc, init)
+}
+
+// NODE_MODULE(wrtc, init)
