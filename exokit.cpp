@@ -173,19 +173,21 @@ void InitExports(Local<Object> exports) {
   Local<Value> canvas = makeCanvasRenderingContext2D(imageData, canvasGradient, canvasPattern);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCanvasRenderingContext2D"), canvas);
 
-  Local<Value> audio = makeAudio();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
-
   Local<Value> video = makeVideo(imageData);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVideo"), video);
 
-#if !defined(__ANDROID)
+#if !defined(__ANDROID) || !defined(ANDROID)
+/*
+  Local<Value> audio = makeAudio();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
+
   Local<Value> browser = makeBrowser();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeBrowser"), browser);
-#endif
 
   Local<Value> rtc = makeRtc();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeRtc"), rtc);
+*/
+#endif
 
   /* Local<Value> glfw = makeGlfw();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
@@ -213,7 +215,7 @@ void InitExports(Local<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 #endif
 
-#ifndef LUMIN
+#if !defined(__ANDROID) || !defined(LUMIN) || !defined(ANDROID)
 #define NATIVE_ANALYTICS true
 #else
 #define NATIVE_ANALYTICS false
@@ -233,12 +235,12 @@ void Init(Local<Object> exports) {
 
 }
 
-#ifndef LUMIN
-NODE_MODULE(NODE_GYP_MODULE_NAME, exokit::Init)
-#else
+//#if !defined(__ANDROID) || !defined(LUMIN) || !defined(ANDROID)
+//NODE_MODULE(NODE_GYP_MODULE_NAME, exokit::Init)
+//#else
 extern "C" {
   void node_register_module_exokit(Local<Object> exports, Local<Value> module, Local<Context> context) {
     exokit::Init(exports);
   }
 }
-#endif
+//#endif
