@@ -22,6 +22,8 @@
 #include "src/webrtc/fake_audio_device.h"  // IWYU pragma: keep
 #include "src/zerocapturer.h"  // IWYU pragma: keep
 
+#include <AudioContext.h>
+
 using node_webrtc::Maybe;
 using node_webrtc::PeerConnectionFactory;
 using v8::External;
@@ -47,7 +49,7 @@ std::shared_ptr<PeerConnectionFactory> PeerConnectionFactory::_default;
 uv_mutex_t PeerConnectionFactory::_lock;
 int PeerConnectionFactory::_references = 0;
 
-PeerConnectionFactory::PeerConnectionFactory(Maybe<AudioDeviceModule::AudioLayer> audioLayer) {
+PeerConnectionFactory::PeerConnectionFactory(node_webrtc::Maybe<AudioDeviceModule::AudioLayer> audioLayer) {
   TRACE_CALL;
 
   bool result;
@@ -64,8 +66,7 @@ PeerConnectionFactory::PeerConnectionFactory(Maybe<AudioDeviceModule::AudioLayer
       return webrtc::AudioDeviceModule::Create(0, audioLayer);
     }).Or([]() {
       return node_webrtc::TestAudioDeviceModule::CreateTestAudioDeviceModule(
-              node_webrtc::ZeroCapturer::Create(48000),
-              node_webrtc::TestAudioDeviceModule::CreateDiscardRenderer(48000));
+              node_webrtc::TestAudioDeviceModule::CreateWebAudioBinding(lab::DefaultSampleRate, 1));
     });
   });
 
