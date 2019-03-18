@@ -23,15 +23,14 @@ const {Request, Response, Headers, Blob} = fetch;
 
 const WebSocket = require('ws/lib/websocket');
 const {
-  /* getUserMedia,
+  getUserMedia,
   MediaStream,
   MediaStreamTrack,
-  RTCDataChannel, */
+  RTCDataChannel,
   RTCIceCandidate,
   RTCPeerConnection,
-  /* RTCPeerConnectionIceEvent,
   RTCRtpReceiver,
-  RTCRtpSender, */
+  RTCRtpSender,
   RTCRtpTransceiver,
   RTCSessionDescription,
 
@@ -778,21 +777,19 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.NodeList = NodeList;
   window.HTMLCollection = HTMLCollection;
 
-  /* window.MediaStreamTrack = MediaStreamTrack;
-  window.RTCRtpReceiver = RTCRtpReceiver;
-  window.RTCRtpSender = RTCRtpSender; */
-  window.MediaStream = class MediaStream {};
-
+  window.MediaStream = MediaStream;
+  window.MediaStreamTrack = MediaStreamTrack;
   window.RTCPeerConnection = RTCPeerConnection;
   window.webkitRTCPeerConnection = RTCPeerConnection; // for feature detection
   window.RTCSessionDescription = RTCSessionDescription;
+  window.RTCDataChannel = RTCDataChannel;
   window.RTCIceCandidate = RTCIceCandidate;
-
-  window.RTCPeerConnectionIceEvent = RTCPeerConnectionIceEvent;
   window.RTCDataChannelEvent = RTCDataChannelEvent;
   window.RTCDataChannelMessageEvent = RTCDataChannelMessageEvent;
   window.RTCTrackEvent = RTCTrackEvent;
-
+  window.RTCPeerConnectionIceEvent = RTCPeerConnectionIceEvent;
+  window.RTCRtpReceiver = RTCRtpReceiver;
+  window.RTCRtpSender = RTCRtpSender;
   window.RTCRtpTransceiver = RTCRtpTransceiver;
 
   window.customElements = new CustomElementRegistry(window);
