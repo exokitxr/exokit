@@ -27,7 +27,6 @@
         "uniform mat4 initialProjectionMatrix;",
         "uniform float zNear;",
         "uniform float zFar;",
-        "uniform float aspect;",
         `
         void main() {
           vec2 xy = (position.xy + 1.0) / 2.0; //in [0,1] range
@@ -114,10 +113,6 @@
             zFar: {
               type:'f',
               value: undefined !== params.zFar ? params.zFar : null
-            },
-            aspect: {
-              type:'f',
-              value: undefined !== params.aspect ? params.aspect : null
             },
           },
 
@@ -262,7 +257,6 @@ function init() {
     matrixWorldInverse: hiddenCamera.matrixWorldInverse,
     zNear: hiddenCamera.near,
     zFar: hiddenCamera.far,
-    aspect: hiddenCamera.aspect,
     inverseMatrix: hiddenCamera.inverseMatrix,
     initialProjectionMatrixInverse: hiddenCamera.initialProjectionMatrixInverse,
     initialProjectionMatrix: hiddenCamera.initialProjectionMatrix,
