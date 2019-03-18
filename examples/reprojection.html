@@ -20,8 +20,6 @@
         "varying vec2 vUv;",
         "varying float vZDiff;",
         "uniform sampler2D dTexture;",
-        "uniform mat4 projectionMatrixInverse;",
-        "uniform mat4 matrixWorldInverse;",
         "uniform mat4 inverseMatrix;",
         "uniform mat4 initialProjectionMatrixInverse;",
         "uniform mat4 initialProjectionMatrix;",
@@ -85,14 +83,6 @@
             dTexture: {
               type:'t',
               value: undefined !== params.depthTexture ? params.depthTexture : null
-            },
-            projectionMatrixInverse: {
-              type:'m4',
-              value: undefined !== params.projectionMatrixInverse ? params.projectionMatrixInverse : null
-            },
-            matrixWorldInverse: {
-              type:'m4',
-              value: undefined !== params.matrixWorldInverse ? params.matrixWorldInverse : null
             },
             inverseMatrix: {
               type:'m4',
@@ -253,8 +243,6 @@ function init() {
   screenQuad = new ScreenQuad({
     texture: renderTarget.texture,
     depthTexture: renderTarget.depthTexture,
-    projectionMatrixInverse: hiddenCamera.projectionMatrixInverse,
-    matrixWorldInverse: hiddenCamera.matrixWorldInverse,
     zNear: hiddenCamera.near,
     zFar: hiddenCamera.far,
     inverseMatrix: hiddenCamera.inverseMatrix,
