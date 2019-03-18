@@ -64,6 +64,20 @@ Local<Object> makeCanvasPattern() {
   return scope.Escape(CanvasPattern::Initialize(isolate));
 }
 
+Local<Object> makeVideo(Local<Value> imageDataCons) {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  Local<Object> exports = Nan::New<Object>();
+
+  exports->Set(JS_STR("Video"), ffmpeg::Video::Initialize(isolate));
+  exports->Set(JS_STR("VideoDevice"), ffmpeg::VideoDevice::Initialize(isolate, imageDataCons));
+
+  return scope.Escape(exports);
+}
+
+#if !defined(__ANDROID__)
 Local<Object> makeAudio() {
   Isolate *isolate = Isolate::GetCurrent();
 
@@ -109,20 +123,7 @@ Local<Object> makeAudio() {
   return scope.Escape(exports);
 }
 
-Local<Object> makeVideo(Local<Value> imageDataCons) {
-  Isolate *isolate = Isolate::GetCurrent();
 
-  Nan::EscapableHandleScope scope;
-
-  Local<Object> exports = Nan::New<Object>();
-
-  exports->Set(JS_STR("Video"), ffmpeg::Video::Initialize(isolate));
-  exports->Set(JS_STR("VideoDevice"), ffmpeg::VideoDevice::Initialize(isolate, imageDataCons));
-
-  return scope.Escape(exports);
-}
-
-#if !defined(__ANDROID__)
 Local<Object> makeBrowser() {
   Isolate *isolate = Isolate::GetCurrent();
 
@@ -134,7 +135,6 @@ Local<Object> makeBrowser() {
 
   return scope.Escape(exports);
 }
-#endif
 
 Local<Object> makeRtc() {
   Isolate *isolate = Isolate::GetCurrent();
@@ -147,3 +147,4 @@ Local<Object> makeRtc() {
 
   return scope.Escape(exports);
 }
+#endif
