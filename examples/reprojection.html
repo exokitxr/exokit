@@ -37,10 +37,11 @@
           vec4 offset = initialProjectionMatrix * vec4(0.0, 0.0, z_e, 1.0);
           vec4 worldPosOrig = initialProjectionMatrixInverse * vec4(position.xy, offset.z/offset.w, 1.0);
           float zNew = worldPosOrig.z/worldPosOrig.w;
-          vec4 worldPosNew = modelViewMatrix * worldPosOrig;
+          vec4 worldPosNew = modelMatrix * worldPosOrig;
+          vec4 viewPosNew = viewMatrix * worldPosNew;
 
-          gl_Position = projectionMatrix * worldPosNew;
-          vViewPosition = worldPosNew.xyz;
+          gl_Position = projectionMatrix * viewPosNew;
+          vViewPosition = -worldPosNew.xyz;
           vUv = uv;
           vZDiff = abs(zNew - zOrig);
         }
@@ -59,7 +60,7 @@
         uniform sampler2D dTexture;
         uniform vec4 plane;
         void main() {
-          if (vZDiff < 0.0001 && dot(vViewPosition, plane.xyz) > plane.w) {
+          if (vZDiff < 0.0001 && dot(vViewPosition, plane.xyz) <= plane.w) {
             vec4 c = texture2D(uTexture, vUv);
             float dc = (1.0 - texture2D(dTexture, vUv).r) * 20.0;
             gl_FragColor = vec4(vec3(dc) * c.rgb, c.a);
@@ -190,7 +191,7 @@ function init() {
   hiddenCamera.inverseMatrix = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrixInverse = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrix = new THREE.Matrix4();
-  hiddenCamera.plane = new THREE.Vector4(0, 1, 0, 1);
+  hiddenCamera.plane = new THREE.Vector4(0, 1, 0, 0);
 
   {
     const ambientLight = new THREE.AmbientLight(0x808080);
