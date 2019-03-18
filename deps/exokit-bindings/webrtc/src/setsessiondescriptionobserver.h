@@ -8,6 +8,8 @@
 #ifndef SRC_SET_DESCRIPTION_DESCRIPTION_OBSERVER_H_
 #define SRC_SET_DESCRIPTION_DESCRIPTION_OBSERVER_H_
 
+#include <Winsock2.h>
+
 #include <webrtc/api/jsep.h>
 
 #include "src/events.h"  // IWYU pragma: keep

@@ -11,6 +11,9 @@
 #include <memory>
 
 #include <nan.h>
+
+#include <Winsock2.h>
+
 #include <webrtc/api/mediastreaminterface.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 #include <v8.h>  // IWYU pragma: keep
