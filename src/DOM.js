@@ -2231,7 +2231,7 @@ class HTMLCanvasElement extends HTMLElement {
       if (this._context === null) {
         this._context = new GlobalContext.CanvasRenderingContext2D(this);
       }
-    } else if (contextType === 'webgl' || contextType === 'webgl2' || contextType === 'xrpresent') {
+    } else if (contextType === 'webgl' || contextType === 'experimental-webgl' || contextType === 'webgl2' || contextType === 'xrpresent') {
       if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext' && this._context.constructor.name !== 'WebGL2RenderingContext') {
         this._context.destroy();
         this._context = null;
@@ -2240,11 +2240,11 @@ class HTMLCanvasElement extends HTMLElement {
         const window = this.ownerDocument.defaultView;
 
         if (!window[symbols.optionsSymbol].args || window[symbols.optionsSymbol].args.webgl === '1') {
-          if (contextType === 'webgl' || contextType === 'xrpresent') {
+          if (contextType === 'webgl' || contextType === 'experimental-webgl' || contextType === 'xrpresent') {
             this._context = new GlobalContext.WebGLRenderingContext(this);
           }
         } else {
-          if (contextType === 'webgl') {
+          if (contextType === 'webgl' || contextType === 'experimental-webgl') {
             this._context = new GlobalContext.WebGLRenderingContext(this);
           } else {
             this._context = new GlobalContext.WebGL2RenderingContext(this);
