@@ -39,6 +39,17 @@ const {
   RTCDataChannelMessageEvent,
   RTCTrackEvent,
 } = require('./RTC/index.js');
+/* function getUserMedia(constraints) {
+  if (constraints.audio) {
+    return Promise.resolve(new MicrophoneMediaStream());
+  } else if (constraints.video) {
+    const dev = new VideoDevice();
+    dev.constraints = constraints.video;
+    return Promise.resolve(dev);
+  } else {
+    return Promise.reject(new Error('constraints not met'));
+  }
+} */
 
 const nativeWorker = require('worker-native');
 
@@ -438,17 +449,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
   });
   window.history = new History(location.href);
-  function getUserMedia(constraints) {
-    if (constraints.audio) {
-      return Promise.resolve(new MicrophoneMediaStream());
-    } else if (constraints.video) {
-      const dev = new VideoDevice();
-      dev.constraints = constraints.video;
-      return Promise.resolve(dev);
-    } else {
-      return Promise.reject(new Error('constraints not met'));
-    }
-  }
   window.navigator = {
     userAgent: `Mozilla/5.0 (OS) AppleWebKit/999.0 (KHTML, like Gecko) Chrome/999.0.0.0 Safari/999.0 Exokit/${GlobalContext.version}`,
     vendor: 'Exokit',
