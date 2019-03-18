@@ -127,11 +127,11 @@ NAN_METHOD(node_webrtc::GetUserMedia::GetUserMediaImpl) {
     stream->AddTrack(track);
   }
 
-  if (video) {
+  /* if (video) {
     auto source = new rtc::RefCountedObject<node_webrtc::RTCVideoTrackSource>();
     auto track = factory->factory()->CreateVideoTrack(rtc::CreateRandomUuid(), source);
     stream->AddTrack(track);
-  }
+  } */
 
   resolver->Resolve(Nan::GetCurrentContext(), MediaStream::wrap()->GetOrCreate(factory, stream)->handle()).IsNothing();
 }
