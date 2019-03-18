@@ -83,6 +83,8 @@ PeerConnectionFactory::PeerConnectionFactory(Maybe<AudioDeviceModule::AudioLayer
           webrtc::CreateBuiltinAudioEncoderFactory(),
           webrtc::CreateBuiltinAudioDecoderFactory(),
           nullptr,
+          nullptr,
+          nullptr,
           nullptr);
   assert(_factory);
 
