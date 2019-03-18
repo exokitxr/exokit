@@ -14,6 +14,7 @@ exports.RTCRtpReceiver = binding.RTCRtpReceiver;
 exports.RTCRtpSender = binding.RTCRtpSender;
 exports.RTCRtpTransceiver = binding.RTCRtpTransceiver;
 exports.RTCSessionDescription = require('./sessiondescription');
+exports.RTCTrackEvent = require('./trackevent');
 
 exports.nonstandard = {};
 exports.nonstandard.i420ToRgba = binding.i420ToRgba;
