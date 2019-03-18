@@ -28,6 +28,8 @@
 // IWYU pragma: no_include <rtc_base/scoped_ref_ptr.h>
 // IWYU pragma: no_include <rtc_base/thread_annotations.h>
 
+#include <AudioContext.h>
+
 namespace webrtc { class AudioTransport; }
 
 namespace node_webrtc {
@@ -49,11 +51,10 @@ class TestAudioDeviceModuleImpl
   // |renderer| is an object that receives audio data that would have been
   // played out. Can be nullptr if this device is never used for playing.
   // Use one of the Create... functions to get these instances.
-  TestAudioDeviceModuleImpl(std::unique_ptr<Capturer> capturer,
-      std::unique_ptr<Renderer> renderer,
+  TestAudioDeviceModuleImpl(
+      std::unique_ptr<WebAudioBinding> binding,
       float speed = 1)
-    : capturer_(std::move(capturer)),
-      renderer_(std::move(renderer)),
+    : binding_(std::move(binding)),
       process_interval_us_(kFrameLengthUs / speed),
       audio_callback_(nullptr),
       rendering_(false),
@@ -66,14 +67,14 @@ class TestAudioDeviceModuleImpl
           sr == 48000;
     };
 
-    if (renderer_) {
-      const int sample_rate = renderer_->SamplingFrequency();
+    if (binding_) {
+      const int sample_rate = binding_->SamplingFrequency();
       playout_buffer_.resize(
-          SamplesPerFrame(sample_rate) * renderer_->NumChannels(), 0);
+          SamplesPerFrame(sample_rate) * binding_->NumChannels(), 0);
       RTC_CHECK(good_sample_rate(sample_rate));
     }
-    if (capturer_) {
-      RTC_CHECK(good_sample_rate(capturer_->SamplingFrequency()));
+    if (binding_) {
+      RTC_CHECK(good_sample_rate(binding_->SamplingFrequency()));
     }
   }
 
@@ -106,7 +107,7 @@ class TestAudioDeviceModuleImpl
 
   int32_t StartPlayout() {
     rtc::CritScope cs(&lock_);
-    RTC_CHECK(renderer_);
+    RTC_CHECK(binding_);
     rendering_ = true;
     done_rendering_.Reset();
     return 0;
@@ -121,7 +122,7 @@ class TestAudioDeviceModuleImpl
 
   int32_t StartRecording() {
     rtc::CritScope cs(&lock_);
-    RTC_CHECK(capturer_);
+    RTC_CHECK(binding_);
     capturing_ = true;
     done_capturing_.Reset();
     return 0;
@@ -168,12 +169,12 @@ class TestAudioDeviceModuleImpl
         }
         if (capturing_) {
           // Capture 10ms of audio. 2 bytes per sample.
-          const bool keep_capturing = capturer_->Capture(&recording_buffer_);
-          uint32_t new_mic_level = 0;
+          const bool keep_capturing = binding_->Capture(&recording_buffer_);
+          uint32_t new_mic_level = 0xFFFFFFFF;
           audio_callback_->RecordedDataIsAvailable(
               recording_buffer_.data(), recording_buffer_.size(), 2,
-              capturer_->NumChannels(), capturer_->SamplingFrequency(), 0, 0,
-              0, false, new_mic_level);
+              binding_->NumChannels(), binding_->SamplingFrequency(), 0, 0,
+              0xFFFFFFFF, false, new_mic_level);
           if (!keep_capturing) {
             capturing_ = false;
             done_capturing_.Set();
@@ -183,15 +184,15 @@ class TestAudioDeviceModuleImpl
           size_t samples_out = 0;
           int64_t elapsed_time_ms = -1;
           int64_t ntp_time_ms = -1;
-          const int sampling_frequency = renderer_->SamplingFrequency();
+          const int sampling_frequency = binding_->SamplingFrequency();
           if (audio_callback_) {
             audio_callback_->NeedMorePlayData(
-                SamplesPerFrame(sampling_frequency), 2, renderer_->NumChannels(),
+                SamplesPerFrame(sampling_frequency), 2, binding_->NumChannels(),
                 sampling_frequency, playout_buffer_.data(), samples_out,
                 &elapsed_time_ms, &ntp_time_ms);
           }
           const bool keep_rendering =
-              renderer_->Render(rtc::ArrayView<const int16_t>(
+              binding_->Render(rtc::ArrayView<const int16_t>(
                       playout_buffer_.data(), samples_out));
           if (!keep_rendering) {
             rendering_ = false;
@@ -222,8 +223,9 @@ class TestAudioDeviceModuleImpl
     static_cast<TestAudioDeviceModuleImpl*>(obj)->ProcessAudio();
   }
 
-  const std::unique_ptr<Capturer> capturer_ RTC_GUARDED_BY(lock_);
-  const std::unique_ptr<Renderer> renderer_ RTC_GUARDED_BY(lock_);
+  std::unique_ptr<WebAudioBinding> binding_;
+  // const std::unique_ptr<Capturer> capturer_ RTC_GUARDED_BY(lock_);
+  // const std::unique_ptr<Renderer> renderer_ RTC_GUARDED_BY(lock_);
   const int64_t process_interval_us_;
 
   rtc::CriticalSection lock_;
@@ -238,6 +240,95 @@ class TestAudioDeviceModuleImpl
 
   std::unique_ptr<rtc::PlatformThread> thread_;
   bool stop_thread_ RTC_GUARDED_BY(lock_);
+};
+
+class WebAudioBindingImpl final : public TestAudioDeviceModule::WebAudioBinding {
+public:
+  WebAudioBindingImpl(int sampling_frequency_in_hz, int num_channels) :
+    sampling_frequency_in_hz_(sampling_frequency_in_hz),
+    num_channels_(num_channels)
+  {
+    defaultAudioContext = webaudio::getDefaultAudioContext();
+
+    {
+      lab::ContextRenderLock r(defaultAudioContext, "WebAudioBinding::WebAudioBinding");
+
+      captureNode = lab::MakeHardwareSourceNode(r);
+      scriptNode.reset(new lab::ScriptProcessorNode(num_channels_, [this](lab::ContextRenderLock& r, vector<const float*> sources, vector<float*> destinations, size_t framesToProcess) {
+        const float *source = sources[0];
+        float *destination = destinations[0];
+
+        std::lock_guard<mutex> lock(this->bufferMutex);
+
+        {
+          // flush buffer overflow if not consumed fast enough
+          const size_t tickSize = TestAudioDeviceModule::SamplesPerFrame(sampling_frequency_in_hz_);
+          const size_t maxSize = tickSize * 3;
+          if (this->captureBuffer.size() > maxSize) {
+            const size_t overflowSize = this->captureBuffer.size() - maxSize;
+            this->captureBuffer.erase(this->captureBuffer.begin(), this->captureBuffer.begin() + overflowSize);
+          }
+          // push new value
+          for (size_t i = 0; i < framesToProcess; i++) {
+            this->captureBuffer.push_back(source[i]);
+          }
+        }
+        {
+          size_t i;
+          for (i = 0; i < framesToProcess && this->renderBuffer.size() > 0; i++) {
+            destination[i] = this->renderBuffer.front();
+            this->renderBuffer.pop_front();
+          }
+          for (; i < framesToProcess; i++) {
+            destination[i] = 0;
+          }
+        }
+      }));
+    }
+    defaultAudioContext->connect(scriptNode, captureNode, 0, 0);
+    defaultAudioContext->connect(defaultAudioContext->destination(), scriptNode, 0, 0);
+  }
+  WebAudioBindingImpl::~WebAudioBindingImpl() {}
+  int WebAudioBindingImpl::SamplingFrequency() const override { return sampling_frequency_in_hz_; }
+  int WebAudioBindingImpl::NumChannels() const override { return num_channels_; }
+  bool WebAudioBindingImpl::Capture(rtc::BufferT<int16_t>* buffer) override {
+    buffer->SetData(TestAudioDeviceModule::SamplesPerFrame(sampling_frequency_in_hz_), [&](rtc::ArrayView<int16_t> data) {
+      std::lock_guard<mutex> lock(bufferMutex);
+
+      size_t dataSize = data.size();
+      size_t i;
+      for (i = 0; i < dataSize && captureBuffer.size() > 0; i++) {
+        data[i] = (int16_t)(captureBuffer.front() * 32767.0f);
+        captureBuffer.pop_front();
+      }
+      for (i = 0; i < dataSize; i++) {
+        data[i] = 0;
+      }
+      return data.size();
+    });
+
+    return true;
+  }
+  bool WebAudioBindingImpl::Render(rtc::ArrayView<const int16_t> data) override {
+    std::lock_guard<mutex> lock(bufferMutex);
+
+    size_t dataSize = data.size();
+    for (size_t i = 0; i < dataSize; i++) {
+      renderBuffer.push_back((float)data[i] / 32767.0f);
+    }
+
+    return true;
+  }
+
+protected:
+  int sampling_frequency_in_hz_;
+  int num_channels_;
+  lab::AudioContext *defaultAudioContext;
+  std::shared_ptr<lab::AudioHardwareSourceNode> captureNode;
+  std::shared_ptr<lab::ScriptProcessorNode> scriptNode;
+  std::mutex bufferMutex;
+  std::deque<float> captureBuffer;
+  std::deque<float> renderBuffer;
 };
 
 // A fake capturer that generates pulses with random samples between
@@ -492,11 +583,10 @@ size_t TestAudioDeviceModule::SamplesPerFrame(int sampling_frequency_in_hz) {
 
 rtc::scoped_refptr<TestAudioDeviceModule>
 TestAudioDeviceModule::CreateTestAudioDeviceModule(
-    std::unique_ptr<Capturer> capturer,
-    std::unique_ptr<Renderer> renderer,
+    std::unique_ptr<WebAudioBinding> binding,
     float speed) {
   return new rtc::RefCountedObject<TestAudioDeviceModuleImpl>(
-          std::move(capturer), std::move(renderer), speed);
+          std::move(binding), speed);
 }
 
 std::unique_ptr<TestAudioDeviceModule::PulsedNoiseCapturer>
@@ -513,6 +603,13 @@ TestAudioDeviceModule::CreateDiscardRenderer(int sampling_frequency_in_hz,
     int num_channels) {
   return std::unique_ptr<TestAudioDeviceModule::Renderer>(
           new DiscardRenderer(sampling_frequency_in_hz, num_channels));
+}
+
+std::unique_ptr<TestAudioDeviceModule::WebAudioBinding>
+TestAudioDeviceModule::CreateWebAudioBinding(int sampling_frequency_in_hz,
+    int num_channels) {
+  return std::unique_ptr<TestAudioDeviceModule::WebAudioBinding>(
+          new WebAudioBindingImpl(sampling_frequency_in_hz, num_channels));
 }
 
 std::unique_ptr<TestAudioDeviceModule::Capturer>

@@ -20,6 +20,8 @@
 #include <webrtc/rtc_base/platform_file.h>  // IWYU pragma: keep
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
+#include <AudioContext.h>
+
 namespace node_webrtc {
 
 // TestAudioDeviceModule implements an AudioDevice module that can act both as a
@@ -57,6 +59,18 @@ class TestAudioDeviceModule : public webrtc::AudioDeviceModule {
     virtual bool Render(rtc::ArrayView<const int16_t> data) = 0;
   };
 
+  class WebAudioBinding {
+    public:
+      virtual ~WebAudioBinding() {}
+      // Returns the sampling frequency in Hz of the audio data that this
+      // renderer receives.
+      virtual int SamplingFrequency() const = 0;
+      // Returns the number of channels of audio data to be required.
+      virtual int NumChannels() const = 0;
+      virtual bool Capture(rtc::BufferT<int16_t>* buffer) = 0;
+      virtual bool Render(rtc::ArrayView<const int16_t> data) = 0;
+  };
+
   // A fake capturer that generates pulses with random samples between
   // -max_amplitude and +max_amplitude.
   class PulsedNoiseCapturer : public Capturer {
@@ -76,8 +90,7 @@ class TestAudioDeviceModule : public webrtc::AudioDeviceModule {
   // played out. Can be nullptr if this device is never used for playing.
   // Use one of the Create... functions to get these instances.
   static rtc::scoped_refptr<TestAudioDeviceModule> CreateTestAudioDeviceModule(
-      std::unique_ptr<Capturer> capturer,
-      std::unique_ptr<Renderer> renderer,
+      std::unique_ptr<WebAudioBinding> binding,
       float speed = 1);
 
   // Returns a Capturer instance that generates a signal of |num_channels|
@@ -90,6 +103,10 @@ class TestAudioDeviceModule : public webrtc::AudioDeviceModule {
 
   // Returns a Renderer instance that does nothing with the audio data.
   static std::unique_ptr<Renderer> CreateDiscardRenderer(
+      int sampling_frequency_in_hz,
+      int num_channels = 1);
+
+  static std::unique_ptr<WebAudioBinding> CreateWebAudioBinding(
       int sampling_frequency_in_hz,
       int num_channels = 1);
 
