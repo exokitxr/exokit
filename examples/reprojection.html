@@ -266,11 +266,7 @@ function init() {
 
 init();
 
-window.addEventListener('keydown', e => {
-  boxMesh2.position.copy(boxMesh.position);
-  boxMesh2.quaternion.copy(boxMesh.quaternion);
-  boxMesh2.scale.copy(boxMesh.scale);
-
+const _renderFrame = () => {
   hiddenCamera.position.copy(camera.position);
   hiddenCamera.quaternion.copy(camera.quaternion);
   hiddenCamera.scale.copy(camera.scale);
@@ -289,12 +285,19 @@ window.addEventListener('keydown', e => {
 
   renderer.render(hiddenScene, hiddenCamera, renderTarget);
   renderer.setRenderTarget(null);
-});
+
+  setTimeout(_renderFrame, 2000);
+};
+_renderFrame();
 
 function animate(timestamp, frame) {
   boxMesh.rotation.x += 0.01;
   boxMesh.rotation.y += 0.01;
   boxMesh.rotation.z += 0.01;
+
+  boxMesh2.position.copy(boxMesh.position);
+  boxMesh2.quaternion.copy(boxMesh.quaternion);
+  boxMesh2.scale.copy(boxMesh.scale);
 
   renderer.render(scene, camera);
 }
