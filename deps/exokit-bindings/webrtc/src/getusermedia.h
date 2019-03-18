@@ -11,7 +11,9 @@
 #include <nan.h>
 #include <v8.h>  // IWYU pragma: keep
 
+#ifdef _WIN32
 #include <Winsock2.h>
+#endif
 
 namespace node_webrtc {
 

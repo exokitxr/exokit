@@ -10,7 +10,9 @@
 
 #include <v8.h>  // IWYU pragma: keep
 
+#ifdef _WIN32
 #include <Winsock2.h>
+#endif
 
 #include "src/converters.h"
 

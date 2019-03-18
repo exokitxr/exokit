@@ -16,7 +16,9 @@
 
 #include <iosfwd>
 
+#ifdef _WIN32
 #include <Winsock2.h>
+#endif
 
 #include <absl/types/optional.h>
 #include <nan.h>  // IWYU pragma: keep
