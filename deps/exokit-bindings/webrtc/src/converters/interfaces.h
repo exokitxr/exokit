@@ -10,6 +10,8 @@
 
 #include <v8.h>  // IWYU pragma: keep
 
+#include <Winsock2.h>
+
 #include "src/converters.h"
 
 namespace rtc { template <class T> class scoped_refptr; }

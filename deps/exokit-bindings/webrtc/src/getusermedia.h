@@ -11,6 +11,8 @@
 #include <nan.h>
 #include <v8.h>  // IWYU pragma: keep
 
+#include <Winsock2.h>
+
 namespace node_webrtc {
 
 class GetUserMedia {

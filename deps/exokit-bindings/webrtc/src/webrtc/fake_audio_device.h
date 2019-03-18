@@ -10,6 +10,8 @@
 #ifndef SRC_WEBRTC_FAKE_AUDIO_DEVICE_H_
 #define SRC_WEBRTC_FAKE_AUDIO_DEVICE_H_
 
+#include <Winsock2.h>
+
 #include <webrtc/modules/audio_device/include/audio_device.h>
 #include <webrtc/rtc_base/buffer.h>  // IWYU pragma: keep
 #include <webrtc/rtc_base/event.h>
