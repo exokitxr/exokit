@@ -236,7 +236,7 @@ NODE_MODULE(NODE_GYP_MODULE_NAME, exokit::Init)
 #else
 extern "C" {
   void node_register_module_exokit(Local<Object> exports, Local<Value> module, Local<Context> context) {
-    exokit::Init(exports, module);
+    exokit::Init(exports, Local<Object>::Cast(module));
   }
 }
 #endif
