@@ -136,14 +136,14 @@ Local<Object> makeBrowser() {
 }
 #endif
 
-Local<Object> makeRtc() {
+Local<Object> makeRtc(Local<Object> module) {
   Isolate *isolate = Isolate::GetCurrent();
 
   Nan::EscapableHandleScope scope;
 
   Local<Object> exports = Nan::New<Object>();
 
-  node_webrtc::init(exports);
+  node_webrtc::init(exports, module);
 
   return scope.Escape(exports);
 }
