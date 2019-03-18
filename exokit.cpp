@@ -145,7 +145,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
   }
 }
 
-void InitExports(Local<Object> exports) {
+void InitExports(Local<Object> exports, Local<Object> module) {
   std::pair<Local<Value>, Local<FunctionTemplate>> glResult = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), glResult.first);
 
@@ -182,7 +182,7 @@ void InitExports(Local<Object> exports) {
   Local<Value> browser = makeBrowser();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeBrowser"), browser);
 
-  Local<Value> rtc = makeRtc();
+  Local<Value> rtc = makeRtc(module);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeRtc"), rtc);
 
   /* Local<Value> glfw = makeGlfw();
@@ -225,8 +225,8 @@ void InitExports(Local<Object> exports) {
   exports->Set(JS_STR("initFunctionAddress"), initFunctionAddressArray);
 }
 
-void Init(Local<Object> exports) {
-  InitExports(exports);
+void Init(Local<Object> exports, Local<Object> module) {
+  InitExports(exports, module);
 }
 
 }
@@ -236,7 +236,7 @@ NODE_MODULE(NODE_GYP_MODULE_NAME, exokit::Init)
 #else
 extern "C" {
   void node_register_module_exokit(Local<Object> exports, Local<Value> module, Local<Context> context) {
-    exokit::Init(exports);
+    exokit::Init(exports, module);
   }
 }
 #endif
