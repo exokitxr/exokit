@@ -368,5 +368,8 @@ class Range extends DocumentFragment {
     fragment.innerHTML = str;
     return fragment;
   }
+
+  setStart() {}
+  setEnd() {}
 }
 module.exports.Range = Range;
