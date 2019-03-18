@@ -52,3 +52,5 @@ OS=android node-gyp rebuild --arch=aarch64 --devdir="$(pwd)/.node-gyp" -v --logl
 rm -Rf build/libexokit
 mkdir -p build/libexokit
 find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/libexokit/libexokit.a
+./scripts/gen-dlibs-h.js "$(pwd)" >build/libexokit/dlibs.h
+popd
