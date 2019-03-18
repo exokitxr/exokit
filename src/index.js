@@ -283,8 +283,13 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
       contexts.splice(contexts.indexOf(gl), 1);
 
-      if (!contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()))) { // no more windows
-        process.exit();
+      const _hasMoreContexts = () => contexts.some(context => nativeWindow.isVisible(context.getWindowHandle()));
+      if (!_hasMoreContexts()) {
+        setImmediate(() => { // give time to create a replacement context
+          if (!_hasMoreContexts()) {
+            process.exit();
+          }
+        });
       }
     })(gl.destroy);
 
