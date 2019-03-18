@@ -11,9 +11,7 @@
 #include <canvas-gradient.h>
 #include <canvas-pattern.h>
 #include <webgl.h>
-#include <AudioContext.h>
 #include <Video.h>
-#include <webrtc.h>
 #if _WIN32
 #include <leapmotion.h>
 #endif
@@ -24,6 +22,8 @@
 // Stub out on Android for now until get libcef working on Android.
 #if !defined(__ANDROID__)
   #include <browser.h>
+  #include <AudioContext.h>
+  #include <webrtc.h>
 #endif
 
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl();
