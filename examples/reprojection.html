@@ -30,69 +30,8 @@
         "uniform vec2 size;",
         "uniform float aspect;",
         `
-        float depthLimit = 0.95;
-        float getDepth(vec2 xy) {
-          float dx = 1.0/size.x;
-          float dy = 1.0/size.y;
-
-          float value = 0.0;
-          float count = 0.0;
-
-          float d = texture2D(dTexture, xy + vec2(-dx, -dy)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-          d = texture2D(dTexture, xy + vec2(0.0, -dy)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-          d = texture2D(dTexture, xy + vec2(dx, -dy)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-          d = texture2D(dTexture, xy + vec2(-dx, 0.0)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-          d = texture2D(dTexture, xy + vec2(dx, 0.0)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-          d = texture2D(dTexture, xy + vec2(-dx, dy)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-          d = texture2D(dTexture, xy + vec2(0.0, dy)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-          d = texture2D(dTexture, xy + vec2(dx, dy)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-          d = texture2D(dTexture, xy + vec2(0.0, 0.0)).r;
-          if (d > depthLimit) {
-            value += d;
-            count++;
-          }
-
-          if (count > 0.0) {
-            return d;
-          } else {
-            return 100.0;
-          }
-        }
         void main() {
           vec2 xy = (position.xy + 1.0) / 2.0; //in [0,1] range
-          // float z_b = getDepth(xy);
           float z_b = texture2D(dTexture, xy).r;
           float z_n = 2.0 * z_b - 1.0;
           float z_e = -(2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear)));
@@ -191,8 +130,6 @@
 
           fragmentShader: defaultFragmentShader,
 
-          // depthWrite: !params.lol,
-
           transparent: true,
 
         })]);
@@ -202,8 +139,6 @@
         this.renderOrder = -1;
 
         //end mesh setup
-
-        // console.log( this , this.width , this.height );
 
       }
 
@@ -338,7 +273,6 @@ function init() {
     inverseMatrix: hiddenCamera.inverseMatrix,
     inverseMatrix2: hiddenCamera.inverseMatrix2,
     initialProjectionMatrix: hiddenCamera.initialProjectionMatrix,
-    lol: true,
   });
   scene.add(screenQuad);
 }
