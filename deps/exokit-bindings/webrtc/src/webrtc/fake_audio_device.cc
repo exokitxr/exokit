@@ -288,10 +288,10 @@ public:
     defaultAudioContext->connect(scriptNode, captureNode, 0, 0);
     defaultAudioContext->connect(defaultAudioContext->destination(), scriptNode, 0, 0);
   }
-  WebAudioBindingImpl::~WebAudioBindingImpl() {}
-  int WebAudioBindingImpl::SamplingFrequency() const override { return sampling_frequency_in_hz_; }
-  int WebAudioBindingImpl::NumChannels() const override { return num_channels_; }
-  bool WebAudioBindingImpl::Capture(rtc::BufferT<int16_t>* buffer) override {
+  WebAudioBindingImpl() {}
+  int SamplingFrequency() const override { return sampling_frequency_in_hz_; }
+  int NumChannels() const override { return num_channels_; }
+  bool Capture(rtc::BufferT<int16_t>* buffer) override {
     buffer->SetData(TestAudioDeviceModule::SamplesPerFrame(sampling_frequency_in_hz_), [&](rtc::ArrayView<int16_t> data) {
       std::lock_guard<mutex> lock(bufferMutex);
 
@@ -309,7 +309,7 @@ public:
 
     return true;
   }
-  bool WebAudioBindingImpl::Render(rtc::ArrayView<const int16_t> data) override {
+  bool Render(rtc::ArrayView<const int16_t> data) override {
     std::lock_guard<mutex> lock(bufferMutex);
 
     size_t dataSize = data.size();
