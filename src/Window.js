@@ -466,7 +466,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         ]);
       },
     },
-    webkitGetUserMedia, // for feature detection
+    webkitGetUserMedia: getUserMedia, // for feature detection
     getVRDisplaysSync() {
       const result = [];
       if (GlobalContext.fakeVrDisplayEnabled) {
