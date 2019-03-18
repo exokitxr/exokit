@@ -27,7 +27,6 @@
         "uniform mat4 initialProjectionMatrix;",
         "uniform float zNear;",
         "uniform float zFar;",
-        "uniform vec2 size;",
         "uniform float aspect;",
         `
         void main() {
@@ -116,10 +115,6 @@
               type:'f',
               value: undefined !== params.zFar ? params.zFar : null
             },
-            size: {
-              type:'v2',
-              value: undefined !== params.size ? params.size : null
-            },
             aspect: {
               type:'f',
               value: undefined !== params.aspect ? params.aspect : null
@@ -200,7 +195,6 @@ function init() {
   hiddenCamera.inverseMatrix = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrixInverse = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrix = new THREE.Matrix4();
-  hiddenCamera.size = new THREE.Vector2();
 
   {
     const ambientLight = new THREE.AmbientLight(0x808080);
@@ -268,7 +262,6 @@ function init() {
     matrixWorldInverse: hiddenCamera.matrixWorldInverse,
     zNear: hiddenCamera.near,
     zFar: hiddenCamera.far,
-    size: hiddenCamera.size,
     aspect: hiddenCamera.aspect,
     inverseMatrix: hiddenCamera.inverseMatrix,
     initialProjectionMatrixInverse: hiddenCamera.initialProjectionMatrixInverse,
@@ -299,7 +292,6 @@ window.addEventListener('keydown', e => {
   hiddenCamera.inverseMatrix.getInverse(hiddenCamera.inverseMatrix);
   hiddenCamera.initialProjectionMatrixInverse.copy(hiddenCamera.projectionMatrixInverse);
   hiddenCamera.initialProjectionMatrix.copy(hiddenCamera.projectionMatrix);
-  hiddenCamera.size.set(renderTarget.width, renderTarget.height);
 
   renderer.render(hiddenScene, hiddenCamera, renderTarget);
   renderer.setRenderTarget(null);
