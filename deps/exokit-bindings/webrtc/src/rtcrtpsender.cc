@@ -90,10 +90,10 @@ NAN_GETTER(RTCRtpSender::GetRtcpTransport) {
   info.GetReturnValue().Set(Nan::Null());
 }
 
-NAN_METHOD(RTCRtpSender::GetCapabilities) {
+/* NAN_METHOD(RTCRtpSender::GetCapabilities) {
   (void) info;
   Nan::ThrowError("Not yet implemented; file a feature request against node-webrtc");
-}
+} */
 
 NAN_METHOD(RTCRtpSender::GetParameters) {
   auto self = AsyncObjectWrap::Unwrap<RTCRtpSender>(info.Holder());
@@ -164,7 +164,7 @@ void RTCRtpSender::Init(Handle<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("track").ToLocalChecked(), GetTrack, nullptr);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("transport").ToLocalChecked(), GetTransport, nullptr);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("rtcpTransport").ToLocalChecked(), GetRtcpTransport, nullptr);
-  Nan::SetMethod(tpl, "getCapabilities", GetCapabilities);
+  // Nan::SetMethod(tpl, "getCapabilities", GetCapabilities);
   Nan::SetPrototypeMethod(tpl, "getParameters", GetParameters);
   Nan::SetPrototypeMethod(tpl, "setParameters", SetParameters);
   Nan::SetPrototypeMethod(tpl, "getStats", GetStats);
