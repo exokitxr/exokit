@@ -17,7 +17,7 @@
 
       var defaultVertexShader = [
 
-        "varying vec3 viewPosition;",
+        "varying vec3 vViewPosition;",
         "varying vec2 vUv;",
         "varying float vZDiff;",
         "uniform sampler2D dTexture;",
@@ -51,7 +51,7 @@
       var defaultFragmentShader = [
 
         `
-        varying vec3 viewPosition;
+        varying vec3 vViewPosition;
         varying vec2 vUv;
         varying float vZDiff;
         uniform float numTextures;
