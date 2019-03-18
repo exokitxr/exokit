@@ -17,6 +17,7 @@
 
       var defaultVertexShader = [
 
+        "varying vec3 viewPosition;",
         "varying vec2 vUv;",
         "varying float vZDiff;",
         "uniform sampler2D dTexture;",
@@ -25,6 +26,7 @@
         "uniform mat4 initialProjectionMatrix;",
         "uniform float zNear;",
         "uniform float zFar;",
+        "uniform vec4 plane;",
         `
         void main() {
           vec2 xy = (position.xy + 1.0) / 2.0; //in [0,1] range
@@ -36,7 +38,9 @@
           vec4 worldPosOrig = initialProjectionMatrixInverse * vec4(position.xy, offset.z/offset.w, 1.0);
           float zNew = worldPosOrig.z/worldPosOrig.w;
           vec4 worldPosNew = modelViewMatrix * worldPosOrig;
+
           gl_Position = projectionMatrix * worldPosNew;
+          vViewPosition = worldPosNew.xyz;
           vUv = uv;
           vZDiff = abs(zNew - zOrig);
         }
@@ -47,13 +51,15 @@
       var defaultFragmentShader = [
 
         `
+        varying vec3 viewPosition;
         varying vec2 vUv;
         varying float vZDiff;
         uniform float numTextures;
         uniform sampler2D uTexture;
         uniform sampler2D dTexture;
+        uniform vec4 plane;
         void main() {
-          if (vZDiff < 0.0001) {
+          if (vZDiff < 0.0001 && dot(vViewPosition, plane.xyz) > plane.w) {
             vec4 c = texture2D(uTexture, vUv);
             float dc = (1.0 - texture2D(dTexture, vUv).r) * 20.0;
             gl_FragColor = vec4(vec3(dc) * c.rgb, c.a);
@@ -103,6 +109,10 @@
             zFar: {
               type:'f',
               value: undefined !== params.zFar ? params.zFar : null
+            },
+            plane: {
+              type:'v4',
+              value: undefined !== params.plane ? params.plane : null
             },
           },
 
@@ -180,6 +190,7 @@ function init() {
   hiddenCamera.inverseMatrix = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrixInverse = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrix = new THREE.Matrix4();
+  hiddenCamera.plane = new THREE.Vector4(0, 1, 0, 1);
 
   {
     const ambientLight = new THREE.AmbientLight(0x808080);
@@ -245,6 +256,7 @@ function init() {
     depthTexture: renderTarget.depthTexture,
     zNear: hiddenCamera.near,
     zFar: hiddenCamera.far,
+    plane: hiddenCamera.plane,
     inverseMatrix: hiddenCamera.inverseMatrix,
     initialProjectionMatrixInverse: hiddenCamera.initialProjectionMatrixInverse,
     initialProjectionMatrix: hiddenCamera.initialProjectionMatrix,
