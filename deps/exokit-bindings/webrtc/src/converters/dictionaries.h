@@ -16,6 +16,8 @@
 
 #include <iosfwd>
 
+#include <Winsock2.h>
+
 #include <absl/types/optional.h>
 #include <nan.h>  // IWYU pragma: keep
 #include <webrtc/api/mediastreaminterface.h>
