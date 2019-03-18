@@ -12,7 +12,9 @@
 
 #include <nan.h>
 
+#ifdef _WIN32
 #include <Winsock2.h>
+#endif
 
 #include <webrtc/api/mediastreaminterface.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>

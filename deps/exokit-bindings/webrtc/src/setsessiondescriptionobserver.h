@@ -8,7 +8,9 @@
 #ifndef SRC_SET_DESCRIPTION_DESCRIPTION_OBSERVER_H_
 #define SRC_SET_DESCRIPTION_DESCRIPTION_OBSERVER_H_
 
+#ifdef _WIN32
 #include <Winsock2.h>
+#endif
 
 #include <webrtc/api/jsep.h>
 

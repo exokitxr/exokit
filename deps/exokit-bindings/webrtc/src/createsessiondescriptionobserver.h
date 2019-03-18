@@ -8,7 +8,9 @@
 #ifndef SRC_CREATE_SESSION_DESCRIPTION_OBSERVER_H_
 #define SRC_CREATE_SESSION_DESCRIPTION_OBSERVER_H_
 
+#ifdef _WIN32
 #include <Winsock2.h>
+#endif
 
 #include <webrtc/api/jsep.h>
 
