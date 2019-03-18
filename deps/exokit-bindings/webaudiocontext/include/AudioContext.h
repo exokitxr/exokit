@@ -18,7 +18,7 @@
 #include <AudioBuffer.h>
 #include <ScriptProcessorNode.h>
 #include <AudioListener.h>
-#include <MediaStreamTrack.h>
+#include <AudioMediaStreamTrack.h>
 #include <MicrophoneMediaStream.h>
 #include <AudioDestinationGenericImpl.h>
 

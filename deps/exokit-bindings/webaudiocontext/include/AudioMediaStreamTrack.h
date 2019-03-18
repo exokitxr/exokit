@@ -1,5 +1,5 @@
-#ifndef _MEDIA_STREAM_TRACK_H_
-#define _MEDIA_STREAM_TRACK_H_
+#ifndef _AUDIO_MEDIA_STREAM_TRACK_H_
+#define _AUDIO_MEDIA_STREAM_TRACK_H_
 
 #include <v8.h>
 #include <node.h>
