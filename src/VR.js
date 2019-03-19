@@ -183,7 +183,7 @@ class VRStageParameters {
 class VRDisplay extends EventEmitter {
   constructor(displayName) {
     super();
-    
+
     this.displayName = displayName;
 
     this.isPresenting = false;
@@ -303,7 +303,7 @@ class VRDisplay extends EventEmitter {
 class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
-    
+
     this.window = window;
 
     this.position = new THREE.Vector3();
@@ -356,35 +356,38 @@ class FakeVRDisplay extends VRDisplay {
     GlobalContext.xrState.renderWidth[0] = width;
     GlobalContext.xrState.renderHeight[0] = height;
   } *?
-  
+
   /* setProjection(projectionMatrix) {
     GlobalContext.xrState.leftProjectionMatrix.set(projectionMatrix);
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   } */
 
   requestPresent() {
-    this.isPresenting = true;
-
     GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
     GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
 
-    if (this.onvrdisplaypresentchange) {
+    if (this.onvrdisplaypresentchange && !this.isPresenting) {
+      this.isPresenting = true;
       this.onvrdisplaypresentchange();
+    } else {
+      this.isPresenting = true;
     }
 
     return Promise.resolve();
   }
 
   exitPresent() {
-    this.isPresenting = false;
 
-    if (this.onvrdisplaypresentchange) {
+    if (this.onvrdisplaypresentchange && this.isPresenting) {
+      this.isPresenting = false;
       this.onvrdisplaypresentchange();
+    } else {
+      this.isPresenting = false;
     }
 
     return Promise.resolve();
   }
-  
+
   requestSession({exclusive = true} = {}) {
     const self = this;
 
@@ -492,11 +495,11 @@ class FakeVRDisplay extends VRDisplay {
 
     return Promise.resolve(session);
   }
-  
+
   supportsSession() {
     return Promise.resolve(null);
   }
-  
+
   get layers() {
     return this._layers;
   }
@@ -521,7 +524,7 @@ class FakeVRDisplay extends VRDisplay {
       }
     ];
   }
-  
+
   getEyeParameters(eye) {
     const result = super.getEyeParameters(eye);
     if (eye === 'right') {
@@ -529,12 +532,12 @@ class FakeVRDisplay extends VRDisplay {
     }
     return result;
   }
-  
+
   waitGetPoses() {
     // update hmd
     this.position.toArray(GlobalContext.xrState.position);
     this.quaternion.toArray(GlobalContext.xrState.orientation);
-    
+
     localMatrix.compose(
       this.position,
       this.quaternion,
@@ -544,7 +547,7 @@ class FakeVRDisplay extends VRDisplay {
      .toArray(GlobalContext.xrState.leftViewMatrix);
 
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
- 
+
     /* localMatrix.compose(
       localVector.copy(this.position)
         .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
@@ -602,7 +605,7 @@ const createVRDisplay = () => new FakeVRDisplay();
 
 const getGamepads = (() => {
   let gamepads = null;
-  
+
   return () => {
     if (!gamepads) {
       gamepads = [
