@@ -6,8 +6,35 @@ set -e
 
 # Preface.
 
-#TOOLCHAIN="$PWD/node_modules/android-toolchain"
-TOOLCHAIN="/home/chris/github/NODE-up/node-magicleap/the-toolchain"
+TOOLCHAIN="$PWD/node_modules/android-toolchain"
+
+
+NDK_PATH=$1
+ARCH=arm64
+SUFFIX="aarch64-linux-android"
+TOOLCHAIN_NAME="$SUFFIX"
+
+function make_toolchain {
+    $NDK_PATH/build/tools/make-standalone-toolchain.sh \
+         --toolchain=$TOOLCHAIN_NAME-$CC_VER \
+        --arch=$ARCH \
+        --install-dir=$TOOLCHAIN \
+        --platform=android-21
+}
+
+export TOOLCHAIN=$PWD/android-toolchain
+if [ -d "$TOOLCHAIN" ]; then
+    read -r -p "NDK toolchain already exists. Replace it?  [y/N]" response
+    case "$response" in
+        [Yy])
+            rm -rf "$TOOLCHAIN"
+            make_toolchain
+    esac
+else
+    make_toolchain
+fi
+
+
 cd "$(dirname "$0")"
 
 export TOOLCHAIN_USR="$TOOLCHAIN/sysroot/usr"
