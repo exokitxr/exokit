@@ -305,7 +305,7 @@
                     '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
                     '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
                     '<(module_root_dir)/deps/exokit-bindings/glfw/include',
-                    '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
+                    '<(module_root_dir)/deps/exokit-bindings/webrtc',
                   ],
                   'library_dirs': [
                     "<!(node -e \"console.log(require.resolve('native-graphics-deps').slice(0, -9) + '/lib2/arm64/glew')\")",
