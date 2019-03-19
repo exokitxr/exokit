@@ -392,6 +392,8 @@
                 '<!@(ls -1 deps/exokit-bindings/windowsystem/src/*.cc)',
                 '<!@(ls -1 deps/exokit-bindings/glfw/src/*.cc)',
                 '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)',
+                '<!@(ls -1 deps/exokit-bindings/webrtc/src/converters/*.cc)',
+                '<!@(ls -1 deps/exokit-bindings/webrtc/src/webrtc/*.cc)',
                 '<!@(ls -1 deps/openvr/src/*.cpp)',
               ],
               'include_dirs': [
@@ -406,6 +408,8 @@
                 "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
                 "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include/webrtc')\")",
+                "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include/webrtc/third_party/abseil-cpp')\")",
+                "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include/webrtc/third_party/libyuv/include')\")",
                 "<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/headers')\")",
                 '<(module_root_dir)/deps/exokit-bindings',
                 '<(module_root_dir)/deps/exokit-bindings/utf8',
@@ -422,7 +426,7 @@
                 '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
                 '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
                 '<(module_root_dir)/deps/exokit-bindings/glfw/include',
-                '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
+                '<(module_root_dir)/deps/exokit-bindings/webrtc',
                 '<(module_root_dir)/deps/openvr/include',
               ],
               'library_dirs': [
