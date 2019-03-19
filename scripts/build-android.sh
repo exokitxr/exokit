@@ -6,7 +6,7 @@ set -e
 
 # Preface.
 
-TOOLCHAIN="$PWD/node_modules/android-toolchain"
+export TOOLCHAIN="$PWD/node_modules/android-toolchain"
 
 
 NDK_PATH=$1
@@ -22,7 +22,6 @@ function make_toolchain {
         --platform=android-21
 }
 
-export TOOLCHAIN=$PWD/android-toolchain
 if [ -d "$TOOLCHAIN" ]; then
     read -r -p "NDK toolchain already exists. Replace it?  [y/N]" response
     case "$response" in
