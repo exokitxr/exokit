@@ -301,7 +301,7 @@ public:
         data[i] = (int16_t)(captureBuffer.front() * 32767.0f);
         captureBuffer.pop_front();
       }
-      for (i = 0; i < dataSize; i++) {
+      for (; i < dataSize; i++) {
         data[i] = 0;
       }
       return data.size();
