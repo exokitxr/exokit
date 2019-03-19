@@ -40,17 +40,19 @@ struct MediaTrackConstraintSet {
   }
 };
 
+namespace node_webrtc {
 template <>
-struct node_webrtc::Converter<v8::Local<v8::Value>, MediaTrackConstraintSet> {
-  static node_webrtc::Validation<MediaTrackConstraintSet> Convert(const v8::Local<v8::Value> value) {
-    return node_webrtc::From<v8::Local<v8::Object>>(value).FlatMap<MediaTrackConstraintSet>(
+struct Converter<v8::Local<v8::Value>, MediaTrackConstraintSet> {
+  static Validation<MediaTrackConstraintSet> Convert(const v8::Local<v8::Value> value) {
+    return From<v8::Local<v8::Object>>(value).FlatMap<MediaTrackConstraintSet>(
     [](const v8::Local<v8::Object> object) {
       return curry(MediaTrackConstraintSet::Create)
-          % node_webrtc::GetOptional<uint16_t>(object, "width")
-          * node_webrtc::GetOptional<uint16_t>(object, "height");
+          % GetOptional<uint16_t>(object, "width")
+          * GetOptional<uint16_t>(object, "height");
     });
   }
 };
+}
 
 struct MediaTrackConstraints: public MediaTrackConstraintSet {
   std::vector<MediaTrackConstraintSet> advanced;
@@ -67,17 +69,19 @@ struct MediaTrackConstraints: public MediaTrackConstraintSet {
   }
 };
 
+namespace node_webrtc {
 template <>
-struct node_webrtc::Converter<v8::Local<v8::Value>, MediaTrackConstraints> {
-  static node_webrtc::Validation<MediaTrackConstraints> Convert(const v8::Local<v8::Value> value) {
-    return node_webrtc::From<v8::Local<v8::Object>>(value).FlatMap<MediaTrackConstraints>(
+struct Converter<v8::Local<v8::Value>, MediaTrackConstraints> {
+  static Validation<MediaTrackConstraints> Convert(const v8::Local<v8::Value> value) {
+    return From<v8::Local<v8::Object>>(value).FlatMap<MediaTrackConstraints>(
     [&value](const v8::Local<v8::Object> object) {
       return curry(MediaTrackConstraints::Create)
-          % node_webrtc::From<MediaTrackConstraintSet>(value)
-          * node_webrtc::GetOptional<std::vector<MediaTrackConstraintSet>>(object, "advanced", std::vector<MediaTrackConstraintSet>());
+          % From<MediaTrackConstraintSet>(value)
+          * GetOptional<std::vector<MediaTrackConstraintSet>>(object, "advanced", std::vector<MediaTrackConstraintSet>());
     });
   }
 };
+}
 
 struct MediaStreamConstraints {
   node_webrtc::Maybe<node_webrtc::Either<bool, MediaTrackConstraints>> audio;
@@ -93,17 +97,19 @@ struct MediaStreamConstraints {
   }
 };
 
+namespace node_webrtc {
 template <>
-struct node_webrtc::Converter<v8::Local<v8::Value>, MediaStreamConstraints> {
-  static node_webrtc::Validation<MediaStreamConstraints> Convert(const v8::Local<v8::Value> value) {
-    return node_webrtc::From<v8::Local<v8::Object>>(value).FlatMap<MediaStreamConstraints>(
+struct Converter<v8::Local<v8::Value>, MediaStreamConstraints> {
+  static Validation<MediaStreamConstraints> Convert(const v8::Local<v8::Value> value) {
+    return From<v8::Local<v8::Object>>(value).FlatMap<MediaStreamConstraints>(
     [](const v8::Local<v8::Object> object) {
-      return node_webrtc::Validation<MediaStreamConstraints>::Join(curry(MediaStreamConstraints::Create)
-              % GetOptional<node_webrtc::Either<bool, MediaTrackConstraints>>(object, "audio")
-              * GetOptional<node_webrtc::Either<bool, MediaTrackConstraints>>(object, "video"));
+      return Validation<MediaStreamConstraints>::Join(curry(MediaStreamConstraints::Create)
+              % GetOptional<Either<bool, MediaTrackConstraints>>(object, "audio")
+              * GetOptional<Either<bool, MediaTrackConstraints>>(object, "video"));
     });
   }
 };
+}
 
 NAN_METHOD(node_webrtc::GetUserMedia::GetUserMediaImpl) {
   SETUP_PROMISE(node_webrtc::GetUserMedia, node_webrtc::MediaStream*);
