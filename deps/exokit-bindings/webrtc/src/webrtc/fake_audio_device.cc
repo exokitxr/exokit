@@ -261,16 +261,15 @@ public:
         std::lock_guard<mutex> lock(this->bufferMutex);
 
         {
-          // flush buffer overflow if not consumed fast enough
-          const size_t tickSize = TestAudioDeviceModule::SamplesPerFrame(sampling_frequency_in_hz_);
-          const size_t maxSize = tickSize * 3;
-          if (this->captureBuffer.size() > maxSize) {
-            const size_t overflowSize = this->captureBuffer.size() - maxSize;
-            this->captureBuffer.erase(this->captureBuffer.begin(), this->captureBuffer.begin() + overflowSize);
-          }
           // push new value
           for (size_t i = 0; i < framesToProcess; i++) {
             this->captureBuffer.push_back(source[i]);
+          }
+          // flush buffer overflow if not consumed fast enough
+          const size_t maxSize = this->sampling_frequency_in_hz_; // 1 second
+          if (this->captureBuffer.size() > maxSize) {
+            const size_t overflowSize = this->captureBuffer.size() - maxSize;
+            this->captureBuffer.erase(this->captureBuffer.begin(), this->captureBuffer.begin() + overflowSize);
           }
         }
         {
