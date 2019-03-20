@@ -6,8 +6,7 @@ set -e
 
 # Preface.
 
-#TOOLCHAIN="$PWD/node_modules/android-toolchain"
-TOOLCHAIN="/home/chris/github/NODE-up/node-magicleap/the-toolchain"
+TOOLCHAIN="$PWD/node_modules/android-toolchain"
 cd "$(dirname "$0")"
 
 export TOOLCHAIN_USR="$TOOLCHAIN/sysroot/usr"
