@@ -244,10 +244,11 @@ class VRDisplay extends EventEmitter {
       this.onrequestpresent(layers);
     }
 
-    this.isPresenting = true;
-
-    if (this.onvrdisplaypresentchange) {
+    if (this.onvrdisplaypresentchange && !this.isPresenting) {
+      this.isPresenting = true;
       this.onvrdisplaypresentchange();
+    } else {
+      this.isPresenting = true;
     }
 
     return Promise.resolve();
@@ -256,15 +257,16 @@ class VRDisplay extends EventEmitter {
   exitPresent() {
     return (this.onexitpresent ? this.onexitpresent() : Promise.resolve())
       .then(() => {
-        this.isPresenting = false;
-
         for (let i = 0; i < this._rafs.length; i++) {
           this.cancelAnimationFrame(this._rafs[i]);
         }
         this._rafs.length = 0;
 
-        if (this.onvrdisplaypresentchange) {
+        if (this.onvrdisplaypresentchange && this.isPresenting) {
+          this.isPresenting = false;
           this.onvrdisplaypresentchange();
+        } else {
+          this.isPresenting = false;
         }
       });
   }
