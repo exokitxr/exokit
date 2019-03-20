@@ -13,25 +13,6 @@ declare class MLMesher {
     destroy() : void;
 }
 
-declare enum updateType {
-    /**
-     * Mesh should be added to the scene.
-     */
-    new = 'new',
-    /**
-     *  Mesh was previously emitted as new but its data has changed. No action is necessary, but may be desired.
-     */
-    update = 'update',
-    /**
-     * Mesh is still valid, but its data has not changed.
-     */
-    unchanged = 'unchanged',
-    /**
-     * Mesh is no longer in scope for the meshing system and should be discarded.
-     */
-    remove = 'remove'
-}
-
 /**
  * A single update to the world mesh.
  */
@@ -40,11 +21,15 @@ declare class MLMeshUpdate {
      * A globally unique ID that can be used to identify the world chunk for this mesh.
      * If this ID is the same between updates, then the update represents a change to the existing chunk.
      */
-    id : String;
+    id : string;
     /**
-     * The type of update.  see updateType.
+     * The type of update, can be either:
+     * 'new': the mesh should be added to the scene.
+     * 'update': the mesh was previously emitted as new but its data has changed. No action is necessary, but may be desired.
+     * 'unchanged': the mesh is still valid, but its data has not changed
+     * 'remove': the mesh is no longer in scope for the meshing system and should be discarded.
      */
-    type : updateType;
+    type : string;
     /**
      * The opaque WebGLBuffer for the mesh positions in world space. Represented as three WebGLFloat per vertex.
      * Not in any particular order; indexed by MLMeshUpdate.indexBuffer. Tightly packed stride.
@@ -91,7 +76,7 @@ declare class MLEyeTracker {
      * The individual eye locations and statuses. Note that this does not include the eye fixation (cursor);
      * that is contained in fixation.
      */
-    eyes : MLEye;
+    eyes : MLEye[];
     /**
      * Dispose of this MLEyeTracker instance and stop tracking.
      */
@@ -124,7 +109,7 @@ declare class MLPlaneUpdate {
      * A unique identifier for this plane. If a plane's id is the same between updates,
      * then it is an update to a previous plane.
      */
-    id : String;
+    id : string;
     /**
      * The world position of the center of this plane.
      */
@@ -168,21 +153,6 @@ declare class MLHandTracker {
     destroy() : void;
 }
 
-declare enum whichHand {
-    left = 'left',
-    right = 'right'
-}
-
-declare enum Gestures {
-    finger = 'finger',
-    fist = 'fist',
-    pinch = 'pinch',
-    thumb = 'thumb',
-    l = 'l',
-    openHandBack = 'openHandBack',
-    ok = 'ok',
-    c = 'c'
-}
 
 /**
  * A single update to the user's tracked hand pose state.
@@ -191,7 +161,7 @@ declare class MLHandUpdate {
     /**
      * The hand detected for this update. Either 'left' or 'right'.
      */
-    hand : whichHand;
+    hand : string;
     /**
      * The pointer transform of the hand pose.
      *
@@ -223,19 +193,28 @@ declare class MLHandUpdate {
      *
      * The detected hand finger bone positions. The order is right-handed, left-to-right, bottom-to-top:
      *
-     * handUpdate.bones[0][0][0] // left (0) thumb (0) base (0) as a Float32Array(3) vector
-     * handUpdate.bones[1][0][2] // right (1) thumb (0) tip (2) as a Float32Array(3) vector
-     * handUpdate.bones[1][1][3] // right (1) pointer (1) tip (3) as a Float32Array(3) vector
-     * handUpdate.bones[0][4][3] // left (0) pinkie (4) tip (3) as a Float32Array(3) vector
-     */
-    fingers : Float32Array[][][];
-    /**
-     * The current gesture pose of the hand. See Gestures.
+     * handUpdate.fingers[0][0][0] // left (0) thumb (0) base (0) as a Float32Array(3) vector
+     * handUpdate.fingers[1][0][2] // right (1) thumb (0) tip (2) as a Float32Array(3) vector
+     * handUpdate.fingers[1][1][3] // right (1) pointer (1) tip (3) as a Float32Array(3) vector
+     * handUpdate.fingers[0][4][3] // left (0) pinkie (4) tip (3) as a Float32Array(3) vector
      *
      * A bone may be null, which means it is not currently detected.
      * The thumb has one less bone than the other fingers.
      */
-    gesture? : Gestures;
+    fingers : Float32Array[][][];
+    /**
+     * The current gesture pose of the hand. One of:
+     * null (no gesture detected)
+     * 'finger'
+     * 'fist'
+     * 'pinch'
+     * 'thumb'
+     * 'l'
+     * 'openHandBack'
+     * 'ok'
+     * 'c'
+     */
+    gesture? : string;
 }
 
 /**
@@ -245,11 +224,20 @@ declare class MLGestureUpdate {
     /**
      * The hand detected for this update. Either 'left' or 'right'.
      */
-    hand : whichHand;
+    hand : string;
     /**
-     * The detected hand gesture. See Gestures.
+     * The current gesture pose of the hand. One of:
+     * null (no gesture detected)
+     * 'finger'
+     * 'fist'
+     * 'pinch'
+     * 'thumb'
+     * 'l'
+     * 'openHandBack'
+     * 'ok'
+     * 'c'
      */
-    gesture? : Gestures;
+    gesture? : string;
     /**
      * A three-component world position vector represting the gesture pointer origin.
      */
@@ -326,41 +314,46 @@ declare class MLTrackingUpdate {
     size: number;
 }
 
-interface MagicLeap {
-    /**
-     * @returns an instance of MLMesher, which can be used to receive world meshing buffer updates from the Magic Leap platform.
-     */
-    RequestMeshing() : MLMesher;
-    /**
-     * @returns an instance of MLPlaneTracker, which can be used to receive world planes detected by the Magic Leap platform.
-     */
-    RequestPlaneTracking() : MLPlaneTracker;
-    /**
-     * @returns an instance of MLHandTracker, which can be used to receive hand tracking data from the Magic Leap platform.
-     */
-    RequestHandTracking() : MLHandTracker;
-    /**
-     * @returns an instance of MLEyeTracker, which can be used to receive eye tracking data from the Magic Leap platform.
-     */
-    RequestEyeTracking() : MLEyeTracker;
-    /**
-     * @param image- HTMLImageElement containing the image to track.
-     * @param size- The expected size of the widest dimension of the tracker (either X or Y) in meters. This is important for tracking depth.
-     * @returns an instance of MLImageTracker, which can be used to receive image tracking updates from the Magic Leap platform.
-     */
-    RequestImageTracking(image : HTMLImageElement, size : number) : MLImageTracker;
-    /**
-     * Sets whether the render loop will populate the depth buffer from the meshing system at the start of a frame. If you want natural AR occlusion without messing with mesh data, this is the easiest option.
-     *
-     * The way this works is that the main framebuffer of your <canvas> (framebuffer 0) will have its depth component pre-rendered at the start of every frame using the unmodified WebVR/WebXR viewport and matrices.
-     *
-     * Note that you may need to instruct your rendering engine (like THREE.js) to not clear the depth buffer on rendering for this to work as intended.
-     *
-     * Also note that if you transform the WebXR matrices yourself -- such as changing the projection -- the precomputed depth buffer may no longer align with your render.
-     */
-    RequestDepthPopulation(populateDepth : Boolean) : void ;
-}
 
-interface browser {
-    magicLeap : MagicLeap;
+declare module browser {
+    /**
+     * Magic Leap access to native functionality.
+     * if (!browser.magicLeap) then you are not on this platform.
+     * 
+     * Note: All rotations & positions are right-handed, y-up, z-toward.
+     */
+     export class magicLeap {
+        /**
+         * @returns an instance of MLMesher, which can be used to receive world meshing buffer updates from the Magic Leap platform.
+         */
+        public static RequestMeshing() : MLMesher;
+        /**
+         * @returns an instance of MLPlaneTracker, which can be used to receive world planes detected by the Magic Leap platform.
+         */
+        public static RequestPlaneTracking() : MLPlaneTracker;
+        /**
+         * @returns an instance of MLHandTracker, which can be used to receive hand tracking data from the Magic Leap platform.
+         */
+        public static RequestHandTracking() : MLHandTracker;
+        /**
+         * @returns an instance of MLEyeTracker, which can be used to receive eye tracking data from the Magic Leap platform.
+         */
+        public static RequestEyeTracking() : MLEyeTracker;
+        /**
+         * @param image- HTMLImageElement containing the image to track.
+         * @param size- The expected size of the widest dimension of the tracker (either X or Y) in meters. This is important for tracking depth.
+         * @returns an instance of MLImageTracker, which can be used to receive image tracking updates from the Magic Leap platform.
+         */
+        public static RequestImageTracking(image : HTMLImageElement, size : number) : MLImageTracker;
+        /**
+         * Sets whether the render loop will populate the depth buffer from the meshing system at the start of a frame. If you want natural AR occlusion without messing with mesh data, this is the easiest option.
+         *
+         * The way this works is that the main framebuffer of your <canvas> (framebuffer 0) will have its depth component pre-rendered at the start of every frame using the unmodified WebVR/WebXR viewport and matrices.
+         *
+         * Note that you may need to instruct your rendering engine (like THREE.js) to not clear the depth buffer on rendering for this to work as intended.
+         *
+         * Also note that if you transform the WebXR matrices yourself -- such as changing the projection -- the precomputed depth buffer may no longer align with your render.
+         */
+        public static RequestDepthPopulation(populateDepth : boolean) : void ;
+    }
 }
