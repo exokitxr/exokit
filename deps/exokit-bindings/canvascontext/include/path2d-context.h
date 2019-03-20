@@ -16,7 +16,7 @@ using namespace node;
 
 class Path2D : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
   void MoveTo(float x, float y);
   void LineTo(float x, float y);
   void ClosePath();

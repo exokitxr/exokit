@@ -223,7 +223,7 @@ Video::~Video() {
   videos.erase(std::find(videos.begin(), videos.end(), this));
 }
 
-Handle<Object> Video::Initialize(Isolate *isolate) {
+Local<Object> Video::Initialize(Isolate *isolate) {
   // initialize libav
   av_register_all();
   avcodec_register_all();
@@ -250,7 +250,7 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   Nan::SetMethod(ctorFn, "updateAll", UpdateAll);
   Nan::SetMethod(ctorFn, "getDevices", GetDevices);
@@ -422,7 +422,7 @@ NAN_SETTER(Video::LoopSetter) {
 
   if (value->IsBoolean()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
-    video->loop = value->BooleanValue();
+    video->loop = TO_BOOL(value);
   } else {
     Nan::ThrowError("loop: invalid arguments`");
   }
@@ -467,7 +467,7 @@ NAN_SETTER(Video::CurrentTimeSetter) {
   if (value->IsNumber()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-    double timestamp = value->NumberValue();
+    double timestamp = TO_DOUBLE(value);
     video->SeekTo(timestamp);
   } else {
     Nan::ThrowError("currentTime: invalid arguments");
@@ -562,7 +562,7 @@ VideoDevice::~VideoDevice() {
   videoDevices.erase(std::find(videoDevices.begin(), videoDevices.end(), this));
 }
 
-Handle<Object> VideoDevice::Initialize(Isolate *isolate, Local<Value> imageDataCons) {
+Local<Object> VideoDevice::Initialize(Isolate *isolate, Local<Value> imageDataCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -580,7 +580,7 @@ Handle<Object> VideoDevice::Initialize(Isolate *isolate, Local<Value> imageDataC
   Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
   Nan::SetAccessor(proto, JS_STR("imageData"), ImageDataGetter);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
 
   return scope.Escape(ctorFn);
@@ -671,8 +671,8 @@ NAN_GETTER(VideoDevice::DataGetter) {
       double h = video->dev->getHeight();
 
       Local<Function> imageDataCons = Local<Function>::Cast(
-          Local<Object>::Cast(info.This())->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("ImageData"))
-          );
+        JS_OBJ(Local<Object>::Cast(info.This())->Get(JS_STR("constructor")))->Get(JS_STR("ImageData"))
+      );
       Local<Value> argv[] = {
         Number::New(Isolate::GetCurrent(), w),
         Number::New(Isolate::GetCurrent(), h),

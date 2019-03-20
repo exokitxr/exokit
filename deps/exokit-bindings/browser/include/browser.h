@@ -26,7 +26,7 @@ namespace browser {
 
 class Browser : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
 
 protected:
   Browser(WebGLRenderingContext *gl, int width, int height);

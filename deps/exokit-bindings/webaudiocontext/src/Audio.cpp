@@ -12,7 +12,7 @@ Audio::Audio() : audioNode(new lab::FinishableSourceNode(
 
 Audio::~Audio() {}
 
-Handle<Object> Audio::Initialize(Isolate *isolate) {
+Local<Object> Audio::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -31,7 +31,7 @@ Handle<Object> Audio::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("loop"), LoopGetter, LoopSetter);
   Nan::SetAccessor(proto, JS_STR("onended"), OnEndedGetter, OnEndedSetter);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -130,7 +130,7 @@ NAN_SETTER(Audio::CurrentTimeSetter) {
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
   if (value->IsNumber()) {
-    double currentTime = value->NumberValue();
+    double currentTime = TO_DOUBLE(value);
 
     audio->audioNode->setCurrentTime(currentTime);
   } else {
@@ -160,7 +160,7 @@ NAN_SETTER(Audio::LoopSetter) {
   // Nan::HandleScope scope;
 
   if (value->IsBoolean()) {
-    bool loop = value->BooleanValue();
+    bool loop = TO_BOOL(value);
 
     Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
@@ -194,7 +194,7 @@ void Audio::ProcessInMainThread(Audio *self) {
 
   if (!self->onended.IsEmpty()) {
     Local<Function> onended = Nan::New(self->onended);
-    onended->Call(Nan::Null(), 0, nullptr);
+    onended->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), 0, nullptr);
   }
 }
 

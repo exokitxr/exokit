@@ -4,7 +4,7 @@ using namespace v8;
 using namespace node;
 // using namespace std;
 
-Handle<Object> Path2D::Initialize(Isolate *isolate) {
+Local<Object> Path2D::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -23,7 +23,7 @@ Handle<Object> Path2D::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto,"quadraticCurveTo", QuadraticCurveTo);
   Nan::SetMethod(proto,"clear", Clear);
 
-  return scope.Escape(ctor->GetFunction());
+  return scope.Escape(Nan::GetFunction(ctor).ToLocalChecked());
 }
 
 void Path2D::MoveTo(float x, float y) {
@@ -66,8 +66,8 @@ NAN_METHOD(Path2D::MoveTo) {
   Nan::HandleScope scope;
 
   Path2D *path2d = ObjectWrap::Unwrap<Path2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
+  double x = TO_DOUBLE(info[0]);
+  double y = TO_DOUBLE(info[1]);
 
   path2d->MoveTo(x, y);
 }
@@ -76,8 +76,8 @@ NAN_METHOD(Path2D::LineTo) {
   Nan::HandleScope scope;
 
   Path2D *path2d = ObjectWrap::Unwrap<Path2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
+  double x = TO_DOUBLE(info[0]);
+  double y = TO_DOUBLE(info[1]);
 
   path2d->LineTo(x, y);
 }
@@ -94,12 +94,12 @@ NAN_METHOD(Path2D::Arc) {
   Nan::HandleScope scope;
 
   Path2D *path2d = ObjectWrap::Unwrap<Path2D>(info.This());
-  double x = info[0]->NumberValue();
-  double y = info[1]->NumberValue();
-  double radius = info[2]->NumberValue();
-  double startAngle = info[3]->NumberValue();
-  double endAngle = info[4]->NumberValue();
-  double anticlockwise = info[5]->NumberValue();
+  double x = TO_DOUBLE(info[0]);
+  double y = TO_DOUBLE(info[1]);
+  double radius = TO_DOUBLE(info[2]);
+  double startAngle = TO_DOUBLE(info[3]);
+  double endAngle = TO_DOUBLE(info[4]);
+  double anticlockwise = TO_DOUBLE(info[5]);
 
   path2d->Arc(x, y, radius, startAngle, endAngle, anticlockwise);
 }
@@ -108,11 +108,11 @@ NAN_METHOD(Path2D::ArcTo) {
   Nan::HandleScope scope;
 
   Path2D *path2d = ObjectWrap::Unwrap<Path2D>(info.This());
-  double x1 = info[0]->NumberValue();
-  double y1 = info[1]->NumberValue();
-  double x2 = info[2]->NumberValue();
-  double y2 = info[3]->NumberValue();
-  double radius = info[4]->NumberValue();
+  double x1 = TO_DOUBLE(info[0]);
+  double y1 = TO_DOUBLE(info[1]);
+  double x2 = TO_DOUBLE(info[2]);
+  double y2 = TO_DOUBLE(info[3]);
+  double radius = TO_DOUBLE(info[4]);
 
   path2d->ArcTo(x1, y1, x2, y2, radius);
 }
@@ -121,10 +121,10 @@ NAN_METHOD(Path2D::QuadraticCurveTo) {
   Nan::HandleScope scope;
 
   Path2D *path2d = ObjectWrap::Unwrap<Path2D>(info.This());
-  double cpx = info[0]->NumberValue();
-  double cpy = info[1]->NumberValue();
-  double x = info[2]->NumberValue();
-  double y = info[3]->NumberValue();
+  double cpx = TO_DOUBLE(info[0]);
+  double cpy = TO_DOUBLE(info[1]);
+  double x = TO_DOUBLE(info[2]);
+  double y = TO_DOUBLE(info[3]);
 
   path2d->QuadraticCurveTo(cpx, cpy, x, y);
 }

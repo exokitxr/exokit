@@ -5,7 +5,7 @@ namespace webaudio {
 
 AudioProcessingEvent::AudioProcessingEvent(Local<Object> inputBuffer, Local<Object> outputBuffer) : inputBuffer(inputBuffer), outputBuffer(outputBuffer) {}
 AudioProcessingEvent::~AudioProcessingEvent() {}
-Handle<Object> AudioProcessingEvent::Initialize(Isolate *isolate) {
+Local<Object> AudioProcessingEvent::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -20,7 +20,7 @@ Handle<Object> AudioProcessingEvent::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("numberOfInputChannels"), NumberOfInputChannelsGetter);
   Nan::SetAccessor(proto, JS_STR("numberOfOutputChannels"), NumberOfOutputChannelsGetter);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -76,7 +76,7 @@ ScriptProcessorNode::ScriptProcessorNode(uint32_t bufferSize, uint32_t numberOfI
   }
 }
 ScriptProcessorNode::~ScriptProcessorNode() {}
-Handle<Object> ScriptProcessorNode::Initialize(Isolate *isolate, Local<Value> audioBufferCons, Local<Value> audioProcessingEventCons) {
+Local<Object> ScriptProcessorNode::Initialize(Isolate *isolate, Local<Value> audioBufferCons, Local<Value> audioProcessingEventCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -89,7 +89,7 @@ Handle<Object> ScriptProcessorNode::Initialize(Isolate *isolate, Local<Value> au
   AudioNode::InitializePrototype(proto);
   ScriptProcessorNode::InitializePrototype(proto);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   ctorFn->Set(JS_STR("AudioBuffer"), audioBufferCons);
   ctorFn->Set(JS_STR("AudioProcessingEvent"), audioProcessingEventCons);
@@ -104,11 +104,11 @@ NAN_METHOD(ScriptProcessorNode::New) {
 
   if (
     info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() &&
-    info[3]->IsObject() && info[3]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))
+    info[3]->IsObject() && JS_OBJ(JS_OBJ(info[3])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))
   ) {
-    uint32_t bufferSize = info[0]->Uint32Value();
-    uint32_t numberOfInputChannels = info[1]->Uint32Value();
-    uint32_t numberOfOutputChannels = info[2]->Uint32Value();
+    uint32_t bufferSize = TO_UINT32(info[0]);
+    uint32_t numberOfInputChannels = TO_UINT32(info[1]);
+    uint32_t numberOfOutputChannels = TO_UINT32(info[2]);
 
     if (numberOfInputChannels == numberOfOutputChannels) {
       Local<Object> audioContextObj = Local<Object>::Cast(info[3]);
@@ -123,9 +123,9 @@ NAN_METHOD(ScriptProcessorNode::New) {
       });
       scriptProcessorNode->audioNode.reset(labScriptProcessorNode);
 
-      Local<Function> audioBufferConstructor = Local<Function>::Cast(scriptProcessorNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioBuffer")));
+      Local<Function> audioBufferConstructor = Local<Function>::Cast(JS_OBJ(scriptProcessorNodeObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioBuffer")));
       scriptProcessorNode->audioBufferConstructor.Reset(audioBufferConstructor);
-      Local<Function> audioProcessingEventConstructor = Local<Function>::Cast(scriptProcessorNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioProcessingEvent")));
+      Local<Function> audioProcessingEventConstructor = Local<Function>::Cast(JS_OBJ(scriptProcessorNodeObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioProcessingEvent")));
       scriptProcessorNode->audioProcessingEventConstructor.Reset(audioProcessingEventConstructor);
 
       info.GetReturnValue().Set(scriptProcessorNodeObj);
@@ -185,7 +185,7 @@ void ScriptProcessorNode::ProcessInMainThread(ScriptProcessorNode *self) {
   size_t numOutputAudioNodes = outputAudioNodes->Length();
   bool connectedOutput = false;
   for (size_t i = 0; i < numOutputAudioNodes; i++) {
-    if (outputAudioNodes->Get(i)->BooleanValue()) {
+    if (TO_BOOL(outputAudioNodes->Get(i))) {
       connectedOutput = true;
       break;
     }
@@ -239,7 +239,7 @@ void ScriptProcessorNode::ProcessInMainThread(ScriptProcessorNode *self) {
     Local<Value> argv4[] = {
       audioProcessingEventObj,
     };
-    onAudioProcessLocal->Call(Nan::Null(), sizeof(argv4)/sizeof(argv4[0]), argv4);
+    onAudioProcessLocal->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv4)/sizeof(argv4[0]), argv4);
 
     for (size_t i = 0; i < sourcesArray->Length(); i++) {
       Local<Float32Array> sourceFloat32Array = Local<Float32Array>::Cast(sourcesArray->Get(i));

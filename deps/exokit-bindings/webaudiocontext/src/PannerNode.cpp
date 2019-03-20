@@ -12,7 +12,7 @@ PannerNode::PannerNode() {}
 
 PannerNode::~PannerNode() {}
 
-Handle<Object> PannerNode::Initialize(Isolate *isolate, Local<Value> fakeAudioParamCons) {
+Local<Object> PannerNode::Initialize(Isolate *isolate, Local<Value> fakeAudioParamCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -25,7 +25,7 @@ Handle<Object> PannerNode::Initialize(Isolate *isolate, Local<Value> fakeAudioPa
   AudioNode::InitializePrototype(proto);
   PannerNode::InitializePrototype(proto);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   Nan::SetMethod(ctorFn, "setPath", SetPath);
   ctorFn->Set(JS_STR("FakeAudioParam"), fakeAudioParamCons);
@@ -48,7 +48,7 @@ void PannerNode::InitializePrototype(Local<ObjectTemplate> proto) {
 NAN_METHOD(PannerNode::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
 
     PannerNode *pannerNode = new PannerNode();
@@ -61,7 +61,7 @@ NAN_METHOD(PannerNode::New) {
     pannerNode->context.Reset(audioContextObj);
     pannerNode->audioNode = labPannerNode;
 
-    Local<Function> fakeAudioParamConstructor = Local<Function>::Cast(pannerNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("FakeAudioParam")));
+    Local<Function> fakeAudioParamConstructor = Local<Function>::Cast(JS_OBJ(pannerNodeObj->Get(JS_STR("constructor")))->Get(JS_STR("FakeAudioParam")));
 
     Local<Object> positionXAudioParamObj = fakeAudioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
     FakeAudioParam *positionXAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(positionXAudioParamObj);
@@ -123,7 +123,7 @@ NAN_SETTER(PannerNode::ConeInnerAngleSetter) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    float newValue = value->NumberValue();
+    float newValue = TO_FLOAT(value);
     labPannerNode->setConeInnerAngle(newValue);
   } else {
     Nan::ThrowError("value: invalid arguments");
@@ -148,7 +148,7 @@ NAN_SETTER(PannerNode::ConeOuterAngleSetter) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    float newValue = value->NumberValue();
+    float newValue = TO_FLOAT(value);
     labPannerNode->setConeOuterAngle(newValue);
   } else {
     Nan::ThrowError("value: invalid arguments");
@@ -192,7 +192,7 @@ NAN_SETTER(PannerNode::DistanceModelSetter) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    v8::String::Utf8Value valueUtf8(value->ToString());
+    Nan::Utf8String valueUtf8(Local<String>::Cast(value));
     string valueString(*valueUtf8, valueUtf8.length());
 
     ModelType distanceModel;
@@ -230,7 +230,7 @@ NAN_SETTER(PannerNode::MaxDistanceSetter) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    float newValue = value->NumberValue();
+    float newValue = TO_FLOAT(value);
     labPannerNode->setMaxDistance(newValue);
   } else {
     Nan::ThrowError("value: invalid arguments");
@@ -270,7 +270,7 @@ NAN_SETTER(PannerNode::PanningModelSetter) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    v8::String::Utf8Value valueUtf8(value->ToString());
+    Nan::Utf8String valueUtf8(Local<String>::Cast(value));
     string valueString(*valueUtf8, valueUtf8.length());
 
     lab::PanningMode panningModel;
@@ -306,7 +306,7 @@ NAN_SETTER(PannerNode::RefDistanceSetter) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    float newValue = value->NumberValue();
+    float newValue = TO_FLOAT(value);
     labPannerNode->setRefDistance(newValue);
   } else {
     Nan::ThrowError("value: invalid arguments");
@@ -331,7 +331,7 @@ NAN_SETTER(PannerNode::RolloffFactorSetter) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    float newValue = value->NumberValue();
+    float newValue = TO_FLOAT(value);
     labPannerNode->setRolloffFactor(newValue);
   } else {
     Nan::ThrowError("value: invalid arguments");
@@ -345,9 +345,9 @@ NAN_METHOD(PannerNode::SetPosition) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    float x = info[0]->NumberValue();
-    float y = info[1]->NumberValue();
-    float z = info[2]->NumberValue();
+    float x = TO_FLOAT(info[0]);
+    float y = TO_FLOAT(info[1]);
+    float z = TO_FLOAT(info[2]);
 
     labPannerNode->setPosition(x, y, z);
   } else {
@@ -362,9 +362,9 @@ NAN_METHOD(PannerNode::SetOrientation) {
     PannerNode *pannerNode = ObjectWrap::Unwrap<PannerNode>(info.This());
     shared_ptr<lab::PannerNode> labPannerNode = *(shared_ptr<lab::PannerNode> *)(&pannerNode->audioNode);
 
-    float x = info[0]->NumberValue();
-    float y = info[1]->NumberValue();
-    float z = info[2]->NumberValue();
+    float x = TO_FLOAT(info[0]);
+    float y = TO_FLOAT(info[1]);
+    float z = TO_FLOAT(info[2]);
 
     labPannerNode->setOrientation(x, y, z);
   } else {
@@ -376,7 +376,7 @@ NAN_METHOD(PannerNode::SetPath) {
   Nan::HandleScope scope;
 
   if (info[0]->IsString()) {
-    v8::String::Utf8Value pathValue(info[0]->ToString());
+    Nan::Utf8String pathValue(Local<String>::Cast(info[0]));
 
     PannerNode::path = *pathValue;
   } else {

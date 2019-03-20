@@ -16,7 +16,7 @@ namespace webaudio {
 
 class Audio : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
   void Load(uint8_t *bufferValue, size_t bufferLength);
   void Play();
   void Pause();

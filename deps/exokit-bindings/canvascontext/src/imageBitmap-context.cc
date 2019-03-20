@@ -3,7 +3,7 @@
 using namespace v8;
 using namespace node;
 
-Handle<Object> ImageBitmap::Initialize(Isolate *isolate) {
+Local<Object> ImageBitmap::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -14,8 +14,7 @@ Handle<Object> ImageBitmap::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Local<Function> ctorFn = ctor->GetFunction();
-
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
   return scope.Escape(ctorFn);
 }
 
@@ -52,12 +51,12 @@ NAN_METHOD(ImageBitmap::New) {
   Local<Object> imageBitmapObj = info.This();
 
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsNumber() && info[5]->IsBoolean()) {
-    Image *image = ObjectWrap::Unwrap<Image>(info[0]->ToObject());
-    int x = info[1]->Int32Value();
-    int y = info[2]->Int32Value();
-    unsigned int width = info[3]->Uint32Value();
-    unsigned int height = info[4]->Uint32Value();
-    bool flipY = info[5]->BooleanValue();
+    Image *image = ObjectWrap::Unwrap<Image>(Local<Object>::Cast(info[0]));
+    int x = TO_INT32(info[1]);
+    int y = TO_INT32(info[2]);
+    unsigned int width = TO_UINT32(info[3]);
+    unsigned int height = TO_UINT32(info[4]);
+    bool flipY = TO_BOOL(info[5]);
 
     SkImageInfo info = SkImageInfo::Make(width, height, SkColorType::kRGBA_8888_SkColorType, SkAlphaType::kPremul_SkAlphaType);
     unsigned char *address = (unsigned char *)malloc(width * height * 4);
@@ -94,8 +93,8 @@ NAN_METHOD(ImageBitmap::New) {
     }
   } else {
     if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsArrayBufferView()) {
-      unsigned int width = info[0]->Uint32Value();
-      unsigned int height = info[1]->Uint32Value();
+      unsigned int width = TO_UINT32(info[0]);
+      unsigned int height = TO_UINT32(info[1]);
       Local<ArrayBufferView> dataValue = Local<ArrayBufferView>::Cast(info[2]);
       char *data = (char *)dataValue->Buffer()->GetContents().Data() + dataValue->ByteOffset();
 

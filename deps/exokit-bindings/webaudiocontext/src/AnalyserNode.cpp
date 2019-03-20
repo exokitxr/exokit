@@ -7,7 +7,7 @@ AnalyserNode::AnalyserNode() {}
 
 AnalyserNode::~AnalyserNode() {}
 
-Handle<Object> AnalyserNode::Initialize(Isolate *isolate) {
+Local<Object> AnalyserNode::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -20,7 +20,7 @@ Handle<Object> AnalyserNode::Initialize(Isolate *isolate) {
   AudioNode::InitializePrototype(proto);
   AnalyserNode::InitializePrototype(proto);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -40,7 +40,7 @@ void AnalyserNode::InitializePrototype(Local<ObjectTemplate> proto) {
 NAN_METHOD(AnalyserNode::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
 
     AnalyserNode *analyserNode = new AnalyserNode();
@@ -77,7 +77,7 @@ NAN_SETTER(AnalyserNode::FftSizeSetter) {
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
     {
       lab::ContextRenderLock lock(audioContext->audioContext.get(), "AnalyserNode::FftSizeSetter");
-      labAnalyserNode->setFFTSize(lock, value->Uint32Value());
+      labAnalyserNode->setFFTSize(lock, TO_UINT32(value));
     }
   } else {
     Nan::ThrowError("value: invalid arguments");

@@ -314,7 +314,7 @@ NAN_METHOD(IVRCompositor::Submit)
   }
 
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  GLuint texture = info[1]->Uint32Value();
+  GLuint texture = TO_UINT32(info[1]);
 
   vr::EColorSpace colorSpace = vr::ColorSpace_Gamma;
 

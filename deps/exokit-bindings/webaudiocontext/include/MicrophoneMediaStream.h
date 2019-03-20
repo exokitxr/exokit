@@ -25,7 +25,7 @@ class MediaStream : public ObjectWrap {
 
 class MicrophoneMediaStream : public MediaStream {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> mediaStreamTrackCons);
+  static Local<Object> Initialize(Isolate *isolate, Local<Value> mediaStreamTrackCons);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:

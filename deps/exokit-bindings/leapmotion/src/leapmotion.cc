@@ -151,7 +151,7 @@ LMContext::LMContext() {
 
 LMContext::~LMContext() {}
 
-Handle<Object> LMContext::Initialize(Isolate *isolate) {
+Local<Object> LMContext::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -163,7 +163,7 @@ Handle<Object> LMContext::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -254,7 +254,7 @@ NAN_METHOD(LMContext::WaitGetPoses) {
 
 }
 
-Handle<Object> makeLm() {
+Local<Object> makeLm() {
   Isolate *isolate = Isolate::GetCurrent();
 
   Nan::EscapableHandleScope scope;

@@ -58,7 +58,7 @@ public:
 
 class Video : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
   bool Load(uint8_t *bufferValue, size_t bufferLength, string *error = nullptr);
   void Update();
   void Play();
@@ -106,7 +106,7 @@ class VideoCamera;
 
 class VideoDevice : public ObjectWrap {
   public:
-    static Handle<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons);
+    static Local<Object> Initialize(Isolate *isolate, Local<Value> imageDataCons);
 
   protected:
     static NAN_METHOD(New);

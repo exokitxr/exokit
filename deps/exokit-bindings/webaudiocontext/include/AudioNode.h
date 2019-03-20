@@ -16,7 +16,7 @@ namespace webaudio {
 
 class AudioNode : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:

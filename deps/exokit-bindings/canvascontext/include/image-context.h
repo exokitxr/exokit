@@ -21,7 +21,7 @@ using namespace node;
 
 class Image : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
   unsigned int GetWidth();
   unsigned int GetHeight();
   unsigned int GetNumChannels();

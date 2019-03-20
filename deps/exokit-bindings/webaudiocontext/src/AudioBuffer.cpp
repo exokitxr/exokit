@@ -5,7 +5,7 @@ namespace webaudio {
 
 AudioBuffer::AudioBuffer(uint32_t sampleRate, Local<Array> buffers) : sampleRate(sampleRate), buffers(buffers) {}
 AudioBuffer::~AudioBuffer() {}
-Handle<Object> AudioBuffer::Initialize(Isolate *isolate) {
+Local<Object> AudioBuffer::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -23,7 +23,7 @@ Handle<Object> AudioBuffer::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "copyFromChannel", CopyFromChannel);
   Nan::SetMethod(proto, "copyToChannel", CopyToChannel);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -31,9 +31,9 @@ NAN_METHOD(AudioBuffer::New) {
   // Nan::HandleScope scope;
 
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
-    uint32_t numOfChannels = info[0]->Uint32Value();
-    uint32_t length = info[1]->Uint32Value();
-    uint32_t sampleRate = info[2]->Uint32Value();
+    uint32_t numOfChannels = TO_UINT32(info[0]);
+    uint32_t length = TO_UINT32(info[1]);
+    uint32_t sampleRate = TO_UINT32(info[2]);
     Local<Array> buffers;
     if (info[3]->IsArray()) {
       buffers = Local<Array>::Cast(info[3]);
@@ -101,7 +101,7 @@ NAN_METHOD(AudioBuffer::GetChannelData) {
   // Nan::HandleScope scope;
 
   if (info[0]->IsNumber()) {
-    uint32_t channelIndex = info[0]->Uint32Value();
+    uint32_t channelIndex = TO_UINT32(info[0]);
 
     AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
     Local<Array> buffers = Nan::New(audioBuffer->buffers);
@@ -117,15 +117,15 @@ NAN_METHOD(AudioBuffer::CopyFromChannel) {
 
   if (info[0]->IsFloat32Array() && info[1]->IsNumber()) {
     Local<Float32Array> destinationFloat32Array = Local<Float32Array>::Cast(info[0]);
-    uint32_t channelIndex = info[1]->Uint32Value();
+    uint32_t channelIndex = TO_UINT32(info[1]);
 
     AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
     Local<Array> buffers = Nan::New(audioBuffer->buffers);
     Local<Value> channelData = buffers->Get(channelIndex);
 
-    if (channelData->BooleanValue()) {
+    if (TO_BOOL(channelData)) {
       Local<Float32Array> channelDataFloat32Array = Local<Float32Array>::Cast(channelData);
-      uint32_t offset = std::min<uint32_t>(info[2]->IsNumber() ? info[2]->Uint32Value() : 0, channelDataFloat32Array->Length());
+      uint32_t offset = std::min<uint32_t>(info[2]->IsNumber() ? TO_UINT32(info[2]) : 0, channelDataFloat32Array->Length());
       size_t copyLength = std::min<size_t>(channelDataFloat32Array->Length() - offset, destinationFloat32Array->Length());
       for (size_t i = 0; i < copyLength; i++) {
         destinationFloat32Array->Set(i, channelDataFloat32Array->Get(offset + i));
@@ -142,15 +142,15 @@ NAN_METHOD(AudioBuffer::CopyToChannel) {
 
   if (info[0]->IsFloat32Array() && info[1]->IsNumber()) {
     Local<Float32Array> sourceFloat32Array = Local<Float32Array>::Cast(info[0]);
-    uint32_t channelIndex = info[1]->Uint32Value();
+    uint32_t channelIndex = TO_UINT32(info[1]);
 
     AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
     Local<Array> buffers = Nan::New(audioBuffer->buffers);
     Local<Value> channelData = buffers->Get(channelIndex);
 
-    if (channelData->BooleanValue()) {
+    if (TO_BOOL(channelData)) {
       Local<Float32Array> channelDataFloat32Array = Local<Float32Array>::Cast(channelData);
-      uint32_t offset = std::min<uint32_t>(info[2]->IsNumber() ? info[2]->Uint32Value() : 0, channelDataFloat32Array->Length());
+      uint32_t offset = std::min<uint32_t>(info[2]->IsNumber() ? TO_UINT32(info[2]) : 0, channelDataFloat32Array->Length());
       size_t copyLength = std::min<size_t>(channelDataFloat32Array->Length() - offset, sourceFloat32Array->Length());
       for (size_t i = 0; i < copyLength; i++) {
         channelDataFloat32Array->Set(offset + i, sourceFloat32Array->Get(i));
@@ -169,7 +169,7 @@ AudioBufferSourceNode::AudioBufferSourceNode() {
   }));
 }
 AudioBufferSourceNode::~AudioBufferSourceNode() {}
-Handle<Object> AudioBufferSourceNode::Initialize(Isolate *isolate) {
+Local<Object> AudioBufferSourceNode::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -182,7 +182,7 @@ Handle<Object> AudioBufferSourceNode::Initialize(Isolate *isolate) {
   AudioNode::InitializePrototype(proto);
   AudioBufferSourceNode::InitializePrototype(proto);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -195,7 +195,7 @@ void AudioBufferSourceNode::InitializePrototype(Local<ObjectTemplate> proto) {
 NAN_METHOD(AudioBufferSourceNode::New) {
   // Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
@@ -237,7 +237,7 @@ NAN_SETTER(AudioBufferSourceNode::BufferSetter) {
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
   lab::FinishableSourceNode *audioNode = (lab::FinishableSourceNode *)audioBufferSourceNode->audioNode.get();
 
-  if (value->IsObject() && value->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioBuffer"))) {
+  if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioBuffer"))) {
     Local<Object> audioBufferObj = Local<Object>::Cast(value);
     audioBufferSourceNode->buffer.Reset(audioBufferObj);
 
@@ -295,7 +295,7 @@ void AudioBufferSourceNode::ProcessInMainThread(AudioBufferSourceNode *self) {
 
   if (!self->onended.IsEmpty()) {
     Local<Function> onended = Nan::New(self->onended);
-    onended->Call(Nan::Null(), 0, nullptr);
+    onended->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), 0, nullptr);
   }
 }
 

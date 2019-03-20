@@ -91,7 +91,7 @@ NAN_METHOD(GetMonitors) {
 }
 
 NAN_METHOD(SetMonitor) {
-  int index = info[0]->Int32Value();
+  int index = TO_INT32(info[0]);
   int monitor_count;
   GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
   _activeMonitor = monitors[index];
@@ -105,7 +105,7 @@ std::unique_ptr<Nan::Persistent<Function>> eventHandler;
 void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
   if (eventHandler && !(*eventHandler).IsEmpty()) {
     Local<Function> eventHandlerFn = Nan::New(*eventHandler);
-    eventHandlerFn->Call(Nan::Null(), argc, argv);
+    eventHandlerFn->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), argc, argv);
   }
 }
 
@@ -843,15 +843,15 @@ NAN_METHOD(FramebufferTextureLayer) {
 
 NAN_METHOD(BlitFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
-  GLuint fbo1 = info[1]->Uint32Value();
-  GLuint fbo2 = info[2]->Uint32Value();
-  int sw = info[3]->Uint32Value();
-  int sh = info[4]->Uint32Value();
-  int dw = info[5]->Uint32Value();
-  int dh = info[6]->Uint32Value();
-  bool color = info[7]->BooleanValue();
-  bool depth = info[8]->BooleanValue();
-  bool stencil = info[9]->BooleanValue();
+  GLuint fbo1 = TO_UINT32(info[1]);
+  GLuint fbo2 = TO_UINT32(info[2]);
+  int sw = TO_UINT32(info[3]);
+  int sh = TO_UINT32(info[4]);
+  int dw = TO_UINT32(info[5]);
+  int dh = TO_UINT32(info[6]);
+  bool color = TO_BOOL(info[7]);
+  bool depth = TO_BOOL(info[8]);
+  bool stencil = TO_BOOL(info[9]);
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
@@ -916,7 +916,7 @@ NAN_METHOD(SetCurrentWindowContext) {
 
 NAN_METHOD(SetWindowTitle) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  String::Utf8Value str(info[1]->ToString());
+  Nan::Utf8String str(Local<String>::Cast(info[1]));
   glfwSetWindowTitle(window, *str);
 }
 
@@ -936,12 +936,12 @@ NAN_METHOD(GetWindowSize) {
 
 NAN_METHOD(SetWindowSize) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwSetWindowSize(window, info[1]->Uint32Value(), info[2]->Uint32Value());
+  glfwSetWindowSize(window, TO_UINT32(info[1]), TO_UINT32(info[2]));
 }
 
 NAN_METHOD(SetWindowPos) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwSetWindowPos(window, info[1]->Uint32Value(),info[2]->Uint32Value());
+  glfwSetWindowPos(window, TO_UINT32(info[1]), TO_UINT32(info[2]));
 }
 
 NAN_METHOD(GetWindowPos) {
@@ -1163,9 +1163,9 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
 }
 
 NAN_METHOD(Create3D) {
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
-  bool initialVisible = info[2]->BooleanValue();
+  unsigned int width = TO_UINT32(info[0]);
+  unsigned int height = TO_UINT32(info[1]);
+  bool initialVisible = TO_BOOL(info[2]);
   NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[4]));
 
@@ -1244,8 +1244,8 @@ NAN_METHOD(Create3D) {
 }
 
 NAN_METHOD(Create2D) {
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
+  unsigned int width = TO_UINT32(info[0]);
+  unsigned int height = TO_UINT32(info[1]);
   NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
 
   NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, sharedWindow);
@@ -1317,7 +1317,7 @@ NAN_METHOD(GetRefreshRate) {
 
 NAN_METHOD(SetCursorMode) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  if (info[1]->BooleanValue()) {
+  if (TO_BOOL(info[1])) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   } else {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -1336,8 +1336,8 @@ NAN_METHOD(SetCursorMode) {
 
 NAN_METHOD(SetCursorPosition) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int x = info[1]->Int32Value();
-  int y = info[2]->Int32Value();
+  int x = TO_INT32(info[1]);
+  int y = TO_INT32(info[2]);
   glfwSetCursorPos(window, x, y);
 }
 

@@ -85,7 +85,7 @@ class DataChannel
   //
   // Nodejs wrapping.
   //
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
   static Nan::Persistent<v8::Function> constructor;
   static NAN_METHOD(New);
 

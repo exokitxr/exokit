@@ -17,7 +17,6 @@ using v8::Array;
 using v8::External;
 using v8::Function;
 using v8::FunctionTemplate;
-using v8::Handle;
 using v8::Local;
 using v8::Number;
 using v8::Object;
@@ -75,7 +74,7 @@ NAN_METHOD(RTCStatsReport::stat) {
 
   RTCStatsReport* self = Nan::ObjectWrap::Unwrap<RTCStatsReport>(info.This());
 
-  v8::String::Utf8Value _name(info[0]->ToString());
+  Nan::Utf8String _name(Local<String>::Cast(info[0]));
   std::string name = std::string(*_name);
 
   Local<Value> found = Nan::Undefined();
@@ -118,7 +117,7 @@ NAN_SETTER(RTCStatsReport::ReadOnly) {
   // INFO("RTCStatsReport::ReadOnly");
 }
 
-void RTCStatsReport::Init(Handle<Object> exports) {
+void RTCStatsReport::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate> (New);
   tpl->SetClassName(Nan::New("RTCStatsReport").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
@@ -129,6 +128,6 @@ void RTCStatsReport::Init(Handle<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("timestamp").ToLocalChecked(), GetTimestamp, ReadOnly);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("type").ToLocalChecked(), GetType, ReadOnly);
 
-  constructor.Reset(tpl->GetFunction());
-  exports->Set(Nan::New("RTCStatsReport").ToLocalChecked(), tpl->GetFunction());
+  constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("RTCStatsReport").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

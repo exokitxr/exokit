@@ -6,7 +6,7 @@ AudioListener::AudioListener() {}
 
 AudioListener::~AudioListener() {}
 
-Handle<Object> AudioListener::Initialize(Isolate *isolate, Local<Value> fakeAudioParamCons) {
+Local<Object> AudioListener::Initialize(Isolate *isolate, Local<Value> fakeAudioParamCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -19,7 +19,7 @@ Handle<Object> AudioListener::Initialize(Isolate *isolate, Local<Value> fakeAudi
   Nan::SetMethod(proto, "setPosition", SetPosition);
   Nan::SetMethod(proto, "setOrientation", SetOrientation);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
   
   ctorFn->Set(JS_STR("FakeAudioParam"), fakeAudioParamCons);
 
@@ -29,7 +29,7 @@ Handle<Object> AudioListener::Initialize(Isolate *isolate, Local<Value> fakeAudi
 NAN_METHOD(AudioListener::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
@@ -40,7 +40,7 @@ NAN_METHOD(AudioListener::New) {
     lab::AudioListener *labAudioListener = &audioContext->audioContext->listener();
     audioListener->audioListener = labAudioListener;
     
-    Local<Function> fakeAudioParamConstructor = Local<Function>::Cast(audioListenerObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("FakeAudioParam")));
+    Local<Function> fakeAudioParamConstructor = Local<Function>::Cast(JS_OBJ(audioListenerObj->Get(JS_STR("constructor")))->Get(JS_STR("FakeAudioParam")));
 
     Local<Object> positionXAudioParamObj = fakeAudioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
     FakeAudioParam *positionXAudioParam = ObjectWrap::Unwrap<FakeAudioParam>(positionXAudioParamObj);
@@ -108,9 +108,9 @@ NAN_METHOD(AudioListener::SetPosition) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     AudioListener *audioListener = ObjectWrap::Unwrap<AudioListener>(info.This());
 
-    float x = info[0]->NumberValue();
-    float y = info[1]->NumberValue();
-    float z = info[2]->NumberValue();
+    float x = TO_FLOAT(info[0]);
+    float y = TO_FLOAT(info[1]);
+    float z = TO_FLOAT(info[2]);
 
     audioListener->audioListener->setPosition(lab::FloatPoint3D{x, y, z});
   } else {
@@ -124,9 +124,9 @@ NAN_METHOD(AudioListener::SetOrientation) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     AudioListener *audioListener = ObjectWrap::Unwrap<AudioListener>(info.This());
 
-    float x = info[0]->NumberValue();
-    float y = info[1]->NumberValue();
-    float z = info[2]->NumberValue();
+    float x = TO_FLOAT(info[0]);
+    float y = TO_FLOAT(info[1]);
+    float z = TO_FLOAT(info[2]);
 
     audioListener->audioListener->setOrientation(lab::FloatPoint3D{x, y, z});
   } else {
