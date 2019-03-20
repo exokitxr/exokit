@@ -87,7 +87,7 @@
     "window-worker": "0.0.101",
     "window-xhr": "0.0.29",
     "worker-native": "0.0.29",
-    "ws": "^6.1.2"
+    "ws": "^6.2.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",
