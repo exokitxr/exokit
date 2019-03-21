@@ -217,6 +217,7 @@
                     '-lavdevice',
                     '-lswscale',
                     '-lswresample',
+                    '-lx264',
                     '-lopenvr_api',
                     '-luuid',
                     '-lXcursor',
