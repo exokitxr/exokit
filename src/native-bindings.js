@@ -262,9 +262,9 @@ if (bindings.nativeVr) {
 	};
 }
 
-GlobalContext.nativeVr = bindings.nativeVr;
+GlobalContext.nativeOpenVR = bindings.nativeOpenVR;
 GlobalContext.nativeMl = bindings.nativeMl;
 GlobalContext.nativeBrowser = bindings.nativeBrowser;
-GlobalContext.oculusVr = bindings.oculusVr;
+GlobalContext.nativeOculusVR = bindings.nativeOculusVR;
 
 module.exports = bindings;

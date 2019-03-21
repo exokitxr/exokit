@@ -192,13 +192,13 @@ void InitExports(Local<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeWindow"), window);
 
 #ifdef OPENVR
-  Local<Value> vr = makeVr();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVr"), vr);
+  Local<Value> vr = makeOpenVR();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeOpenVR"), vr);
 #endif
 
 #ifdef OCULUSVR
-  Local<Value> oculusVR = makeOculusVr();
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "oculusVr"), oculusVR);
+  Local<Value> oculusVR = makeOculusVR();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeOculusVR"), oculusVR);
 #endif
 
 #if LEAPMOTION

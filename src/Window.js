@@ -34,7 +34,7 @@ const {
   RTCRtpSender, */
   RTCRtpTransceiver,
   RTCSessionDescription,
-  
+
   RTCPeerConnectionIceEvent,
   RTCDataChannelEvent,
   RTCDataChannelMessageEvent,
@@ -93,11 +93,11 @@ const {
     Video,
     VideoDevice,
   },
-  nativeVr,
+  nativeOpenVR,
   nativeMl,
   nativeBrowser,
   nativeWindow,
-  oculusVr
+  nativeOculusVR
 } = bindings;
 
 GlobalContext.args = {};
@@ -476,12 +476,16 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       if (nativeMl && nativeMl.IsPresent()) {
         result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
       }
-      if (nativeVr && nativeVr.VR_IsHmdPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].vrDisplay);
+
+      // Oculus runtime takes precedence over OpenVR for Oculus headsets.
+      if (nativeOculusVR && nativeOculusVR.Oculus_IsHmdPresent()) {
+        result.push(window[symbols.mrDisplaysSymbol].oculusVRDisplay);
+      } else {
+        if (nativeOpenVR && nativeOpenVR.VR_IsHmdPresent()) {
+          result.push(window[symbols.mrDisplaysSymbol].openVRDisplay);
+        }
       }
-      if (oculusVr && oculusVr.Oculus_IsHmdPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].vrDisplay);
-      }
+
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
       return result;
     },
@@ -778,12 +782,12 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.RTCRtpReceiver = RTCRtpReceiver;
   window.RTCRtpSender = RTCRtpSender; */
   window.MediaStream = class MediaStream {};
-  
+
   window.RTCPeerConnection = RTCPeerConnection;
   window.webkitRTCPeerConnection = RTCPeerConnection; // for feature detection
   window.RTCSessionDescription = RTCSessionDescription;
   window.RTCIceCandidate = RTCIceCandidate;
-  
+
   window.RTCPeerConnectionIceEvent = RTCPeerConnectionIceEvent;
   window.RTCDataChannelEvent = RTCDataChannelEvent;
   window.RTCDataChannelMessageEvent = RTCDataChannelMessageEvent;
@@ -1310,11 +1314,19 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.fakePresentState.layers = layers;
     };
 
-    const vrDisplay = new VRDisplay('VR');
-    _bindMRDisplay(vrDisplay);
-    vrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
-    vrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    vrDisplay.onlayers = layers => {
+    const openVRDisplay = new VRDisplay('OpenVR');
+    _bindMRDisplay(openVRDisplay);
+    openVRDisplay.onrequestpresent = layers => nativeOpenVR.requestPresent(layers);
+    openVRDisplay.onexitpresent = () => nativeOpenVR.exitPresent();
+    openVRDisplay.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
+
+    const oculusVRDisplay = new VRDisplay('OculusVR');
+    _bindMRDisplay(oculusVRDisplay);
+    oculusVRDisplay.onrequestpresent = layers => nativeOculusVR.requestPresent(layers);
+    oculusVRDisplay.onexitpresent = () => nativeOculusVR.exitPresent();
+    oculusVRDisplay.onlayers = layers => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
@@ -1368,7 +1380,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
     return {
       fakeVrDisplay,
-      vrDisplay,
+      openVRDisplay,
+      oculusVRDisplay,
       xrDisplay,
       mlDisplay,
       xmDisplay,

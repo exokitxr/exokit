@@ -60,7 +60,7 @@ NAN_METHOD(Oculus_IsHmdPresent)
   info.GetReturnValue().Set(Nan::New<Boolean>(returnValue));
 }
 
-Local<Object> makeOculusVr() {
+Local<Object> makeOculusVR() {
   v8::EscapableHandleScope scope(Isolate::GetCurrent());
 
   Local<Object> exports = Object::New(Isolate::GetCurrent());

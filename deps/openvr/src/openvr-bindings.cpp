@@ -170,9 +170,9 @@ NAN_METHOD(VR_GetInitToken)
 }
 
 NAN_METHOD(GetContext)
-{ 
+{
   Local<Object> result = Object::New(Isolate::GetCurrent());
-  
+
   v8::Local<v8::Object> system = v8::Object::New(v8::Isolate::GetCurrent());
   IVRSystem::Init(system);
   result->Set(Nan::New("system").ToLocalChecked(), system);
@@ -181,13 +181,13 @@ NAN_METHOD(GetContext)
   compositor->Set(Nan::New("NewCompositor").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(NewCompositor)).ToLocalChecked());
   IVRCompositor::Init(compositor);
   result->Set(Nan::New("compositor").ToLocalChecked(), compositor);
-  
+
   info.GetReturnValue().Set(result);
 }
 
-Local<Object> makeVr() {
+Local<Object> makeOpenVR() {
   v8::EscapableHandleScope scope(Isolate::GetCurrent());
-  
+
   Local<Object> exports = Object::New(Isolate::GetCurrent());
 
   exports->Set(Nan::New("VR_Init").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_Init)).ToLocalChecked());

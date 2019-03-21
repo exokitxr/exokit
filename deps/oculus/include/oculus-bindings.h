@@ -10,6 +10,6 @@ using namespace v8;
 NAN_METHOD(Oculus_Init);
 NAN_METHOD(Oculus_IsHmdPresent);
 
-Local<Object> makeOculusVr();
+Local<Object> makeOculusVR();
 
 #endif
