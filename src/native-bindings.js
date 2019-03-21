@@ -133,8 +133,8 @@ bindings.nativeAudio.AudioContext = (OldAudioContext => class AudioContext exten
 
 bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
 
-if (bindings.nativeVr) {
-	bindings.nativeVr.EVRInitError = {
+if (bindings.nativeOpenVR) {
+	bindings.nativeOpenVR.EVRInitError = {
 	  None: 0,
 	  Unknown: 1,
 
@@ -222,7 +222,7 @@ if (bindings.nativeVr) {
 	  Steam_SteamInstallationNotFound: 2000,
 	};
 
-	bindings.nativeVr.EVRApplicationType = {
+	bindings.nativeOpenVR.EVRApplicationType = {
 	  Other: 0,
 	  Scene: 1,
 	  Overlay: 2,
@@ -233,18 +233,18 @@ if (bindings.nativeVr) {
 	  Bootstrapper: 7,
 	};
 
-	bindings.nativeVr.EVREye = {
+	bindings.nativeOpenVR.EVREye = {
 	  Left: 0,
 	  Right: 1,
 	};
 
-	bindings.nativeVr.ETrackingUniverseOrigin = {
+	bindings.nativeOpenVR.ETrackingUniverseOrigin = {
 	  Seated: 0,
 	  Standing: 1,
 	  RawAndUncalibrated: 2,
 	};
 
-	bindings.nativeVr.ETrackingResult = {
+	bindings.nativeOpenVR.ETrackingResult = {
 	  Uninitialized: 1,
 	  Calibrating_InProgress: 100,
 	  Calibrating_OutOfRange: 101,
@@ -252,7 +252,7 @@ if (bindings.nativeVr) {
 	  Running_OutOfRange: 201,
 	};
 
-	bindings.nativeVr.ETrackedDeviceClass = {
+	bindings.nativeOpenVR.ETrackedDeviceClass = {
 	  Invalid: 0,
 	  HMD: 1,
 	  Controller: 2,

@@ -1330,51 +1330,70 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
-    const xrDisplay = new XR.XRDevice('VR');
-    xrDisplay.onrequestpresent = layers => nativeVr.requestPresent(layers);
-    xrDisplay.onexitpresent = () => nativeVr.exitPresent();
-    xrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    xrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
-    xrDisplay.requestSession = (requestSession => function() {
+    const openVRDevice = new XR.XRDevice('OpenVR');
+    openVRDevice.onrequestpresent = layers => nativeOpenVR.requestPresent(layers);
+    openVRDevice.onexitpresent = () => nativeOpenVR.exitPresent();
+    openVRDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    openVRDevice.oncancelanimationframe = window.cancelAnimationFrame;
+    openVRDevice.requestSession = (requestSession => function() {
       return requestSession.apply(this, arguments)
         .then(session => {
-          vrDisplay.isPresenting = true;
+          openVRDisplay.isPresenting = true;
           session.once('end', () => {
-            vrDisplay.isPresenting = false;
+            openVRDisplay.isPresenting = false;
           });
           return session;
         });
-    })(xrDisplay.requestSession);
-    xrDisplay.onlayers = layers => {
+    })(openVRDevice.requestSession);
+    openVRDevice.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
+	
+    const oculusVRDevice = new XR.XRDevice('OculusVR');
+    oculusVRDevice.onrequestpresent = layers => nativeOculusVR.requestPresent(layers);
+    oculusVRDevice.onexitpresent = () => nativeOculusVR.exitPresent();
+    oculusVRDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    oculusVRDevice.oncancelanimationframe = window.cancelAnimationFrame;
+    oculusVRDevice.requestSession = (requestSession => function() {
+      return requestSession.apply(this, arguments)
+        .then(session => {
+          oculusVRDisplay.isPresenting = true;
+          session.once('end', () => {
+            oculusVRDisplay.isPresenting = false;
+          });
+          return session;
+        });
+    })(oculusVRDevice.requestSession);
+    oculusVRDevice.onlayers = layers => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
-    const mlDisplay = new VRDisplay('AR');
-    _bindMRDisplay(mlDisplay);
-    mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
-    mlDisplay.onexitpresent = () => nativeMl.exitPresent();
-    mlDisplay.onrequesthittest = _makeOnRequestHitTest(window);
-    mlDisplay.onlayers = layers => {
+    const magicLeapARDisplay = new VRDisplay('AR');
+    _bindMRDisplay(magicLeapARDisplay);
+    magicLeapARDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    magicLeapARDisplay.onexitpresent = () => nativeMl.exitPresent();
+    magicLeapARDisplay.onrequesthittest = _makeOnRequestHitTest(window);
+    magicLeapARDisplay.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
 
-    const xmDisplay = new XR.XRDevice('AR');
-    xmDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
-    xmDisplay.onexitpresent = () => nativeMl.exitPresent();
-    xmDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    xmDisplay.oncancelanimationframe = window.cancelAnimationFrame;
-    xmDisplay.requestSession = (requestSession => function() {
+    const magicLeapARDevice = new XR.XRDevice('AR');
+    magicLeapARDevice.onrequestpresent = layers => nativeMl.requestPresent(layers);
+    magicLeapARDevice.onexitpresent = () => nativeMl.exitPresent();
+    magicLeapARDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    magicLeapARDevice.oncancelanimationframe = window.cancelAnimationFrame;
+    magicLeapARDevice.requestSession = (requestSession => function() {
       return requestSession.apply(this, arguments)
         .then(session => {
-          mlDisplay.isPresenting = true;
+          magicLeapARDisplay.isPresenting = true;
           session.once('end', () => {
-            mlDisplay.isPresenting = false;
+            magicLeapARDisplay.isPresenting = false;
           });
           return session;
         });
-    })(xmDisplay.requestSession);
-    xmDisplay.onrequesthittest = _makeOnRequestHitTest(window);
-    xmDisplay.onlayers = layers => {
+    })(magicLeapARDevice.requestSession);
+    magicLeapARDevice.onrequesthittest = _makeOnRequestHitTest(window);
+    magicLeapARDevice.onlayers = layers => {
       GlobalContext.mlPresentState.layers = layers;
     };
 
@@ -1382,9 +1401,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       fakeVrDisplay,
       openVRDisplay,
       oculusVRDisplay,
-      xrDisplay,
-      mlDisplay,
-      xmDisplay,
+      openVRDevice,
+      oculusVRDevice,
+      magicLeapARDisplay,
+      magicLeapARDevice,
     };
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();

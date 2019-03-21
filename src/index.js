@@ -575,7 +575,8 @@ if (nativeBindings.nativeOculusVR) {
   nativeBindings.nativeOculusVR.exitPresent = function () {
     return Promise.resolve();
   };
-} else if (nativeBindings.nativeOpenVR) {
+}
+if (nativeBindings.nativeOpenVR) {
   nativeBindings.nativeOpenVR.requestPresent = function(layers) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
@@ -1182,8 +1183,8 @@ const _startRenderLoop = () => {
 
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
-              const {vrDisplay} = window[symbols.mrDisplaysSymbol];
-              _decorateModelViewProjections(vrPresentState.layers, vrDisplay, 2); // note: vrDisplay mirrors xrDisplay
+              const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
+              _decorateModelViewProjections(vrPresentState.layers, openVRDisplay, 2); // note: openVRDisplay mirrors openVRDevice
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
             } else {
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
@@ -1192,7 +1193,7 @@ const _startRenderLoop = () => {
             if (vrPresentState.oculusSystem) {
               nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
               vrPresentState.oculusSystem.Submit(context, vrPresentState.tex, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
-            } else {
+            } else if (vrPresentState.compositor) {
               vrPresentState.compositor.Submit(context, vrPresentState.tex);
             }
 
@@ -1200,8 +1201,8 @@ const _startRenderLoop = () => {
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
-              const {mlDisplay} = window[symbols.mrDisplaysSymbol];
-              _decorateModelViewProjections(mlPresentState.layers, mlDisplay, 2); // note: mlDisplay mirrors xmDisplay
+              const {magicLeapDisplay} = window[symbols.mrDisplaysSymbol];
+              _decorateModelViewProjections(mlPresentState.layers, magicLeapDisplay, 2); // note: magicLeapDisplay mirrors magicLeapDevice
               nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers);
             } else {
               nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, true, false, false);
@@ -1633,8 +1634,9 @@ const _startRenderLoop = () => {
     // poll xr device events
     for (let i = 0; i < windows.length; i++) {
       const window = windows[i];
-      window[symbols.mrDisplaysSymbol].xrDisplay.session && window[symbols.mrDisplaysSymbol].xrDisplay.session.update();
-      window[symbols.mrDisplaysSymbol].xmDisplay.session && window[symbols.mrDisplaysSymbol].xmDisplay.session.update();
+      window[symbols.mrDisplaysSymbol].oculusVRDevice.session && window[symbols.mrDisplaysSymbol].oculusVRDevice.session.update();
+      window[symbols.mrDisplaysSymbol].openVRDevice.session && window[symbols.mrDisplaysSymbol].openVRDevice.session.update();
+      window[symbols.mrDisplaysSymbol].magicLeapARDevice.session && window[symbols.mrDisplaysSymbol].magicLeapARDevice.session.update();
     }
 
     // poll operating system events
