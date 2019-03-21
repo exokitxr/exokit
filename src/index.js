@@ -479,14 +479,13 @@ if (nativeBindings.nativeOculusVR) {
 
         system.SetupSwapChain(contexts[0]);
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-
-        const maxTextureSize = 4096;
-        if (halfWidth > maxTextureSize) {
-          const factor = halfWidth / maxTextureSize;
-          halfWidth = 4096;
+        const MAX_TEXTURE_SIZE = 4096;
+        const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
+        if (halfWidth > MAX_TEXTURE_SIZE_HALF) {
+          const factor = halfWidth / MAX_TEXTURE_SIZE_HALF;
+          halfWidth = MAX_TEXTURE_SIZE_HALF;
           height = Math.floor(height / factor);
         }
-
         const width = halfWidth * 2;
         xrState.renderWidth[0] = halfWidth;
         xrState.renderHeight[0] = height;
