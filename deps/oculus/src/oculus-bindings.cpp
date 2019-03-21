@@ -43,10 +43,11 @@ NAN_METHOD(Oculus_IsHmdPresent)
 {
   bool returnValue;
 
-  ovrSession session;
   ovrResult result = ovr_Initialize(nullptr);
   if (OVR_FAILURE(result)) {
-    std::cout << "LibOVR didn't initialize" << std::endl;
+    if (result != ovrError_LibLoad) {
+      std::cout << "LibOVR didn't initialize" << std::endl;
+    }
     return;
   }
 
