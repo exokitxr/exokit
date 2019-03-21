@@ -1310,7 +1310,7 @@ const _startRenderLoop = () => {
 
         localVector.toArray(xrState.position);
         localQuaternion.toArray(xrState.orientation);
-      } else {
+      } else if (vrPresentState.compositor) {
 
         _normalizeMatrixArray(localFloat32Array);
         _normalizeMatrixArray(localFloat32Array2);
