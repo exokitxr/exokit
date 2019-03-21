@@ -46,7 +46,7 @@ NAN_METHOD(Oculus_IsHmdPresent)
   ovrSession session;
   ovrResult result = ovr_Initialize(nullptr);
   if (OVR_FAILURE(result)) {
-    Nan::ThrowError("Error initializing ovr");
+    std::cout << "LibOVR didn't initialize" << std::endl;
     return;
   }
 
