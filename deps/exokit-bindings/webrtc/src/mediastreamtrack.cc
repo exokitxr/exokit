@@ -149,6 +149,18 @@ NAN_METHOD(MediaStreamTrack::JsStop) {
   self->Stop();
 }
 
+NAN_METHOD(MediaStreamTrack::AddEventListener) {
+  // nothing
+}
+
+NAN_METHOD(MediaStreamTrack::RemoveEventListener) {
+  // nothing
+}
+
+NAN_METHOD(MediaStreamTrack::DispatchEvent) {
+  // nothing
+}
+
 node_webrtc::Wrap <
 MediaStreamTrack*,
 rtc::scoped_refptr<webrtc::MediaStreamTrackInterface>,
@@ -185,6 +197,9 @@ void MediaStreamTrack::Init(Handle<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("muted").ToLocalChecked(), GetMuted, nullptr);
   Nan::SetPrototypeMethod(tpl, "clone", Clone);
   Nan::SetPrototypeMethod(tpl, "stop", JsStop);
+  Nan::SetPrototypeMethod(tpl, "addEventListener", AddEventListener);
+  Nan::SetPrototypeMethod(tpl, "removeEventListener", RemoveEventListener);
+  Nan::SetPrototypeMethod(tpl, "dispatchEvent", DispatchEvent);
   constructor().Reset(tpl->GetFunction());
   exports->Set(Nan::New("MediaStreamTrack").ToLocalChecked(), tpl->GetFunction());
 }
