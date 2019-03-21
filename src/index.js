@@ -1301,7 +1301,7 @@ const _startRenderLoop = () => {
         );
         vrPresentState.hasPose = true;
 
-        xrState.positon = localPositionArray3;
+        xrState.position = localPositionArray3;
         xrState.orientation = localQuaternionArray4;
         xrState.leftViewMatrix.set(localFloat32Array);
         xrState.leftProjectionMatrix.set(localFloat32Array2);
