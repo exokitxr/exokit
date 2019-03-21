@@ -77,6 +77,10 @@ class MediaStreamTrack
 
   static NAN_METHOD(Clone);
   static NAN_METHOD(JsStop);
+  
+  static NAN_METHOD(AddEventListener);
+  static NAN_METHOD(RemoveEventListener);
+  static NAN_METHOD(DispatchEvent);
 
   bool _ended = false;
   bool _enabled;
