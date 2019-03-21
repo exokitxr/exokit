@@ -33,42 +33,50 @@ function RTCDataChannel(internalDC) {
     bufferedAmount: {
       get: function getBufferedAmount() {
         return internalDC.bufferedAmount;
-      }
+      },
+      configurable: true,
     },
     id: {
       get: function getId() {
         return internalDC.id;
-      }
+      },
+      configurable: true,
     },
     label: {
       get: function getLabel() {
         return internalDC.label;
-      }
+      },
+      configurable: true,
     },
     maxRetransmits: {
       get: function getMaxRetransmits() {
         return internalDC.maxRetransmits;
-      }
+      },
+      configurable: true,
     },
     ordered: {
       get: function getOrdered() {
         return internalDC.ordered;
-      }
+      },
+      configurable: true,
     },
     priority: {
       get: function getPriority() {
         return internalDC.priority;
-      }
+      },
+      configurable: true,
     },
     protocol: {
       get: function getProtocol() {
         return internalDC.protocol;
-      }
+      },
+      configurable: true,
     },
     readyState: {
       get: function getReadyState() {
         return internalDC.readyState;
-      }
+      },
+      configurable: true,
     },
     binaryType: {
       get: function getBinaryType() {
@@ -76,7 +84,8 @@ function RTCDataChannel(internalDC) {
       },
       set: function(binaryType) {
         internalDC.binaryType = binaryType;
-      }
+      },
+      configurable: true,
     }
   });
 
