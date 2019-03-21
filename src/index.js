@@ -1311,10 +1311,6 @@ const _startRenderLoop = () => {
 
         localVector.toArray(xrState.position);
         localQuaternion.toArray(xrState.orientation);
-        // console.log("CACA " +
-        //   xrState.positon[0] + ' ' +
-        //   xrState.positon[1] + ' ' +
-        //   xrState.positon[2] + ' '  );
       } else {
 
         _normalizeMatrixArray(localFloat32Array);
