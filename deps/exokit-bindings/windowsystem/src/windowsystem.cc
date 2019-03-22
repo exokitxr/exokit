@@ -450,8 +450,8 @@ NAN_METHOD(CreateRenderTarget) {
 
 NAN_METHOD(ResizeRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  int width = TO_UINT32(info[1]);
-  int height = TO_UINT32(info[2]);
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
   GLuint fbo = TO_UINT32(info[3]);
   GLuint colorTex = TO_UINT32(info[4]);
   GLuint depthStencilTex = TO_UINT32(info[5]);
