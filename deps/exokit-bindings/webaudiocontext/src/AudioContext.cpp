@@ -21,7 +21,7 @@ AudioContext::AudioContext(float sampleRate) {
 
 AudioContext::~AudioContext() {}
 
-Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons) {
   uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
   uv_sem_init(&threadSemaphore, 0);
 
@@ -72,8 +72,6 @@ Handle<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioList
   ctorFn->Set(JS_STR("AudioBufferSourceNode"), audioBufferSourceNodeCons);
   ctorFn->Set(JS_STR("AudioProcessingEvent"), audioProcessingEventCons);
   ctorFn->Set(JS_STR("ScriptProcessorNode"), scriptProcessorNodeCons);
-  ctorFn->Set(JS_STR("MediaStreamTrack"), mediaStreamTrackCons);
-  ctorFn->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
 
   return scope.Escape(ctorFn);
 }
@@ -303,14 +301,14 @@ NAN_METHOD(AudioContext::CreateMediaElementSource) {
 NAN_METHOD(AudioContext::CreateMediaStreamSource) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
-    Local<Object> microphoneMediaStream = Local<Object>::Cast(info[0]);
+  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MediaStream"))) {
+    Local<Object> mediaStream = Local<Object>::Cast(info[0]);
 
     Local<Object> audioContextObj = info.This();
     AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
     Local<Function> audioSourceNodeConstructor = Local<Function>::Cast(audioContextObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioSourceNode")));
-    Local<Object> audioNodeObj = audioContext->CreateMediaStreamSource(audioSourceNodeConstructor, microphoneMediaStream, audioContextObj);
+    Local<Object> audioNodeObj = audioContext->CreateMediaStreamSource(audioSourceNodeConstructor, mediaStream, audioContextObj);
 
     info.GetReturnValue().Set(audioNodeObj);
   } else {

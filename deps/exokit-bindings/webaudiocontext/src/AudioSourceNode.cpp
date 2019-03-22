@@ -52,7 +52,7 @@ NAN_METHOD(AudioSourceNode::New) {
       } else {
         Nan::ThrowError("AudioSourceNode: invalid audio element state");
       }
-    } else if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
+    } else if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("MediaStream"))) {
       AudioSourceNode *audioSourceNode = new AudioSourceNode();
       Local<Object> audioSourceNodeObj = info.This();
       audioSourceNode->Wrap(audioSourceNodeObj);
