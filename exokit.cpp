@@ -32,7 +32,7 @@ void callFunction(const char *funcname, const int argc, Local<Value> argv[]) {
 
   // call function, 'this' points to global object
   TryCatch try_catch(Isolate::GetCurrent());
-  Local<Value> result = Nan::Call(jsfunc, global, argc, argv).ToLocalChecked();
+  Local<Value> result = jsfunc->Call(Isolate::GetCurrent()->GetCurrentContext(), global, argc, argv).ToLocalChecked();
 
   if (result.IsEmpty()) {
     Nan::Utf8String error(try_catch.Exception());
