@@ -267,16 +267,6 @@ A three-component world position vector.
 
 A four-component world quaternion.
 
-### `MLEyeTracker`
-
-Used to acquire eye tracking updates from the Magic Leap platform.
-
-#### `MLEyeTracker.oneye : function(MLEye[2])`
-
-When set, `oneye` will be called with an array of `MLEyeUpdate`. This indicates an update to the user's detected eye post by the Magic Leap platform.
-
-Both eyes are present in all updates.
-
 ### `MLEye`
 
 A single eye state as detected by the platform.
