@@ -3986,8 +3986,8 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttribOffset) {
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderPrecisionFormat) {
-  GLenum shaderType = TO_UINT32(info[0]);
-  GLenum precisionType = TO_UINT32(info[1]);
+  GLenum shaderType = TO_INT32(info[0]);
+  GLenum precisionType = TO_INT32(info[1]);
   GLint range[2];
   GLint precision;
 
