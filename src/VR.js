@@ -139,8 +139,8 @@ class GamepadHapticActuator {
   }
 }
 class Gamepad {
-  constructor(hand, index) {
-    this.id = 'OpenVR Gamepad';
+  constructor(hand, index, id) {
+    this.id = id;
     this.hand = hand;
     this.index = index;
 
@@ -607,12 +607,17 @@ const createVRDisplay = () => new FakeVRDisplay();
 
 const getGamepads = (() => {
   let gamepads = null;
+  const oculusVRIdLeft = 'Oculus Touch (Left)';
+  const oculusVRIdRight = 'Oculus Touch (Right)';
+  const openVRId = 'OpenVR Gamepad';
 
   return () => {
     if (!gamepads) {
+      const idLeft = GlobalContext.isOculusRuntime ? oculusVRIdLeft : openVRId;
+      const idRight = GlobalContext.isOculusRuntime ? oculusVRIdRight : openVRId;
       gamepads = [
-        new Gamepad('left', 0),
-        new Gamepad('right', 1),
+        new Gamepad('left', 0, idLeft),
+        new Gamepad('right', 1, idRight),
       ];
     }
     return gamepads;
