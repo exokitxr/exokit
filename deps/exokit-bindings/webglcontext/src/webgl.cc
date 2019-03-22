@@ -2521,7 +2521,7 @@ NAN_METHOD(WebGLRenderingContext::GetProgramParameter) {
 
 NAN_METHOD(WebGLRenderingContext::GetUniformLocation) {
   GLint programId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
-  Nan::Utf8String name(info[1]);
+  Nan::Utf8String name(Local<String>::Cast(info[1]));
 
   GLint location = glGetUniformLocation(programId, *name);
 
@@ -4897,7 +4897,7 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
 
 // TODO GetExtension(name) return the extension name if found, should be an object...
 NAN_METHOD(WebGLRenderingContext::GetExtension) {
-  Nan::Utf8String name(info[0]);
+  Nan::Utf8String name(Local<String>::Cast(info[0]));
   char *sname = *name;
 
   if (
