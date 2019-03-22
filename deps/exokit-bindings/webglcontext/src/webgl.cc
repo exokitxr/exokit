@@ -4138,8 +4138,8 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
   GLint yoffsetV = TO_INT32(info[3]);
   GLsizei widthV = TO_UINT32(info[4]);
   GLsizei heightV = TO_UINT32(info[5]);
-  GLenum formatV = TO_UINT32(info[6]);
-  GLenum typeV = TO_UINT32(info[7]);
+  GLenum formatV = TO_INT32(info[6]);
+  GLenum typeV = TO_INT32(info[7]);
   Local<Value> pixels = info[8];
   Local<Value> srcOffset = info[9];
 
