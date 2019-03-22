@@ -338,6 +338,11 @@ const localGamepadArray = new Float32Array(24);
 const localPositionArray3 = new Float32Array(3);
 const localQuaternionArray4 = new Float32Array(4);
 
+const leftControllerPositionArray3 = new Float32Array(3);
+const leftControllerQuaternionArray4 = new Float32Array(4);
+const rightControllerPositionArray3 = new Float32Array(3);
+const rightControllerQuaternionArray4 = new Float32Array(4);
+
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
@@ -1298,8 +1303,13 @@ const _startRenderLoop = () => {
           localFloat32Array,     // left eye view matrix
           localFloat32Array2,    // left eye projection matrix
           localFloat32Array3,    // right eye view matrix
-          localFloat32Array4     // right eye projection matrix
+          localFloat32Array4,     // right eye projection matrix
+          leftControllerPositionArray3, // left controller position.
+          leftControllerQuaternionArray4, // left controller orientation.
+          rightControllerPositionArray3, // right controller position.
+          rightControllerQuaternionArray4 // right controller orientation.
         );
+
         vrPresentState.hasPose = true;
 
         xrState.position = localPositionArray3;
@@ -1311,6 +1321,33 @@ const _startRenderLoop = () => {
 
         localVector.toArray(xrState.position);
         localQuaternion.toArray(xrState.orientation);
+
+        // Controllers.
+        {
+          const leftGamepad = xrState.gamepads[0];
+          leftGamepad.connected[0] = true;
+          leftGamepad.position[0] = leftControllerPositionArray3[0];
+          leftGamepad.position[1] = leftControllerPositionArray3[1];
+          leftGamepad.position[2] = leftControllerPositionArray3[2];
+
+          leftGamepad.orientation[0] = leftControllerQuaternionArray4[0];
+          leftGamepad.orientation[1] = leftControllerQuaternionArray4[1];
+          leftGamepad.orientation[2] = leftControllerQuaternionArray4[2];
+          leftGamepad.orientation[3] = leftControllerQuaternionArray4[3];
+        }
+        {
+          const rightGamepad = xrState.gamepads[1];
+          rightGamepad.connected[0] = true;
+          rightGamepad.position[0] = rightControllerPositionArray3[0];
+          rightGamepad.position[1] = rightControllerPositionArray3[1];
+          rightGamepad.position[2] = rightControllerPositionArray3[2];
+
+          rightGamepad.orientation[0] = rightControllerQuaternionArray4[0];
+          rightGamepad.orientation[1] = rightControllerQuaternionArray4[1];
+          rightGamepad.orientation[2] = rightControllerQuaternionArray4[2];
+          rightGamepad.orientation[3] = rightControllerQuaternionArray4[3];
+        }
+
       } else if (vrPresentState.compositor) {
 
         _normalizeMatrixArray(localFloat32Array);

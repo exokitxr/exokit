@@ -179,6 +179,8 @@ NAN_METHOD(OVRSession::RequestGetPoses) {
     return;
   }
 
+  std::cout << "---- RequestGetPoses  ---" << std::endl;
+
   int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
   EyeSwapChain *eyes = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
@@ -202,7 +204,7 @@ NAN_METHOD(OVRSession::RequestGetPoses) {
   ovrPosef HmdToEyePose[2] = { eyeRenderDesc[0].HmdToEyePose,
                                eyeRenderDesc[1].HmdToEyePose };
 
-  double sensorSampleTime;    // sensorSampleTime is fed into the layer later
+  double sensorSampleTime;  // sensorSampleTime is fed into the layer later
   ovr_GetEyePoses(session, *frameIndex, ovrTrue, HmdToEyePose, eyeRenderPoses, &sensorSampleTime);
 
   memset(hmdArray, std::numeric_limits<float>::quiet_NaN(), 16);
@@ -220,7 +222,7 @@ NAN_METHOD(OVRSession::RequestGetPoses) {
 }
 
 NAN_METHOD(OVRSession::GetPose) {
-  if (info.Length() != 6)
+  if (info.Length() != 10)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
@@ -237,6 +239,11 @@ NAN_METHOD(OVRSession::GetPose) {
   Local<Float32Array> leftProjection32Array = Local<Float32Array>::Cast(info[3]);
   Local<Float32Array> rightView32Array = Local<Float32Array>::Cast(info[4]);
   Local<Float32Array> rightProjection32Array = Local<Float32Array>::Cast(info[5]);
+  // Controllers.
+  Local<Float32Array> leftControllerPosition32Array = Local<Float32Array>::Cast(info[6]);
+  Local<Float32Array> leftControllerOrientation32Array = Local<Float32Array>::Cast(info[7]);
+  Local<Float32Array> rightControllerPosition32Array = Local<Float32Array>::Cast(info[8]);
+  Local<Float32Array> rightControllerOrientation32Array = Local<Float32Array>::Cast(info[9]);
 
   float *positionArray = (float *)((char *)position32Array->Buffer()->GetContents().Data() + position32Array->ByteOffset());
   float *orientationArray = (float *)((char *)orientation32Array->Buffer()->GetContents().Data() + orientation32Array->ByteOffset());
@@ -244,7 +251,11 @@ NAN_METHOD(OVRSession::GetPose) {
   float *leftProjectionArray = (float *)((char *)leftProjection32Array->Buffer()->GetContents().Data() + leftProjection32Array->ByteOffset());
   float *rightViewArray = (float *)((char *)rightView32Array->Buffer()->GetContents().Data() + rightView32Array->ByteOffset());
   float *rightProjectionArray = (float *)((char *)rightProjection32Array->Buffer()->GetContents().Data() + rightProjection32Array->ByteOffset());
-
+  // Controllers.
+  float *leftControllerPositionArray = (float *)((char *)leftControllerPosition32Array->Buffer()->GetContents().Data() + leftControllerPosition32Array->ByteOffset());
+  float *leftControllerOrientationArray = (float *)((char *)leftControllerOrientation32Array->Buffer()->GetContents().Data() + leftControllerOrientation32Array->ByteOffset());
+  float *rightControllerPositionArray = (float *)((char *)rightControllerPosition32Array->Buffer()->GetContents().Data() + rightControllerPosition32Array->ByteOffset());
+  float *rightControllerOrientationArray = (float *)((char *)rightControllerOrientation32Array->Buffer()->GetContents().Data() + rightControllerOrientation32Array->ByteOffset());
 
   // Call ovr_GetRenderDesc each frame to get the ovrEyeRenderDesc, as the returned values (e.g. HmdToEyePose) may change at runtime.
   ovrEyeRenderDesc eyeRenderDesc[2];
@@ -304,6 +315,47 @@ NAN_METHOD(OVRSession::GetPose) {
       rightProjectionArray[v * 4 + u] = rightProjectionMatrix.M[u][v];
     }
   }
+
+  // Controllers.
+  double time = ovr_GetPredictedDisplayTime(session, 0);
+  ovrTrackingState trackingState = ovr_GetTrackingState(session, time, ovrTrue);
+
+  ovrPoseStatef leftControllerState = trackingState.HandPoses[ovrHand_Left];
+  ovrVector3f leftControllerPosition = leftControllerState.ThePose.Position;
+  ovrQuatf leftControllerOrientation = leftControllerState.ThePose.Orientation;
+
+  leftControllerPositionArray[0] = leftControllerPosition.x;
+  leftControllerPositionArray[1] = leftControllerPosition.y;
+  leftControllerPositionArray[2] = leftControllerPosition.z;
+
+  leftControllerOrientationArray[0] = leftControllerOrientation.x;
+  leftControllerOrientationArray[1] = leftControllerOrientation.y;
+  leftControllerOrientationArray[2] = leftControllerOrientation.z;
+  leftControllerOrientationArray[3] = leftControllerOrientation.w;
+
+  ovrPoseStatef rightControllerState = trackingState.HandPoses[ovrHand_Right];
+  ovrVector3f rightControllerPosition = rightControllerState.ThePose.Position;
+  ovrQuatf rightControllerOrientation = rightControllerState.ThePose.Orientation;
+
+  rightControllerPositionArray[0] = rightControllerPosition.x;
+  rightControllerPositionArray[1] = rightControllerPosition.y;
+  rightControllerPositionArray[2] = rightControllerPosition.z;
+
+  rightControllerOrientationArray[0] = rightControllerOrientation.x;
+  rightControllerOrientationArray[1] = rightControllerOrientation.y;
+  rightControllerOrientationArray[2] = rightControllerOrientation.z;
+  rightControllerOrientationArray[3] = rightControllerOrientation.w;
+
+  // std::cout << "POSITION: " << leftControllerPosition.x << " " << leftControllerPosition.y << " " << leftControllerPosition.z << std::endl;
+
+  // ovrInputState inputState;
+  // if (OVR_SUCCESS(ovr_GetInputState(session, ovrControllerType_Touch, &inputState)))
+  // {
+  //   if (inputState.Buttons & ovrButton_A)
+  //   {
+  //     std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
+  //   }
+  // }
 }
 
 NAN_METHOD(OVRSession::Submit)
