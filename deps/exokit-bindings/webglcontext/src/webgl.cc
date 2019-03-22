@@ -3481,7 +3481,7 @@ NAN_METHOD(WebGLRenderingContext::VertexAttrib4f) {
 }
 
 NAN_METHOD(WebGLRenderingContext::VertexAttrib1fv) {
-  int indx = TO_INT32(info[0]);
+  GLuint indx = TO_UINT32(info[0]);
 
   GLfloat *data;
   int num;
