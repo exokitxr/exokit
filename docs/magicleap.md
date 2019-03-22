@@ -96,7 +96,7 @@ The opaque `WebGLBuffer` for the mesh indices for `MLMeshUpdate.position` and `M
 
 The `Uint16Array` buffer that was uploaded to the `indexBuffer`.
 
-#### `MLMeshUpdate.count : Number`
+#### `MLMeshUpdate.count : number`
 
 The number of indices in `MLMeshUpdate.index`. Indended to be passed to `glDrawElements(GL_TRIANGLES)`.
 
