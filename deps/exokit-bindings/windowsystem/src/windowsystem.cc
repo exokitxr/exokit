@@ -417,8 +417,8 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
 
 NAN_METHOD(CreateRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  int width = TO_UINT32(info[1]);
-  int height = TO_UINT32(info[2]);
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
   GLuint sharedColorTex = TO_UINT32(info[3]);
   GLuint sharedDepthStencilTex = TO_UINT32(info[4]);
   GLuint sharedMsColorTex = TO_UINT32(info[5]);
