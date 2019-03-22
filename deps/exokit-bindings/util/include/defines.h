@@ -11,7 +11,6 @@ using namespace v8;
 #define JS_NUM(val) Nan::New<v8::Number>(val)
 #define JS_FLOAT(val) Nan::New<v8::Number>(val)
 #define JS_BOOL(val) Nan::New<v8::Boolean>(val)
-#define JS_FN(val) Nan::New<v8::Function>(val)
 #define JS_OBJ(val) Nan::To<v8::Object>(val).ToLocalChecked()
 
 #define TO_DOUBLE(x) (Nan::To<double>(x).FromJust())
