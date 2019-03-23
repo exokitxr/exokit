@@ -59,7 +59,7 @@
     "libnode.a": "0.0.9",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
-    "nan": "^2.12.1",
+    "nan": "^2.13.1",
     "native-audio-deps": "0.0.56",
     "native-browser-deps": "0.0.16",
     "native-browser-deps-linux": "0.0.4",
