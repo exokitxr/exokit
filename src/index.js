@@ -2084,16 +2084,6 @@ const _start = () => {
 if (require.main === module) {
   if (nativeBindings.nativeAnalytics) {
     require(path.join(__dirname, 'bugsnag'));
-    require('fault-zone').registerHandler((stack, stackLen) => {
-      const message = new Buffer(stack, 0, stackLen).toString('utf8');
-      console.warn(message);
-      child_process.execFileSync(process.argv[0], [
-        path.join(__dirname, 'bugsnag.js'),
-      ], {
-        input: message,
-      });
-      process.exit(1);
-    });
   }
   if (args.log) {
     const RedirectOutput = require('redirect-output').default;

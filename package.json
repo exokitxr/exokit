@@ -50,7 +50,6 @@
     "event-loop-native": "0.0.8",
     "events": "^3.0.0",
     "fake-indexeddb": "^2.0.4",
-    "fault-zone": "0.0.20",
     "he": "^1.1.1",
     "history": "^4.9.0",
     "hterm-repl": "0.0.10",
